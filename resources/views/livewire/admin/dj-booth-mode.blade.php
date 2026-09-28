@@ -1867,8 +1867,7 @@ function djAudioPlayer() {
                 }
             }
 
-            // 4. Resolución Unificada vía Backend (/api/music/resolve-track)
-            let resolvedPreviewUrl = null;
+            // 4. Resolución de Metadatos & YouTube Track Completo vía Backend (/api/music/resolve-track)
             let resolvedVideoId = null;
 
             try {
@@ -1880,72 +1879,98 @@ function djAudioPlayer() {
                         if (resData.spotify_url) this.spotifyExternalUrl = resData.spotify_url;
                         if (resData.youtube_url) this.youtubeExternalUrl = resData.youtube_url;
                         if (resData.apple_music_url) this.appleMusicExternalUrl = resData.apple_music_url;
-                        resolvedPreviewUrl = resData.preview_url;
                         resolvedVideoId = resData.youtube_video_id;
                     }
                 }
             } catch (e) {
-                console.warn('Backend resolve error, falling back to direct itunes', e);
+                console.warn('Backend resolve error', e);
             }
 
-            // 4A. Reproducir Preview de alta calidad (iTunes 30s) si está disponible
-            if (resolvedPreviewUrl) {
-                this.playbackSource = 'preview';
-                this.audio.src = resolvedPreviewUrl;
-                this.audio.load();
+            // 5. Reproducción COMPLETA (100% Canción entera) mediante YouTube
+            this.playbackSource = 'youtube';
+
+            if (this.youtubePlayer && this.youtubePlayer.loadVideoById) {
                 try {
-                    await this.audio.play();
+                    if (resolvedVideoId) {
+                        this.youtubePlayer.loadVideoById(resolvedVideoId, 0);
+                    } else {
+                        const searchSong = ((artist || '') + ' ' + title + ' audio').trim();
+                        if (this.youtubePlayer.loadPlaylist) {
+                            this.youtubePlayer.loadPlaylist({
+                                list: searchSong,
+                                listType: 'search',
+                                index: 0,
+                                startSeconds: 0
+                            });
+                        }
+                    }
+                    this.youtubePlayer.playVideo();
                     this.isPlaying = true;
                     this.isPaused = false;
                     this.loading = false;
                     this.$wire.setStatus(id, 'playing');
+                    this.startYouTubeTimer();
                     return;
                 } catch (e) {
-                    console.warn('Preview play error:', e);
+                    console.warn('YouTube playVideo error:', e);
+                }
+            } else if (window.YT && window.YT.Player) {
+                const frameEl = document.getElementById('youtube-audio-frame');
+                if (frameEl) {
+                    this.youtubePlayer = new YT.Player('youtube-audio-frame', {
+                        height: '100%',
+                        width: '100%',
+                        playerVars: {
+                            playsinline: 1,
+                            controls: 1,
+                            autoplay: 1,
+                            modestbranding: 1,
+                            rel: 0,
+                            origin: window.location.origin
+                        },
+                        events: {
+                            onReady: (event) => {
+                                this.youtubeReady = true;
+                                if (resolvedVideoId) {
+                                    event.target.loadVideoById(resolvedVideoId, 0);
+                                    event.target.playVideo();
+                                }
+                            },
+                            onStateChange: (event) => {
+                                if (this.playbackSource === 'youtube') {
+                                    if (event.data === YT.PlayerState.PLAYING) {
+                                        this.isPlaying = true;
+                                        this.isPaused = false;
+                                        this.loading = false;
+                                        this.startYouTubeTimer();
+                                    } else if (event.data === YT.PlayerState.PAUSED) {
+                                        this.isPlaying = false;
+                                        this.isPaused = true;
+                                        this.stopYouTubeTimer();
+                                    } else if (event.data === YT.PlayerState.ENDED) {
+                                        this.isPlaying = false;
+                                        this.isPaused = false;
+                                        this.stopYouTubeTimer();
+                                        this.currentTime = 0;
+                                        this.progress = 0;
+                                        if (this.currentId) {
+                                            this.$wire.setStatus(this.currentId, 'played');
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                    this.isPlaying = true;
+                    this.isPaused = false;
+                    this.loading = false;
+                    this.$wire.setStatus(id, 'playing');
+                    this.startYouTubeTimer();
+                    return;
                 }
             }
 
-            // 4B. Reproducir YouTube Video/Audio si está disponible
-            if (resolvedVideoId) {
-                this.playbackSource = 'youtube';
-                if (this.youtubePlayer && this.youtubePlayer.loadVideoById) {
-                    try {
-                        this.youtubePlayer.loadVideoById(resolvedVideoId);
-                        this.youtubePlayer.playVideo();
-                        this.isPlaying = true;
-                        this.isPaused = false;
-                        this.loading = false;
-                        this.$wire.setStatus(id, 'playing');
-                        this.startYouTubeTimer();
-                        return;
-                    } catch (e) {
-                        console.warn('YouTube playVideo error:', e);
-                    }
-                }
-            }
-
-            // 5. Preescucha directa de iTunes como fallback desde el navegador
-            try {
-                const qClean = encodeURIComponent(((artist || '') + ' ' + title).replace(/\s*[\(\[].*?[\)\]]/g, '').trim());
-                const itunesRes = await fetch(`https://itunes.apple.com/search?term=${qClean}&media=music&entity=song&country=es&limit=1`);
-                if (itunesRes.ok) {
-                    const itData = await itunesRes.json();
-                    if (itData.results && itData.results.length > 0 && itData.results[0].previewUrl) {
-                        this.currentCover = itData.results[0].artworkUrl100?.replace('100x100bb.jpg', '600x600bb.jpg') || '';
-                        this.playbackSource = 'preview';
-                        this.audio.src = itData.results[0].previewUrl;
-                        this.audio.load();
-                        await this.audio.play();
-                        this.isPlaying = true;
-                        this.isPaused = false;
-                        this.loading = false;
-                        this.$wire.setStatus(id, 'playing');
-                        return;
-                    }
-                }
-            } catch (err) {}
-
-            // 6. Si no se puede reproducir automáticamente, notificar al DJ con enlaces directos
+            // 6. Si no se puede reproducir automáticamente en el navegador/tablet, marcar error y permitir enlaces externos
             this.loading = false;
             this.isPlaying = false;
             this.hasError = true;
