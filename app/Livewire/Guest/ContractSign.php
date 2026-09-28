@@ -6,6 +6,7 @@ use Livewire\Component;
 use App\Models\Contract;
 use App\Models\Event;
 use App\Services\ContractTemplateService;
+use App\Services\DocumentValidationService;
 use App\Services\PostalCodeService;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
@@ -25,6 +26,7 @@ class ContractSign extends Component
     // Client fields to review/fill
     public $client_name;
     public $client_dni;
+    public $dniValidation = null;
     public $client_phone;
     public $client_email;
     public $client_postal_code;
@@ -111,6 +113,7 @@ class ContractSign extends Component
             }
         }
 
+        $this->validateDni();
         $this->renderLiveContract();
     }
 
@@ -118,6 +121,22 @@ class ContractSign extends Component
     {
         if (str_starts_with($propertyName, 'client_')) {
             $this->renderLiveContract();
+        }
+    }
+
+    public function updatedClientDni($value)
+    {
+        $this->client_dni = strtoupper(trim($value));
+        $this->validateDni();
+        $this->renderLiveContract();
+    }
+
+    public function validateDni()
+    {
+        if (!empty($this->client_dni)) {
+            $this->dniValidation = DocumentValidationService::validate($this->client_dni);
+        } else {
+            $this->dniValidation = null;
         }
     }
 
@@ -206,6 +225,14 @@ class ContractSign extends Component
             'signature_data.required' => 'Por favor, estampa tu firma en el recuadro o valida con tu certificado digital.',
             'signature_data.min' => 'Por favor, estampa una firma válida en el recuadro.',
         ]);
+
+        // Validate DNI / NIE / CIF format and checksum (modulo 23)
+        $docValidation = DocumentValidationService::validate($this->client_dni);
+        if (!$docValidation['valid']) {
+            $this->addError('client_dni', $docValidation['message'] ?? 'El DNI / NIE introducido no es válido.');
+            return;
+        }
+        $this->client_dni = $docValidation['formatted'] ?? $this->client_dni;
 
         $this->contract->update([
             'status' => 'signed',

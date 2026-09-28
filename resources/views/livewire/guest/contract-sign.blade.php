@@ -104,13 +104,36 @@
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">DNI / NIF / CIF *</label>
-                        <input 
-                            type="text" 
-                            wire:model.live.debounce.250ms="client_dni" 
-                            class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl text-sm font-semibold text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 p-3 transition shadow-xs" 
-                            placeholder="12345678Z"
-                        >
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                            <span>DNI / NIE / CIF *</span>
+                            @if($dniValidation && $dniValidation['valid'])
+                                <span class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-300 dark:border-emerald-800 flex items-center gap-1">
+                                    <span>✓</span> {{ $dniValidation['type'] }} Válido
+                                </span>
+                            @elseif($dniValidation && !$dniValidation['valid'] && !empty($client_dni) && strlen($client_dni) >= 8)
+                                <span class="text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/80 px-2 py-0.5 rounded border border-amber-300 dark:border-amber-800">
+                                    Letra: {{ $dniValidation['expected_letter'] ?? '?' }}
+                                </span>
+                            @endif
+                        </label>
+                        <div class="relative">
+                            <input 
+                                type="text" 
+                                wire:model.live.debounce.250ms="client_dni" 
+                                class="w-full bg-slate-50 dark:bg-slate-950 border {{ $dniValidation && $dniValidation['valid'] ? 'border-emerald-500 focus:border-emerald-500 focus:ring-emerald-500' : ($dniValidation && !$dniValidation['valid'] && strlen($client_dni) >= 8 ? 'border-amber-500 focus:border-amber-500 focus:ring-amber-500' : 'border-slate-300 dark:border-slate-700') }} rounded-xl text-sm font-bold text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 p-3 uppercase transition shadow-xs" 
+                                placeholder="12345678Z"
+                            >
+                            @if($dniValidation && $dniValidation['valid'])
+                                <div class="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500 font-bold text-base pointer-events-none">
+                                    ✓
+                                </div>
+                            @endif
+                        </div>
+                        @if($dniValidation && !$dniValidation['valid'] && !empty($client_dni) && strlen($client_dni) >= 8)
+                            <span class="text-amber-600 dark:text-amber-400 text-xs mt-1 block font-semibold leading-tight">
+                                ⚠️ {{ $dniValidation['message'] }}
+                            </span>
+                        @endif
                         @error('client_dni') <span class="text-rose-600 text-xs mt-1 block font-bold">{{ $message }}</span> @enderror
                     </div>
 
@@ -139,7 +162,13 @@
                     <div>
                         <label class="block text-xs font-bold text-indigo-700 dark:text-indigo-400 uppercase tracking-wider mb-1.5 flex items-center justify-between">
                             <span>Código Postal (CP) *</span>
-                            <span class="text-[10px] text-indigo-500 dark:text-indigo-300 font-normal lowercase">autocompleta ciudad</span>
+                            @if(!empty($client_city) && !empty($client_province) && strlen($client_postal_code) === 5)
+                                <span class="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-0.5">
+                                    <span>✓</span> {{ $client_city }}
+                                </span>
+                            @else
+                                <span class="text-[10px] text-indigo-500 dark:text-indigo-300 font-normal lowercase">autocompleta ciudad</span>
+                            @endif
                         </label>
                         <input 
                             type="text" 
