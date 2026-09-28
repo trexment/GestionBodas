@@ -409,7 +409,9 @@
                             {{ $item->description ?: 'Servicio profesional acordado según especificaciones del evento.' }}
                         </td>
                         <td class="price-cell">
-                            @if($subtotal > 0)
+                            @if(str_contains(mb_strtolower($item->service_name ?: ''), 'consultar') || str_contains(mb_strtolower($item->description ?: ''), 'consultar'))
+                                <span style="color: #b45309; font-weight: bold; font-size: 8pt;">A consultar</span>
+                            @elseif($subtotal > 0)
                                 {{ number_format($subtotal, 2, ',', '.') }} €
                             @else
                                 <span class="price-included">Incluido</span>

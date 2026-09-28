@@ -68,7 +68,7 @@ class EventShow extends Component
         'photo_album' => ['selected' => false, 'quantity' => 1, 'price' => 150, 'desc' => 'Maquetación álbum digital profesional (sin imprimir).'],
         'photo_full_pack' => ['selected' => false, 'quantity' => 1, 'price' => 800, 'desc' => 'Fotografía Completa: Ceremonia, Restaurante, Fiesta, Álbum digital maquetado, fotos en alta calidad sin marcas de agua.'],
         'karaoke' => ['selected' => false, 'quantity' => 1, 'price' => 80, 'desc' => 'Karaoke interactivo para invitados.'],
-        'custom_extra' => ['name' => '', 'price' => 0, 'desc' => ''],
+        'custom_extra' => ['name' => '', 'price' => 0, 'desc' => '', 'consult' => false],
     ];
 
     // Dossier form
@@ -747,8 +747,22 @@ class EventShow extends Component
         
         $custom_name = trim($this->quote_services['custom_extra']['name'] ?? '');
         if (!empty($custom_name)) {
-            $p = (float)($this->quote_services['custom_extra']['price'] ?: 0);
-            $items[] = ['service_name' => $custom_name, 'description' => 'Servicio extra personalizado acordado', 'price' => $p, 'quantity' => 1];
+            $isConsult = !empty($this->quote_services['custom_extra']['consult']);
+            $p = $isConsult ? 0 : (float)($this->quote_services['custom_extra']['price'] ?: 0);
+            $customDesc = trim($this->quote_services['custom_extra']['desc'] ?? '');
+            
+            if ($isConsult) {
+                $desc = $customDesc ? ($customDesc . ' (Tarifa y disponibilidad a consultar)') : 'Servicio extra personalizado (Tarifa y disponibilidad a consultar según necesidades del evento).';
+            } else {
+                $desc = $customDesc ?: 'Servicio extra personalizado acordado';
+            }
+
+            $items[] = [
+                'service_name' => $custom_name . ($isConsult ? ' (A consultar)' : ''),
+                'description' => $desc,
+                'price' => $p,
+                'quantity' => 1
+            ];
             $total += $p;
         }
 
@@ -912,8 +926,13 @@ class EventShow extends Component
                 $this->quote_services['karaoke']['quantity'] = (int)($item->quantity ?: 1);
                 $this->quote_services['karaoke']['price'] = (float)$item->price;
             } else {
-                $this->quote_services['custom_extra']['name'] = $item->service_name ?: $item->concept ?: '';
-                $this->quote_services['custom_extra']['price'] = (float)$item->price;
+                $rawName = $item->service_name ?: $item->concept ?: '';
+                $isConsult = str_contains(mb_strtolower($rawName), 'consultar') || str_contains(mb_strtolower($item->description ?: ''), 'consultar');
+                $cleanName = trim(str_ireplace('(a consultar)', '', $rawName));
+                $this->quote_services['custom_extra']['name'] = $cleanName;
+                $this->quote_services['custom_extra']['price'] = $isConsult ? 0 : (float)$item->price;
+                $this->quote_services['custom_extra']['desc'] = $item->description ?: '';
+                $this->quote_services['custom_extra']['consult'] = $isConsult;
             }
         }
 

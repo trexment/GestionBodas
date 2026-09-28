@@ -1492,16 +1492,31 @@
                             </div>
 
                             <!-- SECCIÓN: EXTRA PERSONALIZADO -->
-                            <div class="bg-white p-4 rounded-xl border border-gray-200 space-y-2 shadow-xs">
-                                <h6 class="text-xs font-black uppercase text-gray-700 tracking-wider flex items-center gap-1.5 border-b pb-2">
-                                    <span>✨</span> Extra Personalizado / Concepto Adicional
-                                </h6>
-                                <div class="flex items-center justify-between gap-2">
-                                    <input type="text" wire:model="quote_services.custom_extra.name" placeholder="Ej: Máquina de fuego frío, proyector..." class="flex-1 border rounded-lg p-2 text-xs focus:ring-indigo-500">
-                                    <div class="flex items-center gap-1">
-                                        <input type="number" step="0.01" wire:model="quote_services.custom_extra.price" placeholder="0.00" class="w-20 border rounded-lg p-2 text-xs text-right font-bold focus:ring-indigo-500">
-                                        <span class="text-xs font-bold text-gray-600">€</span>
+                            <div class="bg-white p-4 rounded-xl border border-gray-200 space-y-3 shadow-xs">
+                                <div class="flex items-center justify-between border-b pb-2">
+                                    <h6 class="text-xs font-black uppercase text-gray-700 tracking-wider flex items-center gap-1.5">
+                                        <span>✨</span> Extra Personalizado / Concepto Adicional
+                                    </h6>
+                                    <label class="flex items-center gap-1.5 cursor-pointer text-xs font-bold text-amber-800 bg-amber-50 hover:bg-amber-100 px-2.5 py-1 rounded-lg border border-amber-200 transition">
+                                        <input type="checkbox" wire:model.live="quote_services.custom_extra.consult" class="rounded text-amber-600 focus:ring-amber-500 h-3.5 w-3.5">
+                                        <span>Precio a consultar</span>
+                                    </label>
+                                </div>
+                                <div class="space-y-2">
+                                    <div class="flex items-center justify-between gap-2">
+                                        <input type="text" wire:model="quote_services.custom_extra.name" placeholder="Ej: Fotomatón / Plataforma 360 / Fuego frío..." class="flex-1 border rounded-lg p-2 text-xs focus:ring-indigo-500">
+                                        @if(empty($quote_services['custom_extra']['consult']))
+                                            <div class="flex items-center gap-1">
+                                                <input type="number" step="0.01" wire:model="quote_services.custom_extra.price" placeholder="0.00" class="w-24 border rounded-lg p-2 text-xs text-right font-bold focus:ring-indigo-500">
+                                                <span class="text-xs font-bold text-gray-600">€</span>
+                                            </div>
+                                        @else
+                                            <span class="text-xs font-bold text-amber-800 bg-amber-100 px-3 py-2 rounded-lg border border-amber-300">
+                                                A consultar
+                                            </span>
+                                        @endif
                                     </div>
+                                    <input type="text" wire:model="quote_services.custom_extra.desc" placeholder="Descripción / detalle (opcional, ej: Servicio 3 horas con atrezzo, libro de firmas y fotos ilimitadas)" class="w-full border rounded-lg p-1.5 text-[11px] text-gray-600 focus:ring-indigo-500">
                                 </div>
                             </div>
 
