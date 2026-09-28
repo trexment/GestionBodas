@@ -104,6 +104,20 @@ class EventManager extends Component
 
     public function render()
     {
-        return view('livewire.admin.event-manager')->layout('components.layouts.app', ['header' => 'Gestión de Eventos']);
+        $user = auth()->user();
+        $query = Event::with(['client', 'dj', 'assistant']);
+
+        if ($user->role === 'admin') {
+            $events = $query->orderBy('event_date', 'asc')->get();
+        } else {
+            $events = $query->where(function ($q) use ($user) {
+                $q->where('dj_id', $user->id)
+                  ->orWhere('assistant_id', $user->id);
+            })->orderBy('event_date', 'asc')->get();
+        }
+
+        return view('livewire.admin.event-manager', [
+            'events' => $events,
+        ])->layout('components.layouts.app', ['header' => 'Gestión de Eventos']);
     }
 }

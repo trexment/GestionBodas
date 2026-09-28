@@ -101,7 +101,7 @@ class EventShow extends Component
     public function mount(Event $event)
     {
         $user = auth()->user();
-        if ($user->role !== 'admin' && $event->dj_id !== $user->id && $event->assistant_id !== $user->id) {
+        if ($user->role !== 'admin' && $event->dj_id != $user->id && $event->assistant_id != $user->id) {
             abort(403, 'Acceso denegado: No estás asignado a este evento.');
         }
 
