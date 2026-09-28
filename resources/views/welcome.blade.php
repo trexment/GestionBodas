@@ -3,7 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ \App\Models\Setting::get('company_name', 'Eventos Musicales') }} - Sonido, Iluminación & DJs para Eventos</title>
+    @php
+        $companyName = \App\Models\Setting::get('company_name', 'Núñez & Son');
+        $companySubtitle = \App\Models\Setting::get('company_subtitle', 'Sound in Motion');
+        $companyLogo = \App\Models\Setting::get('company_logo');
+        $logoUrl = ($companyLogo && \Illuminate\Support\Facades\Storage::disk('public')->exists($companyLogo))
+            ? \Illuminate\Support\Facades\Storage::disk('public')->url($companyLogo)
+            : ($companyLogo ? '/storage/' . ltrim($companyLogo, '/') : null);
+        $faviconUrl = $logoUrl ?: asset('favicon.svg');
+    @endphp
+
+    <title>{{ $companyName }} - Sonido, Iluminación & DJs para Eventos</title>
+    
+    <!-- Favicon Dinámico -->
+    <link rel="icon" type="image/svg+xml" href="{{ $faviconUrl }}">
+    <link rel="alternate icon" href="{{ $faviconUrl }}">
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -42,15 +57,19 @@
                     
                     <!-- BRAND LOGO -->
                     <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/30">
-                            <span class="text-xl">🎧</span>
-                        </div>
+                        @if($logoUrl)
+                            <img src="{{ $logoUrl }}" alt="{{ $companyName }}" class="w-11 h-11 rounded-xl object-contain bg-slate-900 p-1 border border-slate-700/80 shadow-lg shadow-indigo-500/20">
+                        @else
+                            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/30">
+                                <span class="text-xl">🎧</span>
+                            </div>
+                        @endif
                         <div>
                             <span class="text-xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-100 to-slate-400">
-                                {{ \App\Models\Setting::get('company_name', 'Núñez & Son') }}
+                                {{ $companyName }}
                             </span>
                             <span class="block text-[10px] uppercase font-bold tracking-widest text-indigo-400">
-                                {{ \App\Models\Setting::get('company_subtitle', 'Sound in Motion') }}
+                                {{ $companySubtitle }}
                             </span>
                         </div>
                     </div>

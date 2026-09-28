@@ -3,7 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ $title ?? \App\Models\Setting::get('company_name', 'Núñez and Son') . ' - Panel de Gestión' }}</title>
+    @php
+        $companyName = \App\Models\Setting::get('company_name', 'Núñez and Son');
+        $companySubtitle = \App\Models\Setting::get('company_subtitle', 'Sound in Motion');
+        $companyLogo = \App\Models\Setting::get('company_logo');
+        $logoUrl = ($companyLogo && \Illuminate\Support\Facades\Storage::disk('public')->exists($companyLogo))
+            ? \Illuminate\Support\Facades\Storage::disk('public')->url($companyLogo)
+            : ($companyLogo ? '/storage/' . ltrim($companyLogo, '/') : null);
+        $faviconUrl = $logoUrl ?: asset('favicon.svg');
+    @endphp
+
+    <title>{{ $title ?? $companyName . ' - Panel de Gestión' }}</title>
+    
+    <!-- Favicon Dinámico -->
+    <link rel="icon" type="image/svg+xml" href="{{ $faviconUrl }}">
+    <link rel="alternate icon" href="{{ $faviconUrl }}">
     
     <!-- Tailwind CSS CDN + Configuración Dark Mode -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -305,15 +319,19 @@
             <!-- TOP BRAND / LOGO -->
             <div class="p-5 border-b border-slate-800/80">
                 <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-3 group">
-                    <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-500 via-purple-600 to-pink-500 flex items-center justify-center shadow-lg shadow-indigo-500/20 group-hover:scale-105 transition">
-                        <span class="text-lg">🎧</span>
-                    </div>
+                    @if($logoUrl)
+                        <img src="{{ $logoUrl }}" alt="{{ $companyName }}" class="w-10 h-10 rounded-xl object-contain bg-slate-950 p-1 border border-slate-700/80 shadow-lg shadow-indigo-500/10 group-hover:scale-105 transition">
+                    @else
+                        <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-500 via-purple-600 to-pink-500 flex items-center justify-center shadow-lg shadow-indigo-500/20 group-hover:scale-105 transition">
+                            <span class="text-lg">🎧</span>
+                        </div>
+                    @endif
                     <div class="truncate">
                         <span class="text-sm font-extrabold text-white tracking-tight block leading-tight truncate">
-                            {{ \App\Models\Setting::get('company_name', 'Núñez and Son') }}
+                            {{ $companyName }}
                         </span>
                         <span class="text-[10px] text-indigo-400 font-bold uppercase tracking-wider block">
-                            {{ \App\Models\Setting::get('company_subtitle', 'Sound in Motion') }}
+                            {{ $companySubtitle }}
                         </span>
                     </div>
                 </a>

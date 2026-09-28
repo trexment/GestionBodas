@@ -3,7 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Acceso Staff - {{ \App\Models\Setting::get('company_name', 'Eventos Musicales') }}</title>
+    @php
+        $companyName = \App\Models\Setting::get('company_name', 'Eventos Musicales');
+        $companyLogo = \App\Models\Setting::get('company_logo');
+        $logoUrl = ($companyLogo && \Illuminate\Support\Facades\Storage::disk('public')->exists($companyLogo))
+            ? \Illuminate\Support\Facades\Storage::disk('public')->url($companyLogo)
+            : ($companyLogo ? '/storage/' . ltrim($companyLogo, '/') : null);
+        $faviconUrl = $logoUrl ?: asset('favicon.svg');
+    @endphp
+
+    <title>Acceso Staff - {{ $companyName }}</title>
+    
+    <!-- Favicon Dinámico -->
+    <link rel="icon" type="image/svg+xml" href="{{ $faviconUrl }}">
+    <link rel="alternate icon" href="{{ $faviconUrl }}">
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -28,12 +42,16 @@
         <!-- BRAND BADGE -->
         <div class="text-center mb-8">
             <a href="{{ route('home') }}" class="inline-flex items-center gap-3 group">
-                <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center shadow-xl shadow-indigo-500/30 group-hover:scale-105 transition">
-                    <span class="text-2xl">🎧</span>
-                </div>
+                @if($logoUrl)
+                    <img src="{{ $logoUrl }}" alt="{{ $companyName }}" class="w-16 h-16 rounded-2xl object-contain bg-slate-900 p-1.5 border border-slate-700/80 shadow-2xl shadow-indigo-500/30 group-hover:scale-105 transition mx-auto">
+                @else
+                    <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center shadow-xl shadow-indigo-500/30 group-hover:scale-105 transition mx-auto">
+                        <span class="text-3xl">🎧</span>
+                    </div>
+                @endif
             </a>
             <h1 class="text-2xl font-extrabold text-white mt-4 tracking-tight">
-                {{ \App\Models\Setting::get('company_name', 'Eventos Musicales') }}
+                {{ $companyName }}
             </h1>
             <p class="text-xs text-slate-400 mt-1 uppercase tracking-widest font-bold text-indigo-400">
                 Portal de Administración y DJs

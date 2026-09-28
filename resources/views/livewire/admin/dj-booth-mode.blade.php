@@ -9,12 +9,12 @@
         
         <!-- BOTONES DE RETORNO / SALIR DEL MODO CABINA -->
         <div class="flex items-center gap-2">
-            @if(auth()->check() && auth()->user()->role === 'admin')
+            @if(auth()->check() && in_array(auth()->user()->role, ['admin', 'dj', 'assistant']))
                 <a href="{{ route('admin.events.show', $event->id) }}" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 hover:text-white text-xs font-bold border border-slate-700 transition shadow-sm">
                     &larr; Volver a Ficha
                 </a>
                 <a href="{{ route('admin.events') }}" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white text-xs font-medium border border-slate-800 transition">
-                    🎉 Eventos
+                    🎉 Mis Eventos
                 </a>
                 <a href="{{ route('admin.dashboard') }}" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white text-xs font-medium border border-slate-800 transition">
                     📊 Panel
