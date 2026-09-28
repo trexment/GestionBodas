@@ -30,6 +30,19 @@ class EventShow extends Component
     public $venue_notes;
     public $showVenueModal = false;
 
+    // Edición de Cliente
+    public $showClientModal = false;
+    public $client_edit_name;
+    public $client_edit_phone;
+    public $client_edit_email;
+    public $client_edit_username;
+    public $client_edit_dni;
+    public $client_edit_address;
+    public $client_edit_postal_code;
+    public $client_edit_city;
+    public $client_edit_province;
+    public $client_edit_password;
+
     // Facturas y Recibos
     public $invoice_type = 'factura'; // 'factura' | 'recibo'
     public $invoice_quote_id = null;
@@ -209,6 +222,85 @@ class EventShow extends Component
         $this->event->load(['dj', 'assistant']);
         $this->showStaffModal = false;
         session()->flash('message', 'Personal asignado (DJ y Asistente) actualizado correctamente.');
+    }
+
+    public function openClientModal()
+    {
+        $this->resetValidation();
+        $client = $this->event->client;
+        if ($client) {
+            $this->client_edit_name = $client->name;
+            $this->client_edit_phone = $client->phone;
+            $this->client_edit_email = str_ends_with($client->email, '@eventosmusicales.local') ? '' : $client->email;
+            $this->client_edit_username = $client->username;
+            $this->client_edit_dni = $client->dni ?? $client->nif;
+            $this->client_edit_address = $client->address;
+            $this->client_edit_postal_code = $client->postal_code;
+            $this->client_edit_city = $client->city;
+            $this->client_edit_province = $client->province;
+            $this->client_edit_password = '';
+        }
+        $this->showClientModal = true;
+    }
+
+    public function updatedClientEditPostalCode($value)
+    {
+        $lookup = \App\Services\PostalCodeService::lookup($value);
+        if (!empty($lookup['city']) && empty($this->client_edit_city)) {
+            $this->client_edit_city = $lookup['city'];
+        }
+        if (!empty($lookup['province'])) {
+            $this->client_edit_province = $lookup['province'];
+        }
+    }
+
+    public function saveClientDetails()
+    {
+        $client = $this->event->client;
+        if (!$client) return;
+
+        $this->validate([
+            'client_edit_name' => 'required|string|max:255',
+            'client_edit_phone' => 'nullable|string|max:50',
+            'client_edit_email' => ['nullable', 'email', 'max:255', \Illuminate\Validation\Rule::unique('users', 'email')->ignore($client->id)],
+            'client_edit_username' => ['nullable', 'string', 'max:255', \Illuminate\Validation\Rule::unique('users', 'username')->ignore($client->id)],
+            'client_edit_dni' => 'nullable|string|max:50',
+            'client_edit_address' => 'nullable|string|max:255',
+            'client_edit_postal_code' => 'nullable|string|max:10',
+            'client_edit_city' => 'nullable|string|max:100',
+            'client_edit_province' => 'nullable|string|max:100',
+            'client_edit_password' => 'nullable|string|min:4',
+        ], [
+            'client_edit_name.required' => 'El nombre del cliente es obligatorio.',
+            'client_edit_email.unique' => 'Este email ya está en uso por otro usuario.',
+            'client_edit_username.unique' => 'Este nombre de usuario ya existe.',
+            'client_edit_password.min' => 'La contraseña debe tener al menos 4 caracteres.',
+        ]);
+
+        $updateData = [
+            'name' => $this->client_edit_name,
+            'phone' => $this->client_edit_phone ?: null,
+            'username' => $this->client_edit_username ?: null,
+            'dni' => $this->client_edit_dni ?: null,
+            'address' => $this->client_edit_address ?: null,
+            'postal_code' => $this->client_edit_postal_code ?: null,
+            'city' => $this->client_edit_city ?: null,
+            'province' => $this->client_edit_province ?: null,
+        ];
+
+        if (!empty($this->client_edit_email)) {
+            $updateData['email'] = $this->client_edit_email;
+        }
+
+        if (!empty($this->client_edit_password)) {
+            $updateData['password'] = \Illuminate\Support\Facades\Hash::make($this->client_edit_password);
+        }
+
+        $client->update($updateData);
+
+        $this->event->load('client');
+        $this->showClientModal = false;
+        session()->flash('message', '¡Datos y credenciales del cliente actualizados correctamente!');
     }
 
     public function saveDossier()

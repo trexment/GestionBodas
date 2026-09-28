@@ -86,13 +86,16 @@
                 <span>📅 {{ \Carbon\Carbon::parse($event->event_date)->format('d/m/Y') }}</span>
                 <span>📍 {{ $event->location }}</span>
                 @if($event->client)
-                    <span class="inline-flex items-center gap-1.5 text-gray-700">
-                        👤 {{ $event->client->name }}
+                    <span class="inline-flex items-center gap-1.5 text-gray-700 bg-emerald-50/70 border border-emerald-200 px-2.5 py-1 rounded-lg">
+                        👤 <strong>{{ $event->client->name }}</strong>
                         @if($clientPhone)
-                            <a href="https://wa.me/{{ $clientPhone }}" target="_blank" class="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-2 py-0.5 rounded transition" title="Abrir chat de WhatsApp">
-                                💬 WhatsApp
+                            <a href="https://wa.me/{{ $clientPhone }}" target="_blank" class="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-white hover:bg-emerald-100 border border-emerald-300 px-1.5 py-0.5 rounded transition" title="Abrir chat de WhatsApp">
+                                💬
                             </a>
                         @endif
+                        <button type="button" wire:click="openClientModal" class="inline-flex items-center gap-0.5 text-[11px] font-bold text-amber-800 bg-amber-100 hover:bg-amber-200 border border-amber-300 px-1.5 py-0.5 rounded transition cursor-pointer" title="Editar datos o contraseña del cliente">
+                            ✏️ Editar
+                        </button>
                     </span>
                 @endif
 
@@ -2542,6 +2545,106 @@
                         </button>
                         <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2 rounded-xl shadow-xs transition">
                             💾 Guardar Contacto
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    @endif
+
+    <!-- Modal Editar Datos y Contraseña del Cliente -->
+    @if($showClientModal)
+    <div class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-client-title" role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-slate-900/70 backdrop-blur-xs transition-opacity" wire:click="$set('showClientModal', false)"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div class="inline-block align-bottom bg-white dark:bg-slate-900 rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-xl sm:w-full border border-slate-200 dark:border-slate-800">
+                <div class="bg-emerald-600 px-6 py-4 flex items-center justify-between text-white">
+                    <div class="flex items-center gap-2">
+                        <span class="text-2xl">👤</span>
+                        <div>
+                            <h3 class="font-extrabold text-base leading-tight" id="modal-client-title">Editar Ficha y Credenciales del Cliente</h3>
+                            <p class="text-xs text-emerald-100">Evento: {{ $event->name }}</p>
+                        </div>
+                    </div>
+                    <button type="button" wire:click="$set('showClientModal', false)" class="text-emerald-100 hover:text-white text-2xl font-bold leading-none">&times;</button>
+                </div>
+
+                <form wire:submit.prevent="saveClientDetails">
+                    <div class="p-6 space-y-4 text-xs">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">Nombre Completo *</label>
+                                <input type="text" wire:model="client_edit_name" required class="w-full border-slate-300 dark:border-slate-700 rounded-xl p-2.5 text-xs font-semibold text-slate-800 dark:text-white bg-slate-50 dark:bg-slate-950">
+                                @error('client_edit_name') <span class="text-rose-600 text-[11px] block font-bold mt-1">{{ $message }}</span> @enderror
+                            </div>
+
+                            <div>
+                                <label class="block font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">Teléfono (WhatsApp)</label>
+                                <input type="text" wire:model="client_edit_phone" placeholder="612345678" class="w-full border-slate-300 dark:border-slate-700 rounded-xl p-2.5 text-xs text-slate-800 dark:text-white bg-slate-50 dark:bg-slate-950">
+                                @error('client_edit_phone') <span class="text-rose-600 text-[11px] block font-bold mt-1">{{ $message }}</span> @enderror
+                            </div>
+
+                            <div>
+                                <label class="block font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">Correo Electrónico</label>
+                                <input type="email" wire:model="client_edit_email" placeholder="cliente@email.com" class="w-full border-slate-300 dark:border-slate-700 rounded-xl p-2.5 text-xs text-slate-800 dark:text-white bg-slate-50 dark:bg-slate-950">
+                                @error('client_edit_email') <span class="text-rose-600 text-[11px] block font-bold mt-1">{{ $message }}</span> @enderror
+                            </div>
+
+                            <div>
+                                <label class="block font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">DNI / NIF</label>
+                                <input type="text" wire:model="client_edit_dni" placeholder="12345678Z" class="w-full border-slate-300 dark:border-slate-700 rounded-xl p-2.5 text-xs font-mono font-bold text-slate-800 dark:text-white bg-slate-50 dark:bg-slate-950 uppercase">
+                            </div>
+                        </div>
+
+                        <!-- Dirección y Población -->
+                        <div class="p-3 bg-slate-50 dark:bg-slate-950/60 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-2">
+                            <span class="font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider block text-[11px]">Dirección y Residencia</span>
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-600 dark:text-slate-400 mb-1">Código Postal (CP)</label>
+                                    <input type="text" wire:model.live.debounce.300ms="client_edit_postal_code" placeholder="26370" maxlength="5" class="w-full border-slate-300 dark:border-slate-700 rounded-xl p-2 text-xs font-bold text-slate-800 dark:text-white bg-white dark:bg-slate-900">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-600 dark:text-slate-400 mb-1">Población / Ciudad</label>
+                                    <input type="text" wire:model="client_edit_city" placeholder="Navarrete" class="w-full border-slate-300 dark:border-slate-700 rounded-xl p-2 text-xs text-slate-800 dark:text-white bg-white dark:bg-slate-900">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-600 dark:text-slate-400 mb-1">Provincia</label>
+                                    <input type="text" wire:model="client_edit_province" placeholder="La Rioja" class="w-full border-slate-300 dark:border-slate-700 rounded-xl p-2 text-xs text-slate-800 dark:text-white bg-white dark:bg-slate-900">
+                                </div>
+                                <div class="sm:col-span-3">
+                                    <label class="block text-[10px] font-bold text-slate-600 dark:text-slate-400 mb-1">Dirección (Calle, Piso...)</label>
+                                    <input type="text" wire:model="client_edit_address" placeholder="Calle Mayor 12" class="w-full border-slate-300 dark:border-slate-700 rounded-xl p-2 text-xs text-slate-800 dark:text-white bg-white dark:bg-slate-900">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Contraseña (Opcional) -->
+                        <div class="p-3 bg-indigo-50/50 dark:bg-indigo-950/30 rounded-2xl border border-indigo-200 dark:border-indigo-900/60 space-y-1.5">
+                            <div class="flex items-center justify-between">
+                                <label class="font-bold text-indigo-950 dark:text-indigo-200 uppercase tracking-wider text-[11px] flex items-center gap-1">
+                                    <span>🔑</span> Contraseña del Cliente (Opcional)
+                                </label>
+                                <span class="text-[10px] text-indigo-500 font-normal">Dejar en blanco para no cambiar</span>
+                            </div>
+                            <input 
+                                type="text" 
+                                wire:model="client_edit_password" 
+                                placeholder="Escribe nueva contraseña..." 
+                                class="w-full border-indigo-200 dark:border-indigo-800 rounded-xl p-2.5 text-xs text-slate-800 dark:text-white bg-white dark:bg-slate-900 font-mono"
+                            >
+                            @error('client_edit_password') <span class="text-rose-600 text-[11px] block font-bold mt-1">{{ $message }}</span> @enderror
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-50 dark:bg-slate-950 px-6 py-3 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-2">
+                        <button type="button" wire:click="$set('showClientModal', false)" class="bg-white dark:bg-slate-800 hover:bg-slate-100 text-slate-700 dark:text-slate-300 font-bold text-xs px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-xl transition">
+                            Cancelar
+                        </button>
+                        <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow-md transition cursor-pointer">
+                            💾 Guardar Datos del Cliente
                         </button>
                     </div>
                 </form>
