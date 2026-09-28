@@ -2397,6 +2397,45 @@
                         </div>
                         
                         <div class="space-y-4">
+                            <!-- Búsqueda rápida e instantánea de Spotify / Apple Music -->
+                            <div class="bg-indigo-50/70 border border-indigo-100 rounded-xl p-3 relative">
+                                <label class="block text-xs font-bold text-indigo-900 mb-1 flex items-center gap-1.5">
+                                    <span>🔍</span> Autocompletar con Spotify / Apple Music
+                                </label>
+                                <input 
+                                    type="text" 
+                                    wire:model.live.debounce.300ms="musicSearchQuery" 
+                                    placeholder="Escribe el nombre de la canción o artista (ej: Coldplay, Viva la Vida)..." 
+                                    class="w-full border-indigo-200 rounded-lg text-xs focus:ring-indigo-500 focus:border-indigo-500 bg-white"
+                                >
+                                
+                                @if(!empty($musicSearchResults))
+                                    <div class="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-2xl z-50 max-h-56 overflow-y-auto divide-y divide-gray-100">
+                                        @foreach($musicSearchResults as $track)
+                                            <div 
+                                                wire:click="selectTrackFromSearch({{ json_encode($track) }})"
+                                                class="p-2.5 hover:bg-indigo-50/70 cursor-pointer flex items-center justify-between gap-3 transition"
+                                            >
+                                                <div class="flex items-center gap-2.5 truncate">
+                                                    @if(!empty($track['cover_url']))
+                                                        <img src="{{ $track['cover_url'] }}" class="w-8 h-8 rounded-lg object-cover shadow-sm shrink-0" alt="Cover">
+                                                    @else
+                                                        <div class="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs font-bold shrink-0">🎵</div>
+                                                    @endif
+                                                    <div class="truncate">
+                                                        <div class="text-xs font-bold text-gray-900 truncate">{{ $track['title'] }}</div>
+                                                        <div class="text-[11px] text-gray-500 truncate">{{ $track['artist'] }}</div>
+                                                    </div>
+                                                </div>
+                                                <span class="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full whitespace-nowrap">
+                                                    Seleccionar ↵
+                                                </span>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                @endif
+                            </div>
+
                             <!-- Categoría y Momento -->
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div>

@@ -198,6 +198,103 @@ class MusicSearchService
     }
 
     /**
+     * Automatically resolve and enrich metadata (Spotify URL, Apple Music URL, YouTube URL, Preview URL, Cover Art)
+     * for a given title and artist.
+     */
+    public static function resolveTrackMetadata(string $title, string $artist = ''): array
+    {
+        $title = trim($title);
+        $artist = trim($artist);
+        $query = trim($artist . ' ' . $title);
+
+        if (empty($query)) {
+            return [
+                'spotify_url' => null,
+                'apple_music_url' => null,
+                'youtube_url' => null,
+                'preview_url' => null,
+                'cover_url' => null,
+            ];
+        }
+
+        $cacheKey = 'track_meta_v2_' . md5(strtolower($query));
+        return Cache::remember($cacheKey, 86400, function () use ($query, $title, $artist) {
+            $spotifyUrl = null;
+            $appleMusicUrl = null;
+            $youtubeUrl = null;
+            $previewUrl = null;
+            $coverUrl = null;
+
+            // 1. Try search in Spotify API if available
+            $spotifyResults = self::searchSpotifyApi($query, 1);
+            if (!empty($spotifyResults[0])) {
+                $item = $spotifyResults[0];
+                $spotifyUrl = $item['spotify_url'] ?? null;
+                $coverUrl = $item['cover_url'] ?? null;
+                $previewUrl = $item['preview_url'] ?? null;
+            }
+
+            // 2. Search in iTunes / Apple Music (Free, fast, universal)
+            $cleanedTitle = preg_replace('/\s*[\(\[].*?[\)\]]/', '', $title);
+            $searchTerms = array_unique(array_filter([
+                $query,
+                trim($artist . ' ' . $cleanedTitle),
+                $title,
+            ]));
+
+            foreach ($searchTerms as $term) {
+                try {
+                    $country = Setting::get('apple_music_country', 'es');
+                    $res = Http::timeout(3)->get('https://itunes.apple.com/search', [
+                        'term' => $term,
+                        'media' => 'music',
+                        'entity' => 'song',
+                        'country' => $country,
+                        'limit' => 2,
+                    ]);
+
+                    if ($res->successful()) {
+                        $json = $res->json();
+                        if (!empty($json['results'][0])) {
+                            $it = $json['results'][0];
+                            if (!$previewUrl && !empty($it['previewUrl'])) {
+                                $previewUrl = $it['previewUrl'];
+                            }
+                            if (!$appleMusicUrl && !empty($it['trackViewUrl'])) {
+                                $appleMusicUrl = $it['trackViewUrl'];
+                            }
+                            if (!$coverUrl && !empty($it['artworkUrl100'])) {
+                                $coverUrl = str_replace('100x100bb.jpg', '600x600bb.jpg', $it['artworkUrl100']);
+                            }
+                            break;
+                        }
+                    }
+                } catch (\Throwable $e) {}
+            }
+
+            // Fallbacks if not exact link found
+            $encodedQuery = urlencode($query);
+            if (empty($spotifyUrl)) {
+                $spotifyUrl = "https://open.spotify.com/search/{$encodedQuery}";
+            }
+            if (empty($appleMusicUrl)) {
+                $appleMusicUrl = "https://music.apple.com/es/search?term={$encodedQuery}";
+            }
+            if (empty($youtubeUrl)) {
+                $youtubeUrl = "https://www.youtube.com/results?search_query={$encodedQuery}";
+            }
+
+            return [
+                'spotify_url' => $spotifyUrl,
+                'apple_music_url' => $appleMusicUrl,
+                'youtube_url' => $youtubeUrl,
+                'preview_url' => $previewUrl,
+                'cover_url' => $coverUrl,
+            ];
+        });
+    }
+
+    /**
      * Test Spotify Connection
      */
     public static function testSpotifyConnection(): array

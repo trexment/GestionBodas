@@ -119,6 +119,10 @@ class EventShow extends Component
     public $req_cue_time = '';
     public $req_status = 'pending';
 
+    // Music Search Autocomplete
+    public $musicSearchQuery = '';
+    public $musicSearchResults = [];
+
     public function mount(Event $event)
     {
         $user = auth()->user();
@@ -375,14 +379,36 @@ class EventShow extends Component
         session()->flash('equipment_message', 'Material eliminado del evento.');
     }
 
-    // ==================== MÚSICA Y MOMENTOS ====================
+    public function updatedMusicSearchQuery()
+    {
+        if (strlen(trim($this->musicSearchQuery)) >= 2) {
+            $this->musicSearchResults = \App\Services\MusicSearchService::search($this->musicSearchQuery, 5);
+        } else {
+            $this->musicSearchResults = [];
+        }
+    }
+
+    public function selectTrackFromSearch($track)
+    {
+        $this->req_title = $track['title'] ?? '';
+        $this->req_artist = $track['artist'] ?? '';
+        $this->req_spotify_url = $track['spotify_url'] ?? '';
+        $this->req_apple_music_url = $track['apple_music_url'] ?? '';
+        $this->req_youtube_url = $track['youtube_url'] ?? '';
+        if (!empty($track['preview_url'])) {
+            $this->existing_audio_file = $track['preview_url'];
+        }
+        $this->musicSearchResults = [];
+        $this->musicSearchQuery = '';
+    }
 
     public function openSongModal($songId = null)
     {
         $this->resetValidation();
         $this->reset([
             'req_title', 'req_artist', 'req_requested_by', 'req_notes',
-            'req_youtube_url', 'req_spotify_url', 'req_apple_music_url', 'req_audio_file', 'existing_audio_file', 'req_cue_time'
+            'req_youtube_url', 'req_spotify_url', 'req_apple_music_url', 'req_audio_file', 'existing_audio_file', 'req_cue_time',
+            'musicSearchQuery', 'musicSearchResults'
         ]);
 
         if ($songId) {
