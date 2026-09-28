@@ -443,6 +443,64 @@ class EventShow extends Component
         $this->showSongModal = true;
     }
 
+    public function autoFillTrackLinks()
+    {
+        if (empty($this->req_title)) {
+            return;
+        }
+
+        $meta = \App\Services\MusicSearchService::resolveTrackMetadata($this->req_title, $this->req_artist ?? '');
+        if (!empty($meta['spotify_url'])) {
+            $this->req_spotify_url = $meta['spotify_url'];
+        }
+        if (!empty($meta['apple_music_url'])) {
+            $this->req_apple_music_url = $meta['apple_music_url'];
+        }
+        if (!empty($meta['youtube_url'])) {
+            $this->req_youtube_url = $meta['youtube_url'];
+        }
+        if (empty($this->existing_audio_file) && !empty($meta['preview_url'])) {
+            $this->existing_audio_file = $meta['preview_url'];
+        }
+
+        session()->flash('music_modal_message', '✨ Enlaces de Spotify, Apple Music y YouTube completados.');
+    }
+
+    public function autoResolveAllMusicLinks()
+    {
+        $songs = $this->event->musicRequests;
+        $updatedCount = 0;
+
+        foreach ($songs as $song) {
+            $needsSpotify = empty($song->spotify_url) || str_contains($song->spotify_url, 'open.spotify.com/search/');
+            $needsApple = empty($song->apple_music_url) || str_contains($song->apple_music_url, 'music.apple.com/es/search');
+            $needsYoutube = empty($song->youtube_url) || str_contains($song->youtube_url, 'youtube.com/results');
+
+            if ($needsSpotify || $needsApple || $needsYoutube) {
+                $meta = \App\Services\MusicSearchService::resolveTrackMetadata($song->title, $song->artist ?? '');
+                
+                $updates = [];
+                if ($needsSpotify && !empty($meta['spotify_url'])) {
+                    $updates['spotify_url'] = $meta['spotify_url'];
+                }
+                if ($needsApple && !empty($meta['apple_music_url'])) {
+                    $updates['apple_music_url'] = $meta['apple_music_url'];
+                }
+                if ($needsYoutube && !empty($meta['youtube_url'])) {
+                    $updates['youtube_url'] = $meta['youtube_url'];
+                }
+
+                if (!empty($updates)) {
+                    $song->update($updates);
+                    $updatedCount++;
+                }
+            }
+        }
+
+        $this->event->load('musicRequests');
+        session()->flash('music_message', "✨ Se han completado y actualizado automáticamente los enlaces de {$updatedCount} canciones.");
+    }
+
     public function saveSongRequest()
     {
         $this->validate([
@@ -463,6 +521,20 @@ class EventShow extends Component
         $audioPath = $this->existing_audio_file;
         if ($this->req_audio_file) {
             $audioPath = $this->req_audio_file->store('music_audios', 'public');
+        }
+
+        // Auto-resolver enlaces si alguno quedó en blanco
+        if (empty($this->req_spotify_url) || empty($this->req_apple_music_url) || empty($this->req_youtube_url)) {
+            $meta = \App\Services\MusicSearchService::resolveTrackMetadata($this->req_title, $this->req_artist ?? '');
+            if (empty($this->req_spotify_url) && !empty($meta['spotify_url'])) {
+                $this->req_spotify_url = $meta['spotify_url'];
+            }
+            if (empty($this->req_apple_music_url) && !empty($meta['apple_music_url'])) {
+                $this->req_apple_music_url = $meta['apple_music_url'];
+            }
+            if (empty($this->req_youtube_url) && !empty($meta['youtube_url'])) {
+                $this->req_youtube_url = $meta['youtube_url'];
+            }
         }
 
         if ($this->editingSongId) {

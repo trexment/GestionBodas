@@ -772,6 +772,19 @@
                                 <button type="button" @click="nextTrack()" class="px-2.5 py-1.5 text-xs text-slate-300 hover:text-white rounded-lg hover:bg-slate-800 transition font-bold" title="Siguiente canción">⏭️</button>
                             </div>
 
+                            <!-- Botón Auto-completar todos los enlaces del evento -->
+                            <button 
+                                type="button" 
+                                wire:click="autoResolveAllMusicLinks" 
+                                wire:loading.attr="disabled"
+                                class="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-extrabold shadow-md shadow-indigo-600/20 inline-flex items-center gap-1.5 transition cursor-pointer"
+                                title="Detecta y completa automáticamente los enlaces de Spotify, Apple Music y YouTube de todas las canciones del evento"
+                            >
+                                <span>🪄</span>
+                                <span wire:loading.remove wire:target="autoResolveAllMusicLinks">Auto-detectar Enlaces</span>
+                                <span wire:loading wire:target="autoResolveAllMusicLinks">Detectando...</span>
+                            </button>
+
                             <!-- Botón Exportar Spotify -->
                             <button 
                                 type="button" 
@@ -2493,18 +2506,40 @@
                             </div>
 
                             <!-- Enlaces YouTube, Spotify y Apple Music -->
-                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                <div>
-                                    <label class="block text-xs font-semibold text-gray-700 mb-1">Enlace YouTube</label>
-                                    <input type="url" wire:model="req_youtube_url" placeholder="https://youtube.com/watch?v=..." class="w-full border-gray-300 rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500">
+                            <div class="space-y-1.5 pt-1">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-xs font-bold text-gray-700">Enlaces y Plataformas Streaming</span>
+                                    <button 
+                                        type="button" 
+                                        wire:click="autoFillTrackLinks" 
+                                        wire:loading.attr="disabled"
+                                        class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 transition cursor-pointer shadow-2xs"
+                                        title="Buscar y rellenar automáticamente los enlaces de Spotify, Apple Music y YouTube"
+                                    >
+                                        <span wire:loading.remove wire:target="autoFillTrackLinks">🪄 Auto-detectar enlaces</span>
+                                        <span wire:loading wire:target="autoFillTrackLinks" class="animate-pulse">Detectando enlaces...</span>
+                                    </button>
                                 </div>
-                                <div>
-                                    <label class="block text-xs font-semibold text-gray-700 mb-1">Enlace Spotify</label>
-                                    <input type="url" wire:model="req_spotify_url" placeholder="https://open.spotify.com/track/..." class="w-full border-gray-300 rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500">
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-semibold text-gray-700 mb-1">🍎 Apple Music</label>
-                                    <input type="url" wire:model="req_apple_music_url" placeholder="https://music.apple.com/..." class="w-full border-gray-300 rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500">
+
+                                @if (session()->has('music_modal_message'))
+                                    <div class="text-[11px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg">
+                                        {{ session('music_modal_message') }}
+                                    </div>
+                                @endif
+
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                    <div>
+                                        <label class="block text-xs font-semibold text-gray-700 mb-1">Enlace YouTube</label>
+                                        <input type="url" wire:model="req_youtube_url" placeholder="https://youtube.com/watch?v=..." class="w-full border-gray-300 rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-semibold text-gray-700 mb-1">Enlace Spotify</label>
+                                        <input type="url" wire:model="req_spotify_url" placeholder="https://open.spotify.com/track/..." class="w-full border-gray-300 rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-semibold text-gray-700 mb-1">🍎 Apple Music</label>
+                                        <input type="url" wire:model="req_apple_music_url" placeholder="https://music.apple.com/..." class="w-full border-gray-300 rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500">
+                                    </div>
                                 </div>
                             </div>
 

@@ -272,6 +272,14 @@ class MusicSearchService
                 } catch (\Throwable $e) {}
             }
 
+            // 3. Search direct YouTube Video ID
+            try {
+                $ytVideoId = \App\Http\Controllers\SpotifyAuthController::searchYoutubeVideoId($query);
+                if ($ytVideoId) {
+                    $youtubeUrl = "https://www.youtube.com/watch?v={$ytVideoId}";
+                }
+            } catch (\Throwable $e) {}
+
             // Fallbacks if not exact link found
             $encodedQuery = urlencode($query);
             if (empty($spotifyUrl)) {
