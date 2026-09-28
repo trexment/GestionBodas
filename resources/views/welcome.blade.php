@@ -71,9 +71,9 @@
                         </a>
 
                         @auth
-                            @if(auth()->user()->role === 'admin')
+                            @if(in_array(auth()->user()->role, ['admin', 'dj', 'assistant']))
                                 <a href="{{ route('admin.dashboard') }}" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-extrabold shadow-lg shadow-indigo-500/25 transition">
-                                    <span>⚙️</span> Panel de Control
+                                    <span>🎧</span> {{ auth()->user()->role === 'admin' ? 'Panel de Control' : 'Mi Panel DJ / Staff' }}
                                 </a>
                             @else
                                 <form method="POST" action="{{ route('logout') }}" class="inline">
