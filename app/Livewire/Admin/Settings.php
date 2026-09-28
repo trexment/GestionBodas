@@ -86,6 +86,9 @@ class Settings extends Component
     public $apple_music_country = 'es';
     public $apple_music_launch_mode = 'app';
 
+    // Almacenamiento en la Nube (Google Drive / OneDrive)
+    public $google_drive_api_key;
+
     public function mount()
     {
         if (auth()->user()->role !== 'admin') {
@@ -155,6 +158,7 @@ class Settings extends Component
         $this->apple_music_developer_token = Setting::get('apple_music_developer_token', '');
         $this->apple_music_country = Setting::get('apple_music_country', 'es');
         $this->apple_music_launch_mode = Setting::get('apple_music_launch_mode', 'app');
+        $this->google_drive_api_key = Setting::get('google_drive_api_key', '');
         $this->spotifyUser = SpotifyService::getUserDetails();
     }
 
@@ -238,6 +242,7 @@ class Settings extends Component
             'apple_music_developer_token' => 'nullable|string',
             'apple_music_country' => 'required|string|max:5',
             'apple_music_launch_mode' => 'required|in:app,web',
+            'google_drive_api_key' => 'nullable|string|max:255',
         ]);
 
         Setting::set('company_name', $this->company_name);
@@ -297,6 +302,7 @@ class Settings extends Component
         Setting::set('apple_music_developer_token', $this->apple_music_developer_token);
         Setting::set('apple_music_country', $this->apple_music_country);
         Setting::set('apple_music_launch_mode', $this->apple_music_launch_mode);
+        Setting::set('google_drive_api_key', $this->google_drive_api_key);
 
         if ($this->logo) {
             if ($this->current_logo) {

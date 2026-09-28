@@ -576,6 +576,16 @@
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                             Añadir Canción / Momento
                         </button>
+
+                        <button 
+                            type="button" 
+                            wire:click="openCloudImportModal" 
+                            class="bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold px-3 py-2 rounded-lg shadow-sm inline-flex items-center gap-1.5 transition cursor-pointer"
+                            title="Importa en 1 clic todas las canciones de una carpeta compartida de Google Drive, OneDrive o Dropbox"
+                        >
+                            <span>📁</span>
+                            Importar Carpeta Nube
+                        </button>
                         
                         <a href="{{ route('admin.events.music_escaleta.pdf', $event->id) }}" target="_blank" class="bg-gray-800 hover:bg-gray-900 text-white text-xs font-bold px-3 py-2 rounded-lg shadow-sm inline-flex items-center gap-1.5 transition">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
@@ -2722,6 +2732,147 @@
                         </button>
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
+    @endif
+
+    <!-- Modal Importar Carpeta de Google Drive / OneDrive -->
+    @if($showCloudImportModal)
+    <div class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-cloud-title" role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-slate-900/75 backdrop-blur-xs transition-opacity" wire:click="$set('showCloudImportModal', false)"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div class="inline-block align-bottom bg-white dark:bg-slate-900 rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full border border-slate-200 dark:border-slate-800">
+                <div class="bg-sky-600 px-6 py-4 flex items-center justify-between text-white">
+                    <div class="flex items-center gap-3">
+                        <span class="text-2xl">📁</span>
+                        <div>
+                            <h3 class="font-black text-base leading-tight" id="modal-cloud-title">Importar Carpeta de Música desde la Nube</h3>
+                            <p class="text-xs text-sky-100">Google Drive &bull; OneDrive &bull; Dropbox</p>
+                        </div>
+                    </div>
+                    <button type="button" wire:click="$set('showCloudImportModal', false)" class="text-sky-100 hover:text-white text-2xl font-bold leading-none">&times;</button>
+                </div>
+
+                <div class="p-6 space-y-5 text-xs">
+                    <!-- Instrucciones rápidas -->
+                    <div class="p-3.5 bg-sky-50 dark:bg-sky-950/40 rounded-2xl border border-sky-200 dark:border-sky-900/60 text-sky-950 dark:text-sky-200 space-y-1">
+                        <p class="font-bold flex items-center gap-1.5">
+                            <span>💡</span> ¿Cómo importar una carpeta de Google Drive en 1 clic?
+                        </p>
+                        <p class="text-[11px] leading-relaxed text-sky-900 dark:text-sky-300">
+                            1. Sube tus canciones (MP3/WAV) a una carpeta de Google Drive.<br>
+                            2. Haz clic derecho en la carpeta ➔ Compartir ➔ <strong>"Cualquier persona con el enlace puede ver"</strong>.<br>
+                            3. Pega el enlace aquí abajo y pulsa <strong>"Escanear Carpeta"</strong>.
+                        </p>
+                    </div>
+
+                    <!-- Input Enlace de la Carpeta -->
+                    <div class="space-y-1.5">
+                        <label class="block font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[11px]">
+                            Enlace o ID de la Carpeta de Google Drive *
+                        </label>
+                        <div class="flex gap-2">
+                            <input 
+                                type="url" 
+                                wire:model="cloudFolderUrl" 
+                                placeholder="https://drive.google.com/drive/folders/1ABC123_xyz..." 
+                                class="flex-1 border-slate-300 dark:border-slate-700 rounded-xl p-2.5 text-xs text-slate-800 dark:text-white bg-slate-50 dark:bg-slate-950 font-mono"
+                            >
+                            <button 
+                                type="button" 
+                                wire:click="scanCloudFolder" 
+                                wire:loading.attr="disabled"
+                                class="px-4 py-2.5 bg-sky-600 hover:bg-sky-500 text-white font-bold rounded-xl shadow-md transition flex items-center gap-1.5 cursor-pointer shrink-0"
+                            >
+                                <span wire:loading.remove wire:target="scanCloudFolder">🔍 Escanear</span>
+                                <span wire:loading wire:target="scanCloudFolder" class="animate-pulse">Escaneando...</span>
+                            </button>
+                        </div>
+                        @error('cloudFolderUrl') <span class="text-rose-600 text-[11px] block font-bold mt-1">{{ $message }}</span> @enderror
+                    </div>
+
+                    <!-- Mensaje de Estado / Resultado del escaneo -->
+                    @if($cloudImportStatus)
+                        <div class="p-3 rounded-xl border text-xs font-semibold {{ $cloudImportStatus['success'] ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-rose-50 border-rose-200 text-rose-800' }}">
+                            {{ $cloudImportStatus['message'] }}
+                        </div>
+                    @endif
+
+                    <!-- Categoría y Momento destino -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3.5 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800">
+                        <div>
+                            <label class="block font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[10px] mb-1">
+                                Categoría de Destino
+                            </label>
+                            <select wire:model="cloudImportCategory" class="w-full border-slate-300 dark:border-slate-700 rounded-xl p-2 text-xs font-bold text-slate-800 dark:text-white bg-white dark:bg-slate-900">
+                                <option value="ceremonia">💍 Ceremonia</option>
+                                <option value="coctel">🍸 Cóctel</option>
+                                <option value="banquete">🍽️ Banquete</option>
+                                <option value="baile">💃 Baile / Fiesta</option>
+                                <option value="lista_negra">🚫 Lista Negra</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[10px] mb-1">
+                                Momento / Etiqueta
+                            </label>
+                            <input 
+                                type="text" 
+                                wire:model="cloudImportMoment" 
+                                placeholder="Ej: Entrada Novios, Banquete, Ambiente..." 
+                                class="w-full border-slate-300 dark:border-slate-700 rounded-xl p-2 text-xs font-semibold text-slate-800 dark:text-white bg-white dark:bg-slate-900"
+                            >
+                        </div>
+                    </div>
+
+                    <!-- Vista previa de canciones detectadas -->
+                    @if(!empty($cloudScannedFiles))
+                        <div class="space-y-2">
+                            <div class="flex items-center justify-between">
+                                <span class="font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider text-[11px]">
+                                    Canciones Detectadas ({{ count($cloudScannedFiles) }})
+                                </span>
+                                <span class="text-[11px] text-emerald-600 font-bold">Listas para importar con audio 100% completo</span>
+                            </div>
+                            <div class="max-h-48 overflow-y-auto rounded-xl border border-slate-200 dark:border-slate-800 divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-950 p-1">
+                                @foreach($cloudScannedFiles as $file)
+                                    <div class="p-2 flex items-center justify-between gap-3 text-xs">
+                                        <div class="flex items-center gap-2 min-w-0">
+                                            <span class="text-base">🎵</span>
+                                            <div class="truncate">
+                                                <p class="font-bold text-slate-900 dark:text-white truncate">{{ $file['title'] }}</p>
+                                                @if(!empty($file['artist']))
+                                                    <p class="text-[10px] text-slate-400 truncate">{{ $file['artist'] }}</p>
+                                                @endif
+                                            </div>
+                                        </div>
+                                        <span class="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-mono px-2 py-0.5 rounded-full shrink-0">
+                                            Direct MP3
+                                        </span>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+                </div>
+
+                <div class="bg-gray-50 dark:bg-slate-950 px-6 py-3 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-2">
+                    <button type="button" wire:click="$set('showCloudImportModal', false)" class="bg-white dark:bg-slate-800 hover:bg-slate-100 text-slate-700 dark:text-slate-300 font-bold text-xs px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-xl transition">
+                        Cancelar
+                    </button>
+                    @if(!empty($cloudScannedFiles))
+                        <button 
+                            type="button" 
+                            wire:click="confirmImportCloudFolder" 
+                            class="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs px-5 py-2.5 rounded-xl shadow-md transition flex items-center gap-1.5 cursor-pointer"
+                        >
+                            <span>📥</span>
+                            <span>Importar {{ count($cloudScannedFiles) }} Canciones a la Escaleta</span>
+                        </button>
+                    @endif
+                </div>
             </div>
         </div>
     </div>

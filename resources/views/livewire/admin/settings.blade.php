@@ -654,6 +654,66 @@
                 </div>
             </div>
 
+            <!-- SECCIÓN 3: ALMACENAMIENTO EN LA NUBE (GOOGLE DRIVE & ONEDRIVE) -->
+            <div class="bg-white shadow-sm rounded-xl border border-gray-200 p-6 space-y-5">
+                <div class="flex items-center justify-between pb-4 border-b border-gray-100">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 rounded-2xl bg-sky-100 text-sky-700 flex items-center justify-center font-bold text-2xl shadow-sm">
+                            📁
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-black text-gray-900">Almacenamiento en la Nube (Google Drive, OneDrive, Dropbox)</h3>
+                            <p class="text-xs text-gray-500">Escaneo automático de carpetas de música para importar álbumes o canciones en bloque a la escaleta y reproducir en vivo.</p>
+                        </div>
+                    </div>
+                    <span class="px-3 py-1 rounded-full text-xs font-bold bg-sky-50 text-sky-800 border border-sky-200 flex items-center gap-1.5">
+                        Importación Automática Activa
+                    </span>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Guía Google Drive -->
+                    <div class="p-4 bg-sky-50/60 rounded-2xl border border-sky-200 space-y-3">
+                        <h4 class="text-xs font-black uppercase text-sky-900 tracking-wider flex items-center gap-1.5">
+                            <span>Google Drive</span> &bull; Pasos para Escaneo Automático
+                        </h4>
+                        <ol class="text-xs text-sky-950 space-y-2 list-decimal list-inside leading-relaxed">
+                            <li>Crea o sube tus archivos MP3 / WAV a una carpeta en <strong>Google Drive</strong>.</li>
+                            <li>Haz clic derecho en la carpeta ➔ <strong>Compartir</strong> ➔ Cambiar acceso general a <strong>"Cualquier persona con el enlace puede ser lector"</strong>.</li>
+                            <li>Copia el enlace de la carpeta y pégalo en el botón <strong>"📁 Importar Carpeta Nube"</strong> en la pestaña de música del evento.</li>
+                        </ol>
+                    </div>
+
+                    <!-- Guía OneDrive & Dropbox -->
+                    <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+                        <h4 class="text-xs font-black uppercase text-slate-900 tracking-wider flex items-center gap-1.5">
+                            <span>OneDrive & Dropbox</span> &bull; Enlaces de Streaming Directo
+                        </h4>
+                        <ol class="text-xs text-slate-700 space-y-2 list-decimal list-inside leading-relaxed">
+                            <li>En <strong>OneDrive</strong> o <strong>Dropbox</strong>, comparte el archivo o carpeta de audio.</li>
+                            <li>Asegúrate de que el enlace sea <strong>público para visualización</strong>.</li>
+                            <li>El sistema convertirá automáticamente el enlace al formato de streaming continuo de alta velocidad compatible con el reproductor y modo cabina.</li>
+                        </ol>
+                    </div>
+                </div>
+
+                <!-- Campo Google Drive API Key -->
+                <div class="space-y-2 pt-2">
+                    <label class="block text-xs font-bold text-gray-800">
+                        Google Drive API Key (Necesaria para escanear carpetas completas en 1 clic)
+                    </label>
+                    <input 
+                        type="text" 
+                        wire:model="google_drive_api_key" 
+                        placeholder="AIzaSyB-..." 
+                        class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-sky-500 focus:border-sky-500 text-sm font-mono"
+                    >
+                    <p class="text-[11px] text-gray-500 leading-normal">
+                        Para obtener tu clave gratuita: entra en <a href="https://console.cloud.google.com/apis/credentials" target="_blank" class="text-sky-600 underline font-bold">Google Cloud Console</a>, crea un proyecto, habilita la <strong>Google Drive API</strong> y genera una <strong>API Key</strong>.
+                    </p>
+                </div>
+            </div>
+
         </div>
 
         <!-- BOTÓN DE GUARDAR GLOBAL -->

@@ -123,6 +123,14 @@ class EventShow extends Component
     public $musicSearchQuery = '';
     public $musicSearchResults = [];
 
+    // Importador Carpeta Nube (Google Drive / OneDrive)
+    public $showCloudImportModal = false;
+    public $cloudFolderUrl = '';
+    public $cloudImportCategory = 'banquete';
+    public $cloudImportMoment = 'General';
+    public $cloudImportStatus = null;
+    public $cloudScannedFiles = [];
+
     public function mount(Event $event)
     {
         $user = auth()->user();
@@ -499,6 +507,65 @@ class EventShow extends Component
 
         $this->event->load('musicRequests');
         session()->flash('music_message', "✨ Se han completado y actualizado automáticamente los enlaces de {$updatedCount} canciones.");
+    }
+
+    public function openCloudImportModal()
+    {
+        $this->cloudFolderUrl = '';
+        $this->cloudImportCategory = $this->music_active_category !== 'all' ? $this->music_active_category : 'banquete';
+        $this->cloudImportMoment = match($this->cloudImportCategory) {
+            'ceremonia' => 'Entrada Novios',
+            'coctel' => 'Música Ambiente',
+            'banquete' => 'Entrada Comedor',
+            'baile' => 'Baile Nupcial',
+            'lista_negra' => 'Prohibida',
+            default => 'General',
+        };
+        $this->cloudImportStatus = null;
+        $this->cloudScannedFiles = [];
+        $this->showCloudImportModal = true;
+    }
+
+    public function scanCloudFolder()
+    {
+        $this->validate([
+            'cloudFolderUrl' => 'required|string',
+        ], [
+            'cloudFolderUrl.required' => 'Introduce un enlace o ID de carpeta válido.',
+        ]);
+
+        $res = \App\Services\CloudMusicStorageService::scanGoogleDriveFolder($this->cloudFolderUrl);
+        if ($res['success']) {
+            $this->cloudScannedFiles = $res['files'];
+            $this->cloudImportStatus = [
+                'success' => true,
+                'message' => "✓ Se encontraron {$res['count']} archivos de audio en la carpeta."
+            ];
+        } else {
+            $this->cloudScannedFiles = [];
+            $this->cloudImportStatus = [
+                'success' => false,
+                'message' => $res['message']
+            ];
+        }
+    }
+
+    public function confirmImportCloudFolder()
+    {
+        if (empty($this->cloudScannedFiles)) {
+            return;
+        }
+
+        $imported = \App\Services\CloudMusicStorageService::importFolderToEvent(
+            $this->event->id,
+            $this->cloudScannedFiles,
+            $this->cloudImportCategory,
+            $this->cloudImportMoment
+        );
+
+        $this->event->load('musicRequests');
+        $this->showCloudImportModal = false;
+        session()->flash('music_message', "📁 ¡Se importaron {$imported} canciones de la carpeta de la nube a '{$this->cloudImportMoment}'!");
     }
 
     public function saveSongRequest()
