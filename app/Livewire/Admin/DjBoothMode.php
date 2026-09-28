@@ -17,6 +17,12 @@ class DjBoothMode extends Component
     
     // View mode: 'pads' or 'list'
     public $viewMode = 'pads';
+
+    // Phase / Moment category filter: 'all', 'coctel', 'banquete', 'baile', 'ceremonia', 'guest'
+    public $selectedPhase = 'all';
+
+    // Grouping mode: 'grouped' (organized by moments with headers) or 'flat' (continuous sampler)
+    public $groupingMode = 'grouped';
     
     // Pad pagination & search
     public $padPage = 1;
@@ -113,6 +119,18 @@ class DjBoothMode extends Component
         $this->activeTab = $tab;
         $this->padPage = 1;
         $this->search = '';
+    }
+
+    public function setPhase($phase)
+    {
+        $this->selectedPhase = $phase;
+        $this->padPage = 1;
+    }
+
+    public function setGroupingMode($mode)
+    {
+        $this->groupingMode = $mode;
+        $this->padPage = 1;
     }
 
     public function setViewMode($mode)
@@ -326,15 +344,71 @@ class DjBoothMode extends Component
         }
     }
 
+    private function matchItemPhase($item, string $phase): bool
+    {
+        if ($phase === 'all') return true;
+        if ($phase === 'guest') return (bool)$item->is_guest_request;
+
+        $cat = strtolower($item->category ?? '');
+        $mom = strtolower($item->moment ?? '');
+
+        if ($phase === 'coctel') {
+            return $cat === 'coctel' || str_contains($mom, 'coctel') || str_contains($mom, 'cóctel') || str_contains($mom, 'cocktail');
+        }
+
+        if ($phase === 'banquete') {
+            return $cat === 'banquete' 
+                || str_contains($mom, 'comedor') 
+                || str_contains($mom, 'sorbete') 
+                || str_contains($mom, 'regalo') 
+                || str_contains($mom, 'ramo') 
+                || str_contains($mom, 'tarta') 
+                || str_contains($mom, 'entrega')
+                || str_contains($mom, 'banquete');
+        }
+
+        if ($phase === 'baile') {
+            return $cat === 'baile' 
+                || str_contains($mom, 'baile') 
+                || str_contains($mom, 'fiesta') 
+                || str_contains($mom, 'loca') 
+                || str_contains($mom, 'peticion')
+                || str_contains($mom, 'petición')
+                || str_contains($mom, 'barra libre')
+                || str_contains($mom, 'libre');
+        }
+
+        if ($phase === 'ceremonia') {
+            return $cat === 'ceremonia' 
+                || str_contains($mom, 'ceremonia') 
+                || str_contains($mom, 'anillo') 
+                || str_contains($mom, 'lectura')
+                || str_contains($mom, 'salida');
+        }
+
+        return false;
+    }
+
     public function render()
     {
         $allRequests = $this->event->musicRequests;
         $blacklist = $allRequests->where('category', 'lista_negra');
+        $nonBlacklist = $allRequests->where('category', '!=', 'lista_negra');
+
+        // Calculate counts per phase for quick filter badges
+        $phaseCounts = [
+            'all' => $nonBlacklist->count(),
+            'coctel' => $nonBlacklist->filter(fn($i) => $this->matchItemPhase($i, 'coctel'))->count(),
+            'banquete' => $nonBlacklist->filter(fn($i) => $this->matchItemPhase($i, 'banquete'))->count(),
+            'baile' => $nonBlacklist->filter(fn($i) => $this->matchItemPhase($i, 'baile'))->count(),
+            'ceremonia' => $nonBlacklist->filter(fn($i) => $this->matchItemPhase($i, 'ceremonia'))->count(),
+            'guest' => $allRequests->where('is_guest_request', true)->count(),
+        ];
 
         $query = $this->event->musicRequests();
 
         if (in_array($this->activeTab, ['tracks', 'custom', 'playlists', 'requests'])) {
-            // Todas las canciones del evento
+            // Repertorio del evento filtrado por fase
             $query = $query->where('category', '!=', 'lista_negra');
         } elseif ($this->activeTab === 'guest_live') {
             // Peticiones en Vivo (Invitados por QR)
@@ -358,10 +432,17 @@ class DjBoothMode extends Component
         }
 
         // Ordering: playing first, paused second, pending third, played fourth
-        $filteredCollection = $query->orderByRaw("CASE WHEN status = 'playing' THEN 1 WHEN status = 'paused' THEN 2 WHEN status = 'pending' THEN 3 ELSE 4 END")
-                                    ->orderBy('order', 'asc')
-                                    ->orderBy('likes', 'desc')
-                                    ->get();
+        $rawCollection = $query->orderByRaw("CASE WHEN status = 'playing' THEN 1 WHEN status = 'paused' THEN 2 WHEN status = 'pending' THEN 3 ELSE 4 END")
+                               ->orderBy('order', 'asc')
+                               ->orderBy('likes', 'desc')
+                               ->get();
+
+        // Apply Phase Filter in PHP if in Repertorio tab
+        if (in_array($this->activeTab, ['tracks', 'custom', 'playlists', 'requests']) && $this->selectedPhase !== 'all') {
+            $filteredCollection = $rawCollection->filter(fn($i) => $this->matchItemPhase($i, $this->selectedPhase));
+        } else {
+            $filteredCollection = $rawCollection;
+        }
 
         $totalItems = $filteredCollection->count();
         $totalPages = max(1, (int)ceil($totalItems / $this->perPage));
@@ -369,7 +450,11 @@ class DjBoothMode extends Component
         // Slice for pad pagination
         $paginatedPads = $filteredCollection->slice(($this->padPage - 1) * $this->perPage, $this->perPage);
 
-        // Grouped requests by moment for Escaleta view
+        // Grouped by moment for Grouped Mode and Escaleta
+        $groupedPadsByMoment = $filteredCollection->groupBy(function($item) {
+            return $item->moment ?: 'Otras Canciones (Pista Libre)';
+        });
+
         $groupedByMoment = $allRequests->where('category', '!=', 'lista_negra')->groupBy(function($item) {
             return $item->moment ?: 'Otras peticiones (pista libre)';
         });
@@ -378,12 +463,13 @@ class DjBoothMode extends Component
 
         $lastPlayed = $allRequests->where('status', 'played')->sortByDesc('updated_at')->first();
         $playedCount = $allRequests->where('status', 'played')->count();
-        $totalCount = $allRequests->where('category', '!=', 'lista_negra')->count();
+        $totalCount = $nonBlacklist->count();
         $progressPct = $totalCount > 0 ? round(($playedCount / $totalCount) * 100) : 0;
 
         return view('livewire.admin.dj-booth-mode', [
             'filteredRequests' => $filteredCollection,
             'paginatedPads' => $paginatedPads,
+            'groupedPadsByMoment' => $groupedPadsByMoment,
             'totalPages' => $totalPages,
             'totalItems' => $totalItems,
             'blacklist' => $blacklist,
@@ -393,7 +479,8 @@ class DjBoothMode extends Component
             'lastPlayed' => $lastPlayed,
             'groupedByMoment' => $groupedByMoment,
             'escaletaItems' => $escaletaItems,
-            'guestRequestsCount' => $allRequests->where('is_guest_request', true)->count(),
+            'phaseCounts' => $phaseCounts,
+            'guestRequestsCount' => $phaseCounts['guest'],
         ])->layout('components.layouts.wide-guest');
     }
 }

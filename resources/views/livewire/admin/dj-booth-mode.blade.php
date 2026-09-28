@@ -411,6 +411,61 @@
                     </div>
                 @endif
 
+                <!-- FILTROS POR FASES / MOMENTOS DEL EVENTO -->
+                <div class="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-thin border-b border-slate-800/80 pt-1">
+                    <button 
+                        type="button" 
+                        wire:click="setPhase('all')" 
+                        class="px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap {{ $selectedPhase === 'all' ? 'bg-cyan-500 text-slate-950 font-black shadow-md shadow-cyan-500/30 ring-2 ring-cyan-400/40' : 'bg-slate-950 text-slate-300 hover:text-white hover:bg-slate-800 border border-slate-800' }}"
+                    >
+                        <span>🌟</span> Todos los Momentos <span class="text-[10px] px-1.5 py-0.2 rounded-full font-mono {{ $selectedPhase === 'all' ? 'bg-slate-950 text-cyan-400' : 'bg-slate-900 text-slate-400' }}">({{ $phaseCounts['all'] ?? 0 }})</span>
+                    </button>
+
+                    <button 
+                        type="button" 
+                        wire:click="setPhase('coctel')" 
+                        class="px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap {{ $selectedPhase === 'coctel' ? 'bg-amber-500 text-slate-950 font-black shadow-md shadow-amber-500/30 ring-2 ring-amber-400/40' : 'bg-slate-950 text-amber-300/80 hover:text-amber-200 hover:bg-slate-800 border border-slate-800' }}"
+                    >
+                        <span>🍸</span> Cóctel <span class="text-[10px] px-1.5 py-0.2 rounded-full font-mono {{ $selectedPhase === 'coctel' ? 'bg-slate-950 text-amber-400' : 'bg-slate-900 text-slate-400' }}">({{ $phaseCounts['coctel'] ?? 0 }})</span>
+                    </button>
+
+                    <button 
+                        type="button" 
+                        wire:click="setPhase('banquete')" 
+                        class="px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap {{ $selectedPhase === 'banquete' ? 'bg-emerald-500 text-slate-950 font-black shadow-md shadow-emerald-500/30 ring-2 ring-emerald-400/40' : 'bg-slate-950 text-emerald-300/80 hover:text-emerald-200 hover:bg-slate-800 border border-slate-800' }}"
+                    >
+                        <span>🍽️</span> Banquete & Momentos <span class="text-[10px] px-1.5 py-0.2 rounded-full font-mono {{ $selectedPhase === 'banquete' ? 'bg-slate-950 text-emerald-400' : 'bg-slate-900 text-slate-400' }}">({{ $phaseCounts['banquete'] ?? 0 }})</span>
+                    </button>
+
+                    <button 
+                        type="button" 
+                        wire:click="setPhase('baile')" 
+                        class="px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap {{ $selectedPhase === 'baile' ? 'bg-fuchsia-500 text-slate-950 font-black shadow-md shadow-fuchsia-500/30 ring-2 ring-fuchsia-400/40' : 'bg-slate-950 text-fuchsia-300/80 hover:text-fuchsia-200 hover:bg-slate-800 border border-slate-800' }}"
+                    >
+                        <span>💃</span> Baile & Fiesta <span class="text-[10px] px-1.5 py-0.2 rounded-full font-mono {{ $selectedPhase === 'baile' ? 'bg-slate-950 text-fuchsia-400' : 'bg-slate-900 text-slate-400' }}">({{ $phaseCounts['baile'] ?? 0 }})</span>
+                    </button>
+
+                    @if(!empty($phaseCounts['ceremonia']))
+                        <button 
+                            type="button" 
+                            wire:click="setPhase('ceremonia')" 
+                            class="px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap {{ $selectedPhase === 'ceremonia' ? 'bg-indigo-500 text-slate-950 font-black shadow-md ring-2 ring-indigo-400/40' : 'bg-slate-950 text-indigo-300/80 hover:text-indigo-200 hover:bg-slate-800 border border-slate-800' }}"
+                        >
+                            <span>💍</span> Ceremonia <span class="text-[10px] px-1.5 py-0.2 rounded-full font-mono {{ $selectedPhase === 'ceremonia' ? 'bg-slate-950 text-indigo-400' : 'bg-slate-900 text-slate-400' }}">({{ $phaseCounts['ceremonia'] }})</span>
+                        </button>
+                    @endif
+
+                    @if(!empty($phaseCounts['guest']))
+                        <button 
+                            type="button" 
+                            wire:click="setPhase('guest')" 
+                            class="px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap {{ $selectedPhase === 'guest' ? 'bg-purple-500 text-slate-950 font-black shadow-md ring-2 ring-purple-400/40' : 'bg-slate-950 text-purple-300/80 hover:text-purple-200 hover:bg-slate-800 border border-slate-800' }}"
+                        >
+                            <span>⚡</span> Peticiones QR <span class="text-[10px] px-1.5 py-0.2 rounded-full font-mono {{ $selectedPhase === 'guest' ? 'bg-slate-950 text-purple-400' : 'bg-slate-900 text-slate-400' }}">({{ $phaseCounts['guest'] }})</span>
+                        </button>
+                    @endif
+                </div>
+
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
                     <div class="relative flex-1 max-w-md">
                         <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500">🔍</span>
@@ -422,20 +477,29 @@
                         >
                     </div>
 
-                    <div class="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800 self-start sm:self-auto">
+                    <div class="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800 self-start sm:self-auto overflow-x-auto">
                         <button 
                             type="button" 
-                            wire:click="setViewMode('pads')" 
-                            class="px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 {{ $viewMode === 'pads' ? 'bg-cyan-500 text-slate-950 shadow' : 'text-slate-400 hover:text-white' }}"
+                            wire:click="setGroupingMode('grouped')" 
+                            class="px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 {{ $viewMode === 'pads' && $groupingMode === 'grouped' ? 'bg-cyan-500 text-slate-950 shadow font-black' : 'text-slate-400 hover:text-white' }}"
+                            title="Ver organizadas por momentos y fases"
                         >
-                            <span>🎛️</span> Pads Sampler
+                            <span>📂</span> Por Momentos
+                        </button>
+                        <button 
+                            type="button" 
+                            wire:click="setGroupingMode('flat')" 
+                            class="px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 {{ $viewMode === 'pads' && $groupingMode === 'flat' ? 'bg-cyan-500 text-slate-950 shadow font-black' : 'text-slate-400 hover:text-white' }}"
+                            title="Sampler continuo en cuadrícula"
+                        >
+                            <span>🎛️</span> Cuadrícula
                         </button>
                         <button 
                             type="button" 
                             wire:click="setViewMode('list')" 
-                            class="px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 {{ $viewMode === 'list' ? 'bg-cyan-500 text-slate-950 shadow' : 'text-slate-400 hover:text-white' }}"
+                            class="px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 {{ $viewMode === 'list' ? 'bg-cyan-500 text-slate-950 shadow font-black' : 'text-slate-400 hover:text-white' }}"
                         >
-                            <span>📋</span> Lista Detallada
+                            <span>📋</span> Lista
                         </button>
                     </div>
                 </div>
@@ -455,98 +519,205 @@
                         ];
                     @endphp
 
-                    <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5 pt-2">
-                        @forelse($paginatedPads as $index => $req)
-                            @php
-                                $colorScheme = $colors[$index % count($colors)];
-                                $searchQuery = urlencode(trim(($req->artist ? $req->artist . ' ' : '') . $req->title));
-                                $spUrl = $req->spotify_url ?: "https://open.spotify.com/search/{$searchQuery}";
-                                $appleUrl = $req->apple_music_url ?: "https://music.apple.com/es/search?term={$searchQuery}";
-                                $ytUrl = $req->youtube_url ?: "https://www.youtube.com/results?search_query={$searchQuery}";
-                                $isPlaying = $req->status === 'playing';
-                                $isPaused = $req->status === 'paused';
-                                $isPlayed = $req->status === 'played';
-                            @endphp
+                    <!-- 1. VISTA AGRUPADA POR MOMENTOS (DEFAULT) -->
+                    @if($groupingMode === 'grouped')
+                        <div class="space-y-6 pt-2">
+                            @forelse($groupedPadsByMoment as $momentName => $momentSongs)
+                                <div class="bg-slate-950/50 border border-slate-800/90 rounded-3xl p-4 sm:p-5 space-y-3.5 shadow-xl">
+                                    <div class="flex items-center justify-between border-b border-slate-800/80 pb-2.5">
+                                        <div class="flex items-center gap-2.5">
+                                            <span class="text-xl">
+                                                @if(stripos($momentName, 'comedor') !== false || stripos($momentName, 'entrada') !== false) 🚪
+                                                @elseif(stripos($momentName, 'sorbete') !== false) 🍋
+                                                @elseif(stripos($momentName, 'regalo') !== false || stripos($momentName, 'entrega') !== false) 🎁
+                                                @elseif(stripos($momentName, 'ramo') !== false) 💐
+                                                @elseif(stripos($momentName, 'tarta') !== false) 🎂
+                                                @elseif(stripos($momentName, 'baile') !== false) 💃
+                                                @elseif(stripos($momentName, 'coctel') !== false || stripos($momentName, 'cóctel') !== false) 🍸
+                                                @elseif(stripos($momentName, 'ceremonia') !== false) 💍
+                                                @elseif(stripos($momentName, 'peticion') !== false || stripos($momentName, 'invitado') !== false) ⚡
+                                                @else ✨
+                                                @endif
+                                            </span>
+                                            <div>
+                                                <h3 class="text-sm font-black uppercase text-cyan-400 tracking-wider">
+                                                    {{ $momentName }}
+                                                </h3>
+                                            </div>
+                                        </div>
+                                        <span class="text-[11px] font-bold text-slate-300 bg-slate-900 px-2.5 py-1 rounded-xl border border-slate-800 font-mono">
+                                            {{ $momentSongs->count() }} {{ $momentSongs->count() === 1 ? 'canción' : 'canciones' }}
+                                        </span>
+                                    </div>
 
-                            <div 
-                                @click="handleTrackPlay({{ $req->id }}, {{ json_encode($req->title) }}, {{ json_encode($req->artist ?? '') }}, {{ json_encode($req->audio_file ?? '') }}, {{ json_encode($req->spotify_url ?? '') }}, {{ json_encode($req->apple_music_url ?? '') }})"
-                                class="relative rounded-2xl p-4 flex flex-col justify-between min-h-[220px] transition-all duration-200 cursor-pointer group select-none border-2"
-                                :class="{
-                                    'bg-slate-900/95 border-emerald-400 shadow-2xl shadow-emerald-500/40 ring-4 ring-emerald-500/20 scale-[1.02]': currentId === {{ $req->id }} && isPlaying,
-                                    'bg-slate-900/90 border-amber-400 shadow-xl shadow-amber-400/20': currentId === {{ $req->id }} && isPaused,
-                                    'bg-slate-950/70 border-slate-800 opacity-60': '{{ $req->status }}' === 'played' && currentId !== {{ $req->id }},
-                                    'bg-slate-900/70 {{ $colorScheme['border'] }} {{ $colorScheme['hover'] }} shadow-lg {{ $colorScheme['glow'] }}': currentId !== {{ $req->id }} && '{{ $req->status }}' !== 'played'
-                                }"
-                            >
-                                <div class="flex items-center justify-between gap-2">
-                                    <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-md uppercase tracking-wider {{ $colorScheme['tag'] }} bg-slate-950/80 border border-slate-800">
-                                        @if($req->is_guest_request)
-                                            ⚡ INVITADO @if($req->likes > 0) 🔥 {{ $req->likes }} @endif
-                                        @elseif($req->audio_file)
-                                            📁 MP3 LOCAL
-                                        @else
-                                            🎵 STREAMING
-                                        @endif
-                                    </span>
-                                    <template x-if="currentId === {{ $req->id }} && isPlaying">
-                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500 text-slate-950 animate-pulse">▶ SONANDO</span>
-                                    </template>
-                                </div>
+                                    <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5">
+                                        @foreach($momentSongs as $index => $req)
+                                            @php
+                                                $colorScheme = $colors[$index % count($colors)];
+                                                $searchQuery = urlencode(trim(($req->artist ? $req->artist . ' ' : '') . $req->title));
+                                                $spUrl = $req->spotify_url ?: "https://open.spotify.com/search/{$searchQuery}";
+                                                $appleUrl = $req->apple_music_url ?: "https://music.apple.com/es/search?term={$searchQuery}";
+                                                $ytUrl = $req->youtube_url ?: "https://www.youtube.com/results?search_query={$searchQuery}";
+                                                $isPlaying = $req->status === 'playing';
+                                                $isPaused = $req->status === 'paused';
+                                                $isPlayed = $req->status === 'played';
+                                            @endphp
 
-                                <div class="my-auto py-3 text-center">
-                                    <h3 class="text-base sm:text-lg font-black text-white leading-tight tracking-tight group-hover:scale-105 transition-transform duration-200 line-clamp-3">
-                                        {{ $req->title }}
-                                    </h3>
-                                    @if($req->artist)
-                                        <p class="text-xs text-slate-400 font-semibold mt-1 truncate">{{ $req->artist }}</p>
-                                    @endif
-                                    @if($req->notes)
-                                        <p class="text-[10px] text-amber-300/80 italic mt-1 truncate">📝 {{ $req->notes }}</p>
-                                    @endif
-                                </div>
+                                            <div 
+                                                @click="handleTrackPlay({{ $req->id }}, {{ json_encode($req->title) }}, {{ json_encode($req->artist ?? '') }}, {{ json_encode($req->audio_file ?? '') }}, {{ json_encode($req->spotify_url ?? '') }}, {{ json_encode($req->apple_music_url ?? '') }})"
+                                                class="relative rounded-2xl p-4 flex flex-col justify-between min-h-[220px] transition-all duration-200 cursor-pointer group select-none border-2"
+                                                :class="{
+                                                    'bg-slate-900/95 border-emerald-400 shadow-2xl shadow-emerald-500/40 ring-4 ring-emerald-500/20 scale-[1.02]': currentId === {{ $req->id }} && isPlaying,
+                                                    'bg-slate-900/90 border-amber-400 shadow-xl shadow-amber-400/20': currentId === {{ $req->id }} && isPaused,
+                                                    'bg-slate-950/70 border-slate-800 opacity-60': '{{ $req->status }}' === 'played' && currentId !== {{ $req->id }},
+                                                    'bg-slate-900/70 {{ $colorScheme['border'] }} {{ $colorScheme['hover'] }} shadow-lg {{ $colorScheme['glow'] }}': currentId !== {{ $req->id }} && '{{ $req->status }}' !== 'played'
+                                                }"
+                                            >
+                                                <div class="flex items-center justify-between gap-2">
+                                                    <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-md uppercase tracking-wider {{ $colorScheme['tag'] }} bg-slate-950/80 border border-slate-800">
+                                                        @if($req->is_guest_request)
+                                                            ⚡ INVITADO @if($req->likes > 0) 🔥 {{ $req->likes }} @endif
+                                                        @elseif($req->audio_file)
+                                                            📁 MP3 LOCAL
+                                                        @else
+                                                            🎵 STREAMING
+                                                        @endif
+                                                    </span>
+                                                    <template x-if="currentId === {{ $req->id }} && isPlaying">
+                                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500 text-slate-950 animate-pulse">▶ SONANDO</span>
+                                                    </template>
+                                                </div>
 
-                                <div class="pt-2 border-t border-slate-800/80 flex items-center justify-between gap-1.5" @click.stop>
-                                    <span class="text-[9px] font-black uppercase tracking-wider truncate max-w-[100px] px-1.5 py-0.5 rounded {{ $colorScheme['tag_bg'] }} {{ $colorScheme['tag'] }}">
-                                        {{ $req->moment ?: 'FIESTA' }}
-                                    </span>
-                                    <div class="flex items-center gap-1">
-                                        <a href="{{ $appleUrl }}" target="_blank" class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-pink-950/80 text-pink-300 hover:bg-pink-800 hover:text-white border border-pink-700/50 transition">APPLE</a>
-                                        <a href="{{ $spUrl }}" target="_blank" class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-950/80 text-emerald-400 hover:bg-emerald-800 hover:text-white border border-emerald-700/50 transition">SPOTIFY</a>
-                                        <a href="{{ $ytUrl }}" target="_blank" class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-300 hover:text-white transition">▶</a>
+                                                <div class="my-auto py-3 text-center">
+                                                    <h3 class="text-base sm:text-lg font-black text-white leading-tight tracking-tight group-hover:scale-105 transition-transform duration-200 line-clamp-3">
+                                                        {{ $req->title }}
+                                                    </h3>
+                                                    @if($req->artist)
+                                                        <p class="text-xs text-slate-400 font-semibold mt-1 truncate">{{ $req->artist }}</p>
+                                                    @endif
+                                                    @if($req->notes)
+                                                        <p class="text-[10px] text-amber-300/80 italic mt-1 truncate">📝 {{ $req->notes }}</p>
+                                                    @endif
+                                                </div>
+
+                                                <div class="pt-2 border-t border-slate-800/80 flex items-center justify-between gap-1.5" @click.stop>
+                                                    <span class="text-[9px] font-black uppercase tracking-wider truncate max-w-[100px] px-1.5 py-0.5 rounded {{ $colorScheme['tag_bg'] }} {{ $colorScheme['tag'] }}">
+                                                        {{ $req->cue_time ? '⏱️ ' . $req->cue_time : ($req->moment ?: 'FIESTA') }}
+                                                    </span>
+                                                    <div class="flex items-center gap-1">
+                                                        <a href="{{ $appleUrl }}" target="_blank" class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-pink-950/80 text-pink-300 hover:bg-pink-800 hover:text-white border border-pink-700/50 transition">APPLE</a>
+                                                        <a href="{{ $spUrl }}" target="_blank" class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-950/80 text-emerald-400 hover:bg-emerald-800 hover:text-white border border-emerald-700/50 transition">SPOTIFY</a>
+                                                        <a href="{{ $ytUrl }}" target="_blank" class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-300 hover:text-white transition">▶</a>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        @endforeach
                                     </div>
                                 </div>
-                            </div>
-                        @empty
-                            <div class="col-span-full py-16 text-center bg-slate-950/40 rounded-3xl border border-dashed border-slate-800">
-                                <span class="text-4xl">🎵</span>
-                                <p class="text-base font-bold text-slate-300 mt-2">No se encontraron canciones</p>
-                                <p class="text-xs text-slate-500 mt-1">Prueba con otro término de búsqueda o añade una nueva canción.</p>
-                            </div>
-                        @endforelse
-                    </div>
-
-                    @if($totalPages > 1)
-                        <div class="flex items-center justify-between pt-4 border-t border-slate-800/80">
-                            <button 
-                                type="button" 
-                                wire:click="prevPage" 
-                                {{ $padPage <= 1 ? 'disabled' : '' }} 
-                                class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed text-xs font-bold text-white transition flex items-center gap-1.5"
-                            >
-                                &larr; Anterior
-                            </button>
-                            <span class="text-xs font-mono font-bold text-slate-400">
-                                Página <strong class="text-cyan-400">{{ $padPage }}</strong> de {{ $totalPages }} ({{ $totalItems }} temas)
-                            </span>
-                            <button 
-                                type="button" 
-                                wire:click="nextPage({{ $totalPages }})" 
-                                {{ $padPage >= $totalPages ? 'disabled' : '' }} 
-                                class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed text-xs font-bold text-white transition flex items-center gap-1.5"
-                            >
-                                Siguiente &rarr;
-                            </button>
+                            @empty
+                                <div class="py-16 text-center bg-slate-950/40 rounded-3xl border border-dashed border-slate-800">
+                                    <span class="text-4xl">🎵</span>
+                                    <p class="text-base font-bold text-slate-300 mt-2">No se encontraron canciones en esta fase o momento</p>
+                                    <p class="text-xs text-slate-500 mt-1">Selecciona otra fase o pulsa «Añadir Canción».</p>
+                                </div>
+                            @endforelse
                         </div>
+
+                    <!-- 2. VISTA CUADRÍCULA SAMPLER CONTINUO -->
+                    @else
+                        <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5 pt-2">
+                            @forelse($paginatedPads as $index => $req)
+                                @php
+                                    $colorScheme = $colors[$index % count($colors)];
+                                    $searchQuery = urlencode(trim(($req->artist ? $req->artist . ' ' : '') . $req->title));
+                                    $spUrl = $req->spotify_url ?: "https://open.spotify.com/search/{$searchQuery}";
+                                    $appleUrl = $req->apple_music_url ?: "https://music.apple.com/es/search?term={$searchQuery}";
+                                    $ytUrl = $req->youtube_url ?: "https://www.youtube.com/results?search_query={$searchQuery}";
+                                    $isPlaying = $req->status === 'playing';
+                                    $isPaused = $req->status === 'paused';
+                                    $isPlayed = $req->status === 'played';
+                                @endphp
+
+                                <div 
+                                    @click="handleTrackPlay({{ $req->id }}, {{ json_encode($req->title) }}, {{ json_encode($req->artist ?? '') }}, {{ json_encode($req->audio_file ?? '') }}, {{ json_encode($req->spotify_url ?? '') }}, {{ json_encode($req->apple_music_url ?? '') }})"
+                                    class="relative rounded-2xl p-4 flex flex-col justify-between min-h-[220px] transition-all duration-200 cursor-pointer group select-none border-2"
+                                    :class="{
+                                        'bg-slate-900/95 border-emerald-400 shadow-2xl shadow-emerald-500/40 ring-4 ring-emerald-500/20 scale-[1.02]': currentId === {{ $req->id }} && isPlaying,
+                                        'bg-slate-900/90 border-amber-400 shadow-xl shadow-amber-400/20': currentId === {{ $req->id }} && isPaused,
+                                        'bg-slate-950/70 border-slate-800 opacity-60': '{{ $req->status }}' === 'played' && currentId !== {{ $req->id }},
+                                        'bg-slate-900/70 {{ $colorScheme['border'] }} {{ $colorScheme['hover'] }} shadow-lg {{ $colorScheme['glow'] }}': currentId !== {{ $req->id }} && '{{ $req->status }}' !== 'played'
+                                    }"
+                                >
+                                    <div class="flex items-center justify-between gap-2">
+                                        <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-md uppercase tracking-wider {{ $colorScheme['tag'] }} bg-slate-950/80 border border-slate-800">
+                                            @if($req->is_guest_request)
+                                                ⚡ INVITADO @if($req->likes > 0) 🔥 {{ $req->likes }} @endif
+                                            @elseif($req->audio_file)
+                                                📁 MP3 LOCAL
+                                            @else
+                                                🎵 STREAMING
+                                            @endif
+                                        </span>
+                                        <template x-if="currentId === {{ $req->id }} && isPlaying">
+                                            <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500 text-slate-950 animate-pulse">▶ SONANDO</span>
+                                        </template>
+                                    </div>
+
+                                    <div class="my-auto py-3 text-center">
+                                        <h3 class="text-base sm:text-lg font-black text-white leading-tight tracking-tight group-hover:scale-105 transition-transform duration-200 line-clamp-3">
+                                            {{ $req->title }}
+                                        </h3>
+                                        @if($req->artist)
+                                            <p class="text-xs text-slate-400 font-semibold mt-1 truncate">{{ $req->artist }}</p>
+                                        @endif
+                                        @if($req->notes)
+                                            <p class="text-[10px] text-amber-300/80 italic mt-1 truncate">📝 {{ $req->notes }}</p>
+                                        @endif
+                                    </div>
+
+                                    <div class="pt-2 border-t border-slate-800/80 flex items-center justify-between gap-1.5" @click.stop>
+                                        <span class="text-[9px] font-black uppercase tracking-wider truncate max-w-[100px] px-1.5 py-0.5 rounded {{ $colorScheme['tag_bg'] }} {{ $colorScheme['tag'] }}">
+                                            {{ $req->moment ?: 'FIESTA' }}
+                                        </span>
+                                        <div class="flex items-center gap-1">
+                                            <a href="{{ $appleUrl }}" target="_blank" class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-pink-950/80 text-pink-300 hover:bg-pink-800 hover:text-white border border-pink-700/50 transition">APPLE</a>
+                                            <a href="{{ $spUrl }}" target="_blank" class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-950/80 text-emerald-400 hover:bg-emerald-800 hover:text-white border border-emerald-700/50 transition">SPOTIFY</a>
+                                            <a href="{{ $ytUrl }}" target="_blank" class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-300 hover:text-white transition">▶</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            @empty
+                                <div class="col-span-full py-16 text-center bg-slate-950/40 rounded-3xl border border-dashed border-slate-800">
+                                    <span class="text-4xl">🎵</span>
+                                    <p class="text-base font-bold text-slate-300 mt-2">No se encontraron canciones</p>
+                                    <p class="text-xs text-slate-500 mt-1">Prueba con otro término de búsqueda o añade una nueva canción.</p>
+                                </div>
+                            @endforelse
+                        </div>
+
+                        @if($totalPages > 1)
+                            <div class="flex items-center justify-between pt-4 border-t border-slate-800/80">
+                                <button 
+                                    type="button" 
+                                    wire:click="prevPage" 
+                                    {{ $padPage <= 1 ? 'disabled' : '' }} 
+                                    class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed text-xs font-bold text-white transition flex items-center gap-1.5"
+                                >
+                                    &larr; Anterior
+                                </button>
+                                <span class="text-xs font-mono font-bold text-slate-400">
+                                    Página <strong class="text-cyan-400">{{ $padPage }}</strong> de {{ $totalPages }} ({{ $totalItems }} temas)
+                                </span>
+                                <button 
+                                    type="button" 
+                                    wire:click="nextPage({{ $totalPages }})" 
+                                    {{ $padPage >= $totalPages ? 'disabled' : '' }} 
+                                    class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed text-xs font-bold text-white transition flex items-center gap-1.5"
+                                >
+                                    Siguiente &rarr;
+                                </button>
+                            </div>
+                        @endif
                     @endif
 
                 <!-- MODO LISTA -->
