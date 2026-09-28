@@ -13,6 +13,7 @@ class User extends Authenticatable
 
     protected $fillable = [
         'name',
+        'username',
         'email',
         'password',
         'role',
@@ -49,6 +50,11 @@ class User extends Authenticatable
     }
 
     public function eventsAsClient()
+    {
+        return $this->hasMany(Event::class, 'client_id');
+    }
+
+    public function clientEvents()
     {
         return $this->hasMany(Event::class, 'client_id');
     }
