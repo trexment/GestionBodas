@@ -723,6 +723,39 @@
 
     </div>
 
+    <!-- DOCKED MINI VIDEO PLAYER PARA YOUTUBE -->
+    <div 
+        x-show="currentId !== null && playbackSource === 'youtube'" 
+        x-transition:enter="transition ease-out duration-300"
+        x-transition:enter-start="opacity-0 translate-y-8 scale-95"
+        x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+        x-transition:leave="transition ease-in duration-200"
+        x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+        x-transition:leave-end="opacity-0 translate-y-8 scale-95"
+        class="fixed bottom-24 right-4 z-50 bg-slate-950/95 backdrop-blur-md border border-cyan-500/50 rounded-2xl shadow-2xl overflow-hidden transition-all duration-300"
+        :class="showVideoPlayer ? 'w-80 sm:w-96' : 'w-48'"
+        style="display: none;"
+    >
+        <div class="bg-slate-900 px-3 py-1.5 flex items-center justify-between border-b border-slate-800 text-xs">
+            <span class="text-cyan-400 font-bold flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                <span class="truncate max-w-[130px]" x-text="currentTitle || 'YouTube Stream'"></span>
+            </span>
+            <div class="flex items-center gap-2">
+                <button 
+                    type="button" 
+                    @click="showVideoPlayer = !showVideoPlayer" 
+                    class="text-slate-400 hover:text-white text-[10px] font-mono bg-slate-800 px-1.5 py-0.5 rounded cursor-pointer"
+                >
+                    <span x-text="showVideoPlayer ? 'Compacto' : 'Ampliar'"></span>
+                </button>
+            </div>
+        </div>
+        <div :class="showVideoPlayer ? 'h-48 sm:h-56' : 'h-28'" class="bg-black relative">
+            <div id="youtube-audio-frame" class="w-full h-full"></div>
+        </div>
+    </div>
+
     <!-- FLOATING DJ REPRODUCTOR DE AUDIO BAR (INFERIOR) -->
     <div 
         x-show="currentId !== null" 
@@ -737,51 +770,91 @@
     >
         <div class="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             
-            <!-- TRACK INFO -->
+            <!-- TRACK INFO & COVER -->
             <div class="flex items-center gap-3 min-w-[200px] max-w-sm">
-                <div class="w-10 h-10 rounded-xl bg-cyan-950 border border-cyan-500/50 flex items-center justify-center text-cyan-400 shrink-0 relative overflow-hidden">
-                    <span class="text-xl" :class="isPlaying ? 'animate-spin' : ''" style="animation-duration: 4s;">💿</span>
+                <div class="w-11 h-11 rounded-xl bg-slate-900 border border-cyan-500/40 flex items-center justify-center text-cyan-400 shrink-0 relative overflow-hidden shadow-inner">
+                    <template x-if="currentCover">
+                        <img :src="currentCover" class="w-full h-full object-cover rounded-xl" :class="isPlaying ? 'animate-pulse' : ''" alt="Cover">
+                    </template>
+                    <template x-if="!currentCover">
+                        <span class="text-xl" :class="isPlaying ? 'animate-spin' : ''" style="animation-duration: 4s;">💿</span>
+                    </template>
                 </div>
                 <div class="truncate">
                     <div class="flex items-center gap-1.5">
                         <span class="text-xs font-black text-white truncate" x-text="currentTitle"></span>
                         <span class="w-2 h-2 rounded-full bg-emerald-400 shrink-0" :class="isPlaying ? 'animate-ping' : 'opacity-40'"></span>
                     </div>
-                    <p class="text-[11px] text-slate-400 truncate flex items-center gap-1">
+                    <p class="text-[11px] text-slate-400 truncate flex items-center gap-1.5 mt-0.5">
                         <span x-text="currentArtist || 'Pista de Audio'"></span>
-                        <span class="text-[10px] text-red-400 font-mono" x-show="playbackSource === 'youtube'">[Canción Completa]</span>
-                        <span class="text-[10px] text-pink-400 font-mono" x-show="playbackSource === 'apple_music'">[Apple Music]</span>
-                        <span class="text-[10px] text-cyan-400 font-mono" x-show="playbackSource === 'spotify'">[Spotify SDK]</span>
-                        <span class="text-[10px] text-emerald-400 font-mono" x-show="playbackSource === 'local_mp3'">[Cloud Drive / Local]</span>
-                        <span class="text-[10px] text-amber-400 font-mono" x-show="playbackSource === 'preview'">[Preview 30s]</span>
+                        <span class="text-[10px] text-emerald-400 font-mono bg-emerald-950/80 px-1 py-0.2 rounded border border-emerald-800/40" x-show="playbackSource === 'local_mp3'">[MP3 Directo]</span>
+                        <span class="text-[10px] text-amber-400 font-mono bg-amber-950/80 px-1 py-0.2 rounded border border-amber-800/40" x-show="playbackSource === 'preview'">[Vista Previa 30s]</span>
+                        <span class="text-[10px] text-red-400 font-mono bg-red-950/80 px-1 py-0.2 rounded border border-red-800/40" x-show="playbackSource === 'youtube'">[YouTube Audio]</span>
+                        <span class="text-[10px] text-cyan-400 font-mono bg-cyan-950/80 px-1 py-0.2 rounded border border-cyan-800/40" x-show="playbackSource === 'spotify'">[Spotify SDK]</span>
+                        <span class="text-[10px] text-pink-400 font-mono bg-pink-950/80 px-1 py-0.2 rounded border border-pink-800/40" x-show="playbackSource === 'apple_music'">[Apple Music]</span>
                     </p>
+                    <template x-if="loading">
+                        <span class="text-[10px] text-cyan-400 font-mono animate-pulse block">⌛ Conectando fuente de audio...</span>
+                    </template>
+                    <template x-if="hasError">
+                        <span class="text-[10px] text-amber-400 font-mono block">⚠️ Sin stream directo. Usa los enlaces externos 👇</span>
+                    </template>
                 </div>
             </div>
 
             <!-- CONTROLES PRINCIPALES Y BARRA DE PROGRESO -->
             <div class="flex-1 max-w-xl flex flex-col items-center gap-1.5">
-                <div class="flex items-center gap-4">
+                <div class="flex items-center gap-3">
                     <button 
                         type="button"
                         @click="togglePlayPause()" 
                         class="w-10 h-10 rounded-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 flex items-center justify-center font-black text-base shadow-lg shadow-cyan-500/30 transition transform hover:scale-105 cursor-pointer"
+                        :title="isPlaying ? 'Pausar' : 'Reproducir'"
                     >
                         <span x-text="isPlaying ? '⏸' : '▶'"></span>
                     </button>
                     <button 
-                        type="button"
+                        type="button" 
                         @click="stopAndMarkPlayed()" 
                         title="Marcar como Terminada / Siguiente"
                         class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-emerald-600 text-slate-200 hover:text-white text-xs font-bold border border-slate-700 transition cursor-pointer"
                     >
                         ✓ Marcar Lista
                     </button>
+
+                    <!-- ENLACES DIRECTOS EXTERNOS -->
+                    <div class="flex items-center gap-1 ml-2 border-l border-slate-800 pl-3">
+                        <a 
+                            :href="spotifyExternalUrl" 
+                            target="_blank" 
+                            class="px-2 py-1 rounded-lg text-[11px] font-bold bg-emerald-950/80 text-emerald-400 hover:bg-emerald-800 hover:text-white border border-emerald-700/50 transition flex items-center gap-1"
+                            title="Abrir en Spotify"
+                        >
+                            <span>🟢</span> Spotify
+                        </a>
+                        <a 
+                            :href="youtubeExternalUrl" 
+                            target="_blank" 
+                            class="px-2 py-1 rounded-lg text-[11px] font-bold bg-red-950/80 text-red-400 hover:bg-red-800 hover:text-white border border-red-700/50 transition flex items-center gap-1"
+                            title="Abrir en YouTube"
+                        >
+                            <span>🔴</span> YouTube
+                        </a>
+                        <a 
+                            :href="appleMusicExternalUrl" 
+                            target="_blank" 
+                            class="px-2 py-1 rounded-lg text-[11px] font-bold bg-pink-950/80 text-pink-300 hover:bg-pink-800 hover:text-white border border-pink-700/50 transition flex items-center gap-1"
+                            title="Abrir en Apple Music"
+                        >
+                            <span>🍎</span> Apple
+                        </a>
+                    </div>
                 </div>
 
                 <!-- SEEK BAR & TIMERS -->
                 <div class="w-full flex items-center gap-2 text-[10px] text-slate-400 font-mono">
                     <span x-text="formatTime(currentTime)">00:00</span>
-                    <div class="flex-1 bg-slate-800 rounded-full h-1.5 cursor-pointer relative overflow-hidden" @click="seekByEvent($event)">
+                    <div class="flex-1 bg-slate-800 rounded-full h-2 cursor-pointer relative overflow-hidden" @click="seekByEvent($event)">
                         <div class="bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-400 h-full rounded-full transition-all" :style="'width: ' + progress + '%'"></div>
                     </div>
                     <span x-text="formatTime(duration)">00:00</span>
@@ -808,9 +881,6 @@
         </div>
     </div>
 
-    <!-- CONTENEDOR OCULTO PARA EL REPRODUCTOR COMPLETO YOUTUBE -->
-    <div id="youtube-audio-frame" style="position: fixed; bottom: -9999px; left: -9999px; width: 1px; height: 1px; opacity: 0; pointer-events: none;"></div>
-
 </div>
 
 <!-- CARGA DE SDKs OFICIALES DE YOUTUBE, SPOTIFY & APPLE MUSIC -->
@@ -825,6 +895,7 @@ function djAudioPlayer() {
         youtubePlayer: null,
         youtubeReady: false,
         youtubeTimer: null,
+        showVideoPlayer: false,
 
         spotifyPlayer: null,
         spotifyDeviceId: null,
@@ -835,11 +906,16 @@ function djAudioPlayer() {
         appleMusicReady: false,
         appleDevToken: null,
 
-        playbackSource: 'youtube', // 'youtube', 'apple_music', 'spotify', 'local_mp3', 'preview'
+        playbackSource: null, // 'local_mp3', 'preview', 'youtube', 'spotify', 'apple_music'
 
         currentId: null,
         currentTitle: '',
         currentArtist: '',
+        currentCover: '',
+        spotifyExternalUrl: '',
+        youtubeExternalUrl: '',
+        appleMusicExternalUrl: '',
+
         isPlaying: false,
         isPaused: false,
         currentTime: 0,
@@ -848,9 +924,10 @@ function djAudioPlayer() {
         volume: 0.9,
         isMuted: false,
         loading: false,
+        hasError: false,
 
         async initPlayer() {
-            // 1. Inicializar HTML5 Audio para archivos MP3 locales
+            // 1. Inicializar HTML5 Audio para archivos MP3 locales y Previews oficiales de iTunes
             this.audio = new Audio();
             this.audio.volume = this.volume;
 
@@ -891,7 +968,14 @@ function djAudioPlayer() {
                 }
             });
 
-            // 2. Inicializar YouTube IFrame Player para canciones completas 100%
+            this.audio.addEventListener('error', (e) => {
+                if (this.playbackSource === 'local_mp3' || this.playbackSource === 'preview') {
+                    console.warn('Audio stream error:', e);
+                    this.loading = false;
+                }
+            });
+
+            // 2. Inicializar YouTube IFrame Player
             this.initYouTubeSdk();
 
             // 3. Inicializar Apple Music (MusicKit JS)
@@ -903,50 +987,56 @@ function djAudioPlayer() {
 
         initYouTubeSdk() {
             const setupYT = () => {
-                if (window.YT && window.YT.Player) {
+                if (window.YT && window.YT.Player && !this.youtubePlayer) {
                     try {
-                        this.youtubePlayer = new YT.Player('youtube-audio-frame', {
-                            height: '1',
-                            width: '1',
-                            playerVars: {
-                                playsinline: 1,
-                                controls: 0,
-                                disablekb: 1,
-                                origin: window.location.origin
-                            },
-                            events: {
-                                onReady: () => {
-                                    this.youtubeReady = true;
-                                    if (this.youtubePlayer && this.youtubePlayer.setVolume) {
-                                        this.youtubePlayer.setVolume(this.volume * 100);
-                                    }
+                        const frameEl = document.getElementById('youtube-audio-frame');
+                        if (frameEl) {
+                            this.youtubePlayer = new YT.Player('youtube-audio-frame', {
+                                height: '100%',
+                                width: '100%',
+                                playerVars: {
+                                    playsinline: 1,
+                                    controls: 1,
+                                    modestbranding: 1,
+                                    rel: 0,
+                                    origin: window.location.origin
                                 },
-                                onStateChange: (event) => {
-                                    if (this.playbackSource === 'youtube') {
-                                        if (event.data === YT.PlayerState.PLAYING) {
-                                            this.isPlaying = true;
-                                            this.isPaused = false;
-                                            this.loading = false;
-                                            this.startYouTubeTimer();
-                                        } else if (event.data === YT.PlayerState.PAUSED) {
-                                            this.isPlaying = false;
-                                            this.isPaused = true;
-                                            this.stopYouTubeTimer();
-                                        } else if (event.data === YT.PlayerState.ENDED) {
-                                            this.isPlaying = false;
-                                            this.isPaused = false;
-                                            this.stopYouTubeTimer();
-                                            this.currentTime = 0;
-                                            this.progress = 0;
-                                            if (this.currentId) {
-                                                this.$wire.setStatus(this.currentId, 'played');
+                                events: {
+                                    onReady: () => {
+                                        this.youtubeReady = true;
+                                        if (this.youtubePlayer && this.youtubePlayer.setVolume) {
+                                            this.youtubePlayer.setVolume(this.volume * 100);
+                                        }
+                                    },
+                                    onStateChange: (event) => {
+                                        if (this.playbackSource === 'youtube') {
+                                            if (event.data === YT.PlayerState.PLAYING) {
+                                                this.isPlaying = true;
+                                                this.isPaused = false;
+                                                this.loading = false;
+                                                this.startYouTubeTimer();
+                                            } else if (event.data === YT.PlayerState.PAUSED) {
+                                                this.isPlaying = false;
+                                                this.isPaused = true;
+                                                this.stopYouTubeTimer();
+                                            } else if (event.data === YT.PlayerState.ENDED) {
+                                                this.isPlaying = false;
+                                                this.isPaused = false;
+                                                this.stopYouTubeTimer();
+                                                this.currentTime = 0;
+                                                this.progress = 0;
+                                                if (this.currentId) {
+                                                    this.$wire.setStatus(this.currentId, 'played');
+                                                }
                                             }
                                         }
                                     }
                                 }
-                            }
-                        });
-                    } catch (e) {}
+                            });
+                        }
+                    } catch (e) {
+                        console.warn('YouTube SDK init error:', e);
+                    }
                 }
             };
 
@@ -1115,9 +1205,17 @@ function djAudioPlayer() {
             this.currentId = id;
             this.currentTitle = title;
             this.currentArtist = artist;
+            this.currentCover = '';
             this.loading = true;
+            this.hasError = false;
             this.progress = 0;
             this.currentTime = 0;
+            this.duration = 0;
+
+            const queryParam = encodeURIComponent(((artist ? artist + ' ' : '') + title).trim());
+            this.spotifyExternalUrl = spotifyUrl || (`https://open.spotify.com/search/${queryParam}`);
+            this.youtubeExternalUrl = `https://www.youtube.com/results?search_query=${queryParam}`;
+            this.appleMusicExternalUrl = appleMusicUrl || (`https://music.apple.com/es/search?term=${queryParam}`);
 
             // 1. Almacenamiento Nube / Local (Google Drive, Dropbox, Servidor Propio)
             if (audioFile && audioFile.trim() !== '') {
@@ -1128,7 +1226,7 @@ function djAudioPlayer() {
                         streamUrl = `https://drive.google.com/uc?export=download&id=${driveMatch[1]}`;
                     }
                 } else if (streamUrl.includes('dropbox.com')) {
-                    streamUrl = streamUrl.replace('dl=0', 'dl=1');
+                    streamUrl = streamUrl.replace('dl=0', 'raw=1');
                 } else if (!streamUrl.startsWith('http')) {
                     streamUrl = '/storage/' + streamUrl;
                 }
@@ -1143,7 +1241,9 @@ function djAudioPlayer() {
                     this.loading = false;
                     this.$wire.setStatus(id, 'playing');
                     return;
-                } catch (e) {}
+                } catch (e) {
+                    console.warn('Direct file playback failed:', e);
+                }
             }
 
             // 2. Apple Music (MusicKit Full Streaming)
@@ -1152,8 +1252,9 @@ function djAudioPlayer() {
                     const q = encodeURIComponent(((artist || '') + ' ' + title).trim());
                     const searchRes = await this.musicKit.api.music(`/v1/catalog/es/search?term=${q}&types=songs&limit=1`);
                     if (searchRes.data && searchRes.data.results && searchRes.data.results.songs && searchRes.data.results.songs.data.length > 0) {
-                        const songId = searchRes.data.results.songs.data[0].id;
-                        await this.musicKit.setQueue({ song: songId });
+                        const song = searchRes.data.results.songs.data[0];
+                        this.currentCover = song.attributes?.artwork?.url ? song.attributes.artwork.url.replace('{w}', '300').replace('{h}', '300') : '';
+                        await this.musicKit.setQueue({ song: song.id });
                         await this.musicKit.play();
                         this.playbackSource = 'apple_music';
                         this.isPlaying = true;
@@ -1185,6 +1286,7 @@ function djAudioPlayer() {
                             const data = await res.json();
                             if (data.tracks && data.tracks.items.length > 0) {
                                 trackUri = data.tracks.items[0].uri;
+                                this.currentCover = data.tracks.items[0].album?.images?.[0]?.url || '';
                             }
                         }
                     } catch (e) {}
@@ -1213,44 +1315,31 @@ function djAudioPlayer() {
                 }
             }
 
-            // 4. Reproductor Completo Universal (YouTube Full Track)
+            // 4. Resolución Unificada vía Backend (/api/music/resolve-track)
+            let resolvedPreviewUrl = null;
+            let resolvedVideoId = null;
+
             try {
-                const searchQ = encodeURIComponent(((artist || '') + ' ' + title).trim());
-                const ytRes = await fetch(`/api/music/youtube-id?q=${searchQ}`);
-                if (ytRes.ok) {
-                    const ytData = await ytRes.json();
-                    if (ytData.success && ytData.video_id) {
-                        this.playbackSource = 'youtube';
-                        if (this.youtubePlayer && this.youtubePlayer.loadVideoById) {
-                            this.youtubePlayer.loadVideoById(ytData.video_id);
-                            this.youtubePlayer.playVideo();
-                            this.isPlaying = true;
-                            this.isPaused = false;
-                            this.loading = false;
-                            this.$wire.setStatus(id, 'playing');
-                            this.startYouTubeTimer();
-                            return;
-                        }
+                const resolveRes = await fetch(`/api/music/resolve-track?title=${encodeURIComponent(title)}&artist=${encodeURIComponent(artist || '')}`);
+                if (resolveRes.ok) {
+                    const resData = await resolveRes.json();
+                    if (resData.success) {
+                        if (resData.cover_url) this.currentCover = resData.cover_url;
+                        if (resData.spotify_url) this.spotifyExternalUrl = resData.spotify_url;
+                        if (resData.youtube_url) this.youtubeExternalUrl = resData.youtube_url;
+                        if (resData.apple_music_url) this.appleMusicExternalUrl = resData.apple_music_url;
+                        resolvedPreviewUrl = resData.preview_url;
+                        resolvedVideoId = resData.youtube_video_id;
                     }
                 }
-            } catch (e) {}
+            } catch (e) {
+                console.warn('Backend resolve error, falling back to direct itunes', e);
+            }
 
-            // 5. Preescucha gratuita oficial de Apple Music / iTunes (Fallback)
-            this.playbackSource = 'preview';
-            let previewUrl = null;
-            try {
-                const query = encodeURIComponent(((artist || '') + ' ' + title).trim());
-                const res = await fetch(`https://itunes.apple.com/search?term=${query}&media=music&entity=song&country=es&limit=1`);
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data.results && data.results.length > 0 && data.results[0].previewUrl) {
-                        previewUrl = data.results[0].previewUrl;
-                    }
-                }
-            } catch (err) {}
-
-            if (previewUrl) {
-                this.audio.src = previewUrl;
+            // 4A. Reproducir Preview de alta calidad (iTunes 30s) si está disponible
+            if (resolvedPreviewUrl) {
+                this.playbackSource = 'preview';
+                this.audio.src = resolvedPreviewUrl;
                 this.audio.load();
                 try {
                     await this.audio.play();
@@ -1259,14 +1348,57 @@ function djAudioPlayer() {
                     this.loading = false;
                     this.$wire.setStatus(id, 'playing');
                     return;
-                } catch (e) {}
+                } catch (e) {
+                    console.warn('Preview play error:', e);
+                }
             }
 
-            // 6. Fallback final
+            // 4B. Reproducir YouTube Video/Audio si está disponible
+            if (resolvedVideoId) {
+                this.playbackSource = 'youtube';
+                if (this.youtubePlayer && this.youtubePlayer.loadVideoById) {
+                    try {
+                        this.youtubePlayer.loadVideoById(resolvedVideoId);
+                        this.youtubePlayer.playVideo();
+                        this.isPlaying = true;
+                        this.isPaused = false;
+                        this.loading = false;
+                        this.$wire.setStatus(id, 'playing');
+                        this.startYouTubeTimer();
+                        return;
+                    } catch (e) {
+                        console.warn('YouTube playVideo error:', e);
+                    }
+                }
+            }
+
+            // 5. Preescucha directa de iTunes como fallback desde el navegador
+            try {
+                const qClean = encodeURIComponent(((artist || '') + ' ' + title).replace(/\s*[\(\[].*?[\)\]]/g, '').trim());
+                const itunesRes = await fetch(`https://itunes.apple.com/search?term=${qClean}&media=music&entity=song&country=es&limit=1`);
+                if (itunesRes.ok) {
+                    const itData = await itunesRes.json();
+                    if (itData.results && itData.results.length > 0 && itData.results[0].previewUrl) {
+                        this.currentCover = itData.results[0].artworkUrl100?.replace('100x100bb.jpg', '600x600bb.jpg') || '';
+                        this.playbackSource = 'preview';
+                        this.audio.src = itData.results[0].previewUrl;
+                        this.audio.load();
+                        await this.audio.play();
+                        this.isPlaying = true;
+                        this.isPaused = false;
+                        this.loading = false;
+                        this.$wire.setStatus(id, 'playing');
+                        return;
+                    }
+                }
+            } catch (err) {}
+
+            // 6. Si no se puede reproducir automáticamente, notificar al DJ con enlaces directos
             this.loading = false;
-            this.playFallbackBeep();
-            this.isPlaying = true;
-            this.$wire.setStatus(id, 'playing');
+            this.isPlaying = false;
+            this.hasError = true;
+            this.playbackSource = 'none';
+            this.$wire.setStatus(id, 'pending');
         },
 
         togglePlayPause() {
@@ -1317,6 +1449,7 @@ function djAudioPlayer() {
             }
             this.isPlaying = false;
             this.isPaused = false;
+            this.hasError = false;
         },
 
         stopAndMarkPlayed() {
@@ -1389,23 +1522,6 @@ function djAudioPlayer() {
             const mins = Math.floor(seconds / 60);
             const secs = Math.floor(seconds % 60);
             return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-        },
-
-        playFallbackBeep() {
-            try {
-                const ctx = new (window.AudioContext || window.webkitAudioContext)();
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(440, ctx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.3);
-                gain.gain.setValueAtTime(0.1, ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
-                osc.connect(gain);
-                gain.connect(ctx.destination);
-                osc.start();
-                osc.stop(ctx.currentTime + 0.3);
-            } catch (e) {}
         }
     };
 }
