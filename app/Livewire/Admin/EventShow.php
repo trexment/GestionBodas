@@ -39,6 +39,7 @@ class EventShow extends Component
     public $quote_deposit_type = 'percentage'; // 'percentage' | 'fixed'
     public $quote_deposit_percentage = 40;
     public $quote_deposit_fixed_amount = 200;
+    public $editing_quote_id = null; // ID de la propuesta actualmente en edición
 
     // Presupuestos & Packs
     public $quote_services = [
@@ -568,7 +569,7 @@ class EventShow extends Component
         return max(0, (float)$this->calculated_total - (float)$this->calculated_signal);
     }
 
-    public function createQuote()
+    private function buildQuoteItemsList(&$total)
     {
         $total = 0;
         $items = [];
@@ -681,6 +682,14 @@ class EventShow extends Component
             $total += $p;
         }
 
+        return $items;
+    }
+
+    public function createQuote()
+    {
+        $total = 0;
+        $items = $this->buildQuoteItemsList($total);
+
         if (empty($items)) {
             session()->flash('quote_error', 'Debes seleccionar al menos un Pack o Servicio para generar la propuesta comercial.');
             return;
@@ -700,8 +709,145 @@ class EventShow extends Component
             $quote->items()->create($item);
         }
 
+        $this->editing_quote_id = null;
         $this->event->load('quotes.items');
-        session()->flash('quote_message', 'Propuesta Comercial generada exitosamente (Total: ' . number_format($total, 2, ',', '.') . ' € | Señal de reserva: ' . number_format($signal, 2, ',', '.') . ' €).');
+        session()->flash('quote_message', 'Nueva Propuesta Comercial #' . $quote->id . ' generada exitosamente (Total: ' . number_format($total, 2, ',', '.') . ' € | Señal de reserva: ' . number_format($signal, 2, ',', '.') . ' €).');
+    }
+
+    public function updateQuote()
+    {
+        if (!$this->editing_quote_id) {
+            $this->createQuote();
+            return;
+        }
+
+        $quote = \App\Models\Quote::findOrFail($this->editing_quote_id);
+        
+        $total = 0;
+        $items = $this->buildQuoteItemsList($total);
+
+        if (empty($items)) {
+            session()->flash('quote_error', 'Debes seleccionar al menos un Pack o Servicio para la propuesta comercial.');
+            return;
+        }
+
+        $signal = $this->calculated_signal;
+
+        $quote->update([
+            'amount' => $total,
+            'deposit_type' => $this->quote_deposit_type,
+            'deposit_percentage' => $this->quote_deposit_type === 'percentage' ? (float)$this->quote_deposit_percentage : null,
+            'deposit_amount' => $signal,
+        ]);
+
+        $quote->items()->delete();
+        foreach ($items as $item) {
+            $quote->items()->create($item);
+        }
+
+        $this->event->load('quotes.items');
+        session()->flash('quote_message', 'Propuesta Comercial #' . $quote->id . ' actualizada correctamente (Total: ' . number_format($total, 2, ',', '.') . ' € | Señal: ' . number_format($signal, 2, ',', '.') . ' €).');
+    }
+
+    public function loadQuoteIntoCalculator($quoteId)
+    {
+        $quote = \App\Models\Quote::with('items')->findOrFail($quoteId);
+        $this->editing_quote_id = $quote->id;
+        
+        // Cargar configuración de señal
+        $this->quote_deposit_type = $quote->deposit_type ?: 'percentage';
+        if ($this->quote_deposit_type === 'percentage') {
+            $this->quote_deposit_percentage = (float)($quote->deposit_percentage ?: 40);
+        } else {
+            $this->quote_deposit_fixed_amount = (float)($quote->deposit_amount ?: 200);
+        }
+
+        // Limpiar selección previa
+        $this->selectPack('clear');
+        $this->selected_pack_type = 'custom';
+
+        // Mapear cada línea
+        foreach ($quote->items as $item) {
+            $name = mb_strtolower($item->service_name ?: $item->concept ?: '');
+            
+            if (str_contains($name, 'pack básico') || str_contains($name, 'pack basico')) {
+                $this->quote_services['pack_basic']['selected'] = true;
+                $this->quote_services['pack_basic']['price'] = (float)$item->price;
+                $this->selected_pack_type = 'basic';
+            } elseif (str_contains($name, 'pack medio')) {
+                $this->quote_services['pack_medium']['selected'] = true;
+                $this->quote_services['pack_medium']['price'] = (float)$item->price;
+                $this->selected_pack_type = 'medium';
+            } elseif (str_contains($name, 'pack premium')) {
+                $this->quote_services['pack_premium']['selected'] = true;
+                $this->quote_services['pack_premium']['price'] = (float)$item->price;
+                $this->selected_pack_type = 'premium';
+            } elseif (str_contains($name, 'ceremonia') && !str_contains($name, 'foto')) {
+                $this->quote_services['ceremony']['selected'] = true;
+                $this->quote_services['ceremony']['quantity'] = (int)($item->quantity ?: 1);
+                $this->quote_services['ceremony']['price'] = (float)$item->price;
+            } elseif (str_contains($name, 'cóctel') || str_contains($name, 'coctel')) {
+                $this->quote_services['cocktail']['selected'] = true;
+                $this->quote_services['cocktail']['quantity'] = (int)($item->quantity ?: 1);
+                $this->quote_services['cocktail']['price'] = (float)$item->price;
+            } elseif (str_contains($name, 'banquete') || str_contains($name, 'regalos') || (str_contains($name, 'restaurante') && !str_contains($name, 'foto'))) {
+                $this->quote_services['restaurant']['selected'] = true;
+                $this->quote_services['restaurant']['quantity'] = (int)($item->quantity ?: 1);
+                $this->quote_services['restaurant']['price'] = (float)$item->price;
+            } elseif (str_contains($name, 'baile dj') || str_contains($name, 'dj baile') || (str_contains($name, 'dj') && !str_contains($name, 'pack'))) {
+                $this->quote_services['dj_custom']['selected'] = true;
+                $this->quote_services['dj_custom']['quantity'] = (int)($item->quantity ?: 1);
+                $this->quote_services['dj_custom']['price'] = (float)$item->price;
+            } elseif (str_contains($name, 'hora extra') || str_contains($name, 'horas extra')) {
+                $this->quote_services['extra_hours']['quantity'] = (int)($item->quantity ?: 1);
+                $this->quote_services['extra_hours']['price'] = (float)$item->price;
+            } elseif (str_contains($name, 'pack completo foto') || str_contains($name, 'completo fotografía') || str_contains($name, 'completo fotografia')) {
+                $this->quote_services['photo_full_pack']['selected'] = true;
+                $this->quote_services['photo_full_pack']['price'] = (float)$item->price;
+            } elseif (str_contains($name, 'fotografía: ceremonia') || str_contains($name, 'fotografia: ceremonia')) {
+                $this->quote_services['photo_ceremony']['selected'] = true;
+                $this->quote_services['photo_ceremony']['price'] = (float)$item->price;
+            } elseif (str_contains($name, 'fotografía: restaurante') || str_contains($name, 'fotografia: restaurante') || str_contains($name, 'fotografía: banquete')) {
+                $this->quote_services['photo_restaurant']['selected'] = true;
+                $this->quote_services['photo_restaurant']['price'] = (float)$item->price;
+            } elseif (str_contains($name, 'fotografía: fiesta') || str_contains($name, 'fotografia: fiesta') || str_contains($name, 'fotografía: baile')) {
+                $this->quote_services['photo_party']['selected'] = true;
+                $this->quote_services['photo_party']['price'] = (float)$item->price;
+            } elseif (str_contains($name, 'álbum digital') || str_contains($name, 'album digital')) {
+                $this->quote_services['photo_album']['selected'] = true;
+                $this->quote_services['photo_album']['price'] = (float)$item->price;
+            } elseif (str_contains($name, 'karaoke')) {
+                $this->quote_services['karaoke']['selected'] = true;
+                $this->quote_services['karaoke']['quantity'] = (int)($item->quantity ?: 1);
+                $this->quote_services['karaoke']['price'] = (float)$item->price;
+            } else {
+                $this->quote_services['custom_extra']['name'] = $item->service_name ?: $item->concept ?: '';
+                $this->quote_services['custom_extra']['price'] = (float)$item->price;
+            }
+        }
+
+        session()->flash('quote_message', 'Propuesta #' . $quote->id . ' cargada en el configurador. Puedes realizar cambios y pulsar "Guardar Cambios" o "Guardar como Nueva Versión".');
+    }
+
+    public function cancelQuoteEditing()
+    {
+        $this->editing_quote_id = null;
+        $this->selectPack('clear');
+        session()->flash('quote_message', 'Edición cancelada.');
+    }
+
+    public function deleteQuote($quoteId)
+    {
+        $quote = \App\Models\Quote::findOrFail($quoteId);
+        $quote->items()->delete();
+        $quote->delete();
+
+        if ($this->editing_quote_id === $quoteId) {
+            $this->editing_quote_id = null;
+        }
+
+        $this->event->load('quotes.items');
+        session()->flash('quote_message', 'Propuesta comercial eliminada correctamente.');
     }
 
     public function createContract()

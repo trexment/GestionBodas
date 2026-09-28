@@ -1027,7 +1027,25 @@
                 <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
                     <!-- CONFIGURADOR DE LÍNEAS DE PRESUPUESTO -->
                     <div class="lg:col-span-7 bg-gray-50 p-5 rounded-2xl border border-gray-200 shadow-xs space-y-6">
-                        <form wire:submit.prevent="createQuote" class="space-y-5">
+                        @if($editing_quote_id)
+                            <div class="bg-amber-50 border-l-4 border-amber-500 p-3.5 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+                                <div class="flex items-center gap-2.5">
+                                    <span class="text-xl">✏️</span>
+                                    <div>
+                                        <div class="font-black text-xs text-amber-900 uppercase tracking-wide flex items-center gap-2">
+                                            <span>Modificando Propuesta #{{ $editing_quote_id }}</span>
+                                            <span class="bg-amber-200 text-amber-900 text-[10px] px-1.5 py-0.2 rounded font-bold">Modo Edición</span>
+                                        </div>
+                                        <p class="text-[11px] text-amber-700 mt-0.5">Puedes actualizar esta propuesta directamente o guardarla como una nueva versión.</p>
+                                    </div>
+                                </div>
+                                <button type="button" wire:click="cancelQuoteEditing" class="text-xs bg-white border border-amber-300 text-amber-800 px-3 py-1.5 rounded-lg font-bold hover:bg-amber-100 transition self-start sm:self-auto">
+                                    ✕ Cancelar
+                                </button>
+                            </div>
+                        @endif
+
+                        <form wire:submit.prevent="{{ $editing_quote_id ? 'updateQuote' : 'createQuote' }}" class="space-y-5">
                             
                             <!-- SECCIÓN: PACKS DE SONIDO & DJ -->
                             <div class="bg-white p-4 rounded-xl border border-gray-200 space-y-3 shadow-xs">
@@ -1316,9 +1334,20 @@
                                 </div>
                             </div>
 
-                            <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-3.5 px-4 rounded-xl shadow-md transition flex items-center justify-center gap-2">
-                                <span>📄</span> Generar Propuesta Comercial en PDF
-                            </button>
+                            @if($editing_quote_id)
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2">
+                                    <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white font-black py-3.5 px-4 rounded-xl shadow-md transition flex items-center justify-center gap-2">
+                                        <span>💾</span> Actualizar Propuesta #{{ $editing_quote_id }}
+                                    </button>
+                                    <button type="button" wire:click="createQuote" class="bg-indigo-600 hover:bg-indigo-700 text-white font-black py-3.5 px-4 rounded-xl shadow-md transition flex items-center justify-center gap-2">
+                                        <span>➕</span> Guardar como Nueva Versión
+                                    </button>
+                                </div>
+                            @else
+                                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-3.5 px-4 rounded-xl shadow-md transition flex items-center justify-center gap-2">
+                                    <span>📄</span> Generar Propuesta Comercial en PDF
+                                </button>
+                            @endif
                         </form>
                     </div>
 
@@ -1368,48 +1397,93 @@
                             </div>
                         </div>
 
-                        <!-- HISTORIAL DE PROPUESTAS GENERADAS -->
+                        <!-- HISTORIAL DE PROPUESTAS GENERADAS (ORDENADAS POR LA MÁS RECIENTE) -->
                         <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-xs space-y-4">
-                            <h5 class="font-bold text-gray-900 text-sm border-b pb-2 flex items-center justify-between">
-                                <span>📜 Propuestas Emitidas</span>
-                                <span class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-bold">{{ $event->quotes->count() }}</span>
-                            </h5>
+                            <div class="border-b pb-2 flex items-center justify-between">
+                                <div class="flex items-center gap-2">
+                                    <h5 class="font-bold text-gray-900 text-sm">📜 Historial de Propuestas</h5>
+                                    <span class="text-xs bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded-full font-bold">{{ $event->quotes->count() }} emitidas</span>
+                                </div>
+                                <span class="text-[11px] text-gray-400 font-medium">Más reciente arriba</span>
+                            </div>
 
                             <div class="space-y-3">
-                                @forelse($event->quotes as $quote)
+                                @php
+                                    $sortedQuotes = $event->quotes->sortByDesc('id')->values();
+                                    $totalQuotesCount = $sortedQuotes->count();
+                                @endphp
+
+                                @forelse($sortedQuotes as $index => $quote)
                                     @php
                                         $qSignal = $quote->signal_amount;
                                         $qRemaining = $quote->remaining_amount;
                                         $qLabel = $quote->signal_label;
+                                        $isLatest = ($index === 0);
+                                        $isEditingThis = ($editing_quote_id === $quote->id);
+                                        $versionNumber = $totalQuotesCount - $index;
                                         $quoteMsg = "¡Hola " . ($event->client ? $event->client->name : 'pareja') . "! 👋\n\nTe adjuntamos el presupuesto detallado para *" . $event->name . "* por un importe total de *" . number_format($quote->amount, 2, ',', '.') . " €* (Señal de reserva: *" . number_format($qSignal, 2, ',', '.') . " €* - " . $qLabel . ").\n\nPodéis consultarlo con calma y avisarnos para cualquier duda o cambio. ¡Un saludo!";
                                         $qWaUrl = $clientPhone ? "https://wa.me/{$clientPhone}?text=" . rawurlencode($quoteMsg) : "https://api.whatsapp.com/send?text=" . rawurlencode($quoteMsg);
                                     @endphp
-                                    <div class="p-4 border border-gray-200 rounded-xl bg-gray-50/50 hover:bg-white hover:border-indigo-300 transition shadow-xs space-y-3">
-                                        <div class="flex items-start justify-between">
+                                    <div class="p-4 border rounded-xl transition shadow-xs space-y-3 {{ $isEditingThis ? 'border-amber-400 bg-amber-50/40 ring-2 ring-amber-300' : ($isLatest ? 'border-emerald-300 bg-emerald-50/20' : 'border-gray-200 bg-gray-50/60 opacity-90') }}">
+                                        
+                                        <!-- Cabecera de la Propuesta -->
+                                        <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-2.5">
                                             <div>
-                                                <div class="flex items-baseline gap-2">
+                                                <div class="flex flex-wrap items-center gap-2">
                                                     <span class="text-lg font-black text-gray-900">{{ number_format($quote->amount, 2) }} €</span>
-                                                    <span class="text-xs text-emerald-700 font-bold bg-emerald-100 px-1.5 py-0.5 rounded">Señal: {{ number_format($qSignal, 2) }} €</span>
+                                                    
+                                                    @if($isEditingThis)
+                                                        <span class="bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-black px-2 py-0.5 rounded-full uppercase">
+                                                            ✏️ Editando
+                                                        </span>
+                                                    @endif
+
+                                                    @if($isLatest)
+                                                        <span class="bg-emerald-100 text-emerald-800 border border-emerald-300 text-[10px] font-black px-2 py-0.5 rounded-full uppercase flex items-center gap-1">
+                                                            ⭐ Versión Actual (V{{ $versionNumber }})
+                                                        </span>
+                                                    @else
+                                                        <span class="bg-gray-200 text-gray-700 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">
+                                                            🕒 Versión Anterior (V{{ $versionNumber }})
+                                                        </span>
+                                                    @endif
+
+                                                    <span class="text-xs text-emerald-700 font-bold bg-emerald-100 px-1.5 py-0.5 rounded">
+                                                        Señal: {{ number_format($qSignal, 2) }} €
+                                                    </span>
                                                 </div>
-                                                <p class="text-[11px] text-gray-500 mt-0.5">Propuesta #{{ $quote->id }} &bull; {{ $quote->created_at->format('d/m/Y H:i') }} &bull; Señal: {{ $qLabel }}</p>
+                                                <p class="text-[11px] text-gray-500 mt-1">
+                                                    <strong>Propuesta #{{ $quote->id }}</strong> &bull; Emitida: {{ $quote->created_at->format('d/m/Y H:i') }} &bull; Señal: {{ $qLabel }}
+                                                </p>
                                             </div>
 
-                                            <div class="flex items-center gap-1.5">
-                                                <a href="{{ $qWaUrl }}" target="_blank" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-2.5 py-1.5 rounded-lg flex items-center gap-1 transition" title="Compartir por WhatsApp">
+                                            <!-- Botones de Acción -->
+                                            <div class="flex flex-wrap items-center gap-1.5 self-start sm:self-auto">
+                                                <button type="button" wire:click="loadQuoteIntoCalculator({{ $quote->id }})" class="bg-white hover:bg-amber-50 text-amber-800 border border-amber-300 text-xs font-bold px-2.5 py-1.5 rounded-lg flex items-center gap-1 transition shadow-2xs" title="Cargar servicios de esta propuesta en el calculador para editar">
+                                                    ✏️ Editar
+                                                </button>
+
+                                                <a href="{{ $qWaUrl }}" target="_blank" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-2.5 py-1.5 rounded-lg flex items-center gap-1 transition shadow-2xs" title="Compartir por WhatsApp">
                                                     💬 WhatsApp
                                                 </a>
-                                                <a href="{{ route('admin.quote.pdf', $quote->id) }}" target="_blank" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-bold px-2.5 py-1.5 rounded-lg flex items-center gap-1 transition" title="Ver PDF">
+
+                                                <a href="{{ route('admin.quote.pdf', $quote->id) }}" target="_blank" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-bold px-2.5 py-1.5 rounded-lg flex items-center gap-1 transition shadow-2xs" title="Descargar o Ver PDF">
                                                     📄 PDF
                                                 </a>
+
+                                                <button type="button" wire:click="deleteQuote({{ $quote->id }})" wire:confirm="¿Estás seguro de que deseas eliminar la Propuesta #{{ $quote->id }}?" class="bg-white hover:bg-red-50 text-red-600 border border-gray-200 hover:border-red-300 text-xs font-bold px-2 py-1.5 rounded-lg transition" title="Eliminar Propuesta">
+                                                    🗑️
+                                                </button>
                                             </div>
                                         </div>
 
+                                        <!-- Desglose de Servicios -->
                                         @if($quote->items && $quote->items->count() > 0)
-                                            <div class="pt-2 border-t border-gray-200 text-[11px] text-gray-600 space-y-1">
+                                            <div class="pt-2 border-t border-gray-200/80 text-[11px] text-gray-600 space-y-1">
                                                 @foreach($quote->items as $item)
                                                     <div class="flex justify-between">
                                                         <span>&bull; {{ $item->concept ?: $item->service_name }} {{ $item->quantity > 1 ? '('.$item->quantity.'x)' : '' }}</span>
-                                                        <span class="font-mono font-bold">{{ number_format($item->subtotal ?: ($item->price * $item->quantity), 2) }} €</span>
+                                                        <span class="font-mono font-bold text-gray-800">{{ number_format($item->subtotal ?: ($item->price * $item->quantity), 2) }} €</span>
                                                     </div>
                                                 @endforeach
                                             </div>
