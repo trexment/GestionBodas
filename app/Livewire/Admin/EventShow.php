@@ -68,7 +68,10 @@ class EventShow extends Component
         'photo_album' => ['selected' => false, 'quantity' => 1, 'price' => 150, 'desc' => 'Maquetación álbum digital profesional (sin imprimir).'],
         'photo_full_pack' => ['selected' => false, 'quantity' => 1, 'price' => 800, 'desc' => 'Fotografía Completa: Ceremonia, Restaurante, Fiesta, Álbum digital maquetado, fotos en alta calidad sin marcas de agua.'],
         'karaoke' => ['selected' => false, 'quantity' => 1, 'price' => 80, 'desc' => 'Karaoke interactivo para invitados.'],
-        'custom_extra' => ['name' => '', 'price' => 0, 'desc' => '', 'consult' => false],
+    ];
+
+    public $custom_extras = [
+        ['name' => '', 'price' => 0, 'desc' => '', 'consult' => false]
     ];
 
     // Dossier form
@@ -517,9 +520,26 @@ class EventShow extends Component
                 }
             }
             $this->quote_services['extra_hours']['quantity'] = 0;
-            $this->quote_services['custom_extra']['name'] = '';
-            $this->quote_services['custom_extra']['price'] = 0;
+            $this->custom_extras = [
+                ['name' => '', 'price' => 0, 'desc' => '', 'consult' => false]
+            ];
             $this->selected_pack_type = 'custom';
+        }
+    }
+
+    public function addCustomExtra()
+    {
+        $this->custom_extras[] = ['name' => '', 'price' => 0, 'desc' => '', 'consult' => false];
+    }
+
+    public function removeCustomExtra($index)
+    {
+        if (isset($this->custom_extras[$index])) {
+            unset($this->custom_extras[$index]);
+            $this->custom_extras = array_values($this->custom_extras);
+        }
+        if (empty($this->custom_extras)) {
+            $this->custom_extras = [['name' => '', 'price' => 0, 'desc' => '', 'consult' => false]];
         }
     }
 
@@ -574,12 +594,16 @@ class EventShow extends Component
             }
         }
 
-        // Karaoke & Extra
+        // Karaoke & Extras personalizados
         if (!empty($this->quote_services['karaoke']['selected'])) {
             $total += (float)$this->quote_services['karaoke']['price'] * (int)($this->quote_services['karaoke']['quantity'] ?: 1);
         }
-        if (!empty(trim($this->quote_services['custom_extra']['name'] ?? ''))) {
-            $total += (float)($this->quote_services['custom_extra']['price'] ?: 0);
+        if (!empty($this->custom_extras)) {
+            foreach ($this->custom_extras as $extra) {
+                if (!empty(trim($extra['name'] ?? '')) && empty($extra['consult'])) {
+                    $total += (float)($extra['price'] ?: 0);
+                }
+            }
         }
 
         return $total;
@@ -745,25 +769,29 @@ class EventShow extends Component
             $total += ($p * $qty);
         }
         
-        $custom_name = trim($this->quote_services['custom_extra']['name'] ?? '');
-        if (!empty($custom_name)) {
-            $isConsult = !empty($this->quote_services['custom_extra']['consult']);
-            $p = $isConsult ? 0 : (float)($this->quote_services['custom_extra']['price'] ?: 0);
-            $customDesc = trim($this->quote_services['custom_extra']['desc'] ?? '');
-            
-            if ($isConsult) {
-                $desc = $customDesc ? ($customDesc . ' (Tarifa y disponibilidad a consultar)') : 'Servicio extra personalizado (Tarifa y disponibilidad a consultar según necesidades del evento).';
-            } else {
-                $desc = $customDesc ?: 'Servicio extra personalizado acordado';
-            }
+        if (!empty($this->custom_extras)) {
+            foreach ($this->custom_extras as $extra) {
+                $custom_name = trim($extra['name'] ?? '');
+                if (!empty($custom_name)) {
+                    $isConsult = !empty($extra['consult']);
+                    $p = $isConsult ? 0 : (float)($extra['price'] ?: 0);
+                    $customDesc = trim($extra['desc'] ?? '');
+                    
+                    if ($isConsult) {
+                        $desc = $customDesc ? ($customDesc . ' (Tarifa y disponibilidad a consultar)') : 'Servicio extra personalizado (Tarifa y disponibilidad a consultar según necesidades del evento).';
+                    } else {
+                        $desc = $customDesc ?: 'Servicio extra personalizado acordado';
+                    }
 
-            $items[] = [
-                'service_name' => $custom_name . ($isConsult ? ' (A consultar)' : ''),
-                'description' => $desc,
-                'price' => $p,
-                'quantity' => 1
-            ];
-            $total += $p;
+                    $items[] = [
+                        'service_name' => $custom_name . ($isConsult ? ' (A consultar)' : ''),
+                        'description' => $desc,
+                        'price' => $p,
+                        'quantity' => 1
+                    ];
+                    $total += $p;
+                }
+            }
         }
 
         return $items;
@@ -870,6 +898,7 @@ class EventShow extends Component
         // Limpiar selección previa
         $this->selectPack('clear');
         $this->selected_pack_type = 'custom';
+        $loadedCustomExtras = [];
 
         // Mapear cada línea
         foreach ($quote->items as $item) {
@@ -929,11 +958,21 @@ class EventShow extends Component
                 $rawName = $item->service_name ?: $item->concept ?: '';
                 $isConsult = str_contains(mb_strtolower($rawName), 'consultar') || str_contains(mb_strtolower($item->description ?: ''), 'consultar');
                 $cleanName = trim(str_ireplace('(a consultar)', '', $rawName));
-                $this->quote_services['custom_extra']['name'] = $cleanName;
-                $this->quote_services['custom_extra']['price'] = $isConsult ? 0 : (float)$item->price;
-                $this->quote_services['custom_extra']['desc'] = $item->description ?: '';
-                $this->quote_services['custom_extra']['consult'] = $isConsult;
+                $loadedCustomExtras[] = [
+                    'name' => $cleanName,
+                    'price' => $isConsult ? 0 : (float)$item->price,
+                    'desc' => $item->description ?: '',
+                    'consult' => $isConsult,
+                ];
             }
+        }
+
+        if (!empty($loadedCustomExtras)) {
+            $this->custom_extras = $loadedCustomExtras;
+        } else {
+            $this->custom_extras = [
+                ['name' => '', 'price' => 0, 'desc' => '', 'consult' => false]
+            ];
         }
 
         session()->flash('quote_message', 'Propuesta #' . $quote->id . ' cargada en el configurador. Puedes realizar cambios y pulsar "Guardar Cambios" o "Guardar como Nueva Versión".');

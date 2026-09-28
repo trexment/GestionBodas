@@ -1491,32 +1491,59 @@
                                 </div>
                             </div>
 
-                            <!-- SECCIÓN: EXTRA PERSONALIZADO -->
-                            <div class="bg-white p-4 rounded-xl border border-gray-200 space-y-3 shadow-xs">
-                                <div class="flex items-center justify-between border-b pb-2">
-                                    <h6 class="text-xs font-black uppercase text-gray-700 tracking-wider flex items-center gap-1.5">
-                                        <span>✨</span> Extra Personalizado / Concepto Adicional
-                                    </h6>
-                                    <label class="flex items-center gap-1.5 cursor-pointer text-xs font-bold text-amber-800 bg-amber-50 hover:bg-amber-100 px-2.5 py-1 rounded-lg border border-amber-200 transition">
-                                        <input type="checkbox" wire:model.live="quote_services.custom_extra.consult" class="rounded text-amber-600 focus:ring-amber-500 h-3.5 w-3.5">
-                                        <span>Precio a consultar</span>
-                                    </label>
-                                </div>
-                                <div class="space-y-2">
-                                    <div class="flex items-center justify-between gap-2">
-                                        <input type="text" wire:model="quote_services.custom_extra.name" placeholder="Ej: Fotomatón / Plataforma 360 / Fuego frío..." class="flex-1 border rounded-lg p-2 text-xs focus:ring-indigo-500">
-                                        @if(empty($quote_services['custom_extra']['consult']))
-                                            <div class="flex items-center gap-1">
-                                                <input type="number" step="0.01" wire:model="quote_services.custom_extra.price" placeholder="0.00" class="w-24 border rounded-lg p-2 text-xs text-right font-bold focus:ring-indigo-500">
-                                                <span class="text-xs font-bold text-gray-600">€</span>
-                                            </div>
-                                        @else
-                                            <span class="text-xs font-bold text-amber-800 bg-amber-100 px-3 py-2 rounded-lg border border-amber-300">
-                                                A consultar
-                                            </span>
-                                        @endif
+                            <!-- SECCIÓN: EXTRAS PERSONALIZADOS (MÚLTIPLES LÍNEAS) -->
+                            <div class="bg-white p-4 rounded-xl border border-gray-200 space-y-4 shadow-xs">
+                                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b pb-2">
+                                    <div>
+                                        <h6 class="text-xs font-black uppercase text-gray-700 tracking-wider flex items-center gap-1.5">
+                                            <span>✨</span> Extras Personalizados / Conceptos Adicionales
+                                        </h6>
+                                        <p class="text-[11px] text-gray-500">Añade tantas líneas como necesites (ej: Fuego frío con precio y Fotomatón a consultar).</p>
                                     </div>
-                                    <input type="text" wire:model="quote_services.custom_extra.desc" placeholder="Descripción / detalle (opcional, ej: Servicio 3 horas con atrezzo, libro de firmas y fotos ilimitadas)" class="w-full border rounded-lg p-1.5 text-[11px] text-gray-600 focus:ring-indigo-500">
+                                    <button type="button" wire:click="addCustomExtra" class="inline-flex items-center gap-1 text-xs font-bold text-indigo-700 hover:text-indigo-900 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-3 py-1.5 rounded-lg transition shadow-xs self-start sm:self-auto">
+                                        <span>➕</span> Añadir Otro Extra
+                                    </button>
+                                </div>
+
+                                <div class="space-y-3">
+                                    @foreach($custom_extras as $index => $extra)
+                                        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2 relative" wire:key="custom-extra-{{ $index }}">
+                                            <div class="flex items-center justify-between gap-2">
+                                                <span class="text-[11px] font-extrabold uppercase text-slate-600 flex items-center gap-1">
+                                                    <span>🔹</span> Extra #{{ $index + 1 }}
+                                                </span>
+                                                
+                                                <div class="flex items-center gap-2">
+                                                    <label class="flex items-center gap-1.5 cursor-pointer text-xs font-bold text-amber-800 bg-amber-50 hover:bg-amber-100 px-2.5 py-1 rounded-lg border border-amber-200 transition">
+                                                        <input type="checkbox" wire:model.live="custom_extras.{{ $index }}.consult" class="rounded text-amber-600 focus:ring-amber-500 h-3.5 w-3.5">
+                                                        <span>Precio a consultar</span>
+                                                    </label>
+                                                    @if(count($custom_extras) > 1)
+                                                        <button type="button" wire:click="removeCustomExtra({{ $index }})" class="text-rose-500 hover:text-rose-700 p-1 hover:bg-rose-50 rounded-lg transition" title="Eliminar este extra">
+                                                            🗑️
+                                                        </button>
+                                                    @endif
+                                                </div>
+                                            </div>
+
+                                            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                                                <input type="text" wire:model.live="custom_extras.{{ $index }}.name" placeholder="Ej: Fotomatón / Fuego frío / Plataforma 360..." class="flex-1 border-gray-300 rounded-lg p-2 text-xs focus:ring-indigo-500 focus:border-indigo-500 bg-white">
+                                                
+                                                @if(empty($extra['consult']))
+                                                    <div class="flex items-center gap-1">
+                                                        <input type="number" step="0.01" wire:model.live="custom_extras.{{ $index }}.price" placeholder="0.00" class="w-28 border-gray-300 rounded-lg p-2 text-xs text-right font-bold focus:ring-indigo-500 focus:border-indigo-500 bg-white">
+                                                        <span class="text-xs font-bold text-gray-600">€</span>
+                                                    </div>
+                                                @else
+                                                    <span class="text-xs font-bold text-amber-800 bg-amber-100/90 px-3 py-2 rounded-lg border border-amber-300 text-center whitespace-nowrap">
+                                                        ⚠️ Precio a consultar
+                                                    </span>
+                                                @endif
+                                            </div>
+
+                                            <input type="text" wire:model.live="custom_extras.{{ $index }}.desc" placeholder="Descripción / detalle opcional (ej: Servicio 3 horas con atrezzo, libro de firmas y fotos ilimitadas)" class="w-full border-gray-300 rounded-lg p-1.5 text-[11px] text-gray-600 focus:ring-indigo-500 focus:border-indigo-500 bg-white">
+                                        </div>
+                                    @endforeach
                                 </div>
                             </div>
 
