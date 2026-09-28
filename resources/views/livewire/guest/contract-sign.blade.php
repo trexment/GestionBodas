@@ -5,48 +5,48 @@
         <div class="w-16 h-16 bg-gradient-to-tr from-indigo-500 to-purple-600 rounded-3xl mx-auto flex items-center justify-center text-white text-3xl shadow-xl shadow-indigo-500/30 mb-4">
             ✍️
         </div>
-        <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+        <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
             Firma Online de Contrato de Servicios
         </h1>
-        <p class="text-sm text-slate-500 mt-1">
-            {{ \App\Models\Setting::get('company_name', 'Núñez and Son') }} &bull; Evento: <strong class="text-slate-800">{{ $event->name }}</strong>
+        <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">
+            {{ \App\Models\Setting::getCompanyName('Núñez and Son') }} &bull; Evento: <strong class="text-slate-900 dark:text-indigo-300">{{ $event->name }}</strong>
         </p>
     </div>
 
     @if($isSigned)
         <!-- CONTRATO YA FIRMADO -->
-        <div class="bg-emerald-50 border-2 border-emerald-500/80 rounded-3xl p-6 sm:p-8 text-center shadow-lg mb-8">
-            <div class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-2xl mx-auto flex items-center justify-center text-3xl mb-3 shadow-inner">
+        <div class="bg-emerald-50 dark:bg-emerald-950/40 border-2 border-emerald-500/80 rounded-3xl p-6 sm:p-8 text-center shadow-lg mb-8">
+            <div class="w-16 h-16 bg-emerald-100 dark:bg-emerald-900/60 text-emerald-600 dark:text-emerald-300 rounded-2xl mx-auto flex items-center justify-center text-3xl mb-3 shadow-inner">
                 ✅
             </div>
-            <h2 class="text-xl font-black text-emerald-900">¡Contrato Firmado y Validad Criptográficamente!</h2>
-            <p class="text-xs text-emerald-700 mt-1 max-w-lg mx-auto leading-relaxed">
+            <h2 class="text-xl font-black text-emerald-900 dark:text-emerald-200">¡Contrato Firmado y Validado Criptográficamente!</h2>
+            <p class="text-xs text-emerald-700 dark:text-emerald-300 mt-1 max-w-lg mx-auto leading-relaxed">
                 El presente contrato ha sido formalizado electrónicamente con plena validez jurídica conforme a la normativa eIDAS y la Ley 6/2020 de servicios electrónicos de confianza.
             </p>
 
-            <div class="mt-6 p-4 bg-white rounded-2xl border border-emerald-200 text-left max-w-md mx-auto space-y-2 text-xs text-slate-700">
-                <div class="flex justify-between border-b border-slate-100 pb-1.5">
-                    <span class="text-slate-500">Firmante:</span>
-                    <strong class="text-slate-900">{{ $client_name }} ({{ $client_dni }})</strong>
+            <div class="mt-6 p-4 bg-white dark:bg-slate-900 rounded-2xl border border-emerald-200 dark:border-emerald-800 text-left max-w-md mx-auto space-y-2 text-xs text-slate-700 dark:text-slate-300">
+                <div class="flex justify-between border-b border-slate-100 dark:border-slate-800 pb-1.5">
+                    <span class="text-slate-500 dark:text-slate-400">Firmante:</span>
+                    <strong class="text-slate-900 dark:text-white">{{ $client_name }} ({{ $client_dni }})</strong>
                 </div>
-                <div class="flex justify-between border-b border-slate-100 pb-1.5">
-                    <span class="text-slate-500">Tipo de Firma:</span>
-                    <span class="font-bold {{ $signature_type === 'certificate' ? 'text-indigo-600' : 'text-slate-800' }}">
+                <div class="flex justify-between border-b border-slate-100 dark:border-slate-800 pb-1.5">
+                    <span class="text-slate-500 dark:text-slate-400">Tipo de Firma:</span>
+                    <span class="font-bold {{ $signature_type === 'certificate' ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-800 dark:text-slate-200' }}">
                         {{ $signature_type === 'certificate' ? '🔐 Certificado Digital (FNMT/DNIe)' : '✍️ Firma Gráfica Digital' }}
                     </span>
                 </div>
-                <div class="flex justify-between border-b border-slate-100 pb-1.5">
-                    <span class="text-slate-500">Fecha y Hora:</span>
-                    <strong class="text-slate-900">{{ $contract->signed_at ? $contract->signed_at->format('d/m/Y H:i:s') : now()->format('d/m/Y H:i:s') }}</strong>
+                <div class="flex justify-between border-b border-slate-100 dark:border-slate-800 pb-1.5">
+                    <span class="text-slate-500 dark:text-slate-400">Fecha y Hora:</span>
+                    <strong class="text-slate-900 dark:text-white">{{ $contract->signed_at ? $contract->signed_at->format('d/m/Y H:i:s') : now()->format('d/m/Y H:i:s') }}</strong>
                 </div>
-                <div class="flex justify-between border-b border-slate-100 pb-1.5">
-                    <span class="text-slate-500">IP de Firma:</span>
-                    <span class="font-mono text-[11px] text-slate-600">{{ $contract->signed_ip ?: request()->ip() }}</span>
+                <div class="flex justify-between border-b border-slate-100 dark:border-slate-800 pb-1.5">
+                    <span class="text-slate-500 dark:text-slate-400">IP de Firma:</span>
+                    <span class="font-mono text-[11px] text-slate-600 dark:text-slate-400">{{ $contract->signed_ip ?: request()->ip() }}</span>
                 </div>
                 @if($signature_type === 'certificate' && $certificate_hash)
                     <div class="pt-1">
-                        <span class="text-slate-500 block text-[10px]">Huella Criptográfica SHA-256:</span>
-                        <span class="font-mono text-[10px] text-emerald-700 break-all block bg-emerald-50 p-1.5 rounded border border-emerald-200 mt-0.5">
+                        <span class="text-slate-500 dark:text-slate-400 block text-[10px]">Huella Criptográfica SHA-256:</span>
+                        <span class="font-mono text-[10px] text-emerald-700 dark:text-emerald-300 break-all block bg-emerald-50 dark:bg-emerald-950/80 p-1.5 rounded border border-emerald-200 dark:border-emerald-800 mt-0.5">
                             {{ $certificate_hash }}
                         </span>
                     </div>
@@ -54,8 +54,8 @@
             </div>
 
             <!-- MUESTRA DE FIRMA O SELLO -->
-            <div class="mt-6 pt-6 border-t border-emerald-200 max-w-md mx-auto">
-                <p class="text-[11px] font-bold text-emerald-800 uppercase tracking-wider mb-2">Constancia de Firma Electrónica:</p>
+            <div class="mt-6 pt-6 border-t border-emerald-200 dark:border-emerald-800 max-w-md mx-auto">
+                <p class="text-[11px] font-bold text-emerald-800 dark:text-emerald-300 uppercase tracking-wider mb-2">Constancia de Firma Electrónica:</p>
                 @if($signature_type === 'certificate')
                     <div class="bg-gradient-to-r from-emerald-600 to-teal-700 text-white p-4 rounded-2xl shadow-md text-left flex items-start gap-3">
                         <span class="text-3xl">🛡️</span>
@@ -84,85 +84,126 @@
         <form wire:submit.prevent="signContract" class="space-y-8">
             
             <!-- PASO 1: DATOS FISCALES -->
-            <div class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-4">
-                <div class="flex items-center gap-2 border-b border-slate-100 pb-3">
-                    <span class="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-sm">1</span>
-                    <h3 class="text-base font-bold text-slate-900">Datos Personales y Fiscales del Contratante</h3>
+            <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200 dark:border-slate-800 shadow-xl space-y-4">
+                <div class="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
+                    <span class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-sm border border-indigo-200 dark:border-indigo-800">1</span>
+                    <h3 class="text-base font-bold text-slate-900 dark:text-white">Datos Personales y Fiscales del Contratante</h3>
                 </div>
-                <p class="text-xs text-slate-500">Por favor, revisa o completa tus datos para que figuren correctamente en el documento legal.</p>
+                <p class="text-xs text-slate-500 dark:text-slate-400">Por favor, revisa o completa tus datos. Los cambios se actualizarán automáticamente en el contrato inferior en tiempo real.</p>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Nombre Completo *</label>
-                        <input type="text" wire:model="client_name" class="w-full border-slate-300 rounded-xl text-sm focus:ring-indigo-500 focus:border-indigo-500 p-2.5" placeholder="Nombre y Apellidos">
-                        @error('client_name') <span class="text-rose-600 text-xs mt-1 block">{{ $message }}</span> @enderror
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">Nombre Completo *</label>
+                        <input 
+                            type="text" 
+                            wire:model.live.debounce.250ms="client_name" 
+                            class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl text-sm font-semibold text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 p-3 transition shadow-xs" 
+                            placeholder="Nombre y Apellidos"
+                        >
+                        @error('client_name') <span class="text-rose-600 text-xs mt-1 block font-bold">{{ $message }}</span> @enderror
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">DNI / NIF / CIF *</label>
-                        <input type="text" wire:model="client_dni" class="w-full border-slate-300 rounded-xl text-sm focus:ring-indigo-500 focus:border-indigo-500 p-2.5" placeholder="12345678Z">
-                        @error('client_dni') <span class="text-rose-600 text-xs mt-1 block">{{ $message }}</span> @enderror
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">DNI / NIF / CIF *</label>
+                        <input 
+                            type="text" 
+                            wire:model.live.debounce.250ms="client_dni" 
+                            class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl text-sm font-semibold text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 p-3 transition shadow-xs" 
+                            placeholder="12345678Z"
+                        >
+                        @error('client_dni') <span class="text-rose-600 text-xs mt-1 block font-bold">{{ $message }}</span> @enderror
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Teléfono (WhatsApp) *</label>
-                        <input type="text" wire:model="client_phone" class="w-full border-slate-300 rounded-xl text-sm focus:ring-indigo-500 focus:border-indigo-500 p-2.5" placeholder="+34 600 000 000">
-                        @error('client_phone') <span class="text-rose-600 text-xs mt-1 block">{{ $message }}</span> @enderror
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">Teléfono (WhatsApp) *</label>
+                        <input 
+                            type="text" 
+                            wire:model.live.debounce.250ms="client_phone" 
+                            class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl text-sm font-semibold text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 p-3 transition shadow-xs" 
+                            placeholder="+34 600 000 000"
+                        >
+                        @error('client_phone') <span class="text-rose-600 text-xs mt-1 block font-bold">{{ $message }}</span> @enderror
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Correo Electrónico *</label>
-                        <input type="email" wire:model="client_email" class="w-full border-slate-300 rounded-xl text-sm focus:ring-indigo-500 focus:border-indigo-500 p-2.5" placeholder="cliente@email.com">
-                        @error('client_email') <span class="text-rose-600 text-xs mt-1 block">{{ $message }}</span> @enderror
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">Correo Electrónico *</label>
+                        <input 
+                            type="email" 
+                            wire:model.live.debounce.250ms="client_email" 
+                            class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl text-sm font-semibold text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 p-3 transition shadow-xs" 
+                            placeholder="cliente@email.com"
+                        >
+                        @error('client_email') <span class="text-rose-600 text-xs mt-1 block font-bold">{{ $message }}</span> @enderror
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold text-indigo-700 uppercase tracking-wider mb-1 flex items-center justify-between">
+                        <label class="block text-xs font-bold text-indigo-700 dark:text-indigo-400 uppercase tracking-wider mb-1.5 flex items-center justify-between">
                             <span>Código Postal (CP) *</span>
-                            <span class="text-[10px] text-indigo-500 font-normal lowercase">autocompleta ciudad</span>
+                            <span class="text-[10px] text-indigo-500 dark:text-indigo-300 font-normal lowercase">autocompleta ciudad</span>
                         </label>
                         <input 
                             type="text" 
-                            wire:model.live.debounce.300ms="client_postal_code" 
+                            wire:model.live.debounce.250ms="client_postal_code" 
                             @input="lookupPostalCode($event.target.value)"
                             maxlength="5"
-                            class="w-full border-indigo-200 bg-indigo-50/30 rounded-xl text-sm font-semibold focus:ring-indigo-500 focus:border-indigo-500 p-2.5" 
+                            class="w-full bg-indigo-50/60 dark:bg-indigo-950/50 border border-indigo-300 dark:border-indigo-700 rounded-xl text-sm font-bold text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 p-3 transition shadow-xs" 
                             placeholder="Ej: 26370"
                         >
-                        @error('client_postal_code') <span class="text-rose-600 text-xs mt-1 block">{{ $message }}</span> @enderror
+                        @error('client_postal_code') <span class="text-rose-600 text-xs mt-1 block font-bold">{{ $message }}</span> @enderror
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Ciudad / Población *</label>
-                        <input type="text" wire:model="client_city" class="w-full border-slate-300 rounded-xl text-sm focus:ring-indigo-500 focus:border-indigo-500 p-2.5" placeholder="Ej: Navarrete">
-                        @error('client_city') <span class="text-rose-600 text-xs mt-1 block">{{ $message }}</span> @enderror
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">Ciudad / Población *</label>
+                        <input 
+                            type="text" 
+                            wire:model.live.debounce.250ms="client_city" 
+                            class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl text-sm font-semibold text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 p-3 transition shadow-xs" 
+                            placeholder="Ej: Navarrete"
+                        >
+                        @error('client_city') <span class="text-rose-600 text-xs mt-1 block font-bold">{{ $message }}</span> @enderror
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Provincia *</label>
-                        <input type="text" wire:model="client_province" class="w-full border-slate-300 rounded-xl text-sm focus:ring-indigo-500 focus:border-indigo-500 p-2.5" placeholder="Ej: La Rioja">
-                        @error('client_province') <span class="text-rose-600 text-xs mt-1 block">{{ $message }}</span> @enderror
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">Provincia *</label>
+                        <input 
+                            type="text" 
+                            wire:model.live.debounce.250ms="client_province" 
+                            class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl text-sm font-semibold text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 p-3 transition shadow-xs" 
+                            placeholder="Ej: La Rioja"
+                        >
+                        @error('client_province') <span class="text-rose-600 text-xs mt-1 block font-bold">{{ $message }}</span> @enderror
                     </div>
 
                     <div class="sm:col-span-2">
-                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Dirección (Calle, Nº, Piso...)</label>
-                        <input type="text" wire:model="client_address" class="w-full border-slate-300 rounded-xl text-sm focus:ring-indigo-500 focus:border-indigo-500 p-2.5" placeholder="Calle Mayor 14, 2ºB">
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">Dirección (Calle, Nº, Piso...)</label>
+                        <input 
+                            type="text" 
+                            wire:model.live.debounce.250ms="client_address" 
+                            class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl text-sm font-semibold text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 p-3 transition shadow-xs" 
+                            placeholder="Calle Mayor 14, 2ºB"
+                        >
                     </div>
                 </div>
             </div>
 
             <!-- PASO 2: LECTURA DE CLÁUSULAS -->
-            <div class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-4">
-                <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200 dark:border-slate-800 shadow-xl space-y-4">
+                <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
                     <div class="flex items-center gap-2">
-                        <span class="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-sm">2</span>
-                        <h3 class="text-base font-bold text-slate-900">Términos y Cláusulas del Contrato</h3>
+                        <span class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-sm border border-indigo-200 dark:border-indigo-800">2</span>
+                        <h3 class="text-base font-bold text-slate-900 dark:text-white">Términos y Cláusulas del Contrato</h3>
                     </div>
-                    <span class="text-xs text-slate-400 font-medium">Lectura íntegra</span>
+                    <div class="flex items-center gap-2">
+                        <span class="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/80 px-2.5 py-1 rounded-full border border-emerald-200 dark:border-emerald-800 flex items-center gap-1">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                            Actualización en tiempo real
+                        </span>
+                        <span class="text-xs text-slate-400 dark:text-slate-500 font-medium hidden sm:inline">Lectura íntegra</span>
+                    </div>
                 </div>
 
-                <div class="bg-slate-50 border border-slate-200 rounded-2xl p-5 max-h-80 overflow-y-auto font-mono text-xs leading-relaxed text-slate-700 select-text">
-                    <div class="font-sans font-bold text-sm text-slate-900 mb-3 border-b border-slate-200 pb-2">
+                <div class="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 max-h-96 overflow-y-auto font-mono text-xs leading-relaxed text-slate-800 dark:text-slate-200 select-text shadow-inner">
+                    <div class="font-sans font-bold text-sm text-slate-900 dark:text-white mb-3 border-b border-slate-200 dark:border-slate-800 pb-2">
                         {{ $renderedTitle }}
                     </div>
                     {!! nl2br(e($renderedBody)) !!}
@@ -170,23 +211,23 @@
             </div>
 
             <!-- PASO 3: CONSENTIMIENTO REDES SOCIALES -->
-            <div class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-4">
-                <div class="flex items-center gap-2 border-b border-slate-100 pb-3">
-                    <span class="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-sm">3</span>
-                    <h3 class="text-base font-bold text-slate-900">Autorización de Redes Sociales y Portfolio</h3>
+            <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200 dark:border-slate-800 shadow-xl space-y-4">
+                <div class="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
+                    <span class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-sm border border-indigo-200 dark:border-indigo-800">3</span>
+                    <h3 class="text-base font-bold text-slate-900 dark:text-white">Autorización de Redes Sociales y Portfolio</h3>
                 </div>
 
-                <p class="text-xs text-slate-600 leading-relaxed">
-                    ¿Autorizas a {{ \App\Models\Setting::get('company_name', 'Núñez and Son') }} a capturar y publicar fotos/vídeos del montaje de sonido, iluminación y ambiente general en sus redes sociales oficiales (Instagram, TikTok o web)?
+                <p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                    ¿Autorizas a {{ \App\Models\Setting::getCompanyName('Núñez and Son') }} a capturar y publicar fotos/vídeos del montaje de sonido, iluminación y ambiente general en sus redes sociales oficiales (Instagram, TikTok o web)?
                 </p>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                    <label class="flex items-center gap-3 p-3.5 rounded-2xl border cursor-pointer transition {{ $consent_rrss ? 'bg-indigo-50 border-indigo-400 text-indigo-950 font-bold' : 'bg-slate-50 border-slate-200 text-slate-700' }}">
+                    <label class="flex items-center gap-3 p-3.5 rounded-2xl border cursor-pointer transition {{ $consent_rrss ? 'bg-indigo-50 dark:bg-indigo-950/60 border-indigo-400 dark:border-indigo-500 text-indigo-950 dark:text-indigo-200 font-bold' : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300' }}">
                         <input type="radio" wire:model.live="consent_rrss" :value="true" class="text-indigo-600 focus:ring-indigo-500">
                         <span class="text-xs">📸 <strong>SÍ</strong>, autorizo la difusión en redes sociales y portfolio.</span>
                     </label>
 
-                    <label class="flex items-center gap-3 p-3.5 rounded-2xl border cursor-pointer transition {{ !$consent_rrss ? 'bg-indigo-50 border-indigo-400 text-indigo-950 font-bold' : 'bg-slate-50 border-slate-200 text-slate-700' }}">
+                    <label class="flex items-center gap-3 p-3.5 rounded-2xl border cursor-pointer transition {{ !$consent_rrss ? 'bg-indigo-50 dark:bg-indigo-950/60 border-indigo-400 dark:border-indigo-500 text-indigo-950 dark:text-indigo-200 font-bold' : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300' }}">
                         <input type="radio" wire:model.live="consent_rrss" :value="false" class="text-indigo-600 focus:ring-indigo-500">
                         <span class="text-xs">🔒 <strong>NO</strong> autorizo la difusión.</span>
                     </label>
@@ -194,20 +235,20 @@
             </div>
 
             <!-- PASO 4: ELECCIÓN Y ESTAMPACIÓN DE FIRMA -->
-            <div class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-5">
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+            <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200 dark:border-slate-800 shadow-xl space-y-5">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
                     <div class="flex items-center gap-2">
-                        <span class="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-sm">4</span>
-                        <h3 class="text-base font-bold text-slate-900">Método de Firma Electrónica</h3>
+                        <span class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-sm border border-indigo-200 dark:border-indigo-800">4</span>
+                        <h3 class="text-base font-bold text-slate-900 dark:text-white">Método de Firma Electrónica</h3>
                     </div>
 
                     <!-- SELECTOR DE TIPO DE FIRMA -->
-                    <div class="flex items-center gap-1.5 bg-slate-100 p-1 rounded-2xl">
+                    <div class="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-950 p-1 rounded-2xl border border-slate-200 dark:border-slate-800">
                         <button 
                             type="button" 
                             @click="signatureType = 'canvas'; $wire.set('signature_type', 'canvas')"
                             class="px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5"
-                            :class="signatureType === 'canvas' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'"
+                            :class="signatureType === 'canvas' ? 'bg-white dark:bg-slate-800 text-indigo-700 dark:text-indigo-300 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'"
                         >
                             <span>✍️</span> Firma Manuscrita
                         </button>
@@ -215,7 +256,7 @@
                             type="button" 
                             @click="signatureType = 'certificate'; $wire.set('signature_type', 'certificate')"
                             class="px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5"
-                            :class="signatureType === 'certificate' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'"
+                            :class="signatureType === 'certificate' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'"
                         >
                             <span>🔐</span> Certificado Digital (FNMT/DNIe)
                         </button>
@@ -225,17 +266,17 @@
                 <!-- OPCIÓN A: LIENZO CANVAS DE FIRMA MANUSCRITA -->
                 <div x-show="signatureType === 'canvas'" class="space-y-3">
                     <div class="flex items-center justify-between">
-                        <p class="text-xs text-slate-500">
+                        <p class="text-xs text-slate-500 dark:text-slate-400">
                             Dibuja tu firma en el recuadro con el dedo (móvil/tablet) o el ratón:
                         </p>
-                        <button type="button" @click="clearSignature()" class="text-xs font-bold text-slate-500 hover:text-rose-600 px-3 py-1 rounded-lg bg-slate-100 hover:bg-rose-50 transition">
+                        <button type="button" @click="clearSignature()" class="text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-rose-600 px-3 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-rose-50 dark:hover:bg-rose-950/50 transition">
                             🔄 Limpiar Firma
                         </button>
                     </div>
 
-                    <div class="relative bg-slate-50 border-2 border-dashed border-slate-300 rounded-2xl overflow-hidden touch-none" style="height: 180px;">
+                    <div class="relative bg-slate-50 dark:bg-slate-950 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl overflow-hidden touch-none" style="height: 180px;">
                         <canvas x-ref="canvas" class="w-full h-full cursor-crosshair"></canvas>
-                        <div x-show="!hasDrawn" class="absolute inset-0 pointer-events-none flex items-center justify-center text-slate-400 text-xs font-medium">
+                        <div x-show="!hasDrawn" class="absolute inset-0 pointer-events-none flex items-center justify-center text-slate-400 dark:text-slate-500 text-xs font-medium">
                             ✍️ Estampa aquí tu firma digital con el dedo o ratón
                         </div>
                     </div>
@@ -244,12 +285,12 @@
 
                 <!-- OPCIÓN B: FIRMA CON CERTIFICADO DIGITAL -->
                 <div x-show="signatureType === 'certificate'" style="display: none;" class="space-y-4">
-                    <div class="bg-indigo-50/70 border-2 border-indigo-200 rounded-2xl p-5 text-slate-800 space-y-4">
+                    <div class="bg-indigo-50/70 dark:bg-indigo-950/40 border-2 border-indigo-200 dark:border-indigo-800 rounded-2xl p-5 text-slate-800 dark:text-slate-200 space-y-4">
                         <div class="flex items-start gap-3">
                             <span class="text-3xl">🛡️</span>
                             <div>
-                                <h4 class="font-extrabold text-sm text-indigo-950">Firma Electrónica Cualificada con Certificado Digital</h4>
-                                <p class="text-xs text-indigo-800 mt-0.5 leading-relaxed">
+                                <h4 class="font-extrabold text-sm text-indigo-950 dark:text-indigo-200">Firma Electrónica Cualificada con Certificado Digital</h4>
+                                <p class="text-xs text-indigo-800 dark:text-indigo-300 mt-0.5 leading-relaxed">
                                     Válido para certificados de persona física emitidos por la <strong>FNMT-RCM, DNI Electrónico (DNIe), ACCV, Camerfirma o Izenpe</strong>.
                                 </p>
                             </div>
@@ -257,8 +298,8 @@
 
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
                             <div>
-                                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Entidad Emisora del Certificado</label>
-                                <select x-model="certIssuer" @change="$wire.set('certificate_issuer', certIssuer)" class="w-full border-slate-300 rounded-xl text-xs bg-white p-2.5">
+                                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">Entidad Emisora del Certificado</label>
+                                <select x-model="certIssuer" @change="$wire.set('certificate_issuer', certIssuer)" class="w-full border-slate-300 dark:border-slate-700 rounded-xl text-xs bg-white dark:bg-slate-900 text-slate-900 dark:text-white p-2.5">
                                     <option value="AC FNMT Usuarios / RCM">AC FNMT Usuarios (Fábrica Nacional de Moneda y Timbre)</option>
                                     <option value="DGC Policía Nacional - DNIe">Dirección General de la Policía (DNI electrónico)</option>
                                     <option value="ACCV - Generalitat Valenciana">ACCV (Autoridad de Certificación de la C. Valenciana)</option>
@@ -267,18 +308,18 @@
                             </div>
 
                             <div>
-                                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Titular del Certificado</label>
-                                <input type="text" readonly :value="$wire.client_name + ' (' + $wire.client_dni + ')'" class="w-full border-slate-300 rounded-xl text-xs bg-slate-100 p-2.5 text-slate-700 font-semibold">
+                                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">Titular del Certificado</label>
+                                <input type="text" readonly :value="$wire.client_name + ' (' + $wire.client_dni + ')'" class="w-full border-slate-300 dark:border-slate-700 rounded-xl text-xs bg-slate-100 dark:bg-slate-800 p-2.5 text-slate-800 dark:text-slate-200 font-semibold">
                             </div>
                         </div>
 
                         <!-- ESTADO DE VALIDACIÓN DEL CERTIFICADO -->
-                        <div class="p-3.5 bg-white rounded-xl border border-indigo-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div class="p-3.5 bg-white dark:bg-slate-900 rounded-xl border border-indigo-100 dark:border-indigo-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                             <div class="text-xs">
-                                <span class="font-bold text-emerald-700 flex items-center gap-1.5">
+                                <span class="font-bold text-emerald-700 dark:text-emerald-300 flex items-center gap-1.5">
                                     <span>🔒</span> Certificado Digital Listo para Emitir Huella SHA-256
                                 </span>
-                                <span class="text-[11px] text-slate-500">Se generará el sello de tiempo criptográfico oficial al pulsar en Firmar Contrato.</span>
+                                <span class="text-[11px] text-slate-500 dark:text-slate-400">Se generará el sello de tiempo criptográfico oficial al pulsar en Firmar Contrato.</span>
                             </div>
                             <button 
                                 type="button" 
@@ -289,7 +330,7 @@
                             </button>
                         </div>
 
-                        <div x-show="certValidated" class="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-xs text-emerald-800 font-mono break-all" style="display: none;">
+                        <div x-show="certValidated" class="p-3 bg-emerald-50 dark:bg-emerald-950/80 rounded-xl border border-emerald-200 dark:border-emerald-800 text-xs text-emerald-800 dark:text-emerald-300 font-mono break-all" style="display: none;">
                             <strong>Huella Criptográfica SHA-256 generada:</strong><br>
                             <span x-text="certHash"></span>
                         </div>
@@ -299,8 +340,8 @@
                 <!-- CHECKBOX DE ACEPTACIÓN LEGAL -->
                 <div class="pt-2">
                     <label class="flex items-start gap-3 cursor-pointer select-none">
-                        <input type="checkbox" wire:model="accepted_terms" class="mt-0.5 w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500">
-                        <span class="text-xs text-slate-700 leading-relaxed font-medium">
+                        <input type="checkbox" wire:model="accepted_terms" class="mt-0.5 w-4 h-4 text-indigo-600 rounded border-slate-300 dark:border-slate-700 focus:ring-indigo-500">
+                        <span class="text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-medium">
                             He leído, entiendo y acepto expresamente todas las cláusulas y condiciones estipuladas en el presente contrato, reconociendo plena validez jurídica a mi firma electrónica.
                         </span>
                     </label>
@@ -311,11 +352,11 @@
                 <div class="pt-4 text-center">
                     <button 
                         type="submit" 
-                        class="w-full sm:w-auto min-w-[280px] bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-extrabold px-8 py-4 rounded-2xl text-sm shadow-xl shadow-emerald-600/30 transition transform hover:-translate-y-0.5"
+                        class="w-full sm:w-auto min-w-[280px] bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-extrabold px-8 py-4 rounded-2xl text-sm shadow-xl shadow-emerald-600/30 transition transform hover:-translate-y-0.5 cursor-pointer"
                     >
                         <span x-text="signatureType === 'certificate' ? '🔐 Firmar Oficialmente con Certificado Digital' : '✍️ Firmar y Validar Contrato Electrónico'"></span>
                     </button>
-                    <p class="text-[11px] text-slate-400 mt-2">
+                    <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-2">
                         Al firmar, se generará una copia certificada en PDF accesible en cualquier momento.
                     </p>
                 </div>

@@ -72,12 +72,6 @@ class ContractSign extends Component
         $this->event = $this->contract->event;
         $this->client = $this->event ? $this->event->client : null;
 
-        $rendered = ContractTemplateService::renderContract($this->contract);
-        $this->renderedTitle = $rendered['title'];
-        $this->renderedBody = $rendered['body'];
-        $this->renderedFooter = $rendered['footer'];
-        $this->amount = $rendered['amount'];
-
         // Check if already signed
         if ($this->contract->status === 'signed') {
             $this->isSigned = true;
@@ -107,9 +101,44 @@ class ContractSign extends Component
             $this->client_address = $this->client ? $this->client->address : '';
 
             if ($this->client_postal_code) {
-                $this->updatedClientPostalCode($this->client_postal_code);
+                $lookup = PostalCodeService::lookup($this->client_postal_code);
+                if (!empty($lookup['city']) && empty($this->client_city)) {
+                    $this->client_city = $lookup['city'];
+                }
+                if (!empty($lookup['province']) && empty($this->client_province)) {
+                    $this->client_province = $lookup['province'];
+                }
             }
         }
+
+        $this->renderLiveContract();
+    }
+
+    public function updated($propertyName)
+    {
+        if (str_starts_with($propertyName, 'client_')) {
+            $this->renderLiveContract();
+        }
+    }
+
+    public function renderLiveContract()
+    {
+        $overrides = array_filter([
+            'client_name' => $this->client_name ?: null,
+            'client_dni' => $this->client_dni ?: null,
+            'client_phone' => $this->client_phone ?: null,
+            'client_email' => $this->client_email ?: null,
+            'client_address' => $this->client_address ?: null,
+            'client_postal_code' => $this->client_postal_code ?: null,
+            'client_city' => $this->client_city ?: null,
+            'client_province' => $this->client_province ?: null,
+        ]);
+
+        $rendered = ContractTemplateService::renderContract($this->contract, $overrides);
+        $this->renderedTitle = $rendered['title'];
+        $this->renderedBody = $rendered['body'];
+        $this->renderedFooter = $rendered['footer'];
+        $this->amount = $rendered['amount'];
     }
 
     public function updatedClientPostalCode($value)
@@ -121,6 +150,7 @@ class ContractSign extends Component
         if (!empty($lookup['province'])) {
             $this->client_province = $lookup['province'];
         }
+        $this->renderLiveContract();
     }
 
     public function signWithCertificate($certData)

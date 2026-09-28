@@ -139,7 +139,7 @@ TEXT
         return Setting::get('contract_footer', self::presets()['servicio_dj']['footer']);
     }
 
-    public static function renderContract(Contract $contract): array
+    public static function renderContract(Contract $contract, array $overrides = []): array
     {
         $event = $contract->event;
         $client = $event ? $event->client : null;
@@ -177,15 +177,15 @@ TEXT
         }
         $renderedServices = !empty($servicesList) ? implode("\n", $servicesList) : "• Servicio de DJ, Sonorización e Iluminación según presupuesto acordado.";
 
-        $clientName = $contract->client_name_signed ?: ($client ? $client->name : '_____________________');
-        $clientDni = $contract->client_dni_signed ?: ($client?->dni ?? $client?->nif ?? '_________________');
-        $clientPhone = $contract->client_phone_signed ?: ($client?->phone ?? '_________________');
-        $clientEmail = $contract->client_email_signed ?: ($client?->email ?? '_________________');
-        $clientAddress = $contract->client_address_signed ?: ($client?->address ?? '_________________');
+        $clientName = $overrides['client_name'] ?? ($contract->client_name_signed ?: ($client ? $client->name : '_____________________'));
+        $clientDni = $overrides['client_dni'] ?? ($contract->client_dni_signed ?: ($client?->dni ?? $client?->nif ?? '_________________'));
+        $clientPhone = $overrides['client_phone'] ?? ($contract->client_phone_signed ?: ($client?->phone ?? '_________________'));
+        $clientEmail = $overrides['client_email'] ?? ($contract->client_email_signed ?: ($client?->email ?? '_________________'));
+        $clientAddress = $overrides['client_address'] ?? ($contract->client_address_signed ?: ($client?->address ?? '_________________'));
         
-        $clientPostalCode = $contract->client_postal_code_signed ?: ($client?->postal_code ?? '');
-        $clientCity = $contract->client_city_signed ?: ($client?->city ?? '');
-        $clientProvince = $contract->client_province_signed ?: ($client?->province ?? '');
+        $clientPostalCode = $overrides['client_postal_code'] ?? ($contract->client_postal_code_signed ?: ($client?->postal_code ?? ''));
+        $clientCity = $overrides['client_city'] ?? ($contract->client_city_signed ?: ($client?->city ?? ''));
+        $clientProvince = $overrides['client_province'] ?? ($contract->client_province_signed ?: ($client?->province ?? ''));
 
         // Formatted client city string: e.g. ", 26370 Navarrete (La Rioja)"
         $clientCityInfo = '';
@@ -199,7 +199,7 @@ TEXT
         $courtCity = Setting::get('company_court_city', $companyCity === 'Navarrete' ? 'Logroño (La Rioja)' : $companyCity);
 
         $replacements = [
-            '{{ empresa }}' => Setting::get('company_name', 'Núñez and Son'),
+            '{{ empresa }}' => Setting::getCompanyName('Núñez and Son'),
             '{{ cif_empresa }}' => Setting::get('company_cif', 'B-12345678'),
             '{{ email_empresa }}' => Setting::get('company_email', 'info@eventosmusicales.es'),
             '{{ telefono_empresa }}' => Setting::get('company_phone', '+34 622 634 790'),
