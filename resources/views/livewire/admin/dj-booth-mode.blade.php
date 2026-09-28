@@ -412,58 +412,61 @@
                 @endif
 
                 <!-- FILTROS POR FASES / MOMENTOS DEL EVENTO -->
-                <div class="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-thin border-b border-slate-800/80 pt-1">
-                    <button 
-                        type="button" 
-                        wire:click="setPhase('all')" 
-                        class="px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap {{ $selectedPhase === 'all' ? 'bg-cyan-500 text-slate-950 font-black shadow-md shadow-cyan-500/30 ring-2 ring-cyan-400/40' : 'bg-slate-950 text-slate-300 hover:text-white hover:bg-slate-800 border border-slate-800' }}"
-                    >
-                        <span>🌟</span> Todos los Momentos <span class="text-[10px] px-1.5 py-0.2 rounded-full font-mono {{ $selectedPhase === 'all' ? 'bg-slate-950 text-cyan-400' : 'bg-slate-900 text-slate-400' }}">({{ $phaseCounts['all'] ?? 0 }})</span>
-                    </button>
-
-                    <button 
-                        type="button" 
-                        wire:click="setPhase('coctel')" 
-                        class="px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap {{ $selectedPhase === 'coctel' ? 'bg-amber-500 text-slate-950 font-black shadow-md shadow-amber-500/30 ring-2 ring-amber-400/40' : 'bg-slate-950 text-amber-300/80 hover:text-amber-200 hover:bg-slate-800 border border-slate-800' }}"
-                    >
-                        <span>🍸</span> Cóctel <span class="text-[10px] px-1.5 py-0.2 rounded-full font-mono {{ $selectedPhase === 'coctel' ? 'bg-slate-950 text-amber-400' : 'bg-slate-900 text-slate-400' }}">({{ $phaseCounts['coctel'] ?? 0 }})</span>
-                    </button>
-
-                    <button 
-                        type="button" 
-                        wire:click="setPhase('banquete')" 
-                        class="px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap {{ $selectedPhase === 'banquete' ? 'bg-emerald-500 text-slate-950 font-black shadow-md shadow-emerald-500/30 ring-2 ring-emerald-400/40' : 'bg-slate-950 text-emerald-300/80 hover:text-emerald-200 hover:bg-slate-800 border border-slate-800' }}"
-                    >
-                        <span>🍽️</span> Banquete & Momentos <span class="text-[10px] px-1.5 py-0.2 rounded-full font-mono {{ $selectedPhase === 'banquete' ? 'bg-slate-950 text-emerald-400' : 'bg-slate-900 text-slate-400' }}">({{ $phaseCounts['banquete'] ?? 0 }})</span>
-                    </button>
-
-                    <button 
-                        type="button" 
-                        wire:click="setPhase('baile')" 
-                        class="px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap {{ $selectedPhase === 'baile' ? 'bg-fuchsia-500 text-slate-950 font-black shadow-md shadow-fuchsia-500/30 ring-2 ring-fuchsia-400/40' : 'bg-slate-950 text-fuchsia-300/80 hover:text-fuchsia-200 hover:bg-slate-800 border border-slate-800' }}"
-                    >
-                        <span>💃</span> Baile & Fiesta <span class="text-[10px] px-1.5 py-0.2 rounded-full font-mono {{ $selectedPhase === 'baile' ? 'bg-slate-950 text-fuchsia-400' : 'bg-slate-900 text-slate-400' }}">({{ $phaseCounts['baile'] ?? 0 }})</span>
-                    </button>
-
-                    @if(!empty($phaseCounts['ceremonia']))
+                <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800/80 pb-3 pt-1">
+                    <div class="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-thin">
                         <button 
                             type="button" 
-                            wire:click="setPhase('ceremonia')" 
-                            class="px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap {{ $selectedPhase === 'ceremonia' ? 'bg-indigo-500 text-slate-950 font-black shadow-md ring-2 ring-indigo-400/40' : 'bg-slate-950 text-indigo-300/80 hover:text-indigo-200 hover:bg-slate-800 border border-slate-800' }}"
+                            wire:click="setPhase('coctel')" 
+                            class="px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap {{ $selectedPhase === 'coctel' ? 'bg-amber-600 text-white font-black shadow-lg shadow-amber-600/30 ring-2 ring-amber-400/50' : 'bg-slate-950 text-amber-300/80 hover:text-amber-200 hover:bg-slate-900 border border-slate-800' }}"
                         >
-                            <span>💍</span> Ceremonia <span class="text-[10px] px-1.5 py-0.2 rounded-full font-mono {{ $selectedPhase === 'ceremonia' ? 'bg-slate-950 text-indigo-400' : 'bg-slate-900 text-slate-400' }}">({{ $phaseCounts['ceremonia'] }})</span>
+                            <span>🍷</span> Cóctel <span class="text-[11px] px-2 py-0.5 rounded-full font-mono {{ $selectedPhase === 'coctel' ? 'bg-amber-950 text-amber-200' : 'bg-slate-900 text-amber-400' }}">({{ $phaseCounts['coctel'] ?? 0 }})</span>
                         </button>
-                    @endif
 
-                    @if(!empty($phaseCounts['guest']))
                         <button 
                             type="button" 
-                            wire:click="setPhase('guest')" 
-                            class="px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap {{ $selectedPhase === 'guest' ? 'bg-purple-500 text-slate-950 font-black shadow-md ring-2 ring-purple-400/40' : 'bg-slate-950 text-purple-300/80 hover:text-purple-200 hover:bg-slate-800 border border-slate-800' }}"
+                            wire:click="setPhase('banquete')" 
+                            class="px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap {{ $selectedPhase === 'banquete' ? 'bg-emerald-600 text-white font-black shadow-lg shadow-emerald-600/30 ring-2 ring-emerald-400/50' : 'bg-slate-950 text-emerald-300/80 hover:text-emerald-200 hover:bg-slate-900 border border-slate-800' }}"
                         >
-                            <span>⚡</span> Peticiones QR <span class="text-[10px] px-1.5 py-0.2 rounded-full font-mono {{ $selectedPhase === 'guest' ? 'bg-slate-950 text-purple-400' : 'bg-slate-900 text-slate-400' }}">({{ $phaseCounts['guest'] }})</span>
+                            <span>🍽️</span> Banquete <span class="text-[11px] px-2 py-0.5 rounded-full font-mono {{ $selectedPhase === 'banquete' ? 'bg-emerald-950 text-emerald-200' : 'bg-slate-900 text-emerald-400' }}">({{ $phaseCounts['banquete'] ?? 0 }})</span>
                         </button>
-                    @endif
+
+                        <button 
+                            type="button" 
+                            wire:click="setPhase('baile')" 
+                            class="px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap {{ $selectedPhase === 'baile' ? 'bg-pink-600 text-white font-black shadow-lg shadow-pink-600/30 ring-2 ring-pink-400/50' : 'bg-slate-950 text-pink-300/80 hover:text-pink-200 hover:bg-slate-900 border border-slate-800' }}"
+                        >
+                            <span>🎉</span> Baile <span class="text-[11px] px-2 py-0.5 rounded-full font-mono {{ $selectedPhase === 'baile' ? 'bg-pink-950 text-pink-200' : 'bg-slate-900 text-pink-400' }}">({{ $phaseCounts['baile'] ?? 0 }})</span>
+                        </button>
+
+                        @if(!empty($phaseCounts['ceremonia']))
+                            <button 
+                                type="button" 
+                                wire:click="setPhase('ceremonia')" 
+                                class="px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap {{ $selectedPhase === 'ceremonia' ? 'bg-indigo-600 text-white font-black shadow-lg ring-2 ring-indigo-400/50' : 'bg-slate-950 text-indigo-300/80 hover:text-indigo-200 hover:bg-slate-900 border border-slate-800' }}"
+                            >
+                                <span>💍</span> Ceremonia <span class="text-[11px] px-2 py-0.5 rounded-full font-mono {{ $selectedPhase === 'ceremonia' ? 'bg-indigo-950 text-indigo-200' : 'bg-slate-900 text-indigo-400' }}">({{ $phaseCounts['ceremonia'] }})</span>
+                            </button>
+                        @endif
+
+                        <button 
+                            type="button" 
+                            wire:click="setPhase('all')" 
+                            class="px-3 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap {{ $selectedPhase === 'all' ? 'bg-cyan-600 text-white font-black shadow-lg shadow-cyan-600/30 ring-2 ring-cyan-400/50' : 'bg-slate-950 text-slate-400 hover:text-white hover:bg-slate-900 border border-slate-800' }}"
+                        >
+                            <span>🌟</span> Todos ({{ $phaseCounts['all'] ?? 0 }})
+                        </button>
+                    </div>
+
+                    <!-- BOTÓN CAMBIAR MOMENTO -->
+                    <div class="flex items-center gap-2">
+                        <button 
+                            type="button" 
+                            wire:click="$set('showChangeMomentModal', true)"
+                            class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-300 hover:text-white font-bold text-xs border border-slate-700 transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap shadow-sm"
+                        >
+                            <span>🔀</span> Cambiar Momento
+                        </button>
+                    </div>
                 </div>
 
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
@@ -615,10 +618,40 @@
                                     </div>
                                 </div>
                             @empty
-                                <div class="py-16 text-center bg-slate-950/40 rounded-3xl border border-dashed border-slate-800">
-                                    <span class="text-4xl">🎵</span>
-                                    <p class="text-base font-bold text-slate-300 mt-2">No se encontraron canciones en esta fase o momento</p>
-                                    <p class="text-xs text-slate-500 mt-1">Selecciona otra fase o pulsa «Añadir Canción».</p>
+                                <div class="py-16 px-4 text-center bg-slate-950/40 rounded-3xl border border-dashed border-slate-800 space-y-4 max-w-md mx-auto my-6">
+                                    <div class="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center text-3xl
+                                        {{ $selectedPhase === 'coctel' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' : 
+                                          ($selectedPhase === 'banquete' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 
+                                          ($selectedPhase === 'baile' ? 'bg-pink-500/20 text-pink-400 border border-pink-500/30' : 
+                                          ($selectedPhase === 'ceremonia' ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30' : 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30'))) }}">
+                                        @if($selectedPhase === 'coctel') 🍷
+                                        @elseif($selectedPhase === 'banquete') 🍽️
+                                        @elseif($selectedPhase === 'baile') 🎉
+                                        @elseif($selectedPhase === 'ceremonia') 💍
+                                        @else 🎵
+                                        @endif
+                                    </div>
+                                    <div>
+                                        <h4 class="text-base font-black text-white">
+                                            No hay peticiones en {{ $selectedPhase === 'coctel' ? 'Cóctel' : ($selectedPhase === 'banquete' ? 'Banquete' : ($selectedPhase === 'baile' ? 'Baile' : ($selectedPhase === 'ceremonia' ? 'Ceremonia' : 'este momento'))) }}
+                                        </h4>
+                                        <p class="text-xs text-slate-400 mt-1 max-w-sm mx-auto leading-relaxed">
+                                            Añade una petición o impórtala desde Spotify — se etiquetará automáticamente en este momento.
+                                        </p>
+                                    </div>
+                                    <div class="pt-2">
+                                        <button 
+                                            type="button" 
+                                            wire:click="openAddModalForPhase('{{ $selectedPhase }}')" 
+                                            class="px-4 py-2 rounded-xl text-xs font-black transition flex items-center gap-1.5 mx-auto cursor-pointer shadow-lg
+                                            {{ $selectedPhase === 'coctel' ? 'bg-amber-600 hover:bg-amber-500 text-white shadow-amber-600/30' : 
+                                              ($selectedPhase === 'banquete' ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/30' : 
+                                              ($selectedPhase === 'baile' ? 'bg-pink-600 hover:bg-pink-500 text-white shadow-pink-600/30' : 
+                                              ($selectedPhase === 'ceremonia' ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/30' : 'bg-cyan-600 hover:bg-cyan-500 text-white shadow-cyan-600/30'))) }}"
+                                        >
+                                            <span>➕</span> Añadir petición a {{ $selectedPhase === 'coctel' ? 'Cóctel' : ($selectedPhase === 'banquete' ? 'Banquete' : ($selectedPhase === 'baile' ? 'Baile' : ($selectedPhase === 'ceremonia' ? 'Ceremonia' : 'este momento'))) }}
+                                        </button>
+                                    </div>
                                 </div>
                             @endforelse
                         </div>
@@ -687,10 +720,40 @@
                                     </div>
                                 </div>
                             @empty
-                                <div class="col-span-full py-16 text-center bg-slate-950/40 rounded-3xl border border-dashed border-slate-800">
-                                    <span class="text-4xl">🎵</span>
-                                    <p class="text-base font-bold text-slate-300 mt-2">No se encontraron canciones</p>
-                                    <p class="text-xs text-slate-500 mt-1">Prueba con otro término de búsqueda o añade una nueva canción.</p>
+                                <div class="col-span-full py-16 px-4 text-center bg-slate-950/40 rounded-3xl border border-dashed border-slate-800 space-y-4 max-w-md mx-auto my-6">
+                                    <div class="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center text-3xl
+                                        {{ $selectedPhase === 'coctel' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' : 
+                                          ($selectedPhase === 'banquete' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 
+                                          ($selectedPhase === 'baile' ? 'bg-pink-500/20 text-pink-400 border border-pink-500/30' : 
+                                          ($selectedPhase === 'ceremonia' ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30' : 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30'))) }}">
+                                        @if($selectedPhase === 'coctel') 🍷
+                                        @elseif($selectedPhase === 'banquete') 🍽️
+                                        @elseif($selectedPhase === 'baile') 🎉
+                                        @elseif($selectedPhase === 'ceremonia') 💍
+                                        @else 🎵
+                                        @endif
+                                    </div>
+                                    <div>
+                                        <h4 class="text-base font-black text-white">
+                                            No hay peticiones en {{ $selectedPhase === 'coctel' ? 'Cóctel' : ($selectedPhase === 'banquete' ? 'Banquete' : ($selectedPhase === 'baile' ? 'Baile' : ($selectedPhase === 'ceremonia' ? 'Ceremonia' : 'este momento'))) }}
+                                        </h4>
+                                        <p class="text-xs text-slate-400 mt-1 max-w-sm mx-auto leading-relaxed">
+                                            Añade una petición o impórtala desde Spotify — se etiquetará automáticamente en este momento.
+                                        </p>
+                                    </div>
+                                    <div class="pt-2">
+                                        <button 
+                                            type="button" 
+                                            wire:click="openAddModalForPhase('{{ $selectedPhase }}')" 
+                                            class="px-4 py-2 rounded-xl text-xs font-black transition flex items-center gap-1.5 mx-auto cursor-pointer shadow-lg
+                                            {{ $selectedPhase === 'coctel' ? 'bg-amber-600 hover:bg-amber-500 text-white shadow-amber-600/30' : 
+                                              ($selectedPhase === 'banquete' ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/30' : 
+                                              ($selectedPhase === 'baile' ? 'bg-pink-600 hover:bg-pink-500 text-white shadow-pink-600/30' : 
+                                              ($selectedPhase === 'ceremonia' ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/30' : 'bg-cyan-600 hover:bg-cyan-500 text-white shadow-cyan-600/30'))) }}"
+                                        >
+                                            <span>➕</span> Añadir petición a {{ $selectedPhase === 'coctel' ? 'Cóctel' : ($selectedPhase === 'banquete' ? 'Banquete' : ($selectedPhase === 'baile' ? 'Baile' : ($selectedPhase === 'ceremonia' ? 'Ceremonia' : 'este momento'))) }}
+                                        </button>
+                                    </div>
                                 </div>
                             @endforelse
                         </div>
@@ -893,6 +956,324 @@
         @endif
 
     </div>
+
+    <!-- FLOATING ACTION BUTTON (FAB) PARA CAMBIO RÁPIDO DE MOMENTO -->
+    <div class="fixed bottom-20 sm:bottom-24 right-4 sm:right-6 z-30 flex flex-col items-end gap-2">
+        <button 
+            type="button" 
+            wire:click="$set('showChangeMomentModal', true)"
+            class="group px-4 py-2.5 rounded-2xl font-black text-xs shadow-2xl transition-all duration-300 transform hover:scale-105 flex items-center gap-2 cursor-pointer border
+            {{ $selectedPhase === 'coctel' ? 'bg-amber-600 hover:bg-amber-500 text-white border-amber-400/60 shadow-amber-600/40' : 
+              ($selectedPhase === 'banquete' ? 'bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-400/60 shadow-emerald-600/40' : 
+              ($selectedPhase === 'baile' ? 'bg-pink-600 hover:bg-pink-500 text-white border-pink-400/60 shadow-pink-600/40' : 
+              ($selectedPhase === 'ceremonia' ? 'bg-indigo-600 hover:bg-indigo-500 text-white border-indigo-400/60 shadow-indigo-600/40' : 'bg-cyan-600 hover:bg-cyan-500 text-white border-cyan-400/60 shadow-cyan-600/40'))) }}"
+            title="Cambiar momento del evento"
+        >
+            <span class="text-sm">✨</span>
+            <span class="tracking-wide">
+                @if($selectedPhase === 'coctel') 🍷 Cóctel
+                @elseif($selectedPhase === 'banquete') 🍽️ Banquete
+                @elseif($selectedPhase === 'baile') 🎉 Baile
+                @elseif($selectedPhase === 'ceremonia') 💍 Ceremonia
+                @else 🌟 Todos los momentos
+                @endif
+            </span>
+            <span class="bg-black/30 px-2 py-0.5 rounded-full text-[11px] font-mono">
+                {{ $phaseCounts[$selectedPhase] ?? $phaseCounts['all'] }}
+            </span>
+        </button>
+    </div>
+
+    <!-- MODAL 1: CAMBIAR MOMENTO -->
+    @if($showChangeMomentModal)
+        <div class="fixed inset-0 z-50 overflow-y-auto bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+            <div class="relative w-full max-w-lg bg-slate-900 border border-slate-700 rounded-3xl p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <div class="flex items-center gap-2.5">
+                        <span class="text-2xl">🔀</span>
+                        <div>
+                            <h3 class="text-base font-black text-white">Cambiar momento</h3>
+                            <p class="text-xs text-slate-400">Selecciona el bloque musical actual para filtrar la cabina</p>
+                        </div>
+                    </div>
+                    <button type="button" wire:click="$set('showChangeMomentModal', false)" class="text-slate-400 hover:text-white text-xl p-1 leading-none cursor-pointer">&times;</button>
+                </div>
+
+                <div class="grid grid-cols-1 gap-3">
+                    <!-- CÓCTEL -->
+                    <button 
+                        type="button" 
+                        wire:click="setPhase('coctel')" 
+                        class="p-4 rounded-2xl flex items-center justify-between transition-all duration-200 cursor-pointer border-2 text-left group {{ $selectedPhase === 'coctel' ? 'bg-amber-950/90 border-amber-500 shadow-lg shadow-amber-500/20 ring-2 ring-amber-500/30' : 'bg-slate-950/70 border-slate-800 hover:border-amber-500/60 hover:bg-slate-900' }}"
+                    >
+                        <div class="flex items-center gap-3.5">
+                            <div class="w-12 h-12 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
+                                🍷
+                            </div>
+                            <div>
+                                <div class="text-sm font-black text-white group-hover:text-amber-300 transition">Cóctel</div>
+                                <div class="text-xs text-slate-400 mt-0.5">Música ambiental, bienvenida y aperitivos</div>
+                            </div>
+                        </div>
+                        <span class="px-3 py-1 rounded-xl text-xs font-black font-mono {{ $selectedPhase === 'coctel' ? 'bg-amber-500 text-slate-950' : 'bg-slate-900 text-amber-400 border border-slate-800' }}">
+                            {{ $phaseCounts['coctel'] ?? 0 }} temas
+                        </span>
+                    </button>
+
+                    <!-- BANQUETE -->
+                    <button 
+                        type="button" 
+                        wire:click="setPhase('banquete')" 
+                        class="p-4 rounded-2xl flex items-center justify-between transition-all duration-200 cursor-pointer border-2 text-left group {{ $selectedPhase === 'banquete' ? 'bg-emerald-950/90 border-emerald-500 shadow-lg shadow-emerald-500/20 ring-2 ring-emerald-500/30' : 'bg-slate-950/70 border-slate-800 hover:border-emerald-500/60 hover:bg-slate-900' }}"
+                    >
+                        <div class="flex items-center gap-3.5">
+                            <div class="w-12 h-12 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
+                                🍽️
+                            </div>
+                            <div>
+                                <div class="text-sm font-black text-white group-hover:text-emerald-300 transition">Banquete</div>
+                                <div class="text-xs text-slate-400 mt-0.5">Entrada al comedor, sorbete, regalos, ramo y tarta</div>
+                            </div>
+                        </div>
+                        <span class="px-3 py-1 rounded-xl text-xs font-black font-mono {{ $selectedPhase === 'banquete' ? 'bg-emerald-500 text-slate-950' : 'bg-slate-900 text-emerald-400 border border-slate-800' }}">
+                            {{ $phaseCounts['banquete'] ?? 0 }} temas
+                        </span>
+                    </button>
+
+                    <!-- BAILE -->
+                    <button 
+                        type="button" 
+                        wire:click="setPhase('baile')" 
+                        class="p-4 rounded-2xl flex items-center justify-between transition-all duration-200 cursor-pointer border-2 text-left group {{ $selectedPhase === 'baile' ? 'bg-pink-950/90 border-pink-500 shadow-lg shadow-pink-500/20 ring-2 ring-pink-500/30' : 'bg-slate-950/70 border-slate-800 hover:border-pink-500/60 hover:bg-slate-900' }}"
+                    >
+                        <div class="flex items-center gap-3.5">
+                            <div class="w-12 h-12 rounded-xl bg-pink-500/20 border border-pink-500/40 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
+                                🎉
+                            </div>
+                            <div>
+                                <div class="text-sm font-black text-white group-hover:text-pink-300 transition">Baile</div>
+                                <div class="text-xs text-slate-400 mt-0.5">Baile nupcial, fiesta, hora loca y barra libre</div>
+                            </div>
+                        </div>
+                        <span class="px-3 py-1 rounded-xl text-xs font-black font-mono {{ $selectedPhase === 'baile' ? 'bg-pink-500 text-slate-950' : 'bg-slate-900 text-pink-400 border border-slate-800' }}">
+                            {{ $phaseCounts['baile'] ?? 0 }} temas
+                        </span>
+                    </button>
+
+                    @if(!empty($phaseCounts['ceremonia']))
+                        <!-- CEREMONIA -->
+                        <button 
+                            type="button" 
+                            wire:click="setPhase('ceremonia')" 
+                            class="p-4 rounded-2xl flex items-center justify-between transition-all duration-200 cursor-pointer border-2 text-left group {{ $selectedPhase === 'ceremonia' ? 'bg-indigo-950/90 border-indigo-500 shadow-lg shadow-indigo-500/20 ring-2 ring-indigo-500/30' : 'bg-slate-950/70 border-slate-800 hover:border-indigo-500/60 hover:bg-slate-900' }}"
+                        >
+                            <div class="flex items-center gap-3.5">
+                                <div class="w-12 h-12 rounded-xl bg-indigo-500/20 border border-indigo-500/40 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
+                                    💍
+                                </div>
+                                <div>
+                                    <div class="text-sm font-black text-white group-hover:text-indigo-300 transition">Ceremonia</div>
+                                    <div class="text-xs text-slate-400 mt-0.5">Entrada de novios, lecturas, anillos y salida</div>
+                                </div>
+                            </div>
+                            <span class="px-3 py-1 rounded-xl text-xs font-black font-mono {{ $selectedPhase === 'ceremonia' ? 'bg-indigo-500 text-slate-950' : 'bg-slate-900 text-indigo-400 border border-slate-800' }}">
+                                {{ $phaseCounts['ceremonia'] }} temas
+                            </span>
+                        </button>
+                    @endif
+
+                    <!-- TODOS -->
+                    <button 
+                        type="button" 
+                        wire:click="setPhase('all')" 
+                        class="p-3.5 rounded-2xl flex items-center justify-between transition-all duration-200 cursor-pointer border text-left group {{ $selectedPhase === 'all' ? 'bg-cyan-950/90 border-cyan-500 shadow-lg ring-2 ring-cyan-500/30' : 'bg-slate-950/40 border-slate-800 hover:border-slate-700 hover:bg-slate-900' }}"
+                    >
+                        <div class="flex items-center gap-3">
+                            <span class="text-lg">🌟</span>
+                            <div>
+                                <div class="text-xs font-bold text-white group-hover:text-cyan-300 transition">Todos los momentos juntos</div>
+                            </div>
+                        </div>
+                        <span class="text-xs font-mono font-bold text-slate-400">
+                            {{ $phaseCounts['all'] ?? 0 }} temas
+                        </span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    <!-- MODAL 2: AÑADIR CANCIÓN / BÚSQUEDA UNIVERSAL -->
+    @if($showAddModal)
+        <div class="fixed inset-0 z-50 overflow-y-auto bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+            <div class="relative w-full max-w-xl bg-slate-900 border border-slate-700 rounded-3xl p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <div class="flex items-center gap-2.5">
+                        <span class="text-2xl">➕</span>
+                        <div>
+                            <h3 class="text-base font-black text-white">Añadir Canción al Evento</h3>
+                            <p class="text-xs text-slate-400">Busca en el catálogo musical universal o introduce los datos manualmente</p>
+                        </div>
+                    </div>
+                    <button type="button" wire:click="$set('showAddModal', false)" class="text-slate-400 hover:text-white text-xl p-1 leading-none cursor-pointer">&times;</button>
+                </div>
+
+                <!-- BUSCADOR UNIVERSAL SPOTIFY / ITUNES / CATALOGO -->
+                <div class="space-y-2">
+                    <label class="text-xs font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-1.5">
+                        <span>🔍</span> Búsqueda Instantánea en Catálogo Musical
+                    </label>
+                    <div class="relative">
+                        <input 
+                            type="text" 
+                            wire:model.live.debounce.300ms="musicSearchQuery" 
+                            placeholder="Escribe título o artista (ej: Coldplay Viva La Vida)..." 
+                            class="w-full bg-slate-950 border border-cyan-500/50 rounded-2xl px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:ring-2 focus:ring-cyan-500 focus:outline-none"
+                        >
+                    </div>
+
+                    @if(!empty($musicSearchResults))
+                        <div class="bg-slate-950 border border-slate-800 rounded-2xl p-2 max-h-56 overflow-y-auto space-y-1.5 shadow-xl divide-y divide-slate-900">
+                            @foreach($musicSearchResults as $result)
+                                <div 
+                                    wire:click="selectTrackFromSearch({{ json_encode($result) }})"
+                                    class="p-2 rounded-xl hover:bg-slate-800/80 transition flex items-center justify-between gap-3 cursor-pointer group"
+                                >
+                                    <div class="flex items-center gap-3 truncate">
+                                        @if(!empty($result['cover_url']))
+                                            <img src="{{ $result['cover_url'] }}" class="w-10 h-10 rounded-lg object-cover" alt="Cover">
+                                        @else
+                                            <div class="w-10 h-10 rounded-lg bg-slate-800 flex items-center justify-center text-sm">🎵</div>
+                                        @endif
+                                        <div class="truncate">
+                                            <strong class="text-xs font-bold text-white group-hover:text-cyan-400 transition block truncate">{{ $result['title'] }}</strong>
+                                            <span class="text-[11px] text-slate-400 truncate block">{{ $result['artist'] }}</span>
+                                        </div>
+                                    </div>
+                                    <span class="text-[10px] font-black uppercase text-cyan-400 bg-cyan-950/80 px-2 py-1 rounded-lg border border-cyan-800/40 shrink-0">
+                                        Seleccionar
+                                    </span>
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
+                </div>
+
+                <form wire:submit="addRequest" class="space-y-4 pt-1">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-300 mb-1">Título de la Canción *</label>
+                            <input type="text" wire:model="new_title" required placeholder="Ej: Titanium" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white focus:ring-2 focus:ring-cyan-500">
+                            @error('new_title') <span class="text-red-400 text-[10px]">{{ $message }}</span> @enderror
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-300 mb-1">Artista / Grupo</label>
+                            <input type="text" wire:model="new_artist" placeholder="Ej: David Guetta ft. Sia" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white focus:ring-2 focus:ring-cyan-500">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-300 mb-1">Fase / Momento *</label>
+                            <select wire:model="new_category" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white focus:ring-2 focus:ring-cyan-500">
+                                <option value="coctel">🍷 Cóctel / Bienvenida</option>
+                                <option value="banquete">🍽️ Banquete (Momentos Clave)</option>
+                                <option value="baile">🎉 Baile / Fiesta / Barra Libre</option>
+                                <option value="ceremonia">💍 Ceremonia</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-300 mb-1">Sub-Momento / Etiqueta</label>
+                            <input type="text" wire:model="new_moment" placeholder="Ej: Entrada comedor, Ramo, Fiesta..." class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white focus:ring-2 focus:ring-cyan-500">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-300 mb-1">Enlace Spotify (opcional)</label>
+                            <input type="url" wire:model="new_spotify_url" placeholder="https://open.spotify.com/track/..." class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white focus:ring-2 focus:ring-cyan-500">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-300 mb-1">Enlace Apple Music (opcional)</label>
+                            <input type="url" wire:model="new_apple_music_url" placeholder="https://music.apple.com/..." class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white focus:ring-2 focus:ring-cyan-500">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-300 mb-1">Notas especiales para el DJ</label>
+                        <input type="text" wire:model="new_notes" placeholder="Ej: Poner en el segundo estribillo / Regalo para los abuelos" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white focus:ring-2 focus:ring-cyan-500">
+                    </div>
+
+                    <div class="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-800">
+                        <button type="button" wire:click="$set('showAddModal', false)" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs transition cursor-pointer">
+                            Cancelar
+                        </button>
+                        <button type="submit" class="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 text-white font-black text-xs shadow-lg transition cursor-pointer">
+                            Guardar Canción
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    @endif
+
+    <!-- MODAL 3: AÑADIR MOMENTO A ESCALETA -->
+    @if($showAddMomentModal)
+        <div class="fixed inset-0 z-50 overflow-y-auto bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+            <div class="relative w-full max-w-lg bg-slate-900 border border-slate-700 rounded-3xl p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <div class="flex items-center gap-2.5">
+                        <span class="text-2xl">📑</span>
+                        <div>
+                            <h3 class="text-base font-black text-white">Añadir Momento a la Escaleta</h3>
+                            <p class="text-xs text-slate-400">Crea un hito específico con canción asignada</p>
+                        </div>
+                    </div>
+                    <button type="button" wire:click="$set('showAddMomentModal', false)" class="text-slate-400 hover:text-white text-xl p-1 leading-none cursor-pointer">&times;</button>
+                </div>
+
+                <form wire:submit="addMoment" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-300 mb-1">Nombre del Momento *</label>
+                        <input type="text" wire:model="new_moment_name" required placeholder="Ej: Entrega de Ramo de la Novia" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white focus:ring-2 focus:ring-cyan-500">
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-300 mb-1">Canción Asignada *</label>
+                            <input type="text" wire:model="new_moment_song_title" required placeholder="Ej: Perfect" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white focus:ring-2 focus:ring-cyan-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-300 mb-1">Artista</label>
+                            <input type="text" wire:model="new_moment_artist" placeholder="Ej: Ed Sheeran" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white focus:ring-2 focus:ring-cyan-500">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-300 mb-1">Minuto / Cue Time (opcional)</label>
+                        <input type="text" wire:model="new_moment_time" placeholder="Ej: 01:15 (Entrar justo en el estribillo)" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white focus:ring-2 focus:ring-cyan-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-300 mb-1">Indicaciones para el DJ</label>
+                        <textarea wire:model="new_moment_notes" rows="2" placeholder="Ej: Bajar volumen cuando tome el micro..." class="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-xs text-white focus:ring-2 focus:ring-cyan-500"></textarea>
+                    </div>
+
+                    <div class="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-800">
+                        <button type="button" wire:click="$set('showAddMomentModal', false)" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs transition cursor-pointer">
+                            Cancelar
+                        </button>
+                        <button type="submit" class="px-5 py-2 rounded-xl bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white font-black text-xs shadow-lg transition cursor-pointer">
+                            Guardar en Escaleta
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    @endif
 
     <!-- DOCKED MINI VIDEO PLAYER PARA YOUTUBE -->
     <div 

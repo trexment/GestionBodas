@@ -20,6 +20,7 @@ class DjBoothMode extends Component
 
     // Phase / Moment category filter: 'all', 'coctel', 'banquete', 'baile', 'ceremonia', 'guest'
     public $selectedPhase = 'all';
+    public $showChangeMomentModal = false;
 
     // Grouping mode: 'grouped' (organized by moments with headers) or 'flat' (continuous sampler)
     public $groupingMode = 'grouped';
@@ -36,7 +37,7 @@ class DjBoothMode extends Component
     public $new_title = '';
     public $new_artist = '';
     public $new_category = 'baile';
-    public $new_moment = 'Petición en Directo';
+    public $new_moment = 'Baile & Fiesta';
     public $new_requested_by = 'DJ Cabina';
     public $new_notes = '';
     public $new_spotify_url = '';
@@ -125,6 +126,29 @@ class DjBoothMode extends Component
     {
         $this->selectedPhase = $phase;
         $this->padPage = 1;
+        $this->showChangeMomentModal = false;
+    }
+
+    public function openAddModalForPhase($phase = null)
+    {
+        $target = $phase ?: $this->selectedPhase;
+        if ($target === 'coctel') {
+            $this->new_category = 'coctel';
+            $this->new_moment = 'Cóctel / Bienvenida';
+        } elseif ($target === 'banquete') {
+            $this->new_category = 'banquete';
+            $this->new_moment = 'Banquete';
+        } elseif ($target === 'baile') {
+            $this->new_category = 'baile';
+            $this->new_moment = 'Baile & Fiesta';
+        } elseif ($target === 'ceremonia') {
+            $this->new_category = 'ceremonia';
+            $this->new_moment = 'Ceremonia';
+        } else {
+            $this->new_category = 'baile';
+            $this->new_moment = 'Pista Libre';
+        }
+        $this->showAddModal = true;
     }
 
     public function setGroupingMode($mode)
