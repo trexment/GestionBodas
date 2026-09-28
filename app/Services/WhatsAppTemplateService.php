@@ -102,10 +102,19 @@ class WhatsAppTemplateService
         $clientPhone = $event->client ? $event->client->phone : 'Sin teléfono';
         $boothUrl = route('staff.live', $event->token);
 
+        $venueInfo = '';
+        if (!empty($event->venue_contact_name) || !empty($event->venue_contact_phone)) {
+            $venueInfo .= "\n🏢 *Contacto Lugar/Bodega:* " . ($event->venue_contact_name ?: 'Responsable') . ($event->venue_contact_phone ? " ({$event->venue_contact_phone})" : "");
+        }
+        if (!empty($event->venue_notes)) {
+            $venueInfo .= "\n🔧 *Notas de Acceso/Montaje:* " . $event->venue_notes;
+        }
+
         return "¡Hola {$userName}! 🎧 Tienes asignado el evento *{$event->name}*:\n\n"
              . "📅 *Fecha:* {$date}\n"
              . "📍 *Ubicación:* {$location}\n"
-             . "👤 *Cliente:* {$clientName} ({$clientPhone})\n\n"
+             . "👤 *Cliente:* {$clientName} ({$clientPhone})"
+             . $venueInfo . "\n\n"
              . "📱 *Modo Cabina / Escaleta en Vivo:* {$boothUrl}\n\n"
              . "¡A darlo todo en el evento! 🔥";
     }

@@ -24,6 +24,12 @@ class EventShow extends Component
     public $assigned_assistant_id;
     public $showStaffModal = false;
 
+    // Contacto Finca / Bodega / Lugar
+    public $venue_contact_name;
+    public $venue_contact_phone;
+    public $venue_notes;
+    public $showVenueModal = false;
+
     // Facturas
     public $invoice_number;
     public $invoice_amount;
@@ -102,6 +108,9 @@ class EventShow extends Component
         $this->event = $event->load(['client', 'dj', 'assistant', 'invoices', 'quotes.items', 'contracts', 'dossiers', 'equipment', 'musicRequests']);
         $this->assigned_dj_id = $this->event->dj_id;
         $this->assigned_assistant_id = $this->event->assistant_id;
+        $this->venue_contact_name = $this->event->venue_contact_name;
+        $this->venue_contact_phone = $this->event->venue_contact_phone;
+        $this->venue_notes = $this->event->venue_notes;
         $this->is_dossier_completed = $this->event->is_dossier_completed;
         $this->event_notes = $this->event->notes;
         
@@ -952,6 +961,78 @@ class EventShow extends Component
                 'signed_at' => now(),
             ]);
             $this->event->load('contracts');
+        }
+    }
+
+    public function openVenueModal()
+    {
+        $this->venue_contact_name = $this->event->venue_contact_name;
+        $this->venue_contact_phone = $this->event->venue_contact_phone;
+        $this->venue_notes = $this->event->venue_notes;
+        $this->showVenueModal = true;
+    }
+
+    public function closeVenueModal()
+    {
+        $this->showVenueModal = false;
+    }
+
+    public function saveVenueContact()
+    {
+        $this->event->update([
+            'venue_contact_name' => $this->venue_contact_name,
+            'venue_contact_phone' => $this->venue_contact_phone,
+            'venue_notes' => $this->venue_notes,
+        ]);
+
+        $this->showVenueModal = false;
+        session()->flash('venue_message', 'Contacto de la finca/bodega guardado correctamente.');
+    }
+
+    public function exportPlaylistM3u()
+    {
+        $requests = $this->event->musicRequests()->where('status', '!=', 'rejected')->get();
+        
+        $m3uContent = "#EXTM3U\n";
+        $m3uContent .= "#PLAYLIST: " . $this->event->name . " - Playlist Completa\n\n";
+
+        foreach ($requests as $req) {
+            $moment = $req->moment ?: ucfirst($req->category);
+            $title = $req->title;
+            $artist = $req->artist ?: 'Desconocido';
+            $cue = $req->cue_time ? " [CUE: {$req->cue_time}]" : "";
+            
+            $m3uContent .= "#EXTINF:-1,{$artist} - {$title} ({$moment}){$cue}\n";
+            if ($req->audio_file) {
+                $m3uContent .= asset('storage/' . $req->audio_file) . "\n";
+            } elseif ($req->youtube_url) {
+                $m3uContent .= $req->youtube_url . "\n";
+            } elseif ($req->spotify_url) {
+                $m3uContent .= $req->spotify_url . "\n";
+            } else {
+                $m3uContent .= "{$artist} - {$title}.mp3\n";
+            }
+        }
+
+        $fileName = 'Playlist_' . \Illuminate\Support\Str::slug($this->event->name) . '.m3u';
+
+        return response()->streamDownload(function () use ($m3uContent) {
+            echo $m3uContent;
+        }, $fileName, [
+            'Content-Type' => 'audio/x-mpegurl',
+        ]);
+    }
+
+    public function createSpotifyPlaylist()
+    {
+        $res = \App\Services\SpotifyService::createPlaylistForEvent($this->event);
+        if ($res['success']) {
+            session()->flash('music_message', $res['message']);
+            if (!empty($res['url'])) {
+                $this->dispatch('open-url', url: $res['url']);
+            }
+        } else {
+            session()->flash('music_error', $res['message']);
         }
     }
 

@@ -14,6 +14,11 @@
         $assistantPhone = '34' . $assistantPhone;
     }
 
+    $venuePhone = $event->venue_contact_phone ? preg_replace('/[^0-9]/', '', $event->venue_contact_phone) : '';
+    if (strlen($venuePhone) === 9 && in_array(substr($venuePhone, 0, 1), ['6', '7'])) {
+        $venuePhone = '34' . $venuePhone;
+    }
+
     $latestQuote = $event->quotes()->latest()->first();
     $quoteAmount = $latestQuote ? (float)$latestQuote->amount : 0;
     
@@ -111,9 +116,27 @@
                     @endif
                 </span>
 
+                <!-- Contacto Finca / Bodega / Restaurante -->
+                <span class="inline-flex items-center gap-1.5 text-slate-800 dark:text-slate-200 font-semibold bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 shadow-2xs">
+                    🏢 <strong>Finca/Bodega:</strong> {{ $event->venue_contact_name ?: ($event->location ?: 'Sin contacto') }}
+                    @if($event->venue_contact_phone)
+                        <a href="tel:{{ $event->venue_contact_phone }}" class="inline-flex items-center gap-1 text-xs font-bold text-blue-700 bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/60 dark:text-blue-300 border border-blue-300 dark:border-blue-700 px-2 py-0.5 rounded transition" title="Llamar directamente">
+                            📞 {{ $event->venue_contact_phone }}
+                        </a>
+                        @if($venuePhone)
+                            <a href="https://wa.me/{{ $venuePhone }}" target="_blank" class="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-900/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 px-1.5 py-0.5 rounded transition" title="Enviar WhatsApp a la finca">
+                                💬
+                            </a>
+                        @endif
+                    @endif
+                    <button wire:click="openVenueModal" class="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-bold ml-1 cursor-pointer" title="Editar contacto y notas de la finca/bodega">
+                        {{ $event->venue_contact_name || $event->venue_contact_phone ? '✏️' : '+ Añadir Teléfono' }}
+                    </button>
+                </span>
+
                 <!-- Botón rápido cambiar DJ / Asistente -->
                 <button wire:click="openStaffModal" class="text-xs bg-white hover:bg-gray-100 text-gray-700 border border-gray-300 font-bold px-2 py-1 rounded-lg shadow-xs transition">
-                    ⚙️ Cambiar Personal
+                    👥 Personal
                 </button>
             </div>
         </div>
@@ -594,11 +617,199 @@
                     </div>
                 </div>
 
-                @if (session()->has('music_message'))
-                    <div class="mb-4 bg-green-100 border-l-4 border-green-500 text-green-700 p-3 rounded text-sm shadow-sm">
-                        {{ session('music_message') }}
+                @if (session()->has('venue_message'))
+                    <div class="mb-4 bg-indigo-100 border-l-4 border-indigo-500 text-indigo-700 p-3 rounded-xl text-xs font-bold shadow-sm">
+                        ✓ {{ session('venue_message') }}
                     </div>
                 @endif
+
+                @if (session()->has('music_message'))
+                    <div class="mb-4 bg-emerald-100 border-l-4 border-emerald-500 text-emerald-800 p-3 rounded-xl text-xs font-bold shadow-sm">
+                        ✓ {{ session('music_message') }}
+                    </div>
+                @endif
+
+                @if (session()->has('music_error'))
+                    <div class="mb-4 bg-rose-100 border-l-4 border-rose-500 text-rose-800 p-3 rounded-xl text-xs font-bold shadow-sm">
+                        ⚠️ {{ session('music_error') }}
+                    </div>
+                @endif
+
+                <!-- ========================================================= -->
+                <!-- BARRA DE REPRODUCTOR CONTINUO & PLAYLIST DEL EVENTO      -->
+                <!-- ========================================================= -->
+                @php
+                    $playlistJson = $event->musicRequests()->where('status', '!=', 'rejected')->get()->map(function($req) {
+                        return [
+                            'id' => $req->id,
+                            'title' => $req->title,
+                            'artist' => $req->artist ?: '',
+                            'moment' => $req->moment ?: ucfirst($req->category),
+                            'category' => $req->category,
+                            'audio_src' => $req->audio_file ? asset('storage/' . $req->audio_file) : '',
+                            'youtube_url' => $req->youtube_url ?: '',
+                            'spotify_url' => $req->spotify_url ?: '',
+                            'cue_time' => $req->cue_time ?: '',
+                        ];
+                    })->values()->toJson();
+                @endphp
+
+                <div 
+                    class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-indigo-500/30 rounded-2xl p-4 sm:p-5 text-white shadow-xl mb-6 relative overflow-hidden"
+                    x-data="{
+                        tracks: {{ $playlistJson }},
+                        currentIndex: 0,
+                        isPlaying: false,
+                        currentTime: 0,
+                        duration: 0,
+                        audio: null,
+                        continuousMode: true,
+                        init() {
+                            this.audio = new Audio();
+                            this.audio.addEventListener('timeupdate', () => {
+                                this.currentTime = this.audio.currentTime;
+                                this.duration = this.audio.duration || 0;
+                            });
+                            this.audio.addEventListener('ended', () => {
+                                if (this.continuousMode && this.currentIndex < this.tracks.length - 1) {
+                                    this.nextTrack();
+                                } else {
+                                    this.isPlaying = false;
+                                }
+                            });
+                        },
+                        playTrack(index) {
+                            if (index < 0 || index >= this.tracks.length) return;
+                            this.currentIndex = index;
+                            const track = this.tracks[index];
+                            if (track.audio_src) {
+                                this.audio.src = track.audio_src;
+                                this.audio.play();
+                                this.isPlaying = true;
+                            } else if (track.youtube_url) {
+                                window.open(track.youtube_url, '_blank');
+                            } else if (track.spotify_url) {
+                                window.open(track.spotify_url, '_blank');
+                            }
+                        },
+                        togglePlay() {
+                            if (!this.audio.src && this.tracks.length > 0) {
+                                this.playTrack(0);
+                                return;
+                            }
+                            if (this.isPlaying) {
+                                this.audio.pause();
+                                this.isPlaying = false;
+                            } else {
+                                this.audio.play();
+                                this.isPlaying = true;
+                            }
+                        },
+                        nextTrack() {
+                            if (this.currentIndex < this.tracks.length - 1) {
+                                this.playTrack(this.currentIndex + 1);
+                            }
+                        },
+                        prevTrack() {
+                            if (this.currentIndex > 0) {
+                                this.playTrack(this.currentIndex - 1);
+                            }
+                        },
+                        formatTime(sec) {
+                            if (!sec || isNaN(sec)) return '0:00';
+                            const m = Math.floor(sec / 60);
+                            const s = Math.floor(sec % 60);
+                            return m + ':' + (s < 10 ? '0' : '') + s;
+                        }
+                    }"
+                >
+                    <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+                        
+                        <!-- Track Info actual -->
+                        <div class="flex items-center gap-3.5 min-w-0">
+                            <button 
+                                type="button" 
+                                @click="togglePlay()"
+                                class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 text-white flex items-center justify-center text-xl shadow-lg shadow-indigo-500/30 shrink-0 transition transform hover:scale-105 cursor-pointer"
+                            >
+                                <span x-show="!isPlaying">▶️</span>
+                                <span x-show="isPlaying" style="display: none;">⏸️</span>
+                            </button>
+
+                            <div class="min-w-0">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs uppercase tracking-wider font-extrabold text-indigo-400 flex items-center gap-1">
+                                        <span>🎶</span> Reproductor Playlist en la App
+                                    </span>
+                                    <span class="text-[10px] bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-full font-bold">
+                                        Modo Continuo Activo
+                                    </span>
+                                </div>
+                                <h5 class="text-sm font-bold text-white truncate mt-0.5" x-text="tracks[currentIndex] ? tracks[currentIndex].title + (tracks[currentIndex].artist ? ' - ' + tracks[currentIndex].artist : '') : 'Playlist lista para reproducir'">
+                                    Cargando canciones...
+                                </h5>
+                                <p class="text-[11px] text-slate-400 flex items-center gap-2">
+                                    <span x-text="tracks[currentIndex] ? '📌 Momento: ' + tracks[currentIndex].moment : '{{ $event->musicRequests->count() }} canciones en cola'"></span>
+                                    <template x-if="tracks[currentIndex] && tracks[currentIndex].cue_time">
+                                        <span class="text-amber-400 font-bold" x-text="'⚡ CUE: ' + tracks[currentIndex].cue_time"></span>
+                                    </template>
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Botones de Control y Exportación -->
+                        <div class="flex flex-wrap items-center gap-2">
+                            <!-- Controles Anterior / Siguiente -->
+                            <div class="flex items-center gap-1 bg-slate-900/80 p-1 rounded-xl border border-slate-700/60">
+                                <button type="button" @click="prevTrack()" class="px-2.5 py-1.5 text-xs text-slate-300 hover:text-white rounded-lg hover:bg-slate-800 transition font-bold" title="Canción anterior">⏮️</button>
+                                <button type="button" @click="togglePlay()" class="px-3 py-1.5 text-xs text-white rounded-lg bg-indigo-600 hover:bg-indigo-500 transition font-bold">
+                                    <span x-show="!isPlaying">Play</span>
+                                    <span x-show="isPlaying" style="display: none;">Pausa</span>
+                                </button>
+                                <button type="button" @click="nextTrack()" class="px-2.5 py-1.5 text-xs text-slate-300 hover:text-white rounded-lg hover:bg-slate-800 transition font-bold" title="Siguiente canción">⏭️</button>
+                            </div>
+
+                            <!-- Botón Exportar Spotify -->
+                            <button 
+                                type="button" 
+                                wire:click="createSpotifyPlaylist" 
+                                wire:loading.attr="disabled"
+                                class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold shadow-md shadow-emerald-600/20 inline-flex items-center gap-1.5 transition cursor-pointer"
+                                title="Crea y añade todas las canciones de este evento en una playlist en tu Spotify"
+                            >
+                                <span>🟢</span>
+                                <span wire:loading.remove wire:target="createSpotifyPlaylist">Exportar a Spotify</span>
+                                <span wire:loading wire:target="createSpotifyPlaylist">Generando...</span>
+                            </button>
+
+                            <!-- Botón Descargar M3U para Rekordbox / Serato / VirtualDJ -->
+                            <button 
+                                type="button" 
+                                wire:click="exportPlaylistM3u" 
+                                class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white text-xs font-bold border border-slate-600/80 shadow-md inline-flex items-center gap-1.5 transition cursor-pointer"
+                                title="Descargar archivo .M3U para importar en Rekordbox, Serato, Traktor o VirtualDJ"
+                            >
+                                <span>💿</span>
+                                <span>Descargar .M3U (DJ)</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Barra de progreso para pistas con audio local -->
+                    <template x-if="audio && audio.src">
+                        <div class="mt-3 pt-3 border-t border-slate-800/80 flex items-center gap-3 text-xs text-slate-400">
+                            <span x-text="formatTime(currentTime)">0:00</span>
+                            <div class="flex-1 bg-slate-800 h-1.5 rounded-full overflow-hidden cursor-pointer" @click="
+                                const rect = $el.getBoundingClientRect();
+                                const pos = ($event.clientX - rect.left) / rect.width;
+                                if (audio && duration) audio.currentTime = pos * duration;
+                            ">
+                                <div class="bg-indigo-500 h-full transition-all" :style="'width: ' + ((currentTime / (duration || 1)) * 100) + '%'"></div>
+                            </div>
+                            <span x-text="formatTime(duration)">0:00</span>
+                        </div>
+                    </template>
+                </div>
 
                 <!-- Píldoras de Filtro por Categorías / Fases -->
                 <div class="flex flex-wrap items-center gap-2 mb-6">
@@ -1951,6 +2162,55 @@
                         </button>
                         <button type="button" wire:click="$set('showSongModal', false)" class="w-full sm:w-auto mt-2 sm:mt-0 inline-flex justify-center rounded-lg border border-gray-300 shadow-sm px-4 py-2 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none transition">
                             Cancelar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <!-- Modal Contacto Finca / Bodega -->
+    @if($showVenueModal)
+    <div class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" wire:click="closeVenueModal"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                <div class="bg-indigo-700 px-6 py-4 flex items-center justify-between text-white">
+                    <div class="flex items-center gap-2">
+                        <span class="text-2xl">🏢</span>
+                        <div>
+                            <h3 class="font-bold text-lg leading-tight">Contacto de Finca / Bodega / Salón</h3>
+                            <p class="text-xs text-indigo-200">{{ $event->name }} &bull; Datos para coordinación técnica</p>
+                        </div>
+                    </div>
+                    <button type="button" wire:click="closeVenueModal" class="text-indigo-200 hover:text-white text-2xl font-bold leading-none">&times;</button>
+                </div>
+
+                <form wire:submit.prevent="saveVenueContact">
+                    <div class="p-6 space-y-4">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Nombre del Responsable / Coordinador</label>
+                            <input type="text" wire:model="venue_contact_name" placeholder="Ej: Marta (Coordinadora Eventos) o Juan (Maître)" class="w-full border-gray-300 rounded-xl text-sm focus:ring-indigo-500 focus:border-indigo-500">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Teléfono Directo de Contacto</label>
+                            <input type="tel" wire:model="venue_contact_phone" placeholder="Ej: 612 345 678" class="w-full border-gray-300 rounded-xl text-sm focus:ring-indigo-500 focus:border-indigo-500">
+                            <p class="text-[11px] text-gray-500 mt-1">Este número tendrá botones de llamada directa y WhatsApp en 1-clic.</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Notas de Montaje, Acceso & Electricidad</label>
+                            <textarea wire:model="venue_notes" rows="3" placeholder="Ej: Acceso por puerta trasera nave 3. Montaje a partir de las 11:30h. Tomas Schuko a 15 metros del escenario..." class="w-full border-gray-300 rounded-xl text-sm focus:ring-indigo-500 focus:border-indigo-500"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-50 px-6 py-3 border-t border-gray-100 flex justify-end gap-2">
+                        <button type="button" wire:click="closeVenueModal" class="bg-white hover:bg-gray-100 text-gray-700 font-bold text-xs px-4 py-2 border border-gray-300 rounded-xl transition">
+                            Cancelar
+                        </button>
+                        <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2 rounded-xl shadow-xs transition">
+                            💾 Guardar Contacto
                         </button>
                     </div>
                 </form>

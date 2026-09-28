@@ -192,4 +192,88 @@ class SpotifyService
             'is_premium' => strtolower(Setting::get('spotify_user_product', '')) === 'premium',
         ];
     }
+
+    /**
+     * Create a playlist on user's Spotify account for a specific event
+     */
+    public static function createPlaylistForEvent(\App\Models\Event $event): array
+    {
+        $token = self::getValidUserAccessToken();
+        if (!$token) {
+            return [
+                'success' => false,
+                'message' => 'No hay una cuenta de Spotify conectada. Conéctala en Ajustes > Spotify & Apple Music.',
+            ];
+        }
+
+        try {
+            // 1. Fetch current user id
+            $meRes = Http::withToken($token)->get('https://api.spotify.com/v1/me');
+            if (!$meRes->successful()) {
+                return ['success' => false, 'message' => 'Error al verificar la cuenta de Spotify.'];
+            }
+            $userId = $meRes->json('id');
+
+            // 2. Create playlist
+            $dateStr = $event->event_date ? \Carbon\Carbon::parse($event->event_date)->format('d/m/Y') : '';
+            $playlistRes = Http::withToken($token)->post("https://api.spotify.com/v1/users/{$userId}/playlists", [
+                'name' => "{$event->name} - Playlist del Evento",
+                'description' => "Canciones y momentos para {$event->name} ({$dateStr}) generada desde el panel.",
+                'public' => false,
+            ]);
+
+            if (!$playlistRes->successful()) {
+                return ['success' => false, 'message' => 'Error al crear la playlist en Spotify: ' . ($playlistRes->json('error.message') ?? '')];
+            }
+
+            $playlistData = $playlistRes->json();
+            $playlistId = $playlistData['id'];
+            $playlistUrl = $playlistData['external_urls']['spotify'] ?? '';
+
+            // 3. Search and collect tracks
+            $requests = $event->musicRequests()->where('status', '!=', 'rejected')->get();
+            $trackUris = [];
+
+            foreach ($requests as $req) {
+                if (!empty($req->spotify_url) && preg_match('/track\/([a-zA-Z0-9]+)/', $req->spotify_url, $m)) {
+                    $trackUris[] = "spotify:track:" . $m[1];
+                } else {
+                    $query = trim("{$req->title} {$req->artist}");
+                    if (!empty($query)) {
+                        $searchRes = Http::withToken($token)->get('https://api.spotify.com/v1/search', [
+                            'q' => $query,
+                            'type' => 'track',
+                            'limit' => 1,
+                        ]);
+                        if ($searchRes->successful()) {
+                            $items = $searchRes->json('tracks.items');
+                            if (!empty($items[0]['uri'])) {
+                                $trackUris[] = $items[0]['uri'];
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (!empty($trackUris)) {
+                $trackUris = array_values(array_unique($trackUris));
+                foreach (array_chunk($trackUris, 100) as $chunk) {
+                    Http::withToken($token)->post("https://api.spotify.com/v1/playlists/{$playlistId}/tracks", [
+                        'uris' => $chunk,
+                    ]);
+                }
+            }
+
+            return [
+                'success' => true,
+                'message' => '¡Playlist "' . $playlistData['name'] . '" creada en tu Spotify con ' . count($trackUris) . ' canciones!',
+                'url' => $playlistUrl,
+            ];
+        } catch (\Throwable $e) {
+            return [
+                'success' => false,
+                'message' => 'Excepción al crear la playlist en Spotify: ' . $e->getMessage(),
+            ];
+        }
+    }
 }
