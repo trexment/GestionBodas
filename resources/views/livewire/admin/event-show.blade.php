@@ -1334,6 +1334,74 @@
                                 </div>
                             </div>
 
+                            <!-- SECCIÓN: RÉGIMEN DE IVA & CONDICIONES FISCALES -->
+                            <div class="bg-white p-4 rounded-xl border border-gray-200 space-y-3 shadow-xs">
+                                <div class="flex items-center justify-between border-b pb-2">
+                                    <h6 class="text-xs font-black uppercase text-indigo-900 tracking-wider flex items-center gap-1.5">
+                                        <span>🏛️</span> Régimen de IVA y Desglose Fiscal
+                                    </h6>
+                                    <span class="text-[10px] bg-slate-100 text-slate-700 font-bold px-2 py-0.5 rounded-full">Fiscalidad</span>
+                                </div>
+
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                    <label class="flex items-center gap-1.5 p-2 rounded-lg border cursor-pointer transition text-xs {{ $quote_tax_type === 'included' ? 'bg-indigo-50 border-indigo-500 font-bold text-indigo-900 ring-1 ring-indigo-400' : 'bg-gray-50 border-gray-200 text-gray-600' }}">
+                                        <input type="radio" wire:model.live="quote_tax_type" value="included" class="text-indigo-600 focus:ring-indigo-500">
+                                        <div>
+                                            <span class="block font-bold">IVA Incluido</span>
+                                            <span class="text-[10px] text-gray-500">Recomendado (Novios / B2C)</span>
+                                        </div>
+                                    </label>
+
+                                    <label class="flex items-center gap-1.5 p-2 rounded-lg border cursor-pointer transition text-xs {{ $quote_tax_type === 'excluded' ? 'bg-indigo-50 border-indigo-500 font-bold text-indigo-900 ring-1 ring-indigo-400' : 'bg-gray-50 border-gray-200 text-gray-600' }}">
+                                        <input type="radio" wire:model.live="quote_tax_type" value="excluded" class="text-indigo-600 focus:ring-indigo-500">
+                                        <div>
+                                            <span class="block font-bold">Base + 21% IVA</span>
+                                            <span class="text-[10px] text-gray-500">Empresas / B2B</span>
+                                        </div>
+                                    </label>
+
+                                    <label class="flex items-center gap-1.5 p-2 rounded-lg border cursor-pointer transition text-xs {{ $quote_tax_type === 'none' ? 'bg-indigo-50 border-indigo-500 font-bold text-indigo-900 ring-1 ring-indigo-400' : 'bg-gray-50 border-gray-200 text-gray-600' }}">
+                                        <input type="radio" wire:model.live="quote_tax_type" value="none" class="text-indigo-600 focus:ring-indigo-500">
+                                        <div>
+                                            <span class="block font-bold">Exento / Sin IVA</span>
+                                            <span class="text-[10px] text-gray-500">Sin recargo</span>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- SECCIÓN: MÉTODOS DE PAGO PERMITIDOS -->
+                            <div class="bg-white p-4 rounded-xl border border-gray-200 space-y-3 shadow-xs">
+                                <div class="flex items-center justify-between border-b pb-2">
+                                    <h6 class="text-xs font-black uppercase text-indigo-900 tracking-wider flex items-center gap-1.5">
+                                        <span>💳</span> Métodos de Pago Permitidos en este Presupuesto
+                                    </h6>
+                                    <span class="text-[10px] text-gray-400">Selecciona los que aparecerán en el PDF</span>
+                                </div>
+
+                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                    <label class="flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition text-xs {{ in_array('transfer', $quote_payment_methods) ? 'bg-emerald-50 border-emerald-400 font-bold text-emerald-900' : 'bg-gray-50 border-gray-200 text-gray-500' }}">
+                                        <input type="checkbox" wire:model.live="quote_payment_methods" value="transfer" class="rounded text-emerald-600 focus:ring-emerald-500">
+                                        <span>🏦 Transferencia</span>
+                                    </label>
+
+                                    <label class="flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition text-xs {{ in_array('bizum', $quote_payment_methods) ? 'bg-emerald-50 border-emerald-400 font-bold text-emerald-900' : 'bg-gray-50 border-gray-200 text-gray-500' }}">
+                                        <input type="checkbox" wire:model.live="quote_payment_methods" value="bizum" class="rounded text-emerald-600 focus:ring-emerald-500">
+                                        <span>📱 Bizum</span>
+                                    </label>
+
+                                    <label class="flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition text-xs {{ in_array('cash', $quote_payment_methods) ? 'bg-emerald-50 border-emerald-400 font-bold text-emerald-900' : 'bg-gray-50 border-gray-200 text-gray-500' }}">
+                                        <input type="checkbox" wire:model.live="quote_payment_methods" value="cash" class="rounded text-emerald-600 focus:ring-emerald-500">
+                                        <span>💵 Efectivo</span>
+                                    </label>
+
+                                    <label class="flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition text-xs {{ in_array('card', $quote_payment_methods) ? 'bg-emerald-50 border-emerald-400 font-bold text-emerald-900' : 'bg-gray-50 border-gray-200 text-gray-500' }}">
+                                        <input type="checkbox" wire:model.live="quote_payment_methods" value="card" class="rounded text-emerald-600 focus:ring-emerald-500">
+                                        <span>💳 Tarjeta</span>
+                                    </label>
+                                </div>
+                            </div>
+
                             @if($editing_quote_id)
                                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2">
                                     <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white font-black py-3.5 px-4 rounded-xl shadow-md transition flex items-center justify-center gap-2">
@@ -1360,15 +1428,39 @@
                                 <h5 class="font-black text-xs uppercase tracking-wider text-slate-300 flex items-center gap-2">
                                     <span>📊</span> Resumen Económico en Vivo
                                 </h5>
-                                <span class="text-[10px] bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-full font-bold border border-indigo-400/30">
-                                    {{ $quote_deposit_type === 'percentage' ? ($quote_deposit_percentage . '%') : 'Fijo' }}
-                                </span>
+                                <div class="flex items-center gap-1.5">
+                                    <span class="text-[10px] bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-full font-bold border border-indigo-400/30">
+                                        {{ $quote_tax_type === 'included' ? 'IVA 21% Incluido' : ($quote_tax_type === 'excluded' ? '+21% IVA' : 'Sin IVA') }}
+                                    </span>
+                                    <span class="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full font-bold border border-emerald-400/30">
+                                        Señal {{ $quote_deposit_type === 'percentage' ? ($quote_deposit_percentage . '%') : 'Fija' }}
+                                    </span>
+                                </div>
                             </div>
 
                             <div class="space-y-3">
-                                <div class="flex items-baseline justify-between">
-                                    <span class="text-sm font-semibold text-slate-400">Importe Total Presupuesto:</span>
-                                    <span class="text-2xl font-black text-white">{{ number_format($this->calculated_total, 2) }} €</span>
+                                <div class="space-y-1.5 text-xs text-slate-300">
+                                    <div class="flex justify-between">
+                                        <span class="text-slate-400">Base Imponible:</span>
+                                        <span class="font-mono font-bold text-slate-200">{{ number_format($this->calculated_subtotal, 2) }} €</span>
+                                    </div>
+
+                                    @if($quote_tax_type !== 'none')
+                                        <div class="flex justify-between">
+                                            <span class="text-slate-400">IVA ({{ $quote_tax_rate }}%):</span>
+                                            <span class="font-mono font-bold text-slate-300">{{ number_format($this->calculated_tax_amount, 2) }} €</span>
+                                        </div>
+                                    @endif
+
+                                    <div class="flex items-baseline justify-between pt-2 border-t border-slate-800">
+                                        <div>
+                                            <span class="text-sm font-black text-white">TOTAL PROPUESTA:</span>
+                                            <span class="block text-[10px] text-slate-400">
+                                                {{ $quote_tax_type === 'included' ? '(IVA 21% incluido)' : ($quote_tax_type === 'excluded' ? '(Base + IVA)' : '(Exento de IVA)') }}
+                                            </span>
+                                        </div>
+                                        <span class="text-2xl font-black text-emerald-400">{{ number_format($this->calculated_total, 2) }} €</span>
+                                    </div>
                                 </div>
 
                                 <div class="grid grid-cols-2 gap-3 pt-2 border-t border-slate-800">
@@ -1390,10 +1482,23 @@
                                         <span class="text-lg font-black text-amber-300">{{ number_format($this->calculated_remaining, 2) }} €</span>
                                     </div>
                                 </div>
-                            </div>
 
-                            <div class="text-[11px] text-slate-400 pt-2 border-t border-slate-800 space-y-1">
-                                <p>✓ El contrato digital reflejará automáticamente la señal de <strong>{{ number_format($this->calculated_signal, 2) }} €</strong> y los métodos de pago (IBAN y Bizum).</p>
+                                <!-- Métodos de pago activos -->
+                                <div class="pt-2 border-t border-slate-800 flex flex-wrap items-center gap-1.5 text-[11px] text-slate-400">
+                                    <span class="text-[10px] text-slate-500 font-bold mr-1">Cobro por:</span>
+                                    @if(in_array('transfer', $quote_payment_methods))
+                                        <span class="bg-slate-800 text-slate-300 px-2 py-0.5 rounded border border-slate-700">🏦 Transferencia</span>
+                                    @endif
+                                    @if(in_array('bizum', $quote_payment_methods))
+                                        <span class="bg-slate-800 text-slate-300 px-2 py-0.5 rounded border border-slate-700">📱 Bizum</span>
+                                    @endif
+                                    @if(in_array('cash', $quote_payment_methods))
+                                        <span class="bg-slate-800 text-slate-300 px-2 py-0.5 rounded border border-slate-700">💵 Efectivo</span>
+                                    @endif
+                                    @if(in_array('card', $quote_payment_methods))
+                                        <span class="bg-slate-800 text-slate-300 px-2 py-0.5 rounded border border-slate-700">💳 Tarjeta</span>
+                                    @endif
+                                </div>
                             </div>
                         </div>
 
@@ -1421,7 +1526,8 @@
                                         $isLatest = ($index === 0);
                                         $isEditingThis = ($editing_quote_id === $quote->id);
                                         $versionNumber = $totalQuotesCount - $index;
-                                        $quoteMsg = "¡Hola " . ($event->client ? $event->client->name : 'pareja') . "! 👋\n\nTe adjuntamos el presupuesto detallado para *" . $event->name . "* por un importe total de *" . number_format($quote->amount, 2, ',', '.') . " €* (Señal de reserva: *" . number_format($qSignal, 2, ',', '.') . " €* - " . $qLabel . ").\n\nPodéis consultarlo con calma y avisarnos para cualquier duda o cambio. ¡Un saludo!";
+                                        $taxLabel = $quote->tax_label;
+                                        $quoteMsg = "¡Hola " . ($event->client ? $event->client->name : 'pareja') . "! 👋\n\nTe adjuntamos el presupuesto detallado para *" . $event->name . "* por un importe total de *" . number_format($quote->amount, 2, ',', '.') . " €* (" . $taxLabel . " - Señal de reserva: *" . number_format($qSignal, 2, ',', '.') . " €* - " . $qLabel . ").\n\nPodéis consultarlo con calma y avisarnos para cualquier duda o cambio. ¡Un saludo!";
                                         $qWaUrl = $clientPhone ? "https://wa.me/{$clientPhone}?text=" . rawurlencode($quoteMsg) : "https://api.whatsapp.com/send?text=" . rawurlencode($quoteMsg);
                                     @endphp
                                     <div class="p-4 border rounded-xl transition shadow-xs space-y-3 {{ $isEditingThis ? 'border-amber-400 bg-amber-50/40 ring-2 ring-amber-300' : ($isLatest ? 'border-emerald-300 bg-emerald-50/20' : 'border-gray-200 bg-gray-50/60 opacity-90') }}">
@@ -1450,6 +1556,10 @@
 
                                                     <span class="text-xs text-emerald-700 font-bold bg-emerald-100 px-1.5 py-0.5 rounded">
                                                         Señal: {{ number_format($qSignal, 2) }} €
+                                                    </span>
+
+                                                    <span class="text-[10px] bg-slate-100 text-slate-700 font-bold px-1.5 py-0.5 rounded">
+                                                        {{ $taxLabel }}
                                                     </span>
                                                 </div>
                                                 <p class="text-[11px] text-gray-500 mt-1">
@@ -1488,6 +1598,16 @@
                                                 @endforeach
                                             </div>
                                         @endif
+
+                                        <!-- Métodos de pago aceptados en esta propuesta -->
+                                        <div class="pt-1.5 border-t border-gray-100 flex flex-wrap items-center gap-1 text-[10px] text-gray-500">
+                                            <span class="font-bold text-gray-400">Métodos de pago:</span>
+                                            @foreach($quote->active_payment_methods as $pm)
+                                                <span class="bg-gray-100 text-gray-700 px-1.5 py-0.2 rounded font-medium">
+                                                    {{ match($pm) { 'transfer' => '🏦 Transferencia', 'bizum' => '📱 Bizum', 'cash' => '💵 Efectivo', 'card' => '💳 Tarjeta', default => $pm } }}
+                                                </span>
+                                            @endforeach
+                                        </div>
                                     </div>
                                 @empty
                                     <div class="text-center p-6 border-2 border-dashed border-gray-200 rounded-xl text-gray-400 text-xs">

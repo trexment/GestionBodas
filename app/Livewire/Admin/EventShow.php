@@ -41,6 +41,11 @@ class EventShow extends Component
     public $quote_deposit_fixed_amount = 200;
     public $editing_quote_id = null; // ID de la propuesta actualmente en edición
 
+    // Configuración de IVA y Métodos de Pago
+    public $quote_tax_type = 'included'; // 'included' (IVA incluido), 'excluded' (Base + 21% IVA), 'none' (Sin IVA / Exento)
+    public $quote_tax_rate = 21.00;
+    public $quote_payment_methods = ['transfer', 'bizum', 'cash']; // transfer, bizum, cash, card
+
     // Presupuestos & Packs
     public $quote_services = [
         'pack_basic' => ['selected' => false, 'name' => 'Pack Básico', 'price' => 400, 'hours' => 4, 'desc' => '4 Horas de servicio DJ, Equipo de sonido profesional e iluminación de pista básica.'],
@@ -140,6 +145,17 @@ class EventShow extends Component
         $this->quote_deposit_type = \App\Models\Setting::get('deposit_type', 'percentage');
         $this->quote_deposit_percentage = (float)\App\Models\Setting::get('deposit_percentage', 40);
         $this->quote_deposit_fixed_amount = (float)\App\Models\Setting::get('deposit_fixed_amount', 200);
+
+        // Condiciones de IVA y Métodos de Pago
+        $this->quote_tax_type = \App\Models\Setting::get('default_tax_type', 'included');
+        $this->quote_tax_rate = (float)\App\Models\Setting::get('default_tax_rate', 21.00);
+        $savedPm = \App\Models\Setting::get('default_payment_methods');
+        if ($savedPm) {
+            $decoded = json_decode($savedPm, true);
+            if (is_array($decoded) && !empty($decoded)) {
+                $this->quote_payment_methods = $decoded;
+            }
+        }
     }
 
     public function changeStatus($status)
@@ -493,7 +509,7 @@ class EventShow extends Component
         }
     }
 
-    public function getCalculatedTotalProperty()
+    public function getCalculatedGrossTotalProperty()
     {
         $total = 0;
 
@@ -527,20 +543,21 @@ class EventShow extends Component
         }
 
         // Fotografía
-        if (!empty($this->quote_services['photo_ceremony']['selected'])) {
-            $total += (float)$this->quote_services['photo_ceremony']['price'] * (int)($this->quote_services['photo_ceremony']['quantity'] ?: 1);
-        }
-        if (!empty($this->quote_services['photo_restaurant']['selected'])) {
-            $total += (float)$this->quote_services['photo_restaurant']['price'] * (int)($this->quote_services['photo_restaurant']['quantity'] ?: 1);
-        }
-        if (!empty($this->quote_services['photo_party']['selected'])) {
-            $total += (float)$this->quote_services['photo_party']['price'] * (int)($this->quote_services['photo_party']['quantity'] ?: 1);
-        }
-        if (!empty($this->quote_services['photo_album']['selected'])) {
-            $total += (float)$this->quote_services['photo_album']['price'] * (int)($this->quote_services['photo_album']['quantity'] ?: 1);
-        }
         if (!empty($this->quote_services['photo_full_pack']['selected'])) {
             $total += (float)$this->quote_services['photo_full_pack']['price'] * (int)($this->quote_services['photo_full_pack']['quantity'] ?: 1);
+        } else {
+            if (!empty($this->quote_services['photo_ceremony']['selected'])) {
+                $total += (float)$this->quote_services['photo_ceremony']['price'] * (int)($this->quote_services['photo_ceremony']['quantity'] ?: 1);
+            }
+            if (!empty($this->quote_services['photo_restaurant']['selected'])) {
+                $total += (float)$this->quote_services['photo_restaurant']['price'] * (int)($this->quote_services['photo_restaurant']['quantity'] ?: 1);
+            }
+            if (!empty($this->quote_services['photo_party']['selected'])) {
+                $total += (float)$this->quote_services['photo_party']['price'] * (int)($this->quote_services['photo_party']['quantity'] ?: 1);
+            }
+            if (!empty($this->quote_services['photo_album']['selected'])) {
+                $total += (float)$this->quote_services['photo_album']['price'] * (int)($this->quote_services['photo_album']['quantity'] ?: 1);
+            }
         }
 
         // Karaoke & Extra
@@ -552,6 +569,45 @@ class EventShow extends Component
         }
 
         return $total;
+    }
+
+    public function getCalculatedSubtotalProperty()
+    {
+        $gross = (float)$this->calculated_gross_total;
+        $rate = (float)($this->quote_tax_rate ?: 21.00);
+
+        if ($this->quote_tax_type === 'included') {
+            return round($gross / (1 + ($rate / 100)), 2);
+        }
+
+        return $gross;
+    }
+
+    public function getCalculatedTaxAmountProperty()
+    {
+        $gross = (float)$this->calculated_gross_total;
+        $rate = (float)($this->quote_tax_rate ?: 21.00);
+
+        if ($this->quote_tax_type === 'included') {
+            return round($gross - $this->calculated_subtotal, 2);
+        }
+
+        if ($this->quote_tax_type === 'excluded') {
+            return round(($gross * $rate) / 100, 2);
+        }
+
+        return 0.00;
+    }
+
+    public function getCalculatedTotalProperty()
+    {
+        $gross = (float)$this->calculated_gross_total;
+
+        if ($this->quote_tax_type === 'excluded') {
+            return round($gross + $this->calculated_tax_amount, 2);
+        }
+
+        return $gross;
     }
 
     public function getCalculatedSignalProperty()
@@ -687,8 +743,8 @@ class EventShow extends Component
 
     public function createQuote()
     {
-        $total = 0;
-        $items = $this->buildQuoteItemsList($total);
+        $grossTotal = 0;
+        $items = $this->buildQuoteItemsList($grossTotal);
 
         if (empty($items)) {
             session()->flash('quote_error', 'Debes seleccionar al menos un Pack o Servicio para generar la propuesta comercial.');
@@ -696,13 +752,21 @@ class EventShow extends Component
         }
 
         $signal = $this->calculated_signal;
+        $subtotal = $this->calculated_subtotal;
+        $taxAmount = $this->calculated_tax_amount;
+        $finalTotal = $this->calculated_total;
 
         $quote = $this->event->quotes()->create([
-            'amount' => $total,
+            'amount' => $finalTotal,
             'status' => 'pending',
             'deposit_type' => $this->quote_deposit_type,
             'deposit_percentage' => $this->quote_deposit_type === 'percentage' ? (float)$this->quote_deposit_percentage : null,
             'deposit_amount' => $signal,
+            'tax_type' => $this->quote_tax_type,
+            'tax_rate' => (float)$this->quote_tax_rate,
+            'subtotal_amount' => $subtotal,
+            'tax_amount' => $taxAmount,
+            'payment_methods' => $this->quote_payment_methods,
         ]);
 
         foreach ($items as $item) {
@@ -711,7 +775,7 @@ class EventShow extends Component
 
         $this->editing_quote_id = null;
         $this->event->load('quotes.items');
-        session()->flash('quote_message', 'Nueva Propuesta Comercial #' . $quote->id . ' generada exitosamente (Total: ' . number_format($total, 2, ',', '.') . ' € | Señal de reserva: ' . number_format($signal, 2, ',', '.') . ' €).');
+        session()->flash('quote_message', 'Nueva Propuesta Comercial #' . $quote->id . ' generada exitosamente (Total: ' . number_format($finalTotal, 2, ',', '.') . ' € | Señal de reserva: ' . number_format($signal, 2, ',', '.') . ' €).');
     }
 
     public function updateQuote()
@@ -723,8 +787,8 @@ class EventShow extends Component
 
         $quote = \App\Models\Quote::findOrFail($this->editing_quote_id);
         
-        $total = 0;
-        $items = $this->buildQuoteItemsList($total);
+        $grossTotal = 0;
+        $items = $this->buildQuoteItemsList($grossTotal);
 
         if (empty($items)) {
             session()->flash('quote_error', 'Debes seleccionar al menos un Pack o Servicio para la propuesta comercial.');
@@ -732,12 +796,20 @@ class EventShow extends Component
         }
 
         $signal = $this->calculated_signal;
+        $subtotal = $this->calculated_subtotal;
+        $taxAmount = $this->calculated_tax_amount;
+        $finalTotal = $this->calculated_total;
 
         $quote->update([
-            'amount' => $total,
+            'amount' => $finalTotal,
             'deposit_type' => $this->quote_deposit_type,
             'deposit_percentage' => $this->quote_deposit_type === 'percentage' ? (float)$this->quote_deposit_percentage : null,
             'deposit_amount' => $signal,
+            'tax_type' => $this->quote_tax_type,
+            'tax_rate' => (float)$this->quote_tax_rate,
+            'subtotal_amount' => $subtotal,
+            'tax_amount' => $taxAmount,
+            'payment_methods' => $this->quote_payment_methods,
         ]);
 
         $quote->items()->delete();
@@ -746,7 +818,7 @@ class EventShow extends Component
         }
 
         $this->event->load('quotes.items');
-        session()->flash('quote_message', 'Propuesta Comercial #' . $quote->id . ' actualizada correctamente (Total: ' . number_format($total, 2, ',', '.') . ' € | Señal: ' . number_format($signal, 2, ',', '.') . ' €).');
+        session()->flash('quote_message', 'Propuesta Comercial #' . $quote->id . ' actualizada correctamente (Total: ' . number_format($finalTotal, 2, ',', '.') . ' € | Señal: ' . number_format($signal, 2, ',', '.') . ' €).');
     }
 
     public function loadQuoteIntoCalculator($quoteId)
@@ -761,6 +833,11 @@ class EventShow extends Component
         } else {
             $this->quote_deposit_fixed_amount = (float)($quote->deposit_amount ?: 200);
         }
+
+        // Cargar configuración de IVA y Métodos de Pago
+        $this->quote_tax_type = $quote->tax_type ?: 'included';
+        $this->quote_tax_rate = (float)($quote->tax_rate ?: 21.00);
+        $this->quote_payment_methods = $quote->active_payment_methods;
 
         // Limpiar selección previa
         $this->selectPack('clear');

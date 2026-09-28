@@ -417,9 +417,32 @@
                         </td>
                     </tr>
                 @endforeach
+                @if($quote->tax_type === 'excluded')
+                    <tr style="background-color: #f8fafc;">
+                        <td colspan="2" style="text-align: right; font-weight: bold; color: #475569; font-size: 8pt; border-top: 1px solid #cbd5e1;">
+                            BASE IMPONIBLE:
+                        </td>
+                        <td class="price-cell" style="font-size: 8.5pt; color: #0f172a; border-top: 1px solid #cbd5e1;">
+                            {{ number_format($quote->computed_subtotal, 2, ',', '.') }} €
+                        </td>
+                    </tr>
+                    <tr style="background-color: #f8fafc;">
+                        <td colspan="2" style="text-align: right; font-weight: bold; color: #475569; font-size: 8pt;">
+                            IVA ({{ rtrim(rtrim(number_format($quote->tax_rate ?: 21, 2, ',', '.'), '0'), ',') }}%):
+                        </td>
+                        <td class="price-cell" style="font-size: 8.5pt; color: #0f172a;">
+                            {{ number_format($quote->computed_tax, 2, ',', '.') }} €
+                        </td>
+                    </tr>
+                @endif
                 <tr class="total-row">
                     <td colspan="2" style="text-align: right; text-transform: uppercase;">
                         TOTAL PRESUPUESTO:
+                        @if($quote->tax_type === 'included')
+                            <span style="font-size: 7pt; font-weight: normal; color: #94a3b8; display: block; text-transform: none;">(IVA {{ rtrim(rtrim(number_format($quote->tax_rate ?: 21, 2, ',', '.'), '0'), ',') }}% incluido)</span>
+                        @elseif($quote->tax_type === 'none')
+                            <span style="font-size: 7pt; font-weight: normal; color: #94a3b8; display: block; text-transform: none;">(Operación exenta / Sin recargo de IVA)</span>
+                        @endif
                     </td>
                     <td class="price-cell">
                         {{ number_format($quote->amount, 2, ',', '.') }} €
@@ -450,18 +473,35 @@
                         {{ number_format($remainingAmount, 2, ',', '.') }} € <span style="font-weight: normal; color: #64748b; font-size: 7.5pt;">(el día de la celebración del evento)</span>
                     </td>
                 </tr>
-                @if($companyIban)
+                @php
+                    $pms = $quote->active_payment_methods;
+                @endphp
+                @if(in_array('transfer', $pms) && $companyIban)
                 <tr>
                     <td style="font-weight: bold; color: #2563eb;">&bull;</td>
                     <td style="color: #475569;">Transferencia Bancaria:</td>
                     <td style="font-family: monospace; font-size: 8pt; color: #0f172a;"><strong>{{ $companyIban }}</strong></td>
                 </tr>
                 @endif
-                @if($companyBizum)
+                @if(in_array('bizum', $pms) && $companyBizum)
                 <tr>
                     <td style="font-weight: bold; color: #2563eb;">&bull;</td>
                     <td style="color: #475569;">Bizum Directo:</td>
                     <td style="font-weight: bold; color: #0f172a;">{{ $companyBizum }}</td>
+                </tr>
+                @endif
+                @if(in_array('cash', $pms))
+                <tr>
+                    <td style="font-weight: bold; color: #2563eb;">&bull;</td>
+                    <td style="color: #475569;">Pago en Efectivo:</td>
+                    <td style="color: #0f172a; font-size: 8pt;">Abono en mano al personal técnico/DJ al inicio del servicio el día del evento.</td>
+                </tr>
+                @endif
+                @if(in_array('card', $pms))
+                <tr>
+                    <td style="font-weight: bold; color: #2563eb;">&bull;</td>
+                    <td style="color: #475569;">Pago con Tarjeta:</td>
+                    <td style="color: #0f172a; font-size: 8pt;">Pasarela de cobro seguro online con tarjeta de crédito/débito.</td>
                 </tr>
                 @endif
                 <tr>
