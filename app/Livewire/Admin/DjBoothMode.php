@@ -154,12 +154,14 @@ class DjBoothMode extends Component
     public function setGroupingMode($mode)
     {
         $this->groupingMode = $mode;
+        $this->viewMode = 'pads';
         $this->padPage = 1;
     }
 
     public function setViewMode($mode)
     {
         $this->viewMode = $mode;
+        $this->padPage = 1;
     }
 
     public function nextPage($totalPages)
