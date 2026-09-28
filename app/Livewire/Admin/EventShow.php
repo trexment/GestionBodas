@@ -30,11 +30,16 @@ class EventShow extends Component
     public $venue_notes;
     public $showVenueModal = false;
 
-    // Facturas
+    // Facturas y Recibos
+    public $invoice_type = 'factura'; // 'factura' | 'recibo'
+    public $invoice_quote_id = null;
     public $invoice_number;
     public $invoice_amount;
     public $invoice_tax;
+    public $invoice_tax_rate = 21.00;
     public $invoice_issue_date;
+    public $invoice_status = 'unpaid';
+    public $invoice_notes = '';
 
     // Notas de Evento / Acuerdos WhatsApp
     public $event_notes;
@@ -118,11 +123,12 @@ class EventShow extends Component
         $this->event_notes = $this->event->notes;
         
         $dossier = $this->event->dossiers()->first();
-        if ($dossier) {
-            $this->dossier_content = $dossier->content;
-        }
-
         $this->loadSettingsPrices();
+
+        $this->invoice_type = 'factura';
+        $this->invoice_tax_rate = 21.00;
+        $this->invoice_issue_date = now()->format('Y-m-d');
+        $this->invoice_number = \App\Models\Invoice::nextNumber('factura');
     }
 
     public function loadSettingsPrices()
@@ -433,31 +439,192 @@ class EventShow extends Component
         $this->event->load('musicRequests');
     }
 
-    // ==================== FACTURAS Y PRESUPUESTOS ====================
+    // ==================== FACTURAS Y RECIBOS ====================
+
+    public function updatedInvoiceType($value)
+    {
+        $this->invoice_number = \App\Models\Invoice::nextNumber($value);
+        if ($value === 'recibo') {
+            $this->invoice_tax = 0.00;
+            $this->invoice_tax_rate = 0.00;
+        } else {
+            $this->invoice_tax_rate = 21.00;
+            if ((float)$this->invoice_amount > 0) {
+                $this->invoice_tax = round((float)$this->invoice_amount * 0.21, 2);
+            }
+        }
+    }
+
+    public function updatedInvoiceAmount($value)
+    {
+        if ($this->invoice_type === 'factura') {
+            $rate = (float)($this->invoice_tax_rate ?: 21.00);
+            $this->invoice_tax = round((float)$value * ($rate / 100), 2);
+        } else {
+            $this->invoice_tax = 0.00;
+        }
+    }
+
+    public function updatedInvoiceTaxRate($value)
+    {
+        if ($this->invoice_type === 'factura' && (float)$this->invoice_amount > 0) {
+            $this->invoice_tax = round((float)$this->invoice_amount * ((float)$value / 100), 2);
+        }
+    }
+
+    public function loadQuoteIntoInvoice(int $quoteId)
+    {
+        $quote = \App\Models\Quote::with('items')->find($quoteId);
+        if (!$quote) return;
+
+        $this->invoice_quote_id = $quote->id;
+        $this->invoice_issue_date = now()->format('Y-m-d');
+
+        if ($quote->tax_type === 'none') {
+            $this->invoice_type = 'recibo';
+            $this->invoice_amount = (float)$quote->amount;
+            $this->invoice_tax = 0.00;
+            $this->invoice_tax_rate = 0.00;
+        } elseif ($quote->tax_type === 'included') {
+            $this->invoice_type = 'factura';
+            $this->invoice_tax_rate = (float)($quote->tax_rate ?: 21.00);
+            $this->invoice_amount = $quote->computed_subtotal;
+            $this->invoice_tax = $quote->computed_tax;
+        } elseif ($quote->tax_type === 'excluded') {
+            $this->invoice_type = 'factura';
+            $this->invoice_tax_rate = (float)($quote->tax_rate ?: 21.00);
+            $this->invoice_amount = (float)$quote->amount;
+            $this->invoice_tax = $quote->computed_tax;
+        } else {
+            $this->invoice_type = 'factura';
+            $this->invoice_tax_rate = 21.00;
+            $this->invoice_amount = round((float)$quote->amount / 1.21, 2);
+            $this->invoice_tax = round((float)$quote->amount - $this->invoice_amount, 2);
+        }
+
+        $this->invoice_number = \App\Models\Invoice::nextNumber($this->invoice_type);
+        $this->invoice_notes = 'Servicios según Propuesta #' . $quote->id;
+        $this->activeTab = 'invoices';
+        session()->flash('invoice_message', "Propuesta #{$quote->id} cargada en el formulario de " . ($this->invoice_type === 'recibo' ? 'Recibo' : 'Factura') . ".");
+    }
+
+    public function convertQuoteToInvoice(int $quoteId, string $type = 'auto')
+    {
+        $quote = \App\Models\Quote::with('items')->find($quoteId);
+        if (!$quote) {
+            session()->flash('error_message', 'No se encontró la propuesta indicada.');
+            return;
+        }
+
+        // Determinar si es Recibo o Factura
+        if ($type === 'auto') {
+            $type = ($quote->tax_type === 'none') ? 'recibo' : 'factura';
+        }
+
+        if ($type === 'recibo') {
+            $amount = (float)$quote->amount;
+            $tax = 0.00;
+            $taxRate = 0.00;
+            $total = $amount;
+        } else {
+            // Factura con IVA
+            $taxRate = (float)($quote->tax_rate ?: 21.00);
+            if ($quote->tax_type === 'included') {
+                $amount = $quote->computed_subtotal;
+                $tax = $quote->computed_tax;
+                $total = (float)$quote->amount;
+            } elseif ($quote->tax_type === 'excluded') {
+                $amount = (float)$quote->amount;
+                $tax = $quote->computed_tax;
+                $total = $amount + $tax;
+            } else {
+                // Era 'none' pero se solicita explícitamente como Factura
+                $amount = (float)$quote->amount;
+                $tax = round($amount * ($taxRate / 100), 2);
+                $total = $amount + $tax;
+            }
+        }
+
+        $nextNum = \App\Models\Invoice::nextNumber($type);
+
+        $invoice = $this->event->invoices()->create([
+            'quote_id' => $quote->id,
+            'invoice_number' => $nextNum,
+            'type' => $type,
+            'amount' => $amount,
+            'tax' => $tax,
+            'tax_rate' => $taxRate,
+            'total' => $total,
+            'issue_date' => now(),
+            'status' => 'unpaid',
+            'notes' => 'Generado a partir de la Propuesta #' . $quote->id,
+        ]);
+
+        $this->event->load('invoices');
+        $this->activeTab = 'invoices';
+        session()->flash('invoice_message', '¡' . ($type === 'recibo' ? 'Recibo' : 'Factura') . " {$nextNum} generado con éxito a partir de la Propuesta #{$quote->id}!");
+    }
 
     public function createInvoice()
     {
         $this->validate([
             'invoice_number' => 'required|string|unique:invoices,invoice_number',
-            'invoice_amount' => 'required|numeric',
-            'invoice_tax' => 'required|numeric',
+            'invoice_type' => 'required|in:factura,recibo',
+            'invoice_amount' => 'required|numeric|min:0',
+            'invoice_tax' => 'required|numeric|min:0',
             'invoice_issue_date' => 'required|date',
+        ], [
+            'invoice_number.required' => 'El número de documento es obligatorio.',
+            'invoice_number.unique' => 'Este número de factura/recibo ya ha sido utilizado.',
+            'invoice_amount.required' => 'El importe base es obligatorio.',
+            'invoice_issue_date.required' => 'La fecha de emisión es obligatoria.',
         ]);
 
-        $total = $this->invoice_amount + $this->invoice_tax;
+        $total = (float)$this->invoice_amount + (float)$this->invoice_tax;
 
         $this->event->invoices()->create([
+            'quote_id' => $this->invoice_quote_id,
             'invoice_number' => $this->invoice_number,
-            'amount' => $this->invoice_amount,
-            'tax' => $this->invoice_tax,
+            'type' => $this->invoice_type,
+            'amount' => (float)$this->invoice_amount,
+            'tax' => (float)$this->invoice_tax,
+            'tax_rate' => $this->invoice_type === 'recibo' ? 0.00 : (float)($this->invoice_tax_rate ?: 21.00),
             'total' => $total,
             'issue_date' => $this->invoice_issue_date,
-            'status' => 'unpaid',
+            'status' => $this->invoice_status ?: 'unpaid',
+            'notes' => $this->invoice_notes,
         ]);
 
-        $this->reset(['invoice_number', 'invoice_amount', 'invoice_tax', 'invoice_issue_date']);
+        $this->reset(['invoice_amount', 'invoice_tax', 'invoice_quote_id', 'invoice_notes']);
+        $this->invoice_type = 'factura';
+        $this->invoice_tax_rate = 21.00;
+        $this->invoice_issue_date = now()->format('Y-m-d');
+        $this->invoice_number = \App\Models\Invoice::nextNumber('factura');
+
         $this->event->load('invoices');
-        session()->flash('invoice_message', 'Factura creada exitosamente.');
+        session()->flash('invoice_message', 'Documento emitido y guardado exitosamente.');
+    }
+
+    public function toggleInvoiceStatus(int $invoiceId)
+    {
+        $invoice = $this->event->invoices()->find($invoiceId);
+        if ($invoice) {
+            $newStatus = ($invoice->status === 'paid') ? 'unpaid' : 'paid';
+            $invoice->update(['status' => $newStatus]);
+            $this->event->load('invoices');
+            session()->flash('invoice_message', 'Estado del documento ' . $invoice->invoice_number . ' actualizado a: ' . ($newStatus === 'paid' ? 'COBRADO / PAGADO' : 'PENDIENTE') . '.');
+        }
+    }
+
+    public function deleteInvoice(int $invoiceId)
+    {
+        $invoice = $this->event->invoices()->find($invoiceId);
+        if ($invoice) {
+            $num = $invoice->invoice_number;
+            $invoice->delete();
+            $this->event->load('invoices');
+            session()->flash('invoice_message', "Documento {$num} eliminado correctamente.");
+        }
     }
 
     public function saveEventNotes()

@@ -1820,20 +1820,53 @@
                                                 <p class="text-[11px] text-gray-500 mt-1">
                                                     <strong>Propuesta #{{ $quote->id }}</strong> &bull; Emitida: {{ $quote->created_at->format('d/m/Y H:i') }} &bull; Señal: {{ $qLabel }}
                                                 </p>
+
+                                                @php
+                                                    $linkedDocs = $event->invoices->where('quote_id', $quote->id);
+                                                @endphp
+                                                @if($linkedDocs->count() > 0)
+                                                    <div class="flex flex-wrap items-center gap-1.5 mt-2">
+                                                        @foreach($linkedDocs as $ldoc)
+                                                            <a href="{{ route('admin.invoice.pdf', $ldoc->id) }}" target="_blank" class="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-md border {{ $ldoc->isReceipt() ? 'bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100' : 'bg-blue-50 text-blue-800 border-blue-300 hover:bg-blue-100' }} transition">
+                                                                <span>{{ $ldoc->isReceipt() ? '🧾 Recibo' : '📄 Factura' }}:</span>
+                                                                <span>{{ $ldoc->invoice_number }}</span>
+                                                                <span class="text-[9px] opacity-75">({{ number_format($ldoc->total, 2) }}€)</span>
+                                                                <span>⬇️</span>
+                                                            </a>
+                                                        @endforeach
+                                                    </div>
+                                                @endif
                                             </div>
 
                                             <!-- Botones de Acción -->
                                             <div class="flex flex-wrap items-center gap-1.5 self-start sm:self-auto">
+                                                <!-- BOTONES CONVERTIR A RECIBO / FACTURA -->
+                                                @if($quote->tax_type === 'none')
+                                                    <button type="button" wire:click="convertQuoteToInvoice({{ $quote->id }}, 'recibo')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-2.5 py-1.5 rounded-lg flex items-center gap-1 transition shadow-2xs" title="Pasar directamente a Recibo de Pago (Sin IVA)">
+                                                        🧾 Pasar a Recibo
+                                                    </button>
+                                                    <button type="button" wire:click="convertQuoteToInvoice({{ $quote->id }}, 'factura')" class="bg-white hover:bg-blue-50 text-blue-700 border border-blue-300 text-xs font-bold px-2.5 py-1.5 rounded-lg flex items-center gap-1 transition shadow-2xs" title="Pasar a Factura oficial con IVA">
+                                                        📄 A Factura (+IVA)
+                                                    </button>
+                                                @else
+                                                    <button type="button" wire:click="convertQuoteToInvoice({{ $quote->id }}, 'factura')" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-2.5 py-1.5 rounded-lg flex items-center gap-1 transition shadow-2xs" title="Pasar directamente a Factura Oficial con IVA">
+                                                        📄 Pasar a Factura
+                                                    </button>
+                                                    <button type="button" wire:click="convertQuoteToInvoice({{ $quote->id }}, 'recibo')" class="bg-white hover:bg-emerald-50 text-emerald-700 border border-emerald-300 text-xs font-bold px-2.5 py-1.5 rounded-lg flex items-center gap-1 transition shadow-2xs" title="Pasar a Recibo (Sin IVA)">
+                                                        🧾 A Recibo
+                                                    </button>
+                                                @endif
+
                                                 <button type="button" wire:click="loadQuoteIntoCalculator({{ $quote->id }})" class="bg-white hover:bg-amber-50 text-amber-800 border border-amber-300 text-xs font-bold px-2.5 py-1.5 rounded-lg flex items-center gap-1 transition shadow-2xs" title="Cargar servicios de esta propuesta en el calculador para editar">
                                                     ✏️ Editar
                                                 </button>
 
-                                                <a href="{{ $qWaUrl }}" target="_blank" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-2.5 py-1.5 rounded-lg flex items-center gap-1 transition shadow-2xs" title="Compartir por WhatsApp">
+                                                <a href="{{ $qWaUrl }}" target="_blank" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs font-bold px-2.5 py-1.5 rounded-lg flex items-center gap-1 transition shadow-2xs" title="Compartir por WhatsApp">
                                                     💬 WhatsApp
                                                 </a>
 
-                                                <a href="{{ route('admin.quote.pdf', $quote->id) }}" target="_blank" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-bold px-2.5 py-1.5 rounded-lg flex items-center gap-1 transition shadow-2xs" title="Descargar o Ver PDF">
-                                                    📄 PDF
+                                                <a href="{{ route('admin.quote.pdf', $quote->id) }}" target="_blank" class="bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-300 text-xs font-bold px-2.5 py-1.5 rounded-lg flex items-center gap-1 transition shadow-2xs" title="Descargar o Ver PDF de Propuesta">
+                                                    📑 PDF
                                                 </a>
 
                                                 <button type="button" wire:click="deleteQuote({{ $quote->id }})" wire:confirm="¿Estás seguro de que deseas eliminar la Propuesta #{{ $quote->id }}?" class="bg-white hover:bg-red-50 text-red-600 border border-gray-200 hover:border-red-300 text-xs font-bold px-2 py-1.5 rounded-lg transition" title="Eliminar Propuesta">
@@ -1976,55 +2009,309 @@
             </div>
         @endif
 
-        {{-- FACTURAS --}}
+        {{-- FACTURAS Y RECIBOS --}}
         @if($activeTab == 'invoices')
-            <div>
-                <h4 class="text-lg font-bold mb-4">Facturación</h4>
-                @if (session()->has('invoice_message')) <div class="text-green-600 text-sm mb-2">{{ session('invoice_message') }}</div> @endif
+            <div class="space-y-6">
+                <!-- Cabecera de la sección -->
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-200 pb-4">
+                    <div>
+                        <h4 class="text-lg font-black text-gray-900 flex items-center gap-2">
+                            <span>📄 Facturación y 🧾 Recibos de Pago</span>
+                        </h4>
+                        <p class="text-xs text-gray-500 mt-0.5">
+                            Emite Facturas oficiales con desglose de IVA o Recibos / Justificantes sin IVA directamente a partir de cualquier presupuesto.
+                        </p>
+                    </div>
 
-                <ul class="mb-6 divide-y divide-gray-200">
-                    @forelse($event->invoices as $invoice)
-                        <li class="py-3 flex justify-between items-center">
-                            <div>
-                                <span class="font-bold">{{ $invoice->invoice_number }}</span> 
-                                - {{ $invoice->issue_date->format('d/m/Y') }} 
-                                <br> <span class="text-sm text-gray-500">Base: {{ $invoice->amount }}€ | IVA: {{ $invoice->tax }}€ | <strong>Total: {{ $invoice->total }}€</strong></span>
-                            </div>
-                            <div class="flex items-center">
-                                <span class="px-2 py-1 text-xs rounded-full {{ $invoice->status == 'paid' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">{{ ucfirst($invoice->status) }}</span>
-                                <a href="{{ route('admin.invoice.pdf', $invoice->id) }}" target="_blank" class="text-indigo-600 hover:text-indigo-900 text-sm ml-4 border px-2 py-1 rounded bg-white shadow-sm">⬇️ PDF</a>
-                            </div>
-                        </li>
-                    @empty
-                        <li class="py-3 text-gray-500 text-sm">No hay facturas emitidas.</li>
-                    @endforelse
-                </ul>
+                    @php
+                        $invoicesTotal = $event->invoices->sum('total');
+                        $invoicesPaid = $event->invoices->where('status', 'paid')->sum('total');
+                        $invoicesPending = $event->invoices->where('status', '!=', 'paid')->sum('total');
+                    @endphp
 
-                <div class="bg-gray-50 p-4 rounded border">
-                    <h5 class="font-bold mb-3 text-sm">Emitir nueva factura</h5>
-                    <div class="grid grid-cols-4 gap-4 mb-3">
-                        <div>
-                            <label class="block text-xs font-bold mb-1">Nº Factura</label>
-                            <input type="text" wire:model="invoice_number" class="border rounded px-2 py-1 w-full" placeholder="F-2026-001">
+                    <div class="flex items-center gap-2">
+                        <div class="bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-xl text-right">
+                            <span class="text-[10px] uppercase font-bold text-emerald-700 block">Cobrado</span>
+                            <span class="text-xs font-black text-emerald-800">{{ number_format($invoicesPaid, 2) }} €</span>
                         </div>
-                        <div>
-                            <label class="block text-xs font-bold mb-1">Base Imponible (€)</label>
-                            <input type="number" step="0.01" wire:model="invoice_amount" class="border rounded px-2 py-1 w-full">
+                        <div class="bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-xl text-right">
+                            <span class="text-[10px] uppercase font-bold text-amber-700 block">Pendiente</span>
+                            <span class="text-xs font-black text-amber-800">{{ number_format($invoicesPending, 2) }} €</span>
                         </div>
-                        <div>
-                            <label class="block text-xs font-bold mb-1">IVA (€)</label>
-                            <input type="number" step="0.01" wire:model="invoice_tax" class="border rounded px-2 py-1 w-full">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold mb-1">Fecha Emisión</label>
-                            <input type="date" wire:model="invoice_issue_date" class="border rounded px-2 py-1 w-full">
+                        <div class="bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-xl text-right">
+                            <span class="text-[10px] uppercase font-bold text-slate-600 block">Total Emitido</span>
+                            <span class="text-xs font-black text-slate-900">{{ number_format($invoicesTotal, 2) }} €</span>
                         </div>
                     </div>
-                    <button wire:click="createInvoice" class="bg-indigo-600 text-white px-3 py-1 rounded shadow text-sm">Guardar Factura</button>
-                    
-                    @if($errors->any())
-                        <div class="text-red-500 text-xs mt-2">Revisa los datos de la factura. Asegúrate de que el nº no exista.</div>
-                    @endif
+                </div>
+
+                @if (session()->has('invoice_message')) 
+                    <div class="bg-emerald-50 border border-emerald-300 text-emerald-800 text-xs font-bold p-3 rounded-xl flex items-center gap-2 shadow-xs">
+                        <span>✓</span> {{ session('invoice_message') }}
+                    </div> 
+                @endif
+
+                <!-- ACCESO RÁPIDO: PASAR PROPUESTA A FACTURA / RECIBO -->
+                @if($event->quotes && $event->quotes->count() > 0)
+                    <div class="bg-gradient-to-r from-indigo-50/70 via-purple-50/70 to-emerald-50/70 border border-indigo-100 rounded-2xl p-4 space-y-2.5">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-slate-800 uppercase tracking-wide flex items-center gap-1.5">
+                                <span>⚡</span> Emitir Documento Rápido desde Propuestas:
+                            </span>
+                            <span class="text-[11px] text-slate-500">1-Clic y listo</span>
+                        </div>
+                        <div class="flex flex-wrap gap-2">
+                            @foreach($event->quotes as $q)
+                                <div class="inline-flex items-center bg-white border border-slate-200 rounded-xl p-1 shadow-2xs text-xs">
+                                    <span class="font-bold px-2 text-slate-800">Propuesta #{{ $q->id }} ({{ number_format($q->amount, 2) }}€)</span>
+                                    <div class="flex items-center gap-1 pl-1 border-l border-slate-100">
+                                        @if($q->tax_type === 'none')
+                                            <button type="button" wire:click="convertQuoteToInvoice({{ $q->id }}, 'recibo')" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-2 py-1 rounded-lg text-[11px] transition" title="Generar Recibo de Pago Sin IVA">
+                                                🧾 Recibo (Sin IVA)
+                                            </button>
+                                            <button type="button" wire:click="convertQuoteToInvoice({{ $q->id }}, 'factura')" class="bg-slate-100 hover:bg-blue-50 text-blue-700 hover:text-blue-900 font-bold px-2 py-1 rounded-lg text-[11px] transition" title="Generar Factura Oficial con IVA">
+                                                📄 Factura (+IVA)
+                                            </button>
+                                        @else
+                                            <button type="button" wire:click="convertQuoteToInvoice({{ $q->id }}, 'factura')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-2 py-1 rounded-lg text-[11px] transition" title="Generar Factura Oficial con IVA">
+                                                📄 Factura (Con IVA)
+                                            </button>
+                                            <button type="button" wire:click="convertQuoteToInvoice({{ $q->id }}, 'recibo')" class="bg-slate-100 hover:bg-emerald-50 text-emerald-700 hover:text-emerald-900 font-bold px-2 py-1 rounded-lg text-[11px] transition" title="Generar Recibo Sin IVA">
+                                                🧾 Recibo (Sin IVA)
+                                            </button>
+                                        @endif
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
+
+                <!-- LISTADO DE DOCUMENTOS EMITIDOS -->
+                <div class="space-y-3">
+                    <h5 class="text-xs font-bold text-slate-700 uppercase tracking-wider">Documentos Emitidos ({{ $event->invoices->count() }})</h5>
+
+                    @forelse($event->invoices->sortByDesc('id') as $invoice)
+                        <div class="bg-white p-4 rounded-2xl border {{ $invoice->isReceipt() ? 'border-emerald-200 bg-emerald-50/10' : 'border-blue-200 bg-blue-50/10' }} shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition">
+                            <div class="space-y-1">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <span class="text-xs font-black px-2 py-0.5 rounded-full uppercase {{ $invoice->isReceipt() ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-blue-100 text-blue-800 border border-blue-300' }}">
+                                        {{ $invoice->isReceipt() ? '🧾 RECIBO' : '📄 FACTURA' }}
+                                    </span>
+                                    <span class="text-sm font-black text-slate-900 font-mono">{{ $invoice->invoice_number }}</span>
+                                    <span class="text-xs text-slate-500">&bull; {{ $invoice->issue_date ? $invoice->issue_date->format('d/m/Y') : '' }}</span>
+
+                                    @if($invoice->quote_id)
+                                        <span class="text-[10px] bg-slate-100 text-slate-600 font-bold px-1.5 py-0.5 rounded">
+                                            Origen: Propuesta #{{ $invoice->quote_id }}
+                                        </span>
+                                    @endif
+                                </div>
+
+                                <div class="text-xs text-slate-600 flex flex-wrap items-center gap-x-3 gap-y-1 pt-0.5">
+                                    @if($invoice->isInvoice())
+                                        <span>Base: <strong class="text-slate-800">{{ number_format($invoice->amount, 2) }} €</strong></span>
+                                        <span>IVA ({{ number_format($invoice->tax_rate ?: 21, 0) }}%): <strong class="text-slate-800">{{ number_format($invoice->tax, 2) }} €</strong></span>
+                                    @else
+                                        <span>Servicios: <strong class="text-slate-800">{{ number_format($invoice->amount, 2) }} €</strong></span>
+                                        <span class="text-emerald-700 font-semibold">Sin IVA</span>
+                                    @endif
+                                    <span class="text-sm font-black text-slate-900 bg-white px-2 py-0.5 rounded border border-slate-200">
+                                        Total: {{ number_format($invoice->total, 2) }} €
+                                    </span>
+                                </div>
+
+                                @if($invoice->notes)
+                                    <p class="text-[11px] text-slate-500 italic">{{ $invoice->notes }}</p>
+                                @endif
+                            </div>
+
+                            <!-- Acciones del Documento -->
+                            <div class="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+                                <!-- Botón Toggle de Estado de Cobro -->
+                                <button 
+                                    type="button" 
+                                    wire:click="toggleInvoiceStatus({{ $invoice->id }})" 
+                                    class="px-2.5 py-1.5 rounded-lg text-xs font-bold border transition cursor-pointer flex items-center gap-1 {{ $invoice->status === 'paid' ? 'bg-emerald-100 text-emerald-800 border-emerald-300 hover:bg-emerald-200' : 'bg-amber-100 text-amber-800 border-amber-300 hover:bg-amber-200' }}"
+                                    title="Pulsar para cambiar estado entre Cobrado y Pendiente"
+                                >
+                                    <span>{{ $invoice->status === 'paid' ? '✅ COBRADO' : '⏳ PENDIENTE' }}</span>
+                                </button>
+
+                                <!-- Botón Descargar PDF Oficial -->
+                                <a 
+                                    href="{{ route('admin.invoice.pdf', $invoice->id) }}" 
+                                    target="_blank" 
+                                    class="bg-white hover:bg-slate-50 text-indigo-700 border border-indigo-200 hover:border-indigo-300 text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 transition shadow-2xs"
+                                >
+                                    <span>⬇️</span> PDF Oficial
+                                </a>
+
+                                <!-- Botón Eliminar -->
+                                <button 
+                                    type="button" 
+                                    wire:click="deleteInvoice({{ $invoice->id }})" 
+                                    wire:confirm="¿Estás seguro de que deseas eliminar el documento {{ $invoice->invoice_number }}?" 
+                                    class="bg-white hover:bg-red-50 text-red-600 border border-slate-200 hover:border-red-300 text-xs font-bold px-2.5 py-1.5 rounded-lg transition" 
+                                    title="Eliminar Documento"
+                                >
+                                    🗑️
+                                </button>
+                            </div>
+                        </div>
+                    @empty
+                        <div class="bg-white p-8 rounded-2xl border border-gray-200 text-center text-slate-400 text-xs">
+                            <span class="text-3xl block mb-2">🧾</span>
+                            No hay facturas ni recibos emitidos para este evento.<br>
+                            Puedes generar uno con 1-clic a partir de una propuesta superior o rellenar el formulario inferior.
+                        </div>
+                    @endforelse
+                </div>
+
+                <!-- FORMULARIO DE EMISIÓN MANUAL / PERSONALIZADA -->
+                <div class="bg-white p-5 sm:p-6 rounded-2xl border border-gray-200 shadow-xs space-y-4">
+                    <div class="border-b border-gray-100 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div>
+                            <h5 class="font-bold text-gray-900 text-sm">✍️ Emitir Nueva Factura o Recibo Manual</h5>
+                            <p class="text-[11px] text-gray-500">Configura los importes, régimen fiscal y numeración correlativa.</p>
+                        </div>
+
+                        <!-- Selector rápido desde Propuesta -->
+                        @if($event->quotes && $event->quotes->count() > 0)
+                            <div class="flex items-center gap-1.5">
+                                <label class="text-xs text-slate-500 font-medium whitespace-nowrap">Cargar propuesta:</label>
+                                <select 
+                                    wire:change="loadQuoteIntoInvoice($event.target.value)" 
+                                    class="border-slate-300 rounded-lg text-xs py-1 px-2 text-slate-700 bg-slate-50"
+                                >
+                                    <option value="">-- Seleccionar --</option>
+                                    @foreach($event->quotes as $q)
+                                        <option value="{{ $q->id }}">Propuesta #{{ $q->id }} ({{ number_format($q->amount, 2) }} €)</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        @endif
+                    </div>
+
+                    <!-- SELECTOR DE TIPO DE DOCUMENTO (FACTURA VS RECIBO) -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Tipo de Documento Fiscal</label>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <label class="flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition {{ $invoice_type === 'factura' ? 'bg-blue-50/70 border-blue-400 ring-2 ring-blue-200 text-blue-950 font-bold' : 'bg-slate-50 border-slate-200 text-slate-700' }}">
+                                <input type="radio" wire:model.live="invoice_type" value="factura" class="mt-0.5 text-blue-600 focus:ring-blue-500">
+                                <div class="text-xs">
+                                    <strong class="block text-blue-900">📄 Factura Oficial (Con IVA 21%)</strong>
+                                    <span class="text-[11px] text-slate-500 font-normal">Desglosa Base Imponible + Cuota de IVA oficial. Recomendada para empresas o clientes que la soliciten.</span>
+                                </div>
+                            </label>
+
+                            <label class="flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition {{ $invoice_type === 'recibo' ? 'bg-emerald-50/70 border-emerald-400 ring-2 ring-emerald-200 text-emerald-950 font-bold' : 'bg-slate-50 border-slate-200 text-slate-700' }}">
+                                <input type="radio" wire:model.live="invoice_type" value="recibo" class="mt-0.5 text-emerald-600 focus:ring-emerald-500">
+                                <div class="text-xs">
+                                    <strong class="block text-emerald-900">🧾 Recibo de Pago / Justificante (Sin IVA)</strong>
+                                    <span class="text-[11px] text-slate-500 font-normal">Documento justificante de cobro sin desglose de IVA. Ideal para particulares o presupuestos netos.</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- CAMPOS DEL FORMULARIO -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-1">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1 flex items-center justify-between">
+                                <span>Nº Documento *</span>
+                                <button type="button" wire:click="$set('invoice_number', '{{ \App\Models\Invoice::nextNumber($invoice_type) }}')" class="text-[10px] text-indigo-600 hover:underline">
+                                    🔄 Siguiente
+                                </button>
+                            </label>
+                            <input 
+                                type="text" 
+                                wire:model="invoice_number" 
+                                class="w-full border-slate-300 rounded-xl text-sm font-mono font-bold text-slate-900 p-2.5 bg-slate-50 focus:bg-white" 
+                                placeholder="{{ $invoice_type === 'recibo' ? 'REC-2026-001' : 'FAC-2026-001' }}"
+                            >
+                            @error('invoice_number') <span class="text-rose-600 text-xs block font-bold mt-1">{{ $message }}</span> @enderror
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                                {{ $invoice_type === 'recibo' ? 'Importe Total (€) *' : 'Base Imponible (€) *' }}
+                            </label>
+                            <input 
+                                type="number" 
+                                step="0.01" 
+                                wire:model.live.debounce.300ms="invoice_amount" 
+                                class="w-full border-slate-300 rounded-xl text-sm font-bold text-slate-900 p-2.5" 
+                                placeholder="0.00"
+                            >
+                            @error('invoice_amount') <span class="text-rose-600 text-xs block font-bold mt-1">{{ $message }}</span> @enderror
+                        </div>
+
+                        @if($invoice_type === 'factura')
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1 flex items-center justify-between">
+                                    <span>IVA (€)</span>
+                                    <span class="text-[10px] text-slate-500 font-normal">({{ number_format($invoice_tax_rate, 0) }}%)</span>
+                                </label>
+                                <input 
+                                    type="number" 
+                                    step="0.01" 
+                                    wire:model="invoice_tax" 
+                                    class="w-full border-slate-300 rounded-xl text-sm font-bold text-slate-900 p-2.5" 
+                                    placeholder="0.00"
+                                >
+                                @error('invoice_tax') <span class="text-rose-600 text-xs block font-bold mt-1">{{ $message }}</span> @enderror
+                            </div>
+                        @else
+                            <div>
+                                <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Régimen IVA</label>
+                                <input 
+                                    type="text" 
+                                    disabled 
+                                    value="Exento / Sin IVA (0,00 €)" 
+                                    class="w-full border-slate-200 bg-slate-100 rounded-xl text-xs font-bold text-slate-500 p-2.5 cursor-not-allowed"
+                                >
+                            </div>
+                        @endif
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Fecha Emisión *</label>
+                            <input 
+                                type="date" 
+                                wire:model="invoice_issue_date" 
+                                class="w-full border-slate-300 rounded-xl text-sm font-semibold text-slate-900 p-2.5"
+                            >
+                            @error('invoice_issue_date') <span class="text-rose-600 text-xs block font-bold mt-1">{{ $message }}</span> @enderror
+                        </div>
+
+                        <div class="sm:col-span-2">
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Notas / Concepto Especial</label>
+                            <input 
+                                type="text" 
+                                wire:model="invoice_notes" 
+                                class="w-full border-slate-300 rounded-xl text-xs text-slate-800 p-2.5" 
+                                placeholder="Ej: Servicios de sonorización e iluminación para boda..."
+                            >
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Estado de Pago Inicial</label>
+                            <select wire:model="invoice_status" class="w-full border-slate-300 rounded-xl text-xs font-bold p-2.5">
+                                <option value="unpaid">⏳ Pendiente de Cobro</option>
+                                <option value="paid">✅ Pagado / Cobrado</option>
+                            </select>
+                        </div>
+
+                        <div class="flex items-end">
+                            <button 
+                                type="button" 
+                                wire:click="createInvoice" 
+                                class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold p-3 rounded-xl text-xs shadow-md transition flex items-center justify-center gap-1.5 cursor-pointer"
+                            >
+                                <span>💾</span> Guardar y Emitir {{ $invoice_type === 'recibo' ? 'Recibo' : 'Factura' }}
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         @endif

@@ -15,16 +15,32 @@ class PdfController extends Controller
 {
     public function downloadInvoice(Invoice $invoice)
     {
-        $invoice->load('event.client');
+        $invoice->load(['event.client', 'quote.items']);
+
+        $company = [
+            'name' => Setting::getCompanyName('Núñez and Son'),
+            'subtitle' => Setting::get('company_subtitle', 'Sound in Motion'),
+            'cif' => Setting::get('company_cif', 'B-12345678'),
+            'phone' => Setting::get('company_phone', '+34 622 634 790'),
+            'email' => Setting::get('company_email', 'info@eventosmusicales.es'),
+            'address' => Setting::get('company_address', 'Calle Principal s/n'),
+            'city' => Setting::get('company_city', 'Navarrete'),
+            'iban' => Setting::get('company_iban', 'ES00 0000 0000 0000 0000 0000'),
+            'bizum' => Setting::get('company_bizum', '622634790'),
+            'logo' => Setting::get('company_logo'),
+        ];
 
         $data = [
             'invoice' => $invoice,
             'event' => $invoice->event,
-            'client' => $invoice->event->client,
+            'client' => $invoice->event ? $invoice->event->client : null,
+            'quote' => $invoice->quote,
+            'company' => $company,
         ];
 
         $pdf = Pdf::loadView('pdf.invoice', $data);
-        return $pdf->download('factura_' . $invoice->invoice_number . '.pdf');
+        $filenamePrefix = $invoice->isReceipt() ? 'recibo_' : 'factura_';
+        return $pdf->download($filenamePrefix . \Illuminate\Support\Str::slug($invoice->invoice_number) . '.pdf');
     }
 
     public function downloadQuote(Quote $quote)
