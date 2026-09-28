@@ -1,80 +1,271 @@
 <div>
     <!-- Navegación de Pestañas -->
-    <div class="mb-6 border-b border-gray-200">
+    <div class="mb-6 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <ul class="flex flex-wrap -mb-px text-sm font-medium text-center">
             <li class="mr-2">
-                <button wire:click="$set('activeTab', 'library')" class="inline-block p-4 border-b-2 rounded-t-lg {{ $activeTab == 'library' ? 'border-indigo-600 text-indigo-600' : 'border-transparent hover:text-gray-600 hover:border-gray-300 text-gray-500' }}">Biblioteca Principal</button>
+                <button wire:click="$set('activeTab', 'library')" class="inline-flex items-center gap-2 p-4 border-b-2 rounded-t-lg transition {{ $activeTab == 'library' ? 'border-indigo-600 text-indigo-600 font-bold' : 'border-transparent hover:text-gray-600 hover:border-gray-300 text-gray-500' }}">
+                    <span>🎵</span> Biblioteca General
+                    <span class="px-2 py-0.5 text-xs bg-slate-100 text-slate-700 rounded-full font-bold">{{ $totalTracks }}</span>
+                </button>
             </li>
             <li class="mr-2">
-                <button wire:click="$set('activeTab', 'playlists')" class="inline-block p-4 border-b-2 rounded-t-lg {{ in_array($activeTab, ['playlists', 'manage_playlist']) ? 'border-indigo-600 text-indigo-600' : 'border-transparent hover:text-gray-600 hover:border-gray-300 text-gray-500' }}">Playlists</button>
+                <button wire:click="$set('activeTab', 'playlists')" class="inline-flex items-center gap-2 p-4 border-b-2 rounded-t-lg transition {{ in_array($activeTab, ['playlists', 'manage_playlist']) ? 'border-indigo-600 text-indigo-600 font-bold' : 'border-transparent hover:text-gray-600 hover:border-gray-300 text-gray-500' }}">
+                    <span>📑</span> Playlists Oficiales
+                    <span class="px-2 py-0.5 text-xs bg-slate-100 text-slate-700 rounded-full font-bold">{{ count($playlists) }}</span>
+                </button>
             </li>
         </ul>
+
+        <!-- BOTÓN SINCRONIZAR DRIVE DIRECTO DESDE LA BIBLIOTECA -->
+        @if($activeTab === 'library')
+            <div class="flex items-center gap-2 pb-2 sm:pb-0">
+                <button 
+                    wire:click="syncDrive" 
+                    wire:loading.attr="disabled"
+                    class="inline-flex items-center gap-2 px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs rounded-xl shadow-sm transition disabled:opacity-50 cursor-pointer"
+                >
+                    <span wire:loading.remove wire:target="syncDrive">🔄 Sincronizar Google Drive</span>
+                    <span wire:loading wire:target="syncDrive" class="inline-flex items-center gap-1.5">
+                        <svg class="animate-spin h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+                        Indexando...
+                    </span>
+                </button>
+                <a href="{{ route('admin.settings', ['tab' => 'music_integrations']) }}" class="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition" title="Configurar carpeta de Google Drive">
+                    ⚙️
+                </a>
+            </div>
+        @endif
     </div>
+
+    <!-- MENSAJES FLASH -->
+    @if (session()->has('sync_success'))
+        <div class="mb-4 p-4 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-bold flex items-center gap-2 shadow-sm">
+            <span>✅</span> {{ session('sync_success') }}
+        </div>
+    @endif
+    @if (session()->has('sync_error'))
+        <div class="mb-4 p-4 bg-rose-50 text-rose-800 border border-rose-200 rounded-xl text-xs font-bold flex items-center justify-between gap-2 shadow-sm">
+            <div class="flex items-center gap-2">
+                <span>⚠️</span> {{ session('sync_error') }}
+            </div>
+            @if(!$driveFolderConfigured)
+                <a href="{{ route('admin.settings', ['tab' => 'music_integrations']) }}" class="px-3 py-1 bg-rose-600 text-white rounded-lg font-bold hover:bg-rose-700 transition">
+                    Configurar Carpeta
+                </a>
+            @endif
+        </div>
+    @endif
 
     <!-- BIBLIOTECA GENERAL -->
     @if($activeTab == 'library')
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <!-- Formulario Alta -->
-        <div class="md:col-span-1 bg-white shadow rounded-lg p-6 h-fit">
-            <h3 class="text-lg font-bold mb-4">Añadir Canción</h3>
-            @if (session()->has('track_message')) <div class="text-green-600 text-sm mb-2">{{ session('track_message') }}</div> @endif
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        
+        <!-- Formulario Alta Canción Manual -->
+        <div class="lg:col-span-1 bg-white shadow-sm rounded-2xl border border-gray-200 p-5 h-fit space-y-4">
+            <div class="border-b border-gray-100 pb-3">
+                <h3 class="text-sm font-black text-gray-900 flex items-center gap-2">
+                    <span>➕</span> Añadir Canción Manual
+                </h3>
+                <p class="text-xs text-gray-500">Se buscarán automáticamente sus carátulas y enlaces.</p>
+            </div>
             
-            <form wire:submit.prevent="saveTrack">
-                <div class="mb-3">
-                    <label class="block text-xs font-bold mb-1">Título *</label>
-                    <input type="text" wire:model="track_title" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none">
-                    @error('track_title') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+            @if (session()->has('track_message')) 
+                <div class="p-3 bg-indigo-50 text-indigo-700 rounded-xl text-xs font-bold">
+                    {{ session('track_message') }}
+                </div> 
+            @endif
+            
+            <form wire:submit.prevent="saveTrack" class="space-y-3">
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Título de la Canción *</label>
+                    <input type="text" wire:model="track_title" placeholder="ej. Perfect" class="w-full border-gray-300 rounded-lg text-xs font-medium focus:ring-indigo-500 focus:border-indigo-500">
+                    @error('track_title') <span class="text-red-500 text-[11px] block mt-1">{{ $message }}</span> @enderror
                 </div>
-                <div class="mb-3">
-                    <label class="block text-xs font-bold mb-1">Artista</label>
-                    <input type="text" wire:model="track_artist" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none">
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Artista / Grupo</label>
+                    <input type="text" wire:model="track_artist" placeholder="ej. Ed Sheeran" class="w-full border-gray-300 rounded-lg text-xs font-medium focus:ring-indigo-500 focus:border-indigo-500">
                 </div>
-                <div class="mb-3 grid grid-cols-2 gap-4">
+
+                <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="block text-xs font-bold mb-1">Género</label>
-                        <input type="text" wire:model="track_genre" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none">
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Género</label>
+                        <input type="text" wire:model="track_genre" placeholder="Pop, Rock..." class="w-full border-gray-300 rounded-lg text-xs font-medium focus:ring-indigo-500 focus:border-indigo-500">
                     </div>
                     <div>
-                        <label class="block text-xs font-bold mb-1">BPM</label>
-                        <input type="number" wire:model="track_bpm" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none">
+                        <label class="block text-xs font-bold text-gray-700 mb-1">BPM</label>
+                        <input type="number" wire:model="track_bpm" placeholder="128" class="w-full border-gray-300 rounded-lg text-xs font-medium focus:ring-indigo-500 focus:border-indigo-500">
                     </div>
                 </div>
-                <button type="submit" class="w-full bg-indigo-600 text-white font-bold py-2 px-4 rounded hover:bg-indigo-700">Guardar Canción</button>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Enlace de Audio MP3 / Drive (Opcional)</label>
+                    <input type="text" wire:model="track_file_path" placeholder="https://drive.google.com/..." class="w-full border-gray-300 rounded-lg text-xs font-mono focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+
+                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-2.5 px-4 rounded-xl text-xs shadow-md shadow-indigo-600/20 transition cursor-pointer">
+                    Guardar en Catálogo
+                </button>
             </form>
+
+            <!-- Resumen de Almacenamiento -->
+            <div class="pt-3 border-t border-gray-100 space-y-2 text-xs">
+                <div class="flex justify-between text-gray-600">
+                    <span>Total canciones:</span>
+                    <strong class="text-gray-900">{{ $totalTracks }}</strong>
+                </div>
+                <div class="flex justify-between text-gray-600">
+                    <span>Sincronizadas con Drive:</span>
+                    <span class="inline-flex items-center gap-1 font-bold text-sky-700">
+                        📁 {{ $driveCount }}
+                    </span>
+                </div>
+            </div>
         </div>
 
-        <!-- Listado -->
-        <div class="md:col-span-2 bg-white shadow rounded-lg overflow-hidden">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Título y Artista</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Género / BPM</th>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Borrar</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    @forelse($tracks as $track)
-                        <tr>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm font-bold text-gray-900">{{ $track->title }}</div>
-                                <div class="text-sm text-gray-500">{{ $track->artist ?? 'Desconocido' }}</div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm text-gray-900">{{ $track->genre ?? '-' }}</div>
-                                <div class="text-xs text-gray-500">{{ $track->bpm ? $track->bpm . ' BPM' : '' }}</div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-right">
-                                <button wire:click="deleteTrack({{ $track->id }})" wire:confirm="¿Borrar del catálogo?" class="text-red-500 hover:text-red-700 text-sm">X</button>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="3" class="px-6 py-4 text-center text-gray-500">Catálogo vacío. Añade algunas canciones.</td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
+        <!-- Listado y Filtros de Canciones -->
+        <div class="lg:col-span-3 space-y-4">
+            
+            <!-- Barra de Búsqueda y Filtros -->
+            <div class="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div class="w-full sm:w-72">
+                    <input 
+                        type="text" 
+                        wire:model.live.debounce.300ms="search" 
+                        placeholder="🔍 Buscar por título, artista o género..." 
+                        class="w-full border-gray-300 rounded-xl text-xs font-medium focus:ring-indigo-500 focus:border-indigo-500"
+                    >
+                </div>
+
+                <div class="flex items-center gap-1.5 w-full sm:w-auto">
+                    <button 
+                        type="button" 
+                        wire:click="$set('sourceFilter', 'all')" 
+                        class="px-3 py-1.5 rounded-lg text-xs font-bold transition {{ $sourceFilter === 'all' ? 'bg-indigo-600 text-white shadow-xs' : 'bg-gray-100 text-gray-600 hover:bg-gray-200' }}"
+                    >
+                        Todas ({{ $totalTracks }})
+                    </button>
+                    <button 
+                        type="button" 
+                        wire:click="$set('sourceFilter', 'google_drive')" 
+                        class="px-3 py-1.5 rounded-lg text-xs font-bold transition {{ $sourceFilter === 'google_drive' ? 'bg-sky-600 text-white shadow-xs' : 'bg-sky-50 text-sky-700 hover:bg-sky-100' }}"
+                    >
+                        📁 Drive ({{ $driveCount }})
+                    </button>
+                    <button 
+                        type="button" 
+                        wire:click="$set('sourceFilter', 'local')" 
+                        class="px-3 py-1.5 rounded-lg text-xs font-bold transition {{ $sourceFilter === 'local' ? 'bg-slate-800 text-white shadow-xs' : 'bg-gray-100 text-gray-600 hover:bg-gray-200' }}"
+                    >
+                        💻 Locales ({{ $totalTracks - $driveCount }})
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tabla de Canciones -->
+            <div class="bg-white shadow-sm rounded-2xl border border-gray-200 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200 text-left text-xs">
+                        <thead class="bg-slate-50 text-gray-600 font-bold uppercase tracking-wider">
+                            <tr>
+                                <th class="px-4 py-3">Canción / Artista</th>
+                                <th class="px-4 py-3">Origen</th>
+                                <th class="px-4 py-3">Preescucha</th>
+                                <th class="px-4 py-3">Plataformas</th>
+                                <th class="px-4 py-3 text-right">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            @forelse($tracks as $track)
+                                <tr class="hover:bg-slate-50/80 transition">
+                                    <td class="px-4 py-3">
+                                        <div class="font-bold text-gray-900 text-sm">{{ $track->title }}</div>
+                                        <div class="text-xs text-gray-500 flex items-center gap-2">
+                                            <span>{{ $track->artist ?: 'Artista Desconocido' }}</span>
+                                            @if($track->genre)
+                                                <span class="px-1.5 py-0.5 bg-gray-100 rounded text-[10px] text-gray-600 font-medium">{{ $track->genre }}</span>
+                                            @endif
+                                            @if($track->bpm)
+                                                <span class="text-[10px] text-gray-400 font-mono">{{ $track->bpm }} BPM</span>
+                                            @endif
+                                        </div>
+                                    </td>
+                                    <td class="px-4 py-3 whitespace-nowrap">
+                                        @if($track->source === 'google_drive')
+                                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-sky-50 text-sky-800 border border-sky-200">
+                                                <span>📁</span> Google Drive
+                                            </span>
+                                        @else
+                                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                                                <span>💻</span> Local / Manual
+                                            </span>
+                                        @endif
+                                    </td>
+                                    <td class="px-4 py-3 whitespace-nowrap">
+                                        @if($track->audio_url)
+                                            <audio controls preload="none" class="h-7 w-48 rounded">
+                                                <source src="{{ $track->audio_url }}" type="audio/mpeg">
+                                            </audio>
+                                        @else
+                                            <span class="text-gray-400 text-[11px] italic">Sin audio local</span>
+                                        @endif
+                                    </td>
+                                    <td class="px-4 py-3 whitespace-nowrap">
+                                        <div class="flex items-center gap-1.5">
+                                            @if($track->spotify_url)
+                                                <a href="{{ $track->spotify_url }}" target="_blank" class="p-1 rounded-md bg-emerald-50 text-emerald-700 hover:bg-emerald-100 text-xs font-bold" title="Abrir en Spotify">
+                                                    🟢
+                                                </a>
+                                            @endif
+                                            @if($track->apple_music_url)
+                                                <a href="{{ $track->apple_music_url }}" target="_blank" class="p-1 rounded-md bg-pink-50 text-pink-700 hover:bg-pink-100 text-xs font-bold" title="Abrir en Apple Music">
+                                                    🍎
+                                                </a>
+                                            @endif
+                                            @if($track->youtube_url)
+                                                <a href="{{ $track->youtube_url }}" target="_blank" class="p-1 rounded-md bg-rose-50 text-rose-700 hover:bg-rose-100 text-xs font-bold" title="Buscar en YouTube">
+                                                    ▶️
+                                                </a>
+                                            @endif
+                                        </div>
+                                    </td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-right">
+                                        <button 
+                                            wire:click="deleteTrack({{ $track->id }})" 
+                                            wire:confirm="¿Eliminar '{{ $track->title }}' del catálogo?" 
+                                            class="px-2 py-1 text-xs text-rose-600 hover:text-rose-800 hover:bg-rose-50 rounded font-bold transition"
+                                        >
+                                            Eliminar
+                                        </button>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="5" class="px-6 py-8 text-center text-gray-500">
+                                        <div class="space-y-2">
+                                            <span class="text-3xl block">🎵</span>
+                                            <p class="font-bold text-gray-700">No se encontraron canciones en el catálogo.</p>
+                                            <p class="text-xs text-gray-400">
+                                                @if(!empty($search))
+                                                    Prueba con otro término de búsqueda o limpia el filtro.
+                                                @else
+                                                    Pulsa en "🔄 Sincronizar Google Drive" o añade una canción manualmente.
+                                                @endif
+                                            </p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+
+                @if($tracks->hasPages())
+                    <div class="p-4 border-t border-gray-100">
+                        {{ $tracks->links() }}
+                    </div>
+                @endif
+            </div>
         </div>
     </div>
     @endif
@@ -83,45 +274,67 @@
     @if($activeTab == 'playlists')
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         <!-- Formulario Alta Playlist -->
-        <div class="md:col-span-1 bg-white shadow rounded-lg p-6 h-fit">
-            <h3 class="text-lg font-bold mb-4">Crear Playlist</h3>
-            @if (session()->has('playlist_message')) <div class="text-green-600 text-sm mb-2">{{ session('playlist_message') }}</div> @endif
+        <div class="md:col-span-1 bg-white shadow-sm rounded-2xl border border-gray-200 p-5 h-fit space-y-4">
+            <div>
+                <h3 class="text-sm font-black text-gray-900">Crear Nueva Playlist</h3>
+                <p class="text-xs text-gray-500">Agrupa canciones para usarlas en momentos específicos.</p>
+            </div>
             
-            <form wire:submit.prevent="savePlaylist">
-                <div class="mb-3">
-                    <label class="block text-xs font-bold mb-1">Nombre *</label>
-                    <input type="text" wire:model="playlist_name" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none" placeholder="Ej: Música Cóctel">
-                    @error('playlist_name') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+            @if (session()->has('playlist_message')) 
+                <div class="p-3 bg-emerald-50 text-emerald-700 rounded-xl text-xs font-bold">
+                    {{ session('playlist_message') }}
+                </div> 
+            @endif
+            
+            <form wire:submit.prevent="savePlaylist" class="space-y-3">
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Nombre de la Playlist *</label>
+                    <input type="text" wire:model="playlist_name" class="w-full border-gray-300 rounded-lg text-xs font-medium focus:ring-indigo-500 focus:border-indigo-500" placeholder="Ej: Éxitos Cóctel 2026">
+                    @error('playlist_name') <span class="text-red-500 text-[11px] block mt-1">{{ $message }}</span> @enderror
                 </div>
-                <div class="mb-4">
-                    <label class="block text-xs font-bold mb-1">Vincular a un Evento (Opcional)</label>
-                    <select wire:model="playlist_event_id" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none bg-white">
-                        <option value="">-- Lista genérica --</option>
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Vincular a un Evento (Opcional)</label>
+                    <select wire:model="playlist_event_id" class="w-full border-gray-300 rounded-lg text-xs font-medium focus:ring-indigo-500 focus:border-indigo-500 bg-white">
+                        <option value="">-- Playlist Genérica / Reutilizable --</option>
                         @foreach($events as $event)
-                            <option value="{{ $event->id }}">{{ $event->name }} ({{ $event->event_date->format('d/m') }})</option>
+                            <option value="{{ $event->id }}">{{ $event->name }} ({{ \Carbon\Carbon::parse($event->event_date)->format('d/m/Y') }})</option>
                         @endforeach
                     </select>
                 </div>
-                <button type="submit" class="w-full bg-indigo-600 text-white font-bold py-2 px-4 rounded hover:bg-indigo-700">Crear Playlist</button>
+                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-2.5 px-4 rounded-xl text-xs shadow-md shadow-indigo-600/20 transition cursor-pointer">
+                    Crear Playlist
+                </button>
             </form>
         </div>
 
         <!-- Listado Playlists -->
-        <div class="md:col-span-2 bg-white shadow rounded-lg overflow-hidden p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
             @forelse($playlists as $playlist)
-                <div class="border rounded-lg p-4 hover:shadow-md transition">
-                    <h4 class="font-bold text-gray-800 text-lg">{{ $playlist->name }}</h4>
-                    <p class="text-xs text-gray-500 mb-3">
-                        @if($playlist->event)
-                            Evento: {{ $playlist->event->name }}
-                        @else
-                            Lista Genérica
-                        @endif
-                    </p>
-                    <button wire:click="managePlaylist({{ $playlist->id }})" class="bg-gray-100 text-gray-700 px-3 py-1 rounded text-sm hover:bg-gray-200">Gestionar canciones</button>
+                <div class="bg-white shadow-sm rounded-2xl border border-gray-200 p-5 hover:shadow-md transition flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-1">
+                            <h4 class="font-black text-gray-900 text-base">{{ $playlist->name }}</h4>
+                            <span class="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">
+                                {{ $playlist->tracks->count() }} temas
+                            </span>
+                        </div>
+                        <p class="text-xs text-gray-500 mb-4">
+                            @if($playlist->event)
+                                📅 Vinculada a: <strong>{{ $playlist->event->name }}</strong>
+                            @else
+                                🌐 Playlist Genérica
+                            @endif
+                        </p>
+                    </div>
+                    <button wire:click="managePlaylist({{ $playlist->id }})" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold px-3 py-2 rounded-xl text-xs transition cursor-pointer">
+                        Gestionar Canciones &rarr;
+                    </button>
                 </div>
             @empty
-                <div class="col-span-2 text-center py-6 text-gray-500">No hay listas creadas.</div>
+                <div class="col-span-2 bg-white rounded-2xl border border-dashed border-gray-300 p-8 text-center text-gray-500">
+                    <span class="text-3xl block mb-2">📑</span>
+                    <p class="font-bold">No hay playlists creadas todavía.</p>
+                </div>
             @endforelse
         </div>
     </div>
@@ -129,52 +342,77 @@
 
     <!-- GESTIONAR PLAYLIST ACTIVA -->
     @if($activeTab == 'manage_playlist' && $activePlaylist)
-    <div class="bg-white shadow rounded-lg p-6">
-        <div class="flex justify-between items-center mb-6">
+    <div class="bg-white shadow-sm rounded-2xl border border-gray-200 p-6 space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 pb-4">
             <div>
-                <button wire:click="backToPlaylists" class="text-sm text-indigo-600 hover:underline mb-1">&larr; Volver a listas</button>
-                <h3 class="text-2xl font-bold">Editando: {{ $activePlaylist->name }}</h3>
+                <button wire:click="backToPlaylists" class="text-xs font-bold text-indigo-600 hover:underline mb-1 inline-flex items-center gap-1">
+                    &larr; Volver al listado de playlists
+                </button>
+                <h3 class="text-xl font-black text-gray-900">Playlist: {{ $activePlaylist->name }}</h3>
             </div>
+            <span class="text-xs font-bold px-3 py-1 bg-indigo-50 text-indigo-700 rounded-full">
+                {{ $activePlaylist->tracks->count() }} canciones añadidas
+            </span>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
             <!-- Canciones en la Playlist -->
-            <div>
-                <h4 class="font-bold text-gray-700 border-b pb-2 mb-4">Canciones de esta lista</h4>
-                <ul class="divide-y divide-gray-200">
+            <div class="space-y-3">
+                <h4 class="font-bold text-xs uppercase tracking-wider text-gray-700 border-b pb-2">
+                    Canciones en esta lista
+                </h4>
+                <ul class="divide-y divide-gray-100 max-h-96 overflow-y-auto pr-2">
                     @forelse($activePlaylist->tracks as $track)
-                        <li class="py-2 flex justify-between items-center">
+                        <li class="py-2.5 flex justify-between items-center gap-3">
                             <div>
-                                <span class="font-semibold">{{ $track->title }}</span> 
-                                <span class="text-xs text-gray-500">- {{ $track->artist }}</span>
+                                <span class="font-bold text-sm text-gray-900">{{ $track->title }}</span> 
+                                <span class="text-xs text-gray-500 block">{{ $track->artist ?: 'Artista Desconocido' }}</span>
                             </div>
-                            <button wire:click="removeTrackFromPlaylist({{ $track->id }})" class="text-red-500 text-xs hover:underline">Quitar</button>
+                            <button wire:click="removeTrackFromPlaylist({{ $track->id }})" class="text-rose-600 hover:text-rose-800 text-xs font-bold hover:underline">
+                                Quitar
+                            </button>
                         </li>
                     @empty
-                        <li class="py-4 text-gray-500 text-sm">Esta lista está vacía. Busca y añade canciones desde la derecha.</li>
+                        <li class="py-6 text-center text-gray-400 text-xs">
+                            Esta playlist está vacía. Añade canciones desde el catálogo a la derecha.
+                        </li>
                     @endforelse
                 </ul>
             </div>
 
-            <!-- Buscador para añadir -->
-            <div class="bg-gray-50 p-4 rounded-lg">
-                <h4 class="font-bold text-gray-700 border-b pb-2 mb-4">Añadir desde el catálogo</h4>
-                <input type="text" wire:model.live.debounce.300ms="searchTrack" wire:keyup="searchTracksToAdd" placeholder="Buscar por título o artista..." class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 mb-4 focus:outline-none">
+            <!-- Buscador para añadir desde el catálogo -->
+            <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-4">
+                <div>
+                    <h4 class="font-bold text-xs uppercase tracking-wider text-gray-800">
+                        Añadir canciones del catálogo
+                    </h4>
+                    <p class="text-xs text-gray-500">Busca por título o artista de tu biblioteca.</p>
+                </div>
+
+                <input 
+                    type="text" 
+                    wire:model.live.debounce.300ms="searchTrack" 
+                    wire:keyup="searchTracksToAdd" 
+                    placeholder="Escribe para buscar (ej. Queen, Despacito)..." 
+                    class="w-full border-gray-300 rounded-xl text-xs font-medium focus:ring-indigo-500 focus:border-indigo-500 bg-white"
+                >
                 
                 @if($searchTrack !== '' && count($searchResults) > 0)
-                    <ul class="divide-y divide-gray-200 border rounded bg-white">
+                    <ul class="divide-y divide-gray-200 border border-gray-200 rounded-xl bg-white max-h-60 overflow-y-auto shadow-xs">
                         @foreach($searchResults as $res)
-                            <li class="py-2 px-3 flex justify-between items-center">
+                            <li class="p-3 flex justify-between items-center hover:bg-slate-50 transition">
                                 <div>
-                                    <span class="font-semibold text-sm">{{ $res->title }}</span> 
-                                    <span class="text-xs text-gray-500">- {{ $res->artist }}</span>
+                                    <span class="font-bold text-xs text-gray-900 block">{{ $res->title }}</span> 
+                                    <span class="text-[11px] text-gray-500">{{ $res->artist ?: 'Artista Desconocido' }}</span>
                                 </div>
-                                <button wire:click="addTrackToPlaylist({{ $res->id }})" class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs hover:bg-green-200">Añadir</button>
+                                <button wire:click="addTrackToPlaylist({{ $res->id }})" class="bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-bold px-3 py-1 rounded-lg text-xs transition">
+                                    + Añadir
+                                </button>
                             </li>
                         @endforeach
                     </ul>
-                @elseif($searchTrack !== '')
-                    <p class="text-xs text-gray-500">No se encontraron resultados en tu catálogo.</p>
+                @elseif(strlen($searchTrack) > 1)
+                    <p class="text-xs text-gray-500 italic text-center py-3">No se encontraron coincidencias en tu catálogo.</p>
                 @endif
             </div>
         </div>

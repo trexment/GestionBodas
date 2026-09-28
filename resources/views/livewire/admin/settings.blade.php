@@ -697,20 +697,70 @@
                     </div>
                 </div>
 
-                <!-- Campo Google Drive API Key -->
-                <div class="space-y-2 pt-2">
-                    <label class="block text-xs font-bold text-gray-800">
-                        Google Drive API Key (Necesaria para escanear carpetas completas en 1 clic)
-                    </label>
-                    <input 
-                        type="text" 
-                        wire:model="google_drive_api_key" 
-                        placeholder="AIzaSyB-..." 
-                        class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-sky-500 focus:border-sky-500 text-sm font-mono"
-                    >
-                    <p class="text-[11px] text-gray-500 leading-normal">
-                        Para obtener tu clave gratuita: entra en <a href="https://console.cloud.google.com/apis/credentials" target="_blank" class="text-sky-600 underline font-bold">Google Cloud Console</a>, crea un proyecto, habilita la <strong>Google Drive API</strong> y genera una <strong>API Key</strong>.
-                    </p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2">
+                    <!-- Campo Google Drive API Key -->
+                    <div class="space-y-2">
+                        <label class="block text-xs font-bold text-gray-800">
+                            Google Drive API Key (Para escanear carpetas completas)
+                        </label>
+                        <input 
+                            type="text" 
+                            wire:model="google_drive_api_key" 
+                            placeholder="AIzaSyB-..." 
+                            class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-sky-500 focus:border-sky-500 text-sm font-mono"
+                        >
+                        <p class="text-[11px] text-gray-500 leading-normal">
+                            Obtén tu clave en <a href="https://console.cloud.google.com/apis/credentials" target="_blank" class="text-sky-600 underline font-bold">Google Cloud Console</a> activando la <strong>Google Drive API</strong>.
+                        </p>
+                    </div>
+
+                    <!-- Campo Carpeta Biblioteca General -->
+                    <div class="space-y-2">
+                        <label class="block text-xs font-bold text-gray-800">
+                            Carpeta de Biblioteca General (Google Drive)
+                        </label>
+                        <input 
+                            type="text" 
+                            wire:model="google_drive_library_folder" 
+                            placeholder="https://drive.google.com/drive/folders/1ABC... o ID de carpeta" 
+                            class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-sky-500 focus:border-sky-500 text-sm font-mono"
+                        >
+                        <p class="text-[11px] text-gray-500 leading-normal">
+                            Esta carpeta servirá como <strong>catálogo musical principal</strong>. Toda la música que esté aquí tendrá prioridad sobre Spotify / Apple Music en búsquedas y cabina.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Botón de Sincronización Manual de la Biblioteca General -->
+                <div class="pt-3 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div class="space-y-1">
+                        <div class="flex items-center gap-2">
+                            <button 
+                                type="button" 
+                                wire:click="syncDriveLibrary" 
+                                wire:loading.attr="disabled"
+                                class="px-4 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-black text-xs transition flex items-center gap-2 shadow-md shadow-sky-600/20 disabled:opacity-50 cursor-pointer"
+                            >
+                                <span wire:loading.remove wire:target="syncDriveLibrary">🔄 Sincronizar Biblioteca General con Google Drive</span>
+                                <span wire:loading wire:target="syncDriveLibrary" class="inline-flex items-center gap-1.5">
+                                    <svg class="animate-spin h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+                                    Escaneando e indexando archivos...
+                                </span>
+                            </button>
+                        </div>
+                    </div>
+
+                    @if(session()->has('drive_sync_success'))
+                        <div class="p-3 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-bold flex items-center gap-2">
+                            <span>✅</span> {{ session('drive_sync_success') }}
+                        </div>
+                    @endif
+
+                    @if(session()->has('drive_sync_error'))
+                        <div class="p-3 bg-rose-50 text-rose-800 border border-rose-200 rounded-xl text-xs font-bold flex items-center gap-2">
+                            <span>⚠️</span> {{ session('drive_sync_error') }}
+                        </div>
+                    @endif
                 </div>
             </div>
 

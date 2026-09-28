@@ -88,6 +88,8 @@ class Settings extends Component
 
     // Almacenamiento en la Nube (Google Drive / OneDrive)
     public $google_drive_api_key;
+    public $google_drive_library_folder;
+    public $driveSyncStatus = null;
 
     public function mount()
     {
@@ -159,6 +161,7 @@ class Settings extends Component
         $this->apple_music_country = Setting::get('apple_music_country', 'es');
         $this->apple_music_launch_mode = Setting::get('apple_music_launch_mode', 'app');
         $this->google_drive_api_key = Setting::get('google_drive_api_key', '');
+        $this->google_drive_library_folder = Setting::get('google_drive_library_folder', '');
         $this->spotifyUser = SpotifyService::getUserDetails();
     }
 
@@ -243,6 +246,7 @@ class Settings extends Component
             'apple_music_country' => 'required|string|max:5',
             'apple_music_launch_mode' => 'required|in:app,web',
             'google_drive_api_key' => 'nullable|string|max:255',
+            'google_drive_library_folder' => 'nullable|string|max:500',
         ]);
 
         Setting::set('company_name', $this->company_name);
@@ -303,6 +307,7 @@ class Settings extends Component
         Setting::set('apple_music_country', $this->apple_music_country);
         Setting::set('apple_music_launch_mode', $this->apple_music_launch_mode);
         Setting::set('google_drive_api_key', $this->google_drive_api_key);
+        Setting::set('google_drive_library_folder', $this->google_drive_library_folder);
 
         if ($this->logo) {
             if ($this->current_logo) {
@@ -317,6 +322,21 @@ class Settings extends Component
 
         $this->spotifyUser = SpotifyService::getUserDetails();
         session()->flash('message', 'Configuración guardada correctamente.');
+    }
+
+    public function syncDriveLibrary()
+    {
+        Setting::set('google_drive_api_key', $this->google_drive_api_key);
+        Setting::set('google_drive_library_folder', $this->google_drive_library_folder);
+
+        $result = \App\Services\CloudMusicStorageService::syncMasterLibraryFromGoogleDrive($this->google_drive_library_folder, $this->google_drive_api_key);
+        $this->driveSyncStatus = $result;
+
+        if ($result['success']) {
+            session()->flash('drive_sync_success', $result['message']);
+        } else {
+            session()->flash('drive_sync_error', $result['message']);
+        }
     }
 
     public function render()

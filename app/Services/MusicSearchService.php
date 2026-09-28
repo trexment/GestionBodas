@@ -24,6 +24,36 @@ class MusicSearchService
         return Cache::remember($cacheKey, 3600, function () use ($query, $limit) {
             $results = [];
 
+            // 0. Prioridad 1: Buscar primero en la Biblioteca General de Google Drive (Tracks)
+            try {
+                $driveTracks = \App\Models\Track::where(function($q) use ($query) {
+                    $q->where('title', 'LIKE', "%{$query}%")
+                      ->orWhere('artist', 'LIKE', "%{$query}%")
+                      ->orWhere('genre', 'LIKE', "%{$query}%");
+                })->limit($limit)->get();
+
+                foreach ($driveTracks as $dt) {
+                    $searchQuery = urlencode(trim(($dt->artist ? $dt->artist . ' ' : '') . $dt->title));
+                    $results[] = [
+                        'source' => $dt->source ?: 'google_drive',
+                        'is_drive_library' => true,
+                        'id' => 'drive_' . $dt->id,
+                        'title' => $dt->title,
+                        'artist' => $dt->artist ?: 'Mi Biblioteca',
+                        'album' => $dt->cloud_folder ?: 'Google Drive',
+                        'cover_url' => '',
+                        'preview_url' => $dt->audio_url,
+                        'duration_ms' => 0,
+                        'duration_formatted' => 'MP3 Nube',
+                        'spotify_url' => $dt->spotify_url ?: "https://open.spotify.com/search/{$searchQuery}",
+                        'spotify_uri' => "spotify:search:" . rawurlencode($searchQuery),
+                        'apple_music_url' => $dt->apple_music_url ?: "https://music.apple.com/es/search?term={$searchQuery}",
+                        'apple_music_uri' => "music://music.apple.com/search?term=" . $searchQuery,
+                        'youtube_url' => $dt->youtube_url ?: "https://www.youtube.com/results?search_query={$searchQuery}",
+                    ];
+                }
+            } catch (\Throwable $e) {}
+
             // 1. iTunes / Apple Music Search API (Fast, Free, High-res album arts and 30s official audio previews)
             try {
                 $country = Setting::get('apple_music_country', 'es');
@@ -224,14 +254,25 @@ class MusicSearchService
             $youtubeUrl = null;
             $previewUrl = null;
             $coverUrl = null;
+            $isDriveLibrary = false;
+
+            // 0. Prioridad 1: Comprobar si la canción está en la Biblioteca General de Google Drive
+            $driveTrack = \App\Services\CloudMusicStorageService::findInDriveLibrary($title, $artist);
+            if ($driveTrack && !empty($driveTrack->audio_url)) {
+                $previewUrl = $driveTrack->audio_url;
+                $spotifyUrl = $driveTrack->spotify_url;
+                $appleMusicUrl = $driveTrack->apple_music_url;
+                $youtubeUrl = $driveTrack->youtube_url;
+                $isDriveLibrary = true;
+            }
 
             // 1. Try search in Spotify API if available
             $spotifyResults = self::searchSpotifyApi($query, 1);
             if (!empty($spotifyResults[0])) {
                 $item = $spotifyResults[0];
-                $spotifyUrl = $item['spotify_url'] ?? null;
-                $coverUrl = $item['cover_url'] ?? null;
-                $previewUrl = $item['preview_url'] ?? null;
+                if (!$spotifyUrl) $spotifyUrl = $item['spotify_url'] ?? null;
+                if (!$coverUrl) $coverUrl = $item['cover_url'] ?? null;
+                if (!$previewUrl) $previewUrl = $item['preview_url'] ?? null;
             }
 
             // 2. Search in iTunes / Apple Music (Free, fast, universal)
@@ -293,6 +334,7 @@ class MusicSearchService
             }
 
             return [
+                'is_drive_library' => $isDriveLibrary,
                 'spotify_url' => $spotifyUrl,
                 'apple_music_url' => $appleMusicUrl,
                 'youtube_url' => $youtubeUrl,
