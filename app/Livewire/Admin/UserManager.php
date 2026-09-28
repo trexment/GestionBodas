@@ -19,6 +19,13 @@ class UserManager extends Component
 
     public $showCreateModal = false;
 
+    public function mount()
+    {
+        if (auth()->user()->role !== 'admin') {
+            abort(403, 'Acceso restringido a administradores.');
+        }
+    }
+
     public function openCreateModal()
     {
         $this->resetValidation();

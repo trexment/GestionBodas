@@ -420,6 +420,7 @@
                     📦 Material / Carga
                 </button>
             </li>
+            @if(Auth::check() && Auth::user()->role === 'admin')
             <li class="mr-2">
                 <button wire:click="$set('activeTab', 'quotes')" class="inline-block p-4 rounded-t-lg border-b-2 {{ $activeTab == 'quotes' ? 'border-indigo-600 text-indigo-600' : 'border-transparent hover:text-gray-600 hover:border-gray-300' }}">
                     Presupuestos (Propuestas)
@@ -435,6 +436,7 @@
                     Facturas
                 </button>
             </li>
+            @endif
         </ul>
     </div>
 

@@ -16,6 +16,10 @@ class AnalyticsManager extends Component
 
     public function mount()
     {
+        if (auth()->user()->role !== 'admin') {
+            abort(403, 'Acceso restringido a administradores.');
+        }
+
         $this->selectedYear = (int) date('Y');
     }
 

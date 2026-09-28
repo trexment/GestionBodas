@@ -88,6 +88,10 @@ class Settings extends Component
 
     public function mount()
     {
+        if (auth()->user()->role !== 'admin') {
+            abort(403, 'Solo los administradores pueden acceder a los ajustes del sistema.');
+        }
+
         if (request()->has('tab')) {
             $this->activeTab = request()->get('tab');
         }

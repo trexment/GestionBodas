@@ -49,11 +49,26 @@ class EventManager extends Component
 
     public function loadEvents()
     {
-        $this->events = Event::with(['client', 'dj', 'assistant'])->orderBy('event_date', 'asc')->get();
+        $user = auth()->user();
+        if ($user->role === 'admin') {
+            $this->events = Event::with(['client', 'dj', 'assistant'])->orderBy('event_date', 'asc')->get();
+        } else {
+            $this->events = Event::with(['client', 'dj', 'assistant'])
+                ->where(function ($q) use ($user) {
+                    $q->where('dj_id', $user->id)
+                      ->orWhere('assistant_id', $user->id);
+                })
+                ->orderBy('event_date', 'asc')
+                ->get();
+        }
     }
 
     public function openCreateModal()
     {
+        if (auth()->user()->role !== 'admin') {
+            session()->flash('error', 'Solo los administradores pueden crear nuevos eventos.');
+            return;
+        }
         $this->resetValidation();
         $this->reset(['name', 'event_date', 'location', 'client_id', 'dj_id', 'assistant_id', 'notes']);
         $this->dj_id = auth()->id(); // default current logged admin/dj

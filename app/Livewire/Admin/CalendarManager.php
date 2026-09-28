@@ -57,6 +57,10 @@ class CalendarManager extends Component
 
     public function openCreateModal($dateStr = null)
     {
+        if (auth()->user()->role !== 'admin') {
+            session()->flash('error', 'Solo los administradores pueden crear nuevos eventos.');
+            return;
+        }
         $this->resetCreateForm();
         if ($dateStr) {
             $this->new_event_date = $dateStr;
@@ -68,6 +72,10 @@ class CalendarManager extends Component
 
     public function createEvent()
     {
+        if (auth()->user()->role !== 'admin') {
+            session()->flash('error', 'Solo los administradores pueden crear nuevos eventos.');
+            return;
+        }
         $this->validate([
             'new_name' => 'required|string|max:255',
             'new_event_date' => 'required|date',
@@ -117,15 +125,23 @@ class CalendarManager extends Component
         $query = Event::with(['client', 'dj', 'assistant'])
             ->whereBetween('event_date', [$startCalendar->format('Y-m-d'), $endCalendar->format('Y-m-d')]);
 
-        if ($this->filter_status) {
-            $query->where('status', $this->filter_status);
+        if (auth()->user()->role !== 'admin') {
+            $userId = auth()->id();
+            $query->where(function ($q) use ($userId) {
+                $q->where('dj_id', $userId)
+                  ->orWhere('assistant_id', $userId);
+            });
+        } else {
+            if ($this->filter_dj) {
+                $query->where(function ($q) {
+                    $q->where('dj_id', $this->filter_dj)
+                      ->orWhere('assistant_id', $this->filter_dj);
+                });
+            }
         }
 
-        if ($this->filter_dj) {
-            $query->where(function ($q) {
-                $q->where('dj_id', $this->filter_dj)
-                  ->orWhere('assistant_id', $this->filter_dj);
-            });
+        if ($this->filter_status) {
+            $query->where('status', $this->filter_status);
         }
 
         $events = $query->get()->groupBy(function ($event) {

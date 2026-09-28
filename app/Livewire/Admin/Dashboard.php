@@ -26,45 +26,81 @@ class Dashboard extends Component
 
     public function mount()
     {
-        // Métricas financieras
-        $this->totalBilled = Invoice::sum('total');
-        $this->totalPending = Invoice::where('status', 'unpaid')->sum('total');
-        
-        // Usuarios y Personal
-        $this->activeClientsCount = User::where('role', 'client')->count();
-        $this->djsCount = User::where('role', 'dj')->count();
-        $this->assistantsCount = User::where('role', 'assistant')->count();
-        $this->totalEventsCount = Event::count();
-        $this->equipmentCount = Equipment::sum('quantity') ?: Equipment::count();
-        
-        // Eventos a 30 días o total
-        $thirtyDaysFromNow = Carbon::now()->addDays(30);
-        $this->upcomingEventsCount = Event::where('event_date', '>=', Carbon::today()->subDays(30))
-                                          ->count();
+        $user = auth()->user();
+        $isAdmin = $user->role === 'admin';
 
-        // Cuestionarios pendientes de rellenar
-        $this->pendingDossiersCount = Event::where('is_dossier_completed', false)->count();
+        if ($isAdmin) {
+            // Métricas financieras globales
+            $this->totalBilled = Invoice::sum('total');
+            $this->totalPending = Invoice::where('status', 'unpaid')->sum('total');
+            
+            // Usuarios y Personal
+            $this->activeClientsCount = User::where('role', 'client')->count();
+            $this->djsCount = User::where('role', 'dj')->count();
+            $this->assistantsCount = User::where('role', 'assistant')->count();
+            $this->totalEventsCount = Event::count();
+            $this->equipmentCount = Equipment::sum('quantity') ?: Equipment::count();
+            
+            // Eventos próximos
+            $this->upcomingEventsCount = Event::where('event_date', '>=', Carbon::today()->subDays(30))->count();
+            $this->pendingDossiersCount = Event::where('is_dossier_completed', false)->count();
 
-        // Listas rápidas (prioriza próximos, si no hay muestra los más recientes)
-        $futureEvents = Event::with(['client', 'dj', 'assistant'])
-                             ->where('event_date', '>=', Carbon::today())
-                             ->orderBy('event_date', 'asc')
-                             ->take(6)
-                             ->get();
+            $futureEvents = Event::with(['client', 'dj', 'assistant'])
+                                 ->where('event_date', '>=', Carbon::today())
+                                 ->orderBy('event_date', 'asc')
+                                 ->take(6)
+                                 ->get();
 
-        if ($futureEvents->isNotEmpty()) {
-            $this->upcomingEvents = $futureEvents;
+            if ($futureEvents->isNotEmpty()) {
+                $this->upcomingEvents = $futureEvents;
+            } else {
+                $this->upcomingEvents = Event::with(['client', 'dj', 'assistant'])
+                                             ->orderBy('event_date', 'desc')
+                                             ->take(6)
+                                             ->get();
+            }
+                                        
+            $this->recentInvoices = Invoice::with(['event.client'])
+                                        ->orderBy('issue_date', 'desc')
+                                        ->take(6)
+                                        ->get();
         } else {
-            $this->upcomingEvents = Event::with(['client', 'dj', 'assistant'])
-                                         ->orderBy('event_date', 'desc')
-                                         ->take(6)
-                                         ->get();
+            // Métricas y eventos para el personal asignado (DJ / Asistente)
+            $this->totalBilled = 0;
+            $this->totalPending = 0;
+            $this->activeClientsCount = 0;
+            $this->djsCount = 0;
+            $this->assistantsCount = 0;
+            $this->equipmentCount = Equipment::sum('quantity') ?: Equipment::count();
+
+            $assignedEventsQuery = Event::where(function ($q) use ($user) {
+                $q->where('dj_id', $user->id)
+                  ->orWhere('assistant_id', $user->id);
+            });
+
+            $this->totalEventsCount = (clone $assignedEventsQuery)->count();
+            $this->upcomingEventsCount = (clone $assignedEventsQuery)->where('event_date', '>=', Carbon::today())->count();
+            $this->pendingDossiersCount = (clone $assignedEventsQuery)->where('is_dossier_completed', false)->count();
+
+            $futureEvents = (clone $assignedEventsQuery)
+                ->with(['client', 'dj', 'assistant'])
+                ->where('event_date', '>=', Carbon::today())
+                ->orderBy('event_date', 'asc')
+                ->take(6)
+                ->get();
+
+            if ($futureEvents->isNotEmpty()) {
+                $this->upcomingEvents = $futureEvents;
+            } else {
+                $this->upcomingEvents = (clone $assignedEventsQuery)
+                    ->with(['client', 'dj', 'assistant'])
+                    ->orderBy('event_date', 'desc')
+                    ->take(6)
+                    ->get();
+            }
+
+            $this->recentInvoices = collect();
         }
-                                    
-        $this->recentInvoices = Invoice::with(['event.client'])
-                                    ->orderBy('issue_date', 'desc')
-                                    ->take(6)
-                                    ->get();
     }
     
     public function markInvoiceAsPaid($id)

@@ -16,10 +16,10 @@ class IsAdmin
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (Auth::check() && Auth::user()->role === 'admin') {
+        if (Auth::check() && in_array(Auth::user()->role, ['admin', 'dj', 'assistant'])) {
             return $next($request);
         }
 
-        abort(403, 'Acceso denegado: Se requieren permisos de administrador.');
+        abort(403, 'Acceso denegado: Se requieren permisos de administrador o personal.');
     }
 }
