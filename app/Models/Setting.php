@@ -30,4 +30,46 @@ class Setting extends Model
             ['value' => $value]
         );
     }
+
+    /**
+     * Get the public URL for the company logo.
+     */
+    public static function getLogoUrl()
+    {
+        $logo = self::get('company_logo');
+        if (!$logo) {
+            return null;
+        }
+
+        if (str_starts_with($logo, 'http://') || str_starts_with($logo, 'https://')) {
+            return $logo;
+        }
+
+        return asset('storage/' . ltrim($logo, '/'));
+    }
+
+    /**
+     * Get the dynamic favicon URL.
+     */
+    public static function getFaviconUrl()
+    {
+        return self::getLogoUrl() ?: asset('favicon.svg');
+    }
+
+    /**
+     * Get the company name with default fallback.
+     */
+    public static function getCompanyName($default = 'Núñez and Son')
+    {
+        return self::get('company_name', $default);
+    }
+
+    /**
+     * Get the company subtitle with default fallback.
+     */
+    public static function getCompanySubtitle($default = 'Sound in Motion')
+    {
+        return self::get('company_subtitle', $default);
+    }
 }
+

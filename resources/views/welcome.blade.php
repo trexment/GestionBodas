@@ -4,13 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     @php
-        $companyName = \App\Models\Setting::get('company_name', 'Núñez & Son');
-        $companySubtitle = \App\Models\Setting::get('company_subtitle', 'Sound in Motion');
-        $companyLogo = \App\Models\Setting::get('company_logo');
-        $logoUrl = ($companyLogo && \Illuminate\Support\Facades\Storage::disk('public')->exists($companyLogo))
-            ? \Illuminate\Support\Facades\Storage::disk('public')->url($companyLogo)
-            : ($companyLogo ? '/storage/' . ltrim($companyLogo, '/') : null);
-        $faviconUrl = $logoUrl ?: asset('favicon.svg');
+        $companyName = \App\Models\Setting::getCompanyName('Núñez and Son');
+        $companySubtitle = \App\Models\Setting::getCompanySubtitle('Sound in Motion');
+        $logoUrl = \App\Models\Setting::getLogoUrl();
+        $faviconUrl = \App\Models\Setting::getFaviconUrl();
     @endphp
 
     <title>{{ $companyName }} - Sonido, Iluminación & DJs para Eventos</title>
@@ -58,7 +55,10 @@
                     <!-- BRAND LOGO -->
                     <div class="flex items-center gap-3">
                         @if($logoUrl)
-                            <img src="{{ $logoUrl }}" alt="{{ $companyName }}" class="w-11 h-11 rounded-xl object-contain bg-slate-900 p-1 border border-slate-700/80 shadow-lg shadow-indigo-500/20">
+                            <img src="{{ $logoUrl }}" alt="{{ $companyName }}" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';" class="w-11 h-11 rounded-xl object-contain bg-slate-900 p-1 border border-slate-700/80 shadow-lg shadow-indigo-500/20">
+                            <div style="display: none;" class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-600 items-center justify-center shadow-lg shadow-indigo-500/30">
+                                <span class="text-xl">🎧</span>
+                            </div>
                         @else
                             <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/30">
                                 <span class="text-xl">🎧</span>

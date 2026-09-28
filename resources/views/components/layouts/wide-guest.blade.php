@@ -2,8 +2,15 @@
 <html lang="es" class="h-full dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ \App\Models\Setting::get('company_name', 'Eventos Musicales') }} - Modo Cabina DJ</title>
+    @php
+        $companyName = \App\Models\Setting::getCompanyName('Núñez and Son');
+        $faviconUrl = \App\Models\Setting::getFaviconUrl();
+    @endphp
+    <title>{{ $companyName }} - Modo Cabina DJ</title>
+    
+    <!-- Favicon Dinámico -->
+    <link rel="icon" type="image/svg+xml" href="{{ $faviconUrl }}">
+    <link rel="alternate icon" href="{{ $faviconUrl }}">
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script>

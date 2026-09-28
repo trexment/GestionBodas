@@ -4,12 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     @php
-        $companyName = \App\Models\Setting::get('company_name', 'Eventos Musicales');
-        $companyLogo = \App\Models\Setting::get('company_logo');
-        $logoUrl = ($companyLogo && \Illuminate\Support\Facades\Storage::disk('public')->exists($companyLogo))
-            ? \Illuminate\Support\Facades\Storage::disk('public')->url($companyLogo)
-            : ($companyLogo ? '/storage/' . ltrim($companyLogo, '/') : null);
-        $faviconUrl = $logoUrl ?: asset('favicon.svg');
+        $companyName = \App\Models\Setting::getCompanyName('Núñez and Son');
+        $companySubtitle = \App\Models\Setting::getCompanySubtitle('Sound in Motion');
+        $logoUrl = \App\Models\Setting::getLogoUrl();
+        $faviconUrl = \App\Models\Setting::getFaviconUrl();
     @endphp
 
     <title>Acceso Staff - {{ $companyName }}</title>
@@ -41,9 +39,12 @@
         
         <!-- BRAND BADGE -->
         <div class="text-center mb-8">
-            <a href="{{ route('home') }}" class="inline-flex items-center gap-3 group">
+            <a href="{{ route('home') }}" class="inline-flex items-center gap-3 group flex-col">
                 @if($logoUrl)
-                    <img src="{{ $logoUrl }}" alt="{{ $companyName }}" class="w-16 h-16 rounded-2xl object-contain bg-slate-900 p-1.5 border border-slate-700/80 shadow-2xl shadow-indigo-500/30 group-hover:scale-105 transition mx-auto">
+                    <img src="{{ $logoUrl }}" alt="{{ $companyName }}" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';" class="w-16 h-16 rounded-2xl object-contain bg-slate-900 p-1.5 border border-slate-700/80 shadow-2xl shadow-indigo-500/30 group-hover:scale-105 transition mx-auto">
+                    <div style="display: none;" class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-indigo-500 to-purple-600 items-center justify-center shadow-xl shadow-indigo-500/30 group-hover:scale-105 transition mx-auto">
+                        <span class="text-3xl">🎧</span>
+                    </div>
                 @else
                     <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center shadow-xl shadow-indigo-500/30 group-hover:scale-105 transition mx-auto">
                         <span class="text-3xl">🎧</span>

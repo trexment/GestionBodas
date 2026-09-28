@@ -21,6 +21,15 @@ Route::get('/', function () {
     return view('welcome');
 })->name('home');
 
+// Direct public storage file stream fallback (when symlink is missing or blocked by host)
+Route::get('/storage/{path}', function ($path) {
+    $fullPath = storage_path('app/public/' . $path);
+    if (file_exists($fullPath)) {
+        return response()->file($fullPath);
+    }
+    abort(404);
+})->where('path', '.*');
+
 // Auth Routes
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
