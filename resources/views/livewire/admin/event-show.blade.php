@@ -2183,6 +2183,8 @@
             </div>
         </div>
     </div>
+    @endif
+
     <!-- Modal Contacto Finca / Bodega -->
     @if($showVenueModal)
     <div class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
