@@ -83,6 +83,7 @@ Route::middleware('auth')->group(function () {
             Route::get('/events/{event}', EventShow::class)->name('events.show');
             Route::get('/events/{event}/live', DjBoothMode::class)->name('events.live');
             Route::get('/calendar', \App\Livewire\Admin\CalendarManager::class)->name('calendar');
+            Route::get('/clients', \App\Livewire\Admin\ClientManager::class)->name('clients');
             Route::get('/users', UserManager::class)->name('users');
             Route::get('/music', MusicManager::class)->name('music');
             Route::get('/inventory', \App\Livewire\Admin\InventoryManager::class)->name('inventory');

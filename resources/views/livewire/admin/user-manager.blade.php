@@ -16,17 +16,17 @@
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xs">
         <div>
             <h2 class="text-xl font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
-                <span>👥</span> Gestión de Equipo, Empleados y Clientes
+                <span>👥</span> Equipo, Empleados y Personal
             </h2>
             <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                Administra los perfiles, datos de contacto, roles y contraseñas de acceso de todos los usuarios.
+                Gestiona a los DJs, Asistentes técnicos y Administradores de la plataforma. Para gestionar novios y parejas, ve a <a href="{{ route('admin.clients') }}" class="text-indigo-600 dark:text-indigo-400 font-bold underline">Clientes</a>.
             </p>
         </div>
         <button 
             wire:click="openCreateModal" 
             class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-4 rounded-2xl shadow-md text-xs transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
         >
-            <span>+</span> Nuevo Usuario / Empleado
+            <span>+</span> Nuevo Empleado / DJ
         </button>
     </div>
 
@@ -34,11 +34,11 @@
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <!-- Píldoras de Filtro por Rol -->
         <div class="flex flex-wrap items-center gap-1.5">
-            <button wire:click="$set('filterRole', 'all')" class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer {{ $filterRole === 'all' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:bg-slate-50' }}">
-                Todos ({{ \App\Models\User::count() }})
+            <button wire:click="$set('filterRole', 'team')" class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer {{ $filterRole === 'team' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:bg-slate-50' }}">
+                Todo el Equipo ({{ \App\Models\User::whereIn('role', ['assistant', 'dj', 'admin'])->count() }})
             </button>
             <button wire:click="$set('filterRole', 'assistant')" class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer {{ $filterRole === 'assistant' ? 'bg-amber-600 text-white shadow-sm' : 'bg-white dark:bg-slate-900 text-amber-800 dark:text-amber-400 border border-slate-200 dark:border-slate-800 hover:bg-amber-50' }}">
-                👷‍♂️ Asistentes / Empleados ({{ \App\Models\User::where('role', 'assistant')->count() }})
+                👷‍♂️ Asistentes / Personal ({{ \App\Models\User::where('role', 'assistant')->count() }})
             </button>
             <button wire:click="$set('filterRole', 'dj')" class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer {{ $filterRole === 'dj' ? 'bg-blue-600 text-white shadow-sm' : 'bg-white dark:bg-slate-900 text-blue-800 dark:text-blue-400 border border-slate-200 dark:border-slate-800 hover:bg-blue-50' }}">
                 🎧 DJs ({{ \App\Models\User::where('role', 'dj')->count() }})
@@ -46,9 +46,9 @@
             <button wire:click="$set('filterRole', 'admin')" class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer {{ $filterRole === 'admin' ? 'bg-purple-600 text-white shadow-sm' : 'bg-white dark:bg-slate-900 text-purple-800 dark:text-purple-400 border border-slate-200 dark:border-slate-800 hover:bg-purple-50' }}">
                 ⚡ Administradores ({{ \App\Models\User::where('role', 'admin')->count() }})
             </button>
-            <button wire:click="$set('filterRole', 'client')" class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer {{ $filterRole === 'client' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-white dark:bg-slate-900 text-emerald-800 dark:text-emerald-400 border border-slate-200 dark:border-slate-800 hover:bg-emerald-50' }}">
-                👤 Clientes ({{ \App\Models\User::where('role', 'client')->count() }})
-            </button>
+            <a href="{{ route('admin.clients') }}" class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 hover:bg-emerald-100 flex items-center gap-1">
+                <span>👤 Ver Clientes</span> <span>&rarr;</span>
+            </a>
         </div>
 
         <!-- Buscador en tiempo real -->

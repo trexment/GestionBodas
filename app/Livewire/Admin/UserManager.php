@@ -13,7 +13,7 @@ class UserManager extends Component
 {
     // Filtros y búsqueda
     public $search = '';
-    public $filterRole = 'all';
+    public $filterRole = 'team'; // 'team' (todos menos client), 'assistant', 'dj', 'admin', 'all'
 
     // Formulario de Creación
     public $name;
@@ -287,7 +287,9 @@ class UserManager extends Component
     {
         $query = User::orderBy('name', 'asc');
 
-        if ($this->filterRole !== 'all') {
+        if ($this->filterRole === 'team') {
+            $query->whereIn('role', ['assistant', 'dj', 'admin']);
+        } elseif ($this->filterRole !== 'all') {
             $query->where('role', $this->filterRole);
         }
 

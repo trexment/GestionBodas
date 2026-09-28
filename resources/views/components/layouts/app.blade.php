@@ -363,10 +363,16 @@
                 </a>
 
                 @if(Auth::check() && Auth::user()->role === 'admin')
-                <!-- 4. PERSONAL & DJS -->
+                <!-- 4. CLIENTES -->
+                <a href="{{ route('admin.clients') }}" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition {{ request()->routeIs('admin.clients') ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30' : 'text-slate-300 hover:text-white hover:bg-slate-800/80' }}">
+                    <span class="text-base">👤</span>
+                    <span>Clientes y Novios</span>
+                </a>
+
+                <!-- 5. EQUIPO Y PERSONAL (DJs, Asistentes, Admins) -->
                 <a href="{{ route('admin.users') }}" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition {{ request()->routeIs('admin.users') ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30' : 'text-slate-300 hover:text-white hover:bg-slate-800/80' }}">
                     <span class="text-base">👥</span>
-                    <span>Personal, DJs & Clientes</span>
+                    <span>Equipo y Personal</span>
                 </a>
                 @endif
 
