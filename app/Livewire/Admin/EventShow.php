@@ -483,8 +483,9 @@ class EventShow extends Component
             $needsSpotify = empty($song->spotify_url) || str_contains($song->spotify_url, 'open.spotify.com/search/');
             $needsApple = empty($song->apple_music_url) || str_contains($song->apple_music_url, 'music.apple.com/es/search');
             $needsYoutube = empty($song->youtube_url) || str_contains($song->youtube_url, 'youtube.com/results');
+            $needsAudio = empty($song->audio_file);
 
-            if ($needsSpotify || $needsApple || $needsYoutube) {
+            if ($needsSpotify || $needsApple || $needsYoutube || $needsAudio) {
                 $meta = \App\Services\MusicSearchService::resolveTrackMetadata($song->title, $song->artist ?? '');
                 
                 $updates = [];
@@ -497,6 +498,9 @@ class EventShow extends Component
                 if ($needsYoutube && !empty($meta['youtube_url'])) {
                     $updates['youtube_url'] = $meta['youtube_url'];
                 }
+                if ($needsAudio && !empty($meta['preview_url'])) {
+                    $updates['audio_file'] = $meta['preview_url'];
+                }
 
                 if (!empty($updates)) {
                     $song->update($updates);
@@ -506,7 +510,33 @@ class EventShow extends Component
         }
 
         $this->event->load('musicRequests');
-        session()->flash('music_message', "✨ Se han completado y actualizado automáticamente los enlaces de {$updatedCount} canciones.");
+        session()->flash('music_message', "✨ Se han completado y actualizado automáticamente los audios y enlaces de {$updatedCount} canciones.");
+    }
+
+    public function autoResolveSongAudio($songId)
+    {
+        $song = EventMusicRequest::findOrFail($songId);
+        $meta = \App\Services\MusicSearchService::resolveTrackMetadata($song->title, $song->artist ?? '');
+        $updates = [];
+        if (!empty($meta['spotify_url']) && empty($song->spotify_url)) {
+            $updates['spotify_url'] = $meta['spotify_url'];
+        }
+        if (!empty($meta['apple_music_url']) && empty($song->apple_music_url)) {
+            $updates['apple_music_url'] = $meta['apple_music_url'];
+        }
+        if (!empty($meta['youtube_url']) && empty($song->youtube_url)) {
+            $updates['youtube_url'] = $meta['youtube_url'];
+        }
+        if (!empty($meta['preview_url'])) {
+            $updates['audio_file'] = $meta['preview_url'];
+        }
+
+        if (!empty($updates)) {
+            $song->update($updates);
+        }
+
+        $this->event->load('musicRequests');
+        session()->flash('music_message', "✨ Audio y enlaces localizados para '{$song->title}'.");
     }
 
     public function openCloudImportModal()
@@ -1485,8 +1515,8 @@ class EventShow extends Component
             $cue = $req->cue_time ? " [CUE: {$req->cue_time}]" : "";
             
             $m3uContent .= "#EXTINF:-1,{$artist} - {$title} ({$moment}){$cue}\n";
-            if ($req->audio_file) {
-                $m3uContent .= asset('storage/' . $req->audio_file) . "\n";
+            if ($req->audio_url) {
+                $m3uContent .= $req->audio_url . "\n";
             } elseif ($req->youtube_url) {
                 $m3uContent .= $req->youtube_url . "\n";
             } elseif ($req->spotify_url) {

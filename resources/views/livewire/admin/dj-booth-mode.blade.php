@@ -247,7 +247,7 @@
 
                                 <button 
                                     type="button" 
-                                    @click="handleTrackPlay({{ $item->id }}, {{ json_encode($item->title) }}, {{ json_encode($item->artist ?? '') }}, {{ json_encode($item->audio_file ?? '') }}, {{ json_encode($item->spotify_url ?? '') }}, {{ json_encode($item->apple_music_url ?? '') }})" 
+                                    @click="handleTrackPlay({{ $item->id }}, {{ json_encode($item->title) }}, {{ json_encode($item->artist ?? '') }}, {{ json_encode($item->audio_url ?? '') }}, {{ json_encode($item->spotify_url ?? '') }}, {{ json_encode($item->apple_music_url ?? '') }})" 
                                     class="w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs shadow-sm transition {{ $isPlaying ? 'bg-emerald-500 text-slate-950' : 'bg-slate-800 text-slate-200 hover:bg-slate-700' }}"
                                 >
                                     <span x-text="currentId === {{ $item->id }} && isPlaying ? '⏸' : '▶'"></span>
@@ -357,7 +357,7 @@
                                         <div class="flex items-center gap-1.5 flex-shrink-0">
                                             <button 
                                                 type="button" 
-                                                @click="handleTrackPlay({{ $song->id }}, {{ json_encode($song->title) }}, {{ json_encode($song->artist ?? '') }}, {{ json_encode($song->audio_file ?? '') }}, {{ json_encode($song->spotify_url ?? '') }}, {{ json_encode($song->apple_music_url ?? '') }})" 
+                                                @click="handleTrackPlay({{ $song->id }}, {{ json_encode($song->title) }}, {{ json_encode($song->artist ?? '') }}, {{ json_encode($song->audio_url ?? '') }}, {{ json_encode($song->spotify_url ?? '') }}, {{ json_encode($song->apple_music_url ?? '') }})" 
                                                 class="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold transition {{ $isPlaying ? 'bg-emerald-500 text-slate-950' : 'bg-slate-800 text-emerald-400 hover:bg-slate-700' }}"
                                             >
                                                 <span x-text="currentId === {{ $song->id }} && isPlaying ? '⏸' : '▶'"></span>
@@ -567,7 +567,7 @@
                                             @endphp
 
                                             <div 
-                                                @click="handleTrackPlay({{ $req->id }}, {{ json_encode($req->title) }}, {{ json_encode($req->artist ?? '') }}, {{ json_encode($req->audio_file ?? '') }}, {{ json_encode($req->spotify_url ?? '') }}, {{ json_encode($req->apple_music_url ?? '') }})"
+                                                @click="handleTrackPlay({{ $req->id }}, {{ json_encode($req->title) }}, {{ json_encode($req->artist ?? '') }}, {{ json_encode($req->audio_url ?? '') }}, {{ json_encode($req->spotify_url ?? '') }}, {{ json_encode($req->apple_music_url ?? '') }})"
                                                 class="relative rounded-2xl p-4 flex flex-col justify-between min-h-[220px] transition-all duration-200 cursor-pointer group select-none border-2"
                                                 :class="{
                                                     'bg-slate-900/95 border-emerald-400 shadow-2xl shadow-emerald-500/40 ring-4 ring-emerald-500/20 scale-[1.02]': currentId === {{ $req->id }} && isPlaying,
@@ -672,7 +672,7 @@
                                 @endphp
 
                                 <div 
-                                    @click="handleTrackPlay({{ $req->id }}, {{ json_encode($req->title) }}, {{ json_encode($req->artist ?? '') }}, {{ json_encode($req->audio_file ?? '') }}, {{ json_encode($req->spotify_url ?? '') }}, {{ json_encode($req->apple_music_url ?? '') }})"
+                                    @click="handleTrackPlay({{ $req->id }}, {{ json_encode($req->title) }}, {{ json_encode($req->artist ?? '') }}, {{ json_encode($req->audio_url ?? '') }}, {{ json_encode($req->spotify_url ?? '') }}, {{ json_encode($req->apple_music_url ?? '') }})"
                                     class="relative rounded-2xl p-4 flex flex-col justify-between min-h-[220px] transition-all duration-200 cursor-pointer group select-none border-2"
                                     :class="{
                                         'bg-slate-900/95 border-emerald-400 shadow-2xl shadow-emerald-500/40 ring-4 ring-emerald-500/20 scale-[1.02]': currentId === {{ $req->id }} && isPlaying,
@@ -815,7 +815,7 @@
                                         <td class="py-3 px-4 text-center">
                                             <button 
                                                 type="button" 
-                                                @click="handleTrackPlay({{ $item->id }}, {{ json_encode($item->title) }}, {{ json_encode($item->artist ?? '') }}, {{ json_encode($item->audio_file ?? '') }}, {{ json_encode($item->spotify_url ?? '') }}, {{ json_encode($item->apple_music_url ?? '') }})" 
+                                                @click="handleTrackPlay({{ $item->id }}, {{ json_encode($item->title) }}, {{ json_encode($item->artist ?? '') }}, {{ json_encode($item->audio_url ?? '') }}, {{ json_encode($item->spotify_url ?? '') }}, {{ json_encode($item->apple_music_url ?? '') }})" 
                                                 class="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold transition mx-auto {{ $isPlaying ? 'bg-emerald-500 text-slate-950' : 'bg-slate-800 text-emerald-400 hover:bg-slate-700' }}"
                                             >
                                                 <span x-text="currentId === {{ $item->id }} && isPlaying ? '⏸' : '▶'"></span>

@@ -67,6 +67,34 @@ class EventMusicRequest extends Model
         });
     }
 
+    public function getAudioUrlAttribute(): ?string
+    {
+        if (empty($this->audio_file)) {
+            return null;
+        }
+
+        $file = trim($this->audio_file);
+
+        if (str_starts_with($file, 'http://') || str_starts_with($file, 'https://')) {
+            if (str_contains($file, 'drive.google.com')) {
+                if (preg_match('/\/d\/([a-zA-Z0-9_-]+)/', $file, $m) || preg_match('/[?&]id=([a-zA-Z0-9_-]+)/', $file, $m)) {
+                    return "https://drive.google.com/uc?export=download&id={$m[1]}";
+                }
+            }
+            if (str_contains($file, 'dropbox.com')) {
+                if (str_contains($file, '?dl=0')) {
+                    return str_replace('?dl=0', '?raw=1', $file);
+                }
+                if (!str_contains($file, 'raw=1')) {
+                    return $file . (str_contains($file, '?') ? '&raw=1' : '?raw=1');
+                }
+            }
+            return $file;
+        }
+
+        return asset('storage/' . $file);
+    }
+
     public function event()
     {
         return $this->belongsTo(Event::class);

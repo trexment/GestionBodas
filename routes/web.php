@@ -62,6 +62,8 @@ Route::get('/api/spotify/token', [SpotifyAuthController::class, 'getToken'])->na
 Route::get('/api/apple-music/token', [SpotifyAuthController::class, 'getAppleMusicToken'])->name('apple-music.token');
 Route::get('/api/music/youtube-id', [SpotifyAuthController::class, 'getYoutubeVideoId'])->name('music.youtube-id');
 Route::get('/api/music/resolve-track', [SpotifyAuthController::class, 'resolveTrack'])->name('music.resolve-track');
+Route::get('/music-requests/{musicRequest}/download', [SpotifyAuthController::class, 'downloadAudio'])->name('admin.music.download');
+Route::get('/music/{musicRequest}/download', [SpotifyAuthController::class, 'downloadAudio'])->name('music.download');
 
 // Global PDF Download Aliases
 Route::get('/events/{event}/music-escaleta/pdf', [PdfController::class, 'downloadMusicEscaleta'])->name('pdf.music-escaleta');

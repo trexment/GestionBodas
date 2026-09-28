@@ -659,7 +659,7 @@
                             'artist' => $req->artist ?: '',
                             'moment' => $req->moment ?: ucfirst($req->category),
                             'category' => $req->category,
-                            'audio_src' => $req->audio_file ? asset('storage/' . $req->audio_file) : '',
+                            'audio_src' => $req->audio_url ?: '',
                             'youtube_url' => $req->youtube_url ?: '',
                             'spotify_url' => $req->spotify_url ?: '',
                             'cue_time' => $req->cue_time ?: '',
@@ -945,15 +945,27 @@
                                 <!-- Reproductor y Enlaces Multimedia -->
                                 <div class="bg-gray-950/60 rounded-lg p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border border-gray-800">
                                     <div class="flex-1 w-full sm:w-auto">
-                                        @if($song->audio_file)
+                                        @if($song->audio_url)
                                             <div class="flex items-center gap-2">
-                                                <audio controls class="w-full h-8 rounded" style="filter: invert(0.85);">
-                                                    <source src="{{ asset('storage/' . $song->audio_file) }}" type="audio/mpeg">
+                                                <audio controls class="w-full h-8 rounded" style="filter: invert(0.85);" preload="metadata">
+                                                    <source src="{{ $song->audio_url }}" type="audio/mpeg">
+                                                    <source src="{{ $song->audio_url }}" type="audio/mp4">
+                                                    <source src="{{ $song->audio_url }}" type="audio/aac">
                                                     Tu navegador no soporta el reproductor de audio.
                                                 </audio>
                                             </div>
                                         @else
-                                            <div class="text-xs text-gray-500 italic">Sin archivo de audio MP3 subido (Usa los enlaces de YouTube, Spotify o Apple Music)</div>
+                                            <div class="flex items-center justify-between gap-2 text-xs text-slate-400 italic">
+                                                <span>Sin audio local directo</span>
+                                                <button 
+                                                    type="button" 
+                                                    wire:click="autoResolveSongAudio({{ $song->id }})" 
+                                                    class="not-italic text-[11px] font-bold text-indigo-400 hover:text-indigo-300 underline cursor-pointer"
+                                                    title="Detectar y vincular audio MP3 automáticamente"
+                                                >
+                                                    🪄 Detectar Audio
+                                                </button>
+                                            </div>
                                         @endif
                                     </div>
 
@@ -990,7 +1002,7 @@
                                         @endif
 
                                         @if($song->audio_file)
-                                            <a href="{{ asset('storage/' . $song->audio_file) }}" download class="bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 text-xs font-semibold px-2.5 py-1.5 rounded-md inline-flex items-center gap-1 transition" title="Descargar MP3 para DJ">
+                                            <a href="{{ route('admin.music.download', $song->id) }}" target="_blank" class="bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 text-xs font-semibold px-2.5 py-1.5 rounded-md inline-flex items-center gap-1 transition" title="Descargar MP3 para DJ">
                                                 <span>⬇️ MP3</span>
                                             </a>
                                         @endif

@@ -280,4 +280,65 @@ class SpotifyAuthController extends Controller
             return null;
         });
     }
+
+    /**
+     * Download or proxy direct audio MP3 stream for DJ / Client
+     */
+    public function downloadAudio(\App\Models\EventMusicRequest $musicRequest)
+    {
+        $title = $musicRequest->title ?: 'Cancion';
+        $artist = $musicRequest->artist ?: '';
+        $cleanFilename = \Illuminate\Support\Str::slug(($artist ? $artist . ' - ' : '') . $title) ?: 'track';
+
+        // 1. Auto-resolve if empty
+        if (empty($musicRequest->audio_file)) {
+            $meta = \App\Services\MusicSearchService::resolveTrackMetadata($musicRequest->title, $musicRequest->artist ?? '');
+            if (!empty($meta['preview_url'])) {
+                $musicRequest->update(['audio_file' => $meta['preview_url']]);
+            }
+        }
+
+        if (empty($musicRequest->audio_file)) {
+            $fallbackUrl = $musicRequest->youtube_url ?: ("https://www.youtube.com/results?search_query=" . urlencode($musicRequest->title . ' ' . $musicRequest->artist));
+            return redirect()->away($fallbackUrl);
+        }
+
+        $audioFile = trim($musicRequest->audio_file);
+
+        // 2. Local storage file
+        if (!str_starts_with($audioFile, 'http://') && !str_starts_with($audioFile, 'https://')) {
+            $ext = pathinfo($audioFile, PATHINFO_EXTENSION) ?: 'mp3';
+            $fullPath = storage_path('app/public/' . $audioFile);
+            if (file_exists($fullPath)) {
+                return response()->download($fullPath, "{$cleanFilename}.{$ext}");
+            }
+        }
+
+        // 3. Remote URL stream proxy
+        $streamUrl = $musicRequest->audio_url ?: $audioFile;
+
+        try {
+            $response = \Illuminate\Support\Facades\Http::timeout(30)
+                ->withHeaders([
+                    'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+                ])
+                ->get($streamUrl);
+
+            if ($response->successful()) {
+                $contentType = $response->header('Content-Type') ?: 'audio/mpeg';
+                $ext = (str_contains($contentType, 'mp4') || str_contains($contentType, 'm4a') || str_contains($streamUrl, '.m4a')) ? 'm4a' : 'mp3';
+
+                return response($response->body(), 200, [
+                    'Content-Type' => $contentType,
+                    'Content-Disposition' => "attachment; filename=\"{$cleanFilename}.{$ext}\"",
+                    'Content-Length' => strlen($response->body()),
+                    'Cache-Control' => 'no-cache, private',
+                ]);
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning("Remote audio proxy failed for {$streamUrl}: " . $e->getMessage());
+        }
+
+        return redirect()->away($streamUrl);
+    }
 }
