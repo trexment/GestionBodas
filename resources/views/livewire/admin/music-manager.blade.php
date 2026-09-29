@@ -264,11 +264,6 @@
                                                     🍎
                                                 </a>
                                             @endif
-                                            @if($track->youtube_url)
-                                                <a href="{{ $track->youtube_url }}" target="_blank" class="p-1 rounded-md bg-rose-50 text-rose-700 hover:bg-rose-100 text-xs font-bold" title="Buscar en YouTube">
-                                                    ▶️
-                                                </a>
-                                            @endif
                                         </div>
                                     </td>
                                     <td class="px-4 py-3 whitespace-nowrap text-right">

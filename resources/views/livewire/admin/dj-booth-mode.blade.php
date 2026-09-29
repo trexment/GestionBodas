@@ -1577,10 +1577,34 @@ function djAudioPlayer() {
             player.addListener('ready', ({ device_id }) => {
                 this.spotifyDeviceId = device_id;
                 this.spotifyReady = true;
+                console.log('Spotify Cabina DJ Ready with Device ID:', device_id);
             });
 
             player.addListener('not_ready', () => {
                 this.spotifyReady = false;
+            });
+
+            player.addListener('initialization_error', ({ message }) => {
+                console.warn('Spotify Web Playback initialization error:', message);
+            });
+
+            player.addListener('authentication_error', async ({ message }) => {
+                console.warn('Spotify Web Playback authentication error:', message);
+                try {
+                    const res = await fetch('/api/spotify/token');
+                    const data = await res.json();
+                    if (data.access_token) {
+                        this.spotifyToken = data.access_token;
+                    }
+                } catch (e) {}
+            });
+
+            player.addListener('account_error', ({ message }) => {
+                console.warn('Spotify Web Playback account error (requiere Spotify Premium):', message);
+            });
+
+            player.addListener('playback_error', ({ message }) => {
+                console.warn('Spotify Web Playback playback error:', message);
             });
 
             player.addListener('player_state_changed', state => {
@@ -1633,8 +1657,16 @@ function djAudioPlayer() {
             this.spotifyExternalUrl = spotifyUrl || (`https://open.spotify.com/search/${queryParam}`);
             this.appleMusicExternalUrl = appleMusicUrl || (`https://music.apple.com/es/search?term=${queryParam}`);
 
-            // 1. Google Drive / Almacenamiento Local MP3 (100% Canción Completa)
-            if (audioFile && audioFile.trim() !== '') {
+            // Detectar si el audio es un MP3 real de Google Drive o subido al servidor
+            const isDriveOrLocalMp3 = audioFile && (
+                audioFile.includes('drive.google.com') ||
+                audioFile.includes('/api/drive-stream/') ||
+                audioFile.includes('dropbox.com') ||
+                (!audioFile.startsWith('http') && audioFile.trim() !== '')
+            );
+
+            // 1. Google Drive / Almacenamiento Local Propio (100% Canción Completa)
+            if (isDriveOrLocalMp3) {
                 let streamUrl = audioFile.trim();
                 if (streamUrl.includes('drive.google.com') || streamUrl.includes('/api/drive-stream/')) {
                     const driveMatch = streamUrl.match(/\/d\/([a-zA-Z0-9_-]+)/) || streamUrl.match(/[?&]id=([a-zA-Z0-9_-]+)/) || streamUrl.match(/\/api\/drive-stream\/([a-zA-Z0-9_-]+)/);
@@ -1662,28 +1694,8 @@ function djAudioPlayer() {
                 }
             }
 
-            // 2. Apple Music (MusicKit Full Streaming)
-            if (this.appleMusicReady && this.musicKit) {
-                try {
-                    const q = encodeURIComponent(((artist || '') + ' ' + title).trim());
-                    const searchRes = await this.musicKit.api.music(`/v1/catalog/es/search?term=${q}&types=songs&limit=1`);
-                    if (searchRes.data && searchRes.data.results && searchRes.data.results.songs && searchRes.data.results.songs.data.length > 0) {
-                        const song = searchRes.data.results.songs.data[0];
-                        this.currentCover = song.attributes?.artwork?.url ? song.attributes.artwork.url.replace('{w}', '300').replace('{h}', '300') : '';
-                        await this.musicKit.setQueue({ song: song.id });
-                        await this.musicKit.play();
-                        this.playbackSource = 'apple_music';
-                        this.isPlaying = true;
-                        this.isPaused = false;
-                        this.loading = false;
-                        this.$wire.setStatus(id, 'playing');
-                        return;
-                    }
-                } catch (e) {}
-            }
-
-            // 3. Spotify Web Playback SDK (100% Canción Completa con Spotify Premium)
-            if (this.spotifyReady && this.spotifyDeviceId) {
+            // 2. Spotify Web Playback SDK (100% Canción Completa con cuenta Premium conectada)
+            if (this.spotifyReady && this.spotifyDeviceId && this.spotifyToken) {
                 let trackUri = null;
                 if (spotifyUrl && spotifyUrl.includes('/track/')) {
                     const match = spotifyUrl.match(/track\/([a-zA-Z0-9]+)/);
@@ -1703,6 +1715,9 @@ function djAudioPlayer() {
                             if (data.tracks && data.tracks.items.length > 0) {
                                 trackUri = data.tracks.items[0].uri;
                                 this.currentCover = data.tracks.items[0].album?.images?.[0]?.url || '';
+                                if (data.tracks.items[0].external_urls?.spotify) {
+                                    this.spotifyExternalUrl = data.tracks.items[0].external_urls.spotify;
+                                }
                             }
                         }
                     } catch (e) {}
@@ -1731,7 +1746,42 @@ function djAudioPlayer() {
                 }
             }
 
-            // 4. Resolución de Carátula & Enlace de Spotify vía Backend
+            // 3. Apple Music (MusicKit Full Streaming)
+            if (this.appleMusicReady && this.musicKit) {
+                try {
+                    const q = encodeURIComponent(((artist || '') + ' ' + title).trim());
+                    const searchRes = await this.musicKit.api.music(`/v1/catalog/es/search?term=${q}&types=songs&limit=1`);
+                    if (searchRes.data && searchRes.data.results && searchRes.data.results.songs && searchRes.data.results.songs.data.length > 0) {
+                        const song = searchRes.data.results.songs.data[0];
+                        this.currentCover = song.attributes?.artwork?.url ? song.attributes.artwork.url.replace('{w}', '300').replace('{h}', '300') : '';
+                        await this.musicKit.setQueue({ song: song.id });
+                        await this.musicKit.play();
+                        this.playbackSource = 'apple_music';
+                        this.isPlaying = true;
+                        this.isPaused = false;
+                        this.loading = false;
+                        this.$wire.setStatus(id, 'playing');
+                        return;
+                    }
+                } catch (e) {}
+            }
+
+            // 4. Fallback de Preescucha de 30s si no hay cuenta de Spotify conectada ni archivo de Drive
+            if (audioFile && audioFile.startsWith('http')) {
+                this.playbackSource = 'preview';
+                this.audio.src = audioFile;
+                this.audio.load();
+                try {
+                    await this.audio.play();
+                    this.isPlaying = true;
+                    this.isPaused = false;
+                    this.loading = false;
+                    this.$wire.setStatus(id, 'playing');
+                    return;
+                } catch (e) {}
+            }
+
+            // 5. Resolución de Carátula & Enlace de Spotify vía Backend
             try {
                 const resolveRes = await fetch(`/api/music/resolve-track?title=${encodeURIComponent(title)}&artist=${encodeURIComponent(artist || '')}`);
                 if (resolveRes.ok) {
@@ -1746,7 +1796,7 @@ function djAudioPlayer() {
                 console.warn('Backend resolve error', e);
             }
 
-            // 5. Si no se puede reproducir en el navegador directamente
+            // 6. Si no se puede reproducir en el navegador directamente
             this.loading = false;
             this.isPlaying = false;
             this.hasError = true;
