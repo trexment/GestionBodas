@@ -105,8 +105,8 @@
             </form>
 
             <div class="mt-6 pt-6 border-t border-slate-800 text-center">
-                <a href="{{ route('home') }}" class="text-xs text-slate-400 hover:text-indigo-400 transition inline-flex items-center gap-1 font-medium">
-                    <span>&larr;</span> Volver a la web pública
+                <a href="{{ \App\Models\Setting::getPublicWebsiteUrl() }}" class="text-xs text-slate-400 hover:text-indigo-400 transition inline-flex items-center gap-1 font-medium">
+                    <span>&larr;</span> Volver a la web principal
                 </a>
             </div>
         </div>

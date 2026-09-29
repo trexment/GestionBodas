@@ -110,5 +110,44 @@ class Setting extends Model
     {
         return self::get('company_subtitle', $default);
     }
+
+    /**
+     * Get the public website URL (auto-detects domain or uses custom setting).
+     * e.g., app.javnxdj.com -> https://javnxdj.com
+     *       app.nunezandson.com -> https://nunezandson.com
+     */
+    public static function getPublicWebsiteUrl()
+    {
+        $customUrl = self::get('public_website_url');
+        if (!empty($customUrl)) {
+            return $customUrl;
+        }
+
+        if (app()->runningInConsole()) {
+            return config('app.url', 'https://nunezandson.com');
+        }
+
+        $host = request()->getHost();
+        $scheme = request()->getScheme();
+
+        // 1. If running under standard subdomain like app.javnxdj.com or app.nunezandson.com
+        if (str_starts_with(strtolower($host), 'app.')) {
+            $mainDomain = substr($host, 4);
+            return $scheme . '://' . $mainDomain;
+        }
+
+        // 2. If running under appeventos.frannunez.es
+        if (str_starts_with(strtolower($host), 'appeventos.')) {
+            $mainDomain = substr($host, 11);
+            return $scheme . '://' . $mainDomain;
+        }
+
+        // 3. If running locally
+        if ($host === 'localhost' || $host === '127.0.0.1' || str_contains($host, '.test') || str_contains($host, '.local')) {
+            return url('/');
+        }
+
+        return $scheme . '://' . $host;
+    }
 }
 

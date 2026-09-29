@@ -25,6 +25,7 @@ class Settings extends Component
     public $company_address;
     public $company_city;
     public $company_season;
+    public $public_website_url;
     
     // Precios base y Packs Comerciales
     public $pack_basic_name;
@@ -109,6 +110,7 @@ class Settings extends Component
         $this->company_address = Setting::get('company_address', 'Calle Principal s/n');
         $this->company_city = Setting::get('company_city', 'Navarrete');
         $this->company_season = Setting::get('company_season', 'Temporada 2026/2027');
+        $this->public_website_url = Setting::get('public_website_url', '');
         $this->company_iban = Setting::get('company_iban', 'ES00 0000 0000 0000 0000 0000');
         $this->company_bizum = Setting::get('company_bizum', '622634790');
         $this->deposit_type = Setting::get('deposit_type', 'percentage');
@@ -257,6 +259,7 @@ class Settings extends Component
         Setting::set('company_address', $this->company_address);
         Setting::set('company_city', $this->company_city);
         Setting::set('company_season', $this->company_season);
+        Setting::set('public_website_url', $this->public_website_url);
         Setting::set('company_iban', $this->company_iban);
         Setting::set('company_bizum', $this->company_bizum);
         Setting::set('deposit_type', $this->deposit_type);

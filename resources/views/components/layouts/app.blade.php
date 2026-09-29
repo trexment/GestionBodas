@@ -409,7 +409,7 @@
                     Enlaces Directos
                 </div>
 
-                <a href="{{ route('home') }}" target="_blank" class="flex items-center justify-between px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800/60 transition">
+                <a href="{{ \App\Models\Setting::getPublicWebsiteUrl() }}" target="_blank" rel="noopener noreferrer" class="flex items-center justify-between px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800/60 transition">
                     <span class="flex items-center gap-2.5">
                         <span>🌐</span>
                         <span>Web Pública</span>

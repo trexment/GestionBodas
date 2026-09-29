@@ -122,6 +122,15 @@
                         <label class="block text-xs font-bold text-gray-700 mb-1">Localidad / Ciudad</label>
                         <input type="text" wire:model="company_city" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">
                     </div>
+
+                    <div class="md:col-span-2">
+                        <div class="flex items-center justify-between mb-1">
+                            <label class="block text-xs font-bold text-gray-700">URL Web Pública Principal (Opcional)</label>
+                            <span class="text-[11px] text-indigo-600 font-semibold">Auto-detectado: {{ \App\Models\Setting::getPublicWebsiteUrl() }}</span>
+                        </div>
+                        <input type="url" wire:model="public_website_url" placeholder="Dejar vacío para auto-detectar según dominio (ej. app.javnxdj.com &rarr; javnxdj.com)" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">
+                        <span class="text-[11px] text-gray-400 mt-1 block">Si se deja vacío, el botón "Web Pública" redirigirá automáticamente a la raíz del dominio principal (ej: desde <code>app.javnxdj.com</code> irá a <code>https://javnxdj.com</code>).</span>
+                    </div>
                 </div>
 
                 <div class="pt-4 border-t border-gray-100 space-y-3">
