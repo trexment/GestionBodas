@@ -21,6 +21,7 @@ class MusicManager extends Component
     // Filters for Library
     public $search = '';
     public $sourceFilter = 'all'; // 'all', 'google_drive', 'local'
+    public $folderFilter = 'all'; // 'all' or specific folder name
     
     // Playlists & Events
     public $playlists = [];
@@ -48,6 +49,7 @@ class MusicManager extends Component
     protected $queryString = [
         'search' => ['except' => ''],
         'sourceFilter' => ['except' => 'all'],
+        'folderFilter' => ['except' => 'all'],
     ];
 
     public function updatingSearch()
@@ -56,6 +58,11 @@ class MusicManager extends Component
     }
 
     public function updatingSourceFilter()
+    {
+        $this->resetPage();
+    }
+
+    public function updatingFolderFilter()
     {
         $this->resetPage();
     }
@@ -206,17 +213,32 @@ class MusicManager extends Component
             $query->where('source', '!=', 'google_drive');
         }
 
-        $tracks = $query->orderBy('title', 'asc')->paginate(25);
+        if (!empty($this->folderFilter) && $this->folderFilter !== 'all') {
+            $query->where('cloud_folder', $this->folderFilter);
+        }
+
+        $tracks = $query->orderBy('cloud_folder', 'asc')->orderBy('title', 'asc')->paginate(25);
 
         $totalTracks = Track::count();
         $driveCount = Track::where('source', 'google_drive')->count();
         $driveFolderConfigured = !empty(Setting::get('google_drive_library_folder'));
+
+        // Obtener carpetas disponibles con conteo de canciones
+        $availableFolders = Track::where('source', 'google_drive')
+            ->whereNotNull('cloud_folder')
+            ->where('cloud_folder', '!=', '')
+            ->where('cloud_folder', '!=', 'Raíz')
+            ->select('cloud_folder', \Illuminate\Support\Facades\DB::raw('count(*) as count'))
+            ->groupBy('cloud_folder')
+            ->orderBy('cloud_folder', 'asc')
+            ->get();
 
         return view('livewire.admin.music-manager', [
             'tracks' => $tracks,
             'totalTracks' => $totalTracks,
             'driveCount' => $driveCount,
             'driveFolderConfigured' => $driveFolderConfigured,
+            'availableFolders' => $availableFolders,
         ])->layout('components.layouts.app', ['header' => 'Gestor Musical']);
     }
 }

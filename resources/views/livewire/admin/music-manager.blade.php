@@ -127,39 +127,69 @@
         <div class="lg:col-span-3 space-y-4">
             
             <!-- Barra de Búsqueda y Filtros -->
-            <div class="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3">
-                <div class="w-full sm:w-72">
-                    <input 
-                        type="text" 
-                        wire:model.live.debounce.300ms="search" 
-                        placeholder="🔍 Buscar por título, artista o género..." 
-                        class="w-full border-gray-300 rounded-xl text-xs font-medium focus:ring-indigo-500 focus:border-indigo-500"
-                    >
+            <div class="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm space-y-3">
+                <div class="flex flex-col sm:flex-row items-center justify-between gap-3">
+                    <div class="w-full sm:w-72">
+                        <input 
+                            type="text" 
+                            wire:model.live.debounce.300ms="search" 
+                            placeholder="🔍 Buscar por título, artista o género..." 
+                            class="w-full border-gray-300 rounded-xl text-xs font-medium focus:ring-indigo-500 focus:border-indigo-500"
+                        >
+                    </div>
+
+                    <div class="flex items-center gap-1.5 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
+                        <button 
+                            type="button" 
+                            wire:click="$set('sourceFilter', 'all')" 
+                            class="px-3 py-1.5 rounded-lg text-xs font-bold transition whitespace-nowrap {{ $sourceFilter === 'all' ? 'bg-indigo-600 text-white shadow-xs' : 'bg-gray-100 text-gray-600 hover:bg-gray-200' }}"
+                        >
+                            Todas ({{ $totalTracks }})
+                        </button>
+                        <button 
+                            type="button" 
+                            wire:click="$set('sourceFilter', 'google_drive')" 
+                            class="px-3 py-1.5 rounded-lg text-xs font-bold transition whitespace-nowrap {{ $sourceFilter === 'google_drive' ? 'bg-sky-600 text-white shadow-xs' : 'bg-sky-50 text-sky-700 hover:bg-sky-100' }}"
+                        >
+                            📁 Drive ({{ $driveCount }})
+                        </button>
+                        <button 
+                            type="button" 
+                            wire:click="$set('sourceFilter', 'local')" 
+                            class="px-3 py-1.5 rounded-lg text-xs font-bold transition whitespace-nowrap {{ $sourceFilter === 'local' ? 'bg-slate-800 text-white shadow-xs' : 'bg-gray-100 text-gray-600 hover:bg-gray-200' }}"
+                        >
+                            💻 Locales ({{ $totalTracks - $driveCount }})
+                        </button>
+                    </div>
                 </div>
 
-                <div class="flex items-center gap-1.5 w-full sm:w-auto">
-                    <button 
-                        type="button" 
-                        wire:click="$set('sourceFilter', 'all')" 
-                        class="px-3 py-1.5 rounded-lg text-xs font-bold transition {{ $sourceFilter === 'all' ? 'bg-indigo-600 text-white shadow-xs' : 'bg-gray-100 text-gray-600 hover:bg-gray-200' }}"
-                    >
-                        Todas ({{ $totalTracks }})
-                    </button>
-                    <button 
-                        type="button" 
-                        wire:click="$set('sourceFilter', 'google_drive')" 
-                        class="px-3 py-1.5 rounded-lg text-xs font-bold transition {{ $sourceFilter === 'google_drive' ? 'bg-sky-600 text-white shadow-xs' : 'bg-sky-50 text-sky-700 hover:bg-sky-100' }}"
-                    >
-                        📁 Drive ({{ $driveCount }})
-                    </button>
-                    <button 
-                        type="button" 
-                        wire:click="$set('sourceFilter', 'local')" 
-                        class="px-3 py-1.5 rounded-lg text-xs font-bold transition {{ $sourceFilter === 'local' ? 'bg-slate-800 text-white shadow-xs' : 'bg-gray-100 text-gray-600 hover:bg-gray-200' }}"
-                    >
-                        💻 Locales ({{ $totalTracks - $driveCount }})
-                    </button>
-                </div>
+                <!-- Filtro por Carpetas de Google Drive -->
+                @if($availableFolders->count() > 0)
+                    <div class="pt-2 border-t border-gray-100 flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
+                        <span class="text-gray-500 text-[11px] font-bold shrink-0 flex items-center gap-1">
+                            <span>📂</span> Carpetas:
+                        </span>
+                        <button 
+                            type="button" 
+                            wire:click="$set('folderFilter', 'all')" 
+                            class="px-2.5 py-1 rounded-lg text-[11px] font-bold transition shrink-0 {{ $folderFilter === 'all' ? 'bg-sky-700 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' }}"
+                        >
+                            Todas las carpetas
+                        </button>
+                        @foreach($availableFolders as $f)
+                            <button 
+                                type="button" 
+                                wire:click="$set('folderFilter', '{{ $f->cloud_folder }}')" 
+                                class="px-2.5 py-1 rounded-lg text-[11px] font-bold transition shrink-0 flex items-center gap-1 {{ $folderFilter === $f->cloud_folder ? 'bg-sky-600 text-white shadow-xs' : 'bg-sky-50 text-sky-800 hover:bg-sky-100 border border-sky-200/60' }}"
+                            >
+                                <span>📁</span> {{ $f->cloud_folder }}
+                                <span class="px-1.5 py-0.2 rounded-full text-[9px] {{ $folderFilter === $f->cloud_folder ? 'bg-sky-800 text-white' : 'bg-sky-200/80 text-sky-900' }} font-bold">
+                                    {{ $f->count }}
+                                </span>
+                            </button>
+                        @endforeach
+                    </div>
+                @endif
             </div>
 
             <!-- Tabla de Canciones -->
@@ -169,7 +199,7 @@
                         <thead class="bg-slate-50 text-gray-600 font-bold uppercase tracking-wider">
                             <tr>
                                 <th class="px-4 py-3">Canción / Artista</th>
-                                <th class="px-4 py-3">Origen</th>
+                                <th class="px-4 py-3">Origen / Carpeta</th>
                                 <th class="px-4 py-3">Preescucha</th>
                                 <th class="px-4 py-3">Plataformas</th>
                                 <th class="px-4 py-3 text-right">Acciones</th>
@@ -192,9 +222,21 @@
                                     </td>
                                     <td class="px-4 py-3 whitespace-nowrap">
                                         @if($track->source === 'google_drive')
-                                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-sky-50 text-sky-800 border border-sky-200">
-                                                <span>📁</span> Google Drive
-                                            </span>
+                                            <div>
+                                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-50 text-sky-800 border border-sky-200">
+                                                    <span>📁</span> Google Drive
+                                                </span>
+                                                @if($track->cloud_folder && $track->cloud_folder !== 'Raíz')
+                                                    <button 
+                                                        type="button" 
+                                                        wire:click="$set('folderFilter', '{{ $track->cloud_folder }}')" 
+                                                        class="text-[10px] text-sky-700 bg-sky-100/70 hover:bg-sky-200 px-1.5 py-0.5 rounded font-mono font-bold block mt-1 transition cursor-pointer" 
+                                                        title="Filtrar por esta carpeta"
+                                                    >
+                                                        📂 {{ $track->cloud_folder }}
+                                                    </button>
+                                                @endif
+                                            </div>
                                         @else
                                             <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
                                                 <span>💻</span> Local / Manual
