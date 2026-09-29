@@ -264,6 +264,11 @@
                                                     🍎
                                                 </a>
                                             @endif
+                                            @if($track->youtube_url || $track->title)
+                                                <a href="{{ $track->youtube_url ?: ('https://www.youtube.com/results?search_query=' . urlencode($track->artist . ' ' . $track->title)) }}" target="_blank" class="p-1 rounded-md bg-rose-50 text-rose-700 hover:bg-rose-100 text-xs font-bold" title="Buscar en YouTube">
+                                                    ▶️
+                                                </a>
+                                            @endif
                                         </div>
                                     </td>
                                     <td class="px-4 py-3 whitespace-nowrap text-right">

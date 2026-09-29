@@ -178,14 +178,19 @@ class SpotifyAuthController extends Controller
                 } catch (\Throwable $e) {}
             }
 
+            // Also search YouTube Video ID as secondary fallback for rare/special tracks
+            $youtubeVideoId = self::searchYoutubeVideoId($query);
+
             return [
-                'resolved' => !empty($previewUrl) || !empty($coverUrl),
+                'resolved' => !empty($previewUrl) || !empty($coverUrl) || !empty($youtubeVideoId),
                 'preview_url' => $previewUrl,
                 'cover_url' => $coverUrl,
                 'duration_ms' => $durationMs,
                 'track_name' => $trackName,
                 'artist_name' => $artistName,
+                'youtube_video_id' => $youtubeVideoId,
                 'spotify_url' => 'https://open.spotify.com/search/' . urlencode($query),
+                'youtube_url' => $youtubeVideoId ? "https://www.youtube.com/watch?v={$youtubeVideoId}" : ('https://www.youtube.com/results?search_query=' . urlencode($query)),
                 'apple_music_url' => 'https://music.apple.com/es/search?term=' . urlencode($query),
             ];
         });
