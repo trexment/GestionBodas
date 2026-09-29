@@ -96,12 +96,12 @@ class CloudMusicStorageService
     }
 
     /**
-     * Scan Google Drive Shared Folder using Google Drive API v3
+     * Scan Google Drive Shared Folder and all subfolders recursively using Google Drive API v3
      */
     public static function scanGoogleDriveFolder(string $folderUrlOrId, ?string $apiKey = null): array
     {
-        $folderId = self::extractGoogleDriveFolderId($folderUrlOrId);
-        if (!$folderId) {
+        $rootFolderId = self::extractGoogleDriveFolderId($folderUrlOrId);
+        if (!$rootFolderId) {
             return [
                 'success' => false,
                 'message' => 'El enlace proporcionado no contiene un ID de carpeta de Google Drive válido.',
@@ -115,67 +115,104 @@ class CloudMusicStorageService
             return [
                 'success' => false,
                 'message' => 'Para escanear carpetas de Google Drive automáticamente, configura una Google Drive API Key en Ajustes > Almacenamiento.',
-                'folder_id' => $folderId,
+                'folder_id' => $rootFolderId,
                 'files' => [],
             ];
         }
 
         try {
             $parsedFiles = [];
-            $pageToken = null;
-            $maxPages = 10; // Supports up to 1000 audio files per sync
-            $pageCount = 0;
+            $foldersQueue = [['id' => $rootFolderId, 'name' => '']];
+            $processedFolders = [];
+            $maxFolders = 80;
+            $foldersScanned = 0;
 
-            do {
-                $params = [
-                    'q' => "'{$folderId}' in parents and (mimeType contains 'audio/' or name contains '.mp3' or name contains '.wav' or name contains '.m4a' or name contains '.flac' or name contains '.aac' or name contains '.ogg') and trashed=false",
-                    'fields' => 'nextPageToken, files(id, name, mimeType, size, webViewLink, webContentLink)',
-                    'pageSize' => 100,
-                    'key' => $key,
-                ];
+            while (!empty($foldersQueue) && $foldersScanned < $maxFolders) {
+                $current = array_shift($foldersQueue);
+                $currentFolderId = $current['id'];
+                $currentFolderName = $current['name'];
 
-                if ($pageToken) {
-                    $params['pageToken'] = $pageToken;
+                if (isset($processedFolders[$currentFolderId])) {
+                    continue;
                 }
+                $processedFolders[$currentFolderId] = true;
+                $foldersScanned++;
 
-                $response = Http::timeout(15)->get('https://www.googleapis.com/drive/v3/files', $params);
+                $pageToken = null;
+                $pageCount = 0;
+                $maxPagesPerFolder = 10;
 
-                if (!$response->successful()) {
-                    $err = $response->json('error.message') ?: 'Error al acceder a Google Drive API.';
-                    return [
-                        'success' => false,
-                        'message' => 'Google Drive API Error: ' . $err . '. Asegúrate de que la carpeta esté compartida como "Cualquier persona con el enlace puede ver".',
-                        'files' => [],
+                do {
+                    $params = [
+                        'q' => "'{$currentFolderId}' in parents and trashed=false",
+                        'fields' => 'nextPageToken, files(id, name, mimeType, size, webViewLink, webContentLink)',
+                        'pageSize' => 100,
+                        'key' => $key,
                     ];
-                }
 
-                $data = $response->json();
-                $filesData = $data['files'] ?? [];
+                    if ($pageToken) {
+                        $params['pageToken'] = $pageToken;
+                    }
 
-                foreach ($filesData as $file) {
-                    $meta = self::parseFilenameMetadata($file['name']);
-                    $fileId = $file['id'];
-                    $streamUrl = "https://drive.google.com/uc?export=download&id={$fileId}";
+                    $response = Http::timeout(15)->get('https://www.googleapis.com/drive/v3/files', $params);
 
-                    $parsedFiles[] = [
-                        'id' => $fileId,
-                        'name' => $file['name'],
-                        'title' => $meta['title'],
-                        'artist' => $meta['artist'],
-                        'stream_url' => $streamUrl,
-                        'view_url' => $file['webViewLink'] ?? "https://drive.google.com/file/d/{$fileId}/view",
-                        'size' => (int)($file['size'] ?? 0),
-                    ];
-                }
+                    if (!$response->successful()) {
+                        $err = $response->json('error.message') ?: 'Error al acceder a Google Drive API.';
+                        return [
+                            'success' => false,
+                            'message' => 'Google Drive API Error: ' . $err . '. Asegúrate de que la carpeta esté compartida como "Cualquier persona con el enlace puede ver".',
+                            'files' => [],
+                        ];
+                    }
 
-                $pageToken = $data['nextPageToken'] ?? null;
-                $pageCount++;
-            } while ($pageToken && $pageCount < $maxPages);
+                    $data = $response->json();
+                    $filesData = $data['files'] ?? [];
+
+                    foreach ($filesData as $file) {
+                        $mime = $file['mimeType'] ?? '';
+                        $name = $file['name'] ?? '';
+                        $fileId = $file['id'] ?? '';
+
+                        // 1. If it's a subfolder, queue it for scanning
+                        if ($mime === 'application/vnd.google-apps.folder') {
+                            $foldersQueue[] = [
+                                'id' => $fileId,
+                                'name' => $currentFolderName ? ($currentFolderName . ' / ' . $name) : $name,
+                            ];
+                            continue;
+                        }
+
+                        // 2. Check if it's an audio file
+                        $isAudio = str_contains($mime, 'audio') 
+                            || preg_match('/\.(mp3|wav|m4a|flac|aac|ogg|wma|aiff|alac|opus)$/i', $name);
+
+                        if ($isAudio) {
+                            $meta = self::parseFilenameMetadata($name);
+                            $streamUrl = "https://drive.google.com/uc?export=download&id={$fileId}";
+
+                            $parsedFiles[] = [
+                                'id' => $fileId,
+                                'name' => $name,
+                                'title' => $meta['title'],
+                                'artist' => $meta['artist'],
+                                'folder_name' => $currentFolderName ?: 'Raíz',
+                                'stream_url' => $streamUrl,
+                                'view_url' => $file['webViewLink'] ?? "https://drive.google.com/file/d/{$fileId}/view",
+                                'size' => (int)($file['size'] ?? 0),
+                            ];
+                        }
+                    }
+
+                    $pageToken = $data['nextPageToken'] ?? null;
+                    $pageCount++;
+                } while ($pageToken && $pageCount < $maxPagesPerFolder);
+            }
 
             return [
                 'success' => true,
-                'folder_id' => $folderId,
+                'folder_id' => $rootFolderId,
                 'count' => count($parsedFiles),
+                'folders_scanned' => $foldersScanned,
                 'files' => $parsedFiles,
             ];
         } catch (\Throwable $e) {
@@ -258,11 +295,14 @@ class CloudMusicStorageService
         $files = $scanResult['files'] ?? [];
         $added = 0;
         $updated = 0;
+        $scannedCloudIds = [];
 
         foreach ($files as $file) {
             $fileId = $file['id'];
+            $scannedCloudIds[] = $fileId;
             $title = $file['title'] ?? $file['name'];
             $artist = $file['artist'] ?? '';
+            $folderName = $file['folder_name'] ?? '';
             $streamUrl = $file['stream_url'] ?? '';
 
             $track = \App\Models\Track::where('cloud_id', $fileId)
@@ -275,8 +315,10 @@ class CloudMusicStorageService
                 $track->update([
                     'title' => $title,
                     'artist' => $artist,
+                    'genre' => $track->genre ?: ($folderName !== 'Raíz' ? $folderName : null),
                     'file_path' => $streamUrl,
                     'cloud_id' => $fileId,
+                    'cloud_folder' => $folderName,
                     'source' => 'google_drive',
                 ]);
                 $updated++;
@@ -284,18 +326,39 @@ class CloudMusicStorageService
                 \App\Models\Track::create([
                     'title' => $title,
                     'artist' => $artist,
+                    'genre' => $folderName !== 'Raíz' ? $folderName : null,
                     'file_path' => $streamUrl,
                     'cloud_id' => $fileId,
+                    'cloud_folder' => $folderName,
                     'source' => 'google_drive',
                 ]);
                 $added++;
             }
         }
 
+        // Clean up previously erroneously imported folder items (items whose cloud_id is not in audio files list)
+        try {
+            \App\Models\Track::where('source', 'google_drive')
+                ->whereNotIn('cloud_id', $scannedCloudIds)
+                ->where(function($q) {
+                    $q->whereNull('artist')->orWhere('artist', '')->orWhere('artist', 'Desconocido');
+                })
+                ->where(function($q) {
+                    $q->where('title', '70\'s')
+                      ->orWhere('title', '80\'s')
+                      ->orWhere('title', '90\'s')
+                      ->orWhere('title', 'like', '%0\'s%');
+                })
+                ->delete();
+        } catch (\Throwable $e) {}
+
+        $foldersCount = $scanResult['folders_scanned'] ?? 1;
+
         return [
             'success' => true,
-            'message' => "✓ Sincronización completada: {$added} canciones nuevas añadidas y {$updated} actualizadas en la Biblioteca General.",
+            'message' => "✓ Sincronización completada: {$added} canciones añadidas y {$updated} actualizadas ({$foldersCount} carpetas escaneadas).",
             'total_scanned' => count($files),
+            'folders_scanned' => $foldersCount,
             'added' => $added,
             'updated' => $updated,
         ];
