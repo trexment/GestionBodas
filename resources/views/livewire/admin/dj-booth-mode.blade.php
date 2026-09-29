@@ -1400,10 +1400,10 @@
         </div>
     </div>
 
-</div>
+    <!-- CONTENEDOR OCULTO PARA YOUTUBE IFRAME AUDIO FALLBACK -->
+    <div id="youtube-audio-frame" style="position: absolute; top: -9999px; left: -9999px; width: 1px; height: 1px; opacity: 0; pointer-events: none;"></div>
 
-<!-- CONTENEDOR OCULTO PARA YOUTUBE IFRAME AUDIO FALLBACK -->
-<div id="youtube-audio-frame" style="position: absolute; top: -9999px; left: -9999px; width: 1px; height: 1px; opacity: 0; pointer-events: none;"></div>
+</div>
 
 <!-- CARGA DE SDKs OFICIALES DE SPOTIFY, YOUTUBE & APPLE MUSIC -->
 <script src="https://www.youtube.com/iframe_api"></script>
