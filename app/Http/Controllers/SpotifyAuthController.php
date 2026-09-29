@@ -341,4 +341,47 @@ class SpotifyAuthController extends Controller
 
         return redirect()->away($streamUrl);
     }
+
+    /**
+     * Proxy streaming of Google Drive audio directly to HTML5 audio players
+     */
+    public function streamGoogleDriveAudio(string $fileId)
+    {
+        $fileId = trim($fileId);
+        $key = Setting::get('google_drive_api_key', config('services.google.drive_api_key', env('GOOGLE_DRIVE_API_KEY')));
+
+        $targetUrl = !empty($key)
+            ? "https://www.googleapis.com/drive/v3/files/{$fileId}?alt=media&key={$key}"
+            : "https://drive.google.com/uc?export=download&id={$fileId}";
+
+        try {
+            $context = stream_context_create([
+                'http' => [
+                    'follow_location' => 1,
+                    'timeout' => 30,
+                    'header' => "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64)\r\n",
+                ],
+            ]);
+
+            $handle = @fopen($targetUrl, 'rb', false, $context);
+            if ($handle) {
+                return response()->stream(function () use ($handle) {
+                    while (!feof($handle)) {
+                        echo fread($handle, 1024 * 64);
+                        flush();
+                    }
+                    fclose($handle);
+                }, 200, [
+                    'Content-Type' => 'audio/mpeg',
+                    'Accept-Ranges' => 'bytes',
+                    'Access-Control-Allow-Origin' => '*',
+                    'Cache-Control' => 'public, max-age=86400',
+                ]);
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error("Google Drive stream proxy error for {$fileId}: " . $e->getMessage());
+        }
+
+        return redirect()->away("https://drive.google.com/uc?export=download&id={$fileId}");
+    }
 }

@@ -24,6 +24,10 @@ class Track extends Model
 
     public function getAudioUrlAttribute(): ?string
     {
+        if (!empty($this->cloud_id) && $this->source === 'google_drive') {
+            return url('/api/drive-stream/' . $this->cloud_id);
+        }
+
         if (empty($this->file_path)) {
             return null;
         }
@@ -33,7 +37,7 @@ class Track extends Model
         if (str_starts_with($file, 'http://') || str_starts_with($file, 'https://')) {
             if (str_contains($file, 'drive.google.com')) {
                 if (preg_match('/\/d\/([a-zA-Z0-9_-]+)/', $file, $m) || preg_match('/[?&]id=([a-zA-Z0-9_-]+)/', $file, $m)) {
-                    return "https://drive.google.com/uc?export=download&id={$m[1]}";
+                    return url('/api/drive-stream/' . $m[1]);
                 }
             }
             return $file;
