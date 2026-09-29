@@ -255,15 +255,7 @@
         $companyIban = \App\Models\Setting::get('company_iban', '');
         $companyBizum = \App\Models\Setting::get('company_bizum', '');
         $companyLogo = \App\Models\Setting::get('company_logo');
-
-        $logoPath = null;
-        if ($companyLogo) {
-            if (file_exists(storage_path('app/public/' . $companyLogo))) {
-                $logoPath = storage_path('app/public/' . $companyLogo);
-            } elseif (file_exists(public_path('storage/' . $companyLogo))) {
-                $logoPath = public_path('storage/' . $companyLogo);
-            }
-        }
+        $logoPath = \App\Models\Setting::getLogoPathForPdf();
 
         $signalAmount = $quote->signal_amount;
         $remainingAmount = $quote->remaining_amount;

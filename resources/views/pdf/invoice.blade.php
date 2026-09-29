@@ -191,8 +191,9 @@
     <table class="header-table" cellpadding="0" cellspacing="0">
         <tr>
             <td style="width: 55%; vertical-align: middle;">
-                @if(!empty($company['logo']) && file_exists(public_path('storage/' . $company['logo'])))
-                    <img src="{{ public_path('storage/' . $company['logo']) }}" class="header-logo" alt="Logo">
+                @php $invoiceLogoPath = \App\Models\Setting::getLogoPathForPdf(); @endphp
+                @if($invoiceLogoPath)
+                    <img src="{{ $invoiceLogoPath }}" class="header-logo" alt="Logo">
                 @else
                     <h1 class="company-name">{{ $company['name'] ?? 'Eventos Musicales' }}</h1>
                     <p class="company-subtitle">{{ $company['subtitle'] ?? 'Sound in Motion &bull; Servicios Audiovisuales' }}</p>

@@ -46,11 +46,11 @@
                     <div class="header-subtitle">Checklist de salida de almacén, montaje y recogida</div>
                 </td>
                 <td style="text-align: right; vertical-align: middle;">
-                    @php $logo = \App\Models\Setting::get('company_logo'); @endphp
-                    @if($logo && file_exists(public_path('storage/' . $logo)))
-                        <img src="{{ public_path('storage/' . $logo) }}" class="company-logo" alt="Logo">
+                    @php $logoPath = \App\Models\Setting::getLogoPathForPdf(); @endphp
+                    @if($logoPath)
+                        <img src="{{ $logoPath }}" class="company-logo" alt="Logo">
                     @else
-                        <strong style="font-size: 16px; color: #4f46e5;">{{ \App\Models\Setting::get('company_name', 'Eventos Musicales') }}</strong>
+                        <strong style="font-size: 16px; color: #4f46e5;">{{ \App\Models\Setting::getCompanyName('Eventos Musicales') }}</strong>
                     @endif
                 </td>
             </tr>

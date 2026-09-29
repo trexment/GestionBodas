@@ -32,6 +32,36 @@ class Setting extends Model
     }
 
     /**
+     * Get the absolute filesystem path for the company logo (used in PDFs).
+     */
+    public static function getLogoPathForPdf()
+    {
+        $logo = self::get('company_logo');
+        if (!$logo) {
+            return null;
+        }
+
+        $cleanPath = ltrim($logo, '/');
+
+        // Check storage/app/public/
+        if (file_exists(storage_path('app/public/' . $cleanPath))) {
+            return storage_path('app/public/' . $cleanPath);
+        }
+
+        // Check public/storage/
+        if (file_exists(public_path('storage/' . $cleanPath))) {
+            return public_path('storage/' . $cleanPath);
+        }
+
+        // Check public/
+        if (file_exists(public_path($cleanPath))) {
+            return public_path($cleanPath);
+        }
+
+        return null;
+    }
+
+    /**
      * Get the public URL for the company logo.
      */
     public static function getLogoUrl()
@@ -45,7 +75,16 @@ class Setting extends Model
             return $logo;
         }
 
-        return asset('storage/' . ltrim($logo, '/'));
+        $cleanPath = ltrim($logo, '/');
+
+        // Check if the physical file exists on the server
+        if (!file_exists(storage_path('app/public/' . $cleanPath)) &&
+            !file_exists(public_path('storage/' . $cleanPath)) &&
+            !file_exists(public_path($cleanPath))) {
+            return null;
+        }
+
+        return asset('storage/' . $cleanPath);
     }
 
     /**

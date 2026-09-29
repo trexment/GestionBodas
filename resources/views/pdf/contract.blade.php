@@ -169,8 +169,9 @@
     <table class="header-table">
         <tr>
             <td style="vertical-align: middle;">
-                @if($company_logo && file_exists(storage_path('app/public/' . $company_logo)))
-                    <img src="{{ storage_path('app/public/' . $company_logo) }}" class="header-logo" alt="Logo">
+                @php $contractLogoPath = \App\Models\Setting::getLogoPathForPdf(); @endphp
+                @if($contractLogoPath)
+                    <img src="{{ $contractLogoPath }}" class="header-logo" alt="Logo">
                 @else
                     <h1 class="company-title">{{ $replacements['{{ empresa }}'] }}</h1>
                     <p class="company-subtitle">{{ \App\Models\Setting::get('company_subtitle', 'Servicios Musicales, Sonorización e Iluminación') }}</p>

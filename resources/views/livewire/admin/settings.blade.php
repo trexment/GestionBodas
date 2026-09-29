@@ -3,13 +3,22 @@
     <!-- HEADER -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
         <div class="flex items-center gap-4">
-            @if($current_logo)
-                <img src="{{ asset('storage/' . $current_logo) }}" alt="Logo Empresa" class="h-16 w-16 object-contain rounded-xl border border-gray-200 p-1 bg-white shadow-xs">
-            @else
-                <div class="h-16 w-16 bg-gradient-to-tr from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center text-white font-black text-2xl shadow-md">
-                    {{ substr($company_name, 0, 1) }}
-                </div>
-            @endif
+            @php $headerLogo = \App\Models\Setting::getLogoUrl(); @endphp
+            <div class="relative flex-shrink-0">
+                @if($headerLogo)
+                    <img src="{{ $headerLogo }}" 
+                         alt="{{ $company_name }}" 
+                         onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';"
+                         class="h-16 w-16 object-contain rounded-xl border border-gray-200 p-1 bg-white shadow-xs">
+                    <div style="display: none;" class="h-16 w-16 bg-gradient-to-tr from-indigo-500 to-purple-600 rounded-xl items-center justify-center text-white font-black text-2xl shadow-md">
+                        {{ substr($company_name, 0, 1) }}
+                    </div>
+                @else
+                    <div class="h-16 w-16 bg-gradient-to-tr from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center text-white font-black text-2xl shadow-md">
+                        {{ substr($company_name, 0, 1) }}
+                    </div>
+                @endif
+            </div>
             <div>
                 <h1 class="text-2xl font-black text-gray-900">{{ $company_name }}</h1>
                 <p class="text-xs font-semibold text-gray-400 uppercase tracking-widest">{{ $company_subtitle }} &bull; {{ $company_season }}</p>
@@ -115,10 +124,28 @@
                     </div>
                 </div>
 
-                <div class="pt-4 border-t border-gray-100">
+                <div class="pt-4 border-t border-gray-100 space-y-3">
                     <label class="block text-xs font-bold text-gray-700 mb-1">Logotipo Corporativo (PNG, JPG o SVG)</label>
-                    <input type="file" wire:model="logo" class="w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
-                    <span class="text-[11px] text-gray-400 mt-1 block">Aparecerá en el encabezado de presupuestos, contratos y facturas.</span>
+                    <div class="flex items-center gap-4">
+                        @if($logo)
+                            <div class="flex flex-col items-center gap-1">
+                                <img src="{{ $logo->temporaryUrl() }}" alt="Previsualización" class="h-16 w-16 object-contain rounded-xl border-2 border-indigo-500 p-1 bg-white shadow-xs">
+                                <span class="text-[10px] text-indigo-600 font-bold">Nuevo a guardar</span>
+                            </div>
+                        @elseif($headerLogo)
+                            <div class="flex flex-col items-center gap-1">
+                                <img src="{{ $headerLogo }}" alt="Logo actual" class="h-16 w-16 object-contain rounded-xl border border-gray-200 p-1 bg-white shadow-xs">
+                                <span class="text-[10px] text-gray-500 font-semibold">Logo actual</span>
+                            </div>
+                        @endif
+                        <div class="flex-1">
+                            <input type="file" wire:model="logo" accept="image/*" class="w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer">
+                            <span class="text-[11px] text-gray-400 mt-1 block">Aparecerá en el encabezado de presupuestos, contratos, facturas y barra lateral.</span>
+                            <div wire:loading wire:target="logo" class="text-xs text-indigo-600 font-medium mt-1">
+                                ⏳ Subiendo archivo temporal...
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
