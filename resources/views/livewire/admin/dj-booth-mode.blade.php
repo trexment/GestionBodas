@@ -1772,10 +1772,10 @@ function djAudioPlayer() {
             // 1. Almacenamiento Nube / Local (Google Drive, Dropbox, Servidor Propio)
             if (audioFile && audioFile.trim() !== '') {
                 let streamUrl = audioFile.trim();
-                if (streamUrl.includes('drive.google.com')) {
-                    const driveMatch = streamUrl.match(/\/d\/([a-zA-Z0-9_-]+)/) || streamUrl.match(/id=([a-zA-Z0-9_-]+)/);
+                if (streamUrl.includes('drive.google.com') || streamUrl.includes('/api/drive-stream/')) {
+                    const driveMatch = streamUrl.match(/\/d\/([a-zA-Z0-9_-]+)/) || streamUrl.match(/[?&]id=([a-zA-Z0-9_-]+)/) || streamUrl.match(/\/api\/drive-stream\/([a-zA-Z0-9_-]+)/);
                     if (driveMatch && driveMatch[1]) {
-                        streamUrl = `https://drive.google.com/uc?export=download&id=${driveMatch[1]}`;
+                        streamUrl = `/api/drive-stream/${driveMatch[1]}`;
                     }
                 } else if (streamUrl.includes('dropbox.com')) {
                     streamUrl = streamUrl.replace('dl=0', 'raw=1');
