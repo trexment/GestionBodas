@@ -16,9 +16,12 @@ use App\Livewire\Guest\EventForm;
 use App\Livewire\Guest\ContractSign;
 use App\Livewire\Guest\LiveRequests;
 
-// Public Home / Landing Index
+// Root Route: Redirección directa al Login (o al Dashboard si ya ha iniciado sesión)
 Route::get('/', function () {
-    return view('welcome');
+    if (auth()->check()) {
+        return redirect()->route('admin.dashboard');
+    }
+    return redirect()->route('login');
 })->name('home');
 
 // Direct public storage file stream fallback (when symlink is missing or blocked by host)
