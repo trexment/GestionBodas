@@ -1275,39 +1275,6 @@
         </div>
     @endif
 
-    <!-- DOCKED MINI VIDEO PLAYER PARA YOUTUBE -->
-    <div 
-        x-show="currentId !== null && playbackSource === 'youtube'" 
-        x-transition:enter="transition ease-out duration-300"
-        x-transition:enter-start="opacity-0 translate-y-8 scale-95"
-        x-transition:enter-end="opacity-100 translate-y-0 scale-100"
-        x-transition:leave="transition ease-in duration-200"
-        x-transition:leave-start="opacity-100 translate-y-0 scale-100"
-        x-transition:leave-end="opacity-0 translate-y-8 scale-95"
-        class="fixed bottom-24 right-4 z-50 bg-slate-950/95 backdrop-blur-md border border-cyan-500/50 rounded-2xl shadow-2xl overflow-hidden transition-all duration-300"
-        :class="showVideoPlayer ? 'w-80 sm:w-96' : 'w-48'"
-        style="display: none;"
-    >
-        <div class="bg-slate-900 px-3 py-1.5 flex items-center justify-between border-b border-slate-800 text-xs">
-            <span class="text-cyan-400 font-bold flex items-center gap-1.5">
-                <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
-                <span class="truncate max-w-[130px]" x-text="currentTitle || 'YouTube Stream'"></span>
-            </span>
-            <div class="flex items-center gap-2">
-                <button 
-                    type="button" 
-                    @click="showVideoPlayer = !showVideoPlayer" 
-                    class="text-slate-400 hover:text-white text-[10px] font-mono bg-slate-800 px-1.5 py-0.5 rounded cursor-pointer"
-                >
-                    <span x-text="showVideoPlayer ? 'Compacto' : 'Ampliar'"></span>
-                </button>
-            </div>
-        </div>
-        <div :class="showVideoPlayer ? 'h-48 sm:h-56' : 'h-28'" class="bg-black relative">
-            <div id="youtube-audio-frame" class="w-full h-full"></div>
-        </div>
-    </div>
-
     <!-- FLOATING DJ REPRODUCTOR DE AUDIO BAR (INFERIOR) -->
     <div 
         x-show="currentId !== null" 
@@ -1339,17 +1306,16 @@
                     </div>
                     <p class="text-[11px] text-slate-400 truncate flex items-center gap-1.5 mt-0.5">
                         <span x-text="currentArtist || 'Pista de Audio'"></span>
-                        <span class="text-[10px] text-emerald-400 font-mono bg-emerald-950/80 px-1 py-0.2 rounded border border-emerald-800/40" x-show="playbackSource === 'local_mp3'">[MP3 Directo]</span>
-                        <span class="text-[10px] text-amber-400 font-mono bg-amber-950/80 px-1 py-0.2 rounded border border-amber-800/40" x-show="playbackSource === 'preview'">[Vista Previa 30s]</span>
-                        <span class="text-[10px] text-red-400 font-mono bg-red-950/80 px-1 py-0.2 rounded border border-red-800/40" x-show="playbackSource === 'youtube'">[YouTube Audio]</span>
-                        <span class="text-[10px] text-cyan-400 font-mono bg-cyan-950/80 px-1 py-0.2 rounded border border-cyan-800/40" x-show="playbackSource === 'spotify'">[Spotify SDK]</span>
-                        <span class="text-[10px] text-pink-400 font-mono bg-pink-950/80 px-1 py-0.2 rounded border border-pink-800/40" x-show="playbackSource === 'apple_music'">[Apple Music]</span>
+                        <span class="text-[10px] text-sky-400 font-mono bg-sky-950/80 px-1.5 py-0.5 rounded border border-sky-800/40" x-show="playbackSource === 'local_mp3'">[📁 Google Drive]</span>
+                        <span class="text-[10px] text-amber-400 font-mono bg-amber-950/80 px-1.5 py-0.5 rounded border border-amber-800/40" x-show="playbackSource === 'preview'">[Vista Previa 30s]</span>
+                        <span class="text-[10px] text-emerald-400 font-mono bg-emerald-950/80 px-1.5 py-0.5 rounded border border-emerald-800/40" x-show="playbackSource === 'spotify'">[🟢 Spotify Premium]</span>
+                        <span class="text-[10px] text-pink-400 font-mono bg-pink-950/80 px-1.5 py-0.5 rounded border border-pink-800/40" x-show="playbackSource === 'apple_music'">[🍎 Apple Music]</span>
                     </p>
                     <template x-if="loading">
-                        <span class="text-[10px] text-cyan-400 font-mono animate-pulse block">⌛ Conectando fuente de audio...</span>
+                        <span class="text-[10px] text-cyan-400 font-mono animate-pulse block">⌛ Conectando audio...</span>
                     </template>
                     <template x-if="hasError">
-                        <span class="text-[10px] text-amber-400 font-mono block">⚠️ Sin stream directo. Usa los enlaces externos 👇</span>
+                        <span class="text-[10px] text-amber-400 font-mono block">⚠️ Sin stream directo. Pulsa en Spotify para abrir.</span>
                     </template>
                 </div>
             </div>
@@ -1379,23 +1345,15 @@
                         <a 
                             :href="spotifyExternalUrl" 
                             target="_blank" 
-                            class="px-2 py-1 rounded-lg text-[11px] font-bold bg-emerald-950/80 text-emerald-400 hover:bg-emerald-800 hover:text-white border border-emerald-700/50 transition flex items-center gap-1"
+                            class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-emerald-950/80 text-emerald-400 hover:bg-emerald-800 hover:text-white border border-emerald-700/50 transition flex items-center gap-1"
                             title="Abrir en Spotify"
                         >
                             <span>🟢</span> Spotify
                         </a>
                         <a 
-                            :href="youtubeExternalUrl" 
-                            target="_blank" 
-                            class="px-2 py-1 rounded-lg text-[11px] font-bold bg-red-950/80 text-red-400 hover:bg-red-800 hover:text-white border border-red-700/50 transition flex items-center gap-1"
-                            title="Abrir en YouTube"
-                        >
-                            <span>🔴</span> YouTube
-                        </a>
-                        <a 
                             :href="appleMusicExternalUrl" 
                             target="_blank" 
-                            class="px-2 py-1 rounded-lg text-[11px] font-bold bg-pink-950/80 text-pink-300 hover:bg-pink-800 hover:text-white border border-pink-700/50 transition flex items-center gap-1"
+                            class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-pink-950/80 text-pink-300 hover:bg-pink-800 hover:text-white border border-pink-700/50 transition flex items-center gap-1"
                             title="Abrir en Apple Music"
                         >
                             <span>🍎</span> Apple
@@ -1435,8 +1393,7 @@
 
 </div>
 
-<!-- CARGA DE SDKs OFICIALES DE YOUTUBE, SPOTIFY & APPLE MUSIC -->
-<script src="https://www.youtube.com/iframe_api"></script>
+<!-- CARGA DE SDKs OFICIALES DE SPOTIFY & APPLE MUSIC (SIN YOUTUBE) -->
 <script src="https://sdk.scdn.co/spotify-player.js"></script>
 <script src="https://js-cdn.music.apple.com/musickit/v3/musickit.js" async></script>
 
@@ -1444,10 +1401,6 @@
 function djAudioPlayer() {
     return {
         audio: null,
-        youtubePlayer: null,
-        youtubeReady: false,
-        youtubeTimer: null,
-        showVideoPlayer: false,
 
         spotifyPlayer: null,
         spotifyDeviceId: null,
@@ -1458,14 +1411,13 @@ function djAudioPlayer() {
         appleMusicReady: false,
         appleDevToken: null,
 
-        playbackSource: null, // 'local_mp3', 'preview', 'youtube', 'spotify', 'apple_music'
+        playbackSource: null, // 'local_mp3', 'preview', 'spotify', 'apple_music'
 
         currentId: null,
         currentTitle: '',
         currentArtist: '',
         currentCover: '',
         spotifyExternalUrl: '',
-        youtubeExternalUrl: '',
         appleMusicExternalUrl: '',
 
         isPlaying: false,
@@ -1479,7 +1431,7 @@ function djAudioPlayer() {
         hasError: false,
 
         async initPlayer() {
-            // 1. Inicializar HTML5 Audio para archivos MP3 locales y Previews oficiales de iTunes
+            // 1. Inicializar HTML5 Audio para archivos MP3 locales y Google Drive Full Stream
             this.audio = new Audio();
             this.audio.volume = this.volume;
 
@@ -1527,98 +1479,11 @@ function djAudioPlayer() {
                 }
             });
 
-            // 2. Inicializar YouTube IFrame Player
-            this.initYouTubeSdk();
-
-            // 3. Inicializar Apple Music (MusicKit JS)
+            // 2. Inicializar Apple Music (MusicKit JS)
             await this.initAppleMusicSdk();
 
-            // 4. Inicializar Spotify (Web Playback SDK)
+            // 3. Inicializar Spotify (Web Playback SDK)
             await this.initSpotifySdk();
-        },
-
-        initYouTubeSdk() {
-            const setupYT = () => {
-                if (window.YT && window.YT.Player && !this.youtubePlayer) {
-                    try {
-                        const frameEl = document.getElementById('youtube-audio-frame');
-                        if (frameEl) {
-                            this.youtubePlayer = new YT.Player('youtube-audio-frame', {
-                                height: '100%',
-                                width: '100%',
-                                playerVars: {
-                                    playsinline: 1,
-                                    controls: 1,
-                                    modestbranding: 1,
-                                    rel: 0,
-                                    origin: window.location.origin
-                                },
-                                events: {
-                                    onReady: () => {
-                                        this.youtubeReady = true;
-                                        if (this.youtubePlayer && this.youtubePlayer.setVolume) {
-                                            this.youtubePlayer.setVolume(this.volume * 100);
-                                        }
-                                    },
-                                    onStateChange: (event) => {
-                                        if (this.playbackSource === 'youtube') {
-                                            if (event.data === YT.PlayerState.PLAYING) {
-                                                this.isPlaying = true;
-                                                this.isPaused = false;
-                                                this.loading = false;
-                                                this.startYouTubeTimer();
-                                            } else if (event.data === YT.PlayerState.PAUSED) {
-                                                this.isPlaying = false;
-                                                this.isPaused = true;
-                                                this.stopYouTubeTimer();
-                                            } else if (event.data === YT.PlayerState.ENDED) {
-                                                this.isPlaying = false;
-                                                this.isPaused = false;
-                                                this.stopYouTubeTimer();
-                                                this.currentTime = 0;
-                                                this.progress = 0;
-                                                if (this.currentId) {
-                                                    this.$wire.setStatus(this.currentId, 'played');
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            });
-                        }
-                    } catch (e) {
-                        console.warn('YouTube SDK init error:', e);
-                    }
-                }
-            };
-
-            if (window.YT && window.YT.Player) {
-                setupYT();
-            } else {
-                window.onYouTubeIframeAPIReady = setupYT;
-            }
-        },
-
-        startYouTubeTimer() {
-            this.stopYouTubeTimer();
-            this.youtubeTimer = setInterval(() => {
-                if (this.playbackSource === 'youtube' && this.youtubePlayer && this.youtubePlayer.getCurrentTime) {
-                    try {
-                        this.currentTime = Math.floor(this.youtubePlayer.getCurrentTime() || 0);
-                        this.duration = Math.floor(this.youtubePlayer.getDuration() || 0);
-                        if (this.duration > 0) {
-                            this.progress = (this.currentTime / this.duration) * 100;
-                        }
-                    } catch (e) {}
-                }
-            }, 500);
-        },
-
-        stopYouTubeTimer() {
-            if (this.youtubeTimer) {
-                clearInterval(this.youtubeTimer);
-                this.youtubeTimer = null;
-            }
         },
 
         async initAppleMusicSdk() {
@@ -1766,10 +1631,9 @@ function djAudioPlayer() {
 
             const queryParam = encodeURIComponent(((artist ? artist + ' ' : '') + title).trim());
             this.spotifyExternalUrl = spotifyUrl || (`https://open.spotify.com/search/${queryParam}`);
-            this.youtubeExternalUrl = `https://www.youtube.com/results?search_query=${queryParam}`;
             this.appleMusicExternalUrl = appleMusicUrl || (`https://music.apple.com/es/search?term=${queryParam}`);
 
-            // 1. Almacenamiento Nube / Local (Google Drive, Dropbox, Servidor Propio)
+            // 1. Google Drive / Almacenamiento Local MP3 (100% Canción Completa)
             if (audioFile && audioFile.trim() !== '') {
                 let streamUrl = audioFile.trim();
                 if (streamUrl.includes('drive.google.com') || streamUrl.includes('/api/drive-stream/')) {
@@ -1818,7 +1682,7 @@ function djAudioPlayer() {
                 } catch (e) {}
             }
 
-            // 3. Spotify Web Playback SDK
+            // 3. Spotify Web Playback SDK (100% Canción Completa con Spotify Premium)
             if (this.spotifyReady && this.spotifyDeviceId) {
                 let trackUri = null;
                 if (spotifyUrl && spotifyUrl.includes('/track/')) {
@@ -1867,9 +1731,7 @@ function djAudioPlayer() {
                 }
             }
 
-            // 4. Resolución de Metadatos & YouTube Track Completo vía Backend (/api/music/resolve-track)
-            let resolvedVideoId = null;
-
+            // 4. Resolución de Carátula & Enlace de Spotify vía Backend
             try {
                 const resolveRes = await fetch(`/api/music/resolve-track?title=${encodeURIComponent(title)}&artist=${encodeURIComponent(artist || '')}`);
                 if (resolveRes.ok) {
@@ -1877,100 +1739,14 @@ function djAudioPlayer() {
                     if (resData.success) {
                         if (resData.cover_url) this.currentCover = resData.cover_url;
                         if (resData.spotify_url) this.spotifyExternalUrl = resData.spotify_url;
-                        if (resData.youtube_url) this.youtubeExternalUrl = resData.youtube_url;
                         if (resData.apple_music_url) this.appleMusicExternalUrl = resData.apple_music_url;
-                        resolvedVideoId = resData.youtube_video_id;
                     }
                 }
             } catch (e) {
                 console.warn('Backend resolve error', e);
             }
 
-            // 5. Reproducción COMPLETA (100% Canción entera) mediante YouTube
-            this.playbackSource = 'youtube';
-
-            if (this.youtubePlayer && this.youtubePlayer.loadVideoById) {
-                try {
-                    if (resolvedVideoId) {
-                        this.youtubePlayer.loadVideoById(resolvedVideoId, 0);
-                    } else {
-                        const searchSong = ((artist || '') + ' ' + title + ' audio').trim();
-                        if (this.youtubePlayer.loadPlaylist) {
-                            this.youtubePlayer.loadPlaylist({
-                                list: searchSong,
-                                listType: 'search',
-                                index: 0,
-                                startSeconds: 0
-                            });
-                        }
-                    }
-                    this.youtubePlayer.playVideo();
-                    this.isPlaying = true;
-                    this.isPaused = false;
-                    this.loading = false;
-                    this.$wire.setStatus(id, 'playing');
-                    this.startYouTubeTimer();
-                    return;
-                } catch (e) {
-                    console.warn('YouTube playVideo error:', e);
-                }
-            } else if (window.YT && window.YT.Player) {
-                const frameEl = document.getElementById('youtube-audio-frame');
-                if (frameEl) {
-                    this.youtubePlayer = new YT.Player('youtube-audio-frame', {
-                        height: '100%',
-                        width: '100%',
-                        playerVars: {
-                            playsinline: 1,
-                            controls: 1,
-                            autoplay: 1,
-                            modestbranding: 1,
-                            rel: 0,
-                            origin: window.location.origin
-                        },
-                        events: {
-                            onReady: (event) => {
-                                this.youtubeReady = true;
-                                if (resolvedVideoId) {
-                                    event.target.loadVideoById(resolvedVideoId, 0);
-                                    event.target.playVideo();
-                                }
-                            },
-                            onStateChange: (event) => {
-                                if (this.playbackSource === 'youtube') {
-                                    if (event.data === YT.PlayerState.PLAYING) {
-                                        this.isPlaying = true;
-                                        this.isPaused = false;
-                                        this.loading = false;
-                                        this.startYouTubeTimer();
-                                    } else if (event.data === YT.PlayerState.PAUSED) {
-                                        this.isPlaying = false;
-                                        this.isPaused = true;
-                                        this.stopYouTubeTimer();
-                                    } else if (event.data === YT.PlayerState.ENDED) {
-                                        this.isPlaying = false;
-                                        this.isPaused = false;
-                                        this.stopYouTubeTimer();
-                                        this.currentTime = 0;
-                                        this.progress = 0;
-                                        if (this.currentId) {
-                                            this.$wire.setStatus(this.currentId, 'played');
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    });
-                    this.isPlaying = true;
-                    this.isPaused = false;
-                    this.loading = false;
-                    this.$wire.setStatus(id, 'playing');
-                    this.startYouTubeTimer();
-                    return;
-                }
-            }
-
-            // 6. Si no se puede reproducir automáticamente en el navegador/tablet, marcar error y permitir enlaces externos
+            // 5. Si no se puede reproducir en el navegador directamente
             this.loading = false;
             this.isPlaying = false;
             this.hasError = true;
@@ -1981,18 +1757,7 @@ function djAudioPlayer() {
         togglePlayPause() {
             if (!this.currentId) return;
 
-            if (this.playbackSource === 'youtube' && this.youtubePlayer && this.youtubePlayer.getPlayerState) {
-                const state = this.youtubePlayer.getPlayerState();
-                if (state === YT.PlayerState.PLAYING) {
-                    this.youtubePlayer.pauseVideo();
-                    this.isPlaying = false;
-                    this.isPaused = true;
-                } else {
-                    this.youtubePlayer.playVideo();
-                    this.isPlaying = true;
-                    this.isPaused = false;
-                }
-            } else if (this.playbackSource === 'apple_music' && this.musicKit) {
+            if (this.playbackSource === 'apple_music' && this.musicKit) {
                 if (this.isPlaying) {
                     this.musicKit.pause();
                 } else {
@@ -2010,10 +1775,6 @@ function djAudioPlayer() {
         },
 
         stopCurrent() {
-            this.stopYouTubeTimer();
-            if (this.youtubePlayer && this.youtubePlayer.stopVideo) {
-                try { this.youtubePlayer.stopVideo(); } catch (e) {}
-            }
             if (this.audio) {
                 this.audio.pause();
                 this.audio.currentTime = 0;
@@ -2043,9 +1804,6 @@ function djAudioPlayer() {
         },
 
         updateVolume() {
-            if (this.youtubePlayer && this.youtubePlayer.setVolume) {
-                try { this.youtubePlayer.setVolume(this.volume * 100); } catch (e) {}
-            }
             if (this.audio) {
                 this.audio.volume = this.volume;
                 this.isMuted = this.volume === 0;
@@ -2060,9 +1818,6 @@ function djAudioPlayer() {
 
         toggleMute() {
             this.isMuted = !this.isMuted;
-            if (this.youtubePlayer && this.youtubePlayer.mute) {
-                try { this.isMuted ? this.youtubePlayer.mute() : this.youtubePlayer.unMute(); } catch (e) {}
-            }
             if (this.audio) {
                 this.audio.muted = this.isMuted;
             }
@@ -2082,10 +1837,7 @@ function djAudioPlayer() {
             const seekPct = Math.max(0, Math.min(1, clickX / width));
             const targetSeconds = Math.floor(seekPct * this.duration);
 
-            if (this.playbackSource === 'youtube' && this.youtubePlayer && this.youtubePlayer.seekTo) {
-                this.youtubePlayer.seekTo(targetSeconds, true);
-                this.currentTime = targetSeconds;
-            } else if (this.playbackSource === 'apple_music' && this.musicKit) {
+            if (this.playbackSource === 'apple_music' && this.musicKit) {
                 this.musicKit.seekToTime(targetSeconds);
             } else if (this.playbackSource === 'spotify' && this.spotifyPlayer) {
                 this.spotifyPlayer.seek(targetSeconds * 1000);

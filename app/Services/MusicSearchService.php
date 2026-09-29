@@ -49,7 +49,6 @@ class MusicSearchService
                         'spotify_uri' => "spotify:search:" . rawurlencode($searchQuery),
                         'apple_music_url' => $dt->apple_music_url ?: "https://music.apple.com/es/search?term={$searchQuery}",
                         'apple_music_uri' => "music://music.apple.com/search?term=" . $searchQuery,
-                        'youtube_url' => $dt->youtube_url ?: "https://www.youtube.com/results?search_query={$searchQuery}",
                     ];
                 }
             } catch (\Throwable $e) {}
@@ -101,7 +100,6 @@ class MusicSearchService
                                 'spotify_uri' => $spotifyUri,
                                 'apple_music_url' => $appleUrl ?: "https://music.apple.com/es/search?term={$searchQuery}",
                                 'apple_music_uri' => $appleUri,
-                                'youtube_url' => "https://www.youtube.com/results?search_query={$searchQuery}",
                             ];
                         }
                     }
@@ -191,7 +189,6 @@ class MusicSearchService
                         'spotify_uri' => $spotifyUri,
                         'apple_music_url' => "https://music.apple.com/es/search?term={$searchQuery}",
                         'apple_music_uri' => "music://music.apple.com/search?term=" . $searchQuery,
-                        'youtube_url' => "https://www.youtube.com/results?search_query={$searchQuery}",
                     ];
                 }
                 return $out;
@@ -313,14 +310,6 @@ class MusicSearchService
                 } catch (\Throwable $e) {}
             }
 
-            // 3. Search direct YouTube Video ID
-            try {
-                $ytVideoId = \App\Http\Controllers\SpotifyAuthController::searchYoutubeVideoId($query);
-                if ($ytVideoId) {
-                    $youtubeUrl = "https://www.youtube.com/watch?v={$ytVideoId}";
-                }
-            } catch (\Throwable $e) {}
-
             // Fallbacks if not exact link found
             $encodedQuery = urlencode($query);
             if (empty($spotifyUrl)) {
@@ -329,15 +318,11 @@ class MusicSearchService
             if (empty($appleMusicUrl)) {
                 $appleMusicUrl = "https://music.apple.com/es/search?term={$encodedQuery}";
             }
-            if (empty($youtubeUrl)) {
-                $youtubeUrl = "https://www.youtube.com/results?search_query={$encodedQuery}";
-            }
 
             return [
                 'is_drive_library' => $isDriveLibrary,
                 'spotify_url' => $spotifyUrl,
                 'apple_music_url' => $appleMusicUrl,
-                'youtube_url' => $youtubeUrl,
                 'preview_url' => $previewUrl,
                 'cover_url' => $coverUrl,
             ];

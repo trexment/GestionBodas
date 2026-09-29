@@ -45,9 +45,8 @@ class EventMusicRequest extends Model
             if (!empty($title)) {
                 $needsSpotify = empty($request->spotify_url) || str_contains($request->spotify_url, 'open.spotify.com/search/');
                 $needsApple = empty($request->apple_music_url) || str_contains($request->apple_music_url, 'music.apple.com/es/search');
-                $needsYoutube = empty($request->youtube_url) || str_contains($request->youtube_url, 'youtube.com/results');
 
-                if ($needsSpotify || $needsApple || $needsYoutube) {
+                if ($needsSpotify || $needsApple) {
                     $meta = \App\Services\MusicSearchService::resolveTrackMetadata($title, $artist);
                     
                     if ($needsSpotify && !empty($meta['spotify_url'])) {
@@ -55,9 +54,6 @@ class EventMusicRequest extends Model
                     }
                     if ($needsApple && !empty($meta['apple_music_url'])) {
                         $request->apple_music_url = $meta['apple_music_url'];
-                    }
-                    if ($needsYoutube && !empty($meta['youtube_url'])) {
-                        $request->youtube_url = $meta['youtube_url'];
                     }
                     if (empty($request->audio_file) && !empty($meta['preview_url'])) {
                         $request->audio_file = $meta['preview_url'];
