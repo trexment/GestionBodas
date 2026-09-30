@@ -50,6 +50,10 @@ class Settings extends Component
     public $price_dj;
     public $price_karaoke;
     public $price_extra_hours;
+    public $pack_cocktail_restaurant_enabled = true;
+    public $pack_cocktail_restaurant_discount_type = 'percentage'; // 'percentage' | 'fixed_price'
+    public $pack_cocktail_restaurant_discount_percentage = 25;
+    public $pack_cocktail_restaurant_price = 220;
     public $price_photo_ceremony;
     public $price_photo_restaurant;
     public $price_photo_party;
@@ -140,6 +144,12 @@ class Settings extends Component
         $this->price_dj = Setting::get('price_dj', 150);
         $this->price_karaoke = Setting::get('price_karaoke', 80);
         $this->price_extra_hours = Setting::get('price_extra_hours', 120);
+
+        // Pack Cóctel + Banquete
+        $this->pack_cocktail_restaurant_enabled = (bool)Setting::get('pack_cocktail_restaurant_enabled', true);
+        $this->pack_cocktail_restaurant_discount_type = Setting::get('pack_cocktail_restaurant_discount_type', 'percentage');
+        $this->pack_cocktail_restaurant_discount_percentage = (float)Setting::get('pack_cocktail_restaurant_discount_percentage', 25);
+        $this->pack_cocktail_restaurant_price = (float)Setting::get('pack_cocktail_restaurant_price', 220);
 
         // Fotografía
         $this->price_photo_ceremony = Setting::get('price_photo_ceremony', 250);
@@ -289,6 +299,12 @@ class Settings extends Component
         Setting::set('price_dj', $this->price_dj);
         Setting::set('price_karaoke', $this->price_karaoke);
         Setting::set('price_extra_hours', $this->price_extra_hours);
+
+        // Pack Cóctel + Banquete
+        Setting::set('pack_cocktail_restaurant_enabled', $this->pack_cocktail_restaurant_enabled ? '1' : '0');
+        Setting::set('pack_cocktail_restaurant_discount_type', $this->pack_cocktail_restaurant_discount_type);
+        Setting::set('pack_cocktail_restaurant_discount_percentage', (float)$this->pack_cocktail_restaurant_discount_percentage);
+        Setting::set('pack_cocktail_restaurant_price', (float)$this->pack_cocktail_restaurant_price);
 
         // Fotografía
         Setting::set('price_photo_ceremony', $this->price_photo_ceremony);

@@ -327,6 +327,88 @@
                         <input type="number" step="0.01" wire:model="price_extra_hours" required class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm font-bold">
                     </div>
                 </div>
+
+                <!-- PACK COMBINADO CÓCTEL + BANQUETE -->
+                <div class="mt-4 p-4 rounded-xl border-2 border-indigo-100 bg-gradient-to-br from-indigo-50/60 to-purple-50/40 space-y-3">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-indigo-100 pb-3">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl">🎁</span>
+                            <div>
+                                <h4 class="text-sm font-black text-indigo-950">Pack Combinado: Cóctel + Banquete</h4>
+                                <p class="text-[11px] text-indigo-700/80">Aplica un precio promocional automático en la app y el cotizador online cuando se seleccionen ambos servicios.</p>
+                            </div>
+                        </div>
+                        <label class="inline-flex items-center gap-2 cursor-pointer bg-white px-3 py-1.5 rounded-lg border border-indigo-200 shadow-2xs">
+                            <input type="checkbox" wire:model.live="pack_cocktail_restaurant_enabled" class="rounded text-indigo-600 focus:ring-indigo-500 h-4 w-4">
+                            <span class="text-xs font-bold text-indigo-900">Activar Pack Automático</span>
+                        </label>
+                    </div>
+
+                    @if($pack_cocktail_restaurant_enabled)
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-center pt-1">
+                            <div class="space-y-3">
+                                <label class="block text-xs font-bold text-gray-700">Modalidad de Descuento</label>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <label class="flex items-center gap-2 p-2.5 rounded-lg border cursor-pointer transition {{ $pack_cocktail_restaurant_discount_type === 'percentage' ? 'bg-indigo-600 text-white font-bold border-indigo-600 shadow-xs' : 'bg-white border-gray-200 text-gray-700' }}">
+                                        <input type="radio" wire:model.live="pack_cocktail_restaurant_discount_type" value="percentage" class="text-indigo-600">
+                                        <span class="text-xs">Porcentaje (%)</span>
+                                    </label>
+                                    <label class="flex items-center gap-2 p-2.5 rounded-lg border cursor-pointer transition {{ $pack_cocktail_restaurant_discount_type === 'fixed_price' ? 'bg-indigo-600 text-white font-bold border-indigo-600 shadow-xs' : 'bg-white border-gray-200 text-gray-700' }}">
+                                        <input type="radio" wire:model.live="pack_cocktail_restaurant_discount_type" value="fixed_price" class="text-indigo-600">
+                                        <span class="text-xs">Precio Fijo (€)</span>
+                                    </label>
+                                </div>
+
+                                <div>
+                                    @if($pack_cocktail_restaurant_discount_type === 'percentage')
+                                        <label class="block text-xs font-bold text-indigo-950 mb-1">Porcentaje de Descuento sobre la suma de ambos (%)</label>
+                                        <div class="flex items-center gap-2">
+                                            <input type="number" step="0.5" min="1" max="90" wire:model.live="pack_cocktail_restaurant_discount_percentage" class="w-32 border-indigo-300 rounded-lg shadow-sm text-sm font-bold text-indigo-700">
+                                            <span class="text-xs font-bold text-indigo-900">% de ahorro</span>
+                                        </div>
+                                    @else
+                                        <label class="block text-xs font-bold text-indigo-950 mb-1">Precio Cerrado del Pack Cóctel + Banquete (€)</label>
+                                        <div class="flex items-center gap-2">
+                                            <input type="number" step="1" min="10" wire:model.live="pack_cocktail_restaurant_price" class="w-36 border-indigo-300 rounded-lg shadow-sm text-sm font-bold text-indigo-700">
+                                            <span class="text-xs font-bold text-indigo-900">€ (Tarifa final)</span>
+                                        </div>
+                                    @endif
+                                </div>
+                            </div>
+
+                            <!-- Resumen / Cálculo en vivo -->
+                            @php
+                                $cPrice = (float)($price_cocktail ?: 0);
+                                $rPrice = (float)($price_restaurant ?: 0);
+                                $sumPrices = $cPrice + $rPrice;
+                                if ($pack_cocktail_restaurant_discount_type === 'fixed_price') {
+                                    $finalPackPrice = (float)($pack_cocktail_restaurant_price ?: 0);
+                                    $savingsAmount = max(0, $sumPrices - $finalPackPrice);
+                                    $savingsPercent = $sumPrices > 0 ? round(($savingsAmount / $sumPrices) * 100, 1) : 0;
+                                } else {
+                                    $pct = (float)($pack_cocktail_restaurant_discount_percentage ?: 0);
+                                    $savingsAmount = round($sumPrices * ($pct / 100), 2);
+                                    $finalPackPrice = max(0, $sumPrices - $savingsAmount);
+                                    $savingsPercent = $pct;
+                                }
+                            @endphp
+                            <div class="bg-white p-4 rounded-xl border border-indigo-100 shadow-xs space-y-2">
+                                <span class="text-[10px] font-black uppercase tracking-wider text-indigo-600 block">Simulación en tiempo real</span>
+                                <div class="flex items-center justify-between text-xs text-gray-600">
+                                    <span>🍸 Cóctel ({{ number_format($cPrice, 2, ',', '.') }} €) + 🍽️ Banquete ({{ number_format($rPrice, 2, ',', '.') }} €):</span>
+                                    <span class="line-through text-gray-400 font-semibold">{{ number_format($sumPrices, 2, ',', '.') }} €</span>
+                                </div>
+                                <div class="flex items-center justify-between text-xs font-bold text-emerald-700 bg-emerald-50 p-2 rounded-lg border border-emerald-200">
+                                    <span>🎉 Tarifa Final del Pack:</span>
+                                    <span class="text-sm font-black">{{ number_format($finalPackPrice, 2, ',', '.') }} €</span>
+                                </div>
+                                <div class="text-[11px] text-indigo-700 font-medium text-right">
+                                    Ahorro para el cliente: <strong>{{ number_format($savingsAmount, 2, ',', '.') }} €</strong> ({{ round($savingsPercent) }}% de descuento)
+                                </div>
+                            </div>
+                        </div>
+                    @endif
+                </div>
             </div>
 
             <!-- SECCIÓN 4: CONDICIONES DE PAGO Y SEÑAL DE RESERVA -->

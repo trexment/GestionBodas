@@ -405,6 +405,8 @@
                                 <span style="color: #b45309; font-weight: bold; font-size: 8pt;">A consultar</span>
                             @elseif($subtotal > 0)
                                 {{ number_format($subtotal, 2, ',', '.') }} €
+                            @elseif($subtotal < 0)
+                                <span style="color: #15803d; font-weight: bold;">-{{ number_format(abs($subtotal), 2, ',', '.') }} €</span>
                             @else
                                 <span class="price-included">Incluido</span>
                             @endif

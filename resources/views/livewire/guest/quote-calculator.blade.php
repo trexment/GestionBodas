@@ -34,9 +34,17 @@
                                 @if($key === 'dj')
                                     <span class="text-xs bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-full">({{ $serv['quantity'] }} horas)</span>
                                 @endif
+                                @if(($key === 'cocktail' || $key === 'restaurant') && $this->has_cocktail_restaurant_pack && $this->cocktail_restaurant_pack_info['enabled'])
+                                    <span class="text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full">🎁 En Pack Cóctel+Banquete</span>
+                                @endif
                             </div>
                         @endif
                     @endforeach
+                    @if($this->has_cocktail_restaurant_pack && $this->cocktail_restaurant_pack_info['enabled'])
+                        <div class="pt-2 border-t border-slate-800 text-xs text-emerald-400 font-semibold flex items-center gap-1.5">
+                            <span>✨</span> <span>Pack Cóctel + Banquete aplicado ({{ $this->cocktail_restaurant_pack_info['savings_label'] }})</span>
+                        </div>
+                    @endif
                 </div>
                 <p class="text-sm text-slate-400 mb-8">
                     Nuestro equipo comprobará la disponibilidad de la fecha y te contactará muy pronto por teléfono o WhatsApp para enviarte todos los detalles.
@@ -58,6 +66,21 @@
                         <span class="text-xs text-slate-400">Toca para seleccionar / deseleccionar</span>
                     </div>
 
+                    @if($this->has_cocktail_restaurant_pack && $this->cocktail_restaurant_pack_info['enabled'])
+                        <div class="p-3.5 bg-gradient-to-r from-emerald-950/80 via-indigo-950/80 to-purple-950/80 border border-emerald-500/50 rounded-2xl flex items-center justify-between gap-3 shadow-lg shadow-emerald-950/30 animate-pulse">
+                            <div class="flex items-center gap-2.5">
+                                <span class="text-2xl">🎁</span>
+                                <div>
+                                    <span class="text-xs font-black text-emerald-300 uppercase tracking-wider block">¡Pack Cóctel + Banquete Activado!</span>
+                                    <span class="text-[11px] text-slate-300">Has desbloqueado una tarifa especial combinada con descuento en tu presupuesto.</span>
+                                </div>
+                            </div>
+                            <span class="shrink-0 text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2.5 py-1 rounded-full">
+                                {{ round($this->cocktail_restaurant_pack_info['discount_percentage']) }}% Dto
+                            </span>
+                        </div>
+                    @endif
+
                     <div class="space-y-3">
                         @foreach($services as $key => $service)
                             <div wire:key="service-{{ $key }}"
@@ -77,14 +100,30 @@
                                                 {{ $service['name'] }}
                                             </h3>
                                             @if($service['selected'])
-                                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/30 text-indigo-300 border border-indigo-500/40">
-                                                    INCLUIDO
-                                                </span>
+                                                @if(($key === 'cocktail' || $key === 'restaurant') && $this->has_cocktail_restaurant_pack && $this->cocktail_restaurant_pack_info['enabled'])
+                                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/30 text-emerald-300 border border-emerald-500/40">
+                                                        🎁 EN PACK CON DESCUENTO
+                                                    </span>
+                                                @else
+                                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/30 text-indigo-300 border border-indigo-500/40">
+                                                        INCLUIDO
+                                                    </span>
+                                                @endif
                                             @endif
                                         </div>
                                         <p class="text-xs text-slate-400 mt-1 leading-relaxed">
                                             {{ $service['description'] }}
                                         </p>
+
+                                        @if($key === 'cocktail' && $service['selected'] && empty($services['restaurant']['selected']) && $this->cocktail_restaurant_pack_info['enabled'])
+                                            <div class="mt-2 text-[11px] text-amber-300 font-semibold flex items-center gap-1">
+                                                <span>💡</span> <span>Añade Banquete para desbloquear el precio especial de Pack Cóctel + Banquete.</span>
+                                            </div>
+                                        @elseif($key === 'restaurant' && $service['selected'] && empty($services['cocktail']['selected']) && $this->cocktail_restaurant_pack_info['enabled'])
+                                            <div class="mt-2 text-[11px] text-amber-300 font-semibold flex items-center gap-1">
+                                                <span>💡</span> <span>Añade Cóctel para desbloquear el precio especial de Pack Cóctel + Banquete.</span>
+                                            </div>
+                                        @endif
 
                                         <!-- Sub-controls (e.g. DJ Hours) if selected -->
                                         @if($key === 'dj' && $service['selected'])

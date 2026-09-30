@@ -1022,6 +1022,16 @@ class EventShow extends Component
         if (!empty($this->quote_services['restaurant']['selected'])) {
             $total += (float)$this->quote_services['restaurant']['price'] * (int)($this->quote_services['restaurant']['quantity'] ?: 1);
         }
+
+        // Descuento Pack Cóctel + Banquete si ambos están seleccionados
+        if (!empty($this->quote_services['cocktail']['selected']) && !empty($this->quote_services['restaurant']['selected'])) {
+            $cPrice = (float)($this->quote_services['cocktail']['price'] ?: 0);
+            $rPrice = (float)($this->quote_services['restaurant']['price'] ?: 0);
+            $packInfo = \App\Models\Setting::getCocktailRestaurantPackInfo($cPrice, $rPrice);
+            if (!empty($packInfo['enabled']) && $packInfo['discount_amount'] > 0) {
+                $total -= (float)$packInfo['discount_amount'];
+            }
+        }
         if (!empty($this->quote_services['dj_custom']['selected'])) {
             $total += (float)$this->quote_services['dj_custom']['price'] * (int)($this->quote_services['dj_custom']['quantity'] ?: 1);
         }
@@ -1172,6 +1182,23 @@ class EventShow extends Component
             $p = (float)($this->quote_services['restaurant']['price'] ?: 0);
             $items[] = ['service_name' => 'Sonorización Banquete y Regalos', 'description' => $this->quote_services['restaurant']['desc'], 'price' => $p, 'quantity' => $qty];
             $total += ($p * $qty);
+        }
+
+        // Descuento Pack Cóctel + Banquete
+        if (!empty($this->quote_services['cocktail']['selected']) && !empty($this->quote_services['restaurant']['selected'])) {
+            $cPrice = (float)($this->quote_services['cocktail']['price'] ?: 0);
+            $rPrice = (float)($this->quote_services['restaurant']['price'] ?: 0);
+            $packInfo = \App\Models\Setting::getCocktailRestaurantPackInfo($cPrice, $rPrice);
+            if (!empty($packInfo['enabled']) && $packInfo['discount_amount'] > 0) {
+                $discountAmt = (float)$packInfo['discount_amount'];
+                $items[] = [
+                    'service_name' => 'Descuento Especial Pack Cóctel + Banquete',
+                    'description' => 'Tarifa combinada promocional por contratación conjunta de Cóctel y Banquete (' . round($packInfo['discount_percentage']) . '% dto.)',
+                    'price' => -$discountAmt,
+                    'quantity' => 1
+                ];
+                $total -= $discountAmt;
+            }
         }
         if (!empty($this->quote_services['dj_custom']['selected'])) {
             $qty = (int)($this->quote_services['dj_custom']['quantity'] ?: 1);

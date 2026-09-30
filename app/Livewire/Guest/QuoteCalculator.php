@@ -85,6 +85,23 @@ class QuoteCalculator extends Component
         ];
     }
 
+    /**
+     * Check if both Cocktail and Restaurant are selected
+     */
+    public function getHasCocktailRestaurantPackProperty(): bool
+    {
+        return !empty($this->services['cocktail']['selected']) && !empty($this->services['restaurant']['selected']);
+    }
+
+    /**
+     * Get Cocktail + Restaurant combined pack settings and calculations
+     */
+    public function getCocktailRestaurantPackInfoProperty(): array
+    {
+        $catalog = $this->getPriceCatalog();
+        return Setting::getCocktailRestaurantPackInfo($catalog['cocktail'] ?? 150, $catalog['restaurant'] ?? 150);
+    }
+
     public function submitRequest()
     {
         $this->validate([
@@ -108,6 +125,12 @@ class QuoteCalculator extends Component
             }
         }
 
+        // Apply Pack Cóctel + Banquete discount if active
+        $packInfo = $this->has_cocktail_restaurant_pack ? $this->cocktail_restaurant_pack_info : null;
+        if ($packInfo && !empty($packInfo['enabled']) && $packInfo['discount_amount'] > 0) {
+            $totalEstimated = max(0, $totalEstimated - $packInfo['discount_amount']);
+        }
+
         // 2. Create or Find Client
         $client = User::firstOrCreate(
             ['email' => $this->client_email],
@@ -127,6 +150,10 @@ class QuoteCalculator extends Component
                 $qtyText = $key === 'dj' ? " ({$qty} horas)" : ($qty > 1 ? " ({$qty} uds)" : "");
                 $requestedServicesList[] = "• " . $service['name'] . $qtyText;
             }
+        }
+
+        if ($packInfo && !empty($packInfo['enabled']) && $packInfo['discount_amount'] > 0) {
+            $requestedServicesList[] = "• 🎁 Pack Cóctel + Banquete incluido (" . $packInfo['savings_label'] . ")";
         }
 
         $fullNotes = "SOLICITUD DE PRESUPUESTO ONLINE:\n"
@@ -162,6 +189,16 @@ class QuoteCalculator extends Component
                     'total' => $price * $qty,
                 ]);
             }
+        }
+
+        if ($packInfo && !empty($packInfo['enabled']) && $packInfo['discount_amount'] > 0) {
+            $quote->items()->create([
+                'service_name' => 'Descuento Especial Pack Cóctel + Banquete',
+                'description' => 'Tarifa combinada promocional por contratación conjunta de Cóctel y Banquete (' . round($packInfo['discount_percentage']) . '% dto.)',
+                'quantity' => 1,
+                'price' => -$packInfo['discount_amount'],
+                'total' => -$packInfo['discount_amount'],
+            ]);
         }
 
         $this->is_submitted = true;

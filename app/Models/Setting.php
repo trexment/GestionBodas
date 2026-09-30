@@ -149,5 +149,53 @@ class Setting extends Model
 
         return $scheme . '://' . $host;
     }
+
+    /**
+     * Get Cocktail + Restaurant combined pack settings and calculation.
+     */
+    public static function getCocktailRestaurantPackInfo($cocktailPrice = null, $restaurantPrice = null)
+    {
+        $cocktail = $cocktailPrice !== null ? (float)$cocktailPrice : (float)self::get('price_cocktail', 150);
+        $restaurant = $restaurantPrice !== null ? (float)$restaurantPrice : (float)self::get('price_restaurant', 150);
+        $sum = $cocktail + $restaurant;
+
+        $enabled = (bool)self::get('pack_cocktail_restaurant_enabled', true);
+        $discountType = self::get('pack_cocktail_restaurant_discount_type', 'percentage'); // 'percentage' or 'fixed_price'
+        $discountPercent = (float)self::get('pack_cocktail_restaurant_discount_percentage', 25); // default 25%
+        $fixedPackPrice = (float)self::get('pack_cocktail_restaurant_price', 220); // default 220€
+
+        if (!$enabled || $sum <= 0) {
+            return [
+                'enabled' => false,
+                'discount_type' => $discountType,
+                'discount_percentage' => 0,
+                'individual_sum' => $sum,
+                'pack_price' => $sum,
+                'discount_amount' => 0,
+                'savings_label' => 'Sin descuento de pack',
+            ];
+        }
+
+        if ($discountType === 'fixed_price') {
+            $packPrice = max(0, $fixedPackPrice);
+            $discountAmount = max(0, $sum - $packPrice);
+            $effectivePercent = $sum > 0 ? round(($discountAmount / $sum) * 100, 1) : 0;
+        } else {
+            // percentage discount
+            $discountAmount = round($sum * ($discountPercent / 100), 2);
+            $packPrice = max(0, $sum - $discountAmount);
+            $effectivePercent = $discountPercent;
+        }
+
+        return [
+            'enabled' => true,
+            'discount_type' => $discountType,
+            'discount_percentage' => $effectivePercent,
+            'individual_sum' => $sum,
+            'pack_price' => $packPrice,
+            'discount_amount' => $discountAmount,
+            'savings_label' => 'Ahorro de ' . number_format($discountAmount, 2, ',', '.') . ' € (' . round($effectivePercent) . '% dto.)',
+        ];
+    }
 }
 

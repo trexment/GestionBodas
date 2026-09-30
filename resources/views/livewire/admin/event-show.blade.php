@@ -1410,6 +1410,25 @@
                                         </div>
                                     </div>
 
+                                    @php
+                                        $cSelected = !empty($quote_services['cocktail']['selected']);
+                                        $rSelected = !empty($quote_services['restaurant']['selected']);
+                                        $cPrice = (float)($quote_services['cocktail']['price'] ?? 0);
+                                        $rPrice = (float)($quote_services['restaurant']['price'] ?? 0);
+                                        $packDiscountInfo = \App\Models\Setting::getCocktailRestaurantPackInfo($cPrice, $rPrice);
+                                    @endphp
+                                    @if($cSelected && $rSelected && !empty($packDiscountInfo['enabled']) && $packDiscountInfo['discount_amount'] > 0)
+                                        <div class="p-2.5 rounded-lg bg-emerald-50 border border-emerald-200 flex items-center justify-between text-xs text-emerald-800">
+                                            <div class="flex items-center gap-1.5 font-bold">
+                                                <span>🎁</span>
+                                                <span>¡Pack Cóctel + Banquete Activado!</span>
+                                            </div>
+                                            <div class="font-extrabold text-emerald-700">
+                                                -{{ number_format($packDiscountInfo['discount_amount'], 2, ',', '.') }} € ({{ round($packDiscountInfo['discount_percentage']) }}% dto)
+                                            </div>
+                                        </div>
+                                    @endif
+
                                     <!-- DJ Baile (Horas sueltas) -->
                                     <div class="flex items-center justify-between p-2 rounded-lg border border-gray-100 hover:bg-gray-50 gap-2">
                                         <label class="flex items-center cursor-pointer flex-1 gap-2">
