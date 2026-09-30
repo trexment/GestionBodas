@@ -50,6 +50,7 @@ class Settings extends Component
     public $price_dj;
     public $price_karaoke;
     public $price_extra_hours;
+    public $price_photobooth;
     public $pack_cocktail_restaurant_enabled = true;
     public $pack_cocktail_restaurant_discount_type = 'percentage'; // 'percentage' | 'fixed_price'
     public $pack_cocktail_restaurant_discount_percentage = 25;
@@ -144,6 +145,7 @@ class Settings extends Component
         $this->price_dj = Setting::get('price_dj', 150);
         $this->price_karaoke = Setting::get('price_karaoke', 80);
         $this->price_extra_hours = Setting::get('price_extra_hours', 120);
+        $this->price_photobooth = Setting::get('price_photobooth', 350);
 
         // Pack Cóctel + Banquete
         $this->pack_cocktail_restaurant_enabled = (bool)Setting::get('pack_cocktail_restaurant_enabled', true);
@@ -239,6 +241,7 @@ class Settings extends Component
             'price_dj' => 'required|numeric',
             'price_karaoke' => 'required|numeric',
             'price_extra_hours' => 'required|numeric',
+            'price_photobooth' => 'required|numeric',
 
             'price_photo_ceremony' => 'required|numeric',
             'price_photo_restaurant' => 'required|numeric',
@@ -299,6 +302,7 @@ class Settings extends Component
         Setting::set('price_dj', $this->price_dj);
         Setting::set('price_karaoke', $this->price_karaoke);
         Setting::set('price_extra_hours', $this->price_extra_hours);
+        Setting::set('price_photobooth', $this->price_photobooth);
 
         // Pack Cóctel + Banquete
         Setting::set('pack_cocktail_restaurant_enabled', $this->pack_cocktail_restaurant_enabled ? '1' : '0');

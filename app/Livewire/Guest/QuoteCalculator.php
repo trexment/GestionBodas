@@ -21,6 +21,9 @@ class QuoteCalculator extends Component
 
     // Services selected by the user (No pricing in state to avoid leaking in wire:snapshot)
     public $services = [];
+    public $custom_service_selected = false;
+    public $custom_service_name = '';
+    public $custom_service_description = '';
     public $is_submitted = false;
 
     public static function getEventTypes(): array
@@ -237,6 +240,13 @@ class QuoteCalculator extends Component
                 'name' => 'Horas Adicionales de Fiesta', 
                 'description' => 'Ampliación de horario para continuar el baile sin interrupciones.'
             ],
+            'photobooth' => [
+                'selected' => false, 
+                'quantity' => 1, 
+                'icon' => '📸',
+                'name' => 'Fotomatón & Photocall', 
+                'description' => 'Servicio de fotomatón con impresión instantánea, atrezzo divertido y libro de firmas personalizado.'
+            ],
         ];
 
         $this->updateServiceLabels();
@@ -254,6 +264,7 @@ class QuoteCalculator extends Component
             'dj' => (float) Setting::get('price_dj', 150),
             'karaoke' => (float) Setting::get('price_karaoke', 80),
             'extra_hours' => (float) Setting::get('price_extra_hours', 120),
+            'photobooth' => (float) Setting::get('price_photobooth', 350),
         ];
     }
 
@@ -328,6 +339,12 @@ class QuoteCalculator extends Component
             $requestedServicesList[] = "• 🎁 Pack Cóctel + Banquete incluido (" . $packInfo['savings_label'] . ")";
         }
 
+        if ($this->custom_service_selected && !empty(trim($this->custom_service_name))) {
+            $customName = trim($this->custom_service_name);
+            $customDesc = trim($this->custom_service_description);
+            $requestedServicesList[] = "• ✨ " . $customName . " (A consultar)" . ($customDesc ? " - " . $customDesc : "");
+        }
+
         $typeConfig = self::getEventTypes()[$this->event_type] ?? self::getEventTypes()['boda'];
         $eventTitle = $typeConfig['prefix'] . $this->client_name;
 
@@ -375,6 +392,18 @@ class QuoteCalculator extends Component
                 'quantity' => 1,
                 'price' => -$packInfo['discount_amount'],
                 'total' => -$packInfo['discount_amount'],
+            ]);
+        }
+
+        if ($this->custom_service_selected && !empty(trim($this->custom_service_name))) {
+            $customName = trim($this->custom_service_name);
+            $customDesc = trim($this->custom_service_description);
+            $quote->items()->create([
+                'service_name' => $customName . ' (A consultar)',
+                'description' => $customDesc ?: 'Servicio / Extra solicitado por el cliente (Presupuesto y disponibilidad a consultar)',
+                'quantity' => 1,
+                'price' => 0,
+                'total' => 0,
             ]);
         }
 

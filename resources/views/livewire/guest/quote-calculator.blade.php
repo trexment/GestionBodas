@@ -67,6 +67,13 @@
                             </div>
                         @endif
                     @endforeach
+                    @if($custom_service_selected && !empty($custom_service_name))
+                        <div class="flex items-center gap-2 text-sm text-slate-200">
+                            <span>✨</span>
+                            <span class="font-medium">{{ $custom_service_name }}</span>
+                            <span class="text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded-full">A consultar</span>
+                        </div>
+                    @endif
                     @if($this->has_cocktail_restaurant_pack && $this->cocktail_restaurant_pack_info['enabled'])
                         <div class="pt-2 border-t border-slate-800 text-xs text-emerald-400 font-semibold flex items-center gap-1.5">
                             <span>✨</span> <span>Pack Cóctel + Banquete aplicado ({{ $this->cocktail_restaurant_pack_info['savings_label'] }})</span>
@@ -178,6 +185,55 @@
                                 </div>
                             </div>
                         @endforeach
+
+                        <!-- Servicio / Efecto Especial Personalizado en Blanco -->
+                        <div class="p-5 rounded-2xl border transition-all select-none {{ $custom_service_selected ? 'bg-indigo-950/60 border-indigo-500/60 shadow-lg shadow-indigo-950/50 ring-1 ring-indigo-500/50' : 'bg-slate-800/40 border-slate-700/60 hover:border-slate-600 hover:bg-slate-800/70' }}">
+                            <div class="flex items-start gap-4 cursor-pointer" wire:click="$toggle('custom_service_selected')">
+                                <!-- Icon Box -->
+                                <div class="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0 {{ $custom_service_selected ? 'bg-indigo-500/20 text-indigo-300 ring-2 ring-indigo-500/30' : 'bg-slate-700/40 text-slate-400' }}">
+                                    ✨
+                                </div>
+
+                                <!-- Details -->
+                                <div class="flex-1 min-w-0 pr-8">
+                                    <div class="flex items-center gap-2 flex-wrap">
+                                        <h3 class="font-bold text-base {{ $custom_service_selected ? 'text-white' : 'text-slate-300' }}">
+                                            ¿Quieres añadir otro servicio o efecto especial?
+                                        </h3>
+                                        @if($custom_service_selected)
+                                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/30 text-amber-300 border border-amber-500/40">
+                                                A CONSULTAR
+                                            </span>
+                                        @endif
+                                    </div>
+                                    <p class="text-xs text-slate-400 mt-1 leading-relaxed">
+                                        Fuego frío, máquinas de humo bajo, plataforma 360, saxofonista, violinista, iluminación de jardín... Dinos qué necesitas y te lo presupuestamos a medida.
+                                    </p>
+                                </div>
+
+                                <!-- Checkmark Status Bubble -->
+                                <div class="w-6 h-6 rounded-full flex items-center justify-center border transition-colors shrink-0 {{ $custom_service_selected ? 'bg-indigo-500 border-indigo-400 text-white shadow-md shadow-indigo-500/40' : 'border-slate-600 bg-slate-900/40 text-transparent' }}">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+                                    </svg>
+                                </div>
+                            </div>
+
+                            @if($custom_service_selected)
+                                <div class="mt-4 pt-4 border-t border-indigo-500/20 space-y-3" wire:click.stop>
+                                    <div>
+                                        <label class="block text-xs font-semibold text-slate-300 mb-1">Nombre del servicio o extra deseado *</label>
+                                        <input type="text" wire:model.defer="custom_service_name" placeholder="Ej: Fuego frío para el baile / Plataforma 360 / Saxofonista"
+                                               class="w-full bg-slate-900/80 border border-indigo-500/40 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-semibold text-slate-300 mb-1">Detalles o especificaciones (opcional)</label>
+                                        <textarea wire:model.defer="custom_service_description" rows="2" placeholder="Momento en el que te gustaría incluirlo, horario o cualquier detalle que nos ayude a cotizarlo..."
+                                                  class="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"></textarea>
+                                    </div>
+                                </div>
+                            @endif
+                        </div>
                     </div>
                 </div>
 

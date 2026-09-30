@@ -326,6 +326,11 @@
                         <label class="block text-xs font-bold text-gray-700 mb-1">⏰ Hora Extra Baile (€)</label>
                         <input type="number" step="0.01" wire:model="price_extra_hours" required class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm font-bold">
                     </div>
+
+                    <div class="p-3.5 bg-indigo-50/60 rounded-xl border border-indigo-200">
+                        <label class="block text-xs font-bold text-indigo-900 mb-1">📸 Fotomatón & Photocall (€)</label>
+                        <input type="number" step="0.01" wire:model="price_photobooth" required class="w-full border-indigo-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm font-bold text-indigo-700">
+                    </div>
                 </div>
 
                 <!-- PACK COMBINADO CÓCTEL + BANQUETE -->

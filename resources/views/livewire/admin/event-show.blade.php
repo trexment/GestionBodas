@@ -1474,6 +1474,23 @@
                                             <span class="text-xs text-gray-600">€</span>
                                         </div>
                                     </div>
+
+                                    <!-- Fotomatón & Photocall -->
+                                    <div class="flex items-center justify-between p-2 rounded-lg border border-indigo-100 bg-indigo-50/30 hover:bg-indigo-50/60 gap-2">
+                                        <label class="flex items-center cursor-pointer flex-1 gap-2">
+                                            <input type="checkbox" wire:model.live="quote_services.photobooth.selected" class="rounded text-indigo-600 focus:ring-indigo-500 h-4 w-4">
+                                            <div>
+                                                <span class="text-xs font-bold text-indigo-950">📸 Fotomatón & Photocall</span>
+                                                <span class="block text-[10px] text-indigo-700">{{ $quote_services['photobooth']['desc'] }}</span>
+                                            </div>
+                                        </label>
+                                        <div class="flex items-center gap-1">
+                                            <input type="number" wire:model.live="quote_services.photobooth.quantity" min="1" class="w-10 border rounded p-1 text-xs text-center font-bold">
+                                            <span class="text-xs text-gray-400">x</span>
+                                            <input type="number" step="0.01" wire:model.live="quote_services.photobooth.price" class="w-16 border rounded p-1 text-xs text-right font-bold text-indigo-700">
+                                            <span class="text-xs text-gray-600">€</span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 

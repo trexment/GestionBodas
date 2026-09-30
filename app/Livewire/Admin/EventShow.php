@@ -86,6 +86,7 @@ class EventShow extends Component
         'photo_album' => ['selected' => false, 'quantity' => 1, 'price' => 150, 'desc' => 'Maquetación álbum digital profesional (sin imprimir).'],
         'photo_full_pack' => ['selected' => false, 'quantity' => 1, 'price' => 800, 'desc' => 'Fotografía Completa: Ceremonia, Restaurante, Fiesta, Álbum digital maquetado, fotos en alta calidad sin marcas de agua.'],
         'karaoke' => ['selected' => false, 'quantity' => 1, 'price' => 80, 'desc' => 'Karaoke interactivo para invitados.'],
+        'photobooth' => ['selected' => false, 'quantity' => 1, 'price' => 350, 'desc' => 'Fotomatón con impresión instantánea, atrezzo y libro de firmas.'],
     ];
 
     public $custom_extras = [
@@ -180,6 +181,7 @@ class EventShow extends Component
         $this->quote_services['restaurant']['price'] = (float)\App\Models\Setting::get('price_restaurant', 150);
         $this->quote_services['dj_custom']['price'] = (float)\App\Models\Setting::get('price_dj', 150);
         $this->quote_services['karaoke']['price'] = (float)\App\Models\Setting::get('price_karaoke', 80);
+        $this->quote_services['photobooth']['price'] = (float)\App\Models\Setting::get('price_photobooth', 350);
         $this->quote_services['extra_hours']['price'] = (float)\App\Models\Setting::get('price_extra_hours', 120);
 
         // Fotografía
@@ -1058,9 +1060,12 @@ class EventShow extends Component
             }
         }
 
-        // Karaoke & Extras personalizados
+        // Karaoke, Fotomatón & Extras personalizados
         if (!empty($this->quote_services['karaoke']['selected'])) {
             $total += (float)$this->quote_services['karaoke']['price'] * (int)($this->quote_services['karaoke']['quantity'] ?: 1);
+        }
+        if (!empty($this->quote_services['photobooth']['selected'])) {
+            $total += (float)$this->quote_services['photobooth']['price'] * (int)($this->quote_services['photobooth']['quantity'] ?: 1);
         }
         if (!empty($this->custom_extras)) {
             foreach ($this->custom_extras as $extra) {
@@ -1242,11 +1247,18 @@ class EventShow extends Component
             }
         }
         
-        // 4. Karaoke & Extra personalizado
+        // 4. Karaoke, Fotomatón & Extra personalizado
         if (!empty($this->quote_services['karaoke']['selected'])) {
             $qty = (int)($this->quote_services['karaoke']['quantity'] ?: 1);
             $p = (float)($this->quote_services['karaoke']['price'] ?: 0);
             $items[] = ['service_name' => 'Karaoke & Animación', 'description' => 'Micrófonos inalámbricos y catálogo de canciones para invitados', 'price' => $p, 'quantity' => $qty];
+            $total += ($p * $qty);
+        }
+
+        if (!empty($this->quote_services['photobooth']['selected'])) {
+            $qty = (int)($this->quote_services['photobooth']['quantity'] ?: 1);
+            $p = (float)($this->quote_services['photobooth']['price'] ?: 0);
+            $items[] = ['service_name' => 'Fotomatón & Photocall', 'description' => $this->quote_services['photobooth']['desc'], 'price' => $p, 'quantity' => $qty];
             $total += ($p * $qty);
         }
         
@@ -1435,6 +1447,13 @@ class EventShow extends Component
                 $this->quote_services['karaoke']['selected'] = true;
                 $this->quote_services['karaoke']['quantity'] = (int)($item->quantity ?: 1);
                 $this->quote_services['karaoke']['price'] = (float)$item->price;
+            } elseif (str_contains($name, 'fotomatón') || str_contains($name, 'fotomaton') || str_contains($name, 'photobooth')) {
+                $this->quote_services['photobooth']['selected'] = true;
+                $this->quote_services['photobooth']['quantity'] = (int)($item->quantity ?: 1);
+                $this->quote_services['photobooth']['price'] = (float)$item->price;
+            } elseif (str_contains($name, 'descuento especial pack') || str_contains($name, 'descuento pack')) {
+                // Descuento automático de pack cóctel+banquete, no agregarlo como extra personalizado
+                continue;
             } else {
                 $rawName = $item->service_name ?: $item->concept ?: '';
                 $isConsult = str_contains(mb_strtolower($rawName), 'consultar') || str_contains(mb_strtolower($item->description ?: ''), 'consultar');
