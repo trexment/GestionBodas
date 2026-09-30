@@ -18,6 +18,11 @@ class Event extends Model
         'venue_contact_phone',
         'venue_notes',
         'status',
+        'deposit_paid',
+        'deposit_paid_amount',
+        'deposit_payment_method',
+        'deposit_paid_at',
+        'deposit_notes',
         'token',
         'is_dossier_completed',
         'client_id',
@@ -28,6 +33,9 @@ class Event extends Model
 
     protected $casts = [
         'event_date' => 'date',
+        'deposit_paid' => 'boolean',
+        'deposit_paid_amount' => 'decimal:2',
+        'deposit_paid_at' => 'date',
     ];
 
     protected static function boot()
@@ -89,5 +97,34 @@ class Event extends Model
     public function musicRequests()
     {
         return $this->hasMany(EventMusicRequest::class)->orderBy('order')->orderBy('id');
+    }
+
+    /**
+     * Etiqueta legible del método de pago de la señal
+     */
+    public function getDepositMethodLabelAttribute(): string
+    {
+        return match($this->deposit_payment_method) {
+            'bizum' => 'Bizum',
+            'transfer' => 'Transferencia Bancaria',
+            'cash' => 'Efectivo',
+            'card' => 'Tarjeta / TPV',
+            'other' => 'Otro',
+            default => $this->deposit_payment_method ? ucfirst($this->deposit_payment_method) : 'No especificado',
+        };
+    }
+
+    /**
+     * Icono según método de pago
+     */
+    public function getDepositMethodIconAttribute(): string
+    {
+        return match($this->deposit_payment_method) {
+            'bizum' => '📱',
+            'transfer' => '🏦',
+            'cash' => '💵',
+            'card' => '💳',
+            default => '💶',
+        };
     }
 }

@@ -80,6 +80,37 @@
                 <span class="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full font-bold {{ $event->status === 'confirmed' ? 'bg-emerald-100 text-emerald-800' : ($event->status === 'completed' ? 'bg-blue-100 text-blue-800' : ($event->status === 'cancelled' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800')) }}">
                     {{ ucfirst($event->status) }}
                 </span>
+
+                @if($event->deposit_paid && (float)$event->deposit_paid_amount > 0)
+                    <span class="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-300 px-3 py-1 rounded-xl shadow-2xs">
+                        <span>{{ $event->deposit_method_icon }}</span>
+                        <span>Señal: <strong>{{ number_format($event->deposit_paid_amount, 2, ',', '.') }} €</strong> ({{ $event->deposit_method_label }})</span>
+                        @if($event->deposit_paid_at)
+                            <span class="text-[11px] text-emerald-600 font-normal">el {{ \Carbon\Carbon::parse($event->deposit_paid_at)->format('d/m/Y') }}</span>
+                        @endif
+                        <button type="button" wire:click="openDepositModal('confirmed')" class="text-[11px] text-indigo-600 hover:text-indigo-800 font-bold ml-1 hover:underline cursor-pointer" title="Modificar importe, método o fecha de la señal">
+                            ✏️ Modificar
+                        </button>
+                    </span>
+                    @if($quoteAmount > 0)
+                        @php
+                            $realRemaining = max(0, $quoteAmount - (float)$event->deposit_paid_amount);
+                        @endphp
+                        <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-xl">
+                            <span>Pendiente:</span>
+                            <strong class="{{ $realRemaining == 0 ? 'text-emerald-700' : 'text-slate-900' }}">
+                                {{ number_format($realRemaining, 2, ',', '.') }} €
+                            </strong>
+                            @if($realRemaining == 0)
+                                <span class="text-[10px] bg-emerald-200 text-emerald-800 font-black px-1.5 py-0.5 rounded-md">¡100% Pagado!</span>
+                            @endif
+                        </span>
+                    @endif
+                @elseif($event->status === 'confirmed')
+                    <button type="button" wire:click="openDepositModal('confirmed')" class="inline-flex items-center gap-1 text-xs font-bold text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-300 px-3 py-1 rounded-xl shadow-2xs transition cursor-pointer" title="Registrar el cobro de la señal">
+                        <span>💳 + Registrar Señal</span>
+                    </button>
+                @endif
             </div>
             
             <div class="flex flex-wrap items-center gap-3 text-sm text-gray-500 mt-2">
@@ -2924,6 +2955,197 @@
                             <span>Importar {{ count($cloudScannedFiles) }} Canciones a la Escaleta</span>
                         </button>
                     @endif
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Modal de Registro de Señal / Pago de Reserva -->
+    @if($showDepositModal)
+    <div class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="relative bg-white dark:bg-slate-900 rounded-3xl shadow-2xl max-w-lg w-full border border-slate-100 dark:border-slate-800 overflow-hidden animate-in fade-in zoom-in duration-200">
+            <!-- Cabecera del Modal -->
+            <div class="bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 text-white px-6 py-4 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <span class="text-2xl">💳</span>
+                    <div>
+                        <h3 class="font-black text-base leading-tight">Registrar Cobro de Reserva / Señal</h3>
+                        <p class="text-xs text-emerald-100">{{ $event->name }} &bull; {{ $event->client ? $event->client->name : 'Cliente' }}</p>
+                    </div>
+                </div>
+                <button type="button" wire:click="closeDepositModal" class="text-emerald-100 hover:text-white text-2xl font-bold leading-none cursor-pointer">&times;</button>
+            </div>
+
+            <!-- Contenido del Formulario -->
+            <div class="p-6 space-y-4 text-xs">
+                <!-- Info resumen rápido -->
+                <div class="p-3 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 grid grid-cols-2 gap-3 text-center">
+                    <div>
+                        <span class="block text-[10px] uppercase font-bold text-slate-400">Total Presupuesto</span>
+                        <strong class="text-sm font-black text-slate-800 dark:text-slate-100">{{ number_format($quoteAmount, 2, ',', '.') }} €</strong>
+                    </div>
+                    <div>
+                        <span class="block text-[10px] uppercase font-bold text-emerald-600">Señal Propuesta</span>
+                        <strong class="text-sm font-black text-emerald-600">{{ number_format($signalAmount, 2, ',', '.') }} €</strong>
+                    </div>
+                </div>
+
+                <!-- Input Cantidad Pagada -->
+                <div>
+                    <label class="block font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[11px] mb-1">
+                        Importe Cobrado de la Señal (€) *
+                    </label>
+                    <div class="relative rounded-xl shadow-2xs">
+                        <input 
+                            type="number" 
+                            step="0.01" 
+                            min="0"
+                            wire:model.live="deposit_amount_input" 
+                            class="w-full border-slate-300 dark:border-slate-700 rounded-xl p-3 pr-10 text-base font-black text-emerald-700 dark:text-emerald-400 bg-white dark:bg-slate-950 focus:ring-2 focus:ring-emerald-500" 
+                            placeholder="Ej: 200.00"
+                        >
+                        <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400 font-bold">
+                            €
+                        </div>
+                    </div>
+                    @error('deposit_amount_input') <span class="text-rose-600 text-[11px] block font-bold mt-1">{{ $message }}</span> @enderror
+
+                    <!-- Accesos rápidos de importe -->
+                    @if($quoteAmount > 0)
+                        <div class="flex flex-wrap items-center gap-1.5 mt-2">
+                            <span class="text-[10px] text-slate-400 font-bold">Atajos:</span>
+                            <button type="button" wire:click="$set('deposit_amount_input', {{ $signalAmount }})" class="text-[10px] font-bold bg-slate-100 hover:bg-emerald-100 text-slate-700 hover:text-emerald-800 border border-slate-200 px-2 py-0.5 rounded-lg transition cursor-pointer">
+                                Señal Propuesta ({{ number_format($signalAmount, 2, ',', '.') }} €)
+                            </button>
+                            @if($quoteAmount != $signalAmount)
+                                <button type="button" wire:click="$set('deposit_amount_input', {{ round($quoteAmount * 0.5, 2) }})" class="text-[10px] font-bold bg-slate-100 hover:bg-emerald-100 text-slate-700 hover:text-emerald-800 border border-slate-200 px-2 py-0.5 rounded-lg transition cursor-pointer">
+                                    50% ({{ number_format($quoteAmount * 0.5, 2, ',', '.') }} €)
+                                </button>
+                                <button type="button" wire:click="$set('deposit_amount_input', {{ $quoteAmount }})" class="text-[10px] font-bold bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 px-2 py-0.5 rounded-lg transition cursor-pointer">
+                                    100% Total ({{ number_format($quoteAmount, 2, ',', '.') }} €)
+                                </button>
+                            @endif
+                        </div>
+                    @endif
+                </div>
+
+                <!-- Método de Pago -->
+                <div>
+                    <label class="block font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[11px] mb-1.5">
+                        Método de Pago Utilizado *
+                    </label>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        <label class="flex items-center gap-2 p-2.5 rounded-xl border cursor-pointer transition {{ $deposit_method_input === 'bizum' ? 'bg-emerald-50 border-emerald-400 text-emerald-900 font-bold shadow-2xs' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100' }}">
+                            <input type="radio" wire:model.live="deposit_method_input" value="bizum" class="text-emerald-600 focus:ring-emerald-500">
+                            <span>📱 Bizum</span>
+                        </label>
+                        <label class="flex items-center gap-2 p-2.5 rounded-xl border cursor-pointer transition {{ $deposit_method_input === 'transfer' ? 'bg-emerald-50 border-emerald-400 text-emerald-900 font-bold shadow-2xs' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100' }}">
+                            <input type="radio" wire:model.live="deposit_method_input" value="transfer" class="text-emerald-600 focus:ring-emerald-500">
+                            <span>🏦 Transferencia</span>
+                        </label>
+                        <label class="flex items-center gap-2 p-2.5 rounded-xl border cursor-pointer transition {{ $deposit_method_input === 'cash' ? 'bg-emerald-50 border-emerald-400 text-emerald-900 font-bold shadow-2xs' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100' }}">
+                            <input type="radio" wire:model.live="deposit_method_input" value="cash" class="text-emerald-600 focus:ring-emerald-500">
+                            <span>💵 Efectivo</span>
+                        </label>
+                        <label class="flex items-center gap-2 p-2.5 rounded-xl border cursor-pointer transition {{ $deposit_method_input === 'card' ? 'bg-emerald-50 border-emerald-400 text-emerald-900 font-bold shadow-2xs' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100' }}">
+                            <input type="radio" wire:model.live="deposit_method_input" value="card" class="text-emerald-600 focus:ring-emerald-500">
+                            <span>💳 Tarjeta / TPV</span>
+                        </label>
+                        <label class="flex items-center gap-2 p-2.5 rounded-xl border cursor-pointer transition {{ $deposit_method_input === 'other' ? 'bg-emerald-50 border-emerald-400 text-emerald-900 font-bold shadow-2xs' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100' }}">
+                            <input type="radio" wire:model.live="deposit_method_input" value="other" class="text-emerald-600 focus:ring-emerald-500">
+                            <span>💶 Otro</span>
+                        </label>
+                    </div>
+                    @error('deposit_method_input') <span class="text-rose-600 text-[11px] block font-bold mt-1">{{ $message }}</span> @enderror
+                </div>
+
+                <!-- Fecha del Pago -->
+                <div>
+                    <label class="block font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[11px] mb-1">
+                        Fecha en que se Realizó el Pago *
+                    </label>
+                    <input 
+                        type="date" 
+                        wire:model="deposit_date_input" 
+                        class="w-full border-slate-300 dark:border-slate-700 rounded-xl p-2.5 text-xs font-semibold text-slate-800 dark:text-white bg-slate-50 dark:bg-slate-950"
+                    >
+                    @error('deposit_date_input') <span class="text-rose-600 text-[11px] block font-bold mt-1">{{ $message }}</span> @enderror
+                </div>
+
+                <!-- Notas del Pago -->
+                <div>
+                    <label class="block font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[11px] mb-1">
+                        Notas u Observaciones del Pago (Opcional)
+                    </label>
+                    <input 
+                        type="text" 
+                        wire:model="deposit_notes_input" 
+                        placeholder="Ej: Recibido por Bizum del novio, ref #49823" 
+                        class="w-full border-slate-300 dark:border-slate-700 rounded-xl p-2.5 text-xs text-slate-800 dark:text-white bg-slate-50 dark:bg-slate-950"
+                    >
+                </div>
+
+                <!-- Checkbox Generar Recibo Automático -->
+                <div class="p-3 bg-emerald-50/60 dark:bg-emerald-950/30 rounded-xl border border-emerald-200 dark:border-emerald-800/50 flex items-start gap-2.5">
+                    <input 
+                        type="checkbox" 
+                        id="gen_rec_chk" 
+                        wire:model="generate_receipt_checkbox" 
+                        class="mt-0.5 rounded text-emerald-600 focus:ring-emerald-500"
+                    >
+                    <label for="gen_rec_chk" class="text-xs text-emerald-950 dark:text-emerald-200 cursor-pointer">
+                        <strong class="font-bold block">🧾 Generar Recibo de Cobro Pagado automáticamente</strong>
+                        <span class="text-[11px] text-emerald-800 dark:text-emerald-400">Creará un documento de recibo oficial pagado en la pestaña de Facturas para entregar al cliente.</span>
+                    </label>
+                </div>
+
+                <!-- Resumen de Restante -->
+                @if($quoteAmount > 0)
+                    @php
+                        $tempPaid = (float)($deposit_amount_input ?: 0);
+                        $tempRemaining = max(0, $quoteAmount - $tempPaid);
+                    @endphp
+                    <div class="p-3 bg-slate-100 dark:bg-slate-800 rounded-xl flex items-center justify-between text-xs">
+                        <span class="font-bold text-slate-600 dark:text-slate-300">Pendiente para el día del evento:</span>
+                        <strong class="font-black text-sm {{ $tempRemaining == 0 ? 'text-emerald-600' : 'text-slate-900 dark:text-white' }}">
+                            {{ number_format($tempRemaining, 2, ',', '.') }} €
+                            @if($tempRemaining == 0)
+                                <span class="text-[10px] font-bold text-emerald-700 ml-1">(Pagado al 100%)</span>
+                            @endif
+                        </strong>
+                    </div>
+                @endif
+            </div>
+
+            <!-- Footer del Modal -->
+            <div class="bg-gray-50 dark:bg-slate-950 px-6 py-3.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                <div>
+                    @if($event->deposit_paid && $event->deposit_paid_amount > 0)
+                        <button 
+                            type="button" 
+                            wire:click="removeDeposit" 
+                            wire:confirm="¿Seguro que deseas anular/quitar el registro de la señal cobrada?"
+                            class="text-[11px] text-rose-600 hover:text-rose-800 font-bold hover:underline cursor-pointer"
+                        >
+                            🗑️ Resetear Señal
+                        </button>
+                    @endif
+                </div>
+                <div class="flex items-center gap-2">
+                    <button 
+                        type="button" 
+                        wire:click="closeDepositModal" 
+                        class="bg-white dark:bg-slate-800 hover:bg-slate-100 text-slate-700 dark:text-slate-300 font-bold text-xs px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-xl transition cursor-pointer"
+                    >
+                        Cancelar
+                    </button>
+                    <button 
+                        type="button" 
+                        wire:click="saveDepositAndStatus" 
+                        class="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs px-5 py-2.5 rounded-xl shadow-md transition flex items-center gap-1.5 cursor-pointer"
+                    >
+                        <span>✅</span>
+                        <span>Confirmar y Guardar Cobro</span>
+                    </button>
                 </div>
             </div>
         </div>

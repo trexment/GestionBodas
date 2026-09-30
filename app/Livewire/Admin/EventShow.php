@@ -70,6 +70,15 @@ class EventShow extends Component
     public $quote_tax_rate = 21.00;
     public $quote_payment_methods = ['transfer', 'bizum', 'cash']; // transfer, bizum, cash, card
 
+    // Señal / Reserva cobrada
+    public $showDepositModal = false;
+    public $deposit_amount_input;
+    public $deposit_method_input = 'bizum'; // bizum, transfer, cash, card, other
+    public $deposit_date_input;
+    public $deposit_notes_input = '';
+    public $generate_receipt_checkbox = true;
+    public $target_status = 'confirmed';
+
     // Presupuestos & Packs
     public $quote_services = [
         'pack_basic' => ['selected' => false, 'name' => 'Pack Básico', 'price' => 400, 'hours' => 4, 'desc' => '4 Horas de servicio DJ, Equipo de sonido profesional e iluminación de pista básica.'],
@@ -210,8 +219,127 @@ class EventShow extends Component
 
     public function changeStatus($status)
     {
+        if ($status === 'confirmed') {
+            $this->openDepositModal('confirmed');
+            return;
+        }
+
         $this->event->update(['status' => $status]);
-        session()->flash('message', 'Estado del evento actualizado a: ' . $status);
+        session()->flash('message', 'Estado del evento actualizado a: ' . ucfirst($status));
+    }
+
+    public function openDepositModal(string $targetStatus = 'confirmed')
+    {
+        $this->target_status = $targetStatus;
+
+        // Si ya tenía señal cobrada guardada, precargar los valores existentes
+        if ($this->event->deposit_paid_amount > 0) {
+            $this->deposit_amount_input = (float)$this->event->deposit_paid_amount;
+            $this->deposit_method_input = $this->event->deposit_payment_method ?: 'bizum';
+            $this->deposit_date_input = $this->event->deposit_paid_at ? \Carbon\Carbon::parse($this->event->deposit_paid_at)->format('Y-m-d') : now()->format('Y-m-d');
+            $this->deposit_notes_input = $this->event->deposit_notes ?: '';
+        } else {
+            // Sugerir la señal estipulada en la última propuesta
+            $latestQuote = $this->event->quotes()->latest()->first();
+            if ($latestQuote) {
+                $this->deposit_amount_input = (float)$latestQuote->signal_amount;
+            } else {
+                $depType = \App\Models\Setting::get('deposit_type', 'percentage');
+                if ($depType === 'fixed') {
+                    $this->deposit_amount_input = (float)\App\Models\Setting::get('deposit_fixed_amount', 200);
+                } else {
+                    $this->deposit_amount_input = 200;
+                }
+            }
+            $this->deposit_method_input = 'bizum';
+            $this->deposit_date_input = now()->format('Y-m-d');
+            $this->deposit_notes_input = '';
+        }
+
+        $this->generate_receipt_checkbox = true;
+        $this->showDepositModal = true;
+    }
+
+    public function closeDepositModal()
+    {
+        $this->showDepositModal = false;
+    }
+
+    public function saveDepositAndStatus()
+    {
+        $this->validate([
+            'deposit_amount_input' => 'required|numeric|min:0',
+            'deposit_method_input' => 'required|in:bizum,transfer,cash,card,other',
+            'deposit_date_input' => 'required|date',
+            'deposit_notes_input' => 'nullable|string|max:500',
+        ], [
+            'deposit_amount_input.required' => 'Debes indicar el importe cobrado de la señal.',
+            'deposit_amount_input.numeric' => 'El importe debe ser un número válido.',
+            'deposit_amount_input.min' => 'El importe no puede ser negativo.',
+            'deposit_date_input.required' => 'Indica la fecha en que se recibió el pago.',
+        ]);
+
+        $amount = (float)$this->deposit_amount_input;
+        $hasPaid = $amount > 0;
+
+        $this->event->update([
+            'status' => $this->target_status ?: 'confirmed',
+            'deposit_paid' => $hasPaid,
+            'deposit_paid_amount' => $amount,
+            'deposit_payment_method' => $this->deposit_method_input,
+            'deposit_paid_at' => $this->deposit_date_input,
+            'deposit_notes' => $this->deposit_notes_input,
+        ]);
+
+        // Generar recibo de cobro automático si está marcado y el importe es > 0
+        if ($this->generate_receipt_checkbox && $hasPaid) {
+            $nextNum = \App\Models\Invoice::nextNumber('recibo');
+            $methodLabel = match($this->deposit_method_input) {
+                'bizum' => 'Bizum',
+                'transfer' => 'Transferencia Bancaria',
+                'cash' => 'Efectivo',
+                'card' => 'Tarjeta / TPV',
+                'other' => 'Otro método',
+                default => ucfirst($this->deposit_method_input)
+            };
+
+            $latestQuote = $this->event->quotes()->latest()->first();
+
+            $this->event->invoices()->create([
+                'quote_id' => $latestQuote ? $latestQuote->id : null,
+                'invoice_number' => $nextNum,
+                'type' => 'recibo',
+                'amount' => $amount,
+                'tax' => 0.00,
+                'tax_rate' => 0.00,
+                'total' => $amount,
+                'issue_date' => $this->deposit_date_input,
+                'status' => 'paid',
+                'notes' => "Señal de reserva cobrada vía {$methodLabel} el " . \Carbon\Carbon::parse($this->deposit_date_input)->format('d/m/Y') . ($this->deposit_notes_input ? " ({$this->deposit_notes_input})" : ""),
+            ]);
+            $this->event->load('invoices');
+        }
+
+        $this->showDepositModal = false;
+        $this->event->refresh();
+
+        session()->flash('message', "✅ Evento actualizado a '" . ucfirst($this->event->status) . "' y señal de " . number_format($amount, 2, ',', '.') . " € registrada correctamente.");
+    }
+
+    public function removeDeposit()
+    {
+        $this->event->update([
+            'deposit_paid' => false,
+            'deposit_paid_amount' => 0,
+            'deposit_payment_method' => null,
+            'deposit_paid_at' => null,
+            'deposit_notes' => null,
+        ]);
+
+        $this->showDepositModal = false;
+        $this->event->refresh();
+
+        session()->flash('message', "ℹ️ Datos de la señal de reserva reseteados.");
     }
 
     public function openStaffModal()
