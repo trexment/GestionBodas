@@ -267,6 +267,24 @@ class ContractSign extends Component
             ]);
         }
 
+        // Send contract signed email notification to admin & assigned DJ
+        try {
+            $brandKey = $this->event ? ($this->event->brand_clean ?? 'nunez_and_son') : 'nunez_and_son';
+            $brand = \App\Models\Setting::getBrandInfo($brandKey);
+            $adminEmail = $brand['email'] ?: \App\Models\Setting::get('company_email', config('mail.from.address'));
+
+            if (!empty($adminEmail)) {
+                $mailable = new \App\Mail\ContractSignedNotificationMail($this->contract);
+                $mail = \Illuminate\Support\Facades\Mail::to($adminEmail);
+                if ($this->event && $this->event->dj && !empty($this->event->dj->email) && $this->event->dj->email !== $adminEmail) {
+                    $mail->cc($this->event->dj->email);
+                }
+                $mail->send($mailable);
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Error enviando email de contrato firmado: ' . $e->getMessage());
+        }
+
         $this->isSigned = true;
         session()->flash('success_message', '¡Contrato firmado y aceptado correctamente! Muchas gracias.');
     }

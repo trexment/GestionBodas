@@ -424,6 +424,37 @@ class EventForm extends Component
         }
 
         $this->event->update(['is_dossier_completed' => true]);
+
+        // Enviar email de notificación al Administrador y al DJ asignado
+        try {
+            $brand = \App\Models\Setting::getBrandInfo($this->event->brand_clean);
+            $adminEmail = $brand['email'] ?: \App\Models\Setting::get('company_email', config('mail.from.address'));
+
+            $summary = [
+                'Ceremonia' => $this->ceremony_songs,
+                'Cóctel / Aperitivo' => $this->cocktail_songs,
+                'Entrada Salón' => $this->entrance_song,
+                'Corte de Tarta' => $this->cake_song,
+                'Regalos / Sorpresas' => $this->gifts_songs,
+                'Baile Nupcial' => $this->dance_song,
+                'Momentos Especiales' => $this->special_moments,
+                'Temazos Favoritos' => $this->party_favs,
+                'Lista Negra (Prohibidas)' => $this->blacklist,
+                'Comentarios / Notas' => $this->comments,
+            ];
+
+            if (!empty($adminEmail)) {
+                $mailable = new \App\Mail\ClientMusicFormSubmittedMail($this->event, $summary);
+                $mail = \Illuminate\Support\Facades\Mail::to($adminEmail);
+                if ($this->event->dj && !empty($this->event->dj->email) && $this->event->dj->email !== $adminEmail) {
+                    $mail->cc($this->event->dj->email);
+                }
+                $mail->send($mailable);
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Error enviando email de cuestionario musical: ' . $e->getMessage());
+        }
+
         $this->submitted = true;
     }
 
