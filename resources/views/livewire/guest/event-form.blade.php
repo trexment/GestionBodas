@@ -14,7 +14,7 @@
         </div>
         <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
             @if($event->is_wedding)
-                Rellena las canciones que no pueden faltar en vuestro gran día.
+                Rellena o busca las canciones que no pueden faltar en vuestro gran día.
             @else
                 Indícanos los estilos, canciones imprescindibles y momentos especiales de tu {{ mb_strtolower($event->event_type_label) }}.
             @endif
@@ -47,19 +47,57 @@
         <form wire:submit.prevent="submitForm" class="space-y-6">
             
             <script>
+                // Global Audio Preview Manager
+                window.previewAudio = null;
+                window.previewPlayingUrl = null;
+                window.togglePreview = function(url, callback) {
+                    if (window.previewAudio) {
+                        window.previewAudio.pause();
+                        const wasSame = (window.previewPlayingUrl === url);
+                        window.previewAudio = null;
+                        window.previewPlayingUrl = null;
+                        if (wasSame) {
+                            if (callback) callback(null);
+                            return;
+                        }
+                    }
+                    if (!url) {
+                        if (callback) callback(null);
+                        return;
+                    }
+                    window.previewPlayingUrl = url;
+                    window.previewAudio = new Audio(url);
+                    window.previewAudio.play().catch(() => {});
+                    if (callback) callback(url);
+                    window.previewAudio.onended = () => {
+                        window.previewAudio = null;
+                        window.previewPlayingUrl = null;
+                        if (callback) callback(null);
+                    };
+                };
+
+                // Single Song Picker (Entrada Comedor, Tarta, Baile)
                 function singleSongPicker(targetWireProperty) {
                     return {
+                        selectedSong: '',
                         searchQuery: '',
                         results: [],
                         loading: false,
                         showDropdown: false,
+                        playingPreviewUrl: null,
                         timer: null,
+                        init() {
+                            this.selectedSong = this.$wire.get(targetWireProperty) || '';
+                            this.$watch('$wire.' + targetWireProperty, val => {
+                                this.selectedSong = val || '';
+                            });
+                        },
                         onInput() {
                             clearTimeout(this.timer);
-                            if (this.searchQuery.trim().length > 2) {
+                            if (this.searchQuery.trim().length > 1) {
                                 this.timer = setTimeout(() => {
                                     this.fetchSongs(this.searchQuery.trim());
-                                }, 300);
+                                }, 260);
                             } else {
                                 this.results = [];
                                 this.showDropdown = false;
@@ -67,7 +105,7 @@
                         },
                         fetchSongs(term) {
                             this.loading = true;
-                            fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&entity=song&limit=6`)
+                            fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&entity=song&country=es&limit=8`)
                                 .then(res => res.json())
                                 .then(data => {
                                     this.results = data.results || [];
@@ -80,14 +118,139 @@
                         },
                         selectSong(song) {
                             const formatted = `${song.artistName} - ${song.trackName}`;
+                            this.selectedSong = formatted;
                             this.$wire.set(targetWireProperty, formatted);
                             this.searchQuery = '';
                             this.showDropdown = false;
+                            this.results = [];
+                            if (window.previewAudio) {
+                                window.previewAudio.pause();
+                                window.previewPlayingUrl = null;
+                                this.playingPreviewUrl = null;
+                            }
+                        },
+                        clearSong() {
+                            this.selectedSong = '';
+                            this.$wire.set(targetWireProperty, '');
+                        },
+                        toggleAudio(url) {
+                            window.togglePreview(url, (activeUrl) => {
+                                this.playingPreviewUrl = activeUrl;
+                            });
                         }
                     }
                 }
 
-                function partyListBuilder(targetWireProperty) {
+                // Moment List Builder (Ceremonia, Regalos & Sorpresas, Momentos Especiales)
+                function momentListBuilder(targetWireProperty, defaultMoment = '') {
+                    return {
+                        items: [],
+                        activeMoment: defaultMoment,
+                        customMoment: '',
+                        searchQuery: '',
+                        manualSong: '',
+                        results: [],
+                        loading: false,
+                        showDropdown: false,
+                        playingPreviewUrl: null,
+                        timer: null,
+                        init() {
+                            const raw = this.$wire.get(targetWireProperty) || '';
+                            if (raw.trim()) {
+                                this.items = raw.split('\n')
+                                    .map(line => line.trim().replace(/^[-*•]\s*/, ''))
+                                    .filter(line => line.length > 0)
+                                    .map(line => {
+                                        if (line.includes(':')) {
+                                            const parts = line.split(':');
+                                            return {
+                                                moment: parts[0].trim(),
+                                                song: parts.slice(1).join(':').trim()
+                                            };
+                                        }
+                                        return { moment: '', song: line };
+                                    });
+                            }
+                        },
+                        sync() {
+                            const lines = this.items.map(item => {
+                                if (item.moment && item.moment.trim()) {
+                                    return `${item.moment.trim()}: ${item.song.trim()}`;
+                                }
+                                return item.song.trim();
+                            });
+                            this.$wire.set(targetWireProperty, lines.join('\n'));
+                        },
+                        setMoment(m) {
+                            this.activeMoment = m;
+                        },
+                        onSearch() {
+                            clearTimeout(this.timer);
+                            if (this.searchQuery.trim().length > 1) {
+                                this.timer = setTimeout(() => {
+                                    this.fetchSongs(this.searchQuery.trim());
+                                }, 260);
+                            } else {
+                                this.results = [];
+                                this.showDropdown = false;
+                            }
+                        },
+                        fetchSongs(term) {
+                            this.loading = true;
+                            fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&entity=song&country=es&limit=8`)
+                                .then(res => res.json())
+                                .then(data => {
+                                    this.results = data.results || [];
+                                    this.showDropdown = this.results.length > 0;
+                                    this.loading = false;
+                                })
+                                .catch(() => {
+                                    this.loading = false;
+                                });
+                        },
+                        addFromSearch(song) {
+                            const formatted = `${song.artistName} - ${song.trackName}`;
+                            const momentName = (this.customMoment.trim() || this.activeMoment || '').trim();
+                            this.items.push({
+                                moment: momentName,
+                                song: formatted
+                            });
+                            this.sync();
+                            this.searchQuery = '';
+                            this.showDropdown = false;
+                            this.results = [];
+                            if (window.previewAudio) {
+                                window.previewAudio.pause();
+                                window.previewPlayingUrl = null;
+                                this.playingPreviewUrl = null;
+                            }
+                        },
+                        addManual() {
+                            const songText = this.manualSong.trim();
+                            if (songText) {
+                                const momentName = (this.customMoment.trim() || this.activeMoment || '').trim();
+                                this.items.push({
+                                    moment: momentName,
+                                    song: songText
+                                });
+                                this.sync();
+                                this.manualSong = '';
+                            }
+                        },
+                        remove(index) {
+                            this.items.splice(index, 1);
+                            this.sync();
+                        },
+                        toggleAudio(url) {
+                            window.togglePreview(url, (activeUrl) => {
+                                this.playingPreviewUrl = activeUrl;
+                            });
+                        }
+                    }
+                }
+
+                // Multi Song List Builder (Temazos Fiesta, Lista Negra)
+                function multiSongListBuilder(targetWireProperty) {
                     return {
                         songs: [],
                         searchQuery: '',
@@ -95,6 +258,7 @@
                         loading: false,
                         showDropdown: false,
                         manualInput: '',
+                        playingPreviewUrl: null,
                         timer: null,
                         init() {
                             const raw = this.$wire.get(targetWireProperty) || '';
@@ -109,10 +273,10 @@
                         },
                         onSearch() {
                             clearTimeout(this.timer);
-                            if (this.searchQuery.trim().length > 2) {
+                            if (this.searchQuery.trim().length > 1) {
                                 this.timer = setTimeout(() => {
                                     this.fetchSongs(this.searchQuery.trim());
-                                }, 300);
+                                }, 260);
                             } else {
                                 this.results = [];
                                 this.showDropdown = false;
@@ -120,7 +284,7 @@
                         },
                         fetchSongs(term) {
                             this.loading = true;
-                            fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&entity=song&limit=6`)
+                            fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&entity=song&country=es&limit=8`)
                                 .then(res => res.json())
                                 .then(data => {
                                     this.results = data.results || [];
@@ -140,6 +304,11 @@
                             this.searchQuery = '';
                             this.showDropdown = false;
                             this.results = [];
+                            if (window.previewAudio) {
+                                window.previewAudio.pause();
+                                window.previewPlayingUrl = null;
+                                this.playingPreviewUrl = null;
+                            }
                         },
                         addManual() {
                             const val = this.manualInput.trim();
@@ -152,6 +321,104 @@
                         remove(index) {
                             this.songs.splice(index, 1);
                             this.sync();
+                        },
+                        toggleAudio(url) {
+                            window.togglePreview(url, (activeUrl) => {
+                                this.playingPreviewUrl = activeUrl;
+                            });
+                        }
+                    }
+                }
+
+                // Cocktail Style & Songs Builder
+                function cocktailStyleBuilder(targetWireProperty) {
+                    return {
+                        selectedStyles: [],
+                        customNotes: '',
+                        searchQuery: '',
+                        results: [],
+                        loading: false,
+                        showDropdown: false,
+                        playingPreviewUrl: null,
+                        timer: null,
+                        availableStyles: [
+                            'Pop-Rock Español', 'Indie & Chill', 'Jazz & Bossa Nova', 'Deep House & Saxo',
+                            'Acústicos / Versiones', 'R&B / Soul', 'Clásicos 80s y 90s', 'Flamenco Fusión'
+                        ],
+                        init() {
+                            const raw = this.$wire.get(targetWireProperty) || '';
+                            if (raw.trim()) {
+                                const lines = raw.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+                                const remaining = [];
+                                for (let line of lines) {
+                                    if (line.startsWith('Estilos:')) {
+                                        const stylesPart = line.replace('Estilos:', '').split(',').map(s => s.trim());
+                                        this.selectedStyles = stylesPart.filter(s => this.availableStyles.includes(s));
+                                    } else {
+                                        remaining.push(line);
+                                    }
+                                }
+                                this.customNotes = remaining.join('\n');
+                            }
+                        },
+                        toggleStyle(style) {
+                            if (this.selectedStyles.includes(style)) {
+                                this.selectedStyles = this.selectedStyles.filter(s => s !== style);
+                            } else {
+                                this.selectedStyles.push(style);
+                            }
+                            this.sync();
+                        },
+                        sync() {
+                            const parts = [];
+                            if (this.selectedStyles.length > 0) {
+                                parts.push('Estilos: ' + this.selectedStyles.join(', '));
+                            }
+                            if (this.customNotes.trim()) {
+                                parts.push(this.customNotes.trim());
+                            }
+                            this.$wire.set(targetWireProperty, parts.join('\n'));
+                        },
+                        onSearch() {
+                            clearTimeout(this.timer);
+                            if (this.searchQuery.trim().length > 1) {
+                                this.timer = setTimeout(() => {
+                                    this.fetchSongs(this.searchQuery.trim());
+                                }, 260);
+                            } else {
+                                this.results = [];
+                                this.showDropdown = false;
+                            }
+                        },
+                        fetchSongs(term) {
+                            this.loading = true;
+                            fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&entity=song&country=es&limit=8`)
+                                .then(res => res.json())
+                                .then(data => {
+                                    this.results = data.results || [];
+                                    this.showDropdown = this.results.length > 0;
+                                    this.loading = false;
+                                })
+                                .catch(() => {
+                                    this.loading = false;
+                                });
+                        },
+                        addFromSearch(song) {
+                            const formatted = `${song.artistName} - ${song.trackName}`;
+                            if (this.customNotes.trim()) {
+                                this.customNotes += '\n• ' + formatted;
+                            } else {
+                                this.customNotes = '• ' + formatted;
+                            }
+                            this.sync();
+                            this.searchQuery = '';
+                            this.showDropdown = false;
+                            this.results = [];
+                        },
+                        toggleAudio(url) {
+                            window.togglePreview(url, (activeUrl) => {
+                                this.playingPreviewUrl = activeUrl;
+                            });
                         }
                     }
                 }
@@ -161,55 +428,209 @@
                 <!-- ==================== CUESTIONARIO COMPLETO PARA BODAS ==================== -->
 
                 <!-- SECCIÓN 1: CEREMONIA -->
-                <div class="bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
-                    <h3 class="text-base font-black text-indigo-900 dark:text-indigo-300 border-b border-slate-100 dark:border-slate-800 pb-2.5 flex items-center gap-2">
-                        <span>💍 1. Ceremonia (Opcional)</span>
-                    </h3>
+                <div class="bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4" x-data="momentListBuilder('ceremony_songs', 'Entrada Novio')">
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Canciones para la Ceremonia (Entradas, Anillos, Firmas, Salida)</label>
-                        <textarea wire:model="ceremony_songs" rows="3" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 p-3 leading-relaxed" placeholder="Ej: Entrada Novio: Coldplay - Viva la Vida / Entrada Novia: Canon de Pachelbel / Salida: Bruno Mars - Marry You"></textarea>
+                        <h3 class="text-base font-black text-indigo-900 dark:text-indigo-300 border-b border-slate-100 dark:border-slate-800 pb-2.5 flex items-center gap-2">
+                            <span>💍 1. Ceremonia (Opcional)</span>
+                        </h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Busca y añade canciones para cada momento de la ceremonia (entradas, lecturas, anillos, firmas, salida).</p>
+                    </div>
+
+                    <!-- Selector de Momento de la Ceremonia -->
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">Momento a asignar:</label>
+                        <div class="flex flex-wrap gap-1.5">
+                            <template x-for="m in ['Entrada Novio', 'Entrada Novia', 'Lecturas / Votos', 'Anillos', 'Firmas / Fotos', 'Salida Novios']" :key="m">
+                                <button type="button" @click="setMoment(m); customMoment = ''" :class="activeMoment === m && !customMoment ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'" class="px-2.5 py-1 rounded-lg text-xs font-semibold transition">
+                                    <span x-text="m"></span>
+                                </button>
+                            </template>
+                        </div>
+                    </div>
+
+                    <!-- Buscador de canciones para la ceremonia -->
+                    <div class="relative">
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                            🔍 Buscar canción para <span class="text-indigo-600 dark:text-indigo-400 font-bold" x-text="customMoment || activeMoment || 'la Ceremonia'"></span>:
+                        </label>
+                        <div class="flex items-center gap-2">
+                            <input type="text" x-model="searchQuery" @input="onSearch()" placeholder="Escribe título o artista... Ej: Coldplay, Pachelbel, Ludovico Einaudi, Morat..." class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 px-3.5 py-2.5 focus:ring-2 focus:ring-indigo-500" autocomplete="off">
+                            <span x-show="loading" class="text-xs text-indigo-500 animate-spin flex-shrink-0" style="display: none;">⏳</span>
+                        </div>
+
+                        <!-- Dropdown con resultados y preview -->
+                        <div x-show="showDropdown" @click.away="showDropdown = false" class="absolute z-30 w-full mt-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl max-h-64 overflow-y-auto" style="display: none;">
+                            <template x-for="song in results" :key="song.trackId">
+                                <div class="px-3.5 py-2 hover:bg-indigo-50 dark:hover:bg-slate-800 cursor-pointer flex items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 transition">
+                                    <div @click="addFromSearch(song)" class="flex items-center gap-3 min-w-0 flex-1">
+                                        <img :src="song.artworkUrl60 || song.artworkUrl30" class="w-8 h-8 rounded-lg object-cover flex-shrink-0" alt="cover">
+                                        <div class="min-w-0 flex-1">
+                                            <div class="text-xs font-bold text-slate-800 dark:text-white truncate" x-text="song.trackName"></div>
+                                            <div class="text-[11px] text-slate-500 dark:text-slate-400 truncate" x-text="song.artistName"></div>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-1.5 flex-shrink-0">
+                                        <template x-if="song.previewUrl">
+                                            <button type="button" @click.stop="toggleAudio(song.previewUrl)" class="p-1.5 rounded-lg text-xs bg-slate-100 dark:bg-slate-800 hover:bg-indigo-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300" title="Escuchar fragmento">
+                                                <span x-show="playingPreviewUrl === song.previewUrl">⏸️</span>
+                                                <span x-show="playingPreviewUrl !== song.previewUrl">🔊</span>
+                                            </button>
+                                        </template>
+                                        <button type="button" @click="addFromSearch(song)" class="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/80 px-2.5 py-1 rounded-lg hover:bg-indigo-600 hover:text-white transition">
+                                            + Añadir
+                                        </button>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    <!-- Lista de canciones añadidas para ceremonia -->
+                    <div class="space-y-1.5" x-show="items.length > 0">
+                        <span class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">Canciones de Ceremonia (<span x-text="items.length"></span>):</span>
+                        <div class="space-y-1.5 max-h-60 overflow-y-auto pr-1">
+                            <template x-for="(item, idx) in items" :key="idx">
+                                <div class="flex items-center justify-between gap-2 p-2.5 bg-indigo-50/50 dark:bg-slate-950 border border-indigo-100 dark:border-slate-800 rounded-xl">
+                                    <div class="flex items-center gap-2 min-w-0 flex-1">
+                                        <span class="text-xs px-2 py-0.5 rounded-md font-bold bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 flex-shrink-0" x-text="item.moment || 'Ceremonia'"></span>
+                                        <span class="text-xs font-semibold text-slate-800 dark:text-white truncate" x-text="item.song"></span>
+                                    </div>
+                                    <button type="button" @click="remove(idx)" class="text-rose-500 hover:text-rose-700 text-xs font-bold px-2 py-0.5 rounded hover:bg-rose-50 dark:hover:bg-rose-950/50 transition flex-shrink-0" title="Eliminar">
+                                        ✕
+                                    </button>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    <!-- Entrada manual / personalizada -->
+                    <div class="pt-1">
+                        <div class="flex items-center gap-2">
+                            <input type="text" x-model="manualSong" @keydown.enter.prevent="addManual()" placeholder="O escribe manualmente una canción / versión..." class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 px-3 py-2 focus:ring-1 focus:ring-indigo-500">
+                            <button type="button" @click="addManual()" class="px-3 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold whitespace-nowrap transition">
+                                + Añadir
+                            </button>
+                        </div>
                     </div>
                 </div>
 
                 <!-- SECCIÓN 2: CÓCTEL -->
-                <div class="bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
-                    <h3 class="text-base font-black text-indigo-900 dark:text-indigo-300 border-b border-slate-100 dark:border-slate-800 pb-2.5 flex items-center gap-2">
-                        <span>🍸 2. Cóctel / Aperitivo</span>
-                    </h3>
+                <div class="bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4" x-data="cocktailStyleBuilder('cocktail_songs')">
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Estilo musical preferido o canciones para el cóctel</label>
-                        <textarea wire:model="cocktail_songs" rows="3" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 p-3 leading-relaxed" placeholder="Ej: Pop-rock acústico en español, Indie chill, Jazz moderno, Bossa nova..."></textarea>
+                        <h3 class="text-base font-black text-indigo-900 dark:text-indigo-300 border-b border-slate-100 dark:border-slate-800 pb-2.5 flex items-center gap-2">
+                            <span>🍸 2. Cóctel / Aperitivo</span>
+                        </h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Elige los estilos que queréis para el cóctel o busca canciones concretas que os gustaría escuchar.</p>
+                    </div>
+
+                    <!-- Botones de estilos recomendados -->
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">Estilos musicales preferidos:</label>
+                        <div class="flex flex-wrap gap-1.5">
+                            <template x-for="style in availableStyles" :key="style">
+                                <button type="button" @click="toggleStyle(style)" :class="selectedStyles.includes(style) ? 'bg-indigo-600 text-white shadow-sm ring-2 ring-indigo-300' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'" class="px-2.5 py-1.5 rounded-xl text-xs font-semibold transition flex items-center gap-1">
+                                    <span x-text="selectedStyles.includes(style) ? '✓' : '+'"></span>
+                                    <span x-text="style"></span>
+                                </button>
+                            </template>
+                        </div>
+                    </div>
+
+                    <!-- Buscador de canciones para añadir al cóctel -->
+                    <div class="relative">
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">🔍 ¿Queréis añadir canciones específicas para el Cóctel?:</label>
+                        <div class="flex items-center gap-2">
+                            <input type="text" x-model="searchQuery" @input="onSearch()" placeholder="Buscar canción para el cóctel... Ej: Jack Johnson, Norah Jones, Leiva..." class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 px-3.5 py-2 focus:ring-2 focus:ring-indigo-500" autocomplete="off">
+                            <span x-show="loading" class="text-xs text-indigo-500 animate-spin flex-shrink-0" style="display: none;">⏳</span>
+                        </div>
+
+                        <div x-show="showDropdown" @click.away="showDropdown = false" class="absolute z-30 w-full mt-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl max-h-60 overflow-y-auto" style="display: none;">
+                            <template x-for="song in results" :key="song.trackId">
+                                <div class="px-3.5 py-2 hover:bg-indigo-50 dark:hover:bg-slate-800 cursor-pointer flex items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 transition">
+                                    <div @click="addFromSearch(song)" class="flex items-center gap-3 min-w-0 flex-1">
+                                        <img :src="song.artworkUrl60 || song.artworkUrl30" class="w-8 h-8 rounded-lg object-cover flex-shrink-0" alt="cover">
+                                        <div class="min-w-0 flex-1">
+                                            <div class="text-xs font-bold text-slate-800 dark:text-white truncate" x-text="song.trackName"></div>
+                                            <div class="text-[11px] text-slate-500 dark:text-slate-400 truncate" x-text="song.artistName"></div>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-1.5 flex-shrink-0">
+                                        <template x-if="song.previewUrl">
+                                            <button type="button" @click.stop="toggleAudio(song.previewUrl)" class="p-1.5 rounded-lg text-xs bg-slate-100 dark:bg-slate-800 hover:bg-indigo-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300" title="Escuchar fragmento">
+                                                <span x-show="playingPreviewUrl === song.previewUrl">⏸️</span>
+                                                <span x-show="playingPreviewUrl !== song.previewUrl">🔊</span>
+                                            </button>
+                                        </template>
+                                        <button type="button" @click="addFromSearch(song)" class="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/80 px-2 py-1 rounded-lg hover:bg-indigo-600 hover:text-white transition">
+                                            + Añadir
+                                        </button>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    <!-- Notas / Canciones adicionales del cóctel -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Notas o canciones para el cóctel:</label>
+                        <textarea x-model="customNotes" @input="sync()" rows="2" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 p-2.5 leading-relaxed" placeholder="Canciones o indicaciones adicionales para el aperitivo..."></textarea>
                     </div>
                 </div>
 
                 <!-- SECCIÓN 3: BANQUETE Y MOMENTOS CLAVE -->
-                <div class="bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-5">
-                    <h3 class="text-base font-black text-indigo-900 dark:text-indigo-300 border-b border-slate-100 dark:border-slate-800 pb-2.5 flex items-center gap-2">
-                        <span>🍽️ 3. Banquete y Momentos Clave</span>
-                    </h3>
+                <div class="bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
+                    <div>
+                        <h3 class="text-base font-black text-indigo-900 dark:text-indigo-300 border-b border-slate-100 dark:border-slate-800 pb-2.5 flex items-center gap-2">
+                            <span>🍽️ 3. Banquete y Momentos Clave</span>
+                        </h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Busca la canción para cada momento especial del banquete.</p>
+                    </div>
 
                     <!-- Entrada al comedor -->
-                    <div x-data="singleSongPicker('entrance_song')" class="space-y-1.5">
-                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">🎯 Canción de Entrada al Comedor / Salón</label>
+                    <div x-data="singleSongPicker('entrance_song')" class="space-y-2 p-3.5 bg-slate-50/70 dark:bg-slate-950/60 rounded-xl border border-slate-200/80 dark:border-slate-800">
+                        <div class="flex items-center justify-between">
+                            <label class="block text-xs font-black text-slate-800 dark:text-slate-200">🎯 Canción de Entrada al Comedor / Salón</label>
+                            <span class="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950 px-2 py-0.5 rounded-full">Momento Clave</span>
+                        </div>
                         
-                        <div class="relative">
-                            <input type="text" wire:model="entrance_song" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 p-3" placeholder="Ej: AC/DC - Thunderstruck / Avicii - The Nights">
+                        <!-- Canción seleccionada -->
+                        <div x-show="selectedSong" class="flex items-center justify-between gap-2 p-2.5 bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 rounded-xl">
+                            <div class="flex items-center gap-2 min-w-0 flex-1">
+                                <span class="text-indigo-600 dark:text-indigo-400 text-sm">🎵</span>
+                                <span class="text-xs font-bold text-slate-900 dark:text-white truncate" x-text="selectedSong"></span>
+                            </div>
+                            <button type="button" @click="clearSong()" class="text-rose-500 hover:text-rose-700 text-xs font-bold px-2 py-0.5 rounded hover:bg-rose-50 dark:hover:bg-rose-950 transition flex-shrink-0" title="Cambiar canción">
+                                Cambiar
+                            </button>
                         </div>
 
                         <!-- Buscador asistente de apoyo -->
-                        <div class="relative pt-1">
+                        <div class="relative">
                             <div class="flex items-center gap-2">
-                                <input type="text" x-model="searchQuery" @input="onInput()" placeholder="🔍 O busca la canción en el catálogo para auto-rellenar..." class="w-full bg-white dark:bg-slate-900 border border-dashed border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 px-3 py-1.5 focus:ring-1 focus:ring-indigo-500" autocomplete="off">
+                                <input type="text" x-model="searchQuery" @input="onInput()" placeholder="🔍 Busca aquí la canción... Ej: Avicii, AC/DC, Dua Lipa..." class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 px-3 py-2 focus:ring-2 focus:ring-indigo-500" autocomplete="off">
                                 <span x-show="loading" class="text-xs text-indigo-500 animate-spin flex-shrink-0" style="display: none;">⏳</span>
                             </div>
 
-                            <div x-show="showDropdown" @click.away="showDropdown = false" class="absolute z-30 w-full mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl max-h-56 overflow-y-auto" style="display: none;">
+                            <div x-show="showDropdown" @click.away="showDropdown = false" class="absolute z-30 w-full mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl max-h-60 overflow-y-auto" style="display: none;">
                                 <template x-for="song in results" :key="song.trackId">
-                                    <div @click="selectSong(song)" class="px-3.5 py-2 hover:bg-indigo-50 dark:hover:bg-slate-800 cursor-pointer flex items-center gap-3 border-b border-slate-100 dark:border-slate-800 transition">
-                                        <img :src="song.artworkUrl30" class="w-7 h-7 rounded object-cover flex-shrink-0" alt="cover">
-                                        <div class="min-w-0 flex-1">
-                                            <div class="text-xs font-bold text-slate-800 dark:text-white truncate" x-text="song.trackName"></div>
-                                            <div class="text-[11px] text-slate-500 dark:text-slate-400 truncate" x-text="song.artistName"></div>
+                                    <div class="px-3.5 py-2 hover:bg-indigo-50 dark:hover:bg-slate-800 cursor-pointer flex items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 transition">
+                                        <div @click="selectSong(song)" class="flex items-center gap-3 min-w-0 flex-1">
+                                            <img :src="song.artworkUrl60 || song.artworkUrl30" class="w-7 h-7 rounded object-cover flex-shrink-0" alt="cover">
+                                            <div class="min-w-0 flex-1">
+                                                <div class="text-xs font-bold text-slate-800 dark:text-white truncate" x-text="song.trackName"></div>
+                                                <div class="text-[11px] text-slate-500 dark:text-slate-400 truncate" x-text="song.artistName"></div>
+                                            </div>
+                                        </div>
+                                        <div class="flex items-center gap-1.5 flex-shrink-0">
+                                            <template x-if="song.previewUrl">
+                                                <button type="button" @click.stop="toggleAudio(song.previewUrl)" class="p-1 rounded text-xs bg-slate-100 dark:bg-slate-800 hover:bg-indigo-100 text-slate-600 dark:text-slate-300">
+                                                    <span x-show="playingPreviewUrl === song.previewUrl">⏸️</span>
+                                                    <span x-show="playingPreviewUrl !== song.previewUrl">🔊</span>
+                                                </button>
+                                            </template>
+                                            <button type="button" @click="selectSong(song)" class="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950 px-2 py-0.5 rounded">
+                                                Elegir
+                                            </button>
                                         </div>
                                     </div>
                                 </template>
@@ -218,27 +639,49 @@
                     </div>
 
                     <!-- Corte de tarta -->
-                    <div x-data="singleSongPicker('cake_song')" class="space-y-1.5">
-                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">🎯 Canción para el Corte de Tarta (Opcional)</label>
+                    <div x-data="singleSongPicker('cake_song')" class="space-y-2 p-3.5 bg-slate-50/70 dark:bg-slate-950/60 rounded-xl border border-slate-200/80 dark:border-slate-800">
+                        <div class="flex items-center justify-between">
+                            <label class="block text-xs font-black text-slate-800 dark:text-slate-200">🍰 Canción para el Corte de Tarta (Opcional)</label>
+                        </div>
                         
-                        <div class="relative">
-                            <input type="text" wire:model="cake_song" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 p-3" placeholder="Ej: Queen - Don't Stop Me Now">
+                        <!-- Canción seleccionada -->
+                        <div x-show="selectedSong" class="flex items-center justify-between gap-2 p-2.5 bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 rounded-xl">
+                            <div class="flex items-center gap-2 min-w-0 flex-1">
+                                <span class="text-indigo-600 dark:text-indigo-400 text-sm">🎵</span>
+                                <span class="text-xs font-bold text-slate-900 dark:text-white truncate" x-text="selectedSong"></span>
+                            </div>
+                            <button type="button" @click="clearSong()" class="text-rose-500 hover:text-rose-700 text-xs font-bold px-2 py-0.5 rounded hover:bg-rose-50 dark:hover:bg-rose-950 transition flex-shrink-0" title="Cambiar canción">
+                                Cambiar
+                            </button>
                         </div>
 
                         <!-- Buscador asistente de apoyo -->
-                        <div class="relative pt-1">
+                        <div class="relative">
                             <div class="flex items-center gap-2">
-                                <input type="text" x-model="searchQuery" @input="onInput()" placeholder="🔍 O busca la canción en el catálogo para auto-rellenar..." class="w-full bg-white dark:bg-slate-900 border border-dashed border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 px-3 py-1.5 focus:ring-1 focus:ring-indigo-500" autocomplete="off">
+                                <input type="text" x-model="searchQuery" @input="onInput()" placeholder="🔍 Busca aquí la canción... Ej: Queen - Don't Stop Me Now, Coldplay..." class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 px-3 py-2 focus:ring-2 focus:ring-indigo-500" autocomplete="off">
                                 <span x-show="loading" class="text-xs text-indigo-500 animate-spin flex-shrink-0" style="display: none;">⏳</span>
                             </div>
 
-                            <div x-show="showDropdown" @click.away="showDropdown = false" class="absolute z-30 w-full mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl max-h-56 overflow-y-auto" style="display: none;">
+                            <div x-show="showDropdown" @click.away="showDropdown = false" class="absolute z-30 w-full mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl max-h-60 overflow-y-auto" style="display: none;">
                                 <template x-for="song in results" :key="song.trackId">
-                                    <div @click="selectSong(song)" class="px-3.5 py-2 hover:bg-indigo-50 dark:hover:bg-slate-800 cursor-pointer flex items-center gap-3 border-b border-slate-100 dark:border-slate-800 transition">
-                                        <img :src="song.artworkUrl30" class="w-7 h-7 rounded object-cover flex-shrink-0" alt="cover">
-                                        <div class="min-w-0 flex-1">
-                                            <div class="text-xs font-bold text-slate-800 dark:text-white truncate" x-text="song.trackName"></div>
-                                            <div class="text-[11px] text-slate-500 dark:text-slate-400 truncate" x-text="song.artistName"></div>
+                                    <div class="px-3.5 py-2 hover:bg-indigo-50 dark:hover:bg-slate-800 cursor-pointer flex items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 transition">
+                                        <div @click="selectSong(song)" class="flex items-center gap-3 min-w-0 flex-1">
+                                            <img :src="song.artworkUrl60 || song.artworkUrl30" class="w-7 h-7 rounded object-cover flex-shrink-0" alt="cover">
+                                            <div class="min-w-0 flex-1">
+                                                <div class="text-xs font-bold text-slate-800 dark:text-white truncate" x-text="song.trackName"></div>
+                                                <div class="text-[11px] text-slate-500 dark:text-slate-400 truncate" x-text="song.artistName"></div>
+                                            </div>
+                                        </div>
+                                        <div class="flex items-center gap-1.5 flex-shrink-0">
+                                            <template x-if="song.previewUrl">
+                                                <button type="button" @click.stop="toggleAudio(song.previewUrl)" class="p-1 rounded text-xs bg-slate-100 dark:bg-slate-800 hover:bg-indigo-100 text-slate-600 dark:text-slate-300">
+                                                    <span x-show="playingPreviewUrl === song.previewUrl">⏸️</span>
+                                                    <span x-show="playingPreviewUrl !== song.previewUrl">🔊</span>
+                                                </button>
+                                            </template>
+                                            <button type="button" @click="selectSong(song)" class="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950 px-2 py-0.5 rounded">
+                                                Elegir
+                                            </button>
                                         </div>
                                     </div>
                                 </template>
@@ -246,44 +689,148 @@
                         </div>
                     </div>
 
-                    <!-- Regalos y Sorpresas -->
-                    <div>
-                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">🎯 Regalos especiales, Ramos o Sorpresas con música</label>
-                        <textarea wire:model="gifts_songs" rows="4" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 p-3 leading-relaxed" placeholder="Ej: 
-- Regalo Padres: Manuel Carrasco - No dejes de soñar
-- Ramo Novia: Beyonce - Single Ladies
-- Amigos viaje: La La Love You - El fin del mundo"></textarea>
+                    <!-- Regalos y Sorpresas con Buscador -->
+                    <div x-data="momentListBuilder('gifts_songs', 'Ramo de Novia')" class="space-y-3.5 p-3.5 bg-slate-50/70 dark:bg-slate-950/60 rounded-xl border border-slate-200/80 dark:border-slate-800">
+                        <div>
+                            <label class="block text-xs font-black text-slate-800 dark:text-slate-200">🎁 Regalos Especiales, Ramos o Sorpresas con música</label>
+                            <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Añade cada entrega indicando a quién va dirigida y su canción.</p>
+                        </div>
+
+                        <!-- Selector rápido de tipo de regalo -->
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">Destinatario / Motivo:</label>
+                            <div class="flex flex-wrap gap-1.5">
+                                <template x-for="r in ['Ramo de Novia', 'Regalo Padres', 'Regalo Madres', 'Amigos / Testigos', 'Hermanos', 'Cumpleaños / Sorpresa']" :key="r">
+                                    <button type="button" @click="setMoment(r); customMoment = ''" :class="activeMoment === r && !customMoment ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-100'" class="px-2 py-1 rounded-lg text-xs font-semibold transition">
+                                        <span x-text="r"></span>
+                                    </button>
+                                </template>
+                            </div>
+                            <div class="mt-1.5">
+                                <input type="text" x-model="customMoment" placeholder="O escribe otro motivo (ej: Regalo para mi abuela)..." class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs text-slate-800 dark:text-white px-2.5 py-1.5">
+                            </div>
+                        </div>
+
+                        <!-- Buscador de canciones para el regalo -->
+                        <div class="relative">
+                            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                🔍 Buscar canción para <strong class="text-indigo-600 dark:text-indigo-400" x-text="customMoment || activeMoment || 'este regalo'"></strong>:
+                            </label>
+                            <div class="flex items-center gap-2">
+                                <input type="text" x-model="searchQuery" @input="onSearch()" placeholder="Buscar canción... Ej: Manuel Carrasco, Beyoncé, Melendi..." class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 px-3 py-2 focus:ring-2 focus:ring-indigo-500" autocomplete="off">
+                                <span x-show="loading" class="text-xs text-indigo-500 animate-spin flex-shrink-0" style="display: none;">⏳</span>
+                            </div>
+
+                            <div x-show="showDropdown" @click.away="showDropdown = false" class="absolute z-30 w-full mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl max-h-60 overflow-y-auto" style="display: none;">
+                                <template x-for="song in results" :key="song.trackId">
+                                    <div class="px-3.5 py-2 hover:bg-indigo-50 dark:hover:bg-slate-800 cursor-pointer flex items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 transition">
+                                        <div @click="addFromSearch(song)" class="flex items-center gap-3 min-w-0 flex-1">
+                                            <img :src="song.artworkUrl60 || song.artworkUrl30" class="w-7 h-7 rounded object-cover flex-shrink-0" alt="cover">
+                                            <div class="min-w-0 flex-1">
+                                                <div class="text-xs font-bold text-slate-800 dark:text-white truncate" x-text="song.trackName"></div>
+                                                <div class="text-[11px] text-slate-500 dark:text-slate-400 truncate" x-text="song.artistName"></div>
+                                            </div>
+                                        </div>
+                                        <div class="flex items-center gap-1.5 flex-shrink-0">
+                                            <template x-if="song.previewUrl">
+                                                <button type="button" @click.stop="toggleAudio(song.previewUrl)" class="p-1 rounded text-xs bg-slate-100 dark:bg-slate-800 hover:bg-indigo-100 text-slate-600 dark:text-slate-300">
+                                                    <span x-show="playingPreviewUrl === song.previewUrl">⏸️</span>
+                                                    <span x-show="playingPreviewUrl !== song.previewUrl">🔊</span>
+                                                </button>
+                                            </template>
+                                            <button type="button" @click="addFromSearch(song)" class="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950 px-2 py-0.5 rounded">
+                                                + Añadir
+                                            </button>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+
+                        <!-- Lista de regalos añadidos -->
+                        <div class="space-y-1.5" x-show="items.length > 0">
+                            <span class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">Entregas y Regalos configurados (<span x-text="items.length"></span>):</span>
+                            <div class="space-y-1.5 max-h-56 overflow-y-auto pr-1">
+                                <template x-for="(item, idx) in items" :key="idx">
+                                    <div class="flex items-center justify-between gap-2 p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl">
+                                        <div class="flex items-center gap-2 min-w-0 flex-1">
+                                            <span class="text-xs px-2 py-0.5 rounded-md font-bold bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 flex-shrink-0" x-text="item.moment || 'Regalo'"></span>
+                                            <span class="text-xs font-semibold text-slate-800 dark:text-white truncate" x-text="item.song"></span>
+                                        </div>
+                                        <button type="button" @click="remove(idx)" class="text-rose-500 hover:text-rose-700 text-xs font-bold px-2 py-0.5 rounded hover:bg-rose-50 dark:hover:bg-rose-950 transition flex-shrink-0">
+                                            ✕
+                                        </button>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+
+                        <!-- Añadir manualmente -->
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <input type="text" x-model="manualSong" @keydown.enter.prevent="addManual()" placeholder="O escribe manualmente la canción / momento..." class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 px-3 py-1.5 focus:ring-1 focus:ring-indigo-500">
+                                <button type="button" @click="addManual()" class="px-2.5 py-1.5 bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-xl text-xs font-bold whitespace-nowrap">
+                                    + Añadir
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
                 <!-- SECCIÓN 4: BAILE NUPCIAL Y FIESTA -->
-                <div class="bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-5">
-                    <h3 class="text-base font-black text-indigo-900 dark:text-indigo-300 border-b border-slate-100 dark:border-slate-800 pb-2.5 flex items-center gap-2">
-                        <span>💃 4. Baile Nupcial y Fiesta</span>
-                    </h3>
+                <div class="bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
+                    <div>
+                        <h3 class="text-base font-black text-indigo-900 dark:text-indigo-300 border-b border-slate-100 dark:border-slate-800 pb-2.5 flex items-center gap-2">
+                            <span>💃 4. Baile Nupcial y Fiesta</span>
+                        </h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">La apertura de baile y la lista de temazos que no pueden faltar en la fiesta.</p>
+                    </div>
 
                     <!-- Baile Nupcial -->
-                    <div x-data="singleSongPicker('dance_song')" class="space-y-1.5">
-                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">🎯 Canción del Baile Nupcial (Apertura de Baile)</label>
+                    <div x-data="singleSongPicker('dance_song')" class="space-y-2 p-3.5 bg-slate-50/70 dark:bg-slate-950/60 rounded-xl border border-slate-200/80 dark:border-slate-800">
+                        <div class="flex items-center justify-between">
+                            <label class="block text-xs font-black text-slate-800 dark:text-slate-200">🎯 Canción del Baile Nupcial (Apertura de Baile)</label>
+                            <span class="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950 px-2 py-0.5 rounded-full">Momento Clave</span>
+                        </div>
                         
-                        <div class="relative">
-                            <input type="text" wire:model="dance_song" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 p-3" placeholder="Ej: Ed Sheeran - Perfect">
+                        <!-- Canción seleccionada -->
+                        <div x-show="selectedSong" class="flex items-center justify-between gap-2 p-2.5 bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 rounded-xl">
+                            <div class="flex items-center gap-2 min-w-0 flex-1">
+                                <span class="text-indigo-600 dark:text-indigo-400 text-sm">🎵</span>
+                                <span class="text-xs font-bold text-slate-900 dark:text-white truncate" x-text="selectedSong"></span>
+                            </div>
+                            <button type="button" @click="clearSong()" class="text-rose-500 hover:text-rose-700 text-xs font-bold px-2 py-0.5 rounded hover:bg-rose-50 dark:hover:bg-rose-950 transition flex-shrink-0" title="Cambiar canción">
+                                Cambiar
+                            </button>
                         </div>
 
                         <!-- Buscador asistente de apoyo -->
-                        <div class="relative pt-1">
+                        <div class="relative">
                             <div class="flex items-center gap-2">
-                                <input type="text" x-model="searchQuery" @input="onInput()" placeholder="🔍 O busca la canción en el catálogo para auto-rellenar..." class="w-full bg-white dark:bg-slate-900 border border-dashed border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 px-3 py-1.5 focus:ring-1 focus:ring-indigo-500" autocomplete="off">
+                                <input type="text" x-model="searchQuery" @input="onInput()" placeholder="🔍 Busca aquí la canción del baile... Ej: Ed Sheeran, Elvis, Adele..." class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 px-3 py-2 focus:ring-2 focus:ring-indigo-500" autocomplete="off">
                                 <span x-show="loading" class="text-xs text-indigo-500 animate-spin flex-shrink-0" style="display: none;">⏳</span>
                             </div>
 
-                            <div x-show="showDropdown" @click.away="showDropdown = false" class="absolute z-30 w-full mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl max-h-56 overflow-y-auto" style="display: none;">
+                            <div x-show="showDropdown" @click.away="showDropdown = false" class="absolute z-30 w-full mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl max-h-60 overflow-y-auto" style="display: none;">
                                 <template x-for="song in results" :key="song.trackId">
-                                    <div @click="selectSong(song)" class="px-3.5 py-2 hover:bg-indigo-50 dark:hover:bg-slate-800 cursor-pointer flex items-center gap-3 border-b border-slate-100 dark:border-slate-800 transition">
-                                        <img :src="song.artworkUrl30" class="w-7 h-7 rounded object-cover flex-shrink-0" alt="cover">
-                                        <div class="min-w-0 flex-1">
-                                            <div class="text-xs font-bold text-slate-800 dark:text-white truncate" x-text="song.trackName"></div>
-                                            <div class="text-[11px] text-slate-500 dark:text-slate-400 truncate" x-text="song.artistName"></div>
+                                    <div class="px-3.5 py-2 hover:bg-indigo-50 dark:hover:bg-slate-800 cursor-pointer flex items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 transition">
+                                        <div @click="selectSong(song)" class="flex items-center gap-3 min-w-0 flex-1">
+                                            <img :src="song.artworkUrl60 || song.artworkUrl30" class="w-7 h-7 rounded object-cover flex-shrink-0" alt="cover">
+                                            <div class="min-w-0 flex-1">
+                                                <div class="text-xs font-bold text-slate-800 dark:text-white truncate" x-text="song.trackName"></div>
+                                                <div class="text-[11px] text-slate-500 dark:text-slate-400 truncate" x-text="song.artistName"></div>
+                                            </div>
+                                        </div>
+                                        <div class="flex items-center gap-1.5 flex-shrink-0">
+                                            <template x-if="song.previewUrl">
+                                                <button type="button" @click.stop="toggleAudio(song.previewUrl)" class="p-1 rounded text-xs bg-slate-100 dark:bg-slate-800 hover:bg-indigo-100 text-slate-600 dark:text-slate-300">
+                                                    <span x-show="playingPreviewUrl === song.previewUrl">⏸️</span>
+                                                    <span x-show="playingPreviewUrl !== song.previewUrl">🔊</span>
+                                                </button>
+                                            </template>
+                                            <button type="button" @click="selectSong(song)" class="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950 px-2 py-0.5 rounded">
+                                                Elegir
+                                            </button>
                                         </div>
                                     </div>
                                 </template>
@@ -292,25 +839,40 @@
                     </div>
 
                     <!-- Temazos imprescindibles con Lista Interactiva -->
-                    <div x-data="partyListBuilder('party_favs')" class="space-y-3">
-                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">⭐ Temazos imprescindibles para la Barra Libre / Fiesta</label>
+                    <div x-data="multiSongListBuilder('party_favs')" class="space-y-3.5">
+                        <div>
+                            <label class="block text-xs font-black text-slate-800 dark:text-slate-200">⭐ Temazos Imprescindibles para la Barra Libre / Fiesta</label>
+                            <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Busca tantas canciones como queráis y pulsa para añadirlas a vuestra lista.</p>
+                        </div>
                         
                         <!-- Buscador rápido -->
                         <div class="relative">
                             <div class="flex items-center gap-2">
-                                <input type="text" x-model="searchQuery" @input="onSearch()" placeholder="🔍 Busca una canción y pulsa para añadir a tu lista..." class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 px-3.5 py-2.5 focus:ring-2 focus:ring-indigo-500" autocomplete="off">
+                                <input type="text" x-model="searchQuery" @input="onSearch()" placeholder="🔍 Busca por canción o artista... Ej: Quevedo, Bizarrap, Bad Bunny, Estopa..." class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 px-3.5 py-2.5 focus:ring-2 focus:ring-indigo-500" autocomplete="off">
                                 <span x-show="loading" class="text-xs text-indigo-500 animate-spin flex-shrink-0" style="display: none;">⏳</span>
                             </div>
 
-                            <div x-show="showDropdown" @click.away="showDropdown = false" class="absolute z-30 w-full mt-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl max-h-60 overflow-y-auto" style="display: none;">
+                            <div x-show="showDropdown" @click.away="showDropdown = false" class="absolute z-30 w-full mt-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl max-h-64 overflow-y-auto" style="display: none;">
                                 <template x-for="song in results" :key="song.trackId">
-                                    <div @click="addFromSearch(song)" class="px-4 py-2.5 hover:bg-indigo-50 dark:hover:bg-slate-800 cursor-pointer flex items-center gap-3 border-b border-slate-100 dark:border-slate-800 transition">
-                                        <img :src="song.artworkUrl30" class="w-8 h-8 rounded-lg object-cover flex-shrink-0" alt="cover">
-                                        <div class="min-w-0 flex-1">
-                                            <div class="text-xs font-bold text-slate-800 dark:text-white truncate" x-text="song.trackName"></div>
-                                            <div class="text-[11px] text-slate-500 dark:text-slate-400 truncate" x-text="song.artistName"></div>
+                                    <div class="px-4 py-2.5 hover:bg-indigo-50 dark:hover:bg-slate-800 cursor-pointer flex items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 transition">
+                                        <div @click="addFromSearch(song)" class="flex items-center gap-3 min-w-0 flex-1">
+                                            <img :src="song.artworkUrl60 || song.artworkUrl30" class="w-8 h-8 rounded-lg object-cover flex-shrink-0" alt="cover">
+                                            <div class="min-w-0 flex-1">
+                                                <div class="text-xs font-bold text-slate-800 dark:text-white truncate" x-text="song.trackName"></div>
+                                                <div class="text-[11px] text-slate-500 dark:text-slate-400 truncate" x-text="song.artistName"></div>
+                                            </div>
                                         </div>
-                                        <span class="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/80 px-2 py-0.5 rounded-md flex-shrink-0">+ Añadir</span>
+                                        <div class="flex items-center gap-1.5 flex-shrink-0">
+                                            <template x-if="song.previewUrl">
+                                                <button type="button" @click.stop="toggleAudio(song.previewUrl)" class="p-1.5 rounded-lg text-xs bg-slate-100 dark:bg-slate-800 hover:bg-indigo-100 text-slate-600 dark:text-slate-300" title="Escuchar fragmento">
+                                                    <span x-show="playingPreviewUrl === song.previewUrl">⏸️</span>
+                                                    <span x-show="playingPreviewUrl !== song.previewUrl">🔊</span>
+                                                </button>
+                                            </template>
+                                            <button type="button" @click="addFromSearch(song)" class="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/80 px-2.5 py-1 rounded-lg hover:bg-indigo-600 hover:text-white transition">
+                                                + Añadir
+                                            </button>
+                                        </div>
                                     </div>
                                 </template>
                             </div>
@@ -318,12 +880,12 @@
 
                         <!-- Lista visual de canciones añadidas -->
                         <div class="space-y-1.5" x-show="songs.length > 0">
-                            <span class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">Canciones en tu lista (<span x-text="songs.length"></span>):</span>
-                            <div class="space-y-1.5 max-h-56 overflow-y-auto pr-1">
+                            <span class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">Canciones añadidas a la fiesta (<span x-text="songs.length"></span>):</span>
+                            <div class="space-y-1.5 max-h-60 overflow-y-auto pr-1">
                                 <template x-for="(song, idx) in songs" :key="idx">
                                     <div class="flex items-center justify-between gap-2 p-2.5 bg-indigo-50/50 dark:bg-slate-950 border border-indigo-100 dark:border-slate-800 rounded-xl">
                                         <div class="flex items-center gap-2 min-w-0 flex-1">
-                                            <span class="text-indigo-500 flex-shrink-0 text-xs">🎵</span>
+                                            <span class="text-indigo-500 flex-shrink-0 text-xs">🔥</span>
                                             <span class="text-xs font-bold text-slate-800 dark:text-white truncate" x-text="song"></span>
                                         </div>
                                         <button type="button" @click="remove(idx)" class="text-rose-500 hover:text-rose-700 text-xs font-bold px-2 py-0.5 rounded hover:bg-rose-50 dark:hover:bg-rose-950/50 transition flex-shrink-0" title="Eliminar de la lista">
@@ -350,18 +912,59 @@
                 <!-- ==================== CUESTIONARIO ADAPTADO PARA EMPRESAS, CUMPLEAÑOS Y FIESTAS ==================== -->
 
                 <!-- SECCIÓN 1: ESTILOS & AMBIENTE -->
-                <div class="bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-2.5">
-                    <h3 class="text-base font-black text-indigo-900 dark:text-indigo-300 border-b border-slate-100 dark:border-slate-800 pb-2.5 flex items-center gap-2">
-                        <span>🎵 1. Estilo Musical & Ambiente de la Fiesta</span>
-                    </h3>
-                    <p class="text-xs text-slate-500 dark:text-slate-400">¿Qué tipo de música queréis que predomine en el evento?</p>
+                <div class="bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4" x-data="cocktailStyleBuilder('cocktail_songs')">
                     <div>
-                        <textarea wire:model="cocktail_songs" rows="3" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 p-3 leading-relaxed" placeholder="Ej: Pop-rock español, Éxitos 80s y 90s, Comercial actual, Reggaeton bailable, Indie pop, House/Electrónica elegante..."></textarea>
+                        <h3 class="text-base font-black text-indigo-900 dark:text-indigo-300 border-b border-slate-100 dark:border-slate-800 pb-2.5 flex items-center gap-2">
+                            <span>🎵 1. Estilo Musical & Ambiente de la Fiesta</span>
+                        </h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">¿Qué tipo de música queréis que predomine en el evento?</p>
+                    </div>
+
+                    <!-- Botones de estilos recomendados -->
+                    <div>
+                        <div class="flex flex-wrap gap-1.5">
+                            <template x-for="style in availableStyles" :key="style">
+                                <button type="button" @click="toggleStyle(style)" :class="selectedStyles.includes(style) ? 'bg-indigo-600 text-white shadow-sm ring-2 ring-indigo-300' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'" class="px-2.5 py-1.5 rounded-xl text-xs font-semibold transition flex items-center gap-1">
+                                    <span x-text="selectedStyles.includes(style) ? '✓' : '+'"></span>
+                                    <span x-text="style"></span>
+                                </button>
+                            </template>
+                        </div>
+                    </div>
+
+                    <!-- Buscador -->
+                    <div class="relative">
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">🔍 Añadir canciones de ejemplo o artistas:</label>
+                        <div class="flex items-center gap-2">
+                            <input type="text" x-model="searchQuery" @input="onSearch()" placeholder="Buscar canción... Ej: Pop 80s, House, Reggaeton..." class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 px-3.5 py-2 focus:ring-2 focus:ring-indigo-500" autocomplete="off">
+                            <span x-show="loading" class="text-xs text-indigo-500 animate-spin flex-shrink-0" style="display: none;">⏳</span>
+                        </div>
+
+                        <div x-show="showDropdown" @click.away="showDropdown = false" class="absolute z-30 w-full mt-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl max-h-60 overflow-y-auto" style="display: none;">
+                            <template x-for="song in results" :key="song.trackId">
+                                <div class="px-3.5 py-2 hover:bg-indigo-50 dark:hover:bg-slate-800 cursor-pointer flex items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 transition">
+                                    <div @click="addFromSearch(song)" class="flex items-center gap-3 min-w-0 flex-1">
+                                        <img :src="song.artworkUrl60 || song.artworkUrl30" class="w-8 h-8 rounded-lg object-cover flex-shrink-0" alt="cover">
+                                        <div class="min-w-0 flex-1">
+                                            <div class="text-xs font-bold text-slate-800 dark:text-white truncate" x-text="song.trackName"></div>
+                                            <div class="text-[11px] text-slate-500 dark:text-slate-400 truncate" x-text="song.artistName"></div>
+                                        </div>
+                                    </div>
+                                    <button type="button" @click="addFromSearch(song)" class="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950 px-2 py-1 rounded-lg">
+                                        + Añadir
+                                    </button>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    <div>
+                        <textarea x-model="customNotes" @input="sync()" rows="3" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 p-2.5 leading-relaxed" placeholder="Notas adicionales sobre estilos o preferencias..."></textarea>
                     </div>
                 </div>
 
                 <!-- SECCIÓN 2: TEMAZOS IMPRESCINDIBLES -->
-                <div class="bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4" x-data="partyListBuilder('party_favs')">
+                <div class="bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4" x-data="multiSongListBuilder('party_favs')">
                     <div>
                         <h3 class="text-base font-black text-indigo-900 dark:text-indigo-300 border-b border-slate-100 dark:border-slate-800 pb-2.5 flex items-center gap-2">
                             <span>🔥 2. Canciones Imprescindibles (Temazos Favoritos)</span>
@@ -379,13 +982,25 @@
                         
                         <div x-show="showDropdown" @click.away="showDropdown = false" class="absolute z-30 w-full mt-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl max-h-60 overflow-y-auto" style="display: none;">
                             <template x-for="song in results" :key="song.trackId">
-                                <div @click="addFromSearch(song)" class="px-4 py-2.5 hover:bg-indigo-50 dark:hover:bg-slate-800 cursor-pointer flex items-center gap-3 border-b border-slate-100 dark:border-slate-800 transition">
-                                    <img :src="song.artworkUrl30" class="w-8 h-8 rounded-lg object-cover flex-shrink-0" alt="cover">
-                                    <div class="min-w-0 flex-1">
-                                        <div class="text-xs font-bold text-slate-800 dark:text-white truncate" x-text="song.trackName"></div>
-                                        <div class="text-[11px] text-slate-500 dark:text-slate-400 truncate" x-text="song.artistName"></div>
+                                <div class="px-4 py-2.5 hover:bg-indigo-50 dark:hover:bg-slate-800 cursor-pointer flex items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 transition">
+                                    <div @click="addFromSearch(song)" class="flex items-center gap-3 min-w-0 flex-1">
+                                        <img :src="song.artworkUrl60 || song.artworkUrl30" class="w-8 h-8 rounded-lg object-cover flex-shrink-0" alt="cover">
+                                        <div class="min-w-0 flex-1">
+                                            <div class="text-xs font-bold text-slate-800 dark:text-white truncate" x-text="song.trackName"></div>
+                                            <div class="text-[11px] text-slate-500 dark:text-slate-400 truncate" x-text="song.artistName"></div>
+                                        </div>
                                     </div>
-                                    <span class="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/80 px-2.5 py-1 rounded-lg flex-shrink-0">+ Añadir a Lista</span>
+                                    <div class="flex items-center gap-1.5 flex-shrink-0">
+                                        <template x-if="song.previewUrl">
+                                            <button type="button" @click.stop="toggleAudio(song.previewUrl)" class="p-1.5 rounded-lg text-xs bg-slate-100 dark:bg-slate-800 hover:bg-indigo-100 text-slate-600 dark:text-slate-300" title="Escuchar fragmento">
+                                                <span x-show="playingPreviewUrl === song.previewUrl">⏸️</span>
+                                                <span x-show="playingPreviewUrl !== song.previewUrl">🔊</span>
+                                            </button>
+                                        </template>
+                                        <button type="button" @click="addFromSearch(song)" class="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/80 px-2.5 py-1 rounded-lg hover:bg-indigo-600 hover:text-white transition">
+                                            + Añadir
+                                        </button>
+                                    </div>
                                 </div>
                             </template>
                         </div>
@@ -421,29 +1036,128 @@
                 </div>
 
                 <!-- SECCIÓN 3: MOMENTOS ESPECIALES -->
-                <div class="bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-2.5">
-                    <h3 class="text-base font-black text-indigo-900 dark:text-indigo-300 border-b border-slate-100 dark:border-slate-800 pb-2.5 flex items-center gap-2">
-                        <span>🎯 3. Momentos Especiales o Clave (Opcional)</span>
-                    </h3>
-                    <p class="text-xs text-slate-500 dark:text-slate-400">¿Habrá algún momento especial que requiera una canción concreta? (Entrada del protagonista, tarta/velas, entrega de regalos, discurso, brindis...)</p>
+                <div class="bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4" x-data="momentListBuilder('special_moments', 'Entrada Protagonista')">
                     <div>
-                        <textarea wire:model="special_moments" rows="4" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 p-3 leading-relaxed" placeholder="Ej:
-- Entrada / Llegada: Survivor - Eye of the Tiger
-- Tarta / Velas: Stevie Wonder - Happy Birthday
-- Brindis / Entrega: Queen - We Are The Champions"></textarea>
+                        <h3 class="text-base font-black text-indigo-900 dark:text-indigo-300 border-b border-slate-100 dark:border-slate-800 pb-2.5 flex items-center gap-2">
+                            <span>🎯 3. Momentos Especiales o Clave (Opcional)</span>
+                        </h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">¿Habrá algún momento especial? (Entrada del protagonista, tarta/velas, entrega de regalos, brindis...)</p>
+                    </div>
+
+                    <!-- Moment chips -->
+                    <div class="flex flex-wrap gap-1.5">
+                        <template x-for="m in ['Entrada Protagonista', 'Tarta / Velas', 'Brindis', 'Discurso / Entrega', 'Momento Especial']" :key="m">
+                            <button type="button" @click="setMoment(m); customMoment = ''" :class="activeMoment === m && !customMoment ? 'bg-indigo-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'" class="px-2.5 py-1 rounded-lg text-xs font-semibold">
+                                <span x-text="m"></span>
+                            </button>
+                        </template>
+                    </div>
+
+                    <!-- Buscador -->
+                    <div class="relative">
+                        <div class="flex items-center gap-2">
+                            <input type="text" x-model="searchQuery" @input="onSearch()" placeholder="Buscar canción para el momento... Ej: Survivor, Stevie Wonder, Queen..." class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 px-3 py-2 focus:ring-2 focus:ring-indigo-500" autocomplete="off">
+                            <span x-show="loading" class="text-xs text-indigo-500 animate-spin flex-shrink-0" style="display: none;">⏳</span>
+                        </div>
+
+                        <div x-show="showDropdown" @click.away="showDropdown = false" class="absolute z-30 w-full mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl max-h-60 overflow-y-auto" style="display: none;">
+                            <template x-for="song in results" :key="song.trackId">
+                                <div class="px-3.5 py-2 hover:bg-indigo-50 dark:hover:bg-slate-800 cursor-pointer flex items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 transition">
+                                    <div @click="addFromSearch(song)" class="flex items-center gap-3 min-w-0 flex-1">
+                                        <img :src="song.artworkUrl60 || song.artworkUrl30" class="w-7 h-7 rounded object-cover flex-shrink-0" alt="cover">
+                                        <div class="min-w-0 flex-1">
+                                            <div class="text-xs font-bold text-slate-800 dark:text-white truncate" x-text="song.trackName"></div>
+                                            <div class="text-[11px] text-slate-500 dark:text-slate-400 truncate" x-text="song.artistName"></div>
+                                        </div>
+                                    </div>
+                                    <button type="button" @click="addFromSearch(song)" class="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950 px-2 py-0.5 rounded">
+                                        + Añadir
+                                    </button>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    <!-- Items list -->
+                    <div class="space-y-1.5" x-show="items.length > 0">
+                        <div class="space-y-1.5 max-h-56 overflow-y-auto pr-1">
+                            <template x-for="(item, idx) in items" :key="idx">
+                                <div class="flex items-center justify-between gap-2 p-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl">
+                                    <div class="flex items-center gap-2 min-w-0 flex-1">
+                                        <span class="text-xs px-2 py-0.5 rounded-md font-bold bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 flex-shrink-0" x-text="item.moment || 'Especial'"></span>
+                                        <span class="text-xs font-semibold text-slate-800 dark:text-white truncate" x-text="item.song"></span>
+                                    </div>
+                                    <button type="button" @click="remove(idx)" class="text-rose-500 hover:text-rose-700 text-xs font-bold px-2 py-0.5 rounded">
+                                        ✕
+                                    </button>
+                                </div>
+                            </template>
+                        </div>
                     </div>
                 </div>
 
             @endif
 
             <!-- SECCIÓN COMÚN: LISTA NEGRA -->
-            <div class="bg-rose-50/40 dark:bg-rose-950/20 p-5 sm:p-6 rounded-2xl border border-rose-200 dark:border-rose-900/60 shadow-sm space-y-2.5">
-                <h3 class="text-base font-black text-rose-800 dark:text-rose-300 border-b border-rose-200/80 dark:border-rose-900/60 pb-2.5 flex items-center gap-2">
-                    <span>🚫 Lista Negra (Canciones o estilos PROHIBIDOS)</span>
-                </h3>
-                <p class="text-xs text-rose-700/90 dark:text-rose-400">Música, géneros o artistas que <strong>NO queréis que suenen</strong> bajo ningún concepto.</p>
+            <div class="bg-rose-50/40 dark:bg-rose-950/20 p-5 sm:p-6 rounded-2xl border border-rose-200 dark:border-rose-900/60 shadow-sm space-y-3.5" x-data="multiSongListBuilder('blacklist')">
                 <div>
-                    <textarea wire:model="blacklist" rows="3" class="w-full bg-white dark:bg-slate-950 border border-rose-300 dark:border-rose-800/80 rounded-xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-rose-500 focus:border-rose-500 p-3 leading-relaxed" placeholder="Ej: Nada de reggaeton antiguo, evitar canciones tristes, no poner Paquito el Chocolatero, nada de trap..."></textarea>
+                    <h3 class="text-base font-black text-rose-800 dark:text-rose-300 border-b border-rose-200/80 dark:border-rose-900/60 pb-2.5 flex items-center gap-2">
+                        <span>🚫 Lista Negra (Canciones o estilos PROHIBIDOS)</span>
+                    </h3>
+                    <p class="text-xs text-rose-700/90 dark:text-rose-400 mt-1">Música, géneros o canciones que <strong>NO queréis que suenen</strong> bajo ningún concepto.</p>
+                </div>
+
+                <!-- Buscador de canciones para prohibir -->
+                <div class="relative">
+                    <div class="flex items-center gap-2">
+                        <input type="text" x-model="searchQuery" @input="onSearch()" placeholder="🔍 Busca una canción o artista para prohibir..." class="w-full bg-white dark:bg-slate-950 border border-rose-300 dark:border-rose-800/80 rounded-xl text-xs text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 px-3 py-2 focus:ring-2 focus:ring-rose-500" autocomplete="off">
+                        <span x-show="loading" class="text-xs text-rose-500 animate-spin flex-shrink-0" style="display: none;">⏳</span>
+                    </div>
+
+                    <div x-show="showDropdown" @click.away="showDropdown = false" class="absolute z-30 w-full mt-1 bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-800 rounded-xl shadow-2xl max-h-60 overflow-y-auto" style="display: none;">
+                        <template x-for="song in results" :key="song.trackId">
+                            <div class="px-3.5 py-2 hover:bg-rose-50 dark:hover:bg-rose-950/50 cursor-pointer flex items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 transition">
+                                <div @click="addFromSearch(song)" class="flex items-center gap-3 min-w-0 flex-1">
+                                    <img :src="song.artworkUrl60 || song.artworkUrl30" class="w-7 h-7 rounded object-cover flex-shrink-0" alt="cover">
+                                    <div class="min-w-0 flex-1">
+                                        <div class="text-xs font-bold text-slate-800 dark:text-white truncate" x-text="song.trackName"></div>
+                                        <div class="text-[11px] text-slate-500 dark:text-slate-400 truncate" x-text="song.artistName"></div>
+                                    </div>
+                                </div>
+                                <button type="button" @click="addFromSearch(song)" class="text-[11px] font-bold text-rose-600 bg-rose-50 dark:bg-rose-950 px-2 py-0.5 rounded">
+                                    🚫 Prohibir
+                                </button>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Lista de prohibidas -->
+                <div class="space-y-1.5" x-show="songs.length > 0">
+                    <span class="text-[10px] font-bold text-rose-800 dark:text-rose-300 uppercase tracking-wider block">Canciones o estilos prohibidos (<span x-text="songs.length"></span>):</span>
+                    <div class="space-y-1.5 max-h-56 overflow-y-auto pr-1">
+                        <template x-for="(song, idx) in songs" :key="idx">
+                            <div class="flex items-center justify-between gap-2 p-2 bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-900/60 rounded-xl">
+                                <div class="flex items-center gap-2 min-w-0 flex-1">
+                                    <span class="text-rose-500 text-xs">🚫</span>
+                                    <span class="text-xs font-bold text-slate-800 dark:text-white truncate" x-text="song"></span>
+                                </div>
+                                <button type="button" @click="remove(idx)" class="text-rose-500 hover:text-rose-700 text-xs font-bold px-2 py-0.5 rounded">
+                                    ✕
+                                </button>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Añadir manualmente estilo o descripción prohibida -->
+                <div>
+                    <div class="flex items-center gap-2">
+                        <input type="text" x-model="manualInput" @keydown.enter.prevent="addManual()" placeholder="O escribe un género prohibido (ej: Reggaeton antiguo, Paquito Chocolatero)..." class="w-full bg-white dark:bg-slate-950 border border-rose-200 dark:border-rose-800 rounded-xl text-xs text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 px-3 py-1.5 focus:ring-1 focus:ring-rose-500">
+                        <button type="button" @click="addManual()" class="px-2.5 py-1.5 bg-rose-100 dark:bg-rose-950 text-rose-800 dark:text-rose-200 rounded-xl text-xs font-bold whitespace-nowrap">
+                            + Añadir
+                        </button>
+                    </div>
                 </div>
             </div>
 
