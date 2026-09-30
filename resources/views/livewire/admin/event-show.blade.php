@@ -81,11 +81,11 @@
                     {{ ucfirst($event->status) }}
                 </span>
 
-                @if($event->deposit_paid && (float)$event->deposit_paid_amount > 0)
+                @if(($event->deposit_paid ?? false) && (float)($event->deposit_paid_amount ?? 0) > 0)
                     <span class="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-300 px-3 py-1 rounded-xl shadow-2xs">
                         <span>{{ $event->deposit_method_icon }}</span>
                         <span>Señal: <strong>{{ number_format($event->deposit_paid_amount, 2, ',', '.') }} €</strong> ({{ $event->deposit_method_label }})</span>
-                        @if($event->deposit_paid_at)
+                        @if(!empty($event->deposit_paid_at))
                             <span class="text-[11px] text-emerald-600 font-normal">el {{ \Carbon\Carbon::parse($event->deposit_paid_at)->format('d/m/Y') }}</span>
                         @endif
                         <button type="button" wire:click="openDepositModal('confirmed')" class="text-[11px] text-indigo-600 hover:text-indigo-800 font-bold ml-1 hover:underline cursor-pointer" title="Modificar importe, método o fecha de la señal">
@@ -94,7 +94,7 @@
                     </span>
                     @if($quoteAmount > 0)
                         @php
-                            $realRemaining = max(0, $quoteAmount - (float)$event->deposit_paid_amount);
+                            $realRemaining = max(0, $quoteAmount - (float)($event->deposit_paid_amount ?? 0));
                         @endphp
                         <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-xl">
                             <span>Pendiente:</span>
@@ -2959,6 +2959,8 @@
             </div>
         </div>
     </div>
+    @endif
+
     <!-- Modal de Registro de Señal / Pago de Reserva -->
     @if($showDepositModal)
     <div class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-4">

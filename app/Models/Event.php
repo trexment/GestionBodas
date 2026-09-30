@@ -104,13 +104,14 @@ class Event extends Model
      */
     public function getDepositMethodLabelAttribute(): string
     {
-        return match($this->deposit_payment_method) {
+        $pm = $this->attributes['deposit_payment_method'] ?? null;
+        return match($pm) {
             'bizum' => 'Bizum',
             'transfer' => 'Transferencia Bancaria',
             'cash' => 'Efectivo',
             'card' => 'Tarjeta / TPV',
             'other' => 'Otro',
-            default => $this->deposit_payment_method ? ucfirst($this->deposit_payment_method) : 'No especificado',
+            default => $pm ? ucfirst($pm) : 'No especificado',
         };
     }
 
@@ -119,7 +120,8 @@ class Event extends Model
      */
     public function getDepositMethodIconAttribute(): string
     {
-        return match($this->deposit_payment_method) {
+        $pm = $this->attributes['deposit_payment_method'] ?? null;
+        return match($pm) {
             'bizum' => '📱',
             'transfer' => '🏦',
             'cash' => '💵',
