@@ -80,6 +80,14 @@ class EventShow extends Component
     public $generate_receipt_checkbox = true;
     public $target_status = 'confirmed';
 
+    // Liquidación / Cobro Final (al Completar Evento)
+    public $showFinalPaymentModal = false;
+    public $final_payment_amount;
+    public $final_payment_method = 'cash'; // cash, bizum, transfer, card, other
+    public $final_payment_date;
+    public $final_payment_notes = '';
+    public $generate_final_receipt_checkbox = true;
+
     // Presupuestos & Packs
     public $quote_services = [
         'pack_basic' => ['selected' => false, 'name' => 'Pack Básico', 'price' => 400, 'hours' => 4, 'desc' => '4 Horas de servicio DJ, Equipo de sonido profesional e iluminación de pista básica.'],
@@ -222,6 +230,11 @@ class EventShow extends Component
     {
         if ($status === 'confirmed') {
             $this->openDepositModal('confirmed');
+            return;
+        }
+
+        if ($status === 'completed') {
+            $this->openFinalPaymentModal();
             return;
         }
 
@@ -374,6 +387,83 @@ class EventShow extends Component
         $this->event->refresh();
 
         session()->flash('message', "ℹ️ Datos de la señal de reserva reseteados.");
+    }
+
+    public function openFinalPaymentModal()
+    {
+        $latestQuote = $this->event->quotes()->latest()->first();
+        $quoteTotal = $latestQuote ? (float)$latestQuote->amount : 0;
+        
+        $alreadyPaid = (float)($this->event->deposit_paid_amount ?? 0);
+        $invoicesPaid = (float)$this->event->invoices()->where('status', 'paid')->sum('total');
+        $totalPaid = max($alreadyPaid, $invoicesPaid);
+        $remaining = max(0, $quoteTotal - $totalPaid);
+
+        $this->final_payment_amount = $remaining;
+        $this->final_payment_method = 'cash';
+        $this->final_payment_date = now()->format('Y-m-d');
+        $this->final_payment_notes = '';
+        $this->generate_final_receipt_checkbox = true;
+        $this->showFinalPaymentModal = true;
+    }
+
+    public function closeFinalPaymentModal()
+    {
+        $this->showFinalPaymentModal = false;
+    }
+
+    public function saveFinalPaymentAndComplete()
+    {
+        $this->validate([
+            'final_payment_amount' => 'required|numeric|min:0',
+            'final_payment_method' => 'required|in:bizum,transfer,cash,card,other',
+            'final_payment_date' => 'required|date',
+            'final_payment_notes' => 'nullable|string|max:500',
+        ], [
+            'final_payment_amount.required' => 'Debes indicar el importe de la liquidación final.',
+            'final_payment_amount.numeric' => 'El importe debe ser un número válido.',
+            'final_payment_amount.min' => 'El importe no puede ser negativo.',
+            'final_payment_date.required' => 'Indica la fecha en que se recibió el cobro.',
+        ]);
+
+        $amount = (float)$this->final_payment_amount;
+
+        $this->event->update([
+            'status' => 'completed',
+        ]);
+
+        if ($this->generate_final_receipt_checkbox && $amount > 0) {
+            $nextNum = \App\Models\Invoice::nextNumber('recibo');
+            $methodLabel = match($this->final_payment_method) {
+                'bizum' => 'Bizum',
+                'transfer' => 'Transferencia Bancaria',
+                'cash' => 'Efectivo',
+                'card' => 'Tarjeta / TPV',
+                'other' => 'Otro método',
+                default => ucfirst($this->final_payment_method)
+            };
+
+            $latestQuote = $this->event->quotes()->latest()->first();
+
+            $this->event->invoices()->create([
+                'quote_id' => $latestQuote ? $latestQuote->id : null,
+                'invoice_number' => $nextNum,
+                'type' => 'recibo',
+                'amount' => $amount,
+                'tax' => 0.00,
+                'tax_rate' => 0.00,
+                'total' => $amount,
+                'issue_date' => $this->final_payment_date,
+                'status' => 'paid',
+                'notes' => "Liquidación final del evento cobrada vía {$methodLabel} el " . \Carbon\Carbon::parse($this->final_payment_date)->format('d/m/Y') . ($this->final_payment_notes ? " ({$this->final_payment_notes})" : ""),
+            ]);
+            $this->event->load('invoices');
+        }
+
+        $this->showFinalPaymentModal = false;
+        $this->event->refresh();
+
+        session()->flash('message', "🎉 Evento marcado como 'Completado' y cobro final de " . number_format($amount, 2, ',', '.') . " € registrado correctamente con recibo.");
     }
 
     public function openStaffModal()
