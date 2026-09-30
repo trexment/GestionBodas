@@ -1,0 +1,49 @@
+{
+  "packageId": "com.nunezandson.eventos",
+  "host": "app.javnxdj.com",
+  "name": "Eventos Musicales - Cabina DJ",
+  "launcherName": "Eventos DJ",
+  "display": "standalone",
+  "themeColor": "#080D16",
+  "themeColorDark": "#080D16",
+  "navigationColor": "#080D16",
+  "navigationColorDark": "#080D16",
+  "backgroundColor": "#080D16",
+  "enableNotifications": true,
+  "startUrl": "/admin/dashboard",
+  "iconUrl": "https://app.javnxdj.com/favicon.svg",
+  "maskableIconUrl": "https://app.javnxdj.com/favicon.svg",
+  "monochromeIconUrl": "https://app.javnxdj.com/favicon.svg",
+  "splashScreenFadeOutDuration": 300,
+  "orientation": "default",
+  "enableSiteSettingsShortcut": true,
+  "shortcuts": [
+    {
+      "name": "Modo Cabina DJ",
+      "shortName": "Cabina DJ",
+      "url": "/admin/events",
+      "chosenIconUrl": "https://app.javnxdj.com/favicon.svg"
+    }
+  ],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://app.javnxdj.com/manifest.json",
+  "fallbackType": "customtabs",
+  "features": {
+    "playBilling": {
+      "enabled": false
+    },
+    "locationDelegation": {
+      "enabled": false
+    }
+  },
+  "alphaDependencies": {
+    "enabled": false
+  },
+  "minSdkVersion": 21,
+  "targetSdkVersion": 34,
+  "appVersionName": "1.0.0",
+  "appVersionCode": 1,
+  "signing": {
+    "scheme": "v2"
+  }
+}

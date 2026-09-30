@@ -1,0 +1,35 @@
+{
+  "name": "Eventos Musicales - Gestión & Cabina DJ",
+  "short_name": "Eventos DJ",
+  "description": "Plataforma de gestión de bodas, eventos musicales, escaletas y modo cabina DJ en vivo.",
+  "start_url": "/admin/dashboard",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#080d16",
+  "theme_color": "#4f46e5",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Cabina DJ",
+      "short_name": "Cabina",
+      "description": "Abrir modo cabina en vivo para DJ",
+      "url": "/admin/events",
+      "icons": [{ "src": "/favicon.svg", "sizes": "192x192" }]
+    },
+    {
+      "name": "Calendario de Eventos",
+      "short_name": "Agenda",
+      "description": "Ver agenda y próximos eventos",
+      "url": "/admin/calendar",
+      "icons": [{ "src": "/favicon.svg", "sizes": "192x192" }]
+    }
+  ]
+}

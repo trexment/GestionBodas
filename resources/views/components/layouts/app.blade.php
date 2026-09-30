@@ -12,9 +12,14 @@
 
     <title>{{ $title ?? $companyName . ' - Panel de Gestión' }}</title>
     
-    <!-- Favicon Dinámico -->
+    <!-- Favicon Dinámico & PWA Android -->
     <link rel="icon" type="image/svg+xml" href="{{ $faviconUrl }}">
     <link rel="alternate icon" href="{{ $faviconUrl }}">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#080d16">
     
     <!-- Tailwind CSS CDN + Configuración Dark Mode -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -550,5 +555,12 @@
     </div>
 
     @livewireScripts
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').catch(() => {});
+            });
+        }
+    </script>
 </body>
 </html>
