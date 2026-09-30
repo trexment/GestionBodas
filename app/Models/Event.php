@@ -13,6 +13,7 @@ class Event extends Model
     protected $fillable = [
         'name',
         'event_type',
+        'brand',
         'event_date',
         'location',
         'venue_contact_name',
@@ -182,5 +183,35 @@ class Event extends Model
             'otro' => '🎉',
             default => '💍',
         };
+    }
+
+    /**
+     * Marca comercial activa del evento
+     */
+    public function getBrandCleanAttribute(): string
+    {
+        $b = $this->attributes['brand'] ?? null;
+        if (!empty($b)) {
+            return $b;
+        }
+        if (!app()->runningInConsole() && request() && str_contains(strtolower(request()->getHost()), 'javnx')) {
+            return 'javnx';
+        }
+        return 'nunez_and_son';
+    }
+
+    public function getBrandLabelAttribute(): string
+    {
+        return $this->brand_clean === 'javnx' ? 'JAVNX DJ' : 'Núñez and Son';
+    }
+
+    public function getBrandIconAttribute(): string
+    {
+        return $this->brand_clean === 'javnx' ? '🎧' : '👑';
+    }
+
+    public function getBrandInfoAttribute(): array
+    {
+        return Setting::getBrandInfo($this->brand_clean);
     }
 }

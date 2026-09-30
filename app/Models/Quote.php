@@ -11,6 +11,7 @@ class Quote extends Model
 
     protected $fillable = [
         'event_id',
+        'brand',
         'amount',
         'status',
         'pdf_path',
@@ -156,5 +157,24 @@ class Quote extends Model
         }
 
         return 0.00;
+    }
+
+    public function getBrandCleanAttribute(): string
+    {
+        if (!empty($this->attributes['brand'])) {
+            return $this->attributes['brand'];
+        }
+        if ($this->event && !empty($this->event->brand_clean)) {
+            return $this->event->brand_clean;
+        }
+        if (!app()->runningInConsole() && request() && str_contains(strtolower(request()->getHost()), 'javnx')) {
+            return 'javnx';
+        }
+        return 'nunez_and_son';
+    }
+
+    public function getBrandInfoAttribute(): array
+    {
+        return Setting::getBrandInfo($this->brand_clean);
     }
 }

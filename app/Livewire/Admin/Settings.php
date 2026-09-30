@@ -27,6 +27,21 @@ class Settings extends Component
     public $company_season;
     public $public_website_url;
     
+    // Perfiles de Marca (Núñez and Son & JAVNX DJ)
+    public $brand_nunez_name;
+    public $brand_nunez_subtitle;
+    public $brand_nunez_phone;
+    public $brand_nunez_phone_2;
+    public $brand_nunez_email;
+    public $brand_nunez_website;
+
+    public $brand_javnx_name;
+    public $brand_javnx_subtitle;
+    public $brand_javnx_phone;
+    public $brand_javnx_phone_2;
+    public $brand_javnx_email;
+    public $brand_javnx_website;
+    
     // Precios base y Packs Comerciales
     public $pack_basic_name;
     public $pack_basic_price;
@@ -125,6 +140,21 @@ class Settings extends Component
         $this->deposit_type = Setting::get('deposit_type', 'percentage');
         $this->deposit_percentage = (float)Setting::get('deposit_percentage', 40);
         $this->deposit_fixed_amount = (float)Setting::get('deposit_fixed_amount', 200);
+
+        // Perfiles de Marca
+        $this->brand_nunez_name = Setting::get('brand_nunez_name', 'Núñez and Son');
+        $this->brand_nunez_subtitle = Setting::get('brand_nunez_subtitle', 'DJ & Sonido');
+        $this->brand_nunez_phone = Setting::get('brand_nunez_phone', '+34 622 62 47 90 (Fran)');
+        $this->brand_nunez_phone_2 = Setting::get('brand_nunez_phone_2', '+34 674 37 89 93 (Miguel)');
+        $this->brand_nunez_email = Setting::get('brand_nunez_email', 'info@eventosmusicales.es');
+        $this->brand_nunez_website = Setting::get('brand_nunez_website', 'landing-bodas.es/nunez-and-son');
+
+        $this->brand_javnx_name = Setting::get('brand_javnx_name', 'JAVNX DJ');
+        $this->brand_javnx_subtitle = Setting::get('brand_javnx_subtitle', 'DJ & Producción de Eventos');
+        $this->brand_javnx_phone = Setting::get('brand_javnx_phone', '+34 622 62 47 90');
+        $this->brand_javnx_phone_2 = Setting::get('brand_javnx_phone_2', '');
+        $this->brand_javnx_email = Setting::get('brand_javnx_email', 'info@javnxdj.com');
+        $this->brand_javnx_website = Setting::get('brand_javnx_website', 'javnxdj.com');
 
         // Packs
         $this->pack_basic_name = Setting::get('pack_basic_name', 'Pack Básico');
@@ -283,6 +313,21 @@ class Settings extends Component
         Setting::set('deposit_type', $this->deposit_type);
         Setting::set('deposit_percentage', (float)$this->deposit_percentage);
         Setting::set('deposit_fixed_amount', (float)$this->deposit_fixed_amount);
+
+        // Perfiles de Marca
+        Setting::set('brand_nunez_name', $this->brand_nunez_name);
+        Setting::set('brand_nunez_subtitle', $this->brand_nunez_subtitle);
+        Setting::set('brand_nunez_phone', $this->brand_nunez_phone);
+        Setting::set('brand_nunez_phone_2', $this->brand_nunez_phone_2);
+        Setting::set('brand_nunez_email', $this->brand_nunez_email);
+        Setting::set('brand_nunez_website', $this->brand_nunez_website);
+
+        Setting::set('brand_javnx_name', $this->brand_javnx_name);
+        Setting::set('brand_javnx_subtitle', $this->brand_javnx_subtitle);
+        Setting::set('brand_javnx_phone', $this->brand_javnx_phone);
+        Setting::set('brand_javnx_phone_2', $this->brand_javnx_phone_2);
+        Setting::set('brand_javnx_email', $this->brand_javnx_email);
+        Setting::set('brand_javnx_website', $this->brand_javnx_website);
 
         // Packs
         Setting::set('pack_basic_name', $this->pack_basic_name);

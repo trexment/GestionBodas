@@ -159,6 +159,100 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- SECCIÓN MULTI-MARCA (NÚÑEZ AND SON & JAVNX DJ) -->
+                <div class="pt-6 border-t border-gray-200 space-y-4">
+                    <div>
+                        <h4 class="text-sm font-extrabold text-gray-900 flex items-center gap-2">
+                            <span>👑🎧</span> Configuración de Marcas Comerciales (Multi-Marca)
+                        </h4>
+                        <p class="text-xs text-gray-500 mt-0.5">
+                            Define los datos que aparecerán automáticamente en las propuestas según la marca que selecciones en cada evento.
+                        </p>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        <!-- PERFIL 1: NÚÑEZ AND SON -->
+                        <div class="p-4 bg-amber-50/60 rounded-2xl border border-amber-200 space-y-3">
+                            <div class="flex items-center gap-2 border-b border-amber-200 pb-2">
+                                <span class="text-xl">👑</span>
+                                <div>
+                                    <strong class="text-xs font-black text-amber-950 block">Marca 1: Núñez and Son</strong>
+                                    <span class="text-[11px] text-amber-800">Bodas, eventos familiares y sonorización tradicional</span>
+                                </div>
+                            </div>
+
+                            <div class="space-y-2.5 text-xs">
+                                <div>
+                                    <label class="block font-bold text-amber-900 mb-0.5">Nombre Comercial</label>
+                                    <input type="text" wire:model="brand_nunez_name" class="w-full border-amber-300 rounded-lg p-2 text-xs bg-white text-slate-800 font-bold">
+                                </div>
+                                <div>
+                                    <label class="block font-bold text-amber-900 mb-0.5">Subtítulo / Especialidad</label>
+                                    <input type="text" wire:model="brand_nunez_subtitle" class="w-full border-amber-300 rounded-lg p-2 text-xs bg-white text-slate-800">
+                                </div>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label class="block font-bold text-amber-900 mb-0.5">Teléfono 1 (Fran)</label>
+                                        <input type="text" wire:model="brand_nunez_phone" class="w-full border-amber-300 rounded-lg p-2 text-xs bg-white text-slate-800">
+                                    </div>
+                                    <div>
+                                        <label class="block font-bold text-amber-900 mb-0.5">Teléfono 2 (Miguel)</label>
+                                        <input type="text" wire:model="brand_nunez_phone_2" class="w-full border-amber-300 rounded-lg p-2 text-xs bg-white text-slate-800">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block font-bold text-amber-900 mb-0.5">Página Web / Landing</label>
+                                    <input type="text" wire:model="brand_nunez_website" class="w-full border-amber-300 rounded-lg p-2 text-xs bg-white text-slate-800">
+                                </div>
+                                <div>
+                                    <label class="block font-bold text-amber-900 mb-0.5">Email de Contacto</label>
+                                    <input type="email" wire:model="brand_nunez_email" class="w-full border-amber-300 rounded-lg p-2 text-xs bg-white text-slate-800">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- PERFIL 2: JAVNX DJ -->
+                        <div class="p-4 bg-indigo-50/60 rounded-2xl border border-indigo-200 space-y-3">
+                            <div class="flex items-center gap-2 border-b border-indigo-200 pb-2">
+                                <span class="text-xl">🎧</span>
+                                <div>
+                                    <strong class="text-xs font-black text-indigo-950 block">Marca 2: JAVNX DJ</strong>
+                                    <span class="text-[11px] text-indigo-800">Fiestas, sesiones DJ, eventos de empresa y festivales</span>
+                                </div>
+                            </div>
+
+                            <div class="space-y-2.5 text-xs">
+                                <div>
+                                    <label class="block font-bold text-indigo-900 mb-0.5">Nombre Comercial</label>
+                                    <input type="text" wire:model="brand_javnx_name" class="w-full border-indigo-300 rounded-lg p-2 text-xs bg-white text-slate-800 font-bold">
+                                </div>
+                                <div>
+                                    <label class="block font-bold text-indigo-900 mb-0.5">Subtítulo / Especialidad</label>
+                                    <input type="text" wire:model="brand_javnx_subtitle" class="w-full border-indigo-300 rounded-lg p-2 text-xs bg-white text-slate-800">
+                                </div>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label class="block font-bold text-indigo-900 mb-0.5">Teléfono Principal</label>
+                                        <input type="text" wire:model="brand_javnx_phone" class="w-full border-indigo-300 rounded-lg p-2 text-xs bg-white text-slate-800">
+                                    </div>
+                                    <div>
+                                        <label class="block font-bold text-indigo-900 mb-0.5">Teléfono Secundario (Opcional)</label>
+                                        <input type="text" wire:model="brand_javnx_phone_2" class="w-full border-indigo-300 rounded-lg p-2 text-xs bg-white text-slate-800">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block font-bold text-indigo-900 mb-0.5">Página Web / Redes</label>
+                                    <input type="text" wire:model="brand_javnx_website" class="w-full border-indigo-300 rounded-lg p-2 text-xs bg-white text-slate-800">
+                                </div>
+                                <div>
+                                    <label class="block font-bold text-indigo-900 mb-0.5">Email de Contacto</label>
+                                    <input type="email" wire:model="brand_javnx_email" class="w-full border-indigo-300 rounded-lg p-2 text-xs bg-white text-slate-800">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 

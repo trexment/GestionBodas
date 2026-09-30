@@ -78,6 +78,33 @@
             <div class="flex flex-wrap items-center gap-3">
                 <h2 class="text-2xl font-bold text-gray-800">{{ $event->name }}</h2>
 
+                <!-- Selector de Marca Comercial -->
+                <div class="relative" x-data="{ openBrandDropdown: false }">
+                    <button type="button" @click="openBrandDropdown = !openBrandDropdown" class="inline-flex items-center gap-1.5 text-xs px-3 py-1 rounded-full font-bold bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs transition cursor-pointer" title="Cambiar marca comercial para presupuestos y contratos">
+                        <span>{{ $event->brand_icon }}</span>
+                        <span>{{ $event->brand_label }}</span>
+                        <span class="text-[9px] text-amber-500">▼</span>
+                    </button>
+                    <div x-show="openBrandDropdown" @click.away="openBrandDropdown = false" class="absolute left-0 mt-1.5 w-60 bg-white border border-slate-200 rounded-2xl shadow-xl z-30 p-1.5 divide-y divide-slate-100 text-xs animate-in fade-in zoom-in-95 duration-100" style="display: none;">
+                        <div class="space-y-0.5">
+                            <button type="button" wire:click="changeBrand('nunez_and_son')" @click="openBrandDropdown = false" class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 font-semibold flex items-center gap-2 cursor-pointer {{ $event->brand_clean === 'nunez_and_son' ? 'bg-amber-50 text-amber-900 font-bold' : 'text-slate-700' }}">
+                                <span class="text-base">👑</span>
+                                <div>
+                                    <div class="font-bold">Núñez and Son</div>
+                                    <div class="text-[10px] text-slate-500">DJ & Sonido (Bodas & Eventos)</div>
+                                </div>
+                            </button>
+                            <button type="button" wire:click="changeBrand('javnx')" @click="openBrandDropdown = false" class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 font-semibold flex items-center gap-2 cursor-pointer {{ $event->brand_clean === 'javnx' ? 'bg-indigo-50 text-indigo-900 font-bold' : 'text-slate-700' }}">
+                                <span class="text-base">🎧</span>
+                                <div>
+                                    <div class="font-bold">JAVNX DJ</div>
+                                    <div class="text-[10px] text-slate-500">DJ & Producción de Eventos</div>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Selector de Tipo de Evento -->
                 <div class="relative" x-data="{ openTypeDropdown: false }">
                     <button type="button" @click="openTypeDropdown = !openTypeDropdown" class="inline-flex items-center gap-1.5 text-xs px-3 py-1 rounded-full font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-200 shadow-2xs transition cursor-pointer" title="Cambiar tipo de evento">

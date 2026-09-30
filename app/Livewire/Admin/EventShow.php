@@ -249,6 +249,14 @@ class EventShow extends Component
         session()->flash('message', "Tipo de evento actualizado a: {$this->event->event_type_label}");
     }
 
+    public function changeBrand($brand)
+    {
+        $this->event->update(['brand' => $brand]);
+        $this->event->refresh();
+        $brandLabel = $brand === 'javnx' ? 'JAVNX DJ' : 'Núñez and Son';
+        session()->flash('message', "Marca comercial del evento cambiada a: {$brandLabel}");
+    }
+
     public function deleteEvent()
     {
         if (auth()->user()->role !== 'admin') {

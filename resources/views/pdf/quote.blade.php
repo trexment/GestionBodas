@@ -383,14 +383,15 @@
 <body>
 
     @php
-        $companyName = \App\Models\Setting::getCompanyName('Núñez and Son');
-        $companyPhone = \App\Models\Setting::get('company_phone', '+34 622 62 47 90');
-        $companyPhone2 = \App\Models\Setting::get('company_phone_2', '+34 674 37 89 93');
-        $companyWebsite = \App\Models\Setting::get('company_website', 'landing-bodas.es/nunez-and-son');
-        $logoPath = \App\Models\Setting::getLogoPathForPdf();
-        if (!$logoPath && file_exists(storage_path('app/public/logos/BqwZKGcLFmX0kuiPh9EWKg3BKmHnRB3puOsxm9TI.png'))) {
-            $logoPath = storage_path('app/public/logos/BqwZKGcLFmX0kuiPh9EWKg3BKmHnRB3puOsxm9TI.png');
-        }
+        $brandKey = $event->brand_clean ?? (\App\Models\Setting::getBrandInfo()['key']);
+        $brand = \App\Models\Setting::getBrandInfo($brandKey);
+
+        $companyName = $brand['name'];
+        $companySubtitle = $brand['subtitle'];
+        $companyPhone = $brand['phone'];
+        $companyPhone2 = $brand['phone_2'];
+        $companyWebsite = $brand['website'];
+        $logoPath = $brand['logo_path'];
 
         // Pack settings
         $packBasicPrice = (float)\App\Models\Setting::get('pack_basic_price', 400);
@@ -452,15 +453,15 @@
                 <img src="{{ $logoPath }}" class="cover-logo-img" alt="Logo">
             @else
                 <div class="cover-badge-logo">
-                    <div class="cover-badge-title">NÚÑEZ</div>
-                    <div class="cover-badge-sub">AND SON · DJ</div>
+                    <div class="cover-badge-title">{{ $brandKey === 'javnx' ? 'JAVNX' : 'NÚÑEZ' }}</div>
+                    <div class="cover-badge-sub">{{ $brandKey === 'javnx' ? 'DJ & EVENTS' : 'AND SON · DJ' }}</div>
                 </div>
             @endif
         </div>
 
         <!-- Tarjeta flotante inferior -->
         <div class="cover-bottom-card">
-            <div class="cover-subtitle-top">{{ mb_strtoupper($companyName) }} &bull; DJ & SONIDO</div>
+            <div class="cover-subtitle-top">{{ mb_strtoupper($companyName) }} &bull; {{ mb_strtoupper($companySubtitle) }}</div>
             <div class="cover-main-title">Propuesta para<br>tu evento</div>
             <div class="cover-gold-line"></div>
             
@@ -543,7 +544,10 @@
 
         <!-- Pie de página -->
         <div class="page-footer-banner">
-            <strong>{{ $companyName }}</strong> &bull; Fran {{ $companyPhone }} &bull; Miguel {{ $companyPhone2 }} &bull; {{ $companyWebsite }}
+            <strong>{{ $companyName }}</strong>
+            @if(!empty($companyPhone)) &bull; {{ $companyPhone }} @endif
+            @if(!empty($companyPhone2)) &bull; {{ $companyPhone2 }} @endif
+            @if(!empty($companyWebsite)) &bull; {{ $companyWebsite }} @endif
         </div>
     </div>
 
@@ -652,7 +656,10 @@
 
         <!-- Pie de página -->
         <div class="page-footer-banner">
-            <strong>{{ $companyName }}</strong> &bull; Fran {{ $companyPhone }} &bull; Miguel {{ $companyPhone2 }} &bull; {{ $companyWebsite }}
+            <strong>{{ $companyName }}</strong>
+            @if(!empty($companyPhone)) &bull; {{ $companyPhone }} @endif
+            @if(!empty($companyPhone2)) &bull; {{ $companyPhone2 }} @endif
+            @if(!empty($companyWebsite)) &bull; {{ $companyWebsite }} @endif
         </div>
     </div>
 
