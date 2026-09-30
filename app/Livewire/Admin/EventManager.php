@@ -14,6 +14,9 @@ class EventManager extends Component
     public $name;
     public $event_type = 'boda'; // boda, empresa, cumpleanos, comunion, otro
     public $event_date;
+    public $start_time;
+    public $dance_start_time;
+    public $dance_duration_hours = 4.0;
     public $location;
     public $client_id;
     public $dj_id;
@@ -30,6 +33,9 @@ class EventManager extends Component
         'name' => 'required|string|max:255',
         'event_type' => 'required|string|in:boda,empresa,cumpleanos,comunion,otro',
         'event_date' => 'required|date',
+        'start_time' => 'nullable|string|max:20',
+        'dance_start_time' => 'nullable|string|max:20',
+        'dance_duration_hours' => 'nullable|numeric|min:0.5|max:24',
         'location' => 'required|string|max:255',
         'client_id' => 'nullable|exists:users,id',
         'dj_id' => 'nullable|exists:users,id',
@@ -72,8 +78,9 @@ class EventManager extends Component
             return;
         }
         $this->resetValidation();
-        $this->reset(['name', 'event_type', 'event_date', 'location', 'client_id', 'dj_id', 'assistant_id', 'notes']);
+        $this->reset(['name', 'event_type', 'event_date', 'start_time', 'dance_start_time', 'dance_duration_hours', 'location', 'client_id', 'dj_id', 'assistant_id', 'notes']);
         $this->event_type = 'boda';
+        $this->dance_duration_hours = 4.0;
         $this->dj_id = auth()->id(); // default current logged admin/dj
         $this->loadStaff();
         $this->showCreateModal = true;
@@ -92,6 +99,9 @@ class EventManager extends Component
             'name' => $this->name,
             'event_type' => $this->event_type ?: 'boda',
             'event_date' => $this->event_date,
+            'start_time' => $this->start_time ?: null,
+            'dance_start_time' => $this->dance_start_time ?: null,
+            'dance_duration_hours' => $this->dance_duration_hours ? (float)$this->dance_duration_hours : null,
             'location' => $this->location,
             'client_id' => $this->client_id ?: null,
             'dj_id' => $this->dj_id ?: auth()->id(),

@@ -241,6 +241,20 @@
                     @endif
                 </span>
 
+                <!-- Horarios del Evento y Baile -->
+                @if(!empty($event->dance_start_time))
+                    <span class="inline-flex items-center gap-1.5 text-purple-900 bg-purple-50 hover:bg-purple-100 border border-purple-200 px-2.5 py-1 rounded-lg shadow-2xs transition">
+                        <span>⏰ <strong>Baile:</strong> {{ $event->dance_schedule_label }}</span>
+                        <button type="button" wire:click="openScheduleModal" class="text-[11px] text-purple-700 hover:text-purple-900 font-bold ml-0.5 hover:underline cursor-pointer" title="Modificar horario de inicio y duración del baile">
+                            ✏️
+                        </button>
+                    </span>
+                @else
+                    <button type="button" wire:click="openScheduleModal" class="inline-flex items-center gap-1.5 text-xs font-bold text-purple-800 bg-purple-50 hover:bg-purple-100 border border-purple-200 px-2.5 py-1 rounded-lg transition cursor-pointer shadow-2xs" title="Establecer hora de inicio del baile y duración">
+                        <span>⏰ <span>+ Horario Baile</span></span>
+                    </button>
+                @endif
+
                 <!-- Contacto Finca / Bodega / Restaurante -->
                 <span class="inline-flex items-center gap-1.5 text-slate-800 dark:text-slate-200 font-semibold bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 shadow-2xs">
                     🏢 <strong>Finca/Bodega:</strong> {{ $event->venue_contact_name ?: ($event->location ?: 'Sin contacto') }}
@@ -2822,6 +2836,115 @@
                         </button>
                         <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2 rounded-xl shadow-xs transition">
                             💾 Guardar Contacto
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    @endif
+
+    <!-- Modal Horarios del Evento y Baile -->
+    @if($showScheduleModal)
+    <div class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-slate-900/70 backdrop-blur-xs transition-opacity" wire:click="closeScheduleModal"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div class="inline-block align-bottom bg-white dark:bg-slate-900 rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border border-slate-200 dark:border-slate-800">
+                <div class="bg-gradient-to-r from-purple-700 to-indigo-700 px-6 py-4 flex items-center justify-between text-white">
+                    <div class="flex items-center gap-2">
+                        <span class="text-2xl">⏰</span>
+                        <div>
+                            <h3 class="font-bold text-lg leading-tight">Horarios del Evento y Baile</h3>
+                            <p class="text-xs text-purple-200">{{ $event->name }} &bull; Planificación horaria para DJ y equipo</p>
+                        </div>
+                    </div>
+                    <button type="button" wire:click="closeScheduleModal" class="text-purple-200 hover:text-white text-2xl font-bold leading-none">&times;</button>
+                </div>
+
+                <form wire:submit.prevent="saveSchedule">
+                    <div class="p-6 space-y-5">
+                        <!-- Sección Destacada: Baile / Barra Libre -->
+                        <div class="bg-purple-50 dark:bg-purple-950/40 p-4 rounded-2xl border border-purple-200 dark:border-purple-800 space-y-3">
+                            <div class="flex items-center justify-between">
+                                <h4 class="text-xs font-black uppercase text-purple-900 dark:text-purple-300 tracking-wider flex items-center gap-1.5">
+                                    <span>🎧 Horario del Baile / Barra Libre (DJ)</span>
+                                </h4>
+                                @if($event->suggested_dance_hours)
+                                    <span class="text-[10px] font-bold bg-purple-200 dark:bg-purple-900 text-purple-800 dark:text-purple-200 px-2 py-0.5 rounded-full">
+                                        Contrato: {{ $event->suggested_dance_hours }}h
+                                    </span>
+                                @endif
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Hora Inicio</label>
+                                    <input type="time" wire:model.live="dance_start_time" class="w-full border-gray-300 dark:border-slate-700 dark:bg-slate-950 dark:text-white rounded-xl text-sm font-bold focus:ring-purple-500 focus:border-purple-500 p-2.5">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Duración (Horas)</label>
+                                    <div class="relative">
+                                        <input type="number" step="0.5" min="0.5" max="24" wire:model.live="dance_duration_hours" class="w-full border-gray-300 dark:border-slate-700 dark:bg-slate-950 dark:text-white rounded-xl text-sm font-bold focus:ring-purple-500 focus:border-purple-500 p-2.5 pr-7">
+                                        <span class="absolute right-2.5 top-2.5 text-xs text-gray-400 font-bold">h</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Fin Previsto</label>
+                                    <input type="time" wire:model="dance_end_time" class="w-full border-gray-300 dark:border-slate-700 dark:bg-slate-950 dark:text-white rounded-xl text-sm font-bold focus:ring-purple-500 focus:border-purple-500 p-2.5">
+                                </div>
+                            </div>
+
+                            <!-- Botones rápidos de duración -->
+                            <div>
+                                <label class="block text-[10px] font-bold text-purple-800 dark:text-purple-300 uppercase mb-1">Presets de duración:</label>
+                                <div class="flex flex-wrap gap-1.5">
+                                    <button type="button" wire:click="setPresetDanceDuration(3)" class="text-xs px-2.5 py-1 rounded-lg font-bold transition {{ (float)$dance_duration_hours === 3.0 ? 'bg-purple-600 text-white shadow-xs' : 'bg-white dark:bg-slate-800 text-purple-900 dark:text-purple-200 border border-purple-200 dark:border-purple-700 hover:bg-purple-100' }}">3h</button>
+                                    <button type="button" wire:click="setPresetDanceDuration(4)" class="text-xs px-2.5 py-1 rounded-lg font-bold transition {{ (float)$dance_duration_hours === 4.0 ? 'bg-purple-600 text-white shadow-xs' : 'bg-white dark:bg-slate-800 text-purple-900 dark:text-purple-200 border border-purple-200 dark:border-purple-700 hover:bg-purple-100' }}">4h (Estándar)</button>
+                                    <button type="button" wire:click="setPresetDanceDuration(5)" class="text-xs px-2.5 py-1 rounded-lg font-bold transition {{ (float)$dance_duration_hours === 5.0 ? 'bg-purple-600 text-white shadow-xs' : 'bg-white dark:bg-slate-800 text-purple-900 dark:text-purple-200 border border-purple-200 dark:border-purple-700 hover:bg-purple-100' }}">5h</button>
+                                    <button type="button" wire:click="setPresetDanceDuration(6)" class="text-xs px-2.5 py-1 rounded-lg font-bold transition {{ (float)$dance_duration_hours === 6.0 ? 'bg-purple-600 text-white shadow-xs' : 'bg-white dark:bg-slate-800 text-purple-900 dark:text-purple-200 border border-purple-200 dark:border-purple-700 hover:bg-purple-100' }}">6h</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Cronograma General del Evento (Opcional) -->
+                        <div class="space-y-3">
+                            <h4 class="text-xs font-black uppercase text-gray-700 dark:text-gray-300 tracking-wider">
+                                📅 Cronograma General del Evento (Opcional)
+                            </h4>
+                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                                <div>
+                                    <label class="block text-[11px] font-bold text-gray-600 dark:text-gray-400 mb-1">🚗 Llegada / Montaje</label>
+                                    <input type="time" wire:model="start_time" class="w-full border-gray-300 dark:border-slate-700 dark:bg-slate-950 dark:text-white rounded-xl text-xs p-2">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold text-gray-600 dark:text-gray-400 mb-1">💍 Ceremonia</label>
+                                    <input type="time" wire:model="ceremony_time" class="w-full border-gray-300 dark:border-slate-700 dark:bg-slate-950 dark:text-white rounded-xl text-xs p-2">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold text-gray-600 dark:text-gray-400 mb-1">🍸 Cóctel</label>
+                                    <input type="time" wire:model="cocktail_time" class="w-full border-gray-300 dark:border-slate-700 dark:bg-slate-950 dark:text-white rounded-xl text-xs p-2">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold text-gray-600 dark:text-gray-400 mb-1">🍽️ Banquete / Cena</label>
+                                    <input type="time" wire:model="banquet_time" class="w-full border-gray-300 dark:border-slate-700 dark:bg-slate-950 dark:text-white rounded-xl text-xs p-2">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Observaciones de Horarios -->
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1">Notas / Observaciones de Horario</label>
+                            <textarea wire:model="schedule_notes" rows="2" placeholder="Ej: Montaje listo antes de las 18:00. Los novios quieren abrir baile a las 23:30 puntuales tras el corte de tarta..." class="w-full border-gray-300 dark:border-slate-700 dark:bg-slate-950 dark:text-white rounded-xl text-xs p-2.5"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-50 dark:bg-slate-800/80 px-6 py-3 border-t border-gray-100 dark:border-slate-800 flex justify-end gap-2">
+                        <button type="button" wire:click="closeScheduleModal" class="bg-white dark:bg-slate-900 hover:bg-gray-100 text-gray-700 dark:text-gray-300 font-bold text-xs px-4 py-2 border border-gray-300 dark:border-slate-700 rounded-xl transition">
+                            Cancelar
+                        </button>
+                        <button type="submit" class="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs px-4 py-2 rounded-xl shadow-xs transition">
+                            💾 Guardar Horarios
                         </button>
                     </div>
                 </form>

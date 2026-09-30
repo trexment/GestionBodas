@@ -30,6 +30,17 @@ class EventShow extends Component
     public $venue_notes;
     public $showVenueModal = false;
 
+    // Horarios del Evento y Baile
+    public $showScheduleModal = false;
+    public $dance_start_time;
+    public $dance_duration_hours;
+    public $dance_end_time;
+    public $start_time;
+    public $ceremony_time;
+    public $cocktail_time;
+    public $banquet_time;
+    public $schedule_notes;
+
     // Edición de Cliente
     public $showClientModal = false;
     public $selected_client_id = '';
@@ -165,6 +176,16 @@ class EventShow extends Component
         $this->venue_notes = $this->event->venue_notes;
         $this->is_dossier_completed = $this->event->is_dossier_completed;
         $this->event_notes = $this->event->notes;
+
+        // Horarios
+        $this->dance_start_time = $this->event->dance_start_time;
+        $this->dance_duration_hours = $this->event->dance_duration_hours ?: $this->event->suggested_dance_hours;
+        $this->dance_end_time = $this->event->dance_end_time ?: $this->event->calculated_dance_end_time;
+        $this->start_time = $this->event->start_time;
+        $this->ceremony_time = $this->event->ceremony_time;
+        $this->cocktail_time = $this->event->cocktail_time;
+        $this->banquet_time = $this->event->banquet_time;
+        $this->schedule_notes = $this->event->schedule_notes;
         
         $dossier = $this->event->dossiers()->first();
         $this->loadSettingsPrices();
@@ -1932,6 +1953,80 @@ class EventShow extends Component
 
         $this->showVenueModal = false;
         session()->flash('venue_message', 'Contacto de la finca/bodega guardado correctamente.');
+    }
+
+    public function openScheduleModal()
+    {
+        $this->dance_start_time = $this->event->dance_start_time;
+        $this->dance_duration_hours = $this->event->dance_duration_hours ?: $this->event->suggested_dance_hours;
+        $this->dance_end_time = $this->event->dance_end_time ?: $this->event->calculated_dance_end_time;
+        $this->start_time = $this->event->start_time;
+        $this->ceremony_time = $this->event->ceremony_time;
+        $this->cocktail_time = $this->event->cocktail_time;
+        $this->banquet_time = $this->event->banquet_time;
+        $this->schedule_notes = $this->event->schedule_notes;
+        $this->showScheduleModal = true;
+    }
+
+    public function closeScheduleModal()
+    {
+        $this->showScheduleModal = false;
+    }
+
+    public function updatedDanceStartTime($value)
+    {
+        $this->recalculateDanceEndTime();
+    }
+
+    public function updatedDanceDurationHours($value)
+    {
+        $this->recalculateDanceEndTime();
+    }
+
+    public function recalculateDanceEndTime()
+    {
+        if (!empty($this->dance_start_time) && !empty($this->dance_duration_hours)) {
+            try {
+                $start = \Carbon\Carbon::createFromFormat('H:i', substr($this->dance_start_time, 0, 5));
+                $minutes = (int)((float)$this->dance_duration_hours * 60);
+                $this->dance_end_time = $start->addMinutes($minutes)->format('H:i');
+            } catch (\Throwable $e) {}
+        }
+    }
+
+    public function setPresetDanceDuration($hours)
+    {
+        $this->dance_duration_hours = (float)$hours;
+        $this->recalculateDanceEndTime();
+    }
+
+    public function saveSchedule()
+    {
+        $this->validate([
+            'dance_start_time' => 'nullable|string|max:20',
+            'dance_duration_hours' => 'nullable|numeric|min:0.5|max:24',
+            'dance_end_time' => 'nullable|string|max:20',
+            'start_time' => 'nullable|string|max:20',
+            'ceremony_time' => 'nullable|string|max:20',
+            'cocktail_time' => 'nullable|string|max:20',
+            'banquet_time' => 'nullable|string|max:20',
+            'schedule_notes' => 'nullable|string',
+        ]);
+
+        $this->event->update([
+            'dance_start_time' => $this->dance_start_time ?: null,
+            'dance_duration_hours' => $this->dance_duration_hours ? (float)$this->dance_duration_hours : null,
+            'dance_end_time' => $this->dance_end_time ?: null,
+            'start_time' => $this->start_time ?: null,
+            'ceremony_time' => $this->ceremony_time ?: null,
+            'cocktail_time' => $this->cocktail_time ?: null,
+            'banquet_time' => $this->banquet_time ?: null,
+            'schedule_notes' => $this->schedule_notes ?: null,
+        ]);
+
+        $this->event->refresh();
+        $this->showScheduleModal = false;
+        session()->flash('message', '¡Horarios del evento y del baile actualizados correctamente!');
     }
 
     public function exportPlaylistM3u()

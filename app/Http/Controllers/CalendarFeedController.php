@@ -42,16 +42,16 @@ class CalendarFeedController extends Controller
 
         foreach ($events as $event) {
             $date = Carbon::parse($event->event_date);
-            $startTime = $event->start_time ?: '13:00';
-            $endTime = $event->end_time ?: '23:00';
+            $startTime = $event->start_time ?: ($event->dance_start_time ?: '13:00');
+            $endTime = $event->calculated_dance_end_time ?: ($event->end_time ?: '23:00');
 
-            $startDt = Carbon::parse($date->format('Y-m-d') . ' ' . $startTime);
-            $endDt = Carbon::parse($date->format('Y-m-d') . ' ' . $endTime);
+            $startDt = Carbon::parse($date->format('Y-m-d') . ' ' . substr($startTime, 0, 5));
+            $endDt = Carbon::parse($date->format('Y-m-d') . ' ' . substr($endTime, 0, 5));
             if ($endDt->lt($startDt)) {
                 $endDt->addDay();
             }
 
-            $summary = "{$event->name}" . ($event->type ? " ({$event->type})" : "");
+            $summary = "{$event->name}" . ($event->event_type_label ? " ({$event->event_type_label})" : "");
             $location = $event->location ?: 'Por determinar';
 
             $clientName = $event->client ? $event->client->name : 'Sin cliente';
@@ -60,6 +60,10 @@ class CalendarFeedController extends Controller
             $assistantName = $event->assistant ? $event->assistant->name : 'Sin Asistente';
 
             $description = "EVENTO: {$event->name}\\n";
+            $description .= "TIPO: {$event->event_type_label}\\n";
+            if ($event->dance_start_time) {
+                $description .= "HORARIO BAILE: {$event->dance_schedule_label}\\n";
+            }
             $description .= "CLIENTE: {$clientName} (Tel: {$clientPhone})\\n";
             $description .= "DJ: {$djName}\\n";
             $description .= "ASISTENTE: {$assistantName}\\n";

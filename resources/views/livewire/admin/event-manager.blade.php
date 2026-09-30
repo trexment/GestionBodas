@@ -56,6 +56,12 @@
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="text-sm text-gray-900 font-semibold">{{ $event->event_date->format('d/m/Y') }}</div>
+                            @if($event->dance_start_time)
+                                <div class="text-[11px] text-purple-700 font-bold flex items-center gap-1 mt-0.5">
+                                    <span>⏰</span>
+                                    <span>Baile: {{ substr($event->dance_start_time, 0, 5) }}h @if($event->dance_duration_hours)({{ (float)$event->dance_duration_hours }}h)@endif</span>
+                                </div>
+                            @endif
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                             📍 {{ $event->location }}
@@ -145,6 +151,25 @@
                                 <label class="block text-gray-700 text-xs font-bold mb-1">Lugar / Finca / Salón *</label>
                                 <input type="text" wire:model="location" placeholder="Ej: Marqués de Riscal" class="border rounded-lg w-full py-2 px-3 text-gray-700 text-sm focus:ring-indigo-500 focus:border-indigo-500">
                                 @error('location') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                            </div>
+                        </div>
+
+                        <!-- Horarios del Baile / Barra Libre -->
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4 p-3 bg-purple-50/70 rounded-xl border border-purple-100">
+                            <div>
+                                <label class="block text-purple-900 text-xs font-bold mb-1">🚗 Llegada / Montaje</label>
+                                <input type="time" wire:model="start_time" class="border border-purple-200 rounded-lg w-full py-1.5 px-2 text-gray-700 text-xs bg-white">
+                            </div>
+                            <div>
+                                <label class="block text-purple-900 text-xs font-bold mb-1">⏰ Inicio Baile (DJ)</label>
+                                <input type="time" wire:model="dance_start_time" class="border border-purple-200 rounded-lg w-full py-1.5 px-2 text-gray-700 text-xs font-bold bg-white">
+                            </div>
+                            <div>
+                                <label class="block text-purple-900 text-xs font-bold mb-1">⏱️ Duración Baile</label>
+                                <div class="relative">
+                                    <input type="number" step="0.5" min="1" max="24" wire:model="dance_duration_hours" class="border border-purple-200 rounded-lg w-full py-1.5 px-2 text-gray-700 text-xs font-bold bg-white pr-6">
+                                    <span class="absolute right-2 top-2 text-[10px] text-gray-400 font-bold">h</span>
+                                </div>
                             </div>
                         </div>
 

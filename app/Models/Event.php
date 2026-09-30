@@ -15,6 +15,14 @@ class Event extends Model
         'event_type',
         'brand',
         'event_date',
+        'start_time',
+        'dance_start_time',
+        'dance_duration_hours',
+        'dance_end_time',
+        'ceremony_time',
+        'cocktail_time',
+        'banquet_time',
+        'schedule_notes',
         'location',
         'venue_contact_name',
         'venue_contact_phone',
@@ -35,6 +43,7 @@ class Event extends Model
 
     protected $casts = [
         'event_date' => 'date',
+        'dance_duration_hours' => 'decimal:1',
         'deposit_paid' => 'boolean',
         'deposit_paid_amount' => 'decimal:2',
         'deposit_paid_at' => 'date',
@@ -229,4 +238,84 @@ class Event extends Model
     {
         return Setting::getBrandInfo($this->brand_clean);
     }
+
+    /**
+     * Calcula la hora de finalización del baile sumando las horas de duración
+     */
+    public function getCalculatedDanceEndTimeAttribute(): ?string
+    {
+        if (!empty($this->dance_end_time)) {
+            return $this->dance_end_time;
+        }
+
+        if (!empty($this->dance_start_time) && !empty($this->dance_duration_hours)) {
+            try {
+                $start = \Carbon\Carbon::createFromFormat('H:i', substr($this->dance_start_time, 0, 5));
+                $minutes = (int)($this->dance_duration_hours * 60);
+                return $start->addMinutes($minutes)->format('H:i');
+            } catch (\Throwable $e) {
+                return null;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Extrae las horas de baile sugeridas a partir del presupuesto / contrato
+     */
+    public function getSuggestedDanceHoursAttribute(): ?float
+    {
+        if (!empty($this->dance_duration_hours)) {
+            return (float)$this->dance_duration_hours;
+        }
+
+        // Buscar en los items del presupuesto
+        $quote = $this->quotes()->latest()->first();
+        if ($quote && $quote->items) {
+            foreach ($quote->items as $item) {
+                $name = mb_strtolower($item->service_name ?? '');
+                $desc = mb_strtolower($item->description ?? '');
+                
+                // Pack Básico (4h), Pack Medio (5h), Pack Premium (6h)
+                if (str_contains($name, 'pack') || str_contains($desc, 'pack')) {
+                    if (str_contains($name, 'básico') || str_contains($name, 'basico')) return 4.0;
+                    if (str_contains($name, 'medio')) return 5.0;
+                    if (str_contains($name, 'premium')) return 6.0;
+                }
+
+                // Horas de DJ
+                if (str_contains($name, 'hora') && str_contains($name, 'dj')) {
+                    if ($item->quantity > 0) return (float)$item->quantity;
+                }
+            }
+        }
+
+        return 4.0; // Valor por defecto habitual
+    }
+
+    /**
+     * Etiqueta legible del horario del baile
+     */
+    public function getDanceScheduleLabelAttribute(): string
+    {
+        if (empty($this->dance_start_time)) {
+            return 'Horario no definido';
+        }
+
+        $start = substr($this->dance_start_time, 0, 5) . ' h';
+        $end = $this->calculated_dance_end_time ? (substr($this->calculated_dance_end_time, 0, 5) . ' h') : null;
+        $hours = $this->dance_duration_hours ? (rtrim(rtrim(number_format($this->dance_duration_hours, 1, ',', '.'), '0'), ',') . 'h') : null;
+
+        if ($end && $hours) {
+            return "De {$start} a {$end} ({$hours})";
+        } elseif ($end) {
+            return "De {$start} a {$end}";
+        } elseif ($hours) {
+            return "Desde las {$start} ({$hours})";
+        }
+
+        return "Desde las {$start}";
+    }
 }
+

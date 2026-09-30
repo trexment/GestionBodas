@@ -110,10 +110,22 @@ class WhatsAppTemplateService
             $venueInfo .= "\n🔧 *Notas de Acceso/Montaje:* " . $event->venue_notes;
         }
 
+        $scheduleInfo = '';
+        if (!empty($event->dance_start_time)) {
+            $scheduleInfo .= "\n⏰ *Horario Baile (DJ):* " . $event->dance_schedule_label;
+        }
+        if (!empty($event->start_time)) {
+            $scheduleInfo .= "\n🚗 *Hora Llegada / Montaje:* " . substr($event->start_time, 0, 5) . " h";
+        }
+        if (!empty($event->schedule_notes)) {
+            $scheduleInfo .= "\n📝 *Timing:* " . $event->schedule_notes;
+        }
+
         return "¡Hola {$userName}! 🎧 Tienes asignado el evento *{$event->name}*:\n\n"
              . "📅 *Fecha:* {$date}\n"
              . "📍 *Ubicación:* {$location}\n"
              . "👤 *Cliente:* {$clientName} ({$clientPhone})"
+             . $scheduleInfo
              . $venueInfo . "\n\n"
              . "📱 *Modo Cabina / Escaleta en Vivo:* {$boothUrl}\n\n"
              . "¡A darlo todo en el evento! 🔥";
