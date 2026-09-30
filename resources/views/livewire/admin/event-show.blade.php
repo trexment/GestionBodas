@@ -309,16 +309,20 @@
     <!-- Banner Cuestionario Musical con WhatsApp -->
     <div class="bg-white p-4 rounded-xl border border-gray-200 mb-6 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
-            <h4 class="font-bold text-gray-800 text-sm flex items-center gap-2">
-                <span>🎵 Enlace Cuestionario Musical (Para Clientes)</span>
+            <div class="flex items-center gap-2">
+                <h4 class="font-bold text-gray-800 text-sm flex items-center gap-1.5">
+                    <span>🎵 Enlace Cuestionario Musical (Para Clientes)</span>
+                </h4>
                 @if($event->is_dossier_completed)
-                    <span class="text-[10px] bg-green-100 text-green-800 px-2 py-0.5 rounded-full font-bold">Completado por cliente</span>
+                    <span class="text-[10px] bg-rose-100 text-rose-800 border border-rose-200 px-2 py-0.5 rounded-full font-bold">🔒 Cuestionario Bloqueado</span>
+                @else
+                    <span class="text-[10px] bg-emerald-100 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-full font-bold">🔓 Abierto para el cliente</span>
                 @endif
-            </h4>
-            <p class="text-xs text-gray-500 mt-0.5">Comparte este enlace para que los novios rellenen sus canciones y preferencias.</p>
+            </div>
+            <p class="text-xs text-gray-500 mt-0.5">Comparte este enlace para que los novios o el cliente rellenen sus canciones y preferencias.</p>
         </div>
         <div class="flex flex-wrap items-center gap-2 w-full md:w-auto" x-data="{ copiedLink: false }">
-            <input type="text" readonly value="{{ route('guest.form', $event->token) }}" class="flex-1 md:w-64 border-gray-300 rounded-lg text-xs bg-gray-50 px-3 py-2 select-all focus:ring-indigo-500" id="guestLink">
+            <input type="text" readonly value="{{ route('guest.form', $event->token) }}" class="flex-1 md:w-64 border-gray-300 rounded-lg text-xs bg-gray-50 px-3 py-2 select-all focus:ring-indigo-500 font-mono" id="guestLink">
             
             <button type="button" @click="
                 const input = document.getElementById('guestLink');
@@ -340,6 +344,14 @@
             " class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg text-xs font-semibold shadow-xs whitespace-nowrap transition min-w-[85px] text-center">
                 <span x-show="!copiedLink">📋 Copiar</span>
                 <span x-show="copiedLink" class="text-emerald-600 font-bold" style="display: none;">✅ ¡Copiado!</span>
+            </button>
+            
+            <a href="{{ route('guest.form', $event->token) }}" target="_blank" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-3 py-2 rounded-lg text-xs font-bold shadow-xs whitespace-nowrap inline-flex items-center gap-1 transition" title="Abrir y probar cuestionario en nueva pestaña">
+                🔗 Probar
+            </a>
+
+            <button type="button" wire:click="toggleDossierStatus" class="px-3 py-2 rounded-lg text-xs font-bold border transition shadow-xs whitespace-nowrap {{ $event->is_dossier_completed ? 'bg-amber-50 hover:bg-amber-100 text-amber-800 border-amber-300' : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-300' }}" title="{{ $event->is_dossier_completed ? 'Permitir al cliente editar sus canciones de nuevo' : 'Bloquear cuestionario para que el cliente no haga más cambios' }}">
+                {{ $event->is_dossier_completed ? '🔓 Reabrir' : '🔒 Bloquear' }}
             </button>
             
             <a href="{{ $cuestionarioWaUrl }}" target="_blank" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-lg text-xs font-bold shadow-xs whitespace-nowrap inline-flex items-center gap-1.5 transition">

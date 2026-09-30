@@ -685,6 +685,14 @@ class EventShow extends Component
         session()->flash('dossier_message', 'Dossier guardado correctamente.');
     }
 
+    public function toggleDossierStatus()
+    {
+        $this->is_dossier_completed = !$this->is_dossier_completed;
+        $this->event->update(['is_dossier_completed' => $this->is_dossier_completed]);
+        $statusStr = $this->is_dossier_completed ? '🔒 Cuestionario bloqueado/cerrado.' : '🔓 Cuestionario reabierto para que el cliente pueda editar sus canciones.';
+        session()->flash('message', $statusStr);
+    }
+
     // Material / Hoja de Carga Methods
     public function addEquipment()
     {

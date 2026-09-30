@@ -67,8 +67,8 @@ class EventManager extends Component
 
     public function openCreateModal()
     {
-        if (auth()->user()->role !== 'admin') {
-            session()->flash('error', 'Solo los administradores pueden crear nuevos eventos.');
+        if (!in_array(auth()->user()->role, ['admin', 'dj'])) {
+            session()->flash('error', 'Solo los administradores y DJs autorizados pueden crear nuevos eventos.');
             return;
         }
         $this->resetValidation();

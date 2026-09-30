@@ -45,8 +45,23 @@ class Event extends Model
         parent::boot();
         
         static::creating(function ($event) {
-            $event->token = Str::random(32);
+            if (empty($event->token)) {
+                $event->token = Str::random(32);
+            }
         });
+    }
+
+    public function getTokenAttribute($value)
+    {
+        if (empty($value)) {
+            $newToken = Str::random(32);
+            if ($this->exists) {
+                $this->attributes['token'] = $newToken;
+                $this->saveQuietly();
+            }
+            return $newToken;
+        }
+        return $value;
     }
 
     public function client()

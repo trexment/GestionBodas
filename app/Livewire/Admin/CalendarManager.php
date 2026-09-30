@@ -57,8 +57,8 @@ class CalendarManager extends Component
 
     public function openCreateModal($dateStr = null)
     {
-        if (auth()->user()->role !== 'admin') {
-            session()->flash('error', 'Solo los administradores pueden crear nuevos eventos.');
+        if (!in_array(auth()->user()->role, ['admin', 'dj'])) {
+            session()->flash('error', 'Solo los administradores y DJs autorizados pueden crear nuevos eventos.');
             return;
         }
         $this->resetCreateForm();
@@ -72,8 +72,8 @@ class CalendarManager extends Component
 
     public function createEvent()
     {
-        if (auth()->user()->role !== 'admin') {
-            session()->flash('error', 'Solo los administradores pueden crear nuevos eventos.');
+        if (!in_array(auth()->user()->role, ['admin', 'dj'])) {
+            session()->flash('error', 'Solo los administradores y DJs autorizados pueden crear nuevos eventos.');
             return;
         }
         $this->validate([
