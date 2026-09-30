@@ -1499,6 +1499,30 @@ class EventShow extends Component
         session()->flash('quote_message', 'Propuesta comercial eliminada correctamente.');
     }
 
+    public function sendQuoteByEmail($quoteId)
+    {
+        $quote = $this->event->quotes()->with('items')->find($quoteId);
+        if (!$quote) {
+            session()->flash('quote_error', 'No se encontró la propuesta comercial.');
+            return;
+        }
+
+        $client = $this->event->client;
+        if (!$client || empty($client->email) || str_ends_with($client->email, '@eventosmusicales.local')) {
+            session()->flash('quote_error', 'El cliente no tiene un email válido asignado. Edita los datos del cliente para introducir su correo antes de enviar.');
+            return;
+        }
+
+        try {
+            \Illuminate\Support\Facades\Mail::to($client->email)
+                ->send(new \App\Mail\QuoteProposalClientMail($this->event, $quote));
+
+            session()->flash('quote_message', '✉️ ¡Propuesta #' . $quote->id . ' enviada por correo con éxito a ' . $client->email . ' con el PDF oficial adjunto!');
+        } catch (\Throwable $e) {
+            session()->flash('quote_error', 'Error al enviar el email: ' . $e->getMessage());
+        }
+    }
+
     public function createContract()
     {
         $token = \Illuminate\Support\Str::random(32);

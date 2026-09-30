@@ -407,6 +407,17 @@ class QuoteCalculator extends Component
             ]);
         }
 
+        // 7. Enviar notificación por email al Administrador / Empresa
+        try {
+            $adminEmail = Setting::get('company_email', config('mail.from.address'));
+            if ($adminEmail && filter_var($adminEmail, FILTER_VALIDATE_EMAIL)) {
+                \Illuminate\Support\Facades\Mail::to($adminEmail)
+                    ->send(new \App\Mail\NewQuoteRequestAdminMail($event, $quote, $requestedServicesList, $typeConfig));
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('No se pudo enviar el email de aviso de presupuesto: ' . $e->getMessage());
+        }
+
         $this->is_submitted = true;
     }
 

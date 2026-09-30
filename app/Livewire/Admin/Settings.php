@@ -97,6 +97,10 @@ class Settings extends Component
     public $google_drive_library_folder;
     public $driveSyncStatus = null;
 
+    // Diagnóstico de Correo Electrónico (SMTP)
+    public $test_email_recipient = '';
+    public $smtpTestStatus = null;
+
     public function mount()
     {
         if (auth()->user()->role !== 'admin') {
@@ -177,6 +181,7 @@ class Settings extends Component
         $this->google_drive_api_key = Setting::get('google_drive_api_key', '');
         $this->google_drive_library_folder = Setting::get('google_drive_library_folder', '');
         $this->spotifyUser = SpotifyService::getUserDetails();
+        $this->test_email_recipient = $this->company_email ?: 'info@javnxdj.com';
     }
 
     public function loadPreset($presetKey)
@@ -359,6 +364,31 @@ class Settings extends Component
             session()->flash('drive_sync_success', $result['message']);
         } else {
             session()->flash('drive_sync_error', $result['message']);
+        }
+    }
+
+    public function testSmtpConnection()
+    {
+        $this->validate([
+            'test_email_recipient' => 'required|email',
+        ], [
+            'test_email_recipient.required' => 'Introduce un email de destino para la prueba.',
+            'test_email_recipient.email' => 'Introduce una dirección de correo electrónico válida.',
+        ]);
+
+        try {
+            \Illuminate\Support\Facades\Mail::to($this->test_email_recipient)
+                ->send(new \App\Mail\TestSmtpMail());
+
+            $this->smtpTestStatus = [
+                'success' => true,
+                'message' => '✅ ¡Correo de prueba enviado con éxito a ' . $this->test_email_recipient . '! Revisa tu bandeja de entrada o carpeta de spam.',
+            ];
+        } catch (\Throwable $e) {
+            $this->smtpTestStatus = [
+                'success' => false,
+                'message' => '❌ Error al conectar o enviar con el servidor SMTP: ' . $e->getMessage(),
+            ];
         }
     }
 

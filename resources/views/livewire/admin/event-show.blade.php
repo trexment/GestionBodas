@@ -1935,6 +1935,10 @@
                                                     ✏️ Editar
                                                 </button>
 
+                                                <button type="button" wire:click="sendQuoteByEmail({{ $quote->id }})" wire:loading.attr="disabled" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-300 text-xs font-bold px-2.5 py-1.5 rounded-lg flex items-center gap-1 transition shadow-2xs cursor-pointer" title="Enviar Propuesta oficial en PDF por Email al cliente">
+                                                    <span>✉️</span> Email
+                                                </button>
+
                                                 <a href="{{ $qWaUrl }}" target="_blank" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs font-bold px-2.5 py-1.5 rounded-lg flex items-center gap-1 transition shadow-2xs" title="Compartir por WhatsApp">
                                                     💬 WhatsApp
                                                 </a>

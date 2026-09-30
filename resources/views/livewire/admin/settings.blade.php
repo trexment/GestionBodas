@@ -66,6 +66,9 @@
         <button type="button" wire:click="$set('activeTab', 'music_integrations')" class="py-3 px-4 text-xs font-bold uppercase tracking-wider border-b-2 transition-all flex items-center gap-2 {{ $activeTab === 'music_integrations' ? 'border-pink-600 text-pink-600' : 'border-transparent text-gray-500 hover:text-gray-700' }}">
             <span>🍎🟢</span> Apple Music & Spotify
         </button>
+        <button type="button" wire:click="$set('activeTab', 'email_smtp')" class="py-3 px-4 text-xs font-bold uppercase tracking-wider border-b-2 transition-all flex items-center gap-2 {{ $activeTab === 'email_smtp' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700' }}">
+            <span>✉️</span> Correo (SMTP)
+        </button>
     </div>
 
     <!-- FORM GLOBAL -->
@@ -885,6 +888,113 @@
                         </div>
                     @endif
                 </div>
+            </div>
+
+        </div>
+
+        <!-- PESTAÑA: CORREO ELECTRÓNICO & SERVIDOR SMTP -->
+        <div class="{{ $activeTab === 'email_smtp' ? 'block' : 'hidden' }} space-y-6">
+            
+            <!-- Diagnóstico de configuración actual -->
+            <div class="bg-white shadow-sm rounded-xl border border-gray-200 p-6 space-y-4">
+                <div class="border-b border-gray-100 pb-3 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-base font-bold text-gray-900 flex items-center gap-2">
+                            <span>✉️</span> Estado de Configuración del Servidor de Correo
+                        </h3>
+                        <p class="text-xs text-gray-500">Parámetros activos detectados en el entorno (<code>.env</code>) de este servidor.</p>
+                    </div>
+                    @php
+                        $mailer = config('mail.default');
+                        $isSmtp = $mailer === 'smtp';
+                    @endphp
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold {{ $isSmtp ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200' }}">
+                        <span class="h-2 w-2 rounded-full {{ $isSmtp ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500' }}"></span>
+                        Driver: {{ strtoupper($mailer) }}
+                    </span>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                    <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                        <span class="text-[10px] uppercase font-bold text-slate-500 block mb-1">Servidor Host</span>
+                        <span class="text-xs font-bold text-slate-800 font-mono">{{ config('mail.mailers.smtp.host') ?: 'No definido' }}</span>
+                    </div>
+                    <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                        <span class="text-[10px] uppercase font-bold text-slate-500 block mb-1">Puerto / Cifrado</span>
+                        <span class="text-xs font-bold text-slate-800 font-mono">{{ config('mail.mailers.smtp.port') }} / {{ config('mail.mailers.smtp.encryption') ?: 'none' }}</span>
+                    </div>
+                    <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                        <span class="text-[10px] uppercase font-bold text-slate-500 block mb-1">Usuario / Remitente</span>
+                        <span class="text-xs font-bold text-slate-800 font-mono truncate block" title="{{ config('mail.mailers.smtp.username') }}">{{ config('mail.mailers.smtp.username') ?: (config('mail.from.address') ?: 'Sin configurar') }}</span>
+                    </div>
+                    <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                        <span class="text-[10px] uppercase font-bold text-slate-500 block mb-1">Nombre Remitente</span>
+                        <span class="text-xs font-bold text-slate-800 truncate block">{{ config('mail.from.name') ?: $company_name }}</span>
+                    </div>
+                </div>
+
+                <!-- GUÍA PLESK -->
+                <div class="p-4 rounded-xl bg-gradient-to-r from-indigo-50/70 to-purple-50/70 border border-indigo-100 text-xs text-indigo-950 space-y-2">
+                    <h5 class="font-bold flex items-center gap-1.5 text-indigo-900">
+                        <span>💡</span> ¿Cómo configurar el correo en tu servidor Plesk / Hosting?
+                    </h5>
+                    <p class="text-indigo-800/90 leading-relaxed">
+                        En el archivo <code>.env</code> de la raíz del dominio o en las variables de entorno de Plesk, añade las credenciales de tu buzón:
+                    </p>
+                    <pre class="bg-slate-900 text-emerald-400 p-3 rounded-lg text-[11px] font-mono overflow-x-auto select-all">MAIL_MAILER=smtp
+MAIL_HOST=localhost
+MAIL_PORT=465
+MAIL_ENCRYPTION=ssl
+MAIL_USERNAME=info@javnxdj.com
+MAIL_PASSWORD=tu_contraseña_del_buzon
+MAIL_FROM_ADDRESS="info@javnxdj.com"
+MAIL_FROM_NAME="{{ $company_name }}"</pre>
+                </div>
+            </div>
+
+            <!-- HERRAMIENTA DE TEST SMTP -->
+            <div class="bg-white shadow-sm rounded-xl border border-gray-200 p-6 space-y-4">
+                <div class="border-b border-gray-100 pb-3">
+                    <h3 class="text-base font-bold text-gray-900 flex items-center gap-2">
+                        <span>🧪</span> Probar Envío de Correo en Vivo
+                    </h3>
+                    <p class="text-xs text-gray-500">Envía un email de prueba inmediato para verificar si el servidor conecta y envía correctamente.</p>
+                </div>
+
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-end gap-3 max-w-xl">
+                    <div class="flex-1">
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Email de Destino para la Prueba</label>
+                        <input type="email" wire:model="test_email_recipient" placeholder="tu-email@gmail.com" class="w-full border-gray-300 rounded-lg shadow-sm text-sm focus:ring-indigo-500 focus:border-indigo-500">
+                        @error('test_email_recipient') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
+                    </div>
+
+                    <button 
+                        type="button" 
+                        wire:click="testSmtpConnection" 
+                        wire:loading.attr="disabled"
+                        class="px-5 py-2.5 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold text-xs shadow-md transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                    >
+                        <span wire:loading.remove wire:target="testSmtpConnection">🚀 Enviar Email de Prueba</span>
+                        <span wire:loading wire:target="testSmtpConnection" class="inline-flex items-center gap-1.5">
+                            <svg class="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+                            Conectando con servidor...
+                        </span>
+                    </button>
+                </div>
+
+                @if($smtpTestStatus)
+                    <div class="p-4 rounded-xl text-xs font-semibold {{ $smtpTestStatus['success'] ? 'bg-emerald-50 text-emerald-800 border border-emerald-300' : 'bg-rose-50 text-rose-800 border border-rose-300' }}">
+                        <div class="flex items-start gap-2">
+                            <span class="text-base">{{ $smtpTestStatus['success'] ? '✅' : '❌' }}</span>
+                            <div class="flex-1">
+                                <span class="block font-bold">{{ $smtpTestStatus['message'] }}</span>
+                                @if(!$smtpTestStatus['success'])
+                                    <p class="text-[11px] text-rose-700 mt-1">Revisa que <code>MAIL_HOST</code>, <code>MAIL_PORT</code>, <code>MAIL_USERNAME</code> y <code>MAIL_PASSWORD</code> en el <code>.env</code> coincidan exactamente con tu cuenta de correo en Plesk.</p>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                @endif
             </div>
 
         </div>
