@@ -393,6 +393,42 @@
         $companyWebsite = $brand['website'];
         $logoPath = $brand['logo_path'];
 
+        // Configuración dinámica del Dossier
+        $dDefaults = \App\Services\DossierTemplateService::getDefaults();
+        $dossierCoverTitle = \App\Models\Setting::get('dossier_cover_title', $dDefaults['dossier_cover_title']);
+        $dossierPage2Subtitle = \App\Models\Setting::get('dossier_page2_subtitle', $dDefaults['dossier_page2_subtitle']);
+        $dossierPage2Title = \App\Models\Setting::get('dossier_page2_title', $dDefaults['dossier_page2_title']);
+        $dossierIntroText = \App\Models\Setting::get('dossier_intro_text', $dDefaults['dossier_intro_text']);
+        
+        $dossierBlock1Title = \App\Models\Setting::get('dossier_block1_title', $dDefaults['dossier_block1_title']);
+        $dossierBlock1Desc = \App\Models\Setting::get('dossier_block1_desc', $dDefaults['dossier_block1_desc']);
+        
+        $dossierBlock2Title = \App\Models\Setting::get('dossier_block2_title', $dDefaults['dossier_block2_title']);
+        $dossierBlock2Desc = \App\Models\Setting::get('dossier_block2_desc', $dDefaults['dossier_block2_desc']);
+        
+        $dossierBlock3Title = \App\Models\Setting::get('dossier_block3_title', $dDefaults['dossier_block3_title']);
+        $dossierBlock3Desc = \App\Models\Setting::get('dossier_block3_desc', $dDefaults['dossier_block3_desc']);
+        
+        $dossierWorkTitle = \App\Models\Setting::get('dossier_work_title', $dDefaults['dossier_work_title']);
+        $dossierWorkItem1 = \App\Models\Setting::get('dossier_work_item1', $dDefaults['dossier_work_item1']);
+        $dossierWorkItem2 = \App\Models\Setting::get('dossier_work_item2', $dDefaults['dossier_work_item2']);
+        $dossierWorkItem3 = \App\Models\Setting::get('dossier_work_item3', $dDefaults['dossier_work_item3']);
+        
+        $dossierExtraHoursTitle = \App\Models\Setting::get('dossier_extra_hours_title', $dDefaults['dossier_extra_hours_title']);
+        $dossierExtraHoursDesc = \App\Models\Setting::get('dossier_extra_hours_desc', $dDefaults['dossier_extra_hours_desc']);
+        $dossierMusicCustomTitle = \App\Models\Setting::get('dossier_music_custom_title', $dDefaults['dossier_music_custom_title']);
+        $dossierMusicCustomDesc = \App\Models\Setting::get('dossier_music_custom_desc', $dDefaults['dossier_music_custom_desc']);
+
+        // Imágenes de Bloques
+        $b1Img = \App\Models\Setting::get('dossier_block1_image');
+        $block1ImgPath = $b1Img && \Illuminate\Support\Facades\Storage::disk('public')->exists($b1Img) ? storage_path('app/public/' . $b1Img) : null;
+
+        $b2Img = \App\Models\Setting::get('dossier_block2_image');
+        $block2ImgPath = $b2Img && \Illuminate\Support\Facades\Storage::disk('public')->exists($b2Img) ? storage_path('app/public/' . $b2Img) : null;
+
+        $b3Img = \App\Models\Setting::get('dossier_block3_image');
+        $block3ImgPath = $b3Img && \Illuminate\Support\Facades\Storage::disk('public')->exists($b3Img) ? storage_path('app/public/' . $b3Img) : null;
+
         // Pack settings
         $packBasicPrice = (float)\App\Models\Setting::get('pack_basic_price', 400);
         $packBasicHours = (int)\App\Models\Setting::get('pack_basic_hours', 4);
@@ -462,7 +498,7 @@
         <!-- Tarjeta flotante inferior -->
         <div class="cover-bottom-card">
             <div class="cover-subtitle-top">{{ mb_strtoupper($companyName) }} &bull; {{ mb_strtoupper($companySubtitle) }}</div>
-            <div class="cover-main-title">Propuesta para<br>tu evento</div>
+            <div class="cover-main-title">{!! nl2br(e($dossierCoverTitle)) !!}</div>
             <div class="cover-gold-line"></div>
             
             <div class="cover-meta-item">
@@ -483,61 +519,111 @@
     <div class="page">
         <!-- Cabecera Azul Marino -->
         <div class="page-header-banner">
-            <div class="page-header-sub">QUÉ LLEVAMOS</div>
-            <div class="page-header-title">DJ, sonido e iluminación propios</div>
+            @if(!empty($dossierPage2Subtitle))
+                <div class="page-header-sub">{{ mb_strtoupper($dossierPage2Subtitle) }}</div>
+            @endif
+            <div class="page-header-title">{{ $dossierPage2Title }}</div>
         </div>
 
         <div class="page-content">
             <!-- Párrafo introductorio -->
             <p class="intro-lead">
-                Nos encargamos de todo: llevamos el equipo, lo montamos y lo probamos antes de que lleguen los invitados, y pinchamos toda la tarde leyendo el ambiente para que la pista no se vacíe. Tú solo te preocupas de disfrutar.
+                {{ $dossierIntroText }}
             </p>
 
             <!-- Mosaico de Bloques de Equipamiento -->
             <table class="photo-mosaic-table">
                 <tr>
-                    <td colspan="2" class="photo-card" style="height: 140px; background-color: #111c34;">
-                        <div class="photo-card-inner">
-                            <span class="photo-card-icon">🔊</span>
-                            <div class="photo-card-title">Sonido Profesional de Gran Potencia y Claridad</div>
-                            <div class="photo-card-desc">Sistemas autoamplificados de alta definición con refuerzo de subgraves para interiores y exteriores.</div>
-                        </div>
+                    <td colspan="2" class="photo-card" style="height: 135px; background-color: #111c34;">
+                        @if($block1ImgPath)
+                            <table style="width: 100%; height: 100%; border-collapse: collapse;">
+                                <tr>
+                                    <td style="width: 38%; padding: 6px; vertical-align: middle; text-align: center;">
+                                        <img src="{{ $block1ImgPath }}" style="width: 100%; height: 115px; object-fit: cover; border-radius: 6px; display: block;">
+                                    </td>
+                                    <td style="width: 62%; padding: 10px 14px; vertical-align: middle; text-align: left; color: #ffffff;">
+                                        <div class="photo-card-title" style="font-size: 10pt; color: #eab308; margin-bottom: 4px;">{{ $dossierBlock1Title }}</div>
+                                        <div class="photo-card-desc" style="font-size: 8pt; color: #e2e8f0; line-height: 1.35;">{{ $dossierBlock1Desc }}</div>
+                                    </td>
+                                </tr>
+                            </table>
+                        @else
+                            <div class="photo-card-inner">
+                                <span class="photo-card-icon">🔊</span>
+                                <div class="photo-card-title">{{ $dossierBlock1Title }}</div>
+                                <div class="photo-card-desc">{{ $dossierBlock1Desc }}</div>
+                            </div>
+                        @endif
                     </td>
                 </tr>
                 <tr>
                     <td class="photo-card" style="width: 50%; height: 130px; background-color: #16223f;">
-                        <div class="photo-card-inner">
-                            <span class="photo-card-icon">💡</span>
-                            <div class="photo-card-title">Iluminación Dinámica de Pista</div>
-                            <div class="photo-card-desc">Cabezas móviles, focos LED y efectos de ambientación con máquina de humo.</div>
-                        </div>
+                        @if($block2ImgPath)
+                            <table style="width: 100%; height: 100%; border-collapse: collapse;">
+                                <tr>
+                                    <td style="width: 40%; padding: 6px; vertical-align: middle; text-align: center;">
+                                        <img src="{{ $block2ImgPath }}" style="width: 100%; height: 110px; object-fit: cover; border-radius: 6px; display: block;">
+                                    </td>
+                                    <td style="width: 60%; padding: 8px 10px; vertical-align: middle; text-align: left; color: #ffffff;">
+                                        <div class="photo-card-title" style="font-size: 9pt; color: #eab308; margin-bottom: 3px;">{{ $dossierBlock2Title }}</div>
+                                        <div class="photo-card-desc" style="font-size: 7.5pt; color: #cbd5e1; line-height: 1.3;">{{ $dossierBlock2Desc }}</div>
+                                    </td>
+                                </tr>
+                            </table>
+                        @else
+                            <div class="photo-card-inner">
+                                <span class="photo-card-icon">💡</span>
+                                <div class="photo-card-title">{{ $dossierBlock2Title }}</div>
+                                <div class="photo-card-desc">{{ $dossierBlock2Desc }}</div>
+                            </div>
+                        @endif
                     </td>
                     <td class="photo-card" style="width: 50%; height: 130px; background-color: #1e293b;">
-                        <div class="photo-card-inner">
-                            <span class="photo-card-icon">🎧</span>
-                            <div class="photo-card-title">Sesión DJ en Directo</div>
-                            <div class="photo-card-desc">Lectura continua de la pista, animación cercana y coordinación en directo.</div>
-                        </div>
+                        @if($block3ImgPath)
+                            <table style="width: 100%; height: 100%; border-collapse: collapse;">
+                                <tr>
+                                    <td style="width: 40%; padding: 6px; vertical-align: middle; text-align: center;">
+                                        <img src="{{ $block3ImgPath }}" style="width: 100%; height: 110px; object-fit: cover; border-radius: 6px; display: block;">
+                                    </td>
+                                    <td style="width: 60%; padding: 8px 10px; vertical-align: middle; text-align: left; color: #ffffff;">
+                                        <div class="photo-card-title" style="font-size: 9pt; color: #eab308; margin-bottom: 3px;">{{ $dossierBlock3Title }}</div>
+                                        <div class="photo-card-desc" style="font-size: 7.5pt; color: #cbd5e1; line-height: 1.3;">{{ $dossierBlock3Desc }}</div>
+                                    </td>
+                                </tr>
+                            </table>
+                        @else
+                            <div class="photo-card-inner">
+                                <span class="photo-card-icon">🎧</span>
+                                <div class="photo-card-title">{{ $dossierBlock3Title }}</div>
+                                <div class="photo-card-desc">{{ $dossierBlock3Desc }}</div>
+                            </div>
+                        @endif
                     </td>
                 </tr>
             </table>
 
             <!-- Bloque Cómo Trabajamos -->
             <div class="work-box">
-                <div class="work-box-title">Cómo trabajamos</div>
+                <div class="work-box-title">{{ $dossierWorkTitle }}</div>
                 <ul class="work-box-list">
-                    <li>
-                        <span class="bullet">&bull;</span>
-                        <strong>Montaje y prueba de sonido</strong> antes del inicio del evento
-                    </li>
-                    <li>
-                        <span class="bullet">&bull;</span>
-                        <strong>Música a vuestro gusto:</strong> antes del evento hablamos para conocer qué os gusta y qué no
-                    </li>
-                    <li>
-                        <span class="bullet">&bull;</span>
-                        <strong>Desmontaje al terminar,</strong> sin que tengáis que preocuparos de nada
-                    </li>
+                    @if(!empty($dossierWorkItem1))
+                        <li>
+                            <span class="bullet">&bull;</span>
+                            {{ $dossierWorkItem1 }}
+                        </li>
+                    @endif
+                    @if(!empty($dossierWorkItem2))
+                        <li>
+                            <span class="bullet">&bull;</span>
+                            {{ $dossierWorkItem2 }}
+                        </li>
+                    @endif
+                    @if(!empty($dossierWorkItem3))
+                        <li>
+                            <span class="bullet">&bull;</span>
+                            {{ $dossierWorkItem3 }}
+                        </li>
+                    @endif
                 </ul>
             </div>
         </div>
@@ -586,15 +672,17 @@
                     <!-- PACK MEDIO (RECOMENDADO) -->
                     <td class="pack-col">
                         <div class="pack-card {{ $hasMediumPack ? 'highlighted' : '' }}">
-                            <div class="pack-badge">{{ $hasMediumPack && $hasBasicPack == false && $hasPremiumPack == false ? 'RECOMENDADO' : 'POPULAR' }}</div>
+                            @if($hasMediumPack)
+                                <div class="pack-badge">MÁS POPULAR</div>
+                            @endif
                             <div class="pack-title">Medio</div>
                             <div class="pack-schedule">Hasta {{ $packMediumHours }} Horas de servicio</div>
                             <div class="pack-price">{{ number_format($packMediumPrice, 0, ',', '.') }}€</div>
                             <ul class="pack-features">
-                                <li>DJ hasta {{ $packMediumHours }} horas</li>
-                                <li>Sonido reforzado con subgraves</li>
-                                <li>Iluminación completa de pista y ambiente</li>
-                                <li>Montaje y desmontaje</li>
+                                <li>Todo lo del pack Básico</li>
+                                <li>Hasta {{ $packMediumHours }} horas completas</li>
+                                <li>Iluminación avanzada + robotizadas</li>
+                                <li>Máquina de humo en pista</li>
                             </ul>
                         </div>
                     </td>
@@ -633,17 +721,25 @@
                 </div>
             @endif
 
-            <!-- Tarjeta Hora Extra -->
+            <!-- Tarjeta Informativa 1 (Horas extra) -->
             <div class="info-card">
-                <div class="info-card-title">Hora extra</div>
+                <div class="info-card-title">{{ $dossierExtraHoursTitle }}</div>
                 <div class="info-card-body">
-                    Si la fiesta se alarga, se puede ampliar en cualquier opción: <strong>{{ number_format($extraHourPrice, 0, ',', '.') }}€ por hora adicional</strong>.
+                    {{ $dossierExtraHoursDesc }} (Tarifa adicional: <strong>{{ number_format($extraHourPrice, 0, ',', '.') }}€/hora</strong>).
+                </div>
+            </div>
+
+            <!-- Tarjeta Informativa 2 (Personalización musical) -->
+            <div class="info-card">
+                <div class="info-card-title">{{ $dossierMusicCustomTitle }}</div>
+                <div class="info-card-body">
+                    {{ $dossierMusicCustomDesc }}
                 </div>
             </div>
 
             <!-- Tarjeta Reserva -->
             <div class="info-card">
-                <div class="info-card-title">Reserva</div>
+                <div class="info-card-title">Reserva de Fecha</div>
                 <div class="info-card-body">
                     Al ser una fecha tan solicitada, la reserva de fecha se confirma por estricto orden de contratación. Señal estipulada: <strong>{{ number_format($quote->signal_amount, 2, ',', '.') }} €</strong> vía Bizum o Transferencia. Las condiciones de pago y detalles se confirman al formalizar.
                 </div>

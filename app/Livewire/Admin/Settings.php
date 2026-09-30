@@ -6,6 +6,7 @@ use Livewire\Component;
 use Livewire\WithFileUploads;
 use App\Models\Setting;
 use App\Services\ContractTemplateService;
+use App\Services\DossierTemplateService;
 use App\Services\MusicSearchService;
 use App\Services\SpotifyService;
 use Illuminate\Support\Facades\Storage;
@@ -88,6 +89,35 @@ class Settings extends Component
     public $contract_body;
     public $contract_footer;
     public $selectedPreset = 'servicio_dj';
+
+    // Dossier y Propuestas Comerciales
+    public $dossier_cover_title;
+    public $dossier_page2_subtitle;
+    public $dossier_page2_title;
+    public $dossier_intro_text;
+    public $dossier_block1_title;
+    public $dossier_block1_desc;
+    public $dossier_block2_title;
+    public $dossier_block2_desc;
+    public $dossier_block3_title;
+    public $dossier_block3_desc;
+    public $dossier_work_title;
+    public $dossier_work_item1;
+    public $dossier_work_item2;
+    public $dossier_work_item3;
+    public $dossier_extra_hours_title;
+    public $dossier_extra_hours_desc;
+    public $dossier_music_custom_title;
+    public $dossier_music_custom_desc;
+    public $selectedDossierPreset = 'bodas';
+
+    // Imágenes del Dossier
+    public $dossier_block1_image;
+    public $dossier_block1_image_upload;
+    public $dossier_block2_image;
+    public $dossier_block2_image_upload;
+    public $dossier_block3_image;
+    public $dossier_block3_image_upload;
 
     public $logo;
     public $current_logo;
@@ -194,9 +224,35 @@ class Settings extends Component
         $this->price_photo_album = Setting::get('price_photo_album', 150);
         $this->price_photo_full_pack = Setting::get('price_photo_full_pack', 800);
 
+        // Contratos
         $this->contract_title = ContractTemplateService::getDefaultTitle();
         $this->contract_body = ContractTemplateService::getDefaultBody();
         $this->contract_footer = ContractTemplateService::getDefaultFooter();
+
+        // Dossier y Propuesta
+        $dDefaults = DossierTemplateService::getDefaults();
+        $this->dossier_cover_title = Setting::get('dossier_cover_title', $dDefaults['dossier_cover_title']);
+        $this->dossier_page2_subtitle = Setting::get('dossier_page2_subtitle', $dDefaults['dossier_page2_subtitle']);
+        $this->dossier_page2_title = Setting::get('dossier_page2_title', $dDefaults['dossier_page2_title']);
+        $this->dossier_intro_text = Setting::get('dossier_intro_text', $dDefaults['dossier_intro_text']);
+        $this->dossier_block1_title = Setting::get('dossier_block1_title', $dDefaults['dossier_block1_title']);
+        $this->dossier_block1_desc = Setting::get('dossier_block1_desc', $dDefaults['dossier_block1_desc']);
+        $this->dossier_block2_title = Setting::get('dossier_block2_title', $dDefaults['dossier_block2_title']);
+        $this->dossier_block2_desc = Setting::get('dossier_block2_desc', $dDefaults['dossier_block2_desc']);
+        $this->dossier_block3_title = Setting::get('dossier_block3_title', $dDefaults['dossier_block3_title']);
+        $this->dossier_block3_desc = Setting::get('dossier_block3_desc', $dDefaults['dossier_block3_desc']);
+        $this->dossier_work_title = Setting::get('dossier_work_title', $dDefaults['dossier_work_title']);
+        $this->dossier_work_item1 = Setting::get('dossier_work_item1', $dDefaults['dossier_work_item1']);
+        $this->dossier_work_item2 = Setting::get('dossier_work_item2', $dDefaults['dossier_work_item2']);
+        $this->dossier_work_item3 = Setting::get('dossier_work_item3', $dDefaults['dossier_work_item3']);
+        $this->dossier_extra_hours_title = Setting::get('dossier_extra_hours_title', $dDefaults['dossier_extra_hours_title']);
+        $this->dossier_extra_hours_desc = Setting::get('dossier_extra_hours_desc', $dDefaults['dossier_extra_hours_desc']);
+        $this->dossier_music_custom_title = Setting::get('dossier_music_custom_title', $dDefaults['dossier_music_custom_title']);
+        $this->dossier_music_custom_desc = Setting::get('dossier_music_custom_desc', $dDefaults['dossier_music_custom_desc']);
+
+        $this->dossier_block1_image = Setting::get('dossier_block1_image');
+        $this->dossier_block2_image = Setting::get('dossier_block2_image');
+        $this->dossier_block3_image = Setting::get('dossier_block3_image');
 
         $this->current_logo = Setting::get('company_logo');
 
@@ -229,6 +285,32 @@ class Settings extends Component
     public function insertVariable($variable)
     {
         $this->contract_body .= ' ' . $variable;
+    }
+
+    public function loadDossierPreset($presetKey)
+    {
+        $presets = DossierTemplateService::presets();
+        if (isset($presets[$presetKey])) {
+            foreach ($presets[$presetKey]['values'] as $key => $val) {
+                $this->$key = $val;
+            }
+            $this->selectedDossierPreset = $presetKey;
+            session()->flash('dossier_preset_loaded', 'Plantilla de dossier "' . $presets[$presetKey]['name'] . '" cargada en el editor. Recuerda hacer clic en "Guardar Configuración".');
+        }
+    }
+
+    public function deleteDossierImage($slot)
+    {
+        $key = 'dossier_' . $slot . '_image';
+        $current = Setting::get($key);
+        if ($current) {
+            Storage::disk('public')->delete($current);
+        }
+        Setting::set($key, null);
+        $this->$key = null;
+        $uploadKey = $key . '_upload';
+        $this->$uploadKey = null;
+        session()->flash('message', 'Imagen de dossier eliminada correctamente.');
     }
 
     public function testSpotify()
@@ -287,6 +369,30 @@ class Settings extends Component
             'contract_title' => 'required|string|max:255',
             'contract_body' => 'required|string',
             'contract_footer' => 'nullable|string',
+
+            'dossier_cover_title' => 'required|string|max:255',
+            'dossier_page2_subtitle' => 'nullable|string|max:255',
+            'dossier_page2_title' => 'required|string|max:255',
+            'dossier_intro_text' => 'required|string',
+            'dossier_block1_title' => 'required|string|max:255',
+            'dossier_block1_desc' => 'required|string',
+            'dossier_block2_title' => 'required|string|max:255',
+            'dossier_block2_desc' => 'required|string',
+            'dossier_block3_title' => 'required|string|max:255',
+            'dossier_block3_desc' => 'required|string',
+            'dossier_work_title' => 'required|string|max:255',
+            'dossier_work_item1' => 'required|string',
+            'dossier_work_item2' => 'required|string',
+            'dossier_work_item3' => 'required|string',
+            'dossier_extra_hours_title' => 'required|string|max:255',
+            'dossier_extra_hours_desc' => 'required|string',
+            'dossier_music_custom_title' => 'required|string|max:255',
+            'dossier_music_custom_desc' => 'required|string',
+
+            'dossier_block1_image_upload' => 'nullable|image|max:4096',
+            'dossier_block2_image_upload' => 'nullable|image|max:4096',
+            'dossier_block3_image_upload' => 'nullable|image|max:4096',
+
             'logo' => 'nullable|image|max:2048',
             'primary_streaming_service' => 'required|in:auto,apple_music,spotify',
             'spotify_client_id' => 'nullable|string|max:255',
@@ -367,9 +473,61 @@ class Settings extends Component
         Setting::set('price_photo_album', $this->price_photo_album);
         Setting::set('price_photo_full_pack', $this->price_photo_full_pack);
 
+        // Contratos
         Setting::set('contract_title', $this->contract_title);
         Setting::set('contract_body', $this->contract_body);
         Setting::set('contract_footer', $this->contract_footer);
+
+        // Dossier y Propuesta
+        Setting::set('dossier_cover_title', $this->dossier_cover_title);
+        Setting::set('dossier_page2_subtitle', $this->dossier_page2_subtitle);
+        Setting::set('dossier_page2_title', $this->dossier_page2_title);
+        Setting::set('dossier_intro_text', $this->dossier_intro_text);
+        Setting::set('dossier_block1_title', $this->dossier_block1_title);
+        Setting::set('dossier_block1_desc', $this->dossier_block1_desc);
+        Setting::set('dossier_block2_title', $this->dossier_block2_title);
+        Setting::set('dossier_block2_desc', $this->dossier_block2_desc);
+        Setting::set('dossier_block3_title', $this->dossier_block3_title);
+        Setting::set('dossier_block3_desc', $this->dossier_block3_desc);
+        Setting::set('dossier_work_title', $this->dossier_work_title);
+        Setting::set('dossier_work_item1', $this->dossier_work_item1);
+        Setting::set('dossier_work_item2', $this->dossier_work_item2);
+        Setting::set('dossier_work_item3', $this->dossier_work_item3);
+        Setting::set('dossier_extra_hours_title', $this->dossier_extra_hours_title);
+        Setting::set('dossier_extra_hours_desc', $this->dossier_extra_hours_desc);
+        Setting::set('dossier_music_custom_title', $this->dossier_music_custom_title);
+        Setting::set('dossier_music_custom_desc', $this->dossier_music_custom_desc);
+
+        // Guardar Fotos del Dossier
+        if ($this->dossier_block1_image_upload) {
+            if ($this->dossier_block1_image) {
+                Storage::disk('public')->delete($this->dossier_block1_image);
+            }
+            $path = $this->dossier_block1_image_upload->store('dossier', 'public');
+            Setting::set('dossier_block1_image', $path);
+            $this->dossier_block1_image = $path;
+            $this->dossier_block1_image_upload = null;
+        }
+
+        if ($this->dossier_block2_image_upload) {
+            if ($this->dossier_block2_image) {
+                Storage::disk('public')->delete($this->dossier_block2_image);
+            }
+            $path = $this->dossier_block2_image_upload->store('dossier', 'public');
+            Setting::set('dossier_block2_image', $path);
+            $this->dossier_block2_image = $path;
+            $this->dossier_block2_image_upload = null;
+        }
+
+        if ($this->dossier_block3_image_upload) {
+            if ($this->dossier_block3_image) {
+                Storage::disk('public')->delete($this->dossier_block3_image);
+            }
+            $path = $this->dossier_block3_image_upload->store('dossier', 'public');
+            Setting::set('dossier_block3_image', $path);
+            $this->dossier_block3_image = $path;
+            $this->dossier_block3_image_upload = null;
+        }
 
         // Guardar ajustes musicales
         Setting::set('primary_streaming_service', $this->primary_streaming_service);
@@ -442,6 +600,7 @@ class Settings extends Component
         return view('livewire.admin.settings', [
             'availableVariables' => ContractTemplateService::availableVariables(),
             'presets' => ContractTemplateService::presets(),
+            'dossierPresets' => DossierTemplateService::presets(),
         ])
             ->layout('components.layouts.app', [
                 'header' => 'Configuración de Empresa'

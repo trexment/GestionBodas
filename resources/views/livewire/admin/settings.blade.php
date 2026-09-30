@@ -63,6 +63,9 @@
         <button type="button" wire:click="$set('activeTab', 'contracts')" class="py-3 px-4 text-xs font-bold uppercase tracking-wider border-b-2 transition-all flex items-center gap-2 {{ $activeTab === 'contracts' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700' }}">
             <span>📜</span> Editor de Contratos
         </button>
+        <button type="button" wire:click="$set('activeTab', 'dossier')" class="py-3 px-4 text-xs font-bold uppercase tracking-wider border-b-2 transition-all flex items-center gap-2 {{ $activeTab === 'dossier' ? 'border-amber-600 text-amber-600' : 'border-transparent text-gray-500 hover:text-gray-700' }}">
+            <span>📖</span> Dossier y Propuestas
+        </button>
         <button type="button" wire:click="$set('activeTab', 'music_integrations')" class="py-3 px-4 text-xs font-bold uppercase tracking-wider border-b-2 transition-all flex items-center gap-2 {{ $activeTab === 'music_integrations' ? 'border-pink-600 text-pink-600' : 'border-transparent text-gray-500 hover:text-gray-700' }}">
             <span>🍎🟢</span> Apple Music & Spotify
         </button>
@@ -647,6 +650,329 @@
                     <input type="text" wire:model="contract_footer" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-xs text-gray-600">
                 </div>
             </div>
+        </div>
+
+        <!-- PESTAÑA: CONFIGURACIÓN DE DOSSIER Y PROPUESTAS COMERCIALES -->
+        <div class="{{ $activeTab === 'dossier' ? 'block' : 'hidden' }} space-y-6">
+            
+            <!-- HEADER DE SECCIÓN CON PRESETS -->
+            <div class="bg-white shadow-sm rounded-xl border border-gray-200 p-6 space-y-4">
+                <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-gray-100 pb-4">
+                    <div>
+                        <h3 class="text-base font-bold text-gray-900 flex items-center gap-2">
+                            <span>📖</span> Personalización de Dossier y Propuestas PDF
+                        </h3>
+                        <p class="text-xs text-gray-500 mt-0.5">Configura los textos de presentación, bloques de equipamiento y fotos reales de tus montajes que verán tus clientes al descargar o recibir la propuesta comercial.</p>
+                    </div>
+
+                    <!-- BOTONES DE PRESETS / PLANTILLAS RÁPIDAS -->
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span class="text-xs font-bold text-gray-500 mr-1">Cargar Plantilla:</span>
+                        @foreach($dossierPresets as $key => $preset)
+                            <button type="button" wire:click="loadDossierPreset('{{ $key }}')" class="px-3 py-1.5 text-xs font-bold rounded-xl border transition flex items-center gap-1.5 shadow-2xs {{ $selectedDossierPreset === $key ? 'bg-amber-100 text-amber-900 border-amber-400 font-black' : 'bg-white text-gray-700 border-gray-300 hover:bg-amber-50 hover:text-amber-800' }}">
+                                {{ $preset['name'] }}
+                            </button>
+                        @endforeach
+                    </div>
+                </div>
+
+                @if(session()->has('dossier_preset_loaded'))
+                    <div class="p-3 bg-amber-50 text-amber-900 border border-amber-200 rounded-xl text-xs font-semibold flex items-center gap-2">
+                        <span>✨</span>
+                        <span>{{ session('dossier_preset_loaded') }}</span>
+                    </div>
+                @endif
+            </div>
+
+            <!-- SECCIÓN 1: PORTADA (PÁGINA 1) -->
+            <div class="bg-white shadow-sm rounded-xl border border-gray-200 p-6 space-y-4">
+                <div class="flex items-center justify-between border-b border-gray-100 pb-3">
+                    <h4 class="text-sm font-black text-gray-900 flex items-center gap-2">
+                        <span>📑</span> 1. Portada del Documento (Página 1)
+                    </h4>
+                    <span class="text-[11px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full">
+                        Portada Elegante
+                    </span>
+                </div>
+
+                <div>
+                    <div class="flex items-center justify-between mb-1">
+                        <label class="block text-xs font-bold text-gray-700">Título Principal de Portada</label>
+                        <span class="text-[11px] text-gray-400">Puedes usar saltos de línea para estructurar el título</span>
+                    </div>
+                    <textarea wire:model="dossier_cover_title" rows="2" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-amber-500 focus:border-amber-500 text-sm font-bold text-gray-900"></textarea>
+                    <p class="text-[11px] text-gray-400 mt-1">Ej: "Propuesta para\ntu evento" o "Propuesta para\nvuestra boda".</p>
+                </div>
+            </div>
+
+            <!-- SECCIÓN 2: PÁGINA 2 - CABECERA Y TEXTO INTRODUCTORIO -->
+            <div class="bg-white shadow-sm rounded-xl border border-gray-200 p-6 space-y-4">
+                <div class="flex items-center justify-between border-b border-gray-100 pb-3">
+                    <h4 class="text-sm font-black text-gray-900 flex items-center gap-2">
+                        <span>📢</span> 2. Presentación y Qué Llevamos (Página 2)
+                    </h4>
+                    <span class="text-[11px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2.5 py-0.5 rounded-full">
+                        Cabecera & Bienvenida
+                    </span>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Subtítulo Superior de Cabecera</label>
+                        <input type="text" wire:model="dossier_page2_subtitle" placeholder="QUÉ LLEVAMOS" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-amber-500 focus:border-amber-500 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Título de la Página 2</label>
+                        <input type="text" wire:model="dossier_page2_title" placeholder="DJ, sonido e iluminación propios" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-amber-500 focus:border-amber-500 text-sm font-bold">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Párrafo de Introducción / Propuesta de Valor</label>
+                    <textarea wire:model="dossier_intro_text" rows="3" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-amber-500 focus:border-amber-500 text-sm text-gray-800 leading-relaxed"></textarea>
+                    <p class="text-[11px] text-gray-400 mt-1">Este texto aparece justo debajo del encabezado en la segunda página del PDF.</p>
+                </div>
+            </div>
+
+            <!-- SECCIÓN 3: MOSAICO DE EQUIPAMIENTO Y SUBIDA DE FOTOS REALES -->
+            <div class="bg-white shadow-sm rounded-xl border border-gray-200 p-6 space-y-6">
+                <div class="flex items-center justify-between border-b border-gray-100 pb-3">
+                    <div>
+                        <h4 class="text-sm font-black text-gray-900 flex items-center gap-2">
+                            <span>📸</span> 3. Bloques de Equipamiento y Fotos Reales
+                        </h4>
+                        <p class="text-xs text-gray-500 mt-0.5">Puedes subir fotos de tus montajes reales para cada bloque. Si no subes foto, se mostrará el icono representativo.</p>
+                    </div>
+                    <span class="text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
+                        Fotos de Alta Calidad
+                    </span>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    
+                    <!-- BLOQUE 1: SONIDO PROFESIONAL -->
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-col justify-between space-y-4">
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-black text-slate-800 uppercase tracking-wider">🔊 Bloque 1 (Sonido)</span>
+                                @if($dossier_block1_image)
+                                    <button type="button" wire:click="deleteDossierImage('block1')" class="text-[11px] text-rose-600 hover:text-rose-800 font-bold">
+                                        ✕ Quitar Foto
+                                    </button>
+                                @endif
+                            </div>
+
+                            <!-- Preview o Subida de Foto -->
+                            <div class="space-y-2">
+                                @if ($dossier_block1_image_upload)
+                                    <div class="relative rounded-lg overflow-hidden border-2 border-amber-500 h-32 bg-slate-900">
+                                        <img src="{{ $dossier_block1_image_upload->temporaryUrl() }}" class="w-full h-full object-cover">
+                                        <span class="absolute bottom-1 right-1 bg-amber-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">Nueva Foto</span>
+                                    </div>
+                                @elseif ($dossier_block1_image)
+                                    <div class="relative rounded-lg overflow-hidden border border-slate-300 h-32 bg-slate-900">
+                                        <img src="{{ asset('storage/' . $dossier_block1_image) }}" class="w-full h-full object-cover">
+                                        <span class="absolute bottom-1 right-1 bg-slate-900/80 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">Foto Actual</span>
+                                    </div>
+                                @else
+                                    <div class="rounded-lg border-2 border-dashed border-slate-300 h-32 flex flex-col items-center justify-center text-slate-400 bg-white">
+                                        <span class="text-2xl">🔊</span>
+                                        <span class="text-[11px] font-medium mt-1">Sin foto (Usa icono)</span>
+                                    </div>
+                                @endif
+
+                                <div>
+                                    <label class="block text-[11px] font-bold text-slate-600 mb-1">Subir / Cambiar Foto de Sonido:</label>
+                                    <input type="file" wire:model="dossier_block1_image_upload" accept="image/*" class="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                                    @error('dossier_block1_image_upload') <span class="text-rose-500 text-xs block mt-1">{{ $message }}</span> @enderror
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-gray-700 mb-1">Título del Bloque 1</label>
+                                <input type="text" wire:model="dossier_block1_title" class="w-full border-gray-300 rounded-lg shadow-sm text-xs font-bold">
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-gray-700 mb-1">Descripción del Bloque 1</label>
+                                <textarea wire:model="dossier_block1_desc" rows="3" class="w-full border-gray-300 rounded-lg shadow-sm text-xs text-gray-700"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- BLOQUE 2: ILUMINACIÓN -->
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-col justify-between space-y-4">
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-black text-slate-800 uppercase tracking-wider">💡 Bloque 2 (Iluminación)</span>
+                                @if($dossier_block2_image)
+                                    <button type="button" wire:click="deleteDossierImage('block2')" class="text-[11px] text-rose-600 hover:text-rose-800 font-bold">
+                                        ✕ Quitar Foto
+                                    </button>
+                                @endif
+                            </div>
+
+                            <!-- Preview o Subida de Foto -->
+                            <div class="space-y-2">
+                                @if ($dossier_block2_image_upload)
+                                    <div class="relative rounded-lg overflow-hidden border-2 border-amber-500 h-32 bg-slate-900">
+                                        <img src="{{ $dossier_block2_image_upload->temporaryUrl() }}" class="w-full h-full object-cover">
+                                        <span class="absolute bottom-1 right-1 bg-amber-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">Nueva Foto</span>
+                                    </div>
+                                @elseif ($dossier_block2_image)
+                                    <div class="relative rounded-lg overflow-hidden border border-slate-300 h-32 bg-slate-900">
+                                        <img src="{{ asset('storage/' . $dossier_block2_image) }}" class="w-full h-full object-cover">
+                                        <span class="absolute bottom-1 right-1 bg-slate-900/80 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">Foto Actual</span>
+                                    </div>
+                                @else
+                                    <div class="rounded-lg border-2 border-dashed border-slate-300 h-32 flex flex-col items-center justify-center text-slate-400 bg-white">
+                                        <span class="text-2xl">💡</span>
+                                        <span class="text-[11px] font-medium mt-1">Sin foto (Usa icono)</span>
+                                    </div>
+                                @endif
+
+                                <div>
+                                    <label class="block text-[11px] font-bold text-slate-600 mb-1">Subir / Cambiar Foto de Luces:</label>
+                                    <input type="file" wire:model="dossier_block2_image_upload" accept="image/*" class="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                                    @error('dossier_block2_image_upload') <span class="text-rose-500 text-xs block mt-1">{{ $message }}</span> @enderror
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-gray-700 mb-1">Título del Bloque 2</label>
+                                <input type="text" wire:model="dossier_block2_title" class="w-full border-gray-300 rounded-lg shadow-sm text-xs font-bold">
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-gray-700 mb-1">Descripción del Bloque 2</label>
+                                <textarea wire:model="dossier_block2_desc" rows="3" class="w-full border-gray-300 rounded-lg shadow-sm text-xs text-gray-700"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- BLOQUE 3: SESIÓN DJ EN DIRECTO -->
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-col justify-between space-y-4">
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-black text-slate-800 uppercase tracking-wider">🎧 Bloque 3 (DJ / Cabina)</span>
+                                @if($dossier_block3_image)
+                                    <button type="button" wire:click="deleteDossierImage('block3')" class="text-[11px] text-rose-600 hover:text-rose-800 font-bold">
+                                        ✕ Quitar Foto
+                                    </button>
+                                @endif
+                            </div>
+
+                            <!-- Preview o Subida de Foto -->
+                            <div class="space-y-2">
+                                @if ($dossier_block3_image_upload)
+                                    <div class="relative rounded-lg overflow-hidden border-2 border-amber-500 h-32 bg-slate-900">
+                                        <img src="{{ $dossier_block3_image_upload->temporaryUrl() }}" class="w-full h-full object-cover">
+                                        <span class="absolute bottom-1 right-1 bg-amber-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">Nueva Foto</span>
+                                    </div>
+                                @elseif ($dossier_block3_image)
+                                    <div class="relative rounded-lg overflow-hidden border border-slate-300 h-32 bg-slate-900">
+                                        <img src="{{ asset('storage/' . $dossier_block3_image) }}" class="w-full h-full object-cover">
+                                        <span class="absolute bottom-1 right-1 bg-slate-900/80 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">Foto Actual</span>
+                                    </div>
+                                @else
+                                    <div class="rounded-lg border-2 border-dashed border-slate-300 h-32 flex flex-col items-center justify-center text-slate-400 bg-white">
+                                        <span class="text-2xl">🎧</span>
+                                        <span class="text-[11px] font-medium mt-1">Sin foto (Usa icono)</span>
+                                    </div>
+                                @endif
+
+                                <div>
+                                    <label class="block text-[11px] font-bold text-slate-600 mb-1">Subir / Cambiar Foto de Cabina/DJ:</label>
+                                    <input type="file" wire:model="dossier_block3_image_upload" accept="image/*" class="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                                    @error('dossier_block3_image_upload') <span class="text-rose-500 text-xs block mt-1">{{ $message }}</span> @enderror
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-gray-700 mb-1">Título del Bloque 3</label>
+                                <input type="text" wire:model="dossier_block3_title" class="w-full border-gray-300 rounded-lg shadow-sm text-xs font-bold">
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-gray-700 mb-1">Descripción del Bloque 3</label>
+                                <textarea wire:model="dossier_block3_desc" rows="3" class="w-full border-gray-300 rounded-lg shadow-sm text-xs text-gray-700"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- SECCIÓN 4: CÓMO TRABAJAMOS (PÁGINA 2) -->
+            <div class="bg-white shadow-sm rounded-xl border border-gray-200 p-6 space-y-4">
+                <div class="flex items-center justify-between border-b border-gray-100 pb-3">
+                    <h4 class="text-sm font-black text-gray-900 flex items-center gap-2">
+                        <span>📋</span> 4. Bloque "Cómo Trabajamos" (Página 2)
+                    </h4>
+                    <span class="text-[11px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full">
+                        Proceso de Trabajo
+                    </span>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Título del Bloque</label>
+                    <input type="text" wire:model="dossier_work_title" placeholder="Cómo trabajamos" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-amber-500 focus:border-amber-500 text-sm font-bold">
+                </div>
+
+                <div class="space-y-3 pt-2">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Punto 1 (Montaje y pruebas)</label>
+                        <input type="text" wire:model="dossier_work_item1" class="w-full border-gray-300 rounded-lg shadow-sm text-xs">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Punto 2 (Personalización musical y coordinación)</label>
+                        <input type="text" wire:model="dossier_work_item2" class="w-full border-gray-300 rounded-lg shadow-sm text-xs">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Punto 3 (Desmontaje y tranquilidad)</label>
+                        <input type="text" wire:model="dossier_work_item3" class="w-full border-gray-300 rounded-lg shadow-sm text-xs">
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECCIÓN 5: CONDICIONES Y NOTAS INFORMATIVAS (PÁGINA 3) -->
+            <div class="bg-white shadow-sm rounded-xl border border-gray-200 p-6 space-y-4">
+                <div class="flex items-center justify-between border-b border-gray-100 pb-3">
+                    <h4 class="text-sm font-black text-gray-900 flex items-center gap-2">
+                        <span>💬</span> 5. Tarjetas Informativas y Condiciones (Página 3)
+                    </h4>
+                    <span class="text-[11px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2.5 py-0.5 rounded-full">
+                        Página de Packs y Precios
+                    </span>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Tarjeta Horas Extra -->
+                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 mb-1">Título Tarjeta 1 (Horas extra)</label>
+                            <input type="text" wire:model="dossier_extra_hours_title" class="w-full border-gray-300 rounded-lg text-xs font-bold">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 mb-1">Texto Informativo</label>
+                            <textarea wire:model="dossier_extra_hours_desc" rows="3" class="w-full border-gray-300 rounded-lg text-xs text-gray-700"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Tarjeta Personalización Canciones -->
+                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 mb-1">Título Tarjeta 2 (Personalización)</label>
+                            <input type="text" wire:model="dossier_music_custom_title" class="w-full border-gray-300 rounded-lg text-xs font-bold">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 mb-1">Texto Informativo</label>
+                            <textarea wire:model="dossier_music_custom_desc" rows="3" class="w-full border-gray-300 rounded-lg text-xs text-gray-700"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </div>
 
         <!-- PESTAÑA: INTEGRACIONES APPLE MUSIC & SPOTIFY -->
