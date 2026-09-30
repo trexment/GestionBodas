@@ -34,8 +34,14 @@
                 @forelse($events as $event)
                     <tr>
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm font-bold text-gray-900">{{ $event->name }}</div>
-                            <div class="flex flex-col gap-0.5 mt-1">
+                            <div class="flex items-center gap-1.5">
+                                <span>{{ $event->event_type_icon }}</span>
+                                <span class="text-sm font-bold text-gray-900">{{ $event->name }}</span>
+                            </div>
+                            <div class="flex flex-wrap items-center gap-2 mt-1">
+                                <span class="text-[10px] bg-slate-100 text-slate-700 font-semibold px-2 py-0.5 rounded-md">
+                                    {{ $event->event_type_label }}
+                                </span>
                                 @if($event->dj)
                                     <span class="text-xs text-indigo-700 font-semibold inline-flex items-center gap-1">
                                         🎧 DJ: {{ $event->dj->name }}
@@ -78,7 +84,12 @@
                             </span>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <a href="{{ route('admin.events.show', $event->id) }}" class="text-indigo-600 hover:text-indigo-900 font-bold bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded transition">Gestionar</a>
+                            <a href="{{ route('admin.events.show', $event->id) }}" class="text-indigo-600 hover:text-indigo-900 font-bold bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition">Gestionar</a>
+                            @if(auth()->user()->role === 'admin')
+                                <button type="button" wire:click="deleteEvent({{ $event->id }})" wire:confirm="¿Estás seguro de que deseas eliminar permanentemente el evento '{{ $event->name }}' y todos sus presupuestos, contratos y música?" class="text-rose-600 hover:text-rose-900 hover:bg-rose-50 px-2 py-1.5 rounded-lg transition ml-1 cursor-pointer" title="Eliminar Evento">
+                                    🗑️
+                                </button>
+                            @endif
                         </td>
                     </tr>
                 @empty
@@ -105,10 +116,23 @@
                     </h3>
                     
                     <form wire:submit.prevent="saveEvent">
-                        <div class="mb-4">
-                            <label class="block text-gray-700 text-xs font-bold mb-1">Nombre del Evento *</label>
-                            <input type="text" wire:model="name" placeholder="Ej: Boda Laura y Carlos" class="border rounded-lg w-full py-2 px-3 text-gray-700 text-sm focus:ring-indigo-500 focus:border-indigo-500">
-                            @error('name') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+                            <div class="sm:col-span-2">
+                                <label class="block text-gray-700 text-xs font-bold mb-1">Nombre del Evento *</label>
+                                <input type="text" wire:model="name" placeholder="Ej: Boda Laura y Carlos / Fiesta ACME" class="border rounded-lg w-full py-2 px-3 text-gray-700 text-sm focus:ring-indigo-500 focus:border-indigo-500">
+                                @error('name') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 text-xs font-bold mb-1">Tipo de Evento *</label>
+                                <select wire:model="event_type" class="border rounded-lg w-full py-2 px-2 text-gray-700 text-xs font-bold focus:ring-indigo-500 focus:border-indigo-500 bg-white">
+                                    <option value="boda">💍 Boda</option>
+                                    <option value="empresa">🏢 Empresa</option>
+                                    <option value="cumpleanos">🎂 Cumpleaños</option>
+                                    <option value="comunion">🕊️ Comunión</option>
+                                    <option value="otro">🎉 Fiesta / Otro</option>
+                                </select>
+                                @error('event_type') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                            </div>
                         </div>
                         
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">

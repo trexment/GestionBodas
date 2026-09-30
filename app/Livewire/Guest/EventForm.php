@@ -19,6 +19,7 @@ class EventForm extends Component
     public $gifts_songs;
     public $dance_song;
     public $party_favs;
+    public $special_moments;
     public $blacklist;
     public $comments;
 
@@ -114,9 +115,22 @@ class EventForm extends Component
                     return ($r->artist ? $r->artist . ' - ' : '') . $r->title;
                 })->implode("\n");
             }
+
+            // 9. Momentos Especiales para eventos que no son boda
+            if (!$this->event->is_wedding) {
+                $specials = $requests->filter(function ($r) {
+                    return in_array($r->moment, ['Momento Especial', 'Entrada Protagonista', 'Tarta / Velas', 'Brindis', 'Discurso / Entrega']) || ($r->category === 'banquete');
+                });
+                if ($specials->isNotEmpty()) {
+                    $this->special_moments = $specials->map(function ($r) {
+                        $prefix = ($r->moment && !in_array($r->moment, ['Momento Especial', 'General'])) ? $r->moment . ': ' : '';
+                        return $prefix . ($r->artist ? $r->artist . ' - ' : '') . $r->title;
+                    })->implode("\n");
+                }
+            }
         }
 
-        // 9. Comentarios desde el dossier
+        // 10. Comentarios desde el dossier
         $dossier = $this->event->dossiers()->first();
         if ($dossier && preg_match('/\*\*Comentarios:\*\*\s*(.*?)(\n---|\n\*\*|$)/s', $dossier->content, $matches)) {
             $this->comments = trim($matches[1]);
@@ -155,136 +169,192 @@ class EventForm extends Component
             'gifts_songs' => 'nullable|string',
             'dance_song' => 'nullable|string',
             'party_favs' => 'nullable|string',
+            'special_moments' => 'nullable|string',
             'blacklist' => 'nullable|string',
             'comments' => 'nullable|string',
         ]);
 
+        $reqBy = $this->event->is_wedding ? 'Novios' : 'Cliente';
+
         // Eliminar las solicitudes previas del cliente para evitar duplicados al re-enviar
-        $this->event->musicRequests()->where('requested_by', 'Novios')->delete();
+        $this->event->musicRequests()->whereIn('requested_by', ['Novios', 'Cliente'])->delete();
 
         $maxOrder = EventMusicRequest::where('event_id', $this->event->id)->max('order') ?: 0;
 
-        // 1. Entrada Salón
-        if (!empty(trim($this->entrance_song))) {
-            $maxOrder++;
-            $parsed = $this->parseSong($this->entrance_song);
-            $this->event->musicRequests()->create([
-                'category' => 'banquete',
-                'moment' => 'Entrada Comedor',
-                'title' => $parsed['title'],
-                'artist' => $parsed['artist'],
-                'requested_by' => 'Novios',
-                'order' => $maxOrder,
-            ]);
-        }
-
-        // 2. Tarta
-        if (!empty(trim($this->cake_song))) {
-            $maxOrder++;
-            $parsed = $this->parseSong($this->cake_song);
-            $this->event->musicRequests()->create([
-                'category' => 'banquete',
-                'moment' => 'Corte de Tarta',
-                'title' => $parsed['title'],
-                'artist' => $parsed['artist'],
-                'requested_by' => 'Novios',
-                'order' => $maxOrder,
-            ]);
-        }
-
-        // 3. Regalos / Sorpresas (Procesar línea a línea)
-        if (!empty(trim($this->gifts_songs))) {
-            $lines = explode("\n", str_replace("\r", "", $this->gifts_songs));
-            foreach ($lines as $line) {
-                $line = trim($line, " \t\n\r\0\x0B-*•");
-                if (empty($line)) continue;
-
-                $moment = 'Regalo / Sorpresa';
-                $songPart = $line;
-                $reqBy = 'Novios';
-
-                if (str_contains($line, ':')) {
-                    $parts = explode(':', $line, 2);
-                    $moment = trim($parts[0]);
-                    $songPart = trim($parts[1]);
-                }
-
-                $parsed = $this->parseSong($songPart);
+        if ($this->event->is_wedding) {
+            // ==================== FLUJO BODA ====================
+            // 1. Entrada Salón
+            if (!empty(trim($this->entrance_song))) {
                 $maxOrder++;
+                $parsed = $this->parseSong($this->entrance_song);
                 $this->event->musicRequests()->create([
                     'category' => 'banquete',
-                    'moment' => $moment ?: 'Regalo / Sorpresa',
+                    'moment' => 'Entrada Comedor',
                     'title' => $parsed['title'],
                     'artist' => $parsed['artist'],
                     'requested_by' => $reqBy,
                     'order' => $maxOrder,
                 ]);
             }
-        }
 
-        // 4. Baile Nupcial
-        if (!empty(trim($this->dance_song))) {
-            $maxOrder++;
-            $parsed = $this->parseSong($this->dance_song);
-            $this->event->musicRequests()->create([
-                'category' => 'baile',
-                'moment' => 'Baile Nupcial',
-                'title' => $parsed['title'],
-                'artist' => $parsed['artist'],
-                'requested_by' => 'Novios',
-                'order' => $maxOrder,
-            ]);
-        }
+            // 2. Tarta
+            if (!empty(trim($this->cake_song))) {
+                $maxOrder++;
+                $parsed = $this->parseSong($this->cake_song);
+                $this->event->musicRequests()->create([
+                    'category' => 'banquete',
+                    'moment' => 'Corte de Tarta',
+                    'title' => $parsed['title'],
+                    'artist' => $parsed['artist'],
+                    'requested_by' => $reqBy,
+                    'order' => $maxOrder,
+                ]);
+            }
 
-        // 5. Ceremonia
-        if (!empty(trim($this->ceremony_songs))) {
-            $lines = explode("\n", str_replace("\r", "", $this->ceremony_songs));
-            foreach ($lines as $line) {
-                $line = trim($line, " \t\n\r\0\x0B-*•");
-                if (empty($line)) continue;
+            // 3. Regalos / Sorpresas (Procesar línea a línea)
+            if (!empty(trim($this->gifts_songs))) {
+                $lines = explode("\n", str_replace("\r", "", $this->gifts_songs));
+                foreach ($lines as $line) {
+                    $line = trim($line, " \t\n\r\0\x0B-*•");
+                    if (empty($line)) continue;
 
-                $moment = 'Ceremonia';
-                $songPart = $line;
-                if (str_contains($line, ':')) {
-                    $parts = explode(':', $line, 2);
-                    $moment = trim($parts[0]);
-                    $songPart = trim($parts[1]);
+                    $moment = 'Regalo / Sorpresa';
+                    $songPart = $line;
+
+                    if (str_contains($line, ':')) {
+                        $parts = explode(':', $line, 2);
+                        $moment = trim($parts[0]);
+                        $songPart = trim($parts[1]);
+                    }
+
+                    $parsed = $this->parseSong($songPart);
+                    $maxOrder++;
+                    $this->event->musicRequests()->create([
+                        'category' => 'banquete',
+                        'moment' => $moment ?: 'Regalo / Sorpresa',
+                        'title' => $parsed['title'],
+                        'artist' => $parsed['artist'],
+                        'requested_by' => $reqBy,
+                        'order' => $maxOrder,
+                    ]);
                 }
+            }
 
-                $parsed = $this->parseSong($songPart);
+            // 4. Baile Nupcial
+            if (!empty(trim($this->dance_song))) {
                 $maxOrder++;
+                $parsed = $this->parseSong($this->dance_song);
                 $this->event->musicRequests()->create([
-                    'category' => 'ceremonia',
-                    'moment' => $moment ?: 'Ceremonia',
+                    'category' => 'baile',
+                    'moment' => 'Baile Nupcial',
                     'title' => $parsed['title'],
                     'artist' => $parsed['artist'],
-                    'requested_by' => 'Novios',
+                    'requested_by' => $reqBy,
                     'order' => $maxOrder,
                 ]);
             }
-        }
 
-        // 6. Cóctel
-        if (!empty(trim($this->cocktail_songs))) {
-            $lines = explode("\n", str_replace("\r", "", $this->cocktail_songs));
-            foreach ($lines as $line) {
-                $line = trim($line, " \t\n\r\0\x0B-*•");
-                if (empty($line)) continue;
+            // 5. Ceremonia
+            if (!empty(trim($this->ceremony_songs))) {
+                $lines = explode("\n", str_replace("\r", "", $this->ceremony_songs));
+                foreach ($lines as $line) {
+                    $line = trim($line, " \t\n\r\0\x0B-*•");
+                    if (empty($line)) continue;
 
-                $parsed = $this->parseSong($line);
-                $maxOrder++;
-                $this->event->musicRequests()->create([
-                    'category' => 'coctel',
-                    'moment' => 'Estilo Cóctel',
-                    'title' => $parsed['title'],
-                    'artist' => $parsed['artist'],
-                    'requested_by' => 'Novios',
-                    'order' => $maxOrder,
-                ]);
+                    $moment = 'Ceremonia';
+                    $songPart = $line;
+                    if (str_contains($line, ':')) {
+                        $parts = explode(':', $line, 2);
+                        $moment = trim($parts[0]);
+                        $songPart = trim($parts[1]);
+                    }
+
+                    $parsed = $this->parseSong($songPart);
+                    $maxOrder++;
+                    $this->event->musicRequests()->create([
+                        'category' => 'ceremonia',
+                        'moment' => $moment ?: 'Ceremonia',
+                        'title' => $parsed['title'],
+                        'artist' => $parsed['artist'],
+                        'requested_by' => $reqBy,
+                        'order' => $maxOrder,
+                    ]);
+                }
+            }
+
+            // 6. Cóctel
+            if (!empty(trim($this->cocktail_songs))) {
+                $lines = explode("\n", str_replace("\r", "", $this->cocktail_songs));
+                foreach ($lines as $line) {
+                    $line = trim($line, " \t\n\r\0\x0B-*•");
+                    if (empty($line)) continue;
+
+                    $parsed = $this->parseSong($line);
+                    $maxOrder++;
+                    $this->event->musicRequests()->create([
+                        'category' => 'coctel',
+                        'moment' => 'Estilo Cóctel',
+                        'title' => $parsed['title'],
+                        'artist' => $parsed['artist'],
+                        'requested_by' => $reqBy,
+                        'order' => $maxOrder,
+                    ]);
+                }
+            }
+        } else {
+            // ==================== FLUJO NO BODA (EMPRESA, CUMPLEAÑOS, FIESTA, ETC.) ====================
+            // 1. Estilo y Ambiente General
+            if (!empty(trim($this->cocktail_songs))) {
+                $lines = explode("\n", str_replace("\r", "", $this->cocktail_songs));
+                foreach ($lines as $line) {
+                    $line = trim($line, " \t\n\r\0\x0B-*•");
+                    if (empty($line)) continue;
+
+                    $parsed = $this->parseSong($line);
+                    $maxOrder++;
+                    $this->event->musicRequests()->create([
+                        'category' => 'coctel',
+                        'moment' => 'Estilo / Ambiente',
+                        'title' => $parsed['title'],
+                        'artist' => $parsed['artist'],
+                        'requested_by' => $reqBy,
+                        'order' => $maxOrder,
+                    ]);
+                }
+            }
+
+            // 2. Momentos Especiales
+            if (!empty(trim($this->special_moments))) {
+                $lines = explode("\n", str_replace("\r", "", $this->special_moments));
+                foreach ($lines as $line) {
+                    $line = trim($line, " \t\n\r\0\x0B-*•");
+                    if (empty($line)) continue;
+
+                    $moment = 'Momento Especial';
+                    $songPart = $line;
+
+                    if (str_contains($line, ':')) {
+                        $parts = explode(':', $line, 2);
+                        $moment = trim($parts[0]);
+                        $songPart = trim($parts[1]);
+                    }
+
+                    $parsed = $this->parseSong($songPart);
+                    $maxOrder++;
+                    $this->event->musicRequests()->create([
+                        'category' => 'banquete',
+                        'moment' => $moment ?: 'Momento Especial',
+                        'title' => $parsed['title'],
+                        'artist' => $parsed['artist'],
+                        'requested_by' => $reqBy,
+                        'order' => $maxOrder,
+                    ]);
+                }
             }
         }
 
-        // 7. Temazos Fiesta
+        // ==================== COMUNES A TODOS LOS EVENTOS ====================
+        // Temazos Fiesta
         if (!empty(trim($this->party_favs))) {
             $lines = explode("\n", str_replace("\r", "", $this->party_favs));
             foreach ($lines as $line) {
@@ -298,13 +368,13 @@ class EventForm extends Component
                     'moment' => 'Temazo Fiesta',
                     'title' => $parsed['title'],
                     'artist' => $parsed['artist'],
-                    'requested_by' => 'Novios',
+                    'requested_by' => $reqBy,
                     'order' => $maxOrder,
                 ]);
             }
         }
 
-        // 8. Lista Negra
+        // Lista Negra
         if (!empty(trim($this->blacklist))) {
             $lines = explode("\n", str_replace("\r", "", $this->blacklist));
             foreach ($lines as $line) {
@@ -318,23 +388,28 @@ class EventForm extends Component
                     'moment' => 'Prohibida',
                     'title' => $parsed['title'],
                     'artist' => $parsed['artist'],
-                    'requested_by' => 'Novios',
+                    'requested_by' => $reqBy,
                     'order' => $maxOrder,
                 ]);
             }
         }
 
-        // 9. Actualizar Dossier General
-        $dossierContent = "### Preferencias Musicales Enviadas por el Cliente\n\n";
-        if ($this->ceremony_songs) $dossierContent .= "**Ceremonia:** " . $this->ceremony_songs . "\n";
-        if ($this->cocktail_songs) $dossierContent .= "**Cóctel:** " . $this->cocktail_songs . "\n";
-        if ($this->entrance_song) $dossierContent .= "**Entrada:** " . $this->entrance_song . "\n";
-        if ($this->cake_song) $dossierContent .= "**Tarta:** " . $this->cake_song . "\n";
-        if ($this->gifts_songs) $dossierContent .= "**Regalos / Entregas:** " . $this->gifts_songs . "\n";
-        if ($this->dance_song) $dossierContent .= "**Baile Nupcial:** " . $this->dance_song . "\n";
-        if ($this->party_favs) $dossierContent .= "**Temazos Fiesta:** " . $this->party_favs . "\n";
-        if ($this->blacklist) $dossierContent .= "**Lista Negra:** " . $this->blacklist . "\n";
-        if ($this->comments) $dossierContent .= "**Comentarios:** " . $this->comments . "\n";
+        // Actualizar Dossier General
+        $dossierContent = "### Preferencias Musicales Enviadas por el Cliente (" . $this->event->event_type_label . ")\n\n";
+        if ($this->event->is_wedding) {
+            if ($this->ceremony_songs) $dossierContent .= "**Ceremonia:** " . $this->ceremony_songs . "\n";
+            if ($this->cocktail_songs) $dossierContent .= "**Cóctel:** " . $this->cocktail_songs . "\n";
+            if ($this->entrance_song) $dossierContent .= "**Entrada Salón:** " . $this->entrance_song . "\n";
+            if ($this->cake_song) $dossierContent .= "**Corte de Tarta:** " . $this->cake_song . "\n";
+            if ($this->gifts_songs) $dossierContent .= "**Regalos / Entregas:** " . $this->gifts_songs . "\n";
+            if ($this->dance_song) $dossierContent .= "**Baile Nupcial:** " . $this->dance_song . "\n";
+        } else {
+            if ($this->cocktail_songs) $dossierContent .= "**Estilo & Ambiente:** " . $this->cocktail_songs . "\n";
+            if ($this->special_moments) $dossierContent .= "**Momentos Especiales:** " . $this->special_moments . "\n";
+        }
+        if ($this->party_favs) $dossierContent .= "**Temazos / Favoritas:** " . $this->party_favs . "\n";
+        if ($this->blacklist) $dossierContent .= "**Lista Negra (Prohibidas):** " . $this->blacklist . "\n";
+        if ($this->comments) $dossierContent .= "**Comentarios & Observaciones:** " . $this->comments . "\n";
         $dossierContent .= "---\n\n";
 
         $dossier = $this->event->dossiers()->first();

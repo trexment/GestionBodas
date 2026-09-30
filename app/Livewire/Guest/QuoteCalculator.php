@@ -357,6 +357,7 @@ class QuoteCalculator extends Component
         // 4. Create Event Draft
         $event = Event::create([
             'name' => $eventTitle,
+            'event_type' => $this->event_type ?: 'boda',
             'event_date' => $this->event_date,
             'location' => $this->event_location,
             'status' => 'draft',

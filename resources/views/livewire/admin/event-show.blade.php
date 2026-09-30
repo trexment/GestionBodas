@@ -77,6 +77,35 @@
         <div>
             <div class="flex flex-wrap items-center gap-3">
                 <h2 class="text-2xl font-bold text-gray-800">{{ $event->name }}</h2>
+
+                <!-- Selector de Tipo de Evento -->
+                <div class="relative" x-data="{ openTypeDropdown: false }">
+                    <button type="button" @click="openTypeDropdown = !openTypeDropdown" class="inline-flex items-center gap-1.5 text-xs px-3 py-1 rounded-full font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-200 shadow-2xs transition cursor-pointer" title="Cambiar tipo de evento">
+                        <span>{{ $event->event_type_icon }}</span>
+                        <span>{{ $event->event_type_label }}</span>
+                        <span class="text-[9px] text-indigo-400">▼</span>
+                    </button>
+                    <div x-show="openTypeDropdown" @click.away="openTypeDropdown = false" class="absolute left-0 mt-1.5 w-56 bg-white border border-slate-200 rounded-2xl shadow-xl z-30 p-1.5 divide-y divide-slate-100 text-xs animate-in fade-in zoom-in-95 duration-100" style="display: none;">
+                        <div class="space-y-0.5">
+                            <button type="button" wire:click="changeEventType('boda')" @click="openTypeDropdown = false" class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 font-semibold flex items-center gap-2 cursor-pointer {{ $event->event_type_clean === 'boda' ? 'bg-indigo-50 text-indigo-700 font-bold' : 'text-slate-700' }}">
+                                <span>💍</span> Boda / Enlace
+                            </button>
+                            <button type="button" wire:click="changeEventType('empresa')" @click="openTypeDropdown = false" class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 font-semibold flex items-center gap-2 cursor-pointer {{ $event->event_type_clean === 'empresa' ? 'bg-indigo-50 text-indigo-700 font-bold' : 'text-slate-700' }}">
+                                <span>🏢</span> Evento de Empresa
+                            </button>
+                            <button type="button" wire:click="changeEventType('cumpleanos')" @click="openTypeDropdown = false" class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 font-semibold flex items-center gap-2 cursor-pointer {{ $event->event_type_clean === 'cumpleanos' ? 'bg-indigo-50 text-indigo-700 font-bold' : 'text-slate-700' }}">
+                                <span>🎂</span> Cumpleaños / Aniversario
+                            </button>
+                            <button type="button" wire:click="changeEventType('comunion')" @click="openTypeDropdown = false" class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 font-semibold flex items-center gap-2 cursor-pointer {{ $event->event_type_clean === 'comunion' ? 'bg-indigo-50 text-indigo-700 font-bold' : 'text-slate-700' }}">
+                                <span>🕊️</span> Comunión
+                            </button>
+                            <button type="button" wire:click="changeEventType('otro')" @click="openTypeDropdown = false" class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 font-semibold flex items-center gap-2 cursor-pointer {{ $event->event_type_clean === 'otro' ? 'bg-indigo-50 text-indigo-700 font-bold' : 'text-slate-700' }}">
+                                <span>🎉</span> Fiesta Privada / Otro
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
                 <span class="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full font-bold {{ $event->status === 'confirmed' ? 'bg-emerald-100 text-emerald-800' : ($event->status === 'completed' ? 'bg-blue-100 text-blue-800' : ($event->status === 'cancelled' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800')) }}">
                     {{ ucfirst($event->status) }}
                 </span>
@@ -197,6 +226,13 @@
                 <button wire:click="changeStatus('completed')" class="px-2.5 py-1.5 text-xs font-medium border-r border-gray-200 {{ $event->status == 'completed' ? 'bg-blue-100 text-blue-900 font-bold' : 'bg-white hover:bg-gray-50' }}">Completado</button>
                 <button wire:click="changeStatus('cancelled')" class="px-2.5 py-1.5 text-xs font-medium {{ $event->status == 'cancelled' ? 'bg-rose-100 text-rose-900 font-bold' : 'bg-white hover:bg-gray-50' }}">Cancelado</button>
             </div>
+
+            @if(auth()->user()->role === 'admin')
+                <button type="button" wire:click="deleteEvent" wire:confirm="⚠️ ¿Estás seguro de que deseas eliminar permanentemente el evento '{{ $event->name }}' y todos sus presupuestos, facturas, contratos y canciones asociadas? Esta acción no se puede deshacer." class="inline-flex items-center gap-1 bg-rose-50 hover:bg-rose-100 text-rose-700 hover:text-rose-800 border border-rose-200 font-bold px-2.5 py-2 rounded-xl text-xs transition cursor-pointer" title="Eliminar este evento">
+                    <span>🗑️</span>
+                    <span>Eliminar</span>
+                </button>
+            @endif
             
             <a href="{{ route('admin.events') }}" class="text-gray-500 hover:text-gray-700 text-sm font-medium ml-2">← Volver</a>
         </div>

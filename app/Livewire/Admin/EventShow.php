@@ -228,6 +228,39 @@ class EventShow extends Component
         session()->flash('message', 'Estado del evento actualizado a: ' . ucfirst($status));
     }
 
+    public function changeEventType($type)
+    {
+        $this->event->update(['event_type' => $type]);
+        $this->event->refresh();
+        session()->flash('message', "Tipo de evento actualizado a: {$this->event->event_type_label}");
+    }
+
+    public function deleteEvent()
+    {
+        if (auth()->user()->role !== 'admin') {
+            session()->flash('error', 'Solo los administradores pueden eliminar eventos.');
+            return;
+        }
+
+        $name = $this->event->name;
+
+        // Cascade delete relations
+        foreach ($this->event->quotes as $quote) {
+            $quote->items()->delete();
+            $quote->delete();
+        }
+        $this->event->invoices()->delete();
+        $this->event->contracts()->delete();
+        $this->event->dossiers()->delete();
+        $this->event->playlists()->delete();
+        $this->event->musicRequests()->delete();
+        $this->event->equipment()->detach();
+        $this->event->delete();
+
+        session()->flash('message', "🗑️ El evento '{$name}' ha sido eliminado permanentemente.");
+        return redirect()->route('admin.events');
+    }
+
     public function openDepositModal(string $targetStatus = 'confirmed')
     {
         $this->target_status = $targetStatus;

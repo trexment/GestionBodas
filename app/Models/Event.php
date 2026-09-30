@@ -12,6 +12,7 @@ class Event extends Model
 
     protected $fillable = [
         'name',
+        'event_type',
         'event_date',
         'location',
         'venue_contact_name',
@@ -127,6 +128,59 @@ class Event extends Model
             'cash' => '💵',
             'card' => '💳',
             default => '💶',
+        };
+    }
+
+    /**
+     * Tipo de evento limpio / normalizado
+     */
+    public function getEventTypeCleanAttribute(): string
+    {
+        $type = $this->attributes['event_type'] ?? null;
+        if (!empty($type)) {
+            return $type;
+        }
+        $nameLower = mb_strtolower($this->name ?? '');
+        if (str_contains($nameLower, 'empresa') || str_contains($nameLower, 'corporativ')) return 'empresa';
+        if (str_contains($nameLower, 'cumplea') || str_contains($nameLower, 'cumple') || str_contains($nameLower, 'aniversario')) return 'cumpleanos';
+        if (str_contains($nameLower, 'comunion') || str_contains($nameLower, 'comunión')) return 'comunion';
+        if (str_contains($nameLower, 'fiesta') || str_contains($nameLower, 'privad') || str_contains($nameLower, 'despedida')) return 'otro';
+        return 'boda';
+    }
+
+    /**
+     * Determina si es una boda
+     */
+    public function getIsWeddingAttribute(): bool
+    {
+        return $this->event_type_clean === 'boda';
+    }
+
+    /**
+     * Etiqueta legible del tipo de evento
+     */
+    public function getEventTypeLabelAttribute(): string
+    {
+        return match($this->event_type_clean) {
+            'empresa' => 'Evento de Empresa / Corporativo',
+            'cumpleanos' => 'Cumpleaños / Aniversario',
+            'comunion' => 'Comunión',
+            'otro' => 'Fiesta Privada / Evento',
+            default => 'Boda / Enlace',
+        };
+    }
+
+    /**
+     * Icono del tipo de evento
+     */
+    public function getEventTypeIconAttribute(): string
+    {
+        return match($this->event_type_clean) {
+            'empresa' => '🏢',
+            'cumpleanos' => '🎂',
+            'comunion' => '🕊️',
+            'otro' => '🎉',
+            default => '💍',
         };
     }
 }
