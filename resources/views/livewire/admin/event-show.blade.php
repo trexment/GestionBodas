@@ -153,10 +153,14 @@
                                 💬
                             </a>
                         @endif
-                        <button type="button" wire:click="openClientModal" class="inline-flex items-center gap-0.5 text-[11px] font-bold text-amber-800 bg-amber-100 hover:bg-amber-200 border border-amber-300 px-1.5 py-0.5 rounded transition cursor-pointer" title="Editar datos o contraseña del cliente">
-                            ✏️ Editar
+                        <button type="button" wire:click="openClientModal" class="inline-flex items-center gap-0.5 text-[11px] font-bold text-amber-800 bg-amber-100 hover:bg-amber-200 border border-amber-300 px-1.5 py-0.5 rounded transition cursor-pointer" title="Editar datos o cambiar cliente">
+                            ✏️ Editar / Cambiar
                         </button>
                     </span>
+                @else
+                    <button type="button" wire:click="openClientModal" class="inline-flex items-center gap-1.5 text-xs font-bold text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-300 px-2.5 py-1 rounded-lg transition cursor-pointer shadow-2xs" title="Asociar o crear cliente para este evento">
+                        👤 <span>+ Asociar Cliente</span>
+                    </button>
                 @endif
 
                 <!-- DJ Principal (Baile) -->
@@ -2767,7 +2771,7 @@
                     <div class="flex items-center gap-2">
                         <span class="text-2xl">👤</span>
                         <div>
-                            <h3 class="font-extrabold text-base leading-tight" id="modal-client-title">Editar Ficha y Credenciales del Cliente</h3>
+                            <h3 class="font-extrabold text-base leading-tight" id="modal-client-title">Gestionar Cliente del Evento</h3>
                             <p class="text-xs text-emerald-100">Evento: {{ $event->name }}</p>
                         </div>
                     </div>
@@ -2776,6 +2780,22 @@
 
                 <form wire:submit.prevent="saveClientDetails">
                     <div class="p-6 space-y-4 text-xs">
+                        <!-- Selector de Cliente Registrado o Crear Nuevo -->
+                        <div class="p-3 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-1.5">
+                            <label class="block font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[11px]">
+                                Seleccionar Cliente Registrado (O crear nuevo)
+                            </label>
+                            <select wire:model.live="selected_client_id" class="w-full border-slate-300 dark:border-slate-700 rounded-xl p-2.5 text-xs font-bold text-slate-800 dark:text-white bg-white dark:bg-slate-900">
+                                <option value="">+ Crear Nuevo Cliente para este Evento</option>
+                                @foreach($allClients as $cItem)
+                                    <option value="{{ $cItem->id }}">👤 {{ $cItem->name }} {{ $cItem->phone ? '('.$cItem->phone.')' : '' }} {{ $cItem->email && !str_ends_with($cItem->email, '@eventosmusicales.local') ? '- '.$cItem->email : '' }}</option>
+                                @endforeach
+                            </select>
+                            <p class="text-[10px] text-slate-500">
+                                Selecciona un cliente registrado para vincularlo a este evento o mantén "+ Crear Nuevo Cliente" para darlo de alta.
+                            </p>
+                        </div>
+
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div>
                                 <label class="block font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">Nombre Completo *</label>
@@ -2842,13 +2862,23 @@
                         </div>
                     </div>
 
-                    <div class="bg-gray-50 dark:bg-slate-950 px-6 py-3 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-2">
-                        <button type="button" wire:click="$set('showClientModal', false)" class="bg-white dark:bg-slate-800 hover:bg-slate-100 text-slate-700 dark:text-slate-300 font-bold text-xs px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-xl transition">
-                            Cancelar
-                        </button>
-                        <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow-md transition cursor-pointer">
-                            💾 Guardar Datos del Cliente
-                        </button>
+                    <div class="bg-gray-50 dark:bg-slate-950 px-6 py-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
+                        @if($event->client_id)
+                            <button type="button" wire:click="unlinkClient" wire:confirm="¿Seguro que deseas desvincular al cliente de este evento?" class="bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-xs px-3 py-2 rounded-xl transition cursor-pointer">
+                                🔗 Desvincular
+                            </button>
+                        @else
+                            <div></div>
+                        @endif
+
+                        <div class="flex items-center gap-2">
+                            <button type="button" wire:click="$set('showClientModal', false)" class="bg-white dark:bg-slate-800 hover:bg-slate-100 text-slate-700 dark:text-slate-300 font-bold text-xs px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-xl transition">
+                                Cancelar
+                            </button>
+                            <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow-md transition cursor-pointer">
+                                💾 Asignar / Guardar Cliente
+                            </button>
+                        </div>
                     </div>
                 </form>
             </div>
