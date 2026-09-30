@@ -14,111 +14,114 @@
             padding: 0;
         }
         body {
-            font-family: 'DejaVu Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            font-family: 'DejaVu Sans', 'Helvetica Neue', Arial, sans-serif;
             color: #1e293b;
             background-color: #ffffff;
-            font-size: 9pt;
-            line-height: 1.45;
+            font-size: 8.5pt;
+            line-height: 1.4;
             margin: 0;
             padding: 0;
         }
 
-        /* ESTRUCTURA DE PÁGINAS A4 (210mm x 297mm) */
+        /* ESTRUCTURA EXACTA DE PÁGINAS A4 */
         .page {
-            width: 210mm;
-            height: 297mm;
-            max-height: 297mm;
             page-break-after: always;
             position: relative;
             box-sizing: border-box;
-            overflow: hidden;
+            width: 100%;
         }
-        .page:last-child {
+        .page-last {
             page-break-after: avoid;
         }
 
         /* ==================== PÁGINA 1: PORTADA ==================== */
         .cover-page {
             background-color: #0b1329;
-            background: linear-gradient(180deg, #0b1329 0%, #111c34 50%, #060b18 100%);
             color: #ffffff;
-            padding: 50px 45px;
-            position: relative;
+            padding: 45px 40px;
+            min-height: 1000px;
         }
         .cover-logo-wrapper {
             text-align: center;
-            margin-top: 25px;
-            margin-bottom: 200px;
+            margin-top: 30px;
+            margin-bottom: 60px;
         }
         .cover-logo-img {
-            max-height: 130px;
-            max-width: 280px;
+            max-height: 120px;
+            max-width: 260px;
             margin: 0 auto;
         }
         .cover-badge-logo {
             display: inline-block;
             border: 2px solid #eab308;
             border-radius: 50%;
-            width: 130px;
-            height: 130px;
-            padding: 20px 10px;
+            width: 120px;
+            height: 120px;
+            padding: 24px 10px;
             text-align: center;
-            box-shadow: 0 0 25px rgba(234, 179, 8, 0.25);
         }
         .cover-badge-title {
-            font-size: 15pt;
+            font-size: 14pt;
             font-weight: bold;
             letter-spacing: 2px;
             color: #ffffff;
             text-transform: uppercase;
         }
         .cover-badge-sub {
-            font-size: 7.5pt;
+            font-size: 7pt;
             letter-spacing: 3px;
             color: #eab308;
             text-transform: uppercase;
-            margin-top: 5px;
+            margin-top: 4px;
         }
 
         .cover-bottom-card {
-            position: absolute;
-            bottom: 60px;
-            left: 45px;
-            right: 45px;
-            background-color: rgba(17, 28, 52, 0.88);
-            border: 1px solid rgba(255, 255, 255, 0.12);
+            background-color: #111c34;
+            border: 1px solid rgba(255, 255, 255, 0.15);
             border-radius: 12px;
-            padding: 30px 35px;
+            padding: 28px 30px;
+            margin-top: 40px;
         }
         .cover-subtitle-top {
-            font-size: 9pt;
-            letter-spacing: 3px;
+            font-size: 8.5pt;
+            letter-spacing: 2.5px;
             text-transform: uppercase;
             color: #93c5fd;
             font-weight: bold;
             margin-bottom: 8px;
         }
         .cover-main-title {
-            font-size: 26pt;
+            font-size: 24pt;
             font-weight: 800;
             color: #ffffff;
             line-height: 1.15;
             margin-bottom: 12px;
         }
         .cover-gold-line {
-            width: 60px;
-            height: 3.5px;
+            width: 50px;
+            height: 3px;
             background-color: #eab308;
-            margin-bottom: 18px;
-            border-radius: 2px;
+            margin-bottom: 16px;
         }
-        .cover-meta-item {
-            font-size: 11pt;
+        .cover-meta-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 6px;
+        }
+        .cover-meta-table td {
+            padding: 4px 0;
+            font-size: 10pt;
             color: #e2e8f0;
-            margin-bottom: 6px;
-            font-weight: 500;
         }
-        .cover-meta-item strong {
+        .cover-meta-label {
+            color: #eab308;
+            font-weight: 800;
+            font-size: 8.5pt;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            width: 100px;
+        }
+        .cover-meta-value {
             color: #ffffff;
             font-weight: 700;
         }
@@ -127,37 +130,33 @@
         .page-header-banner {
             background-color: #0b1329;
             color: #ffffff;
-            padding: 24px 35px;
+            padding: 20px 35px;
         }
         .page-header-sub {
-            font-size: 8pt;
-            letter-spacing: 3px;
+            font-size: 7.5pt;
+            letter-spacing: 2.5px;
             text-transform: uppercase;
             color: #93c5fd;
             font-weight: 700;
-            margin-bottom: 3px;
+            margin-bottom: 2px;
         }
         .page-header-title {
-            font-size: 16pt;
+            font-size: 15pt;
             font-weight: 800;
             color: #ffffff;
-            letter-spacing: -0.3px;
         }
 
         .page-content {
-            padding: 22px 35px 70px 35px;
+            padding: 18px 35px 25px 35px;
         }
 
         .page-footer-banner {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
             background-color: #0b1329;
             color: #94a3b8;
-            padding: 11px 35px;
-            font-size: 8pt;
+            padding: 9px 35px;
+            font-size: 7.5pt;
             text-align: center;
+            margin-top: 15px;
         }
         .page-footer-banner strong {
             color: #ffffff;
@@ -165,17 +164,17 @@
 
         /* INTRO TEXT */
         .intro-lead {
-            font-size: 9.5pt;
+            font-size: 9pt;
             color: #334155;
-            line-height: 1.5;
-            margin-bottom: 16px;
+            line-height: 1.45;
+            margin-bottom: 14px;
             text-align: justify;
         }
 
         /* MOSAICO DE FOTOS / EQUIPO */
         .photo-mosaic-table {
             width: 100%;
-            margin-bottom: 16px;
+            margin-bottom: 14px;
             border-collapse: separate;
             border-spacing: 8px;
         }
@@ -188,15 +187,23 @@
             vertical-align: middle;
         }
         .photo-card-inner {
-            padding: 20px 15px;
+            padding: 14px 12px;
         }
-        .photo-card-icon {
-            font-size: 24pt;
+        .photo-card-pill {
+            display: inline-block;
+            background-color: rgba(234, 179, 8, 0.15);
+            border: 1px solid #eab308;
+            color: #eab308;
+            font-size: 7pt;
+            font-weight: 800;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            padding: 2px 8px;
+            border-radius: 4px;
             margin-bottom: 6px;
-            display: block;
         }
         .photo-card-title {
-            font-size: 9.5pt;
+            font-size: 9pt;
             font-weight: bold;
             color: #ffffff;
             margin-bottom: 3px;
@@ -204,7 +211,7 @@
         .photo-card-desc {
             font-size: 7.5pt;
             color: #cbd5e1;
-            line-height: 1.3;
+            line-height: 1.25;
         }
 
         /* TARJETA CÓMO TRABAJAMOS */
@@ -213,14 +220,13 @@
             border: 1px solid #e2e8f0;
             border-left: 4px solid #d97706;
             border-radius: 8px;
-            padding: 14px 18px;
-            margin-top: 10px;
+            padding: 12px 16px;
         }
         .work-box-title {
-            font-size: 10pt;
+            font-size: 9.5pt;
             font-weight: 800;
             color: #0f172a;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
         .work-box-list {
             list-style: none;
@@ -228,12 +234,12 @@
             margin: 0;
         }
         .work-box-list li {
-            font-size: 8.5pt;
+            font-size: 8pt;
             color: #334155;
-            margin-bottom: 5px;
-            line-height: 1.4;
+            margin-bottom: 4px;
+            line-height: 1.35;
             position: relative;
-            padding-left: 14px;
+            padding-left: 12px;
         }
         .work-box-list li .bullet {
             position: absolute;
@@ -247,8 +253,8 @@
         .packs-table {
             width: 100%;
             border-collapse: separate;
-            border-spacing: 8px;
-            margin-bottom: 12px;
+            border-spacing: 7px;
+            margin-bottom: 10px;
         }
         .pack-col {
             width: 33.33%;
@@ -257,60 +263,56 @@
         .pack-card {
             background-color: #ffffff;
             border: 1px solid #cbd5e1;
-            border-radius: 10px;
-            padding: 16px 12px;
+            border-radius: 8px;
+            padding: 12px 10px;
             text-align: center;
-            height: 100%;
-            position: relative;
         }
         .pack-card.highlighted {
             background-color: #0b1329;
             border: 2px solid #eab308;
             color: #ffffff;
-            box-shadow: 0 4px 15px rgba(11, 19, 41, 0.2);
         }
         .pack-badge {
             background-color: #eab308;
             color: #0f172a;
-            font-size: 7pt;
+            font-size: 6.5pt;
             font-weight: 900;
             letter-spacing: 1px;
             text-transform: uppercase;
-            padding: 3px 8px;
-            border-radius: 4px;
+            padding: 2px 6px;
+            border-radius: 3px;
             display: inline-block;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
         .pack-title {
-            font-size: 13pt;
+            font-size: 12pt;
             font-weight: 800;
             color: #0f172a;
-            margin-bottom: 2px;
+            margin-bottom: 1px;
         }
         .pack-card.highlighted .pack-title {
             color: #ffffff;
         }
         .pack-schedule {
-            font-size: 8pt;
+            font-size: 7.5pt;
             color: #64748b;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
         .pack-card.highlighted .pack-schedule {
             color: #94a3b8;
         }
         .pack-price {
-            font-size: 20pt;
+            font-size: 18pt;
             font-weight: 900;
             color: #0f172a;
-            margin-bottom: 12px;
-            letter-spacing: -0.5px;
+            margin-bottom: 8px;
         }
         .pack-card.highlighted .pack-price {
             color: #eab308;
         }
         .pack-features {
             border-top: 1px solid #e2e8f0;
-            padding-top: 10px;
+            padding-top: 6px;
             text-align: center;
             list-style: none;
             margin: 0;
@@ -319,9 +321,9 @@
             border-top: 1px solid rgba(255, 255, 255, 0.15);
         }
         .pack-features li {
-            font-size: 8pt;
+            font-size: 7.5pt;
             color: #475569;
-            padding: 4px 0;
+            padding: 2.5px 0;
             border-bottom: 1px solid #f1f5f9;
         }
         .pack-card.highlighted .pack-features li {
@@ -336,47 +338,49 @@
         .info-card {
             background-color: #ffffff;
             border: 1px solid #e2e8f0;
-            border-left: 4px solid #d97706;
-            border-radius: 8px;
-            padding: 10px 15px;
-            margin-bottom: 9px;
+            border-left: 3.5px solid #d97706;
+            border-radius: 6px;
+            padding: 8px 12px;
+            margin-bottom: 7px;
         }
         .info-card-title {
-            font-size: 9pt;
+            font-size: 8.5pt;
             font-weight: 800;
             color: #0f172a;
-            margin-bottom: 3px;
+            margin-bottom: 2px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
         .info-card-body {
-            font-size: 8pt;
+            font-size: 7.5pt;
             color: #475569;
-            line-height: 1.35;
+            line-height: 1.3;
         }
 
         .custom-selection-card {
             background-color: #f0fdf4;
             border: 1px solid #bbf7d0;
-            border-left: 4px solid #16a34a;
-            border-radius: 8px;
-            padding: 10px 15px;
-            margin-bottom: 9px;
+            border-left: 3.5px solid #16a34a;
+            border-radius: 6px;
+            padding: 8px 12px;
+            margin-bottom: 7px;
         }
         .custom-selection-title {
-            font-size: 9pt;
+            font-size: 8.5pt;
             font-weight: 800;
             color: #15803d;
-            margin-bottom: 3px;
+            margin-bottom: 2px;
         }
         .custom-selection-body {
-            font-size: 8pt;
+            font-size: 7.5pt;
             color: #166534;
-            line-height: 1.35;
+            line-height: 1.3;
         }
 
         .tax-note {
-            font-size: 7.5pt;
+            font-size: 7pt;
             color: #94a3b8;
-            margin-top: 4px;
+            margin-top: 3px;
         }
     </style>
 </head>
@@ -443,10 +447,10 @@
 
         // Formatted Date
         $carbonDate = $event->event_date ? \Carbon\Carbon::parse($event->event_date)->locale('es') : null;
-        $dateFormatted = $carbonDate ? ucfirst($carbonDate->isoFormat('dddd D [de] MMMM')) : 'Fecha a convenir';
+        $dateFormatted = $carbonDate ? ucfirst($carbonDate->isoFormat('dddd D [de] MMMM [de] YYYY')) : 'Fecha a convenir';
 
         // Schedule string
-        $scheduleStr = 'Horario de servicio personalizado';
+        $scheduleStr = 'Horario personalizado a convenir';
         if ($event->start_time && $event->end_time) {
             $scheduleStr = 'De ' . $event->start_time . ' a ' . $event->end_time;
         } elseif ($event->start_time) {
@@ -495,21 +499,26 @@
             @endif
         </div>
 
-        <!-- Tarjeta flotante inferior -->
+        <!-- Tarjeta de Detalles de Portada -->
         <div class="cover-bottom-card">
             <div class="cover-subtitle-top">{{ mb_strtoupper($companyName) }} &bull; {{ mb_strtoupper($companySubtitle) }}</div>
             <div class="cover-main-title">{!! nl2br(e($dossierCoverTitle)) !!}</div>
             <div class="cover-gold-line"></div>
             
-            <div class="cover-meta-item">
-                📅 <strong>{{ $dateFormatted }}</strong>
-            </div>
-            <div class="cover-meta-item">
-                📍 <strong>{{ $event->location ?: 'Lugar a convenir' }}</strong>
-            </div>
-            <div class="cover-meta-item">
-                🕒 <strong>{{ $scheduleStr }}</strong>
-            </div>
+            <table class="cover-meta-table">
+                <tr>
+                    <td class="cover-meta-label">FECHA</td>
+                    <td class="cover-meta-value">{{ $dateFormatted }}</td>
+                </tr>
+                <tr>
+                    <td class="cover-meta-label">LUGAR</td>
+                    <td class="cover-meta-value">{{ $event->location ?: 'Lugar a convenir' }}</td>
+                </tr>
+                <tr>
+                    <td class="cover-meta-label">HORARIO</td>
+                    <td class="cover-meta-value">{{ $scheduleStr }}</td>
+                </tr>
+            </table>
         </div>
     </div>
 
@@ -534,22 +543,23 @@
             <!-- Mosaico de Bloques de Equipamiento -->
             <table class="photo-mosaic-table">
                 <tr>
-                    <td colspan="2" class="photo-card" style="height: 135px; background-color: #111c34;">
+                    <td colspan="2" class="photo-card" style="background-color: #111c34;">
                         @if($block1ImgPath)
-                            <table style="width: 100%; height: 100%; border-collapse: collapse;">
+                            <table style="width: 100%; border-collapse: collapse;">
                                 <tr>
-                                    <td style="width: 38%; padding: 6px; vertical-align: middle; text-align: center;">
-                                        <img src="{{ $block1ImgPath }}" style="width: 100%; height: 115px; object-fit: cover; border-radius: 6px; display: block;">
+                                    <td style="width: 36%; padding: 6px; vertical-align: middle; text-align: center;">
+                                        <img src="{{ $block1ImgPath }}" style="width: 100%; height: 100px; object-fit: cover; border-radius: 6px; display: block;">
                                     </td>
-                                    <td style="width: 62%; padding: 10px 14px; vertical-align: middle; text-align: left; color: #ffffff;">
-                                        <div class="photo-card-title" style="font-size: 10pt; color: #eab308; margin-bottom: 4px;">{{ $dossierBlock1Title }}</div>
-                                        <div class="photo-card-desc" style="font-size: 8pt; color: #e2e8f0; line-height: 1.35;">{{ $dossierBlock1Desc }}</div>
+                                    <td style="width: 64%; padding: 8px 12px; vertical-align: middle; text-align: left; color: #ffffff;">
+                                        <div class="photo-card-pill">SONIDO PROFESIONAL</div>
+                                        <div class="photo-card-title" style="color: #eab308;">{{ $dossierBlock1Title }}</div>
+                                        <div class="photo-card-desc">{{ $dossierBlock1Desc }}</div>
                                     </td>
                                 </tr>
                             </table>
                         @else
                             <div class="photo-card-inner">
-                                <span class="photo-card-icon">🔊</span>
+                                <div class="photo-card-pill">SONIDO DE ALTA DEFINICIÓN</div>
                                 <div class="photo-card-title">{{ $dossierBlock1Title }}</div>
                                 <div class="photo-card-desc">{{ $dossierBlock1Desc }}</div>
                             </div>
@@ -557,43 +567,45 @@
                     </td>
                 </tr>
                 <tr>
-                    <td class="photo-card" style="width: 50%; height: 130px; background-color: #16223f;">
+                    <td class="photo-card" style="width: 50%; background-color: #16223f;">
                         @if($block2ImgPath)
-                            <table style="width: 100%; height: 100%; border-collapse: collapse;">
+                            <table style="width: 100%; border-collapse: collapse;">
                                 <tr>
-                                    <td style="width: 40%; padding: 6px; vertical-align: middle; text-align: center;">
-                                        <img src="{{ $block2ImgPath }}" style="width: 100%; height: 110px; object-fit: cover; border-radius: 6px; display: block;">
+                                    <td style="width: 38%; padding: 6px; vertical-align: middle; text-align: center;">
+                                        <img src="{{ $block2ImgPath }}" style="width: 100%; height: 90px; object-fit: cover; border-radius: 6px; display: block;">
                                     </td>
-                                    <td style="width: 60%; padding: 8px 10px; vertical-align: middle; text-align: left; color: #ffffff;">
-                                        <div class="photo-card-title" style="font-size: 9pt; color: #eab308; margin-bottom: 3px;">{{ $dossierBlock2Title }}</div>
-                                        <div class="photo-card-desc" style="font-size: 7.5pt; color: #cbd5e1; line-height: 1.3;">{{ $dossierBlock2Desc }}</div>
+                                    <td style="width: 62%; padding: 6px 8px; vertical-align: middle; text-align: left; color: #ffffff;">
+                                        <div class="photo-card-pill">ILUMINACIÓN</div>
+                                        <div class="photo-card-title" style="color: #eab308;">{{ $dossierBlock2Title }}</div>
+                                        <div class="photo-card-desc">{{ $dossierBlock2Desc }}</div>
                                     </td>
                                 </tr>
                             </table>
                         @else
                             <div class="photo-card-inner">
-                                <span class="photo-card-icon">💡</span>
+                                <div class="photo-card-pill">ILUMINACIÓN & SHOW</div>
                                 <div class="photo-card-title">{{ $dossierBlock2Title }}</div>
                                 <div class="photo-card-desc">{{ $dossierBlock2Desc }}</div>
                             </div>
                         @endif
                     </td>
-                    <td class="photo-card" style="width: 50%; height: 130px; background-color: #1e293b;">
+                    <td class="photo-card" style="width: 50%; background-color: #1e293b;">
                         @if($block3ImgPath)
-                            <table style="width: 100%; height: 100%; border-collapse: collapse;">
+                            <table style="width: 100%; border-collapse: collapse;">
                                 <tr>
-                                    <td style="width: 40%; padding: 6px; vertical-align: middle; text-align: center;">
-                                        <img src="{{ $block3ImgPath }}" style="width: 100%; height: 110px; object-fit: cover; border-radius: 6px; display: block;">
+                                    <td style="width: 38%; padding: 6px; vertical-align: middle; text-align: center;">
+                                        <img src="{{ $block3ImgPath }}" style="width: 100%; height: 90px; object-fit: cover; border-radius: 6px; display: block;">
                                     </td>
-                                    <td style="width: 60%; padding: 8px 10px; vertical-align: middle; text-align: left; color: #ffffff;">
-                                        <div class="photo-card-title" style="font-size: 9pt; color: #eab308; margin-bottom: 3px;">{{ $dossierBlock3Title }}</div>
-                                        <div class="photo-card-desc" style="font-size: 7.5pt; color: #cbd5e1; line-height: 1.3;">{{ $dossierBlock3Desc }}</div>
+                                    <td style="width: 62%; padding: 6px 8px; vertical-align: middle; text-align: left; color: #ffffff;">
+                                        <div class="photo-card-pill">SESIÓN DJ</div>
+                                        <div class="photo-card-title" style="color: #eab308;">{{ $dossierBlock3Title }}</div>
+                                        <div class="photo-card-desc">{{ $dossierBlock3Desc }}</div>
                                     </td>
                                 </tr>
                             </table>
                         @else
                             <div class="photo-card-inner">
-                                <span class="photo-card-icon">🎧</span>
+                                <div class="photo-card-pill">SESIÓN EN DIRECTO</div>
                                 <div class="photo-card-title">{{ $dossierBlock3Title }}</div>
                                 <div class="photo-card-desc">{{ $dossierBlock3Desc }}</div>
                             </div>
@@ -609,19 +621,19 @@
                     @if(!empty($dossierWorkItem1))
                         <li>
                             <span class="bullet">&bull;</span>
-                            {{ $dossierWorkItem1 }}
+                            <strong>Montaje y prueba:</strong> {{ $dossierWorkItem1 }}
                         </li>
                     @endif
                     @if(!empty($dossierWorkItem2))
                         <li>
                             <span class="bullet">&bull;</span>
-                            {{ $dossierWorkItem2 }}
+                            <strong>Personalización:</strong> {{ $dossierWorkItem2 }}
                         </li>
                     @endif
                     @if(!empty($dossierWorkItem3))
                         <li>
                             <span class="bullet">&bull;</span>
-                            {{ $dossierWorkItem3 }}
+                            <strong>Desmontaje:</strong> {{ $dossierWorkItem3 }}
                         </li>
                     @endif
                 </ul>
@@ -640,10 +652,10 @@
     <!-- ==========================================
          PÁGINA 3: OPCIONES Y PACKS
          ========================================== -->
-    <div class="page">
+    <div class="page page-last">
         <!-- Cabecera Azul Marino -->
         <div class="page-header-banner">
-            <div class="page-header-sub">OPCIONES</div>
+            <div class="page-header-sub">OPCIONES Y TARIFAS</div>
             <div class="page-header-title">Elige la que mejor encaja</div>
         </div>
 
@@ -710,7 +722,7 @@
             <!-- Si la propuesta tiene servicios personalizados contratados -->
             @if($isCustomQuote && count($quote->items) > 0)
                 <div class="custom-selection-card">
-                    <div class="custom-selection-title">📋 Servicios Seleccionados en esta Propuesta (#PRE-{{ str_pad($quote->id, 5, '0', STR_PAD_LEFT) }})</div>
+                    <div class="custom-selection-title">PRESUPUESTO SELECCIONADO (#PRE-{{ str_pad($quote->id, 5, '0', STR_PAD_LEFT) }})</div>
                     <div class="custom-selection-body">
                         <strong>Total Presupuestado: {{ number_format($quote->amount, 2, ',', '.') }} €</strong>
                         &bull; Incluye: 
@@ -725,7 +737,7 @@
             <div class="info-card">
                 <div class="info-card-title">{{ $dossierExtraHoursTitle }}</div>
                 <div class="info-card-body">
-                    {{ $dossierExtraHoursDesc }} (Tarifa adicional: <strong>{{ number_format($extraHourPrice, 0, ',', '.') }}€/hora</strong>).
+                    {{ $dossierExtraHoursDesc }} (Tarifa: <strong>{{ number_format($extraHourPrice, 0, ',', '.') }}€/hora adicional</strong>).
                 </div>
             </div>
 
@@ -739,14 +751,14 @@
 
             <!-- Tarjeta Reserva -->
             <div class="info-card">
-                <div class="info-card-title">Reserva de Fecha</div>
+                <div class="info-card-title">Reserva y Condiciones</div>
                 <div class="info-card-body">
-                    Al ser una fecha tan solicitada, la reserva de fecha se confirma por estricto orden de contratación. Señal estipulada: <strong>{{ number_format($quote->signal_amount, 2, ',', '.') }} €</strong> vía Bizum o Transferencia. Las condiciones de pago y detalles se confirman al formalizar.
+                    La reserva de fecha se formaliza por estricto orden de contratación. Señal estipulada: <strong>{{ number_format($quote->signal_amount, 2, ',', '.') }} €</strong> vía Bizum o Transferencia. Las condiciones y detalles se consolidan al aceptar la propuesta.
                 </div>
             </div>
 
             <div class="tax-note">
-                Precios finales, impuestos incluidos. Propuesta válida durante 15 días desde su emisión.
+                Precios finales, impuestos incluidos. Propuesta válida durante 15 días desde su fecha de emisión.
             </div>
         </div>
 
