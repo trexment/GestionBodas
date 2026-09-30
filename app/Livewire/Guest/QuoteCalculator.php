@@ -17,41 +17,211 @@ class QuoteCalculator extends Component
     public $event_date = '';
     public $event_location = '';
     public $client_notes = '';
+    public $event_type = 'boda'; // boda, empresa, cumpleanos, comunion, otro
 
     // Services selected by the user (No pricing in state to avoid leaking in wire:snapshot)
     public $services = [];
     public $is_submitted = false;
 
+    public static function getEventTypes(): array
+    {
+        return [
+            'boda' => [
+                'name' => 'Boda / Enlace',
+                'icon' => '💍',
+                'badge' => 'Boda & Enlace',
+                'hero_title' => 'Diseña la Música de tu',
+                'hero_highlight' => 'Día Especial',
+                'hero_subtitle' => 'Selecciona las fases de vuestra boda para recibir una propuesta personalizada con el mejor sonido e iluminación profesional.',
+                'name_label' => 'Nombre de los Novios / Pareja *',
+                'name_placeholder' => 'Ej: Carlos & Laura',
+                'ceremony_name' => 'Ceremonia Civil / Religiosa',
+                'ceremony_icon' => '💍',
+                'ceremony_desc' => 'Sonorización profesional, microfonía inalámbrica y música de momentos clave (entradas, anillos, firmas y salida).',
+                'cocktail_name' => 'Cóctel de Bienvenida',
+                'cocktail_icon' => '🍸',
+                'cocktail_desc' => 'Música ambiente seleccionada y equipo de sonido independiente para la zona del cóctel.',
+                'restaurant_name' => 'Banquete & Momentos Especiales',
+                'restaurant_icon' => '🍽️',
+                'restaurant_desc' => 'Música ambiente en comedor, entrada de novios, entrega de regalos, ramo y corte de tarta.',
+                'dj_name' => 'DJ Baile & Barra Libre',
+                'dj_icon' => '💃',
+                'dj_desc' => 'Sesión de DJ en directo, equipo de sonido de alta fidelidad, puente de luces y efectos.',
+                'prefix' => 'Boda ',
+            ],
+            'empresa' => [
+                'name' => 'Evento de Empresa / Corporativo',
+                'icon' => '🏢',
+                'badge' => 'Empresas & Gala',
+                'hero_title' => 'Sonorización & Música para tu',
+                'hero_highlight' => 'Evento Corporativo',
+                'hero_subtitle' => 'Microfonía para ponencias, música ambiente para cóctel/cena y DJ para celebraciones de equipo o aniversarios.',
+                'name_label' => 'Empresa / Persona de Contacto *',
+                'name_placeholder' => 'Ej: Innova Tech S.L. / Roberto Pérez',
+                'ceremony_name' => 'Sonorización Presentación / Ponencias',
+                'ceremony_icon' => '🎙️',
+                'ceremony_desc' => 'Microfonía inalámbrica de mano/solapa, atril, megafonía y música de apoyo corporativa.',
+                'cocktail_name' => 'Cóctel & Networking',
+                'cocktail_icon' => '🍸',
+                'cocktail_desc' => 'Música ambiente sofisticada para la recepción y networking de los asistentes.',
+                'restaurant_name' => 'Cena de Gala / Banquete Corporativo',
+                'restaurant_icon' => '🍽️',
+                'restaurant_desc' => 'Ambientación durante la cena, sonorización de discursos, entrega de premios o sorteos.',
+                'dj_name' => 'DJ Fiesta de Empresa',
+                'dj_icon' => '💃',
+                'dj_desc' => 'Sesión musical festiva para celebrar los logros del equipo con iluminación y sonido profesional.',
+                'prefix' => 'Evento Empresa: ',
+            ],
+            'cumpleanos' => [
+                'name' => 'Cumpleaños / Fiesta Privada',
+                'icon' => '🎂',
+                'badge' => 'Cumpleaños & Fiesta',
+                'hero_title' => 'Celebra a lo Grande tu',
+                'hero_highlight' => 'Cumpleaños o Fiesta',
+                'hero_subtitle' => 'Música a medida para sorprender al homenajeado, animación, karaoke y los mejores temas de vuestras épocas favoritas.',
+                'name_label' => 'Nombre del Homenajeado / Organizador *',
+                'name_placeholder' => 'Ej: 40 Cumpleaños de David / María',
+                'ceremony_name' => 'Sonorización Sorpresa / Discursos',
+                'ceremony_icon' => '🎬',
+                'ceremony_desc' => 'Microfonía y música de apoyo para proyección de vídeos, dedicatorias o sorpresas especiales.',
+                'cocktail_name' => 'Recepción / Bienvenida',
+                'cocktail_icon' => '🍸',
+                'cocktail_desc' => 'Música ambiente alegre para recibir a todos los amigos y familiares.',
+                'restaurant_name' => 'Comida / Cena & Momento Tarta',
+                'restaurant_desc' => 'Ambientación musical durante la comida/cena, soplar velas de la tarta y entrega de regalos.',
+                'dj_name' => 'DJ Fiesta & Baile',
+                'dj_icon' => '💃',
+                'dj_desc' => 'Sesión de DJ en directo con los grandes éxitos adaptados a los gustos de vuestro grupo.',
+                'prefix' => 'Cumpleaños: ',
+            ],
+            'comunion' => [
+                'name' => 'Comunión / Bautizo / Familiar',
+                'icon' => '🕊️',
+                'badge' => 'Comunión & Familia',
+                'hero_title' => 'Música & Diversión para una',
+                'hero_highlight' => 'Comunión Inolvidable',
+                'hero_subtitle' => 'Sonido profesional y música divertida para que disfruten tanto los peques como los mayores.',
+                'name_label' => 'Nombre del Niño/a o Familia *',
+                'name_placeholder' => 'Ej: Comunión de Mateo / Familia Gómez',
+                'ceremony_name' => 'Sonorización Especial / Entrada',
+                'ceremony_icon' => '🌟',
+                'ceremony_desc' => 'Música especial para la entrada triunfal del protagonista y microfonía para palabras familiares.',
+                'cocktail_name' => 'Aperitivo / Recepción Familiar',
+                'cocktail_icon' => '🍸',
+                'cocktail_desc' => 'Música ambiente alegre y distendida para recibir a los familiares e invitados.',
+                'restaurant_name' => 'Comida & Momento de la Tarta',
+                'restaurant_icon' => '🍽️',
+                'restaurant_desc' => 'Música de fondo durante el banquete, corte de la tarta y entrega de recordatorios.',
+                'dj_name' => 'DJ Baile & Animación Familiar',
+                'dj_icon' => '💃',
+                'dj_desc' => 'Música para bailar toda la familia, grandes éxitos, animación y diversión para todas las edades.',
+                'prefix' => 'Comunión: ',
+            ],
+            'otro' => [
+                'name' => 'Otro Evento / Celebración',
+                'icon' => '🎉',
+                'badge' => 'Celebración General',
+                'hero_title' => 'Música & Sonido para tu',
+                'hero_highlight' => 'Evento o Celebración',
+                'hero_subtitle' => 'Personaliza el equipamiento técnico, sonorización y DJ para cualquier tipo de fiesta o acto.',
+                'name_label' => 'Nombre del Evento / Contacto *',
+                'name_placeholder' => 'Ej: Fiesta de Verano / Asociación Cultural',
+                'ceremony_name' => 'Sonorización / Acto Protocolario',
+                'ceremony_icon' => '📢',
+                'ceremony_desc' => 'Megafonía, microfonía y música institucional o protocolaria.',
+                'cocktail_name' => 'Recepción / Música de Bienvenida',
+                'cocktail_icon' => '🍸',
+                'cocktail_desc' => 'Música ambiente y equipo de sonido independiente para la bienvenida.',
+                'restaurant_name' => 'Comida / Cena / Banquete',
+                'restaurant_icon' => '🍽️',
+                'restaurant_desc' => 'Ambientación musical durante la comida/cena y momentos destacados.',
+                'dj_name' => 'DJ Fiesta & Baile',
+                'dj_icon' => '💃',
+                'dj_desc' => 'Sesión musical completa con sonido e iluminación profesional para la fiesta.',
+                'prefix' => 'Evento: ',
+            ],
+        ];
+    }
+
+    public function setEventType($type)
+    {
+        $types = self::getEventTypes();
+        if (!isset($types[$type])) {
+            $type = 'boda';
+        }
+        $this->event_type = $type;
+        $this->updateServiceLabels();
+    }
+
+    public function updatedEventType()
+    {
+        $this->updateServiceLabels();
+    }
+
+    public function updateServiceLabels()
+    {
+        $types = self::getEventTypes();
+        $typeConfig = $types[$this->event_type] ?? $types['boda'];
+
+        if (isset($this->services['ceremony'])) {
+            $this->services['ceremony']['name'] = $typeConfig['ceremony_name'];
+            $this->services['ceremony']['description'] = $typeConfig['ceremony_desc'];
+            $this->services['ceremony']['icon'] = $typeConfig['ceremony_icon'] ?? '💍';
+        }
+
+        if (isset($this->services['cocktail'])) {
+            $this->services['cocktail']['name'] = $typeConfig['cocktail_name'];
+            $this->services['cocktail']['description'] = $typeConfig['cocktail_desc'];
+            $this->services['cocktail']['icon'] = $typeConfig['cocktail_icon'] ?? '🍸';
+        }
+
+        if (isset($this->services['restaurant'])) {
+            $this->services['restaurant']['name'] = $typeConfig['restaurant_name'];
+            $this->services['restaurant']['description'] = $typeConfig['restaurant_desc'];
+            $this->services['restaurant']['icon'] = $typeConfig['restaurant_icon'] ?? '🍽️';
+        }
+
+        if (isset($this->services['dj'])) {
+            $this->services['dj']['name'] = $typeConfig['dj_name'];
+            $this->services['dj']['description'] = $typeConfig['dj_desc'];
+            $this->services['dj']['icon'] = $typeConfig['dj_icon'] ?? '💃';
+        }
+    }
+
     public function mount()
     {
+        $initialType = request()->get('tipo', 'boda');
+        $types = self::getEventTypes();
+        $this->event_type = isset($types[$initialType]) ? $initialType : 'boda';
+
         $this->services = [
             'ceremony' => [
                 'selected' => false, 
                 'quantity' => 1, 
                 'icon' => '💍',
-                'name' => 'Ceremonia Civil / Religiosa', 
-                'description' => 'Sonorización profesional, microfonía inalámbrica y música de momentos (entrada, anillos, firmas, salida).'
+                'name' => '', 
+                'description' => ''
             ],
             'cocktail' => [
                 'selected' => false, 
                 'quantity' => 1, 
                 'icon' => '🍸',
-                'name' => 'Cóctel de Bienvenida', 
-                'description' => 'Música ambiente seleccionada y equipo de sonido independiente para la zona de bienvenida.'
+                'name' => '', 
+                'description' => ''
             ],
             'restaurant' => [
                 'selected' => false, 
                 'quantity' => 1, 
                 'icon' => '🍽️',
-                'name' => 'Banquete & Momentos Especiales', 
-                'description' => 'Música ambiente en comedor, entrada de novios, entrega de regalos, ramo y corte de tarta.'
+                'name' => '', 
+                'description' => ''
             ],
             'dj' => [
                 'selected' => true,  
                 'quantity' => 4, 
                 'icon' => '💃',
-                'name' => 'DJ Baile & Barra Libre', 
-                'description' => 'Sesión de DJ en directo, equipo de sonido de alta fidelidad, puente de luces y efectos.'
+                'name' => '', 
+                'description' => ''
             ],
             'karaoke' => [
                 'selected' => false, 
@@ -68,6 +238,8 @@ class QuoteCalculator extends Component
                 'description' => 'Ampliación de horario para continuar el baile sin interrupciones.'
             ],
         ];
+
+        $this->updateServiceLabels();
     }
 
     /**
@@ -156,13 +328,18 @@ class QuoteCalculator extends Component
             $requestedServicesList[] = "• 🎁 Pack Cóctel + Banquete incluido (" . $packInfo['savings_label'] . ")";
         }
 
+        $typeConfig = self::getEventTypes()[$this->event_type] ?? self::getEventTypes()['boda'];
+        $eventTitle = $typeConfig['prefix'] . $this->client_name;
+
         $fullNotes = "SOLICITUD DE PRESUPUESTO ONLINE:\n"
+                   . "Tipo de Evento: " . $typeConfig['name'] . "\n\n"
+                   . "Servicios Solicitados:\n"
                    . implode("\n", $requestedServicesList)
-                   . (!empty($this->client_notes) ? "\n\nObservaciones:\n" . $this->client_notes : "");
+                   . (!empty($this->client_notes) ? "\n\nObservaciones del Cliente:\n" . $this->client_notes : "");
 
         // 4. Create Event Draft
         $event = Event::create([
-            'name' => 'Boda ' . $this->client_name,
+            'name' => $eventTitle,
             'event_date' => $this->event_date,
             'location' => $this->event_location,
             'status' => 'draft',

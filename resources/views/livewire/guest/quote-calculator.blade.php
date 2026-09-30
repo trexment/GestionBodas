@@ -1,18 +1,42 @@
+@php
+    $types = \App\Livewire\Guest\QuoteCalculator::getEventTypes();
+    $currentType = $types[$event_type] ?? $types['boda'];
+@endphp
+
 <div class="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 py-10 px-4 sm:px-6 lg:px-8 text-white">
     <div class="max-w-5xl mx-auto">
         
         <!-- Header / Hero -->
-        <div class="text-center mb-10">
+        <div class="text-center mb-8">
             <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-semibold uppercase tracking-wider mb-4 shadow-inner">
-                <span>✨</span> Presupuesto a Medida & Sin Compromiso
+                <span>✨</span> Presupuesto a Medida &bull; {{ $currentType['badge'] }}
             </div>
             <h1 class="text-3xl sm:text-5xl font-extrabold tracking-tight text-white mb-3">
-                Diseña la Música de tu <span class="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-pink-400 to-indigo-400">Día Especial</span>
+                {{ $currentType['hero_title'] }} <span class="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-pink-400 to-indigo-400">{{ $currentType['hero_highlight'] }}</span>
             </h1>
             <p class="text-base sm:text-lg text-slate-400 max-w-2xl mx-auto">
-                Selecciona las fases y servicios que te gustaría incluir en tu evento. Te prepararemos una propuesta personalizada con el mejor sonido e iluminación profesional.
+                {{ $currentType['hero_subtitle'] }}
             </p>
         </div>
+
+        @if(!$is_submitted)
+            <!-- SELECTOR DE TIPO DE EVENTO -->
+            <div class="mb-8">
+                <div class="text-center mb-3">
+                    <span class="text-[11px] uppercase font-black tracking-widest text-slate-400">¿Qué tipo de celebración estás organizando?</span>
+                </div>
+                <div class="flex flex-wrap items-center justify-center gap-2 max-w-3xl mx-auto">
+                    @foreach($types as $key => $type)
+                        <button type="button" 
+                                wire:click="setEventType('{{ $key }}')"
+                                class="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all transform hover:scale-102 cursor-pointer {{ $event_type === $key ? 'bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 text-white shadow-lg shadow-indigo-600/30 border border-indigo-400/50' : 'bg-slate-800/80 hover:bg-slate-700/80 text-slate-300 border border-slate-700/80 hover:text-white' }}">
+                            <span class="text-base">{{ $type['icon'] }}</span>
+                            <span>{{ $type['name'] }}</span>
+                        </button>
+                    @endforeach
+                </div>
+            </div>
+        @endif
 
         @if($is_submitted)
             <!-- Success / Confirmation Card -->
@@ -20,9 +44,12 @@
                 <div class="w-20 h-20 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center text-4xl mx-auto mb-6 ring-8 ring-emerald-500/10">
                     ✓
                 </div>
+                <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-indigo-500/20 text-indigo-300 text-xs font-bold mb-3 border border-indigo-500/30">
+                    <span>{{ $currentType['icon'] }}</span> <span>{{ $currentType['name'] }}</span>
+                </div>
                 <h2 class="text-2xl sm:text-3xl font-bold text-white mb-3">¡Solicitud Recibida con Éxito!</h2>
                 <p class="text-slate-300 text-base mb-6 leading-relaxed">
-                    Muchas gracias <strong class="text-white">{{ $client_name }}</strong>. Hemos registrado tu solicitud para el evento del <strong class="text-emerald-400">{{ \Carbon\Carbon::parse($event_date)->format('d/m/Y') }}</strong> en <strong class="text-white">{{ $event_location }}</strong>.
+                    Muchas gracias <strong class="text-white">{{ $client_name }}</strong>. Hemos registrado tu solicitud de presupuesto para el <strong class="text-emerald-400">{{ \Carbon\Carbon::parse($event_date)->format('d/m/Y') }}</strong> en <strong class="text-white">{{ $event_location }}</strong>.
                 </p>
                 <div class="bg-slate-900/60 rounded-2xl p-5 border border-slate-700/50 text-left mb-8 space-y-2">
                     <p class="text-xs uppercase font-bold tracking-wider text-slate-400 mb-2">Servicios solicitados:</p>
@@ -167,8 +194,8 @@
                         <form wire:submit.prevent="submitRequest" class="space-y-4">
                             <!-- Name -->
                             <div>
-                                <label class="block text-xs font-semibold text-slate-300 mb-1">Nombre completo / Novios *</label>
-                                <input type="text" wire:model.defer="client_name" placeholder="Ej: Carlos & Laura"
+                                <label class="block text-xs font-semibold text-slate-300 mb-1">{{ $currentType['name_label'] }}</label>
+                                <input type="text" wire:model.defer="client_name" placeholder="{{ $currentType['name_placeholder'] }}"
                                        class="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition">
                                 @error('client_name') <span class="text-rose-400 text-xs mt-1 block">{{ $message }}</span> @enderror
                             </div>
