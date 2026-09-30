@@ -24,6 +24,8 @@ class EventForm extends Component
     public $comments;
 
     public $submitted = false;
+    public $showSuccessModal = false;
+    public $totalSavedSongs = 0;
     public $hasExistingData = false;
 
     public function mount($token)
@@ -423,7 +425,9 @@ class EventForm extends Component
             ]);
         }
 
-        $this->event->update(['is_dossier_completed' => true]);
+        $this->totalSavedSongs = $this->event->musicRequests()->count();
+        $this->submitted = true;
+        $this->showSuccessModal = true;
 
         // Enviar email de notificación al Administrador y al DJ asignado
         try {
@@ -454,8 +458,11 @@ class EventForm extends Component
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::error('Error enviando email de cuestionario musical: ' . $e->getMessage());
         }
+    }
 
-        $this->submitted = true;
+    public function closeSuccessModal()
+    {
+        $this->showSuccessModal = false;
     }
 
     public function render()

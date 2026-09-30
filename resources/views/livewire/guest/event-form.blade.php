@@ -27,18 +27,25 @@
             <p class="font-extrabold text-lg text-slate-900 dark:text-white">Cuestionario Cerrado</p>
             <p class="text-sm mt-2 leading-relaxed">Toda la información musical ya ha sido procesada y confirmada con el equipo técnico. Si necesitas hacer algún cambio urgente de última hora, por favor contáctanos directamente por WhatsApp o teléfono.</p>
         </div>
-    @elseif($submitted)
-        <div class="bg-emerald-50 dark:bg-emerald-950/40 border-l-4 border-emerald-500 text-emerald-900 dark:text-emerald-200 p-6 rounded-2xl text-center shadow-sm">
-            <svg class="w-14 h-14 mx-auto mb-3 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-            <p class="font-black text-xl text-emerald-950 dark:text-white">¡Cuestionario Guardado con Éxito!</p>
-            <p class="text-sm mt-2 leading-relaxed text-emerald-800 dark:text-emerald-300">Hemos recibido vuestras peticiones y preferencias musicales. Nuestro DJ ya tiene vuestras canciones preparadas. ¡Nos vemos en la pista de baile!</p>
-        </div>
     @else
-        @if($hasExistingData)
+        @if($submitted)
+            <div class="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-700/70 text-emerald-900 dark:text-emerald-200 p-4 rounded-2xl shadow-sm mb-6 flex items-center justify-between gap-3">
+                <div class="flex items-center gap-2.5">
+                    <span class="text-2xl flex-shrink-0">🎉</span>
+                    <div class="text-xs leading-relaxed">
+                        <strong class="font-bold text-sm block text-emerald-950 dark:text-emerald-100 mb-0.5">¡Preferencias Guardadas con Éxito!</strong>
+                        Se han guardado y enviado todas vuestras canciones y momentos para el DJ. Podéis seguir editando si lo deseáis.
+                    </div>
+                </div>
+                <button type="button" wire:click="$set('showSuccessModal', true)" class="text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-xl shadow-xs transition whitespace-nowrap">
+                    Ver Aviso
+                </button>
+            </div>
+        @elseif($hasExistingData)
             <div class="bg-amber-50 dark:bg-amber-950/50 border border-amber-300 dark:border-amber-700/70 text-amber-900 dark:text-amber-200 p-4 rounded-2xl shadow-sm mb-6 flex items-start gap-3">
                 <span class="text-2xl flex-shrink-0">✏️</span>
                 <div class="text-xs leading-relaxed">
-                    <strong class="font-bold text-sm block text-amber-950 dark:text-amber-100 mb-0.5">Formulario Reabierto para Edición</strong>
+                    <strong class="font-bold text-sm block text-amber-950 dark:text-amber-100 mb-0.5">Formulario Precargado para Edición</strong>
                     Hemos precargado todas las canciones y notas que enviasteis anteriormente. Podéis revisar lo que pusisteis, realizar cualquier cambio o añadir nuevos momentos, y pulsar en <strong>"Guardar y Enviar Preferencias"</strong> para confirmarlo.
                 </div>
             </div>
@@ -1171,10 +1178,68 @@
             </div>
 
             <div class="pt-4">
-                <button type="submit" class="w-full flex justify-center items-center gap-2 py-4 px-6 rounded-2xl shadow-lg shadow-indigo-600/20 text-base font-extrabold text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-300 transition cursor-pointer transform hover:-translate-y-0.5">
-                    <span>🚀 Guardar y Enviar Preferencias</span>
+                <button type="submit" wire:loading.attr="disabled" class="w-full flex justify-center items-center gap-2 py-4 px-6 rounded-2xl shadow-lg shadow-indigo-600/20 text-base font-extrabold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-75 disabled:cursor-not-allowed focus:outline-none focus:ring-4 focus:ring-indigo-300 transition cursor-pointer transform hover:-translate-y-0.5">
+                    <span wire:loading.remove wire:target="submitForm">🚀 Guardar y Enviar Preferencias</span>
+                    <span wire:loading wire:target="submitForm" class="inline-flex items-center gap-2" style="display: none;">
+                        <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span>Guardando y notificando al DJ...</span>
+                    </span>
                 </button>
             </div>
         </form>
+    @endif
+
+    <!-- MODAL FLOTANTE DE CONFIRMACIÓN DE ENVÍO -->
+    @if($showSuccessModal)
+    <div class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-success-title" role="dialog" aria-modal="true">
+        <div class="flex items-center justify-center min-h-screen p-4 text-center sm:p-0">
+            <!-- Backdrop con desenfoque suave -->
+            <div class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm transition-opacity" wire:click="closeSuccessModal"></div>
+
+            <div class="relative bg-white dark:bg-slate-900 rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:max-w-lg sm:w-full border border-emerald-200 dark:border-emerald-800 animate-in fade-in zoom-in-95 duration-200">
+                <!-- Cabecera Festiva / Verde Esmeralda -->
+                <div class="bg-gradient-to-r from-emerald-600 via-teal-600 to-indigo-600 px-6 py-6 text-center text-white relative">
+                    <button type="button" wire:click="closeSuccessModal" class="absolute top-4 right-4 text-white/80 hover:text-white text-2xl font-bold leading-none cursor-pointer">&times;</button>
+                    
+                    <div class="w-16 h-16 mx-auto rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-3xl shadow-inner mb-3">
+                        🎉
+                    </div>
+                    <h3 class="text-xl sm:text-2xl font-black tracking-tight" id="modal-success-title">
+                        ¡Preferencias Guardadas con Éxito!
+                    </h3>
+                    <p class="text-xs text-emerald-100 mt-1 font-medium">
+                        {{ $event->name }} &bull; {{ $event->event_date ? $event->event_date->format('d/m/Y') : 'Fecha confirmada' }}
+                    </p>
+                </div>
+
+                <div class="p-6 text-center space-y-4">
+                    <div class="inline-flex items-center gap-2 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 px-4 py-2 rounded-full text-xs font-bold">
+                        <span>✅</span>
+                        <span>{{ $totalSavedSongs }} momentos / canciones registrados</span>
+                    </div>
+
+                    <p class="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+                        Hemos recibido y procesado vuestra selección musical correctamente. Tanto el equipo de <strong>{{ \App\Models\Setting::getCompanyName('Eventos Musicales') }}</strong> como el <strong>DJ asignado</strong> ya tienen acceso a todas vuestras canciones para preparar la sesión.
+                    </p>
+
+                    <div class="bg-slate-50 dark:bg-slate-950 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 text-xs text-slate-600 dark:text-slate-400">
+                        💡 <em>Podéis volver a acceder a este enlace en cualquier momento para añadir nuevas canciones o hacer cambios si lo necesitáis.</em>
+                    </div>
+                </div>
+
+                <div class="bg-slate-50 dark:bg-slate-800/80 px-6 py-4 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row justify-center gap-2.5">
+                    <button type="button" wire:click="closeSuccessModal" class="w-full sm:w-auto px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-xl shadow-md shadow-emerald-600/20 transition cursor-pointer">
+                        👍 ¡Entendido, todo listo!
+                    </button>
+                    <button type="button" wire:click="closeSuccessModal" class="w-full sm:w-auto px-5 py-3 bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 font-bold text-sm rounded-xl transition cursor-pointer">
+                        ✏️ Seguir revisando
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
     @endif
 </div>
