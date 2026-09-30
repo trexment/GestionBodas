@@ -207,7 +207,7 @@
                                         @endif
                                     </div>
                                     <p class="text-xs text-slate-400 mt-1 leading-relaxed">
-                                        Fuego frío, máquinas de humo bajo, plataforma 360, saxofonista, violinista, iluminación de jardín... Dinos qué necesitas y te lo presupuestamos a medida.
+                                        Fuego frío, máquinas de humo bajo, plataforma 360, iluminación decorativa de jardín... Dinos qué necesitas y te lo presupuestamos a medida.
                                     </p>
                                 </div>
 
@@ -223,7 +223,7 @@
                                 <div class="mt-4 pt-4 border-t border-indigo-500/20 space-y-3" wire:click.stop>
                                     <div>
                                         <label class="block text-xs font-semibold text-slate-300 mb-1">Nombre del servicio o extra deseado *</label>
-                                        <input type="text" wire:model.defer="custom_service_name" placeholder="Ej: Fuego frío para el baile / Plataforma 360 / Saxofonista"
+                                        <input type="text" wire:model.defer="custom_service_name" placeholder="Ej: Fuego frío para el baile / Máquina de humo bajo / Plataforma 360"
                                                class="w-full bg-slate-900/80 border border-indigo-500/40 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500">
                                     </div>
                                     <div>
