@@ -100,6 +100,23 @@
                 <span x-text="wakeLockActive ? '☀️ Pantalla Activa' : '🌙 Pantalla Normal'"></span>
             </button>
 
+            <!-- BADGE ESTADO SPOTIFY EN CABINA -->
+            @if(!empty($spotifyUser['connected']))
+                <div class="px-2.5 py-1.5 rounded-xl bg-emerald-950/80 border border-emerald-500/50 text-emerald-300 font-bold text-xs flex items-center gap-1.5 shadow-sm" title="Cuenta Spotify Premium vinculada: reproduciendo en streaming directo">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span class="hidden md:inline">🟢 Spotify: {{ $spotifyUser['name'] ?: 'Conectado' }}</span>
+                    <span class="md:hidden">🟢 Spotify</span>
+                </div>
+            @else
+                @if(auth()->check() && auth()->user()->role === 'admin')
+                    <a href="{{ route('admin.settings') }}?tab=music" class="px-2.5 py-1.5 rounded-xl bg-amber-950/80 hover:bg-amber-900 border border-amber-500/50 text-amber-300 hover:text-white text-xs font-bold transition flex items-center gap-1.5 shadow-sm" title="Spotify no vinculado mediante OAuth. Haz clic para vincular en Ajustes.">
+                        <span class="text-amber-400">⚠️</span>
+                        <span class="hidden md:inline">Vincular Spotify en Ajustes</span>
+                        <span class="md:hidden">Vincular Spotify</span>
+                    </a>
+                @endif
+            @endif
+
             <!-- RELOJ DIGITAL 24H EN VIVO -->
             <div 
                 x-data="{ currentTime: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }) }" 
@@ -1970,7 +1987,12 @@ function djAudioPlayer() {
                     try {
                         const res = await fetch('/api/spotify/token');
                         const data = await res.json();
-                        cb(data.access_token);
+                        if (data.access_token) {
+                            this.spotifyToken = data.access_token;
+                            cb(data.access_token);
+                        } else {
+                            cb(token);
+                        }
                     } catch (e) {
                         cb(token);
                     }
@@ -1978,10 +2000,20 @@ function djAudioPlayer() {
                 volume: this.volume
             });
 
-            player.addListener('ready', ({ device_id }) => {
+            player.addListener('ready', async ({ device_id }) => {
                 this.spotifyDeviceId = device_id;
                 this.spotifyReady = true;
                 console.log('Spotify Cabina DJ Ready with Device ID:', device_id);
+                try {
+                    await fetch('https://api.spotify.com/v1/me/player', {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${this.spotifyToken}`
+                        },
+                        body: JSON.stringify({ device_ids: [device_id], play: false })
+                    });
+                } catch (e) {}
             });
 
             player.addListener('not_ready', () => {
@@ -2126,7 +2158,7 @@ function djAudioPlayer() {
             }
 
             // 2. PRIORIDAD 2: Spotify Web Playback SDK (100% Canción Completa con cuenta Premium conectada)
-            if (this.spotifyReady && this.spotifyDeviceId && this.spotifyToken) {
+            if (this.spotifyToken) {
                 let trackUri = null;
                 if (spotifyUrl && spotifyUrl.includes('/track/')) {
                     const match = spotifyUrl.match(/track\/([a-zA-Z0-9]+)/);
@@ -2151,12 +2183,15 @@ function djAudioPlayer() {
                                 }
                             }
                         }
-                    } catch (e) {}
+                    } catch (e) {
+                        console.warn('Spotify search error:', e);
+                    }
                 }
 
-                if (trackUri) {
+                if (trackUri && this.spotifyDeviceId) {
                     try {
-                        const playRes = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${this.spotifyDeviceId}`, {
+                        const playUrl = `https://api.spotify.com/v1/me/player/play?device_id=${this.spotifyDeviceId}`;
+                        const playRes = await fetch(playUrl, {
                             method: 'PUT',
                             headers: {
                                 'Content-Type': 'application/json',
@@ -2173,8 +2208,37 @@ function djAudioPlayer() {
                             this.$wire.setStatus(id, 'playing');
                             this.requestWakeLock();
                             return;
+                        } else {
+                            // Transfer device and retry
+                            await fetch('https://api.spotify.com/v1/me/player', {
+                                method: 'PUT',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${this.spotifyToken}`
+                                },
+                                body: JSON.stringify({ device_ids: [this.spotifyDeviceId], play: false })
+                            });
+                            const retryRes = await fetch(playUrl, {
+                                method: 'PUT',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${this.spotifyToken}`
+                                },
+                                body: JSON.stringify({ uris: [trackUri] })
+                            });
+                            if (retryRes.status === 204 || retryRes.ok) {
+                                this.playbackSource = 'spotify';
+                                this.isPlaying = true;
+                                this.isPaused = false;
+                                this.loading = false;
+                                this.$wire.setStatus(id, 'playing');
+                                this.requestWakeLock();
+                                return;
+                            }
                         }
-                    } catch (e) {}
+                    } catch (e) {
+                        console.warn('Spotify play error:', e);
+                    }
                 }
             }
 

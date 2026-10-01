@@ -510,6 +510,7 @@ class DjBoothMode extends Component
             'escaletaItems' => $escaletaItems,
             'phaseCounts' => $phaseCounts,
             'guestRequestsCount' => $phaseCounts['guest'],
+            'spotifyUser' => \App\Services\SpotifyService::getUserDetails(),
         ])->layout('components.layouts.wide-guest');
     }
 }
