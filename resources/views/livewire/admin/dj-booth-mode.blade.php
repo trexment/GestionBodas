@@ -1,3 +1,17 @@
+@php
+    $allSongsOfflineList = $event->musicRequests->map(function($r) {
+        return [
+            'id' => (string)$r->id,
+            'event_id' => (string)$r->event_id,
+            'title' => $r->title,
+            'artist' => $r->artist,
+            'moment' => $r->moment,
+            'category' => $r->category,
+            'audio_file' => $r->audio_file,
+        ];
+    })->values()->toArray();
+@endphp
+
 <div 
     class="min-h-screen bg-[#080d16] text-slate-100 p-3 sm:p-5 select-none font-sans pb-32" 
     wire:poll.10s
@@ -26,14 +40,14 @@
             @endif
         </div>
 
-        <!-- ACCESOS RÁPIDOS Y ESTADO DE APPLE MUSIC / SPOTIFY -->
+        <!-- ACCESOS RÁPIDOS Y ESTADO DE APPLE MUSIC / SPOTIFY / MODO OFFLINE -->
         <div class="flex flex-wrap items-center gap-2">
             
             <!-- BADGE APPLE MUSIC -->
             <template x-if="appleMusicReady">
                 <div class="px-2.5 py-1 rounded-xl bg-pink-950/80 border border-pink-500/40 text-pink-300 text-xs font-bold flex items-center gap-1.5 shadow-sm">
                     <span class="w-2 h-2 rounded-full bg-pink-500 animate-pulse"></span>
-                    <span>🍎 Apple Music Streaming</span>
+                    <span>🍎 Apple Music</span>
                 </div>
             </template>
 
@@ -41,9 +55,27 @@
             <template x-if="spotifyReady">
                 <div class="px-2.5 py-1 rounded-xl bg-emerald-950/80 border border-emerald-500/40 text-emerald-400 text-xs font-bold flex items-center gap-1.5 shadow-sm">
                     <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <span>🟢 Spotify Streaming</span>
+                    <span>🟢 Spotify</span>
                 </div>
             </template>
+
+            <!-- BOTÓN GESTIÓN DE MODO OFFLINE / SIN COBERTURA -->
+            <button 
+                type="button" 
+                @click="showOfflineModal = true"
+                title="Gestor de Canciones Offline (Modo Sin Cobertura)"
+                class="px-3 py-1.5 rounded-xl text-xs font-black transition flex items-center gap-1.5 shadow-sm cursor-pointer border"
+                :class="cachedSongIds.length > 0 ? 'bg-emerald-950/90 text-emerald-300 border-emerald-500/60 hover:bg-emerald-900 shadow-emerald-950/50' : 'bg-slate-900 text-amber-300 border-amber-500/50 hover:bg-slate-800'"
+            >
+                <span x-show="cachedSongIds.length > 0" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span x-show="cachedSongIds.length === 0" class="text-sm">📥</span>
+                <span x-show="cachedSongIds.length > 0">
+                    Modo Offline (<span x-text="cachedSongIds.length"></span> desc. &bull; <span x-text="cacheStorageUsage.mb"></span> MB)
+                </span>
+                <span x-show="cachedSongIds.length === 0">
+                    Descargar para Offline
+                </span>
+            </button>
 
             <!-- BOTÓN INSTALAR APP / GUÍA MÓVIL & TABLET -->
             <button 
@@ -1439,6 +1471,93 @@
         </div>
     </div>
 
+    <!-- MODAL GESTOR DE DESCARGA OFFLINE (MODO SIN COBERTURA) -->
+    <div 
+        x-show="showOfflineModal" 
+        x-cloak
+        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+        @keydown.escape.window="showOfflineModal = false"
+    >
+        <div 
+            class="bg-slate-900 border border-slate-700 rounded-3xl p-6 max-w-lg w-full shadow-2xl space-y-5 text-slate-100"
+            @click.away="showOfflineModal = false"
+        >
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div class="flex items-center gap-2.5">
+                    <span class="text-2xl">📥</span>
+                    <div>
+                        <h3 class="text-base font-black text-white">Modo Offline (Sin Cobertura)</h3>
+                        <p class="text-xs text-slate-400">Guarda los audios en la memoria del dispositivo para tocar sin Internet ni cortes.</p>
+                    </div>
+                </div>
+                <button type="button" @click="showOfflineModal = false" class="text-slate-400 hover:text-white text-xl font-bold p-1">&times;</button>
+            </div>
+
+            <!-- ESTADO ACTUAL DE ALMACENAMIENTO -->
+            <div class="bg-slate-950/80 border border-slate-800 rounded-2xl p-4 flex items-center justify-between">
+                <div>
+                    <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Canciones en este dispositivo</div>
+                    <div class="text-xl font-black text-emerald-400 mt-0.5">
+                        <span x-text="cachedSongIds.length"></span> / <span x-text="eventSongsList.length"></span> canciones
+                    </div>
+                </div>
+                <div class="text-right">
+                    <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Espacio Ocupado</div>
+                    <div class="text-xl font-black text-cyan-400 mt-0.5">
+                        <span x-text="cacheStorageUsage.mb"></span> MB
+                    </div>
+                </div>
+            </div>
+
+            <!-- BARRA DE PROGRESO DE DESCARGA -->
+            <div x-show="isDownloadingOffline" class="space-y-2 bg-slate-950/60 p-3.5 rounded-2xl border border-cyan-900/50">
+                <div class="flex items-center justify-between text-xs font-bold text-cyan-300">
+                    <span class="truncate pr-2" x-text="offlineStatusText"></span>
+                    <span class="font-mono text-cyan-400" x-text="offlineDownloadPercent + '%'"></span>
+                </div>
+                <div class="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
+                    <div class="bg-gradient-to-r from-cyan-500 to-emerald-400 h-2 rounded-full transition-all duration-300" :style="`width: ${offlineDownloadPercent}%`"></div>
+                </div>
+            </div>
+
+            <div x-show="!isDownloadingOffline && offlineStatusText" class="text-xs font-bold text-slate-300 bg-slate-950/40 p-2.5 rounded-xl border border-slate-800/80">
+                <span x-text="offlineStatusText"></span>
+            </div>
+
+            <!-- EXPLICACIÓN Y CONSEJO TÉCNICO -->
+            <div class="text-xs text-slate-400 space-y-1 bg-cyan-950/20 border border-cyan-900/30 rounded-2xl p-3.5">
+                <p class="font-bold text-cyan-300">💡 ¿Cómo funciona?</p>
+                <p>Las canciones con enlace de audio MP3 (Google Drive, Dropbox o subidas a la biblioteca) se descargan como datos binarios directos en la memoria de este navegador.</p>
+                <p class="text-[11px] text-slate-400">Al reproducir en cabina, la app dará prioridad a la versión descargada con 0 latencia y sin consumir tus datos móviles.</p>
+            </div>
+
+            <!-- ACCIONES DEL MODAL -->
+            <div class="flex flex-col sm:flex-row items-center gap-2.5 pt-2">
+                <button 
+                    type="button" 
+                    @click="downloadAllForOffline()" 
+                    :disabled="isDownloadingOffline || eventSongsList.length === 0"
+                    class="w-full sm:flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 disabled:opacity-50 text-white font-black text-xs shadow-lg transition flex items-center justify-center gap-2 cursor-pointer"
+                >
+                    <span x-show="!isDownloadingOffline">📥 Descargar todas las canciones</span>
+                    <span x-show="isDownloadingOffline" class="inline-flex items-center gap-1.5">
+                        <span class="animate-spin text-sm">⏳</span> Descargando...
+                    </span>
+                </button>
+
+                <button 
+                    type="button" 
+                    x-show="cachedSongIds.length > 0"
+                    @click="clearEventOfflineCache()" 
+                    class="w-full sm:w-auto py-3 px-4 rounded-xl bg-slate-800 hover:bg-rose-950 text-slate-300 hover:text-rose-300 border border-slate-700 hover:border-rose-800 text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer"
+                    title="Eliminar archivos locales de este evento"
+                >
+                    <span>🗑️</span> Liberar espacio
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- CONTENEDOR OCULTO PARA YOUTUBE IFRAME AUDIO FALLBACK -->
     <div id="youtube-audio-frame" style="position: absolute; top: -9999px; left: -9999px; width: 1px; height: 1px; opacity: 0; pointer-events: none;"></div>
 
@@ -1476,6 +1595,83 @@ function djAudioPlayer() {
         youtubeExternalUrl: '',
         appleMusicExternalUrl: '',
 
+        cachedSongIds: [],
+        cacheStorageUsage: { count: 0, bytes: 0, mb: '0.0' },
+        isDownloadingOffline: false,
+        offlineDownloadPercent: 0,
+        offlineStatusText: '',
+        showOfflineModal: false,
+        eventSongsList: @json($allSongsOfflineList),
+
+        async refreshOfflineStatus() {
+            if (window.OfflineAudioCache) {
+                try {
+                    this.cachedSongIds = await window.OfflineAudioCache.getCachedSongIdsForEvent('{{ $event->id }}');
+                    this.cacheStorageUsage = await window.OfflineAudioCache.getEventStorageUsage('{{ $event->id }}');
+                } catch(e) {
+                    console.warn('Error comprobando estado de caché offline:', e);
+                }
+            }
+        },
+
+        async downloadAllForOffline() {
+            if (!window.OfflineAudioCache) return;
+            this.isDownloadingOffline = true;
+            this.offlineDownloadPercent = 0;
+            this.offlineStatusText = 'Iniciando descarga de canciones para modo sin cobertura...';
+
+            try {
+                const res = await window.OfflineAudioCache.cacheAllEventSongs(
+                    this.eventSongsList,
+                    '{{ $event->id }}',
+                    (progress) => {
+                        this.offlineDownloadPercent = progress.percent;
+                        if (progress.currentSong) {
+                            this.offlineStatusText = `Descargando (${progress.currentIndex}/${progress.totalSongs}): ${progress.currentSong.title}`;
+                        } else if (progress.status === 'done') {
+                            this.offlineStatusText = `¡Listo! ${progress.completed}/${progress.total} canciones guardadas para reproducir sin conexión.`;
+                        }
+                    }
+                );
+                await this.refreshOfflineStatus();
+                this.isDownloadingOffline = false;
+            } catch (err) {
+                this.isDownloadingOffline = false;
+                this.offlineStatusText = 'Aviso: ' + err.message;
+            }
+        },
+
+        async toggleCacheSingleSong(song) {
+            if (!window.OfflineAudioCache) return;
+            const songId = String(song.id);
+            const isCached = this.cachedSongIds.includes(songId);
+
+            if (isCached) {
+                await window.OfflineAudioCache.deleteSong(songId);
+                await this.refreshOfflineStatus();
+            } else {
+                try {
+                    await window.OfflineAudioCache.cacheSong({ ...song, event_id: '{{ $event->id }}' });
+                    await this.refreshOfflineStatus();
+                } catch(err) {
+                    alert('Error al descargar canción: ' + err.message);
+                }
+            }
+        },
+
+        async clearEventOfflineCache() {
+            if (!window.OfflineAudioCache) return;
+            if (!confirm('¿Deseas borrar las canciones descargadas de este evento en este dispositivo para liberar espacio?')) return;
+
+            try {
+                await window.OfflineAudioCache.deleteEventCache('{{ $event->id }}');
+                await this.refreshOfflineStatus();
+                this.showOfflineModal = false;
+            } catch(err) {
+                console.error(err);
+            }
+        },
+
         isPlaying: false,
         isPaused: false,
         currentTime: 0,
@@ -1487,6 +1683,8 @@ function djAudioPlayer() {
         hasError: false,
 
         async initPlayer() {
+            await this.refreshOfflineStatus();
+
             // 1. Inicializar HTML5 Audio para archivos MP3 locales y Google Drive Full Stream
             this.audio = new Audio();
             this.audio.volume = this.volume;
@@ -1800,6 +1998,30 @@ function djAudioPlayer() {
             this.spotifyExternalUrl = spotifyUrl || (`https://open.spotify.com/search/${queryParam}`);
             this.youtubeExternalUrl = `https://www.youtube.com/results?search_query=${queryParam}`;
             this.appleMusicExternalUrl = appleMusicUrl || (`https://music.apple.com/es/search?term=${queryParam}`);
+
+            // 0. PRIORIDAD ABSOLUTA 0: REPRODUCCIÓN DESDE CACHÉ LOCAL / OFFLINE (MODO SIN COBERTURA)
+            if (window.OfflineAudioCache) {
+                try {
+                    const cachedBlobUrl = await window.OfflineAudioCache.getCachedAudioUrl(id);
+                    if (cachedBlobUrl) {
+                        this.playbackSource = 'local_mp3';
+                        this.audio.src = cachedBlobUrl;
+                        this.audio.load();
+                        try {
+                            await this.audio.play();
+                            this.isPlaying = true;
+                            this.isPaused = false;
+                            this.loading = false;
+                            this.$wire.setStatus(id, 'playing');
+                            return;
+                        } catch (err) {
+                            console.warn('Fallo reproduciendo blob offline, probando streaming:', err);
+                        }
+                    }
+                } catch(e) {
+                    console.warn('Offline cache lookup error:', e);
+                }
+            }
 
             // Detectar si el audio es un MP3 real de Google Drive o subido al servidor
             const isDriveOrLocalMp3 = audioFile && (

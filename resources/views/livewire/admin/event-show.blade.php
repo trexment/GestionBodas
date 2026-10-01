@@ -841,7 +841,23 @@
                         duration: 0,
                         audio: null,
                         continuousMode: true,
-                        init() {
+                        cachedSongIds: [],
+                        cacheStorageUsage: { count: 0, bytes: 0, mb: '0.0' },
+                        isDownloadingOffline: false,
+                        offlineDownloadPercent: 0,
+                        offlineStatusText: '',
+                        showOfflineModal: false,
+
+                        async refreshOfflineStatus() {
+                            if (window.OfflineAudioCache) {
+                                try {
+                                    this.cachedSongIds = await window.OfflineAudioCache.getCachedSongIdsForEvent('{{ $event->id }}');
+                                    this.cacheStorageUsage = await window.OfflineAudioCache.getEventStorageUsage('{{ $event->id }}');
+                                } catch(e) {}
+                            }
+                        },
+
+                        async init() {
                             this.audio = new Audio();
                             this.audio.addEventListener('timeupdate', () => {
                                 this.currentTime = this.audio.currentTime;
@@ -854,13 +870,43 @@
                                     this.isPlaying = false;
                                 }
                             });
+                            await this.refreshOfflineStatus();
                         },
-                        playTrack(index) {
+
+                        async playTrack(index) {
                             if (index < 0 || index >= this.tracks.length) return;
                             this.currentIndex = index;
                             const track = this.tracks[index];
+
+                            // Prioridad 0: Reproducir desde memoria Offline / Blob sin conexión
+                            if (window.OfflineAudioCache) {
+                                try {
+                                    const cachedBlobUrl = await window.OfflineAudioCache.getCachedAudioUrl(track.id);
+                                    if (cachedBlobUrl) {
+                                        this.audio.src = cachedBlobUrl;
+                                        this.audio.load();
+                                        this.audio.play();
+                                        this.isPlaying = true;
+                                        return;
+                                    }
+                                } catch(e) {}
+                            }
+
                             if (track.audio_src) {
-                                this.audio.src = track.audio_src;
+                                let streamUrl = track.audio_src.trim();
+                                if (streamUrl.includes('drive.google.com') || streamUrl.includes('/api/drive-stream/')) {
+                                    const driveMatch = streamUrl.match(/\/d\/([a-zA-Z0-9_-]+)/) || streamUrl.match(/[?&]id=([a-zA-Z0-9_-]+)/) || streamUrl.match(/\/api\/drive-stream\/([a-zA-Z0-9_-]+)/);
+                                    if (driveMatch && driveMatch[1]) {
+                                        streamUrl = `/api/drive-stream/${driveMatch[1]}`;
+                                    }
+                                } else if (streamUrl.includes('dropbox.com')) {
+                                    streamUrl = streamUrl.replace('dl=0', 'raw=1');
+                                } else if (!streamUrl.startsWith('http')) {
+                                    streamUrl = '/storage/' + streamUrl;
+                                }
+
+                                this.audio.src = streamUrl;
+                                this.audio.load();
                                 this.audio.play();
                                 this.isPlaying = true;
                             } else if (track.youtube_url) {
@@ -869,6 +915,7 @@
                                 window.open(track.spotify_url, '_blank');
                             }
                         },
+
                         togglePlay() {
                             if (!this.audio.src && this.tracks.length > 0) {
                                 this.playTrack(0);
@@ -882,16 +929,66 @@
                                 this.isPlaying = true;
                             }
                         },
+
                         nextTrack() {
                             if (this.currentIndex < this.tracks.length - 1) {
                                 this.playTrack(this.currentIndex + 1);
                             }
                         },
+
                         prevTrack() {
                             if (this.currentIndex > 0) {
                                 this.playTrack(this.currentIndex - 1);
                             }
                         },
+
+                        async downloadAllForOffline() {
+                            if (!window.OfflineAudioCache) return;
+                            this.isDownloadingOffline = true;
+                            this.offlineDownloadPercent = 0;
+                            this.offlineStatusText = 'Descargando canciones para modo sin cobertura...';
+
+                            try {
+                                const songList = this.tracks.map(t => ({
+                                    id: String(t.id),
+                                    event_id: '{{ $event->id }}',
+                                    title: t.title,
+                                    artist: t.artist,
+                                    moment: t.moment,
+                                    category: t.category,
+                                    audio_file: t.audio_src
+                                }));
+
+                                await window.OfflineAudioCache.cacheAllEventSongs(
+                                    songList,
+                                    '{{ $event->id }}',
+                                    (progress) => {
+                                        this.offlineDownloadPercent = progress.percent;
+                                        if (progress.currentSong) {
+                                            this.offlineStatusText = `Descargando (${progress.currentIndex}/${progress.totalSongs}): ${progress.currentSong.title}`;
+                                        } else if (progress.status === 'done') {
+                                            this.offlineStatusText = `¡Listo! ${progress.completed}/${progress.total} canciones guardadas para reproducir sin conexión.`;
+                                        }
+                                    }
+                                );
+                                await this.refreshOfflineStatus();
+                                this.isDownloadingOffline = false;
+                            } catch(err) {
+                                this.isDownloadingOffline = false;
+                                this.offlineStatusText = 'Error: ' + err.message;
+                            }
+                        },
+
+                        async clearEventCache() {
+                            if (!window.OfflineAudioCache) return;
+                            if (!confirm('¿Deseas borrar las canciones descargadas de este evento en este dispositivo?')) return;
+                            try {
+                                await window.OfflineAudioCache.deleteEventCache('{{ $event->id }}');
+                                await this.refreshOfflineStatus();
+                                this.showOfflineModal = false;
+                            } catch(e) {}
+                        },
+
                         formatTime(sec) {
                             if (!sec || isNaN(sec)) return '0:00';
                             const m = Math.floor(sec / 60);
@@ -946,6 +1043,24 @@
                                 <button type="button" @click="nextTrack()" class="px-2.5 py-1.5 text-xs text-slate-300 hover:text-white rounded-lg hover:bg-slate-800 transition font-bold" title="Siguiente canción">⏭️</button>
                             </div>
 
+                            <!-- Botón Gestor Modo Offline -->
+                            <button 
+                                type="button" 
+                                @click="showOfflineModal = true"
+                                class="px-3 py-1.5 rounded-xl text-xs font-black shadow-md inline-flex items-center gap-1.5 transition cursor-pointer border"
+                                :class="cachedSongIds.length > 0 ? 'bg-emerald-950/90 text-emerald-300 border-emerald-500/60 hover:bg-emerald-900 shadow-emerald-950/50' : 'bg-slate-900 text-amber-300 border-amber-500/50 hover:bg-slate-800'"
+                                title="Descargar canciones para reproducir sin conexión / sin cobertura"
+                            >
+                                <span x-show="cachedSongIds.length > 0" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                                <span x-show="cachedSongIds.length === 0">📥</span>
+                                <span x-show="cachedSongIds.length > 0">
+                                    Modo Offline (<span x-text="cachedSongIds.length"></span> desc. &bull; <span x-text="cacheStorageUsage.mb"></span> MB)
+                                </span>
+                                <span x-show="cachedSongIds.length === 0">
+                                    Descargar para Offline
+                                </span>
+                            </button>
+
                             <!-- Botón Auto-completar todos los enlaces del evento -->
                             <button 
                                 type="button" 
@@ -999,6 +1114,83 @@
                             <span x-text="formatTime(duration)">0:00</span>
                         </div>
                     </template>
+
+                    <!-- MODAL OFFLINE EN EVENT-SHOW -->
+                    <div 
+                        x-show="showOfflineModal" 
+                        x-cloak
+                        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+                        @keydown.escape.window="showOfflineModal = false"
+                    >
+                        <div 
+                            class="bg-slate-900 border border-slate-700 rounded-3xl p-6 max-w-lg w-full shadow-2xl space-y-5 text-slate-100"
+                            @click.away="showOfflineModal = false"
+                        >
+                            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                                <div class="flex items-center gap-2.5">
+                                    <span class="text-2xl">📥</span>
+                                    <div>
+                                        <h3 class="text-base font-black text-white">Modo Offline (Sin Cobertura)</h3>
+                                        <p class="text-xs text-slate-400">Descarga los MP3 a tu navegador para sonar sin conexión a internet.</p>
+                                    </div>
+                                </div>
+                                <button type="button" @click="showOfflineModal = false" class="text-slate-400 hover:text-white text-xl font-bold p-1">&times;</button>
+                            </div>
+
+                            <div class="bg-slate-950/80 border border-slate-800 rounded-2xl p-4 flex items-center justify-between">
+                                <div>
+                                    <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Canciones descargadas</div>
+                                    <div class="text-xl font-black text-emerald-400 mt-0.5">
+                                        <span x-text="cachedSongIds.length"></span> / <span x-text="tracks.length"></span> canciones
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Espacio Ocupado</div>
+                                    <div class="text-xl font-black text-cyan-400 mt-0.5">
+                                        <span x-text="cacheStorageUsage.mb"></span> MB
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div x-show="isDownloadingOffline" class="space-y-2 bg-slate-950/60 p-3.5 rounded-2xl border border-cyan-900/50">
+                                <div class="flex items-center justify-between text-xs font-bold text-cyan-300">
+                                    <span class="truncate pr-2" x-text="offlineStatusText"></span>
+                                    <span class="font-mono text-cyan-400" x-text="offlineDownloadPercent + '%'"></span>
+                                </div>
+                                <div class="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
+                                    <div class="bg-gradient-to-r from-cyan-500 to-emerald-400 h-2 rounded-full transition-all duration-300" :style="`width: ${offlineDownloadPercent}%`"></div>
+                                </div>
+                            </div>
+
+                            <div x-show="!isDownloadingOffline && offlineStatusText" class="text-xs font-bold text-slate-300 bg-slate-950/40 p-2.5 rounded-xl border border-slate-800/80">
+                                <span x-text="offlineStatusText"></span>
+                            </div>
+
+                            <div class="flex flex-col sm:flex-row items-center gap-2.5 pt-2">
+                                <button 
+                                    type="button" 
+                                    @click="downloadAllForOffline()" 
+                                    :disabled="isDownloadingOffline || tracks.length === 0"
+                                    class="w-full sm:flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 disabled:opacity-50 text-white font-black text-xs shadow-lg transition flex items-center justify-center gap-2 cursor-pointer"
+                                >
+                                    <span x-show="!isDownloadingOffline">📥 Descargar todas las canciones</span>
+                                    <span x-show="isDownloadingOffline" class="inline-flex items-center gap-1.5">
+                                        <span class="animate-spin text-sm">⏳</span> Descargando...
+                                    </span>
+                                </button>
+
+                                <button 
+                                    type="button" 
+                                    x-show="cachedSongIds.length > 0"
+                                    @click="clearEventCache()" 
+                                    class="w-full sm:w-auto py-3 px-4 rounded-xl bg-slate-800 hover:bg-rose-950 text-slate-300 hover:text-rose-300 border border-slate-700 hover:border-rose-800 text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer"
+                                    title="Eliminar archivos locales de este evento"
+                                >
+                                    <span>🗑️</span> Liberar espacio
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Píldoras de Filtro por Categorías / Fases -->

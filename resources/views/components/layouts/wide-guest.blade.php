@@ -43,10 +43,13 @@
 
     @livewireStyles
 </head>
-<body class="h-full font-sans antialiased text-slate-100 bg-[#080d16] selection:bg-cyan-500 selection:text-white">
+<body class="min-h-screen h-auto font-sans antialiased text-slate-100 bg-[#080d16] selection:bg-cyan-500 selection:text-white">
     <div class="min-h-screen">
         {{ $slot }}
     </div>
+
+    <!-- Offline Audio Cache Engine -->
+    <script src="/js/offline-audio-cache.js"></script>
     @livewireScripts
 </body>
 </html>

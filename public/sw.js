@@ -1,9 +1,10 @@
 // Service Worker para Eventos Musicales PWA / TWA Android
-const CACHE_NAME = 'eventos-musicales-v1';
+const CACHE_NAME = 'eventos-musicales-v2';
 const STATIC_ASSETS = [
     '/favicon.svg',
     '/favicon.ico',
-    '/manifest.json'
+    '/manifest.json',
+    '/js/offline-audio-cache.js'
 ];
 
 self.addEventListener('install', (event) => {

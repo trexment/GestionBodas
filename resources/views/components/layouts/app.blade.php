@@ -644,6 +644,9 @@
     <!-- PWA INSTALL BANNER & MODAL GUIDE -->
     <x-pwa-install-banner />
 
+    <!-- OFFLINE AUDIO CACHE ENGINE (INDEXEDDB) -->
+    <script src="/js/offline-audio-cache.js"></script>
+
     @livewireScripts
     <script>
         if ('serviceWorker' in navigator) {
