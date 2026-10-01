@@ -244,15 +244,22 @@ class Event extends Model
      */
     public function getCalculatedDanceEndTimeAttribute(): ?string
     {
-        if (!empty($this->dance_end_time)) {
-            return $this->dance_end_time;
+        $explicitEndTime = $this->attributes['dance_end_time'] ?? null;
+        if (!empty($explicitEndTime)) {
+            return (string)$explicitEndTime;
         }
 
-        if (!empty($this->dance_start_time) && !empty($this->dance_duration_hours)) {
+        $danceStart = $this->attributes['dance_start_time'] ?? null;
+        $danceDuration = $this->attributes['dance_duration_hours'] ?? null;
+
+        if (!empty($danceStart) && !empty($danceDuration)) {
             try {
-                $start = \Carbon\Carbon::createFromFormat('H:i', substr($this->dance_start_time, 0, 5));
-                $minutes = (int)($this->dance_duration_hours * 60);
-                return $start->addMinutes($minutes)->format('H:i');
+                $timeClean = substr(trim((string)$danceStart), 0, 5);
+                if (preg_match('/^\d{1,2}:\d{2}$/', $timeClean)) {
+                    $start = \Carbon\Carbon::createFromFormat('H:i', $timeClean);
+                    $minutes = (int)((float)$danceDuration * 60);
+                    return $start->addMinutes($minutes)->format('H:i');
+                }
             } catch (\Throwable $e) {
                 return null;
             }
@@ -266,29 +273,34 @@ class Event extends Model
      */
     public function getSuggestedDanceHoursAttribute(): ?float
     {
-        if (!empty($this->dance_duration_hours)) {
-            return (float)$this->dance_duration_hours;
+        $duration = $this->attributes['dance_duration_hours'] ?? null;
+        if (!empty($duration)) {
+            return (float)$duration;
         }
 
         // Buscar en los items del presupuesto
-        $quote = $this->quotes()->latest()->first();
-        if ($quote && $quote->items) {
-            foreach ($quote->items as $item) {
-                $name = mb_strtolower($item->service_name ?? '');
-                $desc = mb_strtolower($item->description ?? '');
-                
-                // Pack Básico (4h), Pack Medio (5h), Pack Premium (6h)
-                if (str_contains($name, 'pack') || str_contains($desc, 'pack')) {
-                    if (str_contains($name, 'básico') || str_contains($name, 'basico')) return 4.0;
-                    if (str_contains($name, 'medio')) return 5.0;
-                    if (str_contains($name, 'premium')) return 6.0;
-                }
+        try {
+            $quote = $this->quotes()->latest()->first();
+            if ($quote && $quote->items) {
+                foreach ($quote->items as $item) {
+                    $name = mb_strtolower($item->service_name ?? '');
+                    $desc = mb_strtolower($item->description ?? '');
+                    
+                    // Pack Básico (4h), Pack Medio (5h), Pack Premium (6h)
+                    if (str_contains($name, 'pack') || str_contains($desc, 'pack')) {
+                        if (str_contains($name, 'básico') || str_contains($name, 'basico')) return 4.0;
+                        if (str_contains($name, 'medio')) return 5.0;
+                        if (str_contains($name, 'premium')) return 6.0;
+                    }
 
-                // Horas de DJ
-                if (str_contains($name, 'hora') && str_contains($name, 'dj')) {
-                    if ($item->quantity > 0) return (float)$item->quantity;
+                    // Horas de DJ
+                    if (str_contains($name, 'hora') && str_contains($name, 'dj')) {
+                        if ($item->quantity > 0) return (float)$item->quantity;
+                    }
                 }
             }
+        } catch (\Throwable $e) {
+            // Silently fallback
         }
 
         return 4.0; // Valor por defecto habitual
@@ -299,13 +311,16 @@ class Event extends Model
      */
     public function getDanceScheduleLabelAttribute(): string
     {
-        if (empty($this->dance_start_time)) {
+        $danceStart = $this->attributes['dance_start_time'] ?? null;
+        if (empty($danceStart)) {
             return 'Horario no definido';
         }
 
-        $start = substr($this->dance_start_time, 0, 5) . ' h';
-        $end = $this->calculated_dance_end_time ? (substr($this->calculated_dance_end_time, 0, 5) . ' h') : null;
-        $hours = $this->dance_duration_hours ? (rtrim(rtrim(number_format($this->dance_duration_hours, 1, ',', '.'), '0'), ',') . 'h') : null;
+        $start = substr((string)$danceStart, 0, 5) . ' h';
+        $end = $this->calculated_dance_end_time ? (substr((string)$this->calculated_dance_end_time, 0, 5) . ' h') : null;
+        $hours = !empty($this->attributes['dance_duration_hours']) 
+            ? (rtrim(rtrim(number_format((float)$this->attributes['dance_duration_hours'], 1, ',', '.'), '0'), ',') . 'h') 
+            : null;
 
         if ($end && $hours) {
             return "De {$start} a {$end} ({$hours})";

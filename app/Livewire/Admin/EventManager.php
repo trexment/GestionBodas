@@ -95,25 +95,50 @@ class EventManager extends Component
     {
         $this->validate();
 
-        Event::create([
-            'name' => $this->name,
-            'event_type' => $this->event_type ?: 'boda',
-            'event_date' => $this->event_date,
-            'start_time' => $this->start_time ?: null,
-            'dance_start_time' => $this->dance_start_time ?: null,
-            'dance_duration_hours' => $this->dance_duration_hours ? (float)$this->dance_duration_hours : null,
-            'location' => $this->location,
-            'client_id' => $this->client_id ?: null,
-            'dj_id' => $this->dj_id ?: auth()->id(),
-            'assistant_id' => $this->assistant_id ?: null,
-            'status' => 'draft',
-            'notes' => $this->notes,
-        ]);
+        try {
+            // Si las columnas aún no existen, intentamos aplicar migraciones automáticamente
+            if (!\Illuminate\Support\Facades\Schema::hasColumn('events', 'dance_start_time')) {
+                try {
+                    \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+                } catch (\Throwable $migEx) {
+                    // Ignorar si no se puede ejecutar artisan en este contexto
+                }
+            }
 
-        $this->closeCreateModal();
-        $this->loadEvents();
-        
-        session()->flash('message', 'Evento creado exitosamente con DJ y Asistente asignados.');
+            $createData = [
+                'name' => $this->name,
+                'event_type' => $this->event_type ?: 'boda',
+                'event_date' => $this->event_date,
+                'location' => $this->location,
+                'client_id' => $this->client_id ?: null,
+                'dj_id' => $this->dj_id ?: auth()->id(),
+                'assistant_id' => $this->assistant_id ?: null,
+                'status' => 'draft',
+                'notes' => $this->notes,
+            ];
+
+            $scheduleFields = [
+                'start_time' => $this->start_time ?: null,
+                'dance_start_time' => $this->dance_start_time ?: null,
+                'dance_duration_hours' => $this->dance_duration_hours ? (float)$this->dance_duration_hours : null,
+            ];
+
+            foreach ($scheduleFields as $col => $val) {
+                if (\Illuminate\Support\Facades\Schema::hasColumn('events', $col)) {
+                    $createData[$col] = $val;
+                }
+            }
+
+            Event::create($createData);
+
+            $this->closeCreateModal();
+            $this->loadEvents();
+            
+            session()->flash('message', 'Evento creado exitosamente con DJ y Asistente asignados.');
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Error creating event: ' . $e->getMessage());
+            session()->flash('error', 'Error al crear el evento: ' . $e->getMessage() . '. Si faltan columnas, ejecuta "php artisan migrate".');
+        }
     }
 
     public function deleteEvent($eventId)

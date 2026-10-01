@@ -2013,20 +2013,48 @@ class EventShow extends Component
             'schedule_notes' => 'nullable|string',
         ]);
 
-        $this->event->update([
-            'dance_start_time' => $this->dance_start_time ?: null,
-            'dance_duration_hours' => $this->dance_duration_hours ? (float)$this->dance_duration_hours : null,
-            'dance_end_time' => $this->dance_end_time ?: null,
-            'start_time' => $this->start_time ?: null,
-            'ceremony_time' => $this->ceremony_time ?: null,
-            'cocktail_time' => $this->cocktail_time ?: null,
-            'banquet_time' => $this->banquet_time ?: null,
-            'schedule_notes' => $this->schedule_notes ?: null,
-        ]);
+        try {
+            // Si las columnas aún no existen, intentamos aplicar migraciones automáticamente
+            if (!\Illuminate\Support\Facades\Schema::hasColumn('events', 'dance_start_time')) {
+                try {
+                    \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+                } catch (\Throwable $migEx) {
+                    // Si no tiene permisos de Artisan directo, continuará con los campos disponibles
+                }
+            }
 
-        $this->event->refresh();
-        $this->showScheduleModal = false;
-        session()->flash('message', '¡Horarios del evento y del baile actualizados correctamente!');
+            $updateData = [];
+            $possibleFields = [
+                'dance_start_time' => $this->dance_start_time ?: null,
+                'dance_duration_hours' => $this->dance_duration_hours ? (float)$this->dance_duration_hours : null,
+                'dance_end_time' => $this->dance_end_time ?: null,
+                'start_time' => $this->start_time ?: null,
+                'ceremony_time' => $this->ceremony_time ?: null,
+                'cocktail_time' => $this->cocktail_time ?: null,
+                'banquet_time' => $this->banquet_time ?: null,
+                'schedule_notes' => $this->schedule_notes ?: null,
+            ];
+
+            foreach ($possibleFields as $col => $val) {
+                if (\Illuminate\Support\Facades\Schema::hasColumn('events', $col)) {
+                    $updateData[$col] = $val;
+                }
+            }
+
+            if (!empty($updateData)) {
+                $this->event->update($updateData);
+                $this->event->refresh();
+                $this->showScheduleModal = false;
+                session()->flash('message', '¡Horarios del evento y del baile actualizados correctamente!');
+            } else {
+                $this->showScheduleModal = false;
+                session()->flash('error', '⚠️ Las columnas de horarios aún no existen en la base de datos. Por favor ejecuta "php artisan migrate" en tu servidor.');
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Error saving schedule: ' . $e->getMessage());
+            $this->showScheduleModal = false;
+            session()->flash('error', 'No se pudieron guardar los horarios: ' . $e->getMessage() . '. Si faltan columnas, ejecuta "php artisan migrate".');
+        }
     }
 
     public function exportPlaylistM3u()
