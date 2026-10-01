@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="es" class="h-full">
+<html lang="es" class="min-h-full h-auto">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
     @php
         $companyName = \App\Models\Setting::getCompanyName('Núñez and Son');
         $companySubtitle = \App\Models\Setting::getCompanySubtitle('Sound in Motion');
@@ -55,11 +55,24 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
+        html, body {
+            -webkit-overflow-scrolling: touch;
+        }
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
+            overflow-x: hidden;
         }
         [x-cloak] { display: none !important; }
         
+        /* Utility to hide scrollbar while keeping scroll functionality */
+        .scrollbar-none {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .scrollbar-none::-webkit-scrollbar {
+            display: none;
+        }
+
         /* Custom scrollbar for sidebar */
         .sidebar-scroll::-webkit-scrollbar {
             width: 4px;
@@ -278,9 +291,20 @@
     @livewireStyles
 </head>
 <body 
-    class="h-full font-sans antialiased text-slate-800 dark:text-slate-100 bg-slate-50 dark:bg-slate-950 selection:bg-indigo-500 selection:text-white transition-colors duration-200"
+    class="min-h-screen h-auto font-sans antialiased text-slate-800 dark:text-slate-100 bg-slate-50 dark:bg-slate-950 selection:bg-indigo-500 selection:text-white transition-colors duration-200 overflow-x-hidden"
     x-data="{
         mobileSidebarOpen: false,
+        toasts: [],
+        addToast(message, type = 'success', duration = 4000) {
+            const id = Date.now() + Math.random();
+            this.toasts.push({ id, message, type });
+            setTimeout(() => {
+                this.removeToast(id);
+            }, duration);
+        },
+        removeToast(id) {
+            this.toasts = this.toasts.filter(t => t.id !== id);
+        },
         isDark: localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches),
         toggleTheme() {
             this.isDark = !this.isDark;
@@ -293,6 +317,22 @@
             }
         }
     }"
+    x-init="
+        @if(session()->has('message'))
+            addToast('{{ addslashes(session('message')) }}', 'success');
+        @endif
+        @if(session()->has('success'))
+            addToast('{{ addslashes(session('success')) }}', 'success');
+        @endif
+        @if(session()->has('error'))
+            addToast('{{ addslashes(session('error')) }}', 'error');
+        @endif
+        window.addEventListener('notify', e => {
+            const msg = typeof e.detail === 'string' ? e.detail : (e.detail.message || e.detail[0] || 'Operación realizada correctamente');
+            const type = e.detail.type || 'success';
+            addToast(msg, type);
+        });
+    "
 >
 
     <div class="min-h-full flex">
@@ -563,6 +603,42 @@
 
         </div>
 
+    </div>
+
+    <!-- FLOATING TOAST NOTIFICATIONS (MOBILE & DESKTOP) -->
+    <div class="fixed top-4 right-4 sm:top-6 sm:right-6 z-50 flex flex-col gap-2.5 max-w-sm w-full pointer-events-none px-3 sm:px-0">
+        <template x-for="toast in toasts" :key="toast.id">
+            <div 
+                x-transition:enter="transition ease-out duration-300 transform"
+                x-transition:enter-start="opacity-0 translate-y-[-10px] scale-95"
+                x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+                x-transition:leave="transition ease-in duration-200 transform"
+                x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+                x-transition:leave-end="opacity-0 translate-y-[-10px] scale-95"
+                class="pointer-events-auto p-4 rounded-2xl shadow-xl border flex items-center justify-between gap-3 text-sm font-bold backdrop-blur-md transition"
+                :class="{
+                    'bg-emerald-600/95 text-white border-emerald-500 shadow-emerald-500/20': toast.type === 'success',
+                    'bg-rose-600/95 text-white border-rose-500 shadow-rose-500/20': toast.type === 'error',
+                    'bg-amber-500/95 text-white border-amber-400 shadow-amber-500/20': toast.type === 'warning',
+                    'bg-indigo-600/95 text-white border-indigo-500 shadow-indigo-500/20': toast.type === 'info'
+                }"
+            >
+                <div class="flex items-center gap-2.5">
+                    <span x-show="toast.type === 'success'" class="text-lg">✅</span>
+                    <span x-show="toast.type === 'error'" class="text-lg">⚠️</span>
+                    <span x-show="toast.type === 'warning'" class="text-lg">🔔</span>
+                    <span x-show="toast.type === 'info'" class="text-lg">ℹ️</span>
+                    <span x-text="toast.message" class="text-xs sm:text-sm font-semibold leading-snug"></span>
+                </div>
+                <button 
+                    type="button" 
+                    @click="removeToast(toast.id)"
+                    class="opacity-70 hover:opacity-100 text-white font-bold p-1 rounded-lg transition"
+                >
+                    &times;
+                </button>
+            </div>
+        </template>
     </div>
 
     <!-- PWA INSTALL BANNER & MODAL GUIDE -->

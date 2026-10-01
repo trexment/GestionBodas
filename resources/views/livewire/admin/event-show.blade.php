@@ -592,38 +592,38 @@
         </div>
     </div>
 
-    <!-- Navegación por pestañas -->
-    <div class="mb-6 border-b border-gray-200">
-        <ul class="flex flex-wrap -mb-px text-sm font-medium text-center">
+    <!-- Navegación por pestañas (Scroll Horizontal Táctil en Móvil) -->
+    <div class="mb-6 border-b border-gray-200 dark:border-slate-800 overflow-x-auto scrollbar-none -mx-4 px-4 sm:mx-0 sm:px-0">
+        <ul class="flex flex-nowrap -mb-px text-sm font-medium text-center whitespace-nowrap min-w-full">
             <li class="mr-2">
-                <button wire:click="$set('activeTab', 'dossier')" class="inline-block p-4 rounded-t-lg border-b-2 {{ $activeTab == 'dossier' ? 'border-indigo-600 text-indigo-600' : 'border-transparent hover:text-gray-600 hover:border-gray-300' }}">
-                    Dossier y Planificación
+                <button wire:click="$set('activeTab', 'dossier')" class="inline-block p-4 rounded-t-lg border-b-2 font-bold text-xs sm:text-sm {{ $activeTab == 'dossier' ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400 dark:border-indigo-400' : 'border-transparent hover:text-gray-600 dark:hover:text-slate-300 hover:border-gray-300 dark:hover:border-slate-700 text-gray-500 dark:text-slate-400' }}">
+                    📋 Dossier y Planificación
                 </button>
             </li>
             <li class="mr-2">
-                <button wire:click="$set('activeTab', 'music')" class="inline-block p-4 rounded-t-lg border-b-2 {{ $activeTab == 'music' ? 'border-indigo-600 text-indigo-600 font-bold' : 'border-transparent hover:text-gray-600 hover:border-gray-300' }}">
-                    🎵 Música y Momentos <span class="ml-1 text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-bold">{{ $event->musicRequests->count() }}</span>
+                <button wire:click="$set('activeTab', 'music')" class="inline-block p-4 rounded-t-lg border-b-2 font-bold text-xs sm:text-sm {{ $activeTab == 'music' ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400 dark:border-indigo-400' : 'border-transparent hover:text-gray-600 dark:hover:text-slate-300 hover:border-gray-300 dark:hover:border-slate-700 text-gray-500 dark:text-slate-400' }}">
+                    🎵 Música y Momentos <span class="ml-1 text-xs bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 px-2 py-0.5 rounded-full font-bold">{{ $event->musicRequests->count() }}</span>
                 </button>
             </li>
             <li class="mr-2">
-                <button wire:click="$set('activeTab', 'equipment')" class="inline-block p-4 rounded-t-lg border-b-2 {{ $activeTab == 'equipment' ? 'border-indigo-600 text-indigo-600' : 'border-transparent hover:text-gray-600 hover:border-gray-300' }}">
+                <button wire:click="$set('activeTab', 'equipment')" class="inline-block p-4 rounded-t-lg border-b-2 font-bold text-xs sm:text-sm {{ $activeTab == 'equipment' ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400 dark:border-indigo-400' : 'border-transparent hover:text-gray-600 dark:hover:text-slate-300 hover:border-gray-300 dark:hover:border-slate-700 text-gray-500 dark:text-slate-400' }}">
                     📦 Material / Carga
                 </button>
             </li>
             @if(Auth::check() && Auth::user()->role === 'admin')
             <li class="mr-2">
-                <button wire:click="$set('activeTab', 'quotes')" class="inline-block p-4 rounded-t-lg border-b-2 {{ $activeTab == 'quotes' ? 'border-indigo-600 text-indigo-600' : 'border-transparent hover:text-gray-600 hover:border-gray-300' }}">
-                    Presupuestos (Propuestas)
+                <button wire:click="$set('activeTab', 'quotes')" class="inline-block p-4 rounded-t-lg border-b-2 font-bold text-xs sm:text-sm {{ $activeTab == 'quotes' ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400 dark:border-indigo-400' : 'border-transparent hover:text-gray-600 dark:hover:text-slate-300 hover:border-gray-300 dark:hover:border-slate-700 text-gray-500 dark:text-slate-400' }}">
+                    💶 Presupuestos
                 </button>
             </li>
             <li class="mr-2">
-                <button wire:click="$set('activeTab', 'contracts')" class="inline-block p-4 rounded-t-lg border-b-2 {{ $activeTab == 'contracts' ? 'border-indigo-600 text-indigo-600' : 'border-transparent hover:text-gray-600 hover:border-gray-300' }}">
-                    Contratos
+                <button wire:click="$set('activeTab', 'contracts')" class="inline-block p-4 rounded-t-lg border-b-2 font-bold text-xs sm:text-sm {{ $activeTab == 'contracts' ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400 dark:border-indigo-400' : 'border-transparent hover:text-gray-600 dark:hover:text-slate-300 hover:border-gray-300 dark:hover:border-slate-700 text-gray-500 dark:text-slate-400' }}">
+                    ✍️ Contratos
                 </button>
             </li>
             <li class="mr-2">
-                <button wire:click="$set('activeTab', 'invoices')" class="inline-block p-4 rounded-t-lg border-b-2 {{ $activeTab == 'invoices' ? 'border-indigo-600 text-indigo-600' : 'border-transparent hover:text-gray-600 hover:border-gray-300' }}">
-                    Facturas
+                <button wire:click="$set('activeTab', 'invoices')" class="inline-block p-4 rounded-t-lg border-b-2 font-bold text-xs sm:text-sm {{ $activeTab == 'invoices' ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400 dark:border-indigo-400' : 'border-transparent hover:text-gray-600 dark:hover:text-slate-300 hover:border-gray-300 dark:hover:border-slate-700 text-gray-500 dark:text-slate-400' }}">
+                    🧾 Facturas
                 </button>
             </li>
             @endif
