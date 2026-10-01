@@ -508,8 +508,19 @@
                     </div>
 
                     <!-- ACCIONES SUPERIORES DERECHA -->
-                    <div class="flex items-center gap-2.5 sm:gap-3">
+                    <div class="flex items-center gap-2 sm:gap-2.5">
                         
+                        <!-- BOTÓN INSTALAR APP / GUÍA MÓVIL & TABLET -->
+                        <button 
+                            type="button"
+                            @click="$dispatch('open-pwa-guide')"
+                            title="Instalar App en Móvil o Tablet / Guía de Instalación"
+                            class="px-2.5 sm:px-3 py-1.5 rounded-xl bg-purple-50 dark:bg-purple-950/60 hover:bg-purple-100 dark:hover:bg-purple-900/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 font-bold text-xs flex items-center gap-1.5 transition cursor-pointer shadow-2xs"
+                        >
+                            <span>📲</span>
+                            <span class="hidden sm:inline">Instalar App</span>
+                        </button>
+
                         <!-- TOGGLE TEMA OSCURO / CLARO EN HEADER -->
                         <button 
                             type="button"
@@ -547,12 +558,15 @@
 
             <!-- FOOTER -->
             <footer class="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 py-3 text-center text-xs text-slate-400 dark:text-slate-500 mt-auto transition-colors duration-200">
-                <p>&copy; {{ date('Y') }} {{ \App\Models\Setting::get('company_name', 'Núñez and Son') }} &bull; Software Integral de Gestión para DJs y Eventos</p>
+                <p>&copy; {{ date('Y') }} {{ \App\Models\Setting::get('company_name', 'Núñez and Son') }} &bull; Software Integral de Gestión para DJs y Eventos &bull; <button type="button" @click="$dispatch('open-pwa-guide')" class="text-indigo-600 dark:text-indigo-400 hover:underline font-bold inline-flex items-center gap-1">📲 Instalar App</button></p>
             </footer>
 
         </div>
 
     </div>
+
+    <!-- PWA INSTALL BANNER & MODAL GUIDE -->
+    <x-pwa-install-banner />
 
     @livewireScripts
     <script>

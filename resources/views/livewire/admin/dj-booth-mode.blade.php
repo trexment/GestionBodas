@@ -45,6 +45,17 @@
                 </div>
             </template>
 
+            <!-- BOTÓN INSTALAR APP / GUÍA MÓVIL & TABLET -->
+            <button 
+                type="button" 
+                @click="$dispatch('open-pwa-guide')" 
+                title="Instalar App en Tablet / Móvil"
+                class="px-3 py-1.5 rounded-xl bg-purple-950/70 hover:bg-purple-900 text-purple-300 hover:text-white border border-purple-600/40 text-xs font-bold transition flex items-center gap-1.5 shadow-sm cursor-pointer"
+            >
+                <span>📲</span>
+                <span class="hidden sm:inline">Instalar App</span>
+            </button>
+
             <!-- RELOJ DIGITAL 24H EN VIVO -->
             <div 
                 x-data="{ currentTime: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }) }" 
@@ -2094,3 +2105,6 @@ function djAudioPlayer() {
     };
 }
 </script>
+
+<!-- PWA INSTALL BANNER & MODAL GUIDE -->
+<x-pwa-install-banner />
