@@ -330,7 +330,7 @@
 
                                 <button 
                                     type="button" 
-                                    @click="handleTrackPlay({{ $item->id }}, {{ json_encode($item->title) }}, {{ json_encode($item->artist ?? '') }}, {{ json_encode($item->audio_url ?? '') }}, {{ json_encode($item->spotify_url ?? '') }}, {{ json_encode($item->apple_music_url ?? '') }})" 
+                                    @click="handleTrackPlay({{ $item->id }}, {{ json_encode($item->title) }}, {{ json_encode($item->artist ?? '') }}, {{ json_encode($item->audio_url ?? '') }}, {{ json_encode($item->spotify_url ?? '') }}, {{ json_encode($item->apple_music_url ?? '') }}, {{ json_encode($item->youtube_url ?? '') }})" 
                                     class="w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs shadow-sm transition {{ $isPlaying ? 'bg-emerald-500 text-slate-950' : 'bg-slate-800 text-slate-200 hover:bg-slate-700' }}"
                                 >
                                     <span x-text="currentId === {{ $item->id }} && isPlaying ? '⏸' : '▶'"></span>
@@ -440,7 +440,7 @@
                                         <div class="flex items-center gap-1.5 flex-shrink-0">
                                             <button 
                                                 type="button" 
-                                                @click="handleTrackPlay({{ $song->id }}, {{ json_encode($song->title) }}, {{ json_encode($song->artist ?? '') }}, {{ json_encode($song->audio_url ?? '') }}, {{ json_encode($song->spotify_url ?? '') }}, {{ json_encode($song->apple_music_url ?? '') }})" 
+                                                @click="handleTrackPlay({{ $song->id }}, {{ json_encode($song->title) }}, {{ json_encode($song->artist ?? '') }}, {{ json_encode($song->audio_url ?? '') }}, {{ json_encode($song->spotify_url ?? '') }}, {{ json_encode($song->apple_music_url ?? '') }}, {{ json_encode($song->youtube_url ?? '') }})" 
                                                 class="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold transition {{ $isPlaying ? 'bg-emerald-500 text-slate-950' : 'bg-slate-800 text-emerald-400 hover:bg-slate-700' }}"
                                             >
                                                 <span x-text="currentId === {{ $song->id }} && isPlaying ? '⏸' : '▶'"></span>
@@ -650,7 +650,7 @@
                                             @endphp
 
                                             <div 
-                                                @click="handleTrackPlay({{ $req->id }}, {{ json_encode($req->title) }}, {{ json_encode($req->artist ?? '') }}, {{ json_encode($req->audio_url ?? '') }}, {{ json_encode($req->spotify_url ?? '') }}, {{ json_encode($req->apple_music_url ?? '') }})"
+                                                @click="handleTrackPlay({{ $req->id }}, {{ json_encode($req->title) }}, {{ json_encode($req->artist ?? '') }}, {{ json_encode($req->audio_url ?? '') }}, {{ json_encode($req->spotify_url ?? '') }}, {{ json_encode($req->apple_music_url ?? '') }}, {{ json_encode($req->youtube_url ?? '') }})"
                                                 class="relative rounded-2xl p-4 flex flex-col justify-between min-h-[220px] transition-all duration-200 cursor-pointer group select-none border-2"
                                                 :class="{
                                                     'bg-slate-900/95 border-emerald-400 shadow-2xl shadow-emerald-500/40 ring-4 ring-emerald-500/20 scale-[1.02]': currentId === {{ $req->id }} && isPlaying,
@@ -755,7 +755,7 @@
                                 @endphp
 
                                 <div 
-                                    @click="handleTrackPlay({{ $req->id }}, {{ json_encode($req->title) }}, {{ json_encode($req->artist ?? '') }}, {{ json_encode($req->audio_url ?? '') }}, {{ json_encode($req->spotify_url ?? '') }}, {{ json_encode($req->apple_music_url ?? '') }})"
+                                    @click="handleTrackPlay({{ $req->id }}, {{ json_encode($req->title) }}, {{ json_encode($req->artist ?? '') }}, {{ json_encode($req->audio_url ?? '') }}, {{ json_encode($req->spotify_url ?? '') }}, {{ json_encode($req->apple_music_url ?? '') }}, {{ json_encode($req->youtube_url ?? '') }})"
                                     class="relative rounded-2xl p-4 flex flex-col justify-between min-h-[220px] transition-all duration-200 cursor-pointer group select-none border-2"
                                     :class="{
                                         'bg-slate-900/95 border-emerald-400 shadow-2xl shadow-emerald-500/40 ring-4 ring-emerald-500/20 scale-[1.02]': currentId === {{ $req->id }} && isPlaying,
@@ -898,7 +898,7 @@
                                         <td class="py-3 px-4 text-center">
                                             <button 
                                                 type="button" 
-                                                @click="handleTrackPlay({{ $item->id }}, {{ json_encode($item->title) }}, {{ json_encode($item->artist ?? '') }}, {{ json_encode($item->audio_url ?? '') }}, {{ json_encode($item->spotify_url ?? '') }}, {{ json_encode($item->apple_music_url ?? '') }})" 
+                                                @click="handleTrackPlay({{ $item->id }}, {{ json_encode($item->title) }}, {{ json_encode($item->artist ?? '') }}, {{ json_encode($item->audio_url ?? '') }}, {{ json_encode($item->spotify_url ?? '') }}, {{ json_encode($item->apple_music_url ?? '') }}, {{ json_encode($item->youtube_url ?? '') }})" 
                                                 class="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold transition mx-auto {{ $isPlaying ? 'bg-emerald-500 text-slate-950' : 'bg-slate-800 text-emerald-400 hover:bg-slate-700' }}"
                                             >
                                                 <span x-text="currentId === {{ $item->id }} && isPlaying ? '⏸' : '▶'"></span>
@@ -2035,16 +2035,16 @@ function djAudioPlayer() {
             this.spotifyPlayer = player;
         },
 
-        async handleTrackPlay(id, title, artist, audioFile, spotifyUrl, appleMusicUrl) {
+        async handleTrackPlay(id, title, artist, audioFile, spotifyUrl, appleMusicUrl, youtubeUrl) {
             if (this.currentId === id) {
                 this.togglePlayPause();
                 return;
             }
 
-            await this.playSong(id, title, artist, audioFile, spotifyUrl, appleMusicUrl);
+            await this.playSong(id, title, artist, audioFile, spotifyUrl, appleMusicUrl, youtubeUrl);
         },
 
-        async playSong(id, title, artist, audioFile, spotifyUrl, appleMusicUrl) {
+        async playSong(id, title, artist, audioFile, spotifyUrl, appleMusicUrl, youtubeUrl) {
             this.stopCurrent();
 
             this.currentId = id;
@@ -2059,7 +2059,7 @@ function djAudioPlayer() {
 
             const queryParam = encodeURIComponent(((artist ? artist + ' ' : '') + title).trim());
             this.spotifyExternalUrl = spotifyUrl || (`https://open.spotify.com/search/${queryParam}`);
-            this.youtubeExternalUrl = `https://www.youtube.com/results?search_query=${queryParam}`;
+            this.youtubeExternalUrl = youtubeUrl || (`https://www.youtube.com/results?search_query=${queryParam}`);
             this.appleMusicExternalUrl = appleMusicUrl || (`https://music.apple.com/es/search?term=${queryParam}`);
 
             // 0. PRIORIDAD ABSOLUTA 0: REPRODUCCIÓN DESDE CACHÉ LOCAL / OFFLINE (MODO SIN COBERTURA)
@@ -2076,6 +2076,7 @@ function djAudioPlayer() {
                             this.isPaused = false;
                             this.loading = false;
                             this.$wire.setStatus(id, 'playing');
+                            this.requestWakeLock();
                             return;
                         } catch (err) {
                             console.warn('Fallo reproduciendo blob offline, probando streaming:', err);
@@ -2117,6 +2118,7 @@ function djAudioPlayer() {
                     this.isPaused = false;
                     this.loading = false;
                     this.$wire.setStatus(id, 'playing');
+                    this.requestWakeLock();
                     return;
                 } catch (e) {
                     console.warn('Direct file playback failed:', e);
@@ -2169,6 +2171,7 @@ function djAudioPlayer() {
                             this.isPaused = false;
                             this.loading = false;
                             this.$wire.setStatus(id, 'playing');
+                            this.requestWakeLock();
                             return;
                         }
                     } catch (e) {}
@@ -2190,27 +2193,37 @@ function djAudioPlayer() {
                         this.isPaused = false;
                         this.loading = false;
                         this.$wire.setStatus(id, 'playing');
+                        this.requestWakeLock();
                         return;
                     }
                 } catch (e) {}
             }
 
-            // 4. Resolución de Metadatos & YouTube Track para canciones especiales que solo existen en YouTube
+            // 4. Resolución rápida de ID de YouTube directo si ya tenemos enlace o extracción
             let resolvedVideoId = null;
-            try {
-                const resolveRes = await fetch(`/api/music/resolve-track?title=${encodeURIComponent(title)}&artist=${encodeURIComponent(artist || '')}`);
-                if (resolveRes.ok) {
-                    const resData = await resolveRes.json();
-                    if (resData.success) {
-                        if (resData.cover_url) this.currentCover = resData.cover_url;
-                        if (resData.spotify_url) this.spotifyExternalUrl = resData.spotify_url;
-                        if (resData.youtube_url) this.youtubeExternalUrl = resData.youtube_url;
-                        if (resData.apple_music_url) this.appleMusicExternalUrl = resData.apple_music_url;
-                        resolvedVideoId = resData.youtube_video_id;
-                    }
+            if (youtubeUrl) {
+                const ytMatch = youtubeUrl.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i);
+                if (ytMatch && ytMatch[1]) {
+                    resolvedVideoId = ytMatch[1];
                 }
-            } catch (e) {
-                console.warn('Backend resolve error', e);
+            }
+
+            if (!resolvedVideoId) {
+                try {
+                    const resolveRes = await fetch(`/api/music/resolve-track?title=${encodeURIComponent(title)}&artist=${encodeURIComponent(artist || '')}`);
+                    if (resolveRes.ok) {
+                        const resData = await resolveRes.json();
+                        if (resData.success) {
+                            if (resData.cover_url) this.currentCover = resData.cover_url;
+                            if (resData.spotify_url && !spotifyUrl) this.spotifyExternalUrl = resData.spotify_url;
+                            if (resData.youtube_url && !youtubeUrl) this.youtubeExternalUrl = resData.youtube_url;
+                            if (resData.apple_music_url && !appleMusicUrl) this.appleMusicExternalUrl = resData.apple_music_url;
+                            resolvedVideoId = resData.youtube_video_id;
+                        }
+                    }
+                } catch (e) {
+                    console.warn('Backend resolve error', e);
+                }
             }
 
             // 5. PRIORIDAD 4 (Fallback para canciones exclusivas de YouTube): Reproducir mediante YouTube Player

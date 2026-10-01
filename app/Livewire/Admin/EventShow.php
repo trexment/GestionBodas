@@ -791,8 +791,10 @@ class EventShow extends Component
         $this->req_spotify_url = $track['spotify_url'] ?? '';
         $this->req_apple_music_url = $track['apple_music_url'] ?? '';
         $this->req_youtube_url = $track['youtube_url'] ?? '';
-        if (!empty($track['preview_url'])) {
+        if (!empty($track['is_drive_library']) && !empty($track['preview_url'])) {
             $this->existing_audio_file = $track['preview_url'];
+        } else {
+            $this->existing_audio_file = null;
         }
         $this->musicSearchResults = [];
         $this->musicSearchQuery = '';
@@ -840,6 +842,17 @@ class EventShow extends Component
         $this->showSongModal = true;
     }
 
+    public function removeExistingAudioFile()
+    {
+        $this->existing_audio_file = null;
+        $this->req_audio_file = null;
+        if ($this->editingSongId) {
+            EventMusicRequest::where('id', $this->editingSongId)->update(['audio_file' => null]);
+            $this->event->load('musicRequests');
+        }
+        session()->flash('music_modal_message', '🗑️ Archivo de audio eliminado. Ahora se reproducirá mediante Spotify / Apple Music / YouTube.');
+    }
+
     public function updatedReqCategory($val)
     {
         if (!$this->editingSongId) {
@@ -871,7 +884,7 @@ class EventShow extends Component
         if (!empty($meta['youtube_url'])) {
             $this->req_youtube_url = $meta['youtube_url'];
         }
-        if (empty($this->existing_audio_file) && !empty($meta['preview_url'])) {
+        if (!empty($meta['is_drive_library']) && !empty($meta['preview_url'])) {
             $this->existing_audio_file = $meta['preview_url'];
         }
 

@@ -42,6 +42,7 @@ class DjBoothMode extends Component
     public $new_notes = '';
     public $new_spotify_url = '';
     public $new_apple_music_url = '';
+    public $new_youtube_url = '';
     public $new_audio_file = '';
 
     // Live Universal Music Catalog Search
@@ -110,7 +111,8 @@ class DjBoothMode extends Component
         $this->new_artist = $track['artist'] ?? '';
         $this->new_spotify_url = $track['spotify_url'] ?? '';
         $this->new_apple_music_url = $track['apple_music_url'] ?? '';
-        $this->new_audio_file = $track['preview_url'] ?? '';
+        $this->new_youtube_url = $track['youtube_url'] ?? '';
+        $this->new_audio_file = !empty($track['is_drive_library']) ? ($track['preview_url'] ?? '') : '';
         $this->musicSearchResults = [];
         $this->musicSearchQuery = '';
     }
@@ -242,12 +244,13 @@ class DjBoothMode extends Component
             'notes' => $this->new_notes,
             'spotify_url' => $this->new_spotify_url,
             'apple_music_url' => $this->new_apple_music_url,
+            'youtube_url' => $this->new_youtube_url,
             'audio_file' => $this->new_audio_file,
             'order' => $maxOrder + 1,
             'status' => 'pending',
         ]);
 
-        $this->reset(['new_title', 'new_artist', 'new_notes', 'new_spotify_url', 'new_apple_music_url', 'new_audio_file', 'musicSearchQuery', 'musicSearchResults', 'showAddModal']);
+        $this->reset(['new_title', 'new_artist', 'new_notes', 'new_spotify_url', 'new_apple_music_url', 'new_youtube_url', 'new_audio_file', 'musicSearchQuery', 'musicSearchResults', 'showAddModal']);
         $this->event->load('musicRequests');
         session()->flash('booth_message', 'Canción añadida correctamente.');
     }

@@ -3017,15 +3017,49 @@
                                 </div>
                             </div>
 
-                            <!-- Subir Audio MP3 -->
-                            <div>
-                                <label class="block text-xs font-semibold text-gray-700 mb-1">Subir Archivo de Audio (MP3 / WAV)</label>
-                                <input type="file" wire:model="req_audio_file" accept="audio/*" class="w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
-                                <div wire:loading wire:target="req_audio_file" class="text-xs text-indigo-600 mt-1">Subiendo audio...</div>
+                            <!-- Subir Audio MP3 o Gestión de Archivo -->
+                            <div class="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700/80 space-y-2">
+                                <div class="flex items-center justify-between">
+                                    <label class="block text-xs font-bold text-gray-700 dark:text-slate-300">
+                                        📁 Archivo de Audio (MP3 / WAV) o Nube
+                                    </label>
+                                    @if($existing_audio_file)
+                                        <button 
+                                            type="button" 
+                                            wire:click="removeExistingAudioFile"
+                                            class="text-[11px] font-bold text-rose-600 hover:text-rose-700 dark:text-rose-400 hover:underline cursor-pointer flex items-center gap-1"
+                                            title="Desvincular o eliminar el archivo/preescucha actual"
+                                        >
+                                            <span>🗑️ Quitar archivo / preescucha</span>
+                                        </button>
+                                    @endif
+                                </div>
+
                                 @if($existing_audio_file)
-                                    <div class="text-[11px] text-emerald-600 mt-1">✓ Ya existe un archivo de audio guardado. Sube otro solo si quieres reemplazarlo.</div>
+                                    <div class="text-xs rounded-lg p-2.5 flex items-start justify-between gap-2 {{ str_contains($existing_audio_file, 'itunes.apple.com') || str_contains($existing_audio_file, 'p.scdn.co') ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60' : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60' }}">
+                                        <div class="flex items-center gap-2 truncate">
+                                            @if(str_contains($existing_audio_file, 'drive.google.com') || str_contains($existing_audio_file, '/api/drive-stream/'))
+                                                <span>☁️</span>
+                                                <span class="font-bold truncate">Google Drive vinculado</span>
+                                            @elseif(str_contains($existing_audio_file, 'itunes.apple.com') || str_contains($existing_audio_file, 'p.scdn.co'))
+                                                <span>⚠️</span>
+                                                <div>
+                                                    <span class="font-bold">Preescucha de 30 segundos (iTunes / Apple)</span>
+                                                    <div class="text-[10px] text-amber-700 dark:text-amber-400">Sube un MP3 completo o usa Spotify/Apple/YouTube para que suene entera.</div>
+                                                </div>
+                                            @else
+                                                <span>🎵</span>
+                                                <span class="font-bold truncate">Archivo guardado: {{ basename($existing_audio_file) }}</span>
+                                            @endif
+                                        </div>
+                                    </div>
                                 @endif
-                                @error('req_audio_file') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+
+                                <div class="space-y-1">
+                                    <input type="file" wire:model="req_audio_file" accept="audio/*" class="w-full text-xs text-gray-500 file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer">
+                                    <div wire:loading wire:target="req_audio_file" class="text-xs text-indigo-600 font-bold mt-1">⏳ Subiendo archivo de audio...</div>
+                                    @error('req_audio_file') <span class="text-red-500 text-xs font-bold block">{{ $message }}</span> @enderror
+                                </div>
                             </div>
 
                             <!-- Notas / Instrucciones -->
