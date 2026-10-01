@@ -847,6 +847,31 @@
                         offlineDownloadPercent: 0,
                         offlineStatusText: '',
                         showOfflineModal: false,
+                        wakeLock: null,
+
+                        async requestWakeLock() {
+                            if ('wakeLock' in navigator) {
+                                try {
+                                    if (!this.wakeLock) {
+                                        this.wakeLock = await navigator.wakeLock.request('screen');
+                                        this.wakeLock.addEventListener('release', () => {
+                                            this.wakeLock = null;
+                                        });
+                                    }
+                                } catch (err) {
+                                    console.warn('Wake Lock request:', err);
+                                }
+                            }
+                        },
+
+                        async releaseWakeLock() {
+                            if (this.wakeLock) {
+                                try {
+                                    await this.wakeLock.release();
+                                } catch(e) {}
+                                this.wakeLock = null;
+                            }
+                        },
 
                         async refreshOfflineStatus() {
                             if (window.OfflineAudioCache) {
@@ -868,8 +893,24 @@
                                     this.nextTrack();
                                 } else {
                                     this.isPlaying = false;
+                                    this.releaseWakeLock();
                                 }
                             });
+                            this.audio.addEventListener('play', () => {
+                                this.isPlaying = true;
+                                this.requestWakeLock();
+                            });
+                            this.audio.addEventListener('pause', () => {
+                                this.isPlaying = false;
+                                this.releaseWakeLock();
+                            });
+
+                            document.addEventListener('visibilitychange', async () => {
+                                if (document.visibilityState === 'visible' && this.isPlaying) {
+                                    await this.requestWakeLock();
+                                }
+                            });
+
                             await this.refreshOfflineStatus();
                         },
 
@@ -885,8 +926,9 @@
                                     if (cachedBlobUrl) {
                                         this.audio.src = cachedBlobUrl;
                                         this.audio.load();
-                                        this.audio.play();
+                                        await this.audio.play();
                                         this.isPlaying = true;
+                                        this.requestWakeLock();
                                         return;
                                     }
                                 } catch(e) {}
@@ -907,8 +949,9 @@
 
                                 this.audio.src = streamUrl;
                                 this.audio.load();
-                                this.audio.play();
+                                await this.audio.play();
                                 this.isPlaying = true;
+                                this.requestWakeLock();
                             } else if (track.youtube_url) {
                                 window.open(track.youtube_url, '_blank');
                             } else if (track.spotify_url) {
@@ -924,9 +967,11 @@
                             if (this.isPlaying) {
                                 this.audio.pause();
                                 this.isPlaying = false;
+                                this.releaseWakeLock();
                             } else {
                                 this.audio.play();
                                 this.isPlaying = true;
+                                this.requestWakeLock();
                             }
                         },
 

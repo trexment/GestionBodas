@@ -88,6 +88,18 @@
                 <span class="hidden sm:inline">Instalar App</span>
             </button>
 
+            <!-- BOTÓN / BADGE PANTALLA SIEMPRE ACTIVA (WAKE LOCK PARA TABLETS Y MÓVILES) -->
+            <button 
+                type="button" 
+                @click="toggleWakeLock()"
+                :title="wakeLockActive ? 'Pantalla siempre activa ACTIVADA (haz clic para desactivar)' : 'Pantalla siempre activa DESACTIVADA (haz clic para activar)'"
+                class="px-2.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm cursor-pointer border"
+                :class="wakeLockActive ? 'bg-amber-950/80 border-amber-500/50 text-amber-300 hover:bg-amber-900/90 shadow-amber-950/40' : 'bg-slate-900/90 border-slate-700/60 text-slate-400 hover:bg-slate-800'"
+            >
+                <span class="w-2 h-2 rounded-full" :class="wakeLockActive ? 'bg-amber-400 animate-pulse' : 'bg-slate-500'"></span>
+                <span x-text="wakeLockActive ? '☀️ Pantalla Activa' : '🌙 Pantalla Normal'"></span>
+            </button>
+
             <!-- RELOJ DIGITAL 24H EN VIVO -->
             <div 
                 x-data="{ currentTime: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }) }" 
@@ -1603,6 +1615,48 @@ function djAudioPlayer() {
         showOfflineModal: false,
         eventSongsList: @json($allSongsOfflineList),
 
+        // SCREEN WAKE LOCK (Evitar que la pantalla se apague en móviles y tablets)
+        wakeLock: null,
+        wakeLockActive: false,
+        keepScreenAwake: true,
+
+        async requestWakeLock() {
+            if ('wakeLock' in navigator && this.keepScreenAwake) {
+                try {
+                    if (!this.wakeLock) {
+                        this.wakeLock = await navigator.wakeLock.request('screen');
+                        this.wakeLockActive = true;
+                        this.wakeLock.addEventListener('release', () => {
+                            this.wakeLockActive = false;
+                            this.wakeLock = null;
+                        });
+                    }
+                } catch (err) {
+                    console.warn('Screen Wake Lock request:', err);
+                    this.wakeLockActive = false;
+                }
+            }
+        },
+
+        async releaseWakeLock() {
+            if (this.wakeLock) {
+                try {
+                    await this.wakeLock.release();
+                } catch (e) {}
+                this.wakeLock = null;
+                this.wakeLockActive = false;
+            }
+        },
+
+        async toggleWakeLock() {
+            this.keepScreenAwake = !this.keepScreenAwake;
+            if (this.keepScreenAwake) {
+                await this.requestWakeLock();
+            } else {
+                await this.releaseWakeLock();
+            }
+        },
+
         async refreshOfflineStatus() {
             if (window.OfflineAudioCache) {
                 try {
@@ -1685,6 +1739,14 @@ function djAudioPlayer() {
         async initPlayer() {
             await this.refreshOfflineStatus();
 
+            // Screen Wake Lock: mantener pantalla siempre encendida para el DJ durante el evento
+            await this.requestWakeLock();
+            document.addEventListener('visibilitychange', async () => {
+                if (document.visibilityState === 'visible' && (this.isPlaying || this.keepScreenAwake)) {
+                    await this.requestWakeLock();
+                }
+            });
+
             // 1. Inicializar HTML5 Audio para archivos MP3 locales y Google Drive Full Stream
             this.audio = new Audio();
             this.audio.volume = this.volume;
@@ -1716,6 +1778,7 @@ function djAudioPlayer() {
                     this.isPlaying = true;
                     this.isPaused = false;
                     this.loading = false;
+                    this.requestWakeLock();
                 }
             });
 
