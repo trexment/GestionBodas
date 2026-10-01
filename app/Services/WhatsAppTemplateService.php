@@ -111,11 +111,20 @@ class WhatsAppTemplateService
         }
 
         $scheduleInfo = '';
+        if (!empty($event->setup_date) || !empty($event->start_time)) {
+            $scheduleInfo .= "\n🚗 *Montaje:* " . $event->setup_schedule_label;
+        }
+        if (!empty($event->ceremony_time)) {
+            $scheduleInfo .= "\n💍 *Ceremonia:* " . substr($event->ceremony_time, 0, 5) . " h";
+        }
+        if (!empty($event->cocktail_time)) {
+            $scheduleInfo .= "\n🍸 *Cóctel:* " . substr($event->cocktail_time, 0, 5) . " h";
+        }
+        if (!empty($event->banquet_time)) {
+            $scheduleInfo .= "\n🍽️ *Banquete:* " . substr($event->banquet_time, 0, 5) . " h";
+        }
         if (!empty($event->dance_start_time)) {
             $scheduleInfo .= "\n⏰ *Horario Baile (DJ):* " . $event->dance_schedule_label;
-        }
-        if (!empty($event->start_time)) {
-            $scheduleInfo .= "\n🚗 *Hora Llegada / Montaje:* " . substr($event->start_time, 0, 5) . " h";
         }
         if (!empty($event->schedule_notes)) {
             $scheduleInfo .= "\n📝 *Timing:* " . $event->schedule_notes;

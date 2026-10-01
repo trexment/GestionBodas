@@ -32,6 +32,7 @@ class EventShow extends Component
 
     // Horarios del Evento y Baile
     public $showScheduleModal = false;
+    public $setup_date;
     public $dance_start_time;
     public $dance_duration_hours;
     public $dance_end_time;
@@ -178,6 +179,7 @@ class EventShow extends Component
         $this->event_notes = $this->event->notes;
 
         // Horarios
+        $this->setup_date = $this->event->setup_date ? \Carbon\Carbon::parse($this->event->setup_date)->format('Y-m-d') : null;
         $this->dance_start_time = $this->event->dance_start_time;
         $this->dance_duration_hours = $this->event->dance_duration_hours ?: $this->event->suggested_dance_hours;
         $this->dance_end_time = $this->event->dance_end_time ?: $this->event->calculated_dance_end_time;
@@ -1957,6 +1959,7 @@ class EventShow extends Component
 
     public function openScheduleModal()
     {
+        $this->setup_date = $this->event->setup_date ? \Carbon\Carbon::parse($this->event->setup_date)->format('Y-m-d') : null;
         $this->dance_start_time = $this->event->dance_start_time;
         $this->dance_duration_hours = $this->event->dance_duration_hours ?: $this->event->suggested_dance_hours;
         $this->dance_end_time = $this->event->dance_end_time ?: $this->event->calculated_dance_end_time;
@@ -1971,6 +1974,17 @@ class EventShow extends Component
     public function closeScheduleModal()
     {
         $this->showScheduleModal = false;
+    }
+
+    public function setPresetSetupDate($type)
+    {
+        if ($type === 'same_day') {
+            $this->setup_date = $this->event->event_date ? \Carbon\Carbon::parse($this->event->event_date)->format('Y-m-d') : null;
+        } elseif ($type === 'day_before') {
+            $this->setup_date = $this->event->event_date ? \Carbon\Carbon::parse($this->event->event_date)->subDay()->format('Y-m-d') : null;
+        } elseif ($type === 'clear') {
+            $this->setup_date = null;
+        }
     }
 
     public function updatedDanceStartTime($value)
@@ -2003,6 +2017,7 @@ class EventShow extends Component
     public function saveSchedule()
     {
         $this->validate([
+            'setup_date' => 'nullable|date',
             'dance_start_time' => 'nullable|string|max:20',
             'dance_duration_hours' => 'nullable|numeric|min:0.5|max:24',
             'dance_end_time' => 'nullable|string|max:20',
@@ -2015,7 +2030,7 @@ class EventShow extends Component
 
         try {
             // Si las columnas aún no existen, intentamos aplicar migraciones automáticamente
-            if (!\Illuminate\Support\Facades\Schema::hasColumn('events', 'dance_start_time')) {
+            if (!\Illuminate\Support\Facades\Schema::hasColumn('events', 'setup_date') || !\Illuminate\Support\Facades\Schema::hasColumn('events', 'dance_start_time')) {
                 try {
                     \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
                 } catch (\Throwable $migEx) {
@@ -2025,6 +2040,7 @@ class EventShow extends Component
 
             $updateData = [];
             $possibleFields = [
+                'setup_date' => $this->setup_date ?: null,
                 'dance_start_time' => $this->dance_start_time ?: null,
                 'dance_duration_hours' => $this->dance_duration_hours ? (float)$this->dance_duration_hours : null,
                 'dance_end_time' => $this->dance_end_time ?: null,

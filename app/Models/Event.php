@@ -15,6 +15,7 @@ class Event extends Model
         'event_type',
         'brand',
         'event_date',
+        'setup_date',
         'start_time',
         'dance_start_time',
         'dance_duration_hours',
@@ -43,6 +44,7 @@ class Event extends Model
 
     protected $casts = [
         'event_date' => 'date',
+        'setup_date' => 'date',
         'dance_duration_hours' => 'decimal:1',
         'deposit_paid' => 'boolean',
         'deposit_paid_amount' => 'decimal:2',
@@ -331,6 +333,36 @@ class Event extends Model
         }
 
         return "Desde las {$start}";
+    }
+
+    /**
+     * Etiqueta legible de la fecha y hora de montaje
+     */
+    public function getSetupScheduleLabelAttribute(): string
+    {
+        $setupDate = $this->setup_date;
+        $startTime = $this->start_time;
+
+        if (empty($setupDate) && empty($startTime)) {
+            return 'No especificado';
+        }
+
+        $timeStr = !empty($startTime) ? (substr((string)$startTime, 0, 5) . ' h') : null;
+        
+        if (!empty($setupDate)) {
+            $formattedDate = \Carbon\Carbon::parse($setupDate)->translatedFormat('l d/m/Y');
+            $shortDate = \Carbon\Carbon::parse($setupDate)->format('d/m/Y');
+            
+            if ($this->event_date && $setupDate->isSameDay($this->event_date)) {
+                return $timeStr ? "Mismo día ({$shortDate}) a las {$timeStr}" : "Mismo día ({$shortDate})";
+            } elseif ($this->event_date && $setupDate->isDayBefore($this->event_date)) {
+                return $timeStr ? "Víspera ({$shortDate}) a las {$timeStr}" : "Víspera ({$shortDate})";
+            } else {
+                return $timeStr ? "{$shortDate} a las {$timeStr}" : "Fecha: {$shortDate}";
+            }
+        }
+
+        return $timeStr ? "A las {$timeStr}" : 'No especificado';
     }
 }
 

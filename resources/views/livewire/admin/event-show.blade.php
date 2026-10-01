@@ -241,17 +241,26 @@
                     @endif
                 </span>
 
-                <!-- Horarios del Evento y Baile -->
+                <!-- Horarios de Montaje y Baile -->
+                @if(!empty($event->setup_date) || !empty($event->start_time))
+                    <span class="inline-flex items-center gap-1.5 text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-300 px-2.5 py-1 rounded-lg shadow-2xs transition">
+                        <span>🚗 <strong>Montaje:</strong> {{ $event->setup_schedule_label }}</span>
+                        <button type="button" wire:click="openScheduleModal" class="text-[11px] text-amber-700 hover:text-amber-900 font-bold ml-0.5 hover:underline cursor-pointer" title="Modificar fecha u hora de montaje">
+                            ✏️
+                        </button>
+                    </span>
+                @endif
+
                 @if(!empty($event->dance_start_time))
                     <span class="inline-flex items-center gap-1.5 text-purple-900 bg-purple-50 hover:bg-purple-100 border border-purple-200 px-2.5 py-1 rounded-lg shadow-2xs transition">
-                        <span>⏰ <strong>Baile:</strong> {{ $event->dance_schedule_label }}</span>
+                        <span>⏰ <strong>Baile (24h):</strong> {{ $event->dance_schedule_label }}</span>
                         <button type="button" wire:click="openScheduleModal" class="text-[11px] text-purple-700 hover:text-purple-900 font-bold ml-0.5 hover:underline cursor-pointer" title="Modificar horario de inicio y duración del baile">
                             ✏️
                         </button>
                     </span>
                 @else
-                    <button type="button" wire:click="openScheduleModal" class="inline-flex items-center gap-1.5 text-xs font-bold text-purple-800 bg-purple-50 hover:bg-purple-100 border border-purple-200 px-2.5 py-1 rounded-lg transition cursor-pointer shadow-2xs" title="Establecer hora de inicio del baile y duración">
-                        <span>⏰ <span>+ Horario Baile</span></span>
+                    <button type="button" wire:click="openScheduleModal" class="inline-flex items-center gap-1.5 text-xs font-bold text-purple-800 bg-purple-50 hover:bg-purple-100 border border-purple-200 px-2.5 py-1 rounded-lg transition cursor-pointer shadow-2xs" title="Establecer fecha de montaje, hora de inicio del baile y cronograma">
+                        <span>⏰ <span>+ Horarios & Montaje</span></span>
                     </button>
                 @endif
 
@@ -2864,23 +2873,22 @@
 
                 <form wire:submit.prevent="saveSchedule">
                     <div class="p-6 space-y-5">
-                        <!-- Sección Destacada: Baile / Barra Libre -->
+                        <!-- Sección Destacada: Baile / Barra Libre (24 Horas) -->
                         <div class="bg-purple-50 dark:bg-purple-950/40 p-4 rounded-2xl border border-purple-200 dark:border-purple-800 space-y-3">
                             <div class="flex items-center justify-between">
                                 <h4 class="text-xs font-black uppercase text-purple-900 dark:text-purple-300 tracking-wider flex items-center gap-1.5">
                                     <span>🎧 Horario del Baile / Barra Libre (DJ)</span>
                                 </h4>
-                                @if($event->suggested_dance_hours)
-                                    <span class="text-[10px] font-bold bg-purple-200 dark:bg-purple-900 text-purple-800 dark:text-purple-200 px-2 py-0.5 rounded-full">
-                                        Contrato: {{ $event->suggested_dance_hours }}h
-                                    </span>
-                                @endif
+                                <span class="text-[10px] font-bold bg-purple-200 dark:bg-purple-900 text-purple-800 dark:text-purple-200 px-2 py-0.5 rounded-full">
+                                    Formato 24 Horas @if($event->suggested_dance_hours) &bull; Contrato: {{ $event->suggested_dance_hours }}h @endif
+                                </span>
                             </div>
 
                             <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                 <div>
-                                    <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Hora Inicio</label>
+                                    <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Hora Inicio (24h)</label>
                                     <input type="time" wire:model.live="dance_start_time" class="w-full border-gray-300 dark:border-slate-700 dark:bg-slate-950 dark:text-white rounded-xl text-sm font-bold focus:ring-purple-500 focus:border-purple-500 p-2.5">
+                                    <span class="text-[10px] text-gray-500 mt-0.5 block">Ej: 23:30 o 00:30</span>
                                 </div>
                                 <div>
                                     <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Duración (Horas)</label>
@@ -2890,8 +2898,9 @@
                                     </div>
                                 </div>
                                 <div>
-                                    <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Fin Previsto</label>
+                                    <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Fin Previsto (24h)</label>
                                     <input type="time" wire:model="dance_end_time" class="w-full border-gray-300 dark:border-slate-700 dark:bg-slate-950 dark:text-white rounded-xl text-sm font-bold focus:ring-purple-500 focus:border-purple-500 p-2.5">
+                                    <span class="text-[10px] text-gray-500 mt-0.5 block">Calculado automáticamente</span>
                                 </div>
                             </div>
 
@@ -2907,26 +2916,65 @@
                             </div>
                         </div>
 
-                        <!-- Cronograma General del Evento (Opcional) -->
-                        <div class="space-y-3">
-                            <h4 class="text-xs font-black uppercase text-gray-700 dark:text-gray-300 tracking-wider">
-                                📅 Cronograma General del Evento (Opcional)
-                            </h4>
-                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                        <!-- Sección de Montaje (Fecha y Hora específica) -->
+                        <div class="bg-amber-50/80 dark:bg-amber-950/30 p-4 rounded-2xl border border-amber-200 dark:border-amber-800 space-y-3">
+                            <div class="flex items-center justify-between">
+                                <h4 class="text-xs font-black uppercase text-amber-900 dark:text-amber-300 tracking-wider flex items-center gap-1.5">
+                                    <span>🚗 Planificación de Montaje & Acceso</span>
+                                </h4>
+                                <span class="text-[10px] text-amber-700 dark:text-amber-300 font-semibold">
+                                    ¿Se monta el mismo día o el día anterior?
+                                </span>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div>
-                                    <label class="block text-[11px] font-bold text-gray-600 dark:text-gray-400 mb-1">🚗 Llegada / Montaje</label>
-                                    <input type="time" wire:model="start_time" class="w-full border-gray-300 dark:border-slate-700 dark:bg-slate-950 dark:text-white rounded-xl text-xs p-2">
+                                    <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Fecha de Montaje</label>
+                                    <input type="date" wire:model="setup_date" class="w-full border-gray-300 dark:border-slate-700 dark:bg-slate-950 dark:text-white rounded-xl text-sm font-semibold p-2.5">
+                                    
+                                    <!-- Botones rápidos de fecha de montaje -->
+                                    <div class="flex flex-wrap items-center gap-1.5 mt-2">
+                                        @if($event->event_date)
+                                            <button type="button" wire:click="setPresetSetupDate('same_day')" class="text-[11px] px-2 py-0.5 rounded-lg bg-white dark:bg-slate-800 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-700 font-bold hover:bg-amber-100">
+                                                📅 Mismo día ({{ $event->event_date->format('d/m') }})
+                                            </button>
+                                            <button type="button" wire:click="setPresetSetupDate('day_before')" class="text-[11px] px-2 py-0.5 rounded-lg bg-white dark:bg-slate-800 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-700 font-bold hover:bg-amber-100">
+                                                ⬅️ Víspera ({{ \Carbon\Carbon::parse($event->event_date)->subDay()->format('d/m') }})
+                                            </button>
+                                        @endif
+                                        @if($setup_date)
+                                            <button type="button" wire:click="setPresetSetupDate('clear')" class="text-[10px] text-gray-500 hover:text-rose-600 underline">
+                                                Quitar
+                                            </button>
+                                        @endif
+                                    </div>
                                 </div>
+
                                 <div>
-                                    <label class="block text-[11px] font-bold text-gray-600 dark:text-gray-400 mb-1">💍 Ceremonia</label>
+                                    <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Hora Llegada / Montaje (24h)</label>
+                                    <input type="time" wire:model="start_time" class="w-full border-gray-300 dark:border-slate-700 dark:bg-slate-950 dark:text-white rounded-xl text-sm font-bold p-2.5">
+                                    <span class="text-[10px] text-gray-500 mt-0.5 block">Formato 24h (ej: 11:30 o 17:00)</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Cronograma General de las Fases del Evento (Formato 24h) -->
+                        <div class="space-y-3">
+                            <h4 class="text-xs font-black uppercase text-gray-700 dark:text-gray-300 tracking-wider flex items-center justify-between">
+                                <span>📅 Cronograma de Fases del Evento (Formato 24 Horas)</span>
+                                <span class="text-[10px] text-gray-400 font-normal">Opcional</span>
+                            </h4>
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                                <div>
+                                    <label class="block text-[11px] font-bold text-gray-600 dark:text-gray-400 mb-1">💍 Ceremonia (24h)</label>
                                     <input type="time" wire:model="ceremony_time" class="w-full border-gray-300 dark:border-slate-700 dark:bg-slate-950 dark:text-white rounded-xl text-xs p-2">
                                 </div>
                                 <div>
-                                    <label class="block text-[11px] font-bold text-gray-600 dark:text-gray-400 mb-1">🍸 Cóctel</label>
+                                    <label class="block text-[11px] font-bold text-gray-600 dark:text-gray-400 mb-1">🍸 Cóctel (24h)</label>
                                     <input type="time" wire:model="cocktail_time" class="w-full border-gray-300 dark:border-slate-700 dark:bg-slate-950 dark:text-white rounded-xl text-xs p-2">
                                 </div>
                                 <div>
-                                    <label class="block text-[11px] font-bold text-gray-600 dark:text-gray-400 mb-1">🍽️ Banquete / Cena</label>
+                                    <label class="block text-[11px] font-bold text-gray-600 dark:text-gray-400 mb-1">🍽️ Banquete / Cena (24h)</label>
                                     <input type="time" wire:model="banquet_time" class="w-full border-gray-300 dark:border-slate-700 dark:bg-slate-950 dark:text-white rounded-xl text-xs p-2">
                                 </div>
                             </div>
@@ -2934,7 +2982,7 @@
 
                         <!-- Observaciones de Horarios -->
                         <div>
-                            <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1">Notas / Observaciones de Horario</label>
+                            <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1">Notas / Observaciones de Horario y Timing</label>
                             <textarea wire:model="schedule_notes" rows="2" placeholder="Ej: Montaje listo antes de las 18:00. Los novios quieren abrir baile a las 23:30 puntuales tras el corte de tarta..." class="w-full border-gray-300 dark:border-slate-700 dark:bg-slate-950 dark:text-white rounded-xl text-xs p-2.5"></textarea>
                         </div>
                     </div>
@@ -2944,7 +2992,7 @@
                             Cancelar
                         </button>
                         <button type="submit" class="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs px-4 py-2 rounded-xl shadow-xs transition">
-                            💾 Guardar Horarios
+                            💾 Guardar Horarios & Montaje
                         </button>
                     </div>
                 </form>

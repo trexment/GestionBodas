@@ -14,6 +14,7 @@ class EventManager extends Component
     public $name;
     public $event_type = 'boda'; // boda, empresa, cumpleanos, comunion, otro
     public $event_date;
+    public $setup_date;
     public $start_time;
     public $dance_start_time;
     public $dance_duration_hours = 4.0;
@@ -33,6 +34,7 @@ class EventManager extends Component
         'name' => 'required|string|max:255',
         'event_type' => 'required|string|in:boda,empresa,cumpleanos,comunion,otro',
         'event_date' => 'required|date',
+        'setup_date' => 'nullable|date',
         'start_time' => 'nullable|string|max:20',
         'dance_start_time' => 'nullable|string|max:20',
         'dance_duration_hours' => 'nullable|numeric|min:0.5|max:24',
@@ -78,7 +80,7 @@ class EventManager extends Component
             return;
         }
         $this->resetValidation();
-        $this->reset(['name', 'event_type', 'event_date', 'start_time', 'dance_start_time', 'dance_duration_hours', 'location', 'client_id', 'dj_id', 'assistant_id', 'notes']);
+        $this->reset(['name', 'event_type', 'event_date', 'setup_date', 'start_time', 'dance_start_time', 'dance_duration_hours', 'location', 'client_id', 'dj_id', 'assistant_id', 'notes']);
         $this->event_type = 'boda';
         $this->dance_duration_hours = 4.0;
         $this->dj_id = auth()->id(); // default current logged admin/dj
@@ -97,7 +99,7 @@ class EventManager extends Component
 
         try {
             // Si las columnas aún no existen, intentamos aplicar migraciones automáticamente
-            if (!\Illuminate\Support\Facades\Schema::hasColumn('events', 'dance_start_time')) {
+            if (!\Illuminate\Support\Facades\Schema::hasColumn('events', 'setup_date') || !\Illuminate\Support\Facades\Schema::hasColumn('events', 'dance_start_time')) {
                 try {
                     \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
                 } catch (\Throwable $migEx) {
@@ -118,6 +120,7 @@ class EventManager extends Component
             ];
 
             $scheduleFields = [
+                'setup_date' => $this->setup_date ?: null,
                 'start_time' => $this->start_time ?: null,
                 'dance_start_time' => $this->dance_start_time ?: null,
                 'dance_duration_hours' => $this->dance_duration_hours ? (float)$this->dance_duration_hours : null,

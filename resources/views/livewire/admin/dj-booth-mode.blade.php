@@ -45,12 +45,17 @@
                 </div>
             </template>
 
-            <template x-if="!spotifyReady && !appleMusicReady">
-                <div class="px-2.5 py-1 rounded-xl bg-slate-900 border border-red-500/40 text-red-300 text-xs font-bold flex items-center gap-1.5 shadow-sm">
-                    <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
-                    <span>🔴 Reproductor Completo (100% Canción)</span>
-                </div>
-            </template>
+            <!-- RELOJ DIGITAL 24H EN VIVO -->
+            <div 
+                x-data="{ currentTime: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }) }" 
+                x-init="setInterval(() => { currentTime = new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }) }, 1000)" 
+                class="px-3 py-1 rounded-xl bg-slate-900 border border-slate-700 text-cyan-300 font-mono font-black text-xs flex items-center gap-1.5 shadow-inner"
+                title="Reloj en cabina (Formato 24 Horas)"
+            >
+                <span class="animate-pulse text-cyan-400">🕒</span>
+                <span x-text="currentTime" class="text-sm tracking-wider font-bold"></span>
+                <span class="text-[9px] text-cyan-500 font-sans font-black bg-cyan-950 px-1 py-0.2 rounded border border-cyan-800/80">24H</span>
+            </div>
 
             <div class="flex items-center gap-1.5 bg-slate-900/90 p-1 rounded-xl border border-slate-800 text-xs">
                 <button type="button" wire:click="setTab('escaleta')" class="px-3 py-1 rounded-lg font-bold transition {{ $activeTab === 'escaleta' ? 'bg-cyan-600 text-white shadow-sm' : 'text-slate-400 hover:text-white' }}">
@@ -160,32 +165,55 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
                     <div class="flex items-center gap-2 text-slate-300">
                         <span>📅</span>
-                        <span><strong>{{ $event->event_date ? $event->event_date->format('Y-m-d') : 'Sin fecha' }}</strong></span>
+                        <span><strong>{{ $event->event_date ? $event->event_date->format('d/m/Y') : 'Sin fecha' }}</strong></span>
                     </div>
 
                     <div class="flex items-center gap-2 text-slate-300">
                         <span>📍</span>
-                        <span><strong>{{ $event->location ?: 'Delicatto (Logroño)' }}</strong></span>
+                        <span class="truncate"><strong>{{ $event->location ?: 'Por determinar' }}</strong></span>
                     </div>
 
                     <div class="flex items-center gap-2 text-slate-300">
                         <span>⏰</span>
-                        <span><strong>00:30 - 04:30</strong> <span class="text-slate-500 ml-1">Baile: 4 horas</span></span>
+                        <span>
+                            @if($event->dance_start_time)
+                                <strong>{{ $event->dance_schedule_label }}</strong>
+                            @else
+                                <span class="text-slate-500">Horario de baile no fijado</span>
+                            @endif
+                        </span>
                     </div>
 
                     <div class="flex items-center gap-2 text-slate-300">
                         <span>👥</span>
                         <span>
-                            DJ: <strong class="text-cyan-400">{{ $event->dj ? $event->dj->name : 'Luis' }}</strong>
-                            &bull; Asistente: <strong class="text-amber-400">{{ $event->assistant ? $event->assistant->name : 'Fran' }}</strong>
+                            DJ: <strong class="text-cyan-400">{{ $event->dj ? $event->dj->name : 'Sin asignar' }}</strong>
+                            &bull; Asistente: <strong class="text-amber-400">{{ $event->assistant ? $event->assistant->name : 'Sin asignar' }}</strong>
                         </span>
                     </div>
                 </div>
 
                 <div class="pt-2 text-xs space-y-1 text-slate-400 border-t border-slate-800/80">
-                    <span class="text-[11px] font-black uppercase text-slate-500 block mb-1">📍 ESPACIOS POR FASE</span>
-                    <p><strong class="text-cyan-400">Banquete:</strong> Salón 1 (Entrada comedor, corte tarta, momentos)</p>
-                    <p><strong class="text-cyan-400">Baile:</strong> Discoteca 1 (Sesión de 4 horas aprox)</p>
+                    <div class="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+                        @if($event->setup_date || $event->start_time)
+                            <p><strong class="text-amber-400">🚗 Montaje:</strong> <span class="text-slate-200">{{ $event->setup_schedule_label }}</span></p>
+                        @endif
+                        @if($event->ceremony_time)
+                            <p><strong class="text-cyan-400">💍 Ceremonia:</strong> <span class="text-slate-200">{{ substr($event->ceremony_time, 0, 5) }} h</span></p>
+                        @endif
+                        @if($event->cocktail_time)
+                            <p><strong class="text-cyan-400">🍸 Cóctel:</strong> <span class="text-slate-200">{{ substr($event->cocktail_time, 0, 5) }} h</span></p>
+                        @endif
+                        @if($event->banquet_time)
+                            <p><strong class="text-cyan-400">🍽️ Banquete:</strong> <span class="text-slate-200">{{ substr($event->banquet_time, 0, 5) }} h</span></p>
+                        @endif
+                        @if($event->dance_start_time)
+                            <p><strong class="text-purple-400">🎧 Baile (DJ):</strong> <span class="text-slate-200">{{ $event->dance_schedule_label }}</span></p>
+                        @endif
+                    </div>
+                    @if($event->schedule_notes)
+                        <p class="text-slate-400 mt-1 italic">📝 <strong>Timing / Notas:</strong> {{ $event->schedule_notes }}</p>
+                    @endif
                 </div>
             </div>
 

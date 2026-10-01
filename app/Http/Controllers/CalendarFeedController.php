@@ -61,6 +61,9 @@ class CalendarFeedController extends Controller
 
             $description = "EVENTO: {$event->name}\\n";
             $description .= "TIPO: {$event->event_type_label}\\n";
+            if ($event->setup_date || $event->start_time) {
+                $description .= "MONTAJE: {$event->setup_schedule_label}\\n";
+            }
             if ($event->dance_start_time) {
                 $description .= "HORARIO BAILE: {$event->dance_schedule_label}\\n";
             }
