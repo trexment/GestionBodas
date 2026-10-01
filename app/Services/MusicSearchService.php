@@ -345,6 +345,115 @@ class MusicSearchService
     }
 
     /**
+     * Get Top 50 Trending Songs / Charts (Spain, Global, Party & Viral)
+     */
+    public static function getTopCharts(string $chartType = 'spain_top50', int $limit = 50): array
+    {
+        $cacheKey = 'top_music_chart_' . $chartType . '_' . $limit;
+
+        return Cache::remember($cacheKey, 14400, function () use ($chartType, $limit) {
+            $tracks = [];
+
+            // 1. Intentar obtener desde Spotify Playlists oficiales si hay token
+            $spotifyPlaylistId = match ($chartType) {
+                'spain_top50' => '37i9dQZEVXbNFJfN1Vw8d9', // Top 50 España
+                'global_top50' => '37i9dQZEVXbMDoHDwVN2tF', // Top 50 Global
+                'party_spain' => '37i9dQZF1DX1qNSk37U9hB', // Éxitos España / Fiesta
+                'viral_spain' => '37i9dQZEVXbJvgoTIeZvdn', // Top Viral España
+                default => '37i9dQZEVXbNFJfN1Vw8d9',
+            };
+
+            $clientId = Setting::get('spotify_client_id');
+            $clientSecret = Setting::get('spotify_client_secret');
+            $token = null;
+            if (!empty($clientId) && !empty($clientSecret)) {
+                $token = self::getSpotifyAccessToken($clientId, $clientSecret);
+            }
+
+            if ($token && $spotifyPlaylistId) {
+                try {
+                    $response = Http::timeout(5)->withToken($token)->get("https://api.spotify.com/v1/playlists/{$spotifyPlaylistId}/tracks", [
+                        'limit' => $limit,
+                        'market' => 'ES',
+                    ]);
+
+                    if ($response->successful()) {
+                        $items = $response->json('items') ?: [];
+                        $position = 1;
+                        foreach ($items as $wrapper) {
+                            $item = $wrapper['track'] ?? null;
+                            if (!$item || empty($item['name'])) continue;
+
+                            $artist = !empty($item['artists']) ? implode(', ', array_column($item['artists'], 'name')) : 'Artista';
+                            $title = $item['name'];
+                            $cover = $item['album']['images'][0]['url'] ?? '';
+                            $spotifyUrl = $item['external_urls']['spotify'] ?? '';
+                            $searchQuery = urlencode($artist . ' ' . $title);
+
+                            $tracks[] = [
+                                'position' => $position++,
+                                'id' => 'sp_' . ($item['id'] ?? uniqid()),
+                                'title' => $title,
+                                'artist' => $artist,
+                                'album' => $item['album']['name'] ?? '',
+                                'cover_url' => $cover,
+                                'preview_url' => $item['preview_url'] ?? null,
+                                'duration_ms' => $item['duration_ms'] ?? 0,
+                                'duration_formatted' => gmdate(($item['duration_ms'] ?? 0) > 3600000 ? 'H:i:s' : 'i:s', (int)(($item['duration_ms'] ?? 0) / 1000)),
+                                'spotify_url' => $spotifyUrl ?: "https://open.spotify.com/search/{$searchQuery}",
+                                'spotify_uri' => $item['uri'] ?? ("spotify:search:" . rawurlencode($artist . ' ' . $title)),
+                                'apple_music_url' => "https://music.apple.com/es/search?term={$searchQuery}",
+                                'youtube_url' => "https://www.youtube.com/results?search_query={$searchQuery}",
+                            ];
+                        }
+                    }
+                } catch (\Throwable $e) {}
+            }
+
+            // 2. Fallback Apple Music / iTunes RSS Feed si no hay resultados de Spotify
+            if (empty($tracks)) {
+                try {
+                    $country = ($chartType === 'global_top50') ? 'us' : 'es';
+                    $response = Http::timeout(5)->get("https://rss.applemarketingtools.com/api/v2/{$country}/music/most-played/{$limit}/songs.json");
+
+                    if ($response->successful()) {
+                        $feedResults = $response->json('feed.results') ?: [];
+                        $position = 1;
+                        foreach ($feedResults as $song) {
+                            $title = $song['name'] ?? 'Sin título';
+                            $artist = $song['artistName'] ?? 'Artista';
+                            $cover = $song['artworkUrl100'] ?? '';
+                            if ($cover) {
+                                $cover = str_replace(['100x100bb.jpg', '100x100bb.png'], '600x600bb.jpg', $cover);
+                            }
+                            $appleUrl = $song['url'] ?? '';
+                            $searchQuery = urlencode($artist . ' ' . $title);
+
+                            $tracks[] = [
+                                'position' => $position++,
+                                'id' => 'ap_' . ($song['id'] ?? uniqid()),
+                                'title' => $title,
+                                'artist' => $artist,
+                                'album' => '',
+                                'cover_url' => $cover,
+                                'preview_url' => null,
+                                'duration_ms' => 0,
+                                'duration_formatted' => 'Hit',
+                                'spotify_url' => "https://open.spotify.com/search/{$searchQuery}",
+                                'spotify_uri' => "spotify:search:" . rawurlencode($artist . ' ' . $title),
+                                'apple_music_url' => $appleUrl ?: "https://music.apple.com/es/search?term={$searchQuery}",
+                                'youtube_url' => "https://www.youtube.com/results?search_query={$searchQuery}",
+                            ];
+                        }
+                    }
+                } catch (\Throwable $e) {}
+            }
+
+            return $tracks;
+        });
+    }
+
+    /**
      * Test Spotify Connection
      */
     public static function testSpotifyConnection(): array

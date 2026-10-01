@@ -18,6 +18,12 @@ class MusicManager extends Component
     // Active View
     public $activeTab = 'library';
 
+    // Top Charts & Trends
+    public $topChartType = 'spain_top50';
+    public $selectedEventForTopTrack = '';
+    public $selectedCategoryForTopTrack = 'baile';
+    public $selectedMomentForTopTrack = 'Baile / Fiesta';
+
     // Filters for Library
     public $search = '';
     public $sourceFilter = 'all'; // 'all', 'google_drive', 'local'
@@ -50,7 +56,68 @@ class MusicManager extends Component
         'search' => ['except' => ''],
         'sourceFilter' => ['except' => 'all'],
         'folderFilter' => ['except' => 'all'],
+        'topChartType' => ['except' => 'spain_top50'],
     ];
+
+    public function setTopChartType($type)
+    {
+        $this->topChartType = $type;
+    }
+
+    public function addTopTrackToLibrary($title, $artist, $coverUrl = '', $spotifyUrl = '', $appleUrl = '', $youtubeUrl = '', $previewUrl = '')
+    {
+        // Check if track already exists
+        $exists = Track::where('title', $title)->where('artist', $artist)->first();
+        if ($exists) {
+            session()->flash('top_message', "ℹ️ '{$title}' ya está en tu catálogo musical.");
+            return;
+        }
+
+        Track::create([
+            'title' => $title,
+            'artist' => $artist,
+            'genre' => 'Top Éxito',
+            'file_path' => $previewUrl ?: null,
+            'source' => 'spotify',
+            'spotify_url' => $spotifyUrl,
+            'apple_music_url' => $appleUrl,
+            'youtube_url' => $youtubeUrl,
+        ]);
+
+        session()->flash('top_message', "✅ '{$title}' de {$artist} añadida a tu catálogo musical.");
+    }
+
+    public function addTopTrackToEvent($title, $artist, $eventId, $spotifyUrl = '', $appleUrl = '', $youtubeUrl = '', $previewUrl = '')
+    {
+        if (empty($eventId)) {
+            session()->flash('top_error', 'Selecciona un evento antes de añadir la canción.');
+            return;
+        }
+
+        $event = Event::find($eventId);
+        if (!$event) {
+            session()->flash('top_error', 'Evento no encontrado.');
+            return;
+        }
+
+        $maxOrder = \App\Models\EventMusicRequest::where('event_id', $eventId)->max('order') ?: 0;
+
+        $event->musicRequests()->create([
+            'category' => $this->selectedCategoryForTopTrack ?: 'baile',
+            'moment' => $this->selectedMomentForTopTrack ?: 'Baile / Fiesta',
+            'title' => $title,
+            'artist' => $artist,
+            'requested_by' => 'DJ (Top Hits)',
+            'spotify_url' => $spotifyUrl,
+            'apple_music_url' => $appleUrl,
+            'youtube_url' => $youtubeUrl,
+            'audio_file' => $previewUrl ?: null,
+            'status' => 'pending',
+            'order' => $maxOrder + 1,
+        ]);
+
+        session()->flash('top_message', "✨ '{$title}' añadida a la escaleta del evento '{$event->name}'.");
+    }
 
     public function updatingSearch()
     {
@@ -233,12 +300,18 @@ class MusicManager extends Component
             ->orderBy('cloud_folder', 'asc')
             ->get();
 
+        $topTracks = [];
+        if ($this->activeTab === 'top_charts') {
+            $topTracks = MusicSearchService::getTopCharts($this->topChartType, 50);
+        }
+
         return view('livewire.admin.music-manager', [
             'tracks' => $tracks,
             'totalTracks' => $totalTracks,
             'driveCount' => $driveCount,
             'driveFolderConfigured' => $driveFolderConfigured,
             'availableFolders' => $availableFolders,
+            'topTracks' => $topTracks,
         ])->layout('components.layouts.app', ['header' => 'Gestor Musical']);
     }
 }

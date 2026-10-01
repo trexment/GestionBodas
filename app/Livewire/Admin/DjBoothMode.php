@@ -12,8 +12,9 @@ class DjBoothMode extends Component
     public $event;
     public $token;
     
-    // Tabs: 'escaleta', 'custom', 'playlists', 'requests', 'guest_live', 'blacklist', 'notes', 'checklist', 'documents'
+    // Tabs: 'escaleta', 'tracks', 'top_charts', 'custom', 'playlists', 'requests', 'guest_live', 'blacklist', 'notes', 'checklist', 'documents'
     public $activeTab = 'escaleta';
+    public $topChartType = 'spain_top50';
     
     // View mode: 'pads' or 'list'
     public $viewMode = 'pads';
@@ -495,6 +496,11 @@ class DjBoothMode extends Component
         $totalCount = $nonBlacklist->count();
         $progressPct = $totalCount > 0 ? round(($playedCount / $totalCount) * 100) : 0;
 
+        $topTracks = [];
+        if ($this->activeTab === 'top_charts') {
+            $topTracks = MusicSearchService::getTopCharts($this->topChartType, 50);
+        }
+
         return view('livewire.admin.dj-booth-mode', [
             'filteredRequests' => $filteredCollection,
             'paginatedPads' => $paginatedPads,
@@ -511,6 +517,34 @@ class DjBoothMode extends Component
             'phaseCounts' => $phaseCounts,
             'guestRequestsCount' => $phaseCounts['guest'],
             'spotifyUser' => \App\Services\SpotifyService::getUserDetails(),
+            'topTracks' => $topTracks,
         ])->layout('components.layouts.wide-guest');
+    }
+
+    public function setTopChartType($type)
+    {
+        $this->topChartType = $type;
+    }
+
+    public function addTopTrackToCurrentEvent($title, $artist, $spotifyUrl = '', $appleUrl = '', $youtubeUrl = '', $previewUrl = '')
+    {
+        $maxOrder = $this->event->musicRequests()->max('order') ?: 0;
+
+        $this->event->musicRequests()->create([
+            'category' => 'baile',
+            'moment' => 'Baile & Fiesta',
+            'title' => $title,
+            'artist' => $artist,
+            'requested_by' => 'DJ Cabina (Top Hits)',
+            'spotify_url' => $spotifyUrl,
+            'apple_music_url' => $appleUrl,
+            'youtube_url' => $youtubeUrl,
+            'audio_file' => $previewUrl ?: null,
+            'status' => 'pending',
+            'order' => $maxOrder + 1,
+        ]);
+
+        $this->event->load('musicRequests');
+        session()->flash('booth_message', "🔥 '{$title}' de {$artist} añadida a la lista de la fiesta.");
     }
 }

@@ -14,6 +14,12 @@
                     <span class="px-2 py-0.5 text-xs bg-slate-100 text-slate-700 rounded-full font-bold">{{ count($playlists) }}</span>
                 </button>
             </li>
+            <li class="mr-2">
+                <button wire:click="$set('activeTab', 'top_charts')" class="inline-flex items-center gap-2 p-4 border-b-2 rounded-t-lg transition {{ $activeTab == 'top_charts' ? 'border-indigo-600 text-indigo-600 font-bold' : 'border-transparent hover:text-gray-600 hover:border-gray-300 text-gray-500' }}">
+                    <span>🔥</span> Top 50 & Tendencias
+                    <span class="px-2 py-0.5 text-xs bg-rose-100 text-rose-700 rounded-full font-bold">Éxitos</span>
+                </button>
+            </li>
         </ul>
 
         <!-- BOTÓN SINCRONIZAR DRIVE DIRECTO DESDE LA BIBLIOTECA -->
@@ -458,6 +464,204 @@
                 @endif
             </div>
         </div>
+    </div>
+    @endif
+
+    <!-- TOP 50 & TENDENCIAS -->
+    @if($activeTab == 'top_charts')
+    <div class="space-y-6">
+        
+        <!-- HEADER & SELECTOR DE CHART -->
+        <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-slate-800 rounded-3xl p-6 text-white shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div class="space-y-1">
+                <div class="inline-flex items-center gap-2 px-3 py-1 bg-rose-500/20 text-rose-300 border border-rose-500/30 rounded-full text-xs font-black uppercase tracking-wider">
+                    <span>🔥</span> Tendencias en Tiempo Real
+                </div>
+                <h2 class="text-xl font-black text-white">Top 50 Éxitos Más Escuchados</h2>
+                <p class="text-xs text-slate-300 max-w-xl">
+                    Descubre qué canciones están sonando ahora mismo en las pistas de baile y listas de éxitos. Puedes guardarlas en tu catálogo o añadirlas directamente a la escaleta de tus eventos.
+                </p>
+            </div>
+
+            <!-- SELECTORES DE LISTAS -->
+            <div class="flex flex-wrap items-center gap-2">
+                <button 
+                    wire:click="setTopChartType('spain_top50')" 
+                    class="px-4 py-2 rounded-xl text-xs font-black transition cursor-pointer flex items-center gap-1.5 {{ $topChartType === 'spain_top50' ? 'bg-gradient-to-r from-rose-600 to-amber-600 text-white shadow-lg shadow-rose-600/30 ring-2 ring-rose-400' : 'bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700' }}"
+                >
+                    <span>🇪🇸</span> Top 50 España
+                </button>
+                <button 
+                    wire:click="setTopChartType('global_top50')" 
+                    class="px-4 py-2 rounded-xl text-xs font-black transition cursor-pointer flex items-center gap-1.5 {{ $topChartType === 'global_top50' ? 'bg-gradient-to-r from-indigo-600 to-cyan-600 text-white shadow-lg shadow-indigo-600/30 ring-2 ring-cyan-400' : 'bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700' }}"
+                >
+                    <span>🌍</span> Top 50 Global
+                </button>
+                <button 
+                    wire:click="setTopChartType('party_spain')" 
+                    class="px-4 py-2 rounded-xl text-xs font-black transition cursor-pointer flex items-center gap-1.5 {{ $topChartType === 'party_spain' ? 'bg-gradient-to-r from-amber-500 to-pink-600 text-white shadow-lg shadow-pink-600/30 ring-2 ring-pink-400' : 'bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700' }}"
+                >
+                    <span>🎉</span> Éxitos Fiesta / Bodas
+                </button>
+                <button 
+                    wire:click="setTopChartType('viral_spain')" 
+                    class="px-4 py-2 rounded-xl text-xs font-black transition cursor-pointer flex items-center gap-1.5 {{ $topChartType === 'viral_spain' ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-600/30 ring-2 ring-emerald-400' : 'bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700' }}"
+                >
+                    <span>🚀</span> Top Viral España
+                </button>
+            </div>
+        </div>
+
+        <!-- MENSAJES TOP -->
+        @if (session()->has('top_message'))
+            <div class="p-4 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-2xl text-xs font-bold flex items-center gap-2 shadow-sm">
+                <span>✅</span> {{ session('top_message') }}
+            </div>
+        @endif
+        @if (session()->has('top_error'))
+            <div class="p-4 bg-rose-50 text-rose-800 border border-rose-200 rounded-2xl text-xs font-bold flex items-center gap-2 shadow-sm">
+                <span>⚠️</span> {{ session('top_error') }}
+            </div>
+        @endif
+
+        <!-- BARRA RÁPIDA DE ASIGNACIÓN A EVENTO -->
+        <div class="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+                <span class="text-xs font-bold text-gray-700 whitespace-nowrap flex items-center gap-1.5">
+                    <span>⚡</span> <strong>Asignar a evento:</strong>
+                </span>
+                <select wire:model.live="selectedEventForTopTrack" class="text-xs border-gray-300 rounded-xl font-medium focus:ring-indigo-500 focus:border-indigo-500 bg-slate-50 min-w-[220px]">
+                    <option value="">-- Seleccionar evento destino --</option>
+                    @foreach($events as $ev)
+                        <option value="{{ $ev->id }}">{{ $ev->name }} ({{ $ev->event_date ? $ev->event_date->format('d/m/Y') : 'Sin fecha' }})</option>
+                    @endforeach
+                </select>
+
+                @if($selectedEventForTopTrack)
+                    <select wire:model="selectedCategoryForTopTrack" class="text-xs border-gray-300 rounded-xl font-medium focus:ring-indigo-500 focus:border-indigo-500 bg-slate-50">
+                        <option value="baile">🎉 Baile / Fiesta</option>
+                        <option value="coctel">🍷 Cóctel</option>
+                        <option value="banquete">🍽️ Banquete</option>
+                        <option value="ceremonia">💍 Ceremonia</option>
+                        <option value="general">🎵 General</option>
+                    </select>
+
+                    <input 
+                        type="text" 
+                        wire:model="selectedMomentForTopTrack" 
+                        placeholder="Momento (ej. Baile, Entrada...)" 
+                        class="text-xs border-gray-300 rounded-xl font-medium focus:ring-indigo-500 focus:border-indigo-500 bg-slate-50 w-36"
+                    >
+                @endif
+            </div>
+
+            <div class="text-xs text-gray-500 font-medium">
+                @if($selectedEventForTopTrack)
+                    <span class="text-emerald-600 font-bold">● Modo asignación directa activo</span>
+                @else
+                    <span>Selecciona un evento para enviar canciones a su escaleta en 1 clic.</span>
+                @endif
+            </div>
+        </div>
+
+        <!-- LISTA DE CANCIONES TOP 50 -->
+        <div class="bg-white rounded-3xl border border-gray-200 shadow-sm overflow-hidden" wire:loading.class="opacity-60 pointer-events-none">
+            <div class="divide-y divide-gray-100">
+                @forelse($topTracks as $track)
+                    <div class="p-4 hover:bg-slate-50/80 transition flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        
+                        <!-- RANKING + PORTADA + DETALLES -->
+                        <div class="flex items-center gap-3.5 min-w-0 flex-1">
+                            <!-- BADGE DE POSICIÓN -->
+                            <div class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 font-black text-xs shadow-sm
+                                {{ $track['rank'] === 1 ? 'bg-amber-100 text-amber-800 border border-amber-300 ring-2 ring-amber-400/40' : 
+                                  ($track['rank'] === 2 ? 'bg-slate-200 text-slate-800 border border-slate-300' : 
+                                  ($track['rank'] === 3 ? 'bg-amber-50 text-amber-900 border border-amber-200' : 'bg-slate-100 text-slate-600')) }}"
+                            >
+                                @if($track['rank'] === 1) 🥇
+                                @elseif($track['rank'] === 2) 🥈
+                                @elseif($track['rank'] === 3) 🥉
+                                @else #{{ $track['rank'] }}
+                                @endif
+                            </div>
+
+                            <!-- CARÁTULA -->
+                            <div class="w-12 h-12 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center shrink-0 overflow-hidden shadow-inner">
+                                @if(!empty($track['cover_url']))
+                                    <img src="{{ $track['cover_url'] }}" alt="{{ $track['title'] }}" class="w-full h-full object-cover">
+                                @else
+                                    <span class="text-xl">💿</span>
+                                @endif
+                            </div>
+
+                            <!-- TÍTULO Y ARTISTA -->
+                            <div class="truncate">
+                                <h4 class="text-sm font-black text-gray-900 truncate">{{ $track['title'] }}</h4>
+                                <p class="text-xs text-gray-500 font-semibold truncate">{{ $track['artist'] }}</p>
+                                @if(!empty($track['album']))
+                                    <span class="text-[10px] text-gray-400 truncate block">{{ $track['album'] }}</span>
+                                @endif
+                            </div>
+                        </div>
+
+                        <!-- AUDIO PREVIEW & ENLACES EXTERNOS -->
+                        <div class="flex items-center gap-2 self-start sm:self-center shrink-0">
+                            @if(!empty($track['preview_url']))
+                                <audio controls preload="none" class="h-7 w-32 max-w-[130px]">
+                                    <source src="{{ $track['preview_url'] }}" type="audio/mpeg">
+                                </audio>
+                            @endif
+
+                            @if(!empty($track['spotify_url']))
+                                <a href="{{ $track['spotify_url'] }}" target="_blank" class="px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white border border-emerald-200 rounded-xl text-xs font-bold transition flex items-center gap-1" title="Abrir en Spotify">
+                                    <span>🟢</span> <span class="hidden md:inline">Spotify</span>
+                                </a>
+                            @endif
+
+                            @if(!empty($track['apple_music_url']))
+                                <a href="{{ $track['apple_music_url'] }}" target="_blank" class="px-2.5 py-1.5 bg-pink-50 hover:bg-pink-600 text-pink-700 hover:text-white border border-pink-200 rounded-xl text-xs font-bold transition flex items-center gap-1" title="Abrir en Apple Music">
+                                    <span>🍎</span> <span class="hidden md:inline">Apple</span>
+                                </a>
+                            @endif
+
+                            @if(!empty($track['youtube_url']))
+                                <a href="{{ $track['youtube_url'] }}" target="_blank" class="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white border border-rose-200 rounded-xl text-xs font-bold transition flex items-center gap-1" title="Buscar en YouTube">
+                                    <span>▶</span>
+                                </a>
+                            @endif
+                        </div>
+
+                        <!-- ACCIONES (AÑADIR A CATÁLOGO / EVENTO) -->
+                        <div class="flex items-center gap-2 self-end sm:self-center shrink-0">
+                            <button 
+                                wire:click="addTopTrackToLibrary('{{ addslashes($track['title']) }}', '{{ addslashes($track['artist']) }}', '{{ addslashes($track['cover_url'] ?? '') }}', '{{ addslashes($track['spotify_url'] ?? '') }}', '{{ addslashes($track['apple_music_url'] ?? '') }}', '{{ addslashes($track['youtube_url'] ?? '') }}', '{{ addslashes($track['preview_url'] ?? '') }}')" 
+                                class="px-3 py-1.5 bg-slate-100 hover:bg-indigo-600 text-slate-700 hover:text-white rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1 shadow-xs"
+                                title="Guardar en el catálogo general"
+                            >
+                                <span>➕</span> Catálogo
+                            </button>
+
+                            @if($selectedEventForTopTrack)
+                                <button 
+                                    wire:click="addTopTrackToEvent('{{ addslashes($track['title']) }}', '{{ addslashes($track['artist']) }}', {{ $selectedEventForTopTrack }}, '{{ addslashes($track['spotify_url'] ?? '') }}', '{{ addslashes($track['apple_music_url'] ?? '') }}', '{{ addslashes($track['youtube_url'] ?? '') }}', '{{ addslashes($track['preview_url'] ?? '') }}')" 
+                                    class="px-3.5 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl text-xs font-black transition cursor-pointer flex items-center gap-1 shadow-md"
+                                    title="Añadir a la escaleta del evento seleccionado"
+                                >
+                                    <span>⚡</span> Añadir a Evento
+                                </button>
+                            @endif
+                        </div>
+
+                    </div>
+                @empty
+                    <div class="p-12 text-center text-gray-400 space-y-2">
+                        <span class="text-3xl block">⏳</span>
+                        <p class="font-bold text-sm text-gray-600">Cargando lista de éxitos...</p>
+                    </div>
+                @endforelse
+            </div>
+        </div>
+
     </div>
     @endif
 </div>
