@@ -2675,34 +2675,45 @@
                                 @endif
                             </div>
 
-                            <!-- Categoría y Momento -->
+                            <!-- Categoría y Momento (Adaptados dinámicamente al tipo de evento) -->
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div>
-                                    <label class="block text-xs font-semibold text-gray-700 mb-1">Fase / Categoría *</label>
-                                    <select wire:model.live="req_category" required class="w-full border-gray-300 rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500">
-                                        <option value="ceremonia">💍 Ceremonia</option>
-                                        <option value="coctel">🍸 Cóctel</option>
-                                        <option value="banquete">🍽️ Banquete / Regalos</option>
-                                        <option value="baile">💃 Baile / Fiesta</option>
-                                        <option value="lista_negra">🚫 Lista Negra</option>
+                                    <label class="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">Fase / Categoría *</label>
+                                    <select wire:model.live="req_category" required class="w-full border-gray-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500">
+                                        @foreach($event->suggested_categories as $catKey => $catLabel)
+                                            <option value="{{ $catKey }}">{{ $catLabel }}</option>
+                                        @endforeach
                                     </select>
                                 </div>
                                 <div>
-                                    <label class="block text-xs font-semibold text-gray-700 mb-1">Momento Clave *</label>
-                                    <input type="text" list="moments_list" wire:model="req_moment" placeholder="Ej: Entrada Comedor, Regalos Padres..." required class="w-full border-gray-300 rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500">
+                                    <div class="flex items-center justify-between mb-1">
+                                        <label class="block text-xs font-semibold text-gray-700 dark:text-slate-300">Momento Clave / Etiqueta *</label>
+                                        <span class="text-[10px] text-indigo-600 dark:text-indigo-400 font-bold">Sugerencias: {{ $event->event_type_label }}</span>
+                                    </div>
+                                    <input type="text" list="moments_list" wire:model="req_moment" placeholder="Ej: Baile / Fiesta, Entrada, Tarta..." required class="w-full border-gray-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500 font-medium">
+                                    
+                                    <!-- Datalist dinámico por tipo de evento -->
                                     <datalist id="moments_list">
-                                        <option value="Entrada Novios">
-                                        <option value="Entrada Comedor">
-                                        <option value="Regalos Padres">
-                                        <option value="Entrega de Ramo">
-                                        <option value="Regalo Amigos">
-                                        <option value="Corte de Tarta">
-                                        <option value="Baile Nupcial">
-                                        <option value="Apertura Baile">
-                                        <option value="Hora Loca">
-                                        <option value="Prohibida">
+                                        @foreach($event->suggested_moments as $sugMoment)
+                                            <option value="{{ $sugMoment }}">
+                                        @endforeach
                                     </datalist>
                                     @error('req_moment') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                                </div>
+                            </div>
+
+                            <!-- Botones rápidos de 1-Clic para elegir Momento -->
+                            <div class="pt-0.5">
+                                <span class="text-[10px] font-bold text-gray-400 dark:text-gray-400 uppercase tracking-wider block mb-1">Accesos rápidos de momento:</span>
+                                <div class="flex flex-wrap gap-1.5">
+                                    <button type="button" wire:click="$set('req_moment', 'Baile / Fiesta')" class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-purple-100 hover:bg-purple-200 text-purple-800 dark:bg-purple-950/70 dark:text-purple-300 dark:hover:bg-purple-900 border border-purple-300 dark:border-purple-800 transition cursor-pointer">
+                                        💃 Baile / Fiesta (General)
+                                    </button>
+                                    @foreach(array_slice($event->suggested_moments, 1, 5) as $quickM)
+                                        <button type="button" wire:click="$set('req_moment', '{{ addslashes($quickM) }}')" class="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 border border-gray-200 dark:border-slate-700 transition cursor-pointer">
+                                            {{ $quickM }}
+                                        </button>
+                                    @endforeach
                                 </div>
                             </div>
 
@@ -3190,18 +3201,16 @@
                         </div>
                     @endif
 
-                    <!-- Categoría y Momento destino -->
+                    <!-- Categoría y Momento destino (Adaptados al tipo de evento) -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3.5 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800">
                         <div>
                             <label class="block font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[10px] mb-1">
                                 Categoría de Destino
                             </label>
                             <select wire:model="cloudImportCategory" class="w-full border-slate-300 dark:border-slate-700 rounded-xl p-2 text-xs font-bold text-slate-800 dark:text-white bg-white dark:bg-slate-900">
-                                <option value="ceremonia">💍 Ceremonia</option>
-                                <option value="coctel">🍸 Cóctel</option>
-                                <option value="banquete">🍽️ Banquete</option>
-                                <option value="baile">💃 Baile / Fiesta</option>
-                                <option value="lista_negra">🚫 Lista Negra</option>
+                                @foreach($event->suggested_categories as $cKey => $cLabel)
+                                    <option value="{{ $cKey }}">{{ $cLabel }}</option>
+                                @endforeach
                             </select>
                         </div>
                         <div>
@@ -3210,10 +3219,16 @@
                             </label>
                             <input 
                                 type="text" 
+                                list="cloud_moments_list"
                                 wire:model="cloudImportMoment" 
-                                placeholder="Ej: Entrada Novios, Banquete, Ambiente..." 
+                                placeholder="Ej: Baile / Fiesta, Ambiente..." 
                                 class="w-full border-slate-300 dark:border-slate-700 rounded-xl p-2 text-xs font-semibold text-slate-800 dark:text-white bg-white dark:bg-slate-900"
                             >
+                            <datalist id="cloud_moments_list">
+                                @foreach($event->suggested_moments as $sMoment)
+                                    <option value="{{ $sMoment }}">
+                                @endforeach
+                            </datalist>
                         </div>
                     </div>
 

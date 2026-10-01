@@ -824,19 +824,35 @@ class EventShow extends Component
             $this->req_status = $song->status;
         } else {
             $this->editingSongId = null;
-            $this->req_category = $this->music_active_category !== 'all' ? $this->music_active_category : 'banquete';
+            $this->req_category = $this->music_active_category !== 'all' ? $this->music_active_category : 'baile';
+            $isWedding = $this->event ? ($this->event->event_type_clean === 'boda') : true;
             $this->req_moment = match($this->req_category) {
-                'ceremonia' => 'Entrada Novios',
+                'ceremonia' => $isWedding ? 'Entrada Novios' : 'Recepción / Bienvenida',
                 'coctel' => 'Música Ambiente',
-                'banquete' => 'Entrada Comedor',
-                'baile' => 'Baile Nupcial',
-                'lista_negra' => 'Prohibida',
-                default => 'General',
+                'banquete' => $isWedding ? 'Entrada Comedor' : 'Fondo Almuerzo / Cena',
+                'baile' => 'Baile / Fiesta',
+                'lista_negra' => 'Prohibida / Lista Negra',
+                default => 'Baile / Fiesta',
             };
             $this->req_status = 'pending';
         }
 
         $this->showSongModal = true;
+    }
+
+    public function updatedReqCategory($val)
+    {
+        if (!$this->editingSongId) {
+            $isWedding = $this->event ? ($this->event->event_type_clean === 'boda') : true;
+            $this->req_moment = match($val) {
+                'ceremonia' => $isWedding ? 'Entrada Novios' : 'Recepción / Bienvenida',
+                'coctel' => 'Música Ambiente',
+                'banquete' => $isWedding ? 'Entrada Comedor' : 'Fondo Almuerzo / Cena',
+                'baile' => 'Baile / Fiesta',
+                'lista_negra' => 'Prohibida / Lista Negra',
+                default => 'Baile / Fiesta',
+            };
+        }
     }
 
     public function autoFillTrackLinks()

@@ -364,5 +364,142 @@ class Event extends Model
 
         return $timeStr ? "A las {$timeStr}" : 'No especificado';
     }
+
+    /**
+     * Devuelve la lista de momentos musicales sugeridos según el tipo de evento
+     */
+    public function getSuggestedMomentsAttribute(): array
+    {
+        return self::getMomentsForEventType($this->event_type_clean);
+    }
+
+    /**
+     * Momentos estándar organizados por tipo de evento
+     */
+    public static function getMomentsForEventType(?string $eventType = 'boda'): array
+    {
+        $type = mb_strtolower(trim((string)$eventType));
+
+        return match ($type) {
+            'boda' => [
+                'Baile / Fiesta',
+                'Baile Nupcial',
+                'Apertura Baile',
+                'Hora Loca',
+                'Entrada Novios',
+                'Entrada Comedor',
+                'Corte de Tarta',
+                'Entrega de Ramo',
+                'Regalos Padres',
+                'Regalo Amigos',
+                'Fin de Fiesta / Cierre',
+                'Ceremonia - Entrada Novio',
+                'Ceremonia - Entrada Novia',
+                'Ceremonia - Anillos / Arras',
+                'Ceremonia - Salida',
+                'Música Ambiente Cóctel',
+                'Música Fondo Banquete',
+                'Prohibida / Lista Negra',
+            ],
+            'empresa' => [
+                'Baile / Fiesta',
+                'Recepción / Bienvenida',
+                'Música Ambiente / Networking',
+                'Entrada Ponentes / Directiva',
+                'Entrega de Premios / Reconocimientos',
+                'Fondo Almuerzo / Cena',
+                'Apertura de Pista / Barra Libre',
+                'Momento Sorpresa / Brindis',
+                'Fin de Evento / Cierre',
+                'Prohibida / Lista Negra',
+            ],
+            'cumpleanos' => [
+                'Baile / Fiesta',
+                'Llegada / Sorpresa',
+                'Música Ambiente / Cóctel',
+                'Momento Tarta / Cumpleaños Feliz',
+                'Entrega de Regalo Especial',
+                'Apertura de Pista',
+                'Hora Loca',
+                'Cierre / Fin de Fiesta',
+                'Prohibida / Lista Negra',
+            ],
+            'comunion' => [
+                'Baile / Fiesta',
+                'Entrada del Comulgante',
+                'Música Ambiente Comida',
+                'Momento Tarta',
+                'Entrega de Regalos / Recuerdos',
+                'Animación / Juegos',
+                'Fin de Fiesta',
+                'Prohibida / Lista Negra',
+            ],
+            default => [
+                'Baile / Fiesta',
+                'Recepción / Bienvenida',
+                'Música Ambiente',
+                'Momento Especial',
+                'Apertura de Pista',
+                'Hora Loca',
+                'Fin de Fiesta / Cierre',
+                'Prohibida / Lista Negra',
+            ],
+        };
+    }
+
+    /**
+     * Categorías / Fases contextuales según tipo de evento
+     */
+    public function getSuggestedCategoriesAttribute(): array
+    {
+        return self::getCategoriesForEventType($this->event_type_clean);
+    }
+
+    public static function getCategoriesForEventType(?string $eventType = 'boda'): array
+    {
+        $type = mb_strtolower(trim((string)$eventType));
+
+        if ($type === 'boda') {
+            return [
+                'ceremonia' => '💍 Ceremonia',
+                'coctel' => '🍸 Cóctel',
+                'banquete' => '🍽️ Banquete / Regalos',
+                'baile' => '💃 Baile / Fiesta',
+                'lista_negra' => '🚫 Lista Negra',
+            ];
+        } elseif ($type === 'empresa') {
+            return [
+                'ceremonia' => '🤝 Recepción / Bienvenida',
+                'coctel' => '🍸 Networking / Cóctel',
+                'banquete' => '🍽️ Cena / Ponencias',
+                'baile' => '💃 Baile / Fiesta Empresa',
+                'lista_negra' => '🚫 Lista Negra',
+            ];
+        } elseif ($type === 'cumpleanos') {
+            return [
+                'ceremonia' => '🎉 Bienvenida / Llegada',
+                'coctel' => '🍸 Cóctel / Picoteo',
+                'banquete' => '🎂 Comida / Tarta',
+                'baile' => '💃 Baile / Fiesta',
+                'lista_negra' => '🚫 Lista Negra',
+            ];
+        } elseif ($type === 'comunion') {
+            return [
+                'ceremonia' => '🕊️ Llegada Comulgante',
+                'coctel' => '🍸 Aperitivo',
+                'banquete' => '🍽️ Banquete / Detalles',
+                'baile' => '💃 Juegos / Baile',
+                'lista_negra' => '🚫 Lista Negra',
+            ];
+        }
+
+        return [
+            'ceremonia' => '🚪 Recepción / Entrada',
+            'coctel' => '🍸 Aperitivo / Ambiente',
+            'banquete' => '🍽️ Comida / Actos',
+            'baile' => '💃 Baile / Fiesta',
+            'lista_negra' => '🚫 Lista Negra',
+        ];
+    }
 }
 
