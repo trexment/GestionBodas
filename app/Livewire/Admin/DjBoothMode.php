@@ -526,6 +526,23 @@ class DjBoothMode extends Component
         $this->topChartType = $type;
     }
 
+    public function addTopTrackToCurrentEventByIndex(int $index)
+    {
+        $topTracks = MusicSearchService::getTopCharts($this->topChartType, 50);
+        if (!isset($topTracks[$index])) {
+            return;
+        }
+        $track = $topTracks[$index];
+        $this->addTopTrackToCurrentEvent(
+            $track['title'] ?? '',
+            $track['artist'] ?? '',
+            $track['spotify_url'] ?? '',
+            $track['apple_music_url'] ?? '',
+            $track['youtube_url'] ?? '',
+            $track['preview_url'] ?? ''
+        );
+    }
+
     public function addTopTrackToCurrentEvent($title, $artist, $spotifyUrl = '', $appleUrl = '', $youtubeUrl = '', $previewUrl = '')
     {
         $maxOrder = $this->event->musicRequests()->max('order') ?: 0;

@@ -64,6 +64,46 @@ class MusicManager extends Component
         $this->topChartType = $type;
     }
 
+    public function addTopTrackByIndex(int $index)
+    {
+        $topTracks = MusicSearchService::getTopCharts($this->topChartType, 50);
+        if (!isset($topTracks[$index])) {
+            return;
+        }
+        $track = $topTracks[$index];
+        $this->addTopTrackToLibrary(
+            $track['title'] ?? '',
+            $track['artist'] ?? '',
+            $track['cover_url'] ?? '',
+            $track['spotify_url'] ?? '',
+            $track['apple_music_url'] ?? '',
+            $track['youtube_url'] ?? '',
+            $track['preview_url'] ?? ''
+        );
+    }
+
+    public function addTopTrackToEventByIndex(int $index)
+    {
+        if (empty($this->selectedEventForTopTrack)) {
+            session()->flash('top_error', 'Selecciona un evento antes de añadir la canción.');
+            return;
+        }
+        $topTracks = MusicSearchService::getTopCharts($this->topChartType, 50);
+        if (!isset($topTracks[$index])) {
+            return;
+        }
+        $track = $topTracks[$index];
+        $this->addTopTrackToEvent(
+            $track['title'] ?? '',
+            $track['artist'] ?? '',
+            $this->selectedEventForTopTrack,
+            $track['spotify_url'] ?? '',
+            $track['apple_music_url'] ?? '',
+            $track['youtube_url'] ?? '',
+            $track['preview_url'] ?? ''
+        );
+    }
+
     public function addTopTrackToLibrary($title, $artist, $coverUrl = '', $spotifyUrl = '', $appleUrl = '', $youtubeUrl = '', $previewUrl = '')
     {
         // Check if track already exists

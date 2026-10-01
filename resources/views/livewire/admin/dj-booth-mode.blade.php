@@ -1177,7 +1177,7 @@
 
                                 <button 
                                     type="button"
-                                    wire:click="addTopTrackToCurrentEvent('{{ addslashes($track['title']) }}', '{{ addslashes($track['artist']) }}', '{{ addslashes($spUrl) }}', '{{ addslashes($appleUrl) }}', '{{ addslashes($ytUrl) }}', '{{ addslashes($previewUrl) }}')"
+                                    wire:click="addTopTrackToCurrentEventByIndex({{ $loop->index }})"
                                     class="py-2 px-3 rounded-xl bg-slate-800 hover:bg-emerald-600 text-slate-200 hover:text-white font-bold text-xs border border-slate-700 hover:border-emerald-500 transition flex items-center justify-center gap-1 cursor-pointer whitespace-nowrap"
                                     title="Añadir a la lista de este evento"
                                 >

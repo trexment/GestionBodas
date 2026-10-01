@@ -568,20 +568,23 @@
         <div class="bg-white rounded-3xl border border-gray-200 shadow-sm overflow-hidden" wire:loading.class="opacity-60 pointer-events-none">
             <div class="divide-y divide-gray-100">
                 @forelse($topTracks as $track)
+                    @php
+                        $pos = $track['position'] ?? $track['rank'] ?? $loop->iteration;
+                    @endphp
                     <div class="p-4 hover:bg-slate-50/80 transition flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         
                         <!-- RANKING + PORTADA + DETALLES -->
                         <div class="flex items-center gap-3.5 min-w-0 flex-1">
                             <!-- BADGE DE POSICIÓN -->
                             <div class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 font-black text-xs shadow-sm
-                                {{ $track['rank'] === 1 ? 'bg-amber-100 text-amber-800 border border-amber-300 ring-2 ring-amber-400/40' : 
-                                  ($track['rank'] === 2 ? 'bg-slate-200 text-slate-800 border border-slate-300' : 
-                                  ($track['rank'] === 3 ? 'bg-amber-50 text-amber-900 border border-amber-200' : 'bg-slate-100 text-slate-600')) }}"
+                                {{ $pos === 1 ? 'bg-amber-100 text-amber-800 border border-amber-300 ring-2 ring-amber-400/40' : 
+                                  ($pos === 2 ? 'bg-slate-200 text-slate-800 border border-slate-300' : 
+                                  ($pos === 3 ? 'bg-amber-50 text-amber-900 border border-amber-200' : 'bg-slate-100 text-slate-600')) }}"
                             >
-                                @if($track['rank'] === 1) 🥇
-                                @elseif($track['rank'] === 2) 🥈
-                                @elseif($track['rank'] === 3) 🥉
-                                @else #{{ $track['rank'] }}
+                                @if($pos === 1) 🥇
+                                @elseif($pos === 2) 🥈
+                                @elseif($pos === 3) 🥉
+                                @else #{{ $pos }}
                                 @endif
                             </div>
 
@@ -634,7 +637,7 @@
                         <!-- ACCIONES (AÑADIR A CATÁLOGO / EVENTO) -->
                         <div class="flex items-center gap-2 self-end sm:self-center shrink-0">
                             <button 
-                                wire:click="addTopTrackToLibrary('{{ addslashes($track['title']) }}', '{{ addslashes($track['artist']) }}', '{{ addslashes($track['cover_url'] ?? '') }}', '{{ addslashes($track['spotify_url'] ?? '') }}', '{{ addslashes($track['apple_music_url'] ?? '') }}', '{{ addslashes($track['youtube_url'] ?? '') }}', '{{ addslashes($track['preview_url'] ?? '') }}')" 
+                                wire:click="addTopTrackByIndex({{ $loop->index }})" 
                                 class="px-3 py-1.5 bg-slate-100 hover:bg-indigo-600 text-slate-700 hover:text-white rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1 shadow-xs"
                                 title="Guardar en el catálogo general"
                             >
@@ -643,7 +646,7 @@
 
                             @if($selectedEventForTopTrack)
                                 <button 
-                                    wire:click="addTopTrackToEvent('{{ addslashes($track['title']) }}', '{{ addslashes($track['artist']) }}', {{ $selectedEventForTopTrack }}, '{{ addslashes($track['spotify_url'] ?? '') }}', '{{ addslashes($track['apple_music_url'] ?? '') }}', '{{ addslashes($track['youtube_url'] ?? '') }}', '{{ addslashes($track['preview_url'] ?? '') }}')" 
+                                    wire:click="addTopTrackToEventByIndex({{ $loop->index }})" 
                                     class="px-3.5 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl text-xs font-black transition cursor-pointer flex items-center gap-1 shadow-md"
                                     title="Añadir a la escaleta del evento seleccionado"
                                 >
