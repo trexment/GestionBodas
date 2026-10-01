@@ -1019,17 +1019,22 @@ class EventShow extends Component
     {
         $this->validate([
             'req_title' => 'required|string|max:255',
-            'req_category' => 'required|string|in:ceremonia,coctel,banquete,baile,lista_negra',
+            'req_category' => 'required|string|max:100',
             'req_moment' => 'required|string|max:255',
             'req_artist' => 'nullable|string|max:255',
             'req_requested_by' => 'nullable|string|max:255',
             'req_notes' => 'nullable|string',
-            'req_youtube_url' => 'nullable|string|max:255',
-            'req_spotify_url' => 'nullable|string|max:255',
-            'req_apple_music_url' => 'nullable|string|max:255',
+            'req_youtube_url' => 'nullable|string|max:1000',
+            'req_spotify_url' => 'nullable|string|max:1000',
+            'req_apple_music_url' => 'nullable|string|max:1000',
             'req_audio_file' => 'nullable|file|mimes:mp3,wav,ogg,m4a|max:25600', // 25MB max
             'req_cue_time' => 'nullable|string|max:50',
-            'req_status' => 'required|string|in:pending,ready,played',
+            'req_status' => 'nullable|string|max:50',
+        ], [
+            'req_title.required' => 'El título de la canción es obligatorio.',
+            'req_moment.required' => 'El momento o fase es obligatorio.',
+            'req_audio_file.mimes' => 'El archivo de audio debe ser MP3, WAV, OGG o M4A.',
+            'req_audio_file.max' => 'El archivo de audio no debe superar los 25 MB.',
         ]);
 
         $audioPath = $this->existing_audio_file;
@@ -1051,6 +1056,8 @@ class EventShow extends Component
             }
         }
 
+        $finalStatus = $this->req_status ?: 'pending';
+
         if ($this->editingSongId) {
             $song = EventMusicRequest::findOrFail($this->editingSongId);
             $song->update([
@@ -1065,7 +1072,7 @@ class EventShow extends Component
                 'apple_music_url' => $this->req_apple_music_url,
                 'audio_file' => $audioPath,
                 'cue_time' => $this->req_cue_time,
-                'status' => $this->req_status,
+                'status' => $finalStatus,
             ]);
             session()->flash('music_message', 'Canción/Momento actualizado correctamente.');
         } else {
@@ -1082,13 +1089,19 @@ class EventShow extends Component
                 'apple_music_url' => $this->req_apple_music_url,
                 'audio_file' => $audioPath,
                 'cue_time' => $this->req_cue_time,
-                'status' => $this->req_status,
+                'status' => $finalStatus,
                 'order' => $maxOrder + 1,
             ]);
             session()->flash('music_message', 'Canción/Momento añadido a la escaleta.');
         }
 
         $this->showSongModal = false;
+        $this->reset([
+            'req_title', 'req_artist', 'req_requested_by', 'req_notes',
+            'req_youtube_url', 'req_spotify_url', 'req_apple_music_url',
+            'req_audio_file', 'existing_audio_file', 'req_cue_time',
+            'musicSearchQuery', 'musicSearchResults', 'editingSongId'
+        ]);
         $this->event->load('musicRequests');
     }
 

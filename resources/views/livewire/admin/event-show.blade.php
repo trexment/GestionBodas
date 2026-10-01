@@ -2861,16 +2861,27 @@
             <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
             <div class="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-xl sm:w-full">
                 
-                <form wire:submit.prevent="saveSongRequest">
+                <form wire:submit.prevent="saveSongRequest" novalidate>
                     <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                         <div class="flex justify-between items-center mb-4 border-b pb-2">
                             <h3 class="text-lg font-bold text-gray-900" id="modal-title">
                                 {{ $editingSongId ? '✏️ Editar Canción / Momento' : '➕ Añadir Canción a la Escaleta' }}
                             </h3>
-                            <button type="button" wire:click="$set('showSongModal', false)" class="text-gray-400 hover:text-gray-500">
+                            <button type="button" wire:click="$set('showSongModal', false)" class="text-gray-400 hover:text-gray-500 cursor-pointer">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                             </button>
                         </div>
+
+                        @if ($errors->any())
+                            <div class="mb-4 p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs font-semibold">
+                                <p class="font-bold flex items-center gap-1"><span>⚠️</span> Corrige los siguientes campos antes de guardar:</p>
+                                <ul class="list-disc pl-4 mt-1 space-y-0.5">
+                                    @foreach ($errors->all() as $error)
+                                        <li>{{ $error }}</li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        @endif
                         
                         <div class="space-y-4">
                             <!-- Búsqueda rápida e instantánea de Spotify / Apple Music -->
@@ -2916,18 +2927,19 @@
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div>
                                     <label class="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">Fase / Categoría *</label>
-                                    <select wire:model.live="req_category" required class="w-full border-gray-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500">
+                                    <select wire:model.live="req_category" class="w-full border-gray-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500">
                                         @foreach($event->suggested_categories as $catKey => $catLabel)
                                             <option value="{{ $catKey }}">{{ $catLabel }}</option>
                                         @endforeach
                                     </select>
+                                    @error('req_category') <span class="text-red-500 text-xs font-semibold">{{ $message }}</span> @enderror
                                 </div>
                                 <div>
                                     <div class="flex items-center justify-between mb-1">
                                         <label class="block text-xs font-semibold text-gray-700 dark:text-slate-300">Momento Clave / Etiqueta *</label>
                                         <span class="text-[10px] text-indigo-600 dark:text-indigo-400 font-bold">Sugerencias: {{ $event->event_type_label }}</span>
                                     </div>
-                                    <input type="text" list="moments_list" wire:model="req_moment" placeholder="Ej: Baile / Fiesta, Entrada, Tarta..." required class="w-full border-gray-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500 font-medium">
+                                    <input type="text" list="moments_list" wire:model="req_moment" placeholder="Ej: Baile / Fiesta, Entrada, Tarta..." class="w-full border-gray-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500 font-medium">
                                     
                                     <!-- Datalist dinámico por tipo de evento -->
                                     <datalist id="moments_list">
@@ -2935,7 +2947,7 @@
                                             <option value="{{ $sugMoment }}">
                                         @endforeach
                                     </datalist>
-                                    @error('req_moment') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                                    @error('req_moment') <span class="text-red-500 text-xs font-semibold">{{ $message }}</span> @enderror
                                 </div>
                             </div>
 
@@ -2958,12 +2970,13 @@
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div>
                                     <label class="block text-xs font-semibold text-gray-700 mb-1">Título de la Canción *</label>
-                                    <input type="text" wire:model="req_title" placeholder="Ej: Será Porque Te Amo" required class="w-full border-gray-300 rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500">
-                                    @error('req_title') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                                    <input type="text" wire:model="req_title" placeholder="Ej: Será Porque Te Amo" class="w-full border-gray-300 rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500">
+                                    @error('req_title') <span class="text-red-500 text-xs font-semibold">{{ $message }}</span> @enderror
                                 </div>
                                 <div>
                                     <label class="block text-xs font-semibold text-gray-700 mb-1">Artista / Versión</label>
                                     <input type="text" wire:model="req_artist" placeholder="Ej: DJ Matrix / Ricchi e Poveri" class="w-full border-gray-300 rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500">
+                                    @error('req_artist') <span class="text-red-500 text-xs font-semibold">{{ $message }}</span> @enderror
                                 </div>
                             </div>
 
@@ -3004,15 +3017,18 @@
                                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                     <div>
                                         <label class="block text-xs font-semibold text-gray-700 mb-1">Enlace YouTube</label>
-                                        <input type="url" wire:model="req_youtube_url" placeholder="https://youtube.com/watch?v=..." class="w-full border-gray-300 rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500">
+                                        <input type="text" wire:model="req_youtube_url" placeholder="https://youtube.com/watch?v=..." class="w-full border-gray-300 rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500">
+                                        @error('req_youtube_url') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                                     </div>
                                     <div>
                                         <label class="block text-xs font-semibold text-gray-700 mb-1">Enlace Spotify</label>
-                                        <input type="url" wire:model="req_spotify_url" placeholder="https://open.spotify.com/track/..." class="w-full border-gray-300 rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500">
+                                        <input type="text" wire:model="req_spotify_url" placeholder="https://open.spotify.com/track/..." class="w-full border-gray-300 rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500">
+                                        @error('req_spotify_url') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                                     </div>
                                     <div>
                                         <label class="block text-xs font-semibold text-gray-700 mb-1">🍎 Apple Music</label>
-                                        <input type="url" wire:model="req_apple_music_url" placeholder="https://music.apple.com/..." class="w-full border-gray-300 rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500">
+                                        <input type="text" wire:model="req_apple_music_url" placeholder="https://music.apple.com/..." class="w-full border-gray-300 rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500">
+                                        @error('req_apple_music_url') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                                     </div>
                                 </div>
                             </div>
@@ -3071,10 +3087,11 @@
 
                     </div>
                     <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse rounded-b-xl gap-2">
-                        <button type="submit" class="w-full sm:w-auto inline-flex justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-sm font-bold text-white hover:bg-indigo-700 focus:outline-none transition">
-                            Guardar Canción
+                        <button type="submit" wire:loading.attr="disabled" class="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 rounded-lg border border-transparent shadow-sm px-5 py-2.5 bg-indigo-600 text-sm font-bold text-white hover:bg-indigo-700 focus:outline-none transition cursor-pointer disabled:opacity-50">
+                            <span wire:loading.remove wire:target="saveSongRequest">💾 Guardar Canción</span>
+                            <span wire:loading wire:target="saveSongRequest" class="animate-pulse">Guardando...</span>
                         </button>
-                        <button type="button" wire:click="$set('showSongModal', false)" class="w-full sm:w-auto mt-2 sm:mt-0 inline-flex justify-center rounded-lg border border-gray-300 shadow-sm px-4 py-2 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none transition">
+                        <button type="button" wire:click="$set('showSongModal', false)" class="w-full sm:w-auto mt-2 sm:mt-0 inline-flex justify-center rounded-lg border border-gray-300 shadow-sm px-4 py-2 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none transition cursor-pointer">
                             Cancelar
                         </button>
                     </div>
