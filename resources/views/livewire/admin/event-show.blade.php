@@ -617,6 +617,11 @@
                     📦 Material / Carga
                 </button>
             </li>
+            <li class="mr-2">
+                <button wire:click="$set('activeTab', 'meetings')" class="inline-block p-4 rounded-t-lg border-b-2 font-bold text-xs sm:text-sm {{ $activeTab == 'meetings' ? 'border-purple-600 text-purple-600 dark:text-purple-400 dark:border-purple-400' : 'border-transparent hover:text-gray-600 dark:hover:text-slate-300 hover:border-gray-300 dark:hover:border-slate-700 text-gray-500 dark:text-slate-400' }}">
+                    📅 Citas y Reuniones <span class="ml-1 text-xs bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 px-2 py-0.5 rounded-full font-bold">{{ $event->meetings->count() }}</span>
+                </button>
+            </li>
             @if(Auth::check() && Auth::user()->role === 'admin')
             <li class="mr-2">
                 <button wire:click="$set('activeTab', 'quotes')" class="inline-block p-4 rounded-t-lg border-b-2 font-bold text-xs sm:text-sm {{ $activeTab == 'quotes' ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400 dark:border-indigo-400' : 'border-transparent hover:text-gray-600 dark:hover:text-slate-300 hover:border-gray-300 dark:hover:border-slate-700 text-gray-500 dark:text-slate-400' }}">
@@ -2812,6 +2817,219 @@
             </div>
         @endif
 
+        {{-- TAB 6: CITAS Y REUNIONES CON CLIENTES --}}
+        @if($activeTab == 'meetings')
+            <div class="space-y-6">
+                <!-- Header de Citas -->
+                <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-2xl">📅</span>
+                            <h2 class="text-lg font-black text-slate-900 dark:text-white">Citas y Reuniones con el Cliente</h2>
+                        </div>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                            Planifica reuniones presenciales, videollamadas o visitas técnicas, registra acuerdos y confirma por WhatsApp.
+                        </p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button 
+                            type="button" 
+                            wire:click="openCreateMeetingModal" 
+                            class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs shadow-md hover:shadow-lg transition cursor-pointer"
+                        >
+                            <span>➕</span> Programar Nueva Cita / Reunión
+                        </button>
+                    </div>
+                </div>
+
+                @if(session()->has('meeting_message'))
+                    <div class="p-4 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-xl text-emerald-800 dark:text-emerald-200 text-xs font-bold flex items-center justify-between">
+                        <span>{{ session('meeting_message') }}</span>
+                    </div>
+                @endif
+
+                <!-- Listado de Reuniones -->
+                @php
+                    $meetings = $event->meetings->sortBy('meeting_date');
+                    $clientPhone = $event->client ? preg_replace('/[^0-9]/', '', $event->client->phone) : '';
+                    if (strlen($clientPhone) === 9) $clientPhone = '34' . $clientPhone;
+                @endphp
+
+                @if($meetings->isEmpty())
+                    <div class="bg-white dark:bg-slate-900 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl p-10 text-center">
+                        <div class="w-16 h-16 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center text-3xl mx-auto mb-3">
+                            📅
+                        </div>
+                        <h3 class="text-base font-bold text-slate-900 dark:text-white">No hay citas ni reuniones programadas</h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto mt-1 mb-5">
+                            Registra la primera toma de contacto, visita técnica a la finca, reunión de escaleta musical o guion de magia.
+                        </p>
+                        <button 
+                            type="button" 
+                            wire:click="openCreateMeetingModal" 
+                            class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md transition cursor-pointer"
+                        >
+                            <span>➕</span> Programar Primera Cita
+                        </button>
+                    </div>
+                @else
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        @foreach($meetings as $meeting)
+                            @php
+                                $confirmText = \App\Services\WhatsAppTemplateService::meetingConfirmation($meeting);
+                                $confirmUrl = \App\Services\WhatsAppTemplateService::buildUrl($clientPhone, $confirmText);
+                                $reminderText = \App\Services\WhatsAppTemplateService::meetingReminder($meeting);
+                                $reminderUrl = \App\Services\WhatsAppTemplateService::buildUrl($clientPhone, $reminderText);
+                            @endphp
+                            <div class="bg-white dark:bg-slate-900 border {{ $meeting->status === 'completed' ? 'border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/20' : ($meeting->status === 'cancelled' ? 'border-rose-200 dark:border-rose-900/40 opacity-70' : 'border-slate-200 dark:border-slate-800') }} rounded-2xl p-5 shadow-xs flex flex-col justify-between transition hover:shadow-md">
+                                <div>
+                                    <!-- Header Card -->
+                                    <div class="flex items-start justify-between gap-3 mb-3">
+                                        <div class="flex flex-wrap items-center gap-1.5">
+                                            <!-- Tipo de Reunión Badge -->
+                                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-black {{ $meeting->meeting_type_badge_color }}">
+                                                {{ $meeting->meeting_type_label }}
+                                            </span>
+                                            <!-- Estado Badge -->
+                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-extrabold {{ $meeting->status_badge_color }}">
+                                                {{ $meeting->status_label }}
+                                            </span>
+                                        </div>
+
+                                        <!-- Acciones Rápidas -->
+                                        <div class="flex items-center gap-1">
+                                            @if($meeting->status !== 'completed')
+                                                <button 
+                                                    type="button" 
+                                                    wire:click="markMeetingCompleted({{ $meeting->id }})" 
+                                                    class="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 text-emerald-700 dark:text-emerald-300 text-xs font-bold transition cursor-pointer"
+                                                    title="Marcar como realizada"
+                                                >
+                                                    ✅
+                                                </button>
+                                            @endif
+                                            <button 
+                                                type="button" 
+                                                wire:click="editMeeting({{ $meeting->id }})" 
+                                                class="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 text-xs transition cursor-pointer"
+                                                title="Editar cita"
+                                            >
+                                                ✏️
+                                            </button>
+                                            <button 
+                                                type="button" 
+                                                wire:confirm="¿Seguro que deseas eliminar esta cita?" 
+                                                wire:click="deleteMeeting({{ $meeting->id }})" 
+                                                class="p-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 text-rose-700 dark:text-rose-300 text-xs transition cursor-pointer"
+                                                title="Eliminar cita"
+                                            >
+                                                🗑️
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Título -->
+                                    <h3 class="text-sm font-black text-slate-900 dark:text-white mb-2 flex items-center gap-1.5">
+                                        <span>{{ $meeting->location_icon }}</span>
+                                        <span>{{ $meeting->title }}</span>
+                                    </h3>
+
+                                    <!-- Detalles Clave -->
+                                    <div class="space-y-1.5 text-xs text-slate-600 dark:text-slate-300 mb-4 bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
+                                        <div class="flex items-center justify-between gap-2">
+                                            <span class="text-slate-400 font-semibold">📅 Fecha y Hora:</span>
+                                            <span class="font-bold text-slate-800 dark:text-slate-200">
+                                                {{ $meeting->meeting_date ? $meeting->meeting_date->translatedFormat('d/m/Y \a \l\a\s H:i\h') : 'Sin fecha' }} 
+                                                <span class="text-slate-400 font-normal">({{ $meeting->duration_minutes }} min)</span>
+                                            </span>
+                                        </div>
+
+                                        <div class="flex items-center justify-between gap-2">
+                                            <span class="text-slate-400 font-semibold">📍 Modalidad:</span>
+                                            <span class="font-bold text-slate-800 dark:text-slate-200">
+                                                @if($meeting->location_type === 'video_call')
+                                                    💻 Videollamada
+                                                    @if($meeting->video_call_url)
+                                                        <a href="{{ $meeting->video_call_url }}" target="_blank" class="text-blue-600 dark:text-blue-400 underline ml-1 font-normal">Abrir enlace 🔗</a>
+                                                    @endif
+                                                @elseif($meeting->location_type === 'phone')
+                                                    📱 Llamada telefónica
+                                                @else
+                                                    📍 Presencial: {{ $meeting->location ?: 'Lugar acordado' }}
+                                                @endif
+                                            </span>
+                                        </div>
+
+                                        <div class="flex items-center justify-between gap-2">
+                                            <span class="text-slate-400 font-semibold">👤 Atiende:</span>
+                                            <span class="font-bold text-indigo-600 dark:text-indigo-400">
+                                                {{ $meeting->staff ? $meeting->staff->name : 'Cualquiera del equipo' }}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Notas Previas / Temario -->
+                                    @if($meeting->notes)
+                                        <div class="mb-3">
+                                            <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">📝 Temas a tratar / Notas:</p>
+                                            <p class="text-xs text-slate-700 dark:text-slate-300 bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-900/40 p-2.5 rounded-xl whitespace-pre-line">
+                                                {{ $meeting->notes }}
+                                            </p>
+                                        </div>
+                                    @endif
+
+                                    <!-- Acuerdos / Conclusiones -->
+                                    @if($meeting->summary)
+                                        <div class="mb-3">
+                                            <p class="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-1">💡 Acuerdos y Decisiones tomadas:</p>
+                                            <div class="text-xs text-slate-800 dark:text-slate-200 bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 p-2.5 rounded-xl whitespace-pre-line font-medium">
+                                                {{ $meeting->summary }}
+                                            </div>
+                                        </div>
+                                    @endif
+                                </div>
+
+                                <!-- Footer con Botones de WhatsApp -->
+                                <div class="pt-3 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2 mt-2">
+                                    <div class="flex items-center gap-1.5">
+                                        @if($clientPhone)
+                                            <a 
+                                                href="{{ $confirmUrl }}" 
+                                                target="_blank" 
+                                                class="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 border border-emerald-200 dark:border-emerald-800 px-2.5 py-1.5 rounded-lg transition"
+                                                title="Enviar confirmación de cita al cliente por WhatsApp"
+                                            >
+                                                <span>💬</span> Confirmar Cita
+                                            </a>
+
+                                            <a 
+                                                href="{{ $reminderUrl }}" 
+                                                target="_blank" 
+                                                class="inline-flex items-center gap-1 text-[11px] font-bold text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/50 hover:bg-blue-100 border border-blue-200 dark:border-blue-800 px-2.5 py-1.5 rounded-lg transition"
+                                                title="Enviar recordatorio previo al cliente por WhatsApp"
+                                            >
+                                                <span>🔔</span> Recordatorio
+                                            </a>
+                                        @else
+                                            <span class="text-[10px] text-slate-400 italic">Cliente sin teléfono para WhatsApp</span>
+                                        @endif
+                                    </div>
+
+                                    <button 
+                                        type="button" 
+                                        wire:click="editMeeting({{ $meeting->id }})" 
+                                        class="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
+                                    >
+                                        {{ $meeting->summary ? 'Editar Conclusiones' : '+ Anotar Acuerdos' }}
+                                    </button>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
+            </div>
+        @endif
+
     </div>
 
     <!-- Modal Asignar / Cambiar Personal (DJ y Asistente) -->
@@ -4123,6 +4341,248 @@
                 </button>
             </div>
 
+        </div>
+    </div>
+    @endif
+
+    <!-- Modal Programar / Editar Cita o Reunión -->
+    @if($showMeetingModal)
+    <div class="fixed z-40 inset-0 overflow-y-auto" aria-labelledby="modal-meeting-title" role="dialog" aria-modal="true">
+        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-slate-900/75 backdrop-blur-xs transition-opacity" aria-hidden="true" wire:click="$set('showMeetingModal', false)"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div class="inline-block align-bottom bg-white dark:bg-slate-900 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full border border-slate-200 dark:border-slate-800">
+                
+                <form wire:submit.prevent="saveMeeting">
+                    <!-- HEADER -->
+                    <div class="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4 flex items-center justify-between text-white">
+                        <div class="flex items-center gap-2">
+                            <span class="text-2xl">📅</span>
+                            <div>
+                                <h3 class="text-base font-black" id="modal-meeting-title">
+                                    {{ $editing_meeting_id ? '✏️ Modificar Cita / Reunión' : '📅 Programar Cita / Reunión' }}
+                                </h3>
+                                <p class="text-[11px] text-blue-100 font-medium">
+                                    Evento: {{ $event->name }}
+                                </p>
+                            </div>
+                        </div>
+                        <button type="button" wire:click="$set('showMeetingModal', false)" class="text-white/80 hover:text-white p-1 rounded-lg hover:bg-white/10 transition cursor-pointer">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
+                    </div>
+
+                    <!-- BODY -->
+                    <div class="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+                        <!-- Fila 1: Título y Tipo -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                    Título de la Cita *
+                                </label>
+                                <input 
+                                    type="text" 
+                                    wire:model="meeting_title" 
+                                    placeholder="Ej: Reunión Escaleta Musical"
+                                    class="w-full border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl text-xs font-medium p-2.5 focus:ring-2 focus:ring-blue-500"
+                                    required
+                                >
+                                @error('meeting_title') <span class="text-rose-500 text-[10px]">{{ $message }}</span> @enderror
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                    Tipo de Reunión *
+                                </label>
+                                <select 
+                                    wire:model="meeting_type" 
+                                    class="w-full border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl text-xs font-bold p-2.5 focus:ring-2 focus:ring-blue-500"
+                                >
+                                    <option value="escaleta_musica">🎵 Escaleta Musical & Momentos</option>
+                                    <option value="primera_toma">☕ Primera Toma de Contacto</option>
+                                    <option value="visita_tecnica">🏰 Visita Técnica a Finca / Salón</option>
+                                    <option value="magia_guion">🎩 Guion & Magia (Mago Leugim)</option>
+                                    <option value="otro">📅 Reunión General</option>
+                                </select>
+                                @error('meeting_type') <span class="text-rose-500 text-[10px]">{{ $message }}</span> @enderror
+                            </div>
+                        </div>
+
+                        <!-- Fila 2: Fecha, Hora y Duración -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                    📅 Fecha *
+                                </label>
+                                <input 
+                                    type="date" 
+                                    wire:model="meeting_date" 
+                                    class="w-full border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl text-xs font-medium p-2.5 focus:ring-2 focus:ring-blue-500"
+                                    required
+                                >
+                                @error('meeting_date') <span class="text-rose-500 text-[10px]">{{ $message }}</span> @enderror
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                    ⏰ Hora *
+                                </label>
+                                <input 
+                                    type="time" 
+                                    wire:model="meeting_time" 
+                                    class="w-full border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl text-xs font-medium p-2.5 focus:ring-2 focus:ring-blue-500"
+                                    required
+                                >
+                                @error('meeting_time') <span class="text-rose-500 text-[10px]">{{ $message }}</span> @enderror
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                    ⏱️ Duración
+                                </label>
+                                <select 
+                                    wire:model="meeting_duration_minutes" 
+                                    class="w-full border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl text-xs font-medium p-2.5 focus:ring-2 focus:ring-blue-500"
+                                >
+                                    <option value="15">15 minutos</option>
+                                    <option value="30">30 minutos</option>
+                                    <option value="45">45 minutos</option>
+                                    <option value="60">1 hora</option>
+                                    <option value="90">1 hora y media</option>
+                                    <option value="120">2 horas</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Fila 3: Modalidad y Ubicación / Enlace -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                    📍 Modalidad *
+                                </label>
+                                <select 
+                                    wire:model.live="meeting_location_type" 
+                                    class="w-full border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl text-xs font-bold p-2.5 focus:ring-2 focus:ring-blue-500"
+                                >
+                                    <option value="in_person">📍 Presencial (En persona / Finca / Oficina)</option>
+                                    <option value="video_call">💻 Videollamada Online (Meet / Zoom)</option>
+                                    <option value="phone">📱 Llamada Telefónica</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                @if($meeting_location_type === 'video_call')
+                                    <label class="block text-xs font-bold text-blue-600 dark:text-blue-400 mb-1">
+                                        🔗 Enlace de Videollamada
+                                    </label>
+                                    <input 
+                                        type="url" 
+                                        wire:model="meeting_video_call_url" 
+                                        placeholder="https://meet.google.com/... o Zoom"
+                                        class="w-full border-blue-300 dark:border-blue-700 bg-blue-50/40 dark:bg-blue-950/30 text-slate-900 dark:text-white rounded-xl text-xs font-medium p-2.5 focus:ring-2 focus:ring-blue-500"
+                                    >
+                                @elseif($meeting_location_type === 'phone')
+                                    <label class="block text-xs font-bold text-slate-500 mb-1">
+                                        📱 Teléfono Cliente
+                                    </label>
+                                    <div class="w-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold p-2.5 border border-slate-200 dark:border-slate-700">
+                                        {{ $event->client ? ($event->client->phone ?: 'Sin teléfono registrado') : 'Sin cliente' }}
+                                    </div>
+                                @else
+                                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                        📍 Lugar / Dirección
+                                    </label>
+                                    <input 
+                                        type="text" 
+                                        wire:model="meeting_location" 
+                                        placeholder="Ej: Finca El Olivar o Cafetería Central"
+                                        class="w-full border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl text-xs font-medium p-2.5 focus:ring-2 focus:ring-blue-500"
+                                    >
+                                @endif
+                            </div>
+                        </div>
+
+                        <!-- Fila 4: Staff asignado y Estado -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                    👤 Miembro del Equipo que atiende
+                                </label>
+                                <select 
+                                    wire:model="meeting_staff_id" 
+                                    class="w-full border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl text-xs font-medium p-2.5 focus:ring-2 focus:ring-blue-500"
+                                >
+                                    <option value="">-- Cualquiera / Sin asignar --</option>
+                                    @foreach($allStaff as $staffMember)
+                                        <option value="{{ $staffMember->id }}">{{ $staffMember->name }} ({{ strtoupper($staffMember->role) }})</option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                    Estado de la Cita *
+                                </label>
+                                <select 
+                                    wire:model="meeting_status" 
+                                    class="w-full border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl text-xs font-bold p-2.5 focus:ring-2 focus:ring-blue-500"
+                                >
+                                    <option value="scheduled">🔵 Programada / Pendiente</option>
+                                    <option value="completed">🟢 Realizada / Completada</option>
+                                    <option value="cancelled">🔴 Cancelada</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Fila 5: Notas Previas -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                📝 Temas a tratar / Notas Previas
+                            </label>
+                            <textarea 
+                                wire:model="meeting_notes" 
+                                rows="2" 
+                                placeholder="Ej: Repasar canciones de la entrada al banquete, corte de tarta y sorpresa especial del novio..."
+                                class="w-full border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl text-xs font-medium p-2.5 focus:ring-2 focus:ring-blue-500"
+                            ></textarea>
+                        </div>
+
+                        <!-- Fila 6: Acuerdos y Decisiones (Conclusiones) -->
+                        <div class="bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 p-4 rounded-xl">
+                            <label class="block text-xs font-black text-emerald-800 dark:text-emerald-300 mb-1 flex items-center gap-1.5">
+                                <span>💡</span> Acuerdos, Decisiones y Conclusiones tomadas
+                            </label>
+                            <p class="text-[10px] text-emerald-600 dark:text-emerald-400 mb-2">
+                                Anota aquí todo lo acordado con el cliente durante o después de la reunión para no olvidarlo y que todo el equipo lo consulte.
+                            </p>
+                            <textarea 
+                                wire:model="meeting_summary" 
+                                rows="3" 
+                                placeholder="Ej: Acordado que la entrada será con la canción de Coldplay al segundo 35. El ramo se entregará a la hermana de la novia..."
+                                class="w-full border-emerald-300 dark:border-emerald-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl text-xs font-medium p-2.5 focus:ring-2 focus:ring-emerald-500"
+                            ></textarea>
+                        </div>
+                    </div>
+
+                    <!-- FOOTER -->
+                    <div class="p-4 bg-slate-50 dark:bg-slate-950 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                        <button 
+                            type="button" 
+                            wire:click="$set('showMeetingModal', false)" 
+                            class="px-4 py-2.5 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-100 text-slate-700 dark:text-slate-300 font-bold text-xs border border-slate-200 dark:border-slate-700 transition cursor-pointer"
+                        >
+                            Cancelar
+                        </button>
+                        <button 
+                            type="submit" 
+                            class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs shadow-md hover:shadow-lg transition cursor-pointer flex items-center gap-1.5"
+                        >
+                            <span>💾</span> Guardar Cita
+                        </button>
+                    </div>
+                </form>
+
+            </div>
         </div>
     </div>
     @endif

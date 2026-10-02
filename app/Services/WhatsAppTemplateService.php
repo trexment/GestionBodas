@@ -195,4 +195,42 @@ class WhatsAppTemplateService
             'url' => self::buildUrl($user->phone, $text),
         ];
     }
+
+    public static function meetingConfirmation(\App\Models\ClientMeeting $meeting): string
+    {
+        $event = $meeting->event;
+        $clientName = $event && $event->client ? $event->client->name : 'pareja';
+        $brand = Setting::getBrandInfo($event ? $event->brand_clean : null);
+        $companyName = $brand['name'] ?? Setting::get('company_name', 'Núñez & Son');
+
+        $dateFormatted = $meeting->meeting_date ? $meeting->meeting_date->translatedFormat('l, d \d\e F \a \l\a\s H:i\h') : 'Por determinar';
+        $locText = $meeting->location_type === 'video_call' 
+            ? "💻 *Videollamada online*" . ($meeting->video_call_url ? "\nEnlace: " . $meeting->video_call_url : '')
+            : ($meeting->location_type === 'phone' ? "📱 *Llamada telefónica*" : "📍 *Lugar:* " . ($meeting->location ?: 'Lugar acordado'));
+
+        return "¡Hola {$clientName}! 👋 Os escribe *{$companyName}*.\n\n"
+             . "Os confirmamos nuestra cita para *{$meeting->title}* ({$meeting->meeting_type_label}):\n\n"
+             . "📅 *Fecha y hora:* {$dateFormatted}\n"
+             . "⏱️ *Duración estimada:* {$meeting->duration_minutes} min\n"
+             . "{$locText}\n\n"
+             . "¡Nos vemos pronto para avanzar con los preparativos de vuestro evento! 🎉";
+    }
+
+    public static function meetingReminder(\App\Models\ClientMeeting $meeting): string
+    {
+        $event = $meeting->event;
+        $clientName = $event && $event->client ? $event->client->name : 'pareja';
+        $brand = Setting::getBrandInfo($event ? $event->brand_clean : null);
+        $companyName = $brand['name'] ?? Setting::get('company_name', 'Núñez & Son');
+
+        $dateFormatted = $meeting->meeting_date ? $meeting->meeting_date->translatedFormat('d/m/Y \a \l\a\s H:i\h') : '';
+        $locText = $meeting->location_type === 'video_call' 
+            ? "💻 *Videollamada online*" . ($meeting->video_call_url ? "\nEnlace: " . $meeting->video_call_url : '')
+            : ($meeting->location_type === 'phone' ? "📱 *Llamada telefónica*" : "📍 *Lugar:* " . ($meeting->location ?: 'Lugar acordado'));
+
+        return "¡Hola {$clientName}! 👋 Recordatorio de *{$companyName}*:\n\n"
+             . "Os recordamos que tenemos nuestra reunión (*{$meeting->title}*) el próximo *{$dateFormatted}*.\n\n"
+             . "{$locText}\n\n"
+             . "¡Hasta pronto! 🎧";
+    }
 }

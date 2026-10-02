@@ -127,6 +127,11 @@ class Event extends Model
         return $this->hasMany(EventMusicRequest::class)->orderBy('order')->orderBy('id');
     }
 
+    public function meetings()
+    {
+        return $this->hasMany(ClientMeeting::class)->orderBy('meeting_date', 'asc');
+    }
+
     /**
      * Etiqueta legible del método de pago de la señal
      */

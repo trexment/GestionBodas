@@ -147,64 +147,64 @@
     </div>
 
     <!-- ============================================== -->
-    <!-- VISTA ESCRITORIO / TABLET: TABLA CON SCROLL    -->
+    <!-- VISTA ESCRITORIO / TABLET: TABLA SIN SCROLL    -->
     <!-- ============================================== -->
-    <div class="hidden sm:block bg-white dark:bg-slate-900 shadow-sm overflow-x-auto rounded-2xl border border-gray-200 dark:border-slate-800">
-        <table class="min-w-full divide-y divide-gray-200 dark:divide-slate-800">
+    <div class="hidden sm:block bg-white dark:bg-slate-900 shadow-sm overflow-hidden rounded-2xl border border-gray-200 dark:border-slate-800">
+        <table class="w-full divide-y divide-gray-200 dark:divide-slate-800 table-auto text-left">
             <thead class="bg-gray-50 dark:bg-slate-950">
                 <tr>
-                    <th class="px-6 py-3.5 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Evento y Personal</th>
-                    <th class="px-6 py-3.5 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Fecha</th>
-                    <th class="px-6 py-3.5 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Lugar</th>
-                    <th class="px-6 py-3.5 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Cliente</th>
-                    <th class="px-6 py-3.5 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Estado</th>
-                    <th class="px-6 py-3.5 text-right text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Acciones</th>
+                    <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Evento y Personal</th>
+                    <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Fecha</th>
+                    <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Lugar</th>
+                    <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Cliente</th>
+                    <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Estado</th>
+                    <th class="px-4 py-3 text-right text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Acciones</th>
                 </tr>
             </thead>
             <tbody class="bg-white dark:bg-slate-900 divide-y divide-gray-200 dark:divide-slate-800">
                 @forelse($events as $event)
                     <tr class="hover:bg-gray-50/70 dark:hover:bg-slate-800/50 transition">
-                        <td class="px-6 py-4 whitespace-nowrap">
+                        <td class="px-4 py-3">
                             <div class="flex items-center gap-2">
-                                <span class="text-base">{{ $event->event_type_icon }}</span>
-                                <span class="text-sm font-extrabold text-gray-900 dark:text-white">{{ $event->name }}</span>
+                                <span class="text-base shrink-0">{{ $event->event_type_icon }}</span>
+                                <span class="text-sm font-extrabold text-gray-900 dark:text-white truncate">{{ $event->name }}</span>
                             </div>
-                            <div class="flex flex-wrap items-center gap-2 mt-1">
+                            <div class="flex flex-wrap items-center gap-1.5 mt-1">
                                 <span class="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold px-2 py-0.5 rounded-md">
                                     {{ $event->event_type_label }}
                                 </span>
                                 @if($event->dj)
-                                    <span class="text-xs text-indigo-700 dark:text-indigo-400 font-semibold inline-flex items-center gap-1">
-                                        🎧 DJ: {{ $event->dj->name }}
+                                    <span class="text-[11px] text-indigo-700 dark:text-indigo-400 font-semibold inline-flex items-center gap-1">
+                                        🎧 {{ $event->dj->name }}
                                     </span>
                                 @endif
                                 @if($event->assistant)
-                                    <span class="text-xs text-amber-700 dark:text-amber-400 font-semibold inline-flex items-center gap-1">
-                                        👷‍♂️ Asistente: {{ $event->assistant->name }}
+                                    <span class="text-[11px] text-amber-700 dark:text-amber-400 font-semibold inline-flex items-center gap-1">
+                                        👷‍♂️ {{ $event->assistant->name }}
                                     </span>
                                 @endif
                             </div>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm text-gray-900 dark:text-slate-200 font-bold">{{ $event->event_date->format('d/m/Y') }}</div>
+                        <td class="px-4 py-3 whitespace-nowrap">
+                            <div class="text-xs text-gray-900 dark:text-slate-200 font-bold">{{ $event->event_date->format('d/m/Y') }}</div>
                             @if($event->setup_date || $event->start_time)
                                 <div class="text-[10px] text-amber-800 dark:text-amber-300 font-bold flex items-center gap-1 mt-0.5">
                                     <span>🚗</span>
-                                    <span>Montaje: {{ $event->setup_schedule_label }}</span>
+                                    <span>{{ $event->setup_schedule_label }}</span>
                                 </div>
                             @endif
                             @if($event->dance_start_time)
-                                <div class="text-[11px] text-purple-700 dark:text-purple-300 font-bold flex items-center gap-1 mt-0.5">
+                                <div class="text-[10px] text-purple-700 dark:text-purple-300 font-bold flex items-center gap-1 mt-0.5">
                                     <span>⏰</span>
-                                    <span>Baile (24h): {{ substr($event->dance_start_time, 0, 5) }}h @if($event->dance_duration_hours)({{ (float)$event->dance_duration_hours }}h)@endif</span>
+                                    <span>{{ substr($event->dance_start_time, 0, 5) }}h @if($event->dance_duration_hours)({{ (float)$event->dance_duration_hours }}h)@endif</span>
                                 </div>
                             @endif
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-slate-400">
+                        <td class="px-4 py-3 text-xs text-gray-600 dark:text-slate-400 truncate max-w-[160px]" title="{{ $event->location }}">
                             📍 {{ $event->location }}
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-slate-400">
-                            <div class="font-bold text-gray-800 dark:text-slate-200">{{ $event->client ? $event->client->name : 'Sin asignar' }}</div>
+                        <td class="px-4 py-3 text-xs text-gray-600 dark:text-slate-400">
+                            <div class="font-bold text-gray-800 dark:text-slate-200 truncate max-w-[140px]">{{ $event->client ? $event->client->name : 'Sin asignar' }}</div>
                             @if($event->client && $event->client->phone)
                                 @php
                                     $cPhone = preg_replace('/[^0-9]/', '', $event->client->phone);
@@ -212,13 +212,13 @@
                                         $cPhone = '34' . $cPhone;
                                     }
                                 @endphp
-                                <a href="https://wa.me/{{ $cPhone }}" target="_blank" class="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 border border-emerald-200 dark:border-emerald-800 px-2 py-0.5 rounded-lg mt-0.5 transition" title="Abrir chat de WhatsApp">
+                                <a href="https://wa.me/{{ $cPhone }}" target="_blank" class="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 border border-emerald-200 dark:border-emerald-800 px-1.5 py-0.5 rounded-lg mt-0.5 transition" title="Abrir chat de WhatsApp">
                                     💬 {{ $event->client->phone }}
                                 </a>
                             @endif
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="px-2.5 py-1 inline-flex text-xs leading-5 font-bold rounded-full 
+                        <td class="px-4 py-3 whitespace-nowrap">
+                            <span class="px-2 py-0.5 inline-flex text-[11px] leading-5 font-bold rounded-full 
                                 @if($event->status == 'draft') bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300
                                 @elseif($event->status == 'confirmed') bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300
                                 @elseif($event->status == 'completed') bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300
@@ -226,8 +226,8 @@
                                 {{ ucfirst($event->status) }}
                             </span>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <a href="{{ route('admin.events.show', $event->id) }}" class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 font-extrabold bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 border border-indigo-200 dark:border-indigo-800 px-3.5 py-1.5 rounded-xl transition">Gestionar</a>
+                        <td class="px-4 py-3 whitespace-nowrap text-right text-xs font-medium">
+                            <a href="{{ route('admin.events.show', $event->id) }}" class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 font-extrabold bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 border border-indigo-200 dark:border-indigo-800 px-3 py-1.5 rounded-xl transition">Gestionar</a>
                             @if(auth()->user()->role === 'admin')
                                 <button type="button" wire:click="deleteEvent({{ $event->id }})" wire:confirm="¿Estás seguro de que deseas eliminar permanentemente el evento '{{ $event->name }}' y todos sus presupuestos, contratos y música?" class="text-rose-600 hover:text-rose-900 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/60 px-2 py-1.5 rounded-xl transition ml-1 cursor-pointer" title="Eliminar Evento">
                                     🗑️
@@ -237,7 +237,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="6" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">No hay eventos registrados.</td>
+                        <td colspan="6" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">No hay eventos registrados.</td>
                     </tr>
                 @endforelse
             </tbody>

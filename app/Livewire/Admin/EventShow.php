@@ -171,6 +171,22 @@ class EventShow extends Component
     public $importDefaultCategory = 'baile';
     public $importDefaultMoment = 'Baile & Fiesta';
 
+    // Citas y Reuniones con Clientes
+    public $showMeetingModal = false;
+    public $editing_meeting_id = null;
+    public $meeting_title = 'Reunión de Escaleta Musical';
+    public $meeting_type = 'escaleta_musica';
+    public $meeting_date;
+    public $meeting_time = '18:00';
+    public $meeting_duration_minutes = 45;
+    public $meeting_location_type = 'in_person';
+    public $meeting_location = '';
+    public $meeting_video_call_url = '';
+    public $meeting_staff_id = null;
+    public $meeting_status = 'scheduled';
+    public $meeting_summary = '';
+    public $meeting_notes = '';
+
     public function mount(Event $event)
     {
         $user = auth()->user();
@@ -178,7 +194,7 @@ class EventShow extends Component
             abort(403, 'Acceso denegado: No estás asignado a este evento.');
         }
 
-        $this->event = $event->load(['client', 'dj', 'assistant', 'invoices', 'quotes.items', 'contracts', 'dossiers', 'equipment', 'musicRequests']);
+        $this->event = $event->load(['client', 'dj', 'assistant', 'invoices', 'quotes.items', 'contracts', 'dossiers', 'equipment', 'musicRequests', 'meetings.staff']);
         $this->assigned_dj_id = $this->event->dj_id;
         $this->assigned_assistant_id = $this->event->assistant_id;
         $this->venue_contact_name = $this->event->venue_contact_name;
@@ -2260,6 +2276,125 @@ class EventShow extends Component
         }
     }
 
+    // ==========================================
+    // GESTIÓN DE CITAS Y REUNIONES CON CLIENTES
+    // ==========================================
+    public function openCreateMeetingModal()
+    {
+        $this->resetValidation();
+        $this->editing_meeting_id = null;
+        $this->meeting_title = 'Reunión de Escaleta Musical';
+        $this->meeting_type = 'escaleta_musica';
+        $this->meeting_date = now()->addDays(7)->format('Y-m-d');
+        $this->meeting_time = '18:00';
+        $this->meeting_duration_minutes = 45;
+        $this->meeting_location_type = 'in_person';
+        $this->meeting_location = $this->event->location ?: '';
+        $this->meeting_video_call_url = '';
+        $this->meeting_staff_id = $this->event->dj_id ?: auth()->id();
+        $this->meeting_status = 'scheduled';
+        $this->meeting_summary = '';
+        $this->meeting_notes = '';
+        $this->showMeetingModal = true;
+    }
+
+    public function editMeeting($meetingId)
+    {
+        $this->resetValidation();
+        $meeting = $this->event->meetings()->find($meetingId);
+        if (!$meeting) return;
+
+        $this->editing_meeting_id = $meeting->id;
+        $this->meeting_title = $meeting->title;
+        $this->meeting_type = $meeting->meeting_type;
+        $this->meeting_date = $meeting->meeting_date ? $meeting->meeting_date->format('Y-m-d') : now()->format('Y-m-d');
+        $this->meeting_time = $meeting->meeting_date ? $meeting->meeting_date->format('H:i') : '18:00';
+        $this->meeting_duration_minutes = $meeting->duration_minutes ?: 45;
+        $this->meeting_location_type = $meeting->location_type ?: 'in_person';
+        $this->meeting_location = $meeting->location ?: '';
+        $this->meeting_video_call_url = $meeting->video_call_url ?: '';
+        $this->meeting_staff_id = $meeting->user_id;
+        $this->meeting_status = $meeting->status ?: 'scheduled';
+        $this->meeting_summary = $meeting->summary ?: '';
+        $this->meeting_notes = $meeting->notes ?: '';
+        $this->showMeetingModal = true;
+    }
+
+    public function saveMeeting()
+    {
+        $this->validate([
+            'meeting_title' => 'required|string|max:255',
+            'meeting_type' => 'required|string',
+            'meeting_date' => 'required|date',
+            'meeting_time' => 'required|string',
+            'meeting_duration_minutes' => 'required|integer|min:10|max:480',
+            'meeting_location_type' => 'required|string',
+            'meeting_location' => 'nullable|string|max:255',
+            'meeting_video_call_url' => 'nullable|string|max:255',
+            'meeting_staff_id' => 'nullable|exists:users,id',
+            'meeting_status' => 'required|string',
+            'meeting_summary' => 'nullable|string',
+            'meeting_notes' => 'nullable|string',
+        ]);
+
+        $dateTime = \Carbon\Carbon::parse($this->meeting_date . ' ' . $this->meeting_time);
+
+        $data = [
+            'title' => $this->meeting_title,
+            'meeting_type' => $this->meeting_type,
+            'meeting_date' => $dateTime,
+            'duration_minutes' => $this->meeting_duration_minutes,
+            'location_type' => $this->meeting_location_type,
+            'location' => $this->meeting_location ?: null,
+            'video_call_url' => $this->meeting_video_call_url ?: null,
+            'user_id' => $this->meeting_staff_id ?: null,
+            'status' => $this->meeting_status,
+            'summary' => $this->meeting_summary ?: null,
+            'notes' => $this->meeting_notes ?: null,
+        ];
+
+        // Ensure table exists
+        try {
+            if (!\Illuminate\Support\Facades\Schema::hasTable('client_meetings')) {
+                \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+            }
+        } catch (\Throwable $e) {}
+
+        if ($this->editing_meeting_id) {
+            $meeting = $this->event->meetings()->find($this->editing_meeting_id);
+            if ($meeting) {
+                $meeting->update($data);
+                session()->flash('meeting_message', '¡Cita / Reunión actualizada correctamente!');
+            }
+        } else {
+            $this->event->meetings()->create($data);
+            session()->flash('meeting_message', '¡Nueva reunión programada con éxito!');
+        }
+
+        $this->event->load('meetings');
+        $this->showMeetingModal = false;
+    }
+
+    public function deleteMeeting($meetingId)
+    {
+        $meeting = $this->event->meetings()->find($meetingId);
+        if ($meeting) {
+            $meeting->delete();
+            $this->event->load('meetings');
+            session()->flash('meeting_message', 'Reunión eliminada.');
+        }
+    }
+
+    public function markMeetingCompleted($meetingId)
+    {
+        $meeting = $this->event->meetings()->find($meetingId);
+        if ($meeting) {
+            $meeting->update(['status' => 'completed']);
+            $this->event->load('meetings');
+            session()->flash('meeting_message', '✅ Reunión marcada como Realizada.');
+        }
+    }
+
     public function render()
     {
         $allEquipment = Equipment::orderBy('category')->orderBy('name')->get();
@@ -2272,10 +2407,13 @@ class EventShow extends Component
             $filteredMusicRequests = $filteredMusicRequests->where('category', $this->music_active_category);
         }
 
+        $allStaff = User::whereIn('role', ['admin', 'dj', 'assistant'])->orderBy('name')->get();
+
         return view('livewire.admin.event-show', [
             'allEquipment' => $allEquipment,
             'allDjs' => $allDjs,
             'allAssistants' => $allAssistants,
+            'allStaff' => $allStaff,
             'allClients' => $allClients,
             'filteredMusicRequests' => $filteredMusicRequests,
         ])->layout('components.layouts.app', [
