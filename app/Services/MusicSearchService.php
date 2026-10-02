@@ -12,7 +12,7 @@ class MusicSearchService
      * Search songs in Apple Music / iTunes and Spotify
      * Returns a unified array of track results with album covers, preview URLs and deep links.
      */
-    public static function search(string $query, int $limit = 10): array
+    public static function search(string $query, int $limit = 25): array
     {
         $query = trim($query);
         if (empty($query)) {
@@ -138,7 +138,7 @@ class MusicSearchService
     /**
      * Search directly in Spotify Web API if credentials are provided
      */
-    public static function searchSpotifyApi(string $query, int $limit = 5): array
+    public static function searchSpotifyApi(string $query, int $limit = 10): array
     {
         $clientId = Setting::get('spotify_client_id');
         $clientSecret = Setting::get('spotify_client_secret');

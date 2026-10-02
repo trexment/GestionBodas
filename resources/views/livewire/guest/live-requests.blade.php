@@ -53,6 +53,14 @@
                         </div>
                     </div>
                 </template>
+                <template x-if="query.trim().length > 1">
+                    <div @click="selectCustom()" class="px-4 py-2.5 bg-purple-950/80 hover:bg-purple-900 cursor-pointer flex items-center justify-between gap-2 border-t border-slate-700 transition">
+                        <div class="text-xs text-purple-300 font-bold truncate">
+                            <span>➕</span> Usar lo que he escrito: "<span x-text="query" class="underline"></span>"
+                        </div>
+                        <span class="text-[10px] bg-purple-500/30 text-purple-200 px-2 py-0.5 rounded-full flex-shrink-0">Personalizada</span>
+                    </div>
+                </template>
             </div>
         </div>
 
@@ -151,7 +159,7 @@
                 showDropdown: false,
                 init() {
                     this.$watch('query', (val) => {
-                        if (val.length > 2) {
+                        if (val.length > 1) {
                             this.fetchSongs(val);
                         } else {
                             this.results = [];
@@ -161,20 +169,35 @@
                 },
                 fetchSongs(term) {
                     this.loading = true;
-                    fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&entity=song&limit=6`)
+                    fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&entity=song&country=es&limit=25`)
                         .then(res => res.json())
                         .then(data => {
                             this.results = data.results || [];
-                            this.showDropdown = this.results.length > 0;
+                            this.showDropdown = true;
                             this.loading = false;
                         })
                         .catch(() => {
                             this.loading = false;
+                            this.showDropdown = true;
                         });
                 },
                 selectSong(song) {
                     this.$wire.selectSong(song.trackName, song.artistName);
                     this.query = `${song.artistName} - ${song.trackName}`;
+                    this.showDropdown = false;
+                },
+                selectCustom() {
+                    const text = this.query.trim();
+                    if (!text) return;
+                    let title = text;
+                    let artist = '';
+                    if (text.includes('-')) {
+                        const parts = text.split('-');
+                        artist = parts[0].trim();
+                        title = parts.slice(1).join('-').trim();
+                    }
+                    this.$wire.selectSong(title, artist);
+                    this.query = text;
                     this.showDropdown = false;
                 }
             }

@@ -104,7 +104,7 @@
                             if (this.searchQuery.trim().length > 1) {
                                 this.timer = setTimeout(() => {
                                     this.fetchSongs(this.searchQuery.trim());
-                                }, 260);
+                                }, 220);
                             } else {
                                 this.results = [];
                                 this.showDropdown = false;
@@ -112,19 +112,34 @@
                         },
                         fetchSongs(term) {
                             this.loading = true;
-                            fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&entity=song&country=es&limit=8`)
+                            fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&entity=song&country=es&limit=25`)
                                 .then(res => res.json())
                                 .then(data => {
                                     this.results = data.results || [];
-                                    this.showDropdown = this.results.length > 0;
+                                    this.showDropdown = true;
                                     this.loading = false;
                                 })
                                 .catch(() => {
                                     this.loading = false;
+                                    this.showDropdown = true;
                                 });
                         },
                         selectSong(song) {
                             const formatted = `${song.artistName} - ${song.trackName}`;
+                            this.selectedSong = formatted;
+                            this.$wire.set(targetWireProperty, formatted);
+                            this.searchQuery = '';
+                            this.showDropdown = false;
+                            this.results = [];
+                            if (window.previewAudio) {
+                                window.previewAudio.pause();
+                                window.previewPlayingUrl = null;
+                                this.playingPreviewUrl = null;
+                            }
+                        },
+                        selectCustom() {
+                            const formatted = this.searchQuery.trim();
+                            if (!formatted) return;
                             this.selectedSong = formatted;
                             this.$wire.set(targetWireProperty, formatted);
                             this.searchQuery = '';
@@ -196,7 +211,7 @@
                             if (this.searchQuery.trim().length > 1) {
                                 this.timer = setTimeout(() => {
                                     this.fetchSongs(this.searchQuery.trim());
-                                }, 260);
+                                }, 220);
                             } else {
                                 this.results = [];
                                 this.showDropdown = false;
@@ -204,15 +219,16 @@
                         },
                         fetchSongs(term) {
                             this.loading = true;
-                            fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&entity=song&country=es&limit=8`)
+                            fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&entity=song&country=es&limit=25`)
                                 .then(res => res.json())
                                 .then(data => {
                                     this.results = data.results || [];
-                                    this.showDropdown = this.results.length > 0;
+                                    this.showDropdown = true;
                                     this.loading = false;
                                 })
                                 .catch(() => {
                                     this.loading = false;
+                                    this.showDropdown = true;
                                 });
                         },
                         addFromSearch(song) {
@@ -230,6 +246,25 @@
                                 window.previewAudio.pause();
                                 window.previewPlayingUrl = null;
                                 this.playingPreviewUrl = null;
+                            }
+                        },
+                        addCustomFromSearch() {
+                            const songText = this.searchQuery.trim();
+                            if (songText) {
+                                const momentName = (this.customMoment.trim() || this.activeMoment || '').trim();
+                                this.items.push({
+                                    moment: momentName,
+                                    song: songText
+                                });
+                                this.sync();
+                                this.searchQuery = '';
+                                this.showDropdown = false;
+                                this.results = [];
+                                if (window.previewAudio) {
+                                    window.previewAudio.pause();
+                                    window.previewPlayingUrl = null;
+                                    this.playingPreviewUrl = null;
+                                }
                             }
                         },
                         addManual() {
@@ -283,7 +318,7 @@
                             if (this.searchQuery.trim().length > 1) {
                                 this.timer = setTimeout(() => {
                                     this.fetchSongs(this.searchQuery.trim());
-                                }, 260);
+                                }, 220);
                             } else {
                                 this.results = [];
                                 this.showDropdown = false;
@@ -291,21 +326,37 @@
                         },
                         fetchSongs(term) {
                             this.loading = true;
-                            fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&entity=song&country=es&limit=8`)
+                            fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&entity=song&country=es&limit=25`)
                                 .then(res => res.json())
                                 .then(data => {
                                     this.results = data.results || [];
-                                    this.showDropdown = this.results.length > 0;
+                                    this.showDropdown = true;
                                     this.loading = false;
                                 })
                                 .catch(() => {
                                     this.loading = false;
+                                    this.showDropdown = true;
                                 });
                         },
                         addFromSearch(song) {
                             const formatted = `${song.artistName} - ${song.trackName}`;
                             if (!this.songs.includes(formatted)) {
                                 this.songs.push(formatted);
+                                this.sync();
+                            }
+                            this.searchQuery = '';
+                            this.showDropdown = false;
+                            this.results = [];
+                            if (window.previewAudio) {
+                                window.previewAudio.pause();
+                                window.previewPlayingUrl = null;
+                                this.playingPreviewUrl = null;
+                            }
+                        },
+                        addCustomFromSearch() {
+                            const val = this.searchQuery.trim();
+                            if (val && !this.songs.includes(val)) {
+                                this.songs.push(val);
                                 this.sync();
                             }
                             this.searchQuery = '';
@@ -391,7 +442,7 @@
                             if (this.searchQuery.trim().length > 1) {
                                 this.timer = setTimeout(() => {
                                     this.fetchSongs(this.searchQuery.trim());
-                                }, 260);
+                                }, 220);
                             } else {
                                 this.results = [];
                                 this.showDropdown = false;
@@ -399,15 +450,16 @@
                         },
                         fetchSongs(term) {
                             this.loading = true;
-                            fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&entity=song&country=es&limit=8`)
+                            fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&entity=song&country=es&limit=25`)
                                 .then(res => res.json())
                                 .then(data => {
                                     this.results = data.results || [];
-                                    this.showDropdown = this.results.length > 0;
+                                    this.showDropdown = true;
                                     this.loading = false;
                                 })
                                 .catch(() => {
                                     this.loading = false;
+                                    this.showDropdown = true;
                                 });
                         },
                         addFromSearch(song) {
@@ -418,6 +470,20 @@
                                 this.customNotes = '• ' + formatted;
                             }
                             this.sync();
+                            this.searchQuery = '';
+                            this.showDropdown = false;
+                            this.results = [];
+                        },
+                        addCustomFromSearch() {
+                            const val = this.searchQuery.trim();
+                            if (val) {
+                                if (this.customNotes.trim()) {
+                                    this.customNotes += '\n• ' + val;
+                                } else {
+                                    this.customNotes = '• ' + val;
+                                }
+                                this.sync();
+                            }
                             this.searchQuery = '';
                             this.showDropdown = false;
                             this.results = [];
@@ -487,6 +553,15 @@
                                             + Añadir
                                         </button>
                                     </div>
+                                </div>
+                            </template>
+                            <template x-if="searchQuery.trim().length > 1">
+                                <div @click="addCustomFromSearch()" class="px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950/90 hover:bg-indigo-50 dark:hover:bg-slate-800 cursor-pointer flex items-center justify-between gap-2 border-t border-slate-200 dark:border-slate-700 transition">
+                                    <div class="flex items-center gap-2 truncate text-xs text-indigo-600 dark:text-indigo-400 font-bold">
+                                        <span>➕</span>
+                                        <span class="truncate">Añadir lo que he escrito: "<span x-text="searchQuery" class="underline"></span>"</span>
+                                    </div>
+                                    <span class="text-[10px] font-semibold bg-indigo-100 dark:bg-indigo-900/60 text-indigo-800 dark:text-indigo-200 px-2 py-0.5 rounded flex-shrink-0">Personalizada</span>
                                 </div>
                             </template>
                         </div>
@@ -574,6 +649,15 @@
                                     </div>
                                 </div>
                             </template>
+                            <template x-if="searchQuery.trim().length > 1">
+                                <div @click="addCustomFromSearch()" class="px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950/90 hover:bg-indigo-50 dark:hover:bg-slate-800 cursor-pointer flex items-center justify-between gap-2 border-t border-slate-200 dark:border-slate-700 transition">
+                                    <div class="flex items-center gap-2 truncate text-xs text-indigo-600 dark:text-indigo-400 font-bold">
+                                        <span>➕</span>
+                                        <span class="truncate">Añadir lo que he escrito: "<span x-text="searchQuery" class="underline"></span>"</span>
+                                    </div>
+                                    <span class="text-[10px] font-semibold bg-indigo-100 dark:bg-indigo-900/60 text-indigo-800 dark:text-indigo-200 px-2 py-0.5 rounded flex-shrink-0">Personalizada</span>
+                                </div>
+                            </template>
                         </div>
                     </div>
 
@@ -641,6 +725,15 @@
                                         </div>
                                     </div>
                                 </template>
+                                <template x-if="searchQuery.trim().length > 1">
+                                    <div @click="selectCustom()" class="px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950/90 hover:bg-indigo-50 dark:hover:bg-slate-800 cursor-pointer flex items-center justify-between gap-2 border-t border-slate-200 dark:border-slate-700 transition">
+                                        <div class="flex items-center gap-2 truncate text-xs text-indigo-600 dark:text-indigo-400 font-bold">
+                                            <span>➕</span>
+                                            <span class="truncate">Usar lo que he escrito: "<span x-text="searchQuery" class="underline"></span>"</span>
+                                        </div>
+                                        <span class="text-[10px] font-semibold bg-indigo-100 dark:bg-indigo-900/60 text-indigo-800 dark:text-indigo-200 px-2 py-0.5 rounded flex-shrink-0">Personalizada</span>
+                                    </div>
+                                </template>
                             </div>
                         </div>
                     </div>
@@ -690,6 +783,15 @@
                                                 Elegir
                                             </button>
                                         </div>
+                                    </div>
+                                </template>
+                                <template x-if="searchQuery.trim().length > 1">
+                                    <div @click="selectCustom()" class="px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950/90 hover:bg-indigo-50 dark:hover:bg-slate-800 cursor-pointer flex items-center justify-between gap-2 border-t border-slate-200 dark:border-slate-700 transition">
+                                        <div class="flex items-center gap-2 truncate text-xs text-indigo-600 dark:text-indigo-400 font-bold">
+                                            <span>➕</span>
+                                            <span class="truncate">Usar lo que he escrito: "<span x-text="searchQuery" class="underline"></span>"</span>
+                                        </div>
+                                        <span class="text-[10px] font-semibold bg-indigo-100 dark:bg-indigo-900/60 text-indigo-800 dark:text-indigo-200 px-2 py-0.5 rounded flex-shrink-0">Personalizada</span>
                                     </div>
                                 </template>
                             </div>
@@ -749,6 +851,15 @@
                                                 + Añadir
                                             </button>
                                         </div>
+                                    </div>
+                                </template>
+                                <template x-if="searchQuery.trim().length > 1">
+                                    <div @click="addCustomFromSearch()" class="px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950/90 hover:bg-indigo-50 dark:hover:bg-slate-800 cursor-pointer flex items-center justify-between gap-2 border-t border-slate-200 dark:border-slate-700 transition">
+                                        <div class="flex items-center gap-2 truncate text-xs text-indigo-600 dark:text-indigo-400 font-bold">
+                                            <span>➕</span>
+                                            <span class="truncate">Añadir lo que he escrito: "<span x-text="searchQuery" class="underline"></span>"</span>
+                                        </div>
+                                        <span class="text-[10px] font-semibold bg-indigo-100 dark:bg-indigo-900/60 text-indigo-800 dark:text-indigo-200 px-2 py-0.5 rounded flex-shrink-0">Personalizada</span>
                                     </div>
                                 </template>
                             </div>
@@ -841,6 +952,15 @@
                                         </div>
                                     </div>
                                 </template>
+                                <template x-if="searchQuery.trim().length > 1">
+                                    <div @click="selectCustom()" class="px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950/90 hover:bg-indigo-50 dark:hover:bg-slate-800 cursor-pointer flex items-center justify-between gap-2 border-t border-slate-200 dark:border-slate-700 transition">
+                                        <div class="flex items-center gap-2 truncate text-xs text-indigo-600 dark:text-indigo-400 font-bold">
+                                            <span>➕</span>
+                                            <span class="truncate">Usar lo que he escrito: "<span x-text="searchQuery" class="underline"></span>"</span>
+                                        </div>
+                                        <span class="text-[10px] font-semibold bg-indigo-100 dark:bg-indigo-900/60 text-indigo-800 dark:text-indigo-200 px-2 py-0.5 rounded flex-shrink-0">Personalizada</span>
+                                    </div>
+                                </template>
                             </div>
                         </div>
                     </div>
@@ -880,6 +1000,15 @@
                                                 + Añadir
                                             </button>
                                         </div>
+                                    </div>
+                                </template>
+                                <template x-if="searchQuery.trim().length > 1">
+                                    <div @click="addCustomFromSearch()" class="px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950/90 hover:bg-indigo-50 dark:hover:bg-slate-800 cursor-pointer flex items-center justify-between gap-2 border-t border-slate-200 dark:border-slate-700 transition">
+                                        <div class="flex items-center gap-2 truncate text-xs text-indigo-600 dark:text-indigo-400 font-bold">
+                                            <span>➕</span>
+                                            <span class="truncate">Añadir lo que he escrito: "<span x-text="searchQuery" class="underline"></span>"</span>
+                                        </div>
+                                        <span class="text-[10px] font-semibold bg-indigo-100 dark:bg-indigo-900/60 text-indigo-800 dark:text-indigo-200 px-2 py-0.5 rounded flex-shrink-0">Personalizada</span>
                                     </div>
                                 </template>
                             </div>
@@ -962,6 +1091,15 @@
                                     </button>
                                 </div>
                             </template>
+                            <template x-if="searchQuery.trim().length > 1">
+                                <div @click="addCustomFromSearch()" class="px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950/90 hover:bg-indigo-50 dark:hover:bg-slate-800 cursor-pointer flex items-center justify-between gap-2 border-t border-slate-200 dark:border-slate-700 transition">
+                                    <div class="flex items-center gap-2 truncate text-xs text-indigo-600 dark:text-indigo-400 font-bold">
+                                        <span>➕</span>
+                                        <span class="truncate">Añadir lo que he escrito: "<span x-text="searchQuery" class="underline"></span>"</span>
+                                    </div>
+                                    <span class="text-[10px] font-semibold bg-indigo-100 dark:bg-indigo-900/60 text-indigo-800 dark:text-indigo-200 px-2 py-0.5 rounded flex-shrink-0">Personalizada</span>
+                                </div>
+                            </template>
                         </div>
                     </div>
 
@@ -1008,6 +1146,15 @@
                                             + Añadir
                                         </button>
                                     </div>
+                                </div>
+                            </template>
+                            <template x-if="searchQuery.trim().length > 1">
+                                <div @click="addCustomFromSearch()" class="px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950/90 hover:bg-indigo-50 dark:hover:bg-slate-800 cursor-pointer flex items-center justify-between gap-2 border-t border-slate-200 dark:border-slate-700 transition">
+                                    <div class="flex items-center gap-2 truncate text-xs text-indigo-600 dark:text-indigo-400 font-bold">
+                                        <span>➕</span>
+                                        <span class="truncate">Añadir lo que he escrito: "<span x-text="searchQuery" class="underline"></span>"</span>
+                                    </div>
+                                    <span class="text-[10px] font-semibold bg-indigo-100 dark:bg-indigo-900/60 text-indigo-800 dark:text-indigo-200 px-2 py-0.5 rounded flex-shrink-0">Personalizada</span>
                                 </div>
                             </template>
                         </div>
@@ -1082,6 +1229,15 @@
                                     </button>
                                 </div>
                             </template>
+                            <template x-if="searchQuery.trim().length > 1">
+                                <div @click="addCustomFromSearch()" class="px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950/90 hover:bg-indigo-50 dark:hover:bg-slate-800 cursor-pointer flex items-center justify-between gap-2 border-t border-slate-200 dark:border-slate-700 transition">
+                                    <div class="flex items-center gap-2 truncate text-xs text-indigo-600 dark:text-indigo-400 font-bold">
+                                        <span>➕</span>
+                                        <span class="truncate">Añadir lo que he escrito: "<span x-text="searchQuery" class="underline"></span>"</span>
+                                    </div>
+                                    <span class="text-[10px] font-semibold bg-indigo-100 dark:bg-indigo-900/60 text-indigo-800 dark:text-indigo-200 px-2 py-0.5 rounded flex-shrink-0">Personalizada</span>
+                                </div>
+                            </template>
                         </div>
                     </div>
 
@@ -1134,6 +1290,15 @@
                                 <button type="button" @click="addFromSearch(song)" class="text-[11px] font-bold text-rose-600 bg-rose-50 dark:bg-rose-950 px-2 py-0.5 rounded">
                                     🚫 Prohibir
                                 </button>
+                            </div>
+                        </template>
+                        <template x-if="searchQuery.trim().length > 1">
+                            <div @click="addCustomFromSearch()" class="px-3.5 py-2.5 bg-rose-50/80 dark:bg-rose-950/90 hover:bg-rose-100 dark:hover:bg-rose-900/60 cursor-pointer flex items-center justify-between gap-2 border-t border-rose-200 dark:border-rose-800 transition">
+                                <div class="flex items-center gap-2 truncate text-xs text-rose-700 dark:text-rose-300 font-bold">
+                                    <span>🚫</span>
+                                    <span class="truncate">Prohibir lo que he escrito: "<span x-text="searchQuery" class="underline"></span>"</span>
+                                </div>
+                                <span class="text-[10px] font-semibold bg-rose-100 dark:bg-rose-900/60 text-rose-800 dark:text-rose-200 px-2 py-0.5 rounded flex-shrink-0">Personalizada</span>
                             </div>
                         </template>
                     </div>
