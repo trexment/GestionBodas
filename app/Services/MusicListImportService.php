@@ -16,6 +16,9 @@ class MusicListImportService
      */
     public static function parseText(string $text): array
     {
+        // Ensure clean UTF-8 string
+        $text = self::sanitizeUtf8($text);
+
         $lines = preg_split('/\r\n|\r|\n/', $text);
         $tracks = [];
         $currentMoment = 'Baile & Fiesta';
@@ -95,8 +98,8 @@ class MusicListImportService
             $parts = array_values(array_filter(array_map('trim', $parts)));
             if (count($parts) >= 2) {
                 return [
-                    'title' => $parts[0],
-                    'artist' => $parts[1],
+                    'title' => self::sanitizeUtf8($parts[0]),
+                    'artist' => self::sanitizeUtf8($parts[1]),
                 ];
             }
         }
@@ -104,52 +107,52 @@ class MusicListImportService
         // 2. Separated by " - " or " / " or " — "
         if (preg_match('/^(.+?)\s+[\-\—\/]\s+(.+)$/u', $clean, $m)) {
             return [
-                'title' => trim($m[1]),
-                'artist' => trim($m[2]),
+                'title' => self::sanitizeUtf8(trim($m[1])),
+                'artist' => self::sanitizeUtf8(trim($m[2])),
             ];
         }
 
         // 3. Separated by " de " or " by " (e.g. "Despacito de Luis Fonsi")
         if (preg_match('/^(.+?)\s+(?:de|by)\s+(.+)$/iu', $clean, $m)) {
             return [
-                'title' => trim($m[1]),
-                'artist' => trim($m[2]),
+                'title' => self::sanitizeUtf8(trim($m[1])),
+                'artist' => self::sanitizeUtf8(trim($m[2])),
             ];
         }
 
         // 4. Format: "Title (Artist)" or "Title [Artist]"
         if (preg_match('/^(.+?)\s*[\(\[](.+?)[\)\]]$/u', $clean, $m)) {
             return [
-                'title' => trim($m[1]),
-                'artist' => trim($m[2]),
+                'title' => self::sanitizeUtf8(trim($m[1])),
+                'artist' => self::sanitizeUtf8(trim($m[2])),
             ];
         }
 
         // 5. Format: "Artist: Title"
         if (preg_match('/^(.+?):\s*(.+)$/u', $clean, $m)) {
             return [
-                'title' => trim($m[2]),
-                'artist' => trim($m[1]),
+                'title' => self::sanitizeUtf8(trim($m[2])),
+                'artist' => self::sanitizeUtf8(trim($m[1])),
             ];
         }
 
         // 6. Multiple spaces (from table layout without tabs, e.g. "La morocha    Luck Ra y BM")
         if (preg_match('/^(.+?)\s{2,}(.+)$/u', $clean, $m)) {
             return [
-                'title' => trim($m[1]),
-                'artist' => trim($m[2]),
+                'title' => self::sanitizeUtf8(trim($m[1])),
+                'artist' => self::sanitizeUtf8(trim($m[2])),
             ];
         }
 
         // Fallback: entire line as title
         return [
-            'title' => $clean,
+            'title' => self::sanitizeUtf8($clean),
             'artist' => '',
         ];
     }
 
     /**
-     * Extract raw text from a PDF file using native PHP stream decoding.
+     * Extract raw text from a PDF file using robust, safe stream decoding.
      */
     public static function extractTextFromPdf(string $filePath): string
     {
@@ -157,62 +160,121 @@ class MusicListImportService
             return '';
         }
 
-        $content = @file_get_contents($filePath);
-        if (empty($content)) {
+        try {
+            $content = @file_get_contents($filePath);
+            if (empty($content)) {
+                return '';
+            }
+
+            $extractedText = '';
+
+            // 1. Locate all streams using binary substring offsets to avoid catastrophic PCRE backtracking
+            $offset = 0;
+            $len = strlen($content);
+            $maxStreams = 500;
+            $streamCount = 0;
+
+            while ($offset < $len && $streamCount < $maxStreams) {
+                $streamStart = stripos($content, 'stream', $offset);
+                if ($streamStart === false) {
+                    break;
+                }
+
+                // Advance past "stream" and newlines
+                $dataStart = $streamStart + 6;
+                if ($dataStart < $len && $content[$dataStart] === "\r") {
+                    $dataStart++;
+                }
+                if ($dataStart < $len && $content[$dataStart] === "\n") {
+                    $dataStart++;
+                }
+
+                $streamEnd = stripos($content, 'endstream', $dataStart);
+                if ($streamEnd === false) {
+                    break;
+                }
+
+                $streamLength = $streamEnd - $dataStart;
+                if ($streamLength > 0 && $streamLength < 10485760) { // Safety: max 10MB per stream
+                    $data = substr($content, $dataStart, $streamLength);
+                    
+                    // Attempt decompression
+                    $uncompressed = @gzuncompress($data);
+                    if ($uncompressed === false) {
+                        $uncompressed = @gzinflate($data);
+                    }
+                    if ($uncompressed === false) {
+                        $uncompressed = @zlib_decode($data);
+                    }
+
+                    $decoded = ($uncompressed !== false) ? $uncompressed : $data;
+
+                    $textInStream = self::extractTextFromPdfStream($decoded);
+                    if (!empty($textInStream)) {
+                        $extractedText .= $textInStream . "\n";
+                    }
+                }
+
+                $offset = $streamEnd + 9;
+                $streamCount++;
+            }
+
+            // 2. Fallback: If no stream text found, scan for uncompressed text blocks
+            if (strlen(trim($extractedText)) < 15) {
+                $extractedText = self::extractTextFromPdfStream($content);
+            }
+
+            return self::sanitizeUtf8(trim($extractedText));
+        } catch (\Throwable $e) {
+            Log::warning("Error extrayendo texto de PDF: " . $e->getMessage());
             return '';
         }
+    }
 
-        $text = '';
+    /**
+     * Parse text operators (BT...ET, Tj, TJ) from a uncompressed PDF stream
+     */
+    private static function extractTextFromPdfStream(string $streamData): string
+    {
+        $out = '';
 
-        // Match all PDF streams
-        preg_match_all('/stream[\r\n]+(.*?)[\r\n]+endstream/s', $content, $streamMatches);
-
-        foreach ($streamMatches[1] as $stream) {
-            $data = $stream;
-            // Attempt decompression
-            $uncompressed = @gzuncompress($data);
-            if ($uncompressed === false) {
-                // Try inflate if raw deflate
-                $uncompressed = @gzinflate($data);
-            }
-
-            $decoded = ($uncompressed !== false) ? $uncompressed : $data;
-
-            // Extract text inside BT ... ET text objects
-            if (preg_match_all('/BT[\s\S]*?ET/', $decoded, $textBlocks)) {
-                foreach ($textBlocks[0] as $block) {
-                    // Match Tj operator (single string)
-                    if (preg_match_all('/\((.*?)\)\s*Tj/s', $block, $tjMatches)) {
-                        foreach ($tjMatches[1] as $tj) {
-                            $text .= self::decodePdfString($tj) . " ";
-                        }
-                        $text .= "\n";
+        // Extract BT ... ET blocks safely
+        if (preg_match_all('/BT([\s\S]*?)ET/s', $streamData, $blocks)) {
+            foreach ($blocks[1] as $block) {
+                // Match Tj operator (single string)
+                if (preg_match_all('/\((.*?)\)\s*Tj/s', $block, $tjMatches)) {
+                    foreach ($tjMatches[1] as $tj) {
+                        $out .= self::decodePdfString($tj) . " ";
                     }
-                    // Match TJ operator (array of strings)
-                    if (preg_match_all('/\[(.*?)\]\s*TJ/s', $block, $tjArrayMatches)) {
-                        foreach ($tjArrayMatches[1] as $arrayContent) {
-                            if (preg_match_all('/\((.*?)\)/s', $arrayContent, $stringParts)) {
-                                foreach ($stringParts[1] as $part) {
-                                    $text .= self::decodePdfString($part);
-                                }
+                    $out .= "\n";
+                }
+
+                // Match TJ operator (array of strings / kerning)
+                if (preg_match_all('/\[(.*?)\]\s*TJ/s', $block, $tjArrayMatches)) {
+                    foreach ($tjArrayMatches[1] as $arrayContent) {
+                        if (preg_match_all('/\((.*?)\)/s', $arrayContent, $stringParts)) {
+                            foreach ($stringParts[1] as $part) {
+                                $out .= self::decodePdfString($part);
                             }
                         }
-                        $text .= "\n";
                     }
+                    $out .= "\n";
+                }
+
+                // Match hex strings <48656c6c6f> Tj
+                if (preg_match_all('/<([0-9a-fA-F\s]+)>\s*Tj/s', $block, $hexMatches)) {
+                    foreach ($hexMatches[1] as $hex) {
+                        $cleanHex = preg_replace('/\s+/', '', $hex);
+                        if (strlen($cleanHex) % 2 === 0) {
+                            $out .= @hex2bin($cleanHex) . " ";
+                        }
+                    }
+                    $out .= "\n";
                 }
             }
         }
 
-        // If streams didn't produce clean text, fallback to uncompressed text extraction
-        if (strlen(trim($text)) < 20) {
-            if (preg_match_all('/\((.*?)\)\s*T[jJ]/s', $content, $rawMatches)) {
-                foreach ($rawMatches[1] as $raw) {
-                    $text .= self::decodePdfString($raw) . "\n";
-                }
-            }
-        }
-
-        return trim($text);
+        return $out;
     }
 
     /**
@@ -220,7 +282,7 @@ class MusicListImportService
      */
     private static function decodePdfString(string $str): string
     {
-        $str = str_replace(['\\(', '\\)', '\\\\'], ['(', ')', '\\'], $str);
+        $str = str_replace(['\\(', '\\)', '\\\\', '\\n', '\\r', '\\t'], ['(', ')', '\\', "\n", "\r", "\t"], $str);
         // Octal escape sequences (\ddd)
         $str = preg_replace_callback('/\\\([0-7]{1,3})/', function ($m) {
             return chr(octdec($m[1]));
@@ -229,26 +291,60 @@ class MusicListImportService
     }
 
     /**
-     * Import an array of parsed tracks into an Event.
+     * Sanitize string to clean printable UTF-8 (prevent JSON serialization 500 errors)
+     */
+    public static function sanitizeUtf8(string $str): string
+    {
+        // Convert encoding to UTF-8 ignoring invalid bytes
+        if (!mb_check_encoding($str, 'UTF-8')) {
+            $str = mb_convert_encoding($str, 'UTF-8', 'UTF-8');
+        }
+        // Remove non-printable binary control characters except newlines and tabs
+        $str = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $str);
+        return trim($str);
+    }
+
+    /**
+     * Import an array of parsed tracks into an Event, avoiding duplicates.
      *
      * @param Event $event
      * @param array $tracks Array of ['title' => string, 'artist' => string, 'category' => string, 'moment' => string]
      * @param string $requestedBy
      * @param bool $enrichMetadata
-     * @return int Number of tracks imported
+     * @return array ['imported' => int, 'duplicates' => int, 'total' => int]
      */
-    public static function importTracksToEvent(Event $event, array $tracks, string $requestedBy = 'Cliente (Importado)', bool $enrichMetadata = true): int
+    public static function importTracksToEvent(Event $event, array $tracks, string $requestedBy = 'Cliente (Importado)', bool $enrichMetadata = true): array
     {
-        $maxOrder = $event->musicRequests()->max('order') ?: 0;
-        $count = 0;
+        $event->load('musicRequests');
+        
+        // Build normalized list of existing tracks in this event
+        $existingTracks = [];
+        foreach ($event->musicRequests as $req) {
+            $norm = self::normalizeTrackKey($req->title, $req->artist);
+            $existingTracks[$norm] = true;
+        }
+
+        $maxOrder = $event->musicRequests->max('order') ?: 0;
+        $importedCount = 0;
+        $duplicatesCount = 0;
 
         foreach ($tracks as $track) {
-            $title = trim($track['title'] ?? '');
-            $artist = trim($track['artist'] ?? '');
+            $title = self::sanitizeUtf8($track['title'] ?? '');
+            $artist = self::sanitizeUtf8($track['artist'] ?? '');
 
             if (empty($title)) {
                 continue;
             }
+
+            // Check if track is already in the event
+            $trackKey = self::normalizeTrackKey($title, $artist);
+            if (isset($existingTracks[$trackKey])) {
+                $duplicatesCount++;
+                continue; // Skip duplicate!
+            }
+
+            // Mark as existing so intra-list duplicates are also prevented
+            $existingTracks[$trackKey] = true;
 
             $category = $track['category'] ?? 'baile';
             $moment = $track['moment'] ?? 'Baile & Fiesta';
@@ -287,9 +383,23 @@ class MusicListImportService
                 'order' => $maxOrder,
             ]);
 
-            $count++;
+            $importedCount++;
         }
 
-        return $count;
+        return [
+            'imported' => $importedCount,
+            'duplicates' => $duplicatesCount,
+            'total' => count($tracks),
+        ];
+    }
+
+    /**
+     * Normalize title and artist to a comparable string
+     */
+    private static function normalizeTrackKey(string $title, string $artist = ''): string
+    {
+        $raw = strtolower(trim($title . ' ' . $artist));
+        // Remove non alphanumeric characters
+        return preg_replace('/[^a-z0-9áéíóúñ]/u', '', $raw);
     }
 }

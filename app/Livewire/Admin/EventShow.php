@@ -2169,22 +2169,29 @@ class EventShow extends Component
 
     public function updatedImportFile()
     {
-        if ($this->importFile) {
-            $path = $this->importFile->getRealPath();
-            $mime = $this->importFile->getMimeType();
-            $originalName = strtolower($this->importFile->getClientOriginalName());
+        try {
+            if ($this->importFile) {
+                $path = $this->importFile->getRealPath() ?: $this->importFile->path();
+                $mime = $this->importFile->getMimeType();
+                $originalName = strtolower($this->importFile->getClientOriginalName());
 
-            $extractedText = '';
-            if (str_ends_with($originalName, '.pdf') || $mime === 'application/pdf') {
-                $extractedText = \App\Services\MusicListImportService::extractTextFromPdf($path);
-            } else {
-                $extractedText = @file_get_contents($path) ?: '';
-            }
+                $extractedText = '';
+                if (str_ends_with($originalName, '.pdf') || $mime === 'application/pdf') {
+                    $extractedText = \App\Services\MusicListImportService::extractTextFromPdf($path);
+                } else {
+                    $extractedText = @file_get_contents($path) ?: '';
+                }
 
-            if (!empty($extractedText)) {
-                $this->importRawText = $extractedText;
-                $this->parseImportInput();
+                if (!empty(trim($extractedText))) {
+                    $this->importRawText = $extractedText;
+                    $this->parseImportInput();
+                } else {
+                    session()->flash('import_error', 'No se ha detectado texto seleccionable en el PDF. Puedes copiar el texto y pegarlo directamente en el recuadro inferior.');
+                }
             }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error("Error procesando archivo subido en importador: " . $e->getMessage());
+            session()->flash('import_error', 'Ocurrió un problema leyendo el documento. Puedes pegar el texto directamente en el recuadro inferior.');
         }
     }
 
@@ -2225,14 +2232,19 @@ class EventShow extends Component
             return;
         }
 
-        $count = \App\Services\MusicListImportService::importTracksToEvent($this->event, $selectedTracks);
+        $result = \App\Services\MusicListImportService::importTracksToEvent($this->event, $selectedTracks);
         $this->event->load('musicRequests');
         $this->showImportModal = false;
         $this->parsedImportTracks = [];
         $this->importRawText = '';
         $this->importFile = null;
 
-        session()->flash('music_message', "✅ ¡Se han importado {$count} canciones con carátulas y enlaces a la escaleta del evento!");
+        $msg = "✅ ¡Se han importado {$result['imported']} canciones con carátulas y enlaces a la escaleta!";
+        if (!empty($result['duplicates']) && $result['duplicates'] > 0) {
+            $msg .= " (ℹ️ {$result['duplicates']} canciones ya existían en el evento y se han omitido para evitar duplicados).";
+        }
+
+        session()->flash('music_message', $msg);
     }
 
     public function createSpotifyPlaylist()
