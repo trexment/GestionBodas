@@ -162,6 +162,15 @@ class EventShow extends Component
     public $cloudImportStatus = null;
     public $cloudScannedFiles = [];
 
+    // Importador Inteligente de Listas (PDF / WhatsApp / Texto)
+    public $showImportModal = false;
+    public $importRawText = '';
+    public $importFile = null;
+    public $parsedImportTracks = [];
+    public $parsedImportNotes = [];
+    public $importDefaultCategory = 'baile';
+    public $importDefaultMoment = 'Baile & Fiesta';
+
     public function mount(Event $event)
     {
         $user = auth()->user();
@@ -2147,6 +2156,83 @@ class EventShow extends Component
         }, $fileName, [
             'Content-Type' => 'audio/x-mpegurl',
         ]);
+    }
+
+    public function openImportModal()
+    {
+        $this->importRawText = '';
+        $this->importFile = null;
+        $this->parsedImportTracks = [];
+        $this->parsedImportNotes = [];
+        $this->showImportModal = true;
+    }
+
+    public function updatedImportFile()
+    {
+        if ($this->importFile) {
+            $path = $this->importFile->getRealPath();
+            $mime = $this->importFile->getMimeType();
+            $originalName = strtolower($this->importFile->getClientOriginalName());
+
+            $extractedText = '';
+            if (str_ends_with($originalName, '.pdf') || $mime === 'application/pdf') {
+                $extractedText = \App\Services\MusicListImportService::extractTextFromPdf($path);
+            } else {
+                $extractedText = @file_get_contents($path) ?: '';
+            }
+
+            if (!empty($extractedText)) {
+                $this->importRawText = $extractedText;
+                $this->parseImportInput();
+            }
+        }
+    }
+
+    public function parseImportInput()
+    {
+        if (empty(trim($this->importRawText))) {
+            $this->parsedImportTracks = [];
+            $this->parsedImportNotes = [];
+            return;
+        }
+
+        $result = \App\Services\MusicListImportService::parseText($this->importRawText);
+        $this->parsedImportTracks = array_map(function($t) {
+            $t['category'] = $this->importDefaultCategory;
+            $t['moment'] = $this->importDefaultMoment;
+            $t['selected'] = true;
+            return $t;
+        }, $result['tracks'] ?? []);
+        $this->parsedImportNotes = $result['notes'] ?? [];
+    }
+
+    public function removeParsedTrack($index)
+    {
+        if (isset($this->parsedImportTracks[$index])) {
+            unset($this->parsedImportTracks[$index]);
+            $this->parsedImportTracks = array_values($this->parsedImportTracks);
+        }
+    }
+
+    public function executeImport()
+    {
+        $selectedTracks = array_filter($this->parsedImportTracks, function($t) {
+            return !empty($t['selected']);
+        });
+
+        if (empty($selectedTracks)) {
+            session()->flash('import_error', 'No hay canciones seleccionadas para importar.');
+            return;
+        }
+
+        $count = \App\Services\MusicListImportService::importTracksToEvent($this->event, $selectedTracks);
+        $this->event->load('musicRequests');
+        $this->showImportModal = false;
+        $this->parsedImportTracks = [];
+        $this->importRawText = '';
+        $this->importFile = null;
+
+        session()->flash('music_message', "✅ ¡Se han importado {$count} canciones con carátulas y enlaces a la escaleta del evento!");
     }
 
     public function createSpotifyPlaylist()

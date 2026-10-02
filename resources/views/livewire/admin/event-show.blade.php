@@ -750,6 +750,16 @@
                             <span>📁</span>
                             Importar Carpeta Nube
                         </button>
+
+                        <button 
+                            type="button" 
+                            wire:click="openImportModal" 
+                            class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3 py-2 rounded-lg shadow-sm inline-flex items-center gap-1.5 transition cursor-pointer"
+                            title="Importa listas de canciones directamente desde un archivo PDF o pegando texto de WhatsApp / Word"
+                        >
+                            <span>📄</span>
+                            Importar Lista (PDF / WhatsApp)
+                        </button>
                         
                         <a href="{{ route('admin.events.music_escaleta.pdf', $event->id) }}" target="_blank" class="bg-gray-800 hover:bg-gray-900 text-white text-xs font-bold px-3 py-2 rounded-lg shadow-sm inline-flex items-center gap-1.5 transition">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
@@ -3880,6 +3890,230 @@
                     </button>
                 </div>
             </div>
+        </div>
+    </div>
+    <!-- ========================================================= -->
+    <!-- MODAL IMPORTADOR INTELIGENTE DE CANCIONES (PDF / WHATSAPP)-->
+    <!-- ========================================================= -->
+    @if($showImportModal)
+    <div class="fixed inset-0 z-50 overflow-y-auto bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="relative w-full max-w-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+            
+            <!-- HEADER -->
+            <div class="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-gradient-to-r from-emerald-50 via-teal-50 to-white dark:from-emerald-950/40 dark:via-slate-900 dark:to-slate-900">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 dark:bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-2xl">
+                        📄
+                    </div>
+                    <div>
+                        <h3 class="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
+                            <span>Importador Inteligente de Canciones</span>
+                            <span class="text-[10px] bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 font-bold px-2 py-0.5 rounded-full uppercase">Auto-Detección</span>
+                        </h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                            Sube un PDF enviado por el cliente o pega el mensaje de WhatsApp. El sistema extraerá títulos y artistas automáticamente.
+                        </p>
+                    </div>
+                </div>
+                <button type="button" wire:click="$set('showImportModal', false)" class="text-slate-400 hover:text-slate-600 dark:hover:text-white text-2xl p-1 cursor-pointer">&times;</button>
+            </div>
+
+            <!-- CONTENIDO SCROLLABLE -->
+            <div class="p-6 overflow-y-auto space-y-5 flex-1">
+                
+                @if (session()->has('import_error'))
+                    <div class="p-4 bg-rose-50 border border-rose-200 text-rose-800 rounded-2xl text-xs font-bold flex items-center gap-2 shadow-xs">
+                        <span>⚠️</span> {{ session('import_error') }}
+                    </div>
+                @endif
+
+                <!-- SELECTOR DE ENTRADA: ARCHIVO O TEXTO -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    
+                    <!-- OPCIÓN 1: SUBIR PDF / DOCUMENTO -->
+                    <div class="p-4 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-950/40 space-y-2 flex flex-col justify-between">
+                        <div>
+                            <span class="text-xs font-black text-slate-700 dark:text-slate-200 uppercase tracking-wider block mb-1">
+                                📎 Opción A: Subir Archivo PDF / TXT
+                            </span>
+                            <p class="text-[11px] text-slate-400">
+                                Sube el PDF que te envió el cliente con la lista de canciones.
+                            </p>
+                        </div>
+
+                        <div class="pt-2">
+                            <input 
+                                type="file" 
+                                wire:model="importFile" 
+                                accept=".pdf,.txt,.csv" 
+                                class="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-emerald-600 file:text-white hover:file:bg-emerald-500 cursor-pointer"
+                            >
+                            <div wire:loading wire:target="importFile" class="text-[11px] text-emerald-600 font-bold mt-1.5 flex items-center gap-1.5">
+                                <span class="animate-spin text-sm">⏳</span> Leyendo documento...
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- OPCIÓN 2: CONFIGURACIÓN POR DEFECTO -->
+                    <div class="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950/60 space-y-3">
+                        <span class="text-xs font-black text-slate-700 dark:text-slate-200 uppercase tracking-wider block">
+                            🎯 Destino de las Canciones
+                        </span>
+                        
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-500 mb-1">Fase / Categoría</label>
+                                <select wire:model="importDefaultCategory" class="w-full text-xs border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-900 font-medium">
+                                    <option value="baile">🎉 Baile & Fiesta</option>
+                                    <option value="coctel">🍷 Cóctel</option>
+                                    <option value="banquete">🍽️ Banquete</option>
+                                    <option value="ceremonia">💍 Ceremonia</option>
+                                    <option value="general">🎵 General</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-500 mb-1">Momento / Hito</label>
+                                <input type="text" wire:model="importDefaultMoment" placeholder="Ej: Baile & Fiesta" class="w-full text-xs border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-900 font-medium">
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- TEXTAREA PARA PEGAR TEXTO DE WHATSAPP -->
+                <div class="space-y-1.5">
+                    <div class="flex items-center justify-between">
+                        <label class="block text-xs font-black text-slate-700 dark:text-slate-200 uppercase tracking-wider">
+                            📋 Opción B: Pegar Texto Directo (WhatsApp / Word / Email)
+                        </label>
+                        @if(!empty($importRawText))
+                            <button type="button" wire:click="$set('importRawText', '')" class="text-[11px] text-rose-500 hover:underline">
+                                Borrar texto
+                            </button>
+                        @endif
+                    </div>
+                    <textarea 
+                        wire:model.live.debounce.400ms="importRawText" 
+                        wire:change="parseImportInput"
+                        rows="5" 
+                        placeholder="Pega aquí el texto... Ej:&#10;1 La morocha Luck Ra y BM&#10;2 Fiesta pagana Mägo de Oz&#10;3 Y volar La Pegatina&#10;O también: Mecano - Cruz de navajas" 
+                        class="w-full border-slate-200 dark:border-slate-700 rounded-2xl p-3.5 text-xs font-mono bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-emerald-500"
+                    ></textarea>
+                </div>
+
+                <!-- BOTÓN PROCESAR TEXTO -->
+                <div class="flex items-center justify-between">
+                    <button 
+                        type="button" 
+                        wire:click="parseImportInput" 
+                        class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+                    >
+                        <span>🔍</span> Analizar y Extraer Canciones
+                    </button>
+                    @if(count($parsedImportTracks) > 0)
+                        <span class="text-xs font-black text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/80 px-3 py-1 rounded-xl border border-emerald-200 dark:border-emerald-800">
+                            ✨ {{ count($parsedImportTracks) }} canciones detectadas
+                        </span>
+                    @endif
+                </div>
+
+                <!-- NOTAS ADICIONALES DETECTADAS (ESTILOS / COMENTARIOS) -->
+                @if(!empty($parsedImportNotes))
+                    <div class="p-4 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-2xl space-y-1.5">
+                        <strong class="text-xs font-black text-amber-900 dark:text-amber-300 flex items-center gap-1.5">
+                            <span>💡</span> Estilos y Notas Especiales Detectadas:
+                        </strong>
+                        <ul class="list-disc list-inside text-xs text-amber-800 dark:text-amber-400 space-y-0.5 pl-2">
+                            @foreach($parsedImportNotes as $note)
+                                <li>{{ $note }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
+
+                <!-- PREVISUALIZACIÓN DE CANCIONES A IMPORTAR -->
+                @if(count($parsedImportTracks) > 0)
+                    <div class="space-y-2.5">
+                        <h4 class="text-xs font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                            Lista de Canciones Extraídas (Marca o desmarca las que quieras)
+                        </h4>
+
+                        <div class="max-h-64 overflow-y-auto border border-slate-200 dark:border-slate-800 rounded-2xl divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-950 shadow-inner">
+                            @foreach($parsedImportTracks as $idx => $item)
+                                <div class="p-3 flex items-center justify-between gap-3 hover:bg-slate-50 dark:hover:bg-slate-900/60 transition">
+                                    <div class="flex items-center gap-3 min-w-0 flex-1">
+                                        <input 
+                                            type="checkbox" 
+                                            wire:model="parsedImportTracks.{{ $idx }}.selected" 
+                                            class="rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer h-4 w-4 shrink-0"
+                                        >
+                                        <span class="text-xs font-mono font-bold text-slate-400 w-6 shrink-0">#{{ $loop->iteration }}</span>
+                                        <div class="truncate">
+                                            <input 
+                                                type="text" 
+                                                wire:model="parsedImportTracks.{{ $idx }}.title" 
+                                                placeholder="Título" 
+                                                class="text-xs font-bold text-slate-900 dark:text-white bg-transparent border-0 p-0 focus:ring-0 w-full"
+                                            >
+                                            <input 
+                                                type="text" 
+                                                wire:model="parsedImportTracks.{{ $idx }}.artist" 
+                                                placeholder="Artista (Opcional)" 
+                                                class="text-[11px] text-slate-500 bg-transparent border-0 p-0 focus:ring-0 w-full"
+                                            >
+                                        </div>
+                                    </div>
+
+                                    <div class="flex items-center gap-2 shrink-0">
+                                        <input 
+                                            type="text" 
+                                            wire:model="parsedImportTracks.{{ $idx }}.moment" 
+                                            placeholder="Momento" 
+                                            class="text-[11px] border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 w-28"
+                                        >
+                                        <button 
+                                            type="button" 
+                                            wire:click="removeParsedTrack({{ $idx }})" 
+                                            class="text-rose-500 hover:text-rose-700 text-xs font-bold px-2 py-1 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950 transition cursor-pointer"
+                                            title="Quitar de la lista"
+                                        >
+                                            &times;
+                                        </button>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
+
+            </div>
+
+            <!-- FOOTER -->
+            <div class="p-4 bg-slate-50 dark:bg-slate-950 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3">
+                <button 
+                    type="button" 
+                    wire:click="$set('showImportModal', false)" 
+                    class="px-4 py-2.5 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-100 text-slate-700 dark:text-slate-300 font-bold text-xs border border-slate-200 dark:border-slate-700 transition cursor-pointer"
+                >
+                    Cancelar
+                </button>
+
+                <button 
+                    type="button" 
+                    wire:click="executeImport" 
+                    wire:loading.attr="disabled"
+                    :disabled="{{ count($parsedImportTracks) === 0 ? 'true' : 'false' }}"
+                    class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-50 text-white font-black text-xs shadow-lg transition flex items-center gap-2 cursor-pointer"
+                >
+                    <span wire:loading.remove wire:target="executeImport">
+                        ⚡ Importar a la Escaleta ({{ count(array_filter($parsedImportTracks, fn($t) => !empty($t['selected']))) }})
+                    </span>
+                    <span wire:loading wire:target="executeImport" class="inline-flex items-center gap-1.5">
+                        <span class="animate-spin text-sm">⏳</span> Procesando y buscando carátulas...
+                    </span>
+                </button>
+            </div>
+
         </div>
     </div>
     @endif

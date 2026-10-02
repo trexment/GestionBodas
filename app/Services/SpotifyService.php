@@ -26,6 +26,9 @@ class SpotifyService
             'user-read-private',
             'user-modify-playback-state',
             'user-read-playback-state',
+            'playlist-modify-public',
+            'playlist-modify-private',
+            'playlist-read-private',
         ];
 
         $params = [
@@ -216,14 +219,31 @@ class SpotifyService
 
             // 2. Create playlist
             $dateStr = $event->event_date ? \Carbon\Carbon::parse($event->event_date)->format('d/m/Y') : '';
-            $playlistRes = Http::withToken($token)->post("https://api.spotify.com/v1/users/{$userId}/playlists", [
+            $playlistRes = Http::withToken($token)->post("https://api.spotify.com/v1/me/playlists", [
                 'name' => "{$event->name} - Playlist del Evento",
                 'description' => "Canciones y momentos para {$event->name} ({$dateStr}) generada desde el panel.",
                 'public' => false,
             ]);
 
             if (!$playlistRes->successful()) {
-                return ['success' => false, 'message' => 'Error al crear la playlist en Spotify: ' . ($playlistRes->json('error.message') ?? '')];
+                // Fallback to /v1/users/{userId}/playlists
+                $playlistRes = Http::withToken($token)->post("https://api.spotify.com/v1/users/{$userId}/playlists", [
+                    'name' => "{$event->name} - Playlist del Evento",
+                    'description' => "Canciones y momentos para {$event->name} ({$dateStr}) generada desde el panel.",
+                    'public' => false,
+                ]);
+            }
+
+            if (!$playlistRes->successful()) {
+                $status = $playlistRes->status();
+                $err = $playlistRes->json('error.message') ?: 'Error de autorización';
+                if ($status === 403) {
+                    return [
+                        'success' => false,
+                        'message' => 'Permisos insuficientes en Spotify (403 Forbidden). Ve a Ajustes > Spotify y pulsa "Reconectar Spotify" para autorizar la creación de playlists.',
+                    ];
+                }
+                return ['success' => false, 'message' => 'Error al crear la playlist en Spotify: ' . $err];
             }
 
             $playlistData = $playlistRes->json();
