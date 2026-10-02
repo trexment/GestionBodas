@@ -267,11 +267,20 @@
                 <!-- Formulario con scroll vertical garantizado en móviles -->
                 <div class="p-5 overflow-y-auto flex-1 space-y-4">
                     <form wire:submit.prevent="saveEvent" id="createEventForm">
-                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
+                        <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 mb-3">
                             <div class="sm:col-span-2">
                                 <label class="block text-gray-700 dark:text-slate-300 text-xs font-bold mb-1">Nombre del Evento *</label>
                                 <input type="text" wire:model="name" placeholder="Ej: Boda Laura y Carlos / Fiesta ACME" class="border dark:border-slate-700 rounded-xl w-full py-2 px-3 text-gray-700 dark:text-slate-200 bg-white dark:bg-slate-800 text-sm focus:ring-indigo-500 focus:border-indigo-500">
                                 @error('name') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 dark:text-slate-300 text-xs font-bold mb-1">Marca / Perfil *</label>
+                                <select wire:model="brand" class="border dark:border-slate-700 rounded-xl w-full py-2 px-2 text-gray-700 dark:text-slate-200 text-xs font-bold focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-slate-800">
+                                    <option value="nunez_and_son">👑 Núñez & Son</option>
+                                    <option value="javnx">🎧 JAVNX DJ</option>
+                                    <option value="mago_leugim">🎩 Mago Leugim</option>
+                                </select>
+                                @error('brand') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                             </div>
                             <div>
                                 <label class="block text-gray-700 dark:text-slate-300 text-xs font-bold mb-1">Tipo *</label>

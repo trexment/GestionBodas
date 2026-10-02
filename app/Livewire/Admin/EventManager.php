@@ -12,6 +12,7 @@ class EventManager extends Component
     
     // Properties for creating a new event
     public $name;
+    public $brand = 'nunez_and_son'; // nunez_and_son, javnx, mago_leugim
     public $event_type = 'boda'; // boda, empresa, cumpleanos, comunion, otro
     public $event_date;
     public $setup_date;
@@ -32,6 +33,7 @@ class EventManager extends Component
 
     protected $rules = [
         'name' => 'required|string|max:255',
+        'brand' => 'nullable|string|in:nunez_and_son,javnx,mago_leugim',
         'event_type' => 'required|string|in:boda,empresa,cumpleanos,comunion,otro',
         'event_date' => 'required|date',
         'setup_date' => 'nullable|date',
@@ -80,7 +82,8 @@ class EventManager extends Component
             return;
         }
         $this->resetValidation();
-        $this->reset(['name', 'event_type', 'event_date', 'setup_date', 'start_time', 'dance_start_time', 'dance_duration_hours', 'location', 'client_id', 'dj_id', 'assistant_id', 'notes']);
+        $this->reset(['name', 'brand', 'event_type', 'event_date', 'setup_date', 'start_time', 'dance_start_time', 'dance_duration_hours', 'location', 'client_id', 'dj_id', 'assistant_id', 'notes']);
+        $this->brand = \App\Models\Setting::getDetectedBrand();
         $this->event_type = 'boda';
         $this->dance_duration_hours = 4.0;
         $this->dj_id = auth()->id(); // default current logged admin/dj
@@ -109,6 +112,7 @@ class EventManager extends Component
 
             $createData = [
                 'name' => $this->name,
+                'brand' => $this->brand ?: 'nunez_and_son',
                 'event_type' => $this->event_type ?: 'boda',
                 'event_date' => $this->event_date,
                 'location' => $this->location,

@@ -42,6 +42,13 @@ class Settings extends Component
     public $brand_javnx_phone_2;
     public $brand_javnx_email;
     public $brand_javnx_website;
+
+    public $brand_leugim_name;
+    public $brand_leugim_subtitle;
+    public $brand_leugim_phone;
+    public $brand_leugim_phone_2;
+    public $brand_leugim_email;
+    public $brand_leugim_website;
     
     // Precios base y Packs Comerciales
     public $pack_basic_name;
@@ -185,6 +192,13 @@ class Settings extends Component
         $this->brand_javnx_phone_2 = Setting::get('brand_javnx_phone_2', '');
         $this->brand_javnx_email = Setting::get('brand_javnx_email', 'info@javnxdj.com');
         $this->brand_javnx_website = Setting::get('brand_javnx_website', 'javnxdj.com');
+
+        $this->brand_leugim_name = Setting::get('brand_leugim_name', 'Mago Leugim');
+        $this->brand_leugim_subtitle = Setting::get('brand_leugim_subtitle', 'Ilusionismo, Magia de Cerca & Eventos');
+        $this->brand_leugim_phone = Setting::get('brand_leugim_phone', '+34 674 37 89 93 (Miguel)');
+        $this->brand_leugim_phone_2 = Setting::get('brand_leugim_phone_2', '+34 622 62 47 90 (Fran)');
+        $this->brand_leugim_email = Setting::get('brand_leugim_email', 'magoleugim@gmail.com');
+        $this->brand_leugim_website = Setting::get('brand_leugim_website', 'magoleugim.es');
 
         // Packs
         $this->pack_basic_name = Setting::get('pack_basic_name', 'Pack Básico');
@@ -434,6 +448,13 @@ class Settings extends Component
         Setting::set('brand_javnx_phone_2', $this->brand_javnx_phone_2);
         Setting::set('brand_javnx_email', $this->brand_javnx_email);
         Setting::set('brand_javnx_website', $this->brand_javnx_website);
+
+        Setting::set('brand_leugim_name', $this->brand_leugim_name);
+        Setting::set('brand_leugim_subtitle', $this->brand_leugim_subtitle);
+        Setting::set('brand_leugim_phone', $this->brand_leugim_phone);
+        Setting::set('brand_leugim_phone_2', $this->brand_leugim_phone_2);
+        Setting::set('brand_leugim_email', $this->brand_leugim_email);
+        Setting::set('brand_leugim_website', $this->brand_leugim_website);
 
         // Packs
         Setting::set('pack_basic_name', $this->pack_basic_name);

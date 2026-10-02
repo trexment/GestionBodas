@@ -174,7 +174,7 @@
                         </p>
                     </div>
 
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
                         <!-- PERFIL 1: NÚÑEZ AND SON -->
                         <div class="p-4 bg-amber-50/60 rounded-2xl border border-amber-200 space-y-3">
                             <div class="flex items-center gap-2 border-b border-amber-200 pb-2">
@@ -251,6 +251,46 @@
                                 <div>
                                     <label class="block font-bold text-indigo-900 mb-0.5">Email de Contacto</label>
                                     <input type="email" wire:model="brand_javnx_email" class="w-full border-indigo-300 rounded-lg p-2 text-xs bg-white text-slate-800">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- PERFIL 3: MAGO LEUGIM -->
+                        <div class="p-4 bg-purple-50/60 rounded-2xl border border-purple-200 space-y-3">
+                            <div class="flex items-center gap-2 border-b border-purple-200 pb-2">
+                                <span class="text-xl">🎩</span>
+                                <div>
+                                    <strong class="text-xs font-black text-purple-950 block">Marca 3: Mago Leugim</strong>
+                                    <span class="text-[11px] text-purple-800">Ilusionismo, magia de cerca, espectáculos y bodas</span>
+                                </div>
+                            </div>
+
+                            <div class="space-y-2.5 text-xs">
+                                <div>
+                                    <label class="block font-bold text-purple-900 mb-0.5">Nombre Comercial</label>
+                                    <input type="text" wire:model="brand_leugim_name" class="w-full border-purple-300 rounded-lg p-2 text-xs bg-white text-slate-800 font-bold">
+                                </div>
+                                <div>
+                                    <label class="block font-bold text-purple-900 mb-0.5">Subtítulo / Especialidad</label>
+                                    <input type="text" wire:model="brand_leugim_subtitle" class="w-full border-purple-300 rounded-lg p-2 text-xs bg-white text-slate-800">
+                                </div>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label class="block font-bold text-purple-900 mb-0.5">Teléfono Principal (Miguel)</label>
+                                        <input type="text" wire:model="brand_leugim_phone" class="w-full border-purple-300 rounded-lg p-2 text-xs bg-white text-slate-800">
+                                    </div>
+                                    <div>
+                                        <label class="block font-bold text-purple-900 mb-0.5">Teléfono Secundario</label>
+                                        <input type="text" wire:model="brand_leugim_phone_2" class="w-full border-purple-300 rounded-lg p-2 text-xs bg-white text-slate-800">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block font-bold text-purple-900 mb-0.5">Página Web / Redes</label>
+                                    <input type="text" wire:model="brand_leugim_website" class="w-full border-purple-300 rounded-lg p-2 text-xs bg-white text-slate-800">
+                                </div>
+                                <div>
+                                    <label class="block font-bold text-purple-900 mb-0.5">Email de Contacto</label>
+                                    <input type="email" wire:model="brand_leugim_email" class="w-full border-purple-300 rounded-lg p-2 text-xs bg-white text-slate-800">
                                 </div>
                             </div>
                         </div>

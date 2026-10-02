@@ -127,23 +127,38 @@ class Setting extends Model
                 'icon' => '🎧',
                 'label' => 'JAVNX DJ (Eventos & Sesiones)',
             ],
+            'mago_leugim' => [
+                'name' => self::get('brand_leugim_name', 'Mago Leugim'),
+                'icon' => '🎩',
+                'label' => 'Mago Leugim (Ilusionismo & Magia)',
+            ],
         ];
     }
 
     /**
-     * Get details for a specific brand profile ('nunez_and_son' | 'javnx')
+     * Get details for a specific brand profile ('nunez_and_son' | 'javnx' | 'mago_leugim')
      */
     public static function getBrandInfo(?string $brandKey = null): array
     {
         if (empty($brandKey)) {
             if (!app()->runningInConsole() && request() && str_contains(strtolower(request()->getHost()), 'javnx')) {
                 $brandKey = 'javnx';
+            } elseif (!app()->runningInConsole() && request() && str_contains(strtolower(request()->getHost()), 'leugim')) {
+                $brandKey = 'mago_leugim';
             } else {
                 $brandKey = self::get('default_brand', 'nunez_and_son');
             }
         }
 
-        if ($brandKey === 'javnx') {
+        if ($brandKey === 'mago_leugim') {
+            $name = self::get('brand_leugim_name', 'Mago Leugim');
+            $subtitle = self::get('brand_leugim_subtitle', 'Ilusionismo, Magia de Cerca & Eventos');
+            $phone = self::get('brand_leugim_phone', '+34 674 37 89 93');
+            $phone2 = self::get('brand_leugim_phone_2', '+34 622 62 47 90');
+            $email = self::get('brand_leugim_email', self::get('company_email', 'magoleugim@gmail.com'));
+            $website = self::get('brand_leugim_website', 'magoleugim.es');
+            $logo = self::get('brand_leugim_logo', self::get('company_logo'));
+        } elseif ($brandKey === 'javnx') {
             $name = self::get('brand_javnx_name', 'JAVNX DJ');
             $subtitle = self::get('brand_javnx_subtitle', 'DJ & Producción de Eventos');
             $phone = self::get('brand_javnx_phone', self::get('company_phone', '+34 622 62 47 90'));

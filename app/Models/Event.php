@@ -223,17 +223,24 @@ class Event extends Model
         if (!app()->runningInConsole() && request() && str_contains(strtolower(request()->getHost()), 'javnx')) {
             return 'javnx';
         }
+        if (!app()->runningInConsole() && request() && str_contains(strtolower(request()->getHost()), 'leugim')) {
+            return 'mago_leugim';
+        }
         return 'nunez_and_son';
     }
 
     public function getBrandLabelAttribute(): string
     {
-        return $this->brand_clean === 'javnx' ? 'JAVNX DJ' : 'Núñez and Son';
+        if ($this->brand_clean === 'javnx') return 'JAVNX DJ';
+        if ($this->brand_clean === 'mago_leugim') return 'Mago Leugim';
+        return 'Núñez and Son';
     }
 
     public function getBrandIconAttribute(): string
     {
-        return $this->brand_clean === 'javnx' ? '🎧' : '👑';
+        if ($this->brand_clean === 'javnx') return '🎧';
+        if ($this->brand_clean === 'mago_leugim') return '🎩';
+        return '👑';
     }
 
     public function getBrandInfoAttribute(): array

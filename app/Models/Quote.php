@@ -170,6 +170,9 @@ class Quote extends Model
         if (!app()->runningInConsole() && request() && str_contains(strtolower(request()->getHost()), 'javnx')) {
             return 'javnx';
         }
+        if (!app()->runningInConsole() && request() && str_contains(strtolower(request()->getHost()), 'leugim')) {
+            return 'mago_leugim';
+        }
         return 'nunez_and_son';
     }
 

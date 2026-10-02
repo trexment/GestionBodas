@@ -101,6 +101,13 @@
                                     <div class="text-[10px] text-slate-500">DJ & Producción de Eventos</div>
                                 </div>
                             </button>
+                            <button type="button" wire:click="changeBrand('mago_leugim')" @click="openBrandDropdown = false" class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 font-semibold flex items-center gap-2 cursor-pointer {{ $event->brand_clean === 'mago_leugim' ? 'bg-purple-50 text-purple-900 font-bold' : 'text-slate-700' }}">
+                                <span class="text-base">🎩</span>
+                                <div>
+                                    <div class="font-bold">Mago Leugim</div>
+                                    <div class="text-[10px] text-slate-500">Ilusionismo & Magia Profesional</div>
+                                </div>
+                            </button>
                         </div>
                     </div>
                 </div>
