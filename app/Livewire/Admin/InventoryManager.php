@@ -119,6 +119,9 @@ class InventoryManager extends Component
             'notes' => 'nullable|string',
         ]);
 
+        $allowDmx = in_array($this->category, ['Iluminación', 'Otros']);
+        $isDmx = $allowDmx ? (bool)$this->is_dmx : false;
+
         if ($this->isEditing) {
             $equipment = Equipment::findOrFail($this->editingId);
             $equipment->update([
@@ -127,9 +130,9 @@ class InventoryManager extends Component
                 'brand_model' => $this->brand_model,
                 'quantity' => $this->quantity,
                 'status' => $this->status,
-                'is_dmx' => $this->category === 'Iluminación' ? $this->is_dmx : false,
-                'dmx_mode' => ($this->category === 'Iluminación' && $this->is_dmx) ? $this->dmx_mode : null,
-                'dmx_address' => ($this->category === 'Iluminación' && $this->is_dmx) ? $this->dmx_address : null,
+                'is_dmx' => $isDmx,
+                'dmx_mode' => ($allowDmx && $isDmx) ? $this->dmx_mode : null,
+                'dmx_address' => ($allowDmx && $isDmx) ? $this->dmx_address : null,
                 'notes' => $this->notes,
             ]);
             session()->flash('message', 'Material actualizado correctamente.');
@@ -140,9 +143,9 @@ class InventoryManager extends Component
                 'brand_model' => $this->brand_model,
                 'quantity' => $this->quantity,
                 'status' => $this->status,
-                'is_dmx' => $this->category === 'Iluminación' ? $this->is_dmx : false,
-                'dmx_mode' => ($this->category === 'Iluminación' && $this->is_dmx) ? $this->dmx_mode : null,
-                'dmx_address' => ($this->category === 'Iluminación' && $this->is_dmx) ? $this->dmx_address : null,
+                'is_dmx' => $isDmx,
+                'dmx_mode' => ($allowDmx && $isDmx) ? $this->dmx_mode : null,
+                'dmx_address' => ($allowDmx && $isDmx) ? $this->dmx_address : null,
                 'notes' => $this->notes,
             ]);
             session()->flash('message', 'Material añadido correctamente.');

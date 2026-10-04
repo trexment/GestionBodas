@@ -171,7 +171,7 @@
                                 </select>
                             </div>
                             
-                            @if($category === 'Iluminación')
+                            @if(in_array($category, ['Iluminación', 'Otros']))
                             <div class="bg-indigo-50 p-4 rounded-md border border-indigo-100">
                                 <div class="flex items-start">
                                     <div class="flex items-center h-5">
