@@ -292,6 +292,8 @@ class Setting extends Model
             'discount_amount' => $discountAmount,
             'savings_label' => 'Ahorro de ' . number_format($discountAmount, 2, ',', '.') . ' € (' . round($effectivePercent) . '% dto.)',
         ];
+    }
+
     /**
      * Get DJ Pack resolution and pricing based on requested hours.
      */
