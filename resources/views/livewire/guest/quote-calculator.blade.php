@@ -59,7 +59,7 @@
                                 <span>{{ $serv['icon'] }}</span>
                                 <span class="font-medium">{{ $serv['name'] }}</span>
                                 @if($key === 'dj')
-                                    <span class="text-xs bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-full">({{ $serv['quantity'] }} horas)</span>
+                                    <span class="text-xs bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-full">{{ $this->dj_pack_info['badge'] }}</span>
                                 @endif
                                 @if(($key === 'cocktail' || $key === 'restaurant') && $this->has_cocktail_restaurant_pack && $this->cocktail_restaurant_pack_info['enabled'])
                                     <span class="text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full">🎁 En Pack Cóctel+Banquete</span>
@@ -159,18 +159,36 @@
                                             </div>
                                         @endif
 
-                                        <!-- Sub-controls (e.g. DJ Hours) if selected -->
+                                        <!-- Sub-controls (e.g. DJ Hours & Resolved Pack) if selected -->
                                         @if($key === 'dj' && $service['selected'])
-                                            <div class="mt-4 pt-3 border-t border-indigo-500/20 flex items-center gap-3" wire:click.stop>
-                                                <span class="text-xs font-semibold text-slate-300">Duración estimada del baile:</span>
-                                                <div class="inline-flex items-center bg-slate-900/80 rounded-lg p-1 border border-indigo-500/30">
-                                                    <button type="button" wire:click="$set('services.dj.quantity', {{ max(2, $service['quantity'] - 1) }})" class="w-7 h-7 flex items-center justify-center rounded bg-slate-800 hover:bg-slate-700 text-white font-bold text-sm transition">
-                                                        -
-                                                    </button>
-                                                    <span class="px-3 text-xs font-bold text-indigo-300">{{ $service['quantity'] }} Horas</span>
-                                                    <button type="button" wire:click="$set('services.dj.quantity', {{ min(8, $service['quantity'] + 1) }})" class="w-7 h-7 flex items-center justify-center rounded bg-slate-800 hover:bg-slate-700 text-white font-bold text-sm transition">
-                                                        +
-                                                    </button>
+                                            <div class="mt-4 pt-3.5 border-t border-indigo-500/20 space-y-2.5" wire:click.stop>
+                                                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                                                    <span class="text-xs font-semibold text-slate-300">Duración estimada del baile / fiesta:</span>
+                                                    <div class="inline-flex items-center bg-slate-900/90 rounded-xl p-1 border border-indigo-500/40 shadow-inner">
+                                                        <button type="button" wire:click="$set('services.dj.quantity', {{ max(2, $service['quantity'] - 1) }})" class="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-800 hover:bg-indigo-600 text-white font-bold text-base transition">
+                                                            -
+                                                        </button>
+                                                        <span class="px-4 text-xs font-extrabold text-indigo-200 tracking-wide">{{ $service['quantity'] }} Horas</span>
+                                                        <button type="button" wire:click="$set('services.dj.quantity', {{ min(9, $service['quantity'] + 1) }})" class="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-800 hover:bg-indigo-600 text-white font-bold text-base transition">
+                                                            +
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Dynamic Pack Badge Banner for DJ -->
+                                                <div class="p-3 bg-gradient-to-r from-indigo-900/60 via-purple-900/40 to-slate-900/80 rounded-xl border border-indigo-400/30 flex items-start gap-2.5 text-xs text-slate-200">
+                                                    <span class="text-base shrink-0 mt-0.5">
+                                                        @if($this->dj_pack_info['pack_key'] === 'premium') 👑 @elseif($this->dj_pack_info['pack_key'] === 'medium') 🌟 @else ✨ @endif
+                                                    </span>
+                                                    <div class="flex-1 min-w-0">
+                                                        <div class="flex items-center gap-2 flex-wrap">
+                                                            <strong class="text-indigo-300 font-bold">{{ $this->dj_pack_info['name'] }}</strong>
+                                                            <span class="text-[10px] uppercase font-bold bg-indigo-500/30 text-indigo-200 border border-indigo-400/40 px-2 py-0.5 rounded-md">Pack Asignado</span>
+                                                        </div>
+                                                        <p class="text-[11px] text-slate-300 mt-0.5 leading-snug">
+                                                            {{ $this->dj_pack_info['description'] }}
+                                                        </p>
+                                                    </div>
                                                 </div>
                                             </div>
                                         @endif

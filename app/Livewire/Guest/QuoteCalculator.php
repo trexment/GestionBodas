@@ -285,6 +285,15 @@ class QuoteCalculator extends Component
         return Setting::getCocktailRestaurantPackInfo($catalog['cocktail'] ?? 150, $catalog['restaurant'] ?? 150);
     }
 
+    /**
+     * Get DJ Pack resolution based on selected hours
+     */
+    public function getDjPackInfoProperty(): array
+    {
+        $hours = (int)($this->services['dj']['quantity'] ?? 4);
+        return Setting::getDjPackForHours($hours);
+    }
+
     public function submitRequest()
     {
         $this->validate([
@@ -298,13 +307,18 @@ class QuoteCalculator extends Component
 
         $catalog = $this->getPriceCatalog();
         $totalEstimated = 0;
+        $djPack = !empty($this->services['dj']['selected']) ? $this->dj_pack_info : null;
 
         // 1. Calculate internal total
         foreach ($this->services as $key => $service) {
             if ($service['selected']) {
-                $qty = (int)($service['quantity'] ?: 1);
-                $price = $catalog[$key] ?? 0;
-                $totalEstimated += ($price * $qty);
+                if ($key === 'dj' && $djPack) {
+                    $totalEstimated += (float)$djPack['total_price'];
+                } else {
+                    $qty = (int)($service['quantity'] ?: 1);
+                    $price = $catalog[$key] ?? 0;
+                    $totalEstimated += ($price * $qty);
+                }
             }
         }
 
@@ -329,9 +343,13 @@ class QuoteCalculator extends Component
         $requestedServicesList = [];
         foreach ($this->services as $key => $service) {
             if ($service['selected']) {
-                $qty = (int)($service['quantity'] ?: 1);
-                $qtyText = $key === 'dj' ? " ({$qty} horas)" : ($qty > 1 ? " ({$qty} uds)" : "");
-                $requestedServicesList[] = "• " . $service['name'] . $qtyText;
+                if ($key === 'dj' && $djPack) {
+                    $requestedServicesList[] = "• " . $service['name'] . " (" . $djPack['requested_hours'] . "h) ➔ " . $djPack['badge'];
+                } else {
+                    $qty = (int)($service['quantity'] ?: 1);
+                    $qtyText = $qty > 1 ? " ({$qty} uds)" : "";
+                    $requestedServicesList[] = "• " . $service['name'] . $qtyText;
+                }
             }
         }
 
@@ -375,14 +393,36 @@ class QuoteCalculator extends Component
         // 6. Create Quote Items
         foreach ($this->services as $key => $service) {
             if ($service['selected']) {
-                $qty = (int)($service['quantity'] ?: 1);
-                $price = $catalog[$key] ?? 0;
-                $quote->items()->create([
-                    'service_name' => $service['name'],
-                    'quantity' => $qty,
-                    'price' => $price,
-                    'total' => $price * $qty,
-                ]);
+                if ($key === 'dj' && $djPack) {
+                    // Base DJ Pack item
+                    $quote->items()->create([
+                        'service_name' => $djPack['base_name'],
+                        'description' => $djPack['description'],
+                        'quantity' => 1,
+                        'price' => $djPack['pack_price'],
+                        'total' => $djPack['pack_price'],
+                    ]);
+
+                    // Extra Hours if applicable
+                    if ($djPack['extra_hours'] > 0) {
+                        $quote->items()->create([
+                            'service_name' => 'Horas Adicionales de Fiesta',
+                            'description' => "Ampliación de {$djPack['extra_hours']} hora(s) extra sobre el {$djPack['base_name']}",
+                            'quantity' => $djPack['extra_hours'],
+                            'price' => $djPack['extra_hour_price'],
+                            'total' => $djPack['extra_hours'] * $djPack['extra_hour_price'],
+                        ]);
+                    }
+                } else {
+                    $qty = (int)($service['quantity'] ?: 1);
+                    $price = $catalog[$key] ?? 0;
+                    $quote->items()->create([
+                        'service_name' => $service['name'],
+                        'quantity' => $qty,
+                        'price' => $price,
+                        'total' => $price * $qty,
+                    ]);
+                }
             }
         }
 

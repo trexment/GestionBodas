@@ -292,6 +292,85 @@ class Setting extends Model
             'discount_amount' => $discountAmount,
             'savings_label' => 'Ahorro de ' . number_format($discountAmount, 2, ',', '.') . ' € (' . round($effectivePercent) . '% dto.)',
         ];
+    /**
+     * Get DJ Pack resolution and pricing based on requested hours.
+     */
+    public static function getDjPackForHours(int $hours): array
+    {
+        $hours = max(1, $hours);
+
+        $basicName = self::get('pack_basic_name', 'Pack Básico');
+        $basicPrice = (float)self::get('pack_basic_price', 400);
+        $basicHours = (int)self::get('pack_basic_hours', 4);
+        $basicDesc = self::get('pack_basic_desc', '4 Horas de servicio DJ, Equipo de sonido profesional e iluminación de pista básica.');
+
+        $mediumName = self::get('pack_medium_name', 'Pack Medio (Recomendado)');
+        $mediumPrice = (float)self::get('pack_medium_price', 700);
+        $mediumHours = (int)self::get('pack_medium_hours', 5);
+        $mediumDesc = self::get('pack_medium_desc', 'Hasta 5 Horas de servicio DJ, Sonido alta gama, Iluminación avanzada de pista + Máquina de humo.');
+
+        $premiumName = self::get('pack_premium_name', 'Pack Premium');
+        $premiumPrice = (float)self::get('pack_premium_price', 1000);
+        $premiumHours = (int)self::get('pack_premium_hours', 6);
+        $premiumDesc = self::get('pack_premium_desc', 'Hasta 6 Horas de servicio DJ, Iluminación profesional gran potencia + Efectos especiales + Fuego frío.');
+
+        $extraHourPrice = (float)self::get('price_extra_hours', 120);
+
+        if ($hours >= $premiumHours) {
+            $extra = $hours - $premiumHours;
+            $price = $premiumPrice + ($extra * $extraHourPrice);
+            return [
+                'pack_key' => 'premium',
+                'name' => $premiumName . ($extra > 0 ? " (+{$extra}h extra)" : ''),
+                'base_name' => $premiumName,
+                'pack_price' => $premiumPrice,
+                'hours_included' => $premiumHours,
+                'requested_hours' => $hours,
+                'extra_hours' => $extra,
+                'extra_hour_price' => $extraHourPrice,
+                'total_price' => $price,
+                'description' => $premiumDesc . ($extra > 0 ? " Incluye {$extra} hora(s) adicional(es) de fiesta." : ''),
+                'badge' => '👑 ' . $premiumName . ($extra > 0 ? " +{$extra}h Extra" : ''),
+                'tag' => 'Pack Premium (' . $hours . 'h)',
+            ];
+        }
+
+        if ($hours >= $mediumHours) {
+            $extra = $hours - $mediumHours;
+            $price = $mediumPrice + ($extra * $extraHourPrice);
+            return [
+                'pack_key' => 'medium',
+                'name' => $mediumName . ($extra > 0 ? " (+{$extra}h extra)" : ''),
+                'base_name' => $mediumName,
+                'pack_price' => $mediumPrice,
+                'hours_included' => $mediumHours,
+                'requested_hours' => $hours,
+                'extra_hours' => $extra,
+                'extra_hour_price' => $extraHourPrice,
+                'total_price' => $price,
+                'description' => $mediumDesc . ($extra > 0 ? " Incluye {$extra} hora(s) adicional(es) de fiesta." : ''),
+                'badge' => '🌟 ' . $mediumName . ($extra > 0 ? " +{$extra}h Extra" : ''),
+                'tag' => 'Pack Medio (' . $hours . 'h)',
+            ];
+        }
+
+        // Basic Pack (covers up to basicHours)
+        $extra = max(0, $hours - $basicHours);
+        $price = $basicPrice + ($extra * $extraHourPrice);
+        return [
+            'pack_key' => 'basic',
+            'name' => $basicName . ($extra > 0 ? " (+{$extra}h extra)" : ''),
+            'base_name' => $basicName,
+            'pack_price' => $basicPrice,
+            'hours_included' => $basicHours,
+            'requested_hours' => $hours,
+            'extra_hours' => $extra,
+            'extra_hour_price' => $extraHourPrice,
+            'total_price' => $price,
+            'description' => $basicDesc . ($extra > 0 ? " Incluye {$extra} hora(s) adicional(es) de fiesta." : ''),
+            'badge' => '✨ ' . $basicName . ($hours < $basicHours ? ' (Base técnica completa)' : ''),
+            'tag' => 'Pack Básico (' . $hours . 'h)',
+        ];
     }
 }
 

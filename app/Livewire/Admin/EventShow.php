@@ -1410,17 +1410,15 @@ class EventShow extends Component
         } elseif ($packKey === 'premium') {
             $this->quote_services['pack_premium']['selected'] = true;
         } elseif ($packKey === 'wedding_dj') {
-            // Pack Boda Típico DJ: Cóctel + Banquete/Regalos + Baile 2h o Pack Medio
+            // Pack Boda Típico DJ: Cóctel + Banquete/Regalos + Pack Básico (4h DJ, Sonido + Iluminación)
             $this->quote_services['cocktail']['selected'] = true;
             $this->quote_services['restaurant']['selected'] = true;
-            $this->quote_services['dj_custom']['selected'] = true;
-            $this->quote_services['dj_custom']['quantity'] = 2;
+            $this->quote_services['pack_basic']['selected'] = true;
         } elseif ($packKey === 'wedding_full') {
-            // Pack Boda Completo: Cóctel + Banquete + Baile 2h + Pack Completo Fotos
+            // Pack Boda Completo: Cóctel + Banquete + Pack Medio (5h DJ, Sonido Alta Gama + Luces + Humo) + Pack Completo Fotos
             $this->quote_services['cocktail']['selected'] = true;
             $this->quote_services['restaurant']['selected'] = true;
-            $this->quote_services['dj_custom']['selected'] = true;
-            $this->quote_services['dj_custom']['quantity'] = 2;
+            $this->quote_services['pack_medium']['selected'] = true;
             $this->quote_services['photo_full_pack']['selected'] = true;
         } elseif ($packKey === 'clear') {
             foreach ($this->quote_services as $k => $v) {

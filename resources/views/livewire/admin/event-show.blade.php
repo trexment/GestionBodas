@@ -1682,15 +1682,15 @@
 
                         <button type="button" wire:click="selectPack('wedding_dj')" class="p-3 rounded-xl border text-left transition flex flex-col justify-between {{ $selected_pack_type === 'wedding_dj' ? 'bg-white text-indigo-900 border-white shadow-lg ring-2 ring-indigo-400' : 'bg-white/10 hover:bg-white/20 border-white/20 text-white' }}">
                             <div>
-                                <span class="text-[10px] uppercase font-bold tracking-wider opacity-80">Cóctel + Banquete + 2h</span>
+                                <span class="text-[10px] uppercase font-bold tracking-wider opacity-80">Cóctel + Banquete + 4h</span>
                                 <h6 class="font-extrabold text-xs mt-0.5">Boda Solo DJ</h6>
                             </div>
-                            <span class="font-black text-sm mt-2">Personalizado</span>
+                            <span class="font-black text-sm mt-2">Pack Completo</span>
                         </button>
 
                         <button type="button" wire:click="selectPack('wedding_full')" class="p-3 rounded-xl border text-left transition flex flex-col justify-between {{ $selected_pack_type === 'wedding_full' ? 'bg-white text-indigo-900 border-white shadow-lg ring-2 ring-purple-400' : 'bg-white/10 hover:bg-white/20 border-white/20 text-white' }}">
                             <div>
-                                <span class="text-[10px] uppercase font-bold tracking-wider opacity-80">DJ + Pack Fotos</span>
+                                <span class="text-[10px] uppercase font-bold tracking-wider opacity-80">Pack 5h + Pack Fotos</span>
                                 <h6 class="font-extrabold text-xs mt-0.5">Boda Completa 📸</h6>
                             </div>
                             <span class="font-black text-sm mt-2">DJ + Fotos</span>
