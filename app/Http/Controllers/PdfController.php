@@ -108,4 +108,19 @@ class PdfController extends Controller
         $pdf = Pdf::loadView('pdf.music-escaleta', $data);
         return $pdf->download('escaleta_musical_' . \Illuminate\Support\Str::slug($event->name) . '.pdf');
     }
+
+    public function downloadDjHistory(Event $event)
+    {
+        $event->load(['client', 'dj', 'djHistories.matchedRequest']);
+
+        $data = [
+            'event' => $event,
+            'client' => $event->client,
+            'dj' => $event->dj,
+            'histories' => $event->djHistories,
+        ];
+
+        $pdf = Pdf::loadView('pdf.dj-session-history', $data);
+        return $pdf->download('tracklist_sesion_' . \Illuminate\Support\Str::slug($event->name) . '.pdf');
+    }
 }

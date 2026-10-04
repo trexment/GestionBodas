@@ -132,6 +132,11 @@ class Event extends Model
         return $this->hasMany(ClientMeeting::class)->orderBy('meeting_date', 'asc');
     }
 
+    public function djHistories()
+    {
+        return $this->hasMany(EventDjHistory::class)->orderBy('order', 'asc');
+    }
+
     /**
      * Etiqueta legible del estado del evento
      */

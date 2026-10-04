@@ -71,6 +71,7 @@ Route::get('/music/{musicRequest}/download', [SpotifyAuthController::class, 'dow
 
 // Global PDF Download Aliases
 Route::get('/events/{event}/music-escaleta/pdf', [PdfController::class, 'downloadMusicEscaleta'])->name('pdf.music-escaleta');
+Route::get('/events/{event}/dj-history/pdf', [PdfController::class, 'downloadDjHistory'])->name('pdf.dj-history');
 Route::get('/events/{event}/packing-list/pdf', [PdfController::class, 'downloadPackingList'])->name('pdf.packing-list');
 Route::get('/contract/{contract}/pdf', [PdfController::class, 'downloadContract'])->name('pdf.contract');
 Route::get('/invoice/{invoice}/pdf', [PdfController::class, 'downloadInvoice'])->name('pdf.invoice');

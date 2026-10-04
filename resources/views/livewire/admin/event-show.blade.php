@@ -774,6 +774,16 @@
                             <span>📄</span>
                             Importar Lista (PDF / WhatsApp)
                         </button>
+
+                        <button 
+                            type="button" 
+                            wire:click="openDjHistoryModal" 
+                            class="bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold px-3 py-2 rounded-lg shadow-sm inline-flex items-center gap-1.5 transition cursor-pointer"
+                            title="Importa el historial de la sesión DJ real desde tu controladora (Denon Engine DJ, Rekordbox, Serato, Traktor, M3U o CSV)"
+                        >
+                            <span>🎧</span>
+                            Importar Sesión DJ (Engine / M3U)
+                        </button>
                         
                         <a href="{{ route('admin.events.music_escaleta.pdf', $event->id) }}" target="_blank" class="bg-gray-800 hover:bg-gray-900 text-white text-xs font-bold px-3 py-2 rounded-lg shadow-sm inline-flex items-center gap-1.5 transition">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
@@ -1437,15 +1447,204 @@
                             </div>
                         @endforeach
                     </div>
-                @else
-                    <div class="text-center p-12 border-2 border-dashed border-gray-300 rounded-xl bg-white">
-                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
-                        </svg>
-                        <h3 class="mt-2 text-sm font-medium text-gray-900">No hay canciones en esta categoría</h3>
-                        <p class="mt-1 text-sm text-gray-500">Añade los momentos especiales de la boda pulsando arriba en "Añadir Canción / Momento".</p>
-                    </div>
                 @endif
+
+                <!-- ============================================== -->
+                <!-- SECCIÓN: HISTORIAL DE SESIÓN DJ REAL (TRACKLIST) -->
+                <!-- ============================================== -->
+                <div class="mt-10 pt-8 border-t-2 border-indigo-100 dark:border-slate-800 space-y-4">
+                    
+                    <!-- Encabezado de la Sesión DJ -->
+                    <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl p-5 text-white shadow-md border border-indigo-900/60 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                        <div class="space-y-1">
+                            <div class="flex items-center gap-2">
+                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-purple-500/30 text-purple-200 border border-purple-400/30">
+                                    🎧 Sesión DJ Real & Directo
+                                </span>
+                                @if($event->djHistories->count() > 0)
+                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                                        {{ $event->djHistories->count() }} Canciones Registradas
+                                    </span>
+                                @endif
+                            </div>
+                            <h3 class="text-lg font-black text-white flex items-center gap-2">
+                                Tracklist Oficial de la Sesión
+                            </h3>
+                            <p class="text-xs text-slate-300 max-w-2xl">
+                                Historial cronológico de la música que sonó en directo durante el evento, sincronizado desde tu controladora (<strong>Denon Engine DJ, Pioneer Rekordbox, Serato, Traktor o M3U</strong>).
+                            </p>
+                        </div>
+
+                        <div class="flex flex-wrap items-center gap-2 w-full md:w-auto justify-start md:justify-end">
+                            <button 
+                                type="button" 
+                                wire:click="openDjHistoryModal" 
+                                class="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs px-3.5 py-2.5 rounded-xl shadow-md transition cursor-pointer flex items-center gap-1.5"
+                                title="Importar nuevo historial de sesión desde archivo CSV, M3U o texto"
+                            >
+                                <span>📥</span>
+                                {{ $event->djHistories->count() > 0 ? 'Añadir / Reimportar' : 'Importar Historial DJ' }}
+                            </button>
+
+                            @if($event->djHistories->count() > 0)
+                                <a 
+                                    href="{{ route('pdf.dj-history', $event->id) }}" 
+                                    target="_blank" 
+                                    class="bg-white/10 hover:bg-white/20 text-white font-bold text-xs px-3.5 py-2.5 rounded-xl border border-white/20 shadow-sm transition inline-flex items-center gap-1.5"
+                                    title="Descargar PDF con el Tracklist Oficial para enviar a los novios o guardar de recuerdo"
+                                >
+                                    <span>📄</span>
+                                    PDF Tracklist
+                                </a>
+
+                                <button 
+                                    type="button" 
+                                    wire:click="deleteDjHistory" 
+                                    wire:confirm="⚠️ ¿Estás seguro de que deseas eliminar todas las canciones del historial de sesión de este evento?"
+                                    class="bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 font-bold text-xs px-3 py-2.5 rounded-xl transition cursor-pointer"
+                                    title="Borrar todo el historial de la sesión"
+                                >
+                                    <span>🗑️</span>
+                                </button>
+                            @endif
+                        </div>
+                    </div>
+
+                    @if($event->djHistories->count() > 0)
+                        <!-- Resumen y Filtros de Búsqueda -->
+                        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
+                            <div class="flex flex-wrap items-center gap-2 text-xs">
+                                <span class="text-slate-500 dark:text-slate-400 font-medium">Software:</span>
+                                <span class="bg-purple-50 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 font-bold px-2.5 py-0.5 rounded-lg border border-purple-200 dark:border-purple-800">
+                                    {{ $event->djHistories->first()->source_icon ?? 'Controladora DJ' }}
+                                </span>
+
+                                @php
+                                    $matchedCount = $event->djHistories->whereNotNull('matched_request_id')->count();
+                                @endphp
+                                @if($matchedCount > 0)
+                                    <span class="bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 font-bold px-2.5 py-0.5 rounded-lg border border-emerald-200 dark:border-emerald-800">
+                                        💍 {{ $matchedCount }} peticiones sonadas en directo
+                                    </span>
+                                @endif
+                            </div>
+
+                            <!-- Buscador en tiempo real del Tracklist -->
+                            <div class="w-full sm:w-64">
+                                <input 
+                                    type="text" 
+                                    wire:model.live.debounce.250ms="djHistoryFilterQuery" 
+                                    placeholder="🔍 Filtrar por título, artista o hora..." 
+                                    class="w-full text-xs rounded-xl border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 py-1.5 px-3 focus:ring-2 focus:ring-purple-500"
+                                >
+                            </div>
+                        </div>
+
+                        <!-- TABLA DE CANCIONES DE LA SESIÓN -->
+                        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                            <div class="overflow-x-auto max-h-[500px] overflow-y-auto">
+                                <table class="w-full text-left text-xs border-collapse">
+                                    <thead class="sticky top-0 bg-slate-100 dark:bg-slate-950 text-slate-700 dark:text-slate-300 uppercase text-[10px] font-black border-b border-slate-200 dark:border-slate-800 z-10">
+                                        <tr>
+                                            <th class="py-2.5 px-3 text-center w-10">#</th>
+                                            <th class="py-2.5 px-3 w-20">Hora</th>
+                                            <th class="py-2.5 px-3">Canción / Título</th>
+                                            <th class="py-2.5 px-3">Artista</th>
+                                            <th class="py-2.5 px-3 text-center w-16">BPM</th>
+                                            <th class="py-2.5 px-3 text-center w-16">Tono</th>
+                                            <th class="py-2.5 px-3">Cruce Peticiones</th>
+                                            <th class="py-2.5 px-3 text-right w-12">Acción</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-slate-800 dark:text-slate-200">
+                                        @forelse($allDjHistories as $track)
+                                            <tr class="hover:bg-purple-50/40 dark:hover:bg-purple-950/20 transition group">
+                                                <td class="py-2 px-3 text-center font-bold text-slate-400 group-hover:text-purple-600">
+                                                    {{ $track->order }}
+                                                </td>
+                                                <td class="py-2 px-3 font-mono text-[11px] text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                                                    @if($track->played_at_time)
+                                                        <span class="bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 font-bold px-1.5 py-0.5 rounded">
+                                                            ⏰ {{ $track->played_at_time }}
+                                                        </span>
+                                                    @else
+                                                        <span class="text-slate-300 dark:text-slate-700">-</span>
+                                                    @endif
+                                                </td>
+                                                <td class="py-2 px-3 font-bold text-slate-900 dark:text-white">
+                                                    {{ $track->title }}
+                                                </td>
+                                                <td class="py-2 px-3 text-slate-600 dark:text-slate-300">
+                                                    {{ $track->artist ?: '-' }}
+                                                </td>
+                                                <td class="py-2 px-3 text-center font-mono text-slate-600 dark:text-slate-400">
+                                                    @if($track->bpm)
+                                                        <span class="bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded font-bold">
+                                                            {{ number_format($track->bpm, 0) }}
+                                                        </span>
+                                                    @else
+                                                        <span class="text-slate-300 dark:text-slate-700">-</span>
+                                                    @endif
+                                                </td>
+                                                <td class="py-2 px-3 text-center font-mono font-bold text-purple-700 dark:text-purple-400">
+                                                    {{ $track->key ?: '-' }}
+                                                </td>
+                                                <td class="py-2 px-3">
+                                                    @if($track->matchedRequest)
+                                                        <span class="inline-flex items-center gap-1 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 font-extrabold text-[10px] px-2 py-0.5 rounded-full border border-emerald-300 dark:border-emerald-800">
+                                                            @if($track->matchedRequest->is_guest_request)
+                                                                👥 {{ $track->matchedRequest->guest_name ?: 'Petición Invitado' }}
+                                                            @else
+                                                                💍 Petición Novios ({{ $track->matchedRequest->moment }})
+                                                            @endif
+                                                        </span>
+                                                    @else
+                                                        <span class="text-slate-400 text-[10px]">Sesión DJ</span>
+                                                    @endif
+                                                </td>
+                                                <td class="py-2 px-3 text-right">
+                                                    <button 
+                                                        type="button" 
+                                                        wire:click="deleteDjHistoryTrack({{ $track->id }})" 
+                                                        class="opacity-0 group-hover:opacity-100 text-rose-500 hover:text-rose-700 p-1 rounded transition cursor-pointer"
+                                                        title="Eliminar tema del historial"
+                                                    >
+                                                        🗑️
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        @empty
+                                            <tr>
+                                                <td colspan="8" class="text-center py-8 text-slate-400 text-xs">
+                                                    No se encontraron canciones que coincidan con la búsqueda.
+                                                </td>
+                                            </tr>
+                                        @endforelse
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    @else
+                        <!-- Estado Vacío -->
+                        <div class="bg-white dark:bg-slate-900 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl p-8 text-center space-y-3">
+                            <span class="text-4xl block">🎧</span>
+                            <h4 class="font-extrabold text-sm text-slate-800 dark:text-slate-200">Aún no se ha importado la sesión real de este evento</h4>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto">
+                                Al terminar el evento, exporta el historial desde <strong>Denon Engine DJ, Rekordbox, Serato o M3U</strong> e impórtalo aquí para guardar el tracklist oficial y cruzarlo con las peticiones.
+                            </p>
+                            <button 
+                                type="button" 
+                                wire:click="openDjHistoryModal" 
+                                class="inline-flex items-center gap-1.5 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-md transition cursor-pointer"
+                            >
+                                <span>📥</span>
+                                Importar Historial de Sesión
+                            </button>
+                        </div>
+                    @endif
+
+                </div>
+
             </div>
         @endif
 
@@ -4580,6 +4779,132 @@
                             class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs shadow-md hover:shadow-lg transition cursor-pointer flex items-center gap-1.5"
                         >
                             <span>💾</span> Guardar Cita
+                        </button>
+                    </div>
+                </form>
+
+            </div>
+        </div>
+    </div>
+    @endif
+
+    <!-- ============================================== -->
+    <!-- MODAL: IMPORTAR HISTORIAL DE SESIÓN DJ        -->
+    <!-- ============================================== -->
+    @if($showDjHistoryModal)
+    <div class="fixed z-40 inset-0 overflow-y-auto" aria-labelledby="modal-dj-history-title" role="dialog" aria-modal="true">
+        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-slate-900/75 backdrop-blur-xs transition-opacity" aria-hidden="true" wire:click="$set('showDjHistoryModal', false)"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div class="inline-block align-bottom bg-white dark:bg-slate-900 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full border border-slate-200 dark:border-slate-800">
+                
+                <form wire:submit.prevent="importDjHistory">
+                    <!-- HEADER -->
+                    <div class="p-5 bg-gradient-to-r from-purple-900 via-indigo-900 to-purple-950 text-white flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <span class="text-3xl p-2 bg-white/10 rounded-xl">🎧</span>
+                            <div>
+                                <h3 class="font-extrabold text-base leading-tight" id="modal-dj-history-title">
+                                    Importar Historial de Sesión DJ
+                                </h3>
+                                <p class="text-xs text-purple-200 mt-0.5">
+                                    Exporta tu sesión desde <strong>Engine DJ, Rekordbox, Serato o M3U</strong> y cárgala aquí.
+                                </p>
+                            </div>
+                        </div>
+                        <button type="button" wire:click="$set('showDjHistoryModal', false)" class="text-white/80 hover:text-white p-1 rounded-lg hover:bg-white/10 transition cursor-pointer">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
+                    </div>
+
+                    <!-- BODY -->
+                    <div class="p-6 space-y-5 text-xs text-slate-700 dark:text-slate-300">
+
+                        <!-- Badges de compatibilidad -->
+                        <div class="flex flex-wrap items-center gap-1.5 p-3 bg-purple-50/60 dark:bg-purple-950/30 rounded-xl border border-purple-100 dark:border-purple-900/40">
+                            <span class="text-[10px] font-bold text-purple-900 dark:text-purple-300 uppercase tracking-wider block w-full mb-1">Formatos y Softwares Soportados:</span>
+                            <span class="px-2 py-0.5 rounded-md bg-white dark:bg-slate-800 font-bold text-purple-700 dark:text-purple-300 shadow-2xs border border-purple-200 dark:border-purple-800">Denon Engine DJ (.csv / .m3u)</span>
+                            <span class="px-2 py-0.5 rounded-md bg-white dark:bg-slate-800 font-bold text-indigo-700 dark:text-indigo-300 shadow-2xs border border-indigo-200 dark:border-indigo-800">Pioneer Rekordbox (.csv / .txt)</span>
+                            <span class="px-2 py-0.5 rounded-md bg-white dark:bg-slate-800 font-bold text-blue-700 dark:text-blue-300 shadow-2xs border border-blue-200 dark:border-blue-800">Serato DJ (.csv)</span>
+                            <span class="px-2 py-0.5 rounded-md bg-white dark:bg-slate-800 font-bold text-emerald-700 dark:text-emerald-300 shadow-2xs border border-emerald-200 dark:border-emerald-800">M3U / M3U8 Playlists</span>
+                            <span class="px-2 py-0.5 rounded-md bg-white dark:bg-slate-800 font-bold text-slate-700 dark:text-slate-300 shadow-2xs border border-slate-200 dark:border-slate-800">Texto / Tracklist Copiado</span>
+                        </div>
+
+                        <!-- Nombre de la Sesión / Momento -->
+                        <div>
+                            <label class="block font-bold text-slate-900 dark:text-white mb-1">Nombre o Fase de la Sesión *</label>
+                            <input 
+                                type="text" 
+                                wire:model="djHistorySessionName" 
+                                placeholder="Ej: Sesión Baile & Barra Libre, Cocktail, etc." 
+                                class="w-full border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl text-xs font-medium p-2.5 focus:ring-2 focus:ring-purple-500"
+                                required
+                            >
+                        </div>
+
+                        <!-- SUBIDA DE ARCHIVO -->
+                        <div class="space-y-1.5">
+                            <label class="block font-bold text-slate-900 dark:text-white">Opción 1: Subir Archivo (.csv, .m3u, .m3u8, .txt)</label>
+                            <div class="relative border-2 border-dashed border-purple-300 dark:border-purple-800 hover:border-purple-500 rounded-2xl p-4 text-center bg-purple-50/30 dark:bg-purple-950/20 transition">
+                                <input 
+                                    type="file" 
+                                    wire:model="djHistoryFile" 
+                                    accept=".csv,.m3u,.m3u8,.txt,.nml" 
+                                    class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                >
+                                <div class="space-y-1">
+                                    <span class="text-2xl block">📂</span>
+                                    <span class="font-bold text-purple-900 dark:text-purple-300">
+                                        {{ $djHistoryFile ? $djHistoryFile->getClientOriginalName() : 'Haz clic o arrastra aquí el archivo de historial' }}
+                                    </span>
+                                    <span class="text-[10px] text-slate-500 block">Exportado desde Engine DJ, Rekordbox, Serato o M3U</span>
+                                </div>
+                            </div>
+                            @error('djHistoryFile') <span class="text-rose-500 text-[10px] font-bold">{{ $message }}</span> @enderror
+                        </div>
+
+                        <!-- O PEGAR TEXTO PLANO -->
+                        <div class="space-y-1.5">
+                            <label class="block font-bold text-slate-900 dark:text-white">Opción 2: O pega aquí el listado de canciones (1 por línea)</label>
+                            <textarea 
+                                wire:model="djHistoryRawText" 
+                                rows="4" 
+                                placeholder="00:45 Avicii - Levels&#10;00:48 David Guetta - Titanium&#10;00:52 Quevedo - Columbia&#10;..." 
+                                class="w-full border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl text-xs font-mono p-2.5 focus:ring-2 focus:ring-purple-500"
+                            ></textarea>
+                        </div>
+
+                        <!-- Checkbox Auto-Cruce de Peticiones -->
+                        <div class="flex items-start gap-2.5 p-3 bg-emerald-50/70 dark:bg-emerald-950/30 rounded-xl border border-emerald-200 dark:border-emerald-900/40">
+                            <input 
+                                type="checkbox" 
+                                id="syncRequestsCheck" 
+                                wire:model="djHistorySyncRequests" 
+                                class="mt-0.5 rounded text-emerald-600 focus:ring-emerald-500 h-4 w-4"
+                            >
+                            <label for="syncRequestsCheck" class="text-[11px] text-emerald-900 dark:text-emerald-200 cursor-pointer">
+                                <strong>Cruzar y marcar peticiones como sonadas:</strong> Si alguna canción del historial coincide con las peticiones de los novios o invitados, marcarla automáticamente como <code>✅ Sonada en directo</code>.
+                            </label>
+                        </div>
+
+                    </div>
+
+                    <!-- FOOTER -->
+                    <div class="p-4 bg-slate-50 dark:bg-slate-950 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                        <button 
+                            type="button" 
+                            wire:click="$set('showDjHistoryModal', false)" 
+                            class="px-4 py-2.5 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-100 text-slate-700 dark:text-slate-300 font-bold text-xs border border-slate-200 dark:border-slate-700 transition cursor-pointer"
+                        >
+                            Cancelar
+                        </button>
+                        <button 
+                            type="submit" 
+                            wire:loading.attr="disabled"
+                            class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs shadow-md hover:shadow-lg transition cursor-pointer flex items-center gap-1.5"
+                        >
+                            <span wire:loading.remove wire:target="importDjHistory">🎧 Importar y Procesar Historial</span>
+                            <span wire:loading wire:target="importDjHistory">Procesando pistas...</span>
                         </button>
                     </div>
                 </form>

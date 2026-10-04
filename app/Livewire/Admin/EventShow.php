@@ -187,6 +187,14 @@ class EventShow extends Component
     public $meeting_summary = '';
     public $meeting_notes = '';
 
+    // Historial de Sesión DJ Real (Engine DJ / Rekordbox / M3U / CSV)
+    public $showDjHistoryModal = false;
+    public $djHistoryFile = null;
+    public $djHistoryRawText = '';
+    public $djHistorySessionName = 'Sesión Baile & Fiesta';
+    public $djHistorySyncRequests = true;
+    public $djHistoryFilterQuery = '';
+
     public function mount(Event $event)
     {
         $user = auth()->user();
@@ -194,7 +202,7 @@ class EventShow extends Component
             abort(403, 'Acceso denegado: No estás asignado a este evento.');
         }
 
-        $this->event = $event->load(['client', 'dj', 'assistant', 'invoices', 'quotes.items', 'contracts', 'dossiers', 'equipment', 'musicRequests', 'meetings.staff']);
+        $this->event = $event->load(['client', 'dj', 'assistant', 'invoices', 'quotes.items', 'contracts', 'dossiers', 'equipment', 'musicRequests', 'meetings.staff', 'djHistories.matchedRequest']);
         $this->assigned_dj_id = $this->event->dj_id;
         $this->assigned_assistant_id = $this->event->assistant_id;
         $this->venue_contact_name = $this->event->venue_contact_name;
@@ -2393,6 +2401,70 @@ class EventShow extends Component
         }
     }
 
+    public function openDjHistoryModal()
+    {
+        $this->djHistoryFile = null;
+        $this->djHistoryRawText = '';
+        $this->djHistorySessionName = 'Sesión Baile & Fiesta';
+        $this->djHistorySyncRequests = true;
+        $this->showDjHistoryModal = true;
+    }
+
+    public function closeDjHistoryModal()
+    {
+        $this->showDjHistoryModal = false;
+    }
+
+    public function importDjHistory()
+    {
+        $content = '';
+        $filename = '';
+
+        if ($this->djHistoryFile) {
+            $content = file_get_contents($this->djHistoryFile->getRealPath());
+            $filename = $this->djHistoryFile->getClientOriginalName();
+        } elseif (!empty(trim($this->djHistoryRawText))) {
+            $content = $this->djHistoryRawText;
+            $filename = 'tracklist_pegado.txt';
+        } else {
+            session()->flash('error', 'Selecciona un archivo (.csv, .m3u, .m3u8, .txt) o pega la lista de canciones de la sesión.');
+            return;
+        }
+
+        $service = app(\App\Services\DjHistoryParserService::class);
+        $result = $service->importHistory(
+            $this->event,
+            $content,
+            $filename,
+            $this->djHistorySessionName ?: 'Sesión Principal',
+            $this->djHistorySyncRequests
+        );
+
+        if ($result['success']) {
+            $this->showDjHistoryModal = false;
+            $this->djHistoryFile = null;
+            $this->djHistoryRawText = '';
+            $this->event->load(['djHistories.matchedRequest', 'musicRequests']);
+            session()->flash('message', "🎧 " . $result['message']);
+        } else {
+            session()->flash('error', "❌ " . $result['message']);
+        }
+    }
+
+    public function deleteDjHistory()
+    {
+        $count = $this->event->djHistories()->count();
+        $this->event->djHistories()->delete();
+        $this->event->load(['djHistories', 'musicRequests']);
+        session()->flash('message', "🗑️ Se ha eliminado el historial de sesión ({$count} canciones).");
+    }
+
+    public function deleteDjHistoryTrack(int $trackId)
+    {
+        $this->event->djHistories()->where('id', $trackId)->delete();
+        $this->event->load(['djHistories', 'musicRequests']);
+    }
+
     public function render()
     {
         $allEquipment = Equipment::orderBy('category')->orderBy('name')->get();
@@ -2405,6 +2477,16 @@ class EventShow extends Component
             $filteredMusicRequests = $filteredMusicRequests->where('category', $this->music_active_category);
         }
 
+        $allDjHistories = $this->event->djHistories;
+        if (!empty($this->djHistoryFilterQuery)) {
+            $q = mb_strtolower(trim($this->djHistoryFilterQuery));
+            $allDjHistories = $allDjHistories->filter(function ($item) use ($q) {
+                return str_contains(mb_strtolower($item->title ?? ''), $q) ||
+                       str_contains(mb_strtolower($item->artist ?? ''), $q) ||
+                       str_contains(mb_strtolower($item->played_at_time ?? ''), $q);
+            });
+        }
+
         $allStaff = User::whereIn('role', ['admin', 'dj', 'assistant'])->orderBy('name')->get();
 
         return view('livewire.admin.event-show', [
@@ -2414,6 +2496,7 @@ class EventShow extends Component
             'allStaff' => $allStaff,
             'allClients' => $allClients,
             'filteredMusicRequests' => $filteredMusicRequests,
+            'allDjHistories' => $allDjHistories,
         ])->layout('components.layouts.app', [
             'header' => 'Gestionar Evento: ' . $this->event->name
         ]);
