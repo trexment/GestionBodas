@@ -654,10 +654,11 @@
             @php
                 $photoCount = count($dossierPhotos);
                 $bgColors = ['#111c34', '#16223f', '#1e293b', '#0f172a'];
+                $defaultBadges = ['MONTAJE DE SONIDO', 'ILUMINACIÓN & EFECTOS', 'CABINA DJ PROFESIONAL', 'MONTAJE ESPECIAL / FIESTA'];
             @endphp
 
             @if($photoCount === 4)
-                <!-- CUADRÍCULA 2x2 (4 FOTOS) -->
+                <!-- CUADRÍCULA 2x2 (4 FOTOS DESTACADAS) -->
                 <table class="photo-mosaic-table">
                     <tr>
                         @foreach([$dossierPhotos[0], $dossierPhotos[1]] as $k => $p)
@@ -665,22 +666,24 @@
                                 @if($p['path'])
                                     <table style="width: 100%; border-collapse: collapse;">
                                         <tr>
-                                            <td style="width: 38%; padding: 5px; vertical-align: middle; text-align: center;">
-                                                <img src="{{ $p['path'] }}" style="width: 100%; height: 75px; object-fit: cover; border-radius: 5px; display: block;">
+                                            <td style="width: 44%; padding: 6px; vertical-align: middle; text-align: center;">
+                                                <img src="{{ $p['path'] }}" style="width: 100%; height: 110px; object-fit: cover; border-radius: 6px; display: block;">
                                             </td>
-                                            <td style="width: 62%; padding: 5px 8px; vertical-align: middle; text-align: left; color: #ffffff;">
-                                                <div class="photo-card-title" style="color: #eab308; font-size: 8.5pt;">{{ $p['title'] }}</div>
+                                            <td style="width: 56%; padding: 8px 10px; vertical-align: middle; text-align: left; color: #ffffff;">
+                                                <div class="photo-card-pill">{{ $defaultBadges[$k] }}</div>
+                                                <div class="photo-card-title" style="color: #facc15; font-size: 9.5pt; line-height: 1.25;">{{ $p['title'] }}</div>
                                                 @if(!empty($p['desc']))
-                                                    <div class="photo-card-desc" style="font-size: 7pt;">{{ $p['desc'] }}</div>
+                                                    <div class="photo-card-desc" style="font-size: 7.5pt; margin-top: 3px;">{{ $p['desc'] }}</div>
                                                 @endif
                                             </td>
                                         </tr>
                                     </table>
                                 @else
-                                    <div class="photo-card-inner" style="padding: 10px 8px;">
-                                        <div class="photo-card-title" style="font-size: 8.5pt;">{{ $p['title'] }}</div>
+                                    <div class="photo-card-inner" style="padding: 16px 12px;">
+                                        <div class="photo-card-pill">{{ $defaultBadges[$k] }}</div>
+                                        <div class="photo-card-title" style="font-size: 9.5pt; color: #facc15;">{{ $p['title'] }}</div>
                                         @if(!empty($p['desc']))
-                                            <div class="photo-card-desc" style="font-size: 7pt;">{{ $p['desc'] }}</div>
+                                            <div class="photo-card-desc" style="font-size: 7.5pt; margin-top: 3px;">{{ $p['desc'] }}</div>
                                         @endif
                                     </div>
                                 @endif
@@ -693,22 +696,24 @@
                                 @if($p['path'])
                                     <table style="width: 100%; border-collapse: collapse;">
                                         <tr>
-                                            <td style="width: 38%; padding: 5px; vertical-align: middle; text-align: center;">
-                                                <img src="{{ $p['path'] }}" style="width: 100%; height: 75px; object-fit: cover; border-radius: 5px; display: block;">
+                                            <td style="width: 44%; padding: 6px; vertical-align: middle; text-align: center;">
+                                                <img src="{{ $p['path'] }}" style="width: 100%; height: 110px; object-fit: cover; border-radius: 6px; display: block;">
                                             </td>
-                                            <td style="width: 62%; padding: 5px 8px; vertical-align: middle; text-align: left; color: #ffffff;">
-                                                <div class="photo-card-title" style="color: #eab308; font-size: 8.5pt;">{{ $p['title'] }}</div>
+                                            <td style="width: 56%; padding: 8px 10px; vertical-align: middle; text-align: left; color: #ffffff;">
+                                                <div class="photo-card-pill">{{ $defaultBadges[$k + 2] }}</div>
+                                                <div class="photo-card-title" style="color: #facc15; font-size: 9.5pt; line-height: 1.25;">{{ $p['title'] }}</div>
                                                 @if(!empty($p['desc']))
-                                                    <div class="photo-card-desc" style="font-size: 7pt;">{{ $p['desc'] }}</div>
+                                                    <div class="photo-card-desc" style="font-size: 7.5pt; margin-top: 3px;">{{ $p['desc'] }}</div>
                                                 @endif
                                             </td>
                                         </tr>
                                     </table>
                                 @else
-                                    <div class="photo-card-inner" style="padding: 10px 8px;">
-                                        <div class="photo-card-title" style="font-size: 8.5pt;">{{ $p['title'] }}</div>
+                                    <div class="photo-card-inner" style="padding: 16px 12px;">
+                                        <div class="photo-card-pill">{{ $defaultBadges[$k + 2] }}</div>
+                                        <div class="photo-card-title" style="font-size: 9.5pt; color: #facc15;">{{ $p['title'] }}</div>
                                         @if(!empty($p['desc']))
-                                            <div class="photo-card-desc" style="font-size: 7pt;">{{ $p['desc'] }}</div>
+                                            <div class="photo-card-desc" style="font-size: 7.5pt; margin-top: 3px;">{{ $p['desc'] }}</div>
                                         @endif
                                     </div>
                                 @endif
@@ -724,23 +729,24 @@
                             @if($dossierPhotos[0]['path'])
                                 <table style="width: 100%; border-collapse: collapse;">
                                     <tr>
-                                        <td style="width: 36%; padding: 6px; vertical-align: middle; text-align: center;">
-                                            <img src="{{ $dossierPhotos[0]['path'] }}" style="width: 100%; height: 95px; object-fit: cover; border-radius: 6px; display: block;">
+                                        <td style="width: 38%; padding: 8px; vertical-align: middle; text-align: center;">
+                                            <img src="{{ $dossierPhotos[0]['path'] }}" style="width: 100%; height: 125px; object-fit: cover; border-radius: 6px; display: block;">
                                         </td>
-                                        <td style="width: 64%; padding: 8px 12px; vertical-align: middle; text-align: left; color: #ffffff;">
+                                        <td style="width: 62%; padding: 10px 14px; vertical-align: middle; text-align: left; color: #ffffff;">
                                             <div class="photo-card-pill">MONTAJE DESTACADO</div>
-                                            <div class="photo-card-title" style="color: #eab308;">{{ $dossierPhotos[0]['title'] }}</div>
+                                            <div class="photo-card-title" style="color: #facc15; font-size: 10.5pt;">{{ $dossierPhotos[0]['title'] }}</div>
                                             @if(!empty($dossierPhotos[0]['desc']))
-                                                <div class="photo-card-desc">{{ $dossierPhotos[0]['desc'] }}</div>
+                                                <div class="photo-card-desc" style="font-size: 8pt; margin-top: 4px;">{{ $dossierPhotos[0]['desc'] }}</div>
                                             @endif
                                         </td>
                                     </tr>
                                 </table>
                             @else
-                                <div class="photo-card-inner">
-                                    <div class="photo-card-title">{{ $dossierPhotos[0]['title'] }}</div>
+                                <div class="photo-card-inner" style="padding: 18px 14px;">
+                                    <div class="photo-card-pill">MONTAJE DESTACADO</div>
+                                    <div class="photo-card-title" style="font-size: 10.5pt; color: #facc15;">{{ $dossierPhotos[0]['title'] }}</div>
                                     @if(!empty($dossierPhotos[0]['desc']))
-                                        <div class="photo-card-desc">{{ $dossierPhotos[0]['desc'] }}</div>
+                                        <div class="photo-card-desc" style="font-size: 8pt; margin-top: 4px;">{{ $dossierPhotos[0]['desc'] }}</div>
                                     @endif
                                 </div>
                             @endif
@@ -752,22 +758,22 @@
                                 @if($p['path'])
                                     <table style="width: 100%; border-collapse: collapse;">
                                         <tr>
-                                            <td style="width: 38%; padding: 6px; vertical-align: middle; text-align: center;">
-                                                <img src="{{ $p['path'] }}" style="width: 100%; height: 85px; object-fit: cover; border-radius: 6px; display: block;">
+                                            <td style="width: 44%; padding: 6px; vertical-align: middle; text-align: center;">
+                                                <img src="{{ $p['path'] }}" style="width: 100%; height: 105px; object-fit: cover; border-radius: 6px; display: block;">
                                             </td>
-                                            <td style="width: 62%; padding: 6px 8px; vertical-align: middle; text-align: left; color: #ffffff;">
-                                                <div class="photo-card-title" style="color: #eab308;">{{ $p['title'] }}</div>
+                                            <td style="width: 56%; padding: 8px 10px; vertical-align: middle; text-align: left; color: #ffffff;">
+                                                <div class="photo-card-title" style="color: #facc15; font-size: 9pt;">{{ $p['title'] }}</div>
                                                 @if(!empty($p['desc']))
-                                                    <div class="photo-card-desc">{{ $p['desc'] }}</div>
+                                                    <div class="photo-card-desc" style="font-size: 7.5pt; margin-top: 2px;">{{ $p['desc'] }}</div>
                                                 @endif
                                             </td>
                                         </tr>
                                     </table>
                                 @else
-                                    <div class="photo-card-inner">
-                                        <div class="photo-card-title">{{ $p['title'] }}</div>
+                                    <div class="photo-card-inner" style="padding: 16px 10px;">
+                                        <div class="photo-card-title" style="font-size: 9pt; color: #facc15;">{{ $p['title'] }}</div>
                                         @if(!empty($p['desc']))
-                                            <div class="photo-card-desc">{{ $p['desc'] }}</div>
+                                            <div class="photo-card-desc" style="font-size: 7.5pt; margin-top: 2px;">{{ $p['desc'] }}</div>
                                         @endif
                                     </div>
                                 @endif
@@ -784,22 +790,24 @@
                                 @if($p['path'])
                                     <table style="width: 100%; border-collapse: collapse;">
                                         <tr>
-                                            <td style="width: 42%; padding: 6px; vertical-align: middle; text-align: center;">
-                                                <img src="{{ $p['path'] }}" style="width: 100%; height: 110px; object-fit: cover; border-radius: 6px; display: block;">
+                                            <td style="width: 45%; padding: 8px; vertical-align: middle; text-align: center;">
+                                                <img src="{{ $p['path'] }}" style="width: 100%; height: 130px; object-fit: cover; border-radius: 6px; display: block;">
                                             </td>
-                                            <td style="width: 58%; padding: 8px 10px; vertical-align: middle; text-align: left; color: #ffffff;">
-                                                <div class="photo-card-title" style="color: #eab308;">{{ $p['title'] }}</div>
+                                            <td style="width: 55%; padding: 10px 12px; vertical-align: middle; text-align: left; color: #ffffff;">
+                                                <div class="photo-card-pill">{{ $defaultBadges[$k] }}</div>
+                                                <div class="photo-card-title" style="color: #facc15; font-size: 10pt;">{{ $p['title'] }}</div>
                                                 @if(!empty($p['desc']))
-                                                    <div class="photo-card-desc">{{ $p['desc'] }}</div>
+                                                    <div class="photo-card-desc" style="font-size: 8pt; margin-top: 3px;">{{ $p['desc'] }}</div>
                                                 @endif
                                             </td>
                                         </tr>
                                     </table>
                                 @else
-                                    <div class="photo-card-inner">
-                                        <div class="photo-card-title">{{ $p['title'] }}</div>
+                                    <div class="photo-card-inner" style="padding: 20px 12px;">
+                                        <div class="photo-card-pill">{{ $defaultBadges[$k] }}</div>
+                                        <div class="photo-card-title" style="font-size: 10pt; color: #facc15;">{{ $p['title'] }}</div>
                                         @if(!empty($p['desc']))
-                                            <div class="photo-card-desc">{{ $p['desc'] }}</div>
+                                            <div class="photo-card-desc" style="font-size: 8pt; margin-top: 3px;">{{ $p['desc'] }}</div>
                                         @endif
                                     </div>
                                 @endif
@@ -815,23 +823,24 @@
                             @if($dossierPhotos[0]['path'])
                                 <table style="width: 100%; border-collapse: collapse;">
                                     <tr>
-                                        <td style="width: 40%; padding: 8px; vertical-align: middle; text-align: center;">
-                                            <img src="{{ $dossierPhotos[0]['path'] }}" style="width: 100%; height: 130px; object-fit: cover; border-radius: 6px; display: block;">
+                                        <td style="width: 42%; padding: 10px; vertical-align: middle; text-align: center;">
+                                            <img src="{{ $dossierPhotos[0]['path'] }}" style="width: 100%; height: 155px; object-fit: cover; border-radius: 6px; display: block;">
                                         </td>
-                                        <td style="width: 60%; padding: 12px 16px; vertical-align: middle; text-align: left; color: #ffffff;">
+                                        <td style="width: 58%; padding: 14px 18px; vertical-align: middle; text-align: left; color: #ffffff;">
                                             <div class="photo-card-pill">MONTAJE PROFESIONAL</div>
-                                            <div class="photo-card-title" style="color: #eab308; font-size: 11pt;">{{ $dossierPhotos[0]['title'] }}</div>
+                                            <div class="photo-card-title" style="color: #facc15; font-size: 12pt;">{{ $dossierPhotos[0]['title'] }}</div>
                                             @if(!empty($dossierPhotos[0]['desc']))
-                                                <div class="photo-card-desc" style="font-size: 8.5pt; margin-top: 4px;">{{ $dossierPhotos[0]['desc'] }}</div>
+                                                <div class="photo-card-desc" style="font-size: 8.5pt; margin-top: 6px; line-height: 1.4;">{{ $dossierPhotos[0]['desc'] }}</div>
                                             @endif
                                         </td>
                                     </tr>
                                 </table>
                             @else
-                                <div class="photo-card-inner">
-                                    <div class="photo-card-title">{{ $dossierPhotos[0]['title'] }}</div>
+                                <div class="photo-card-inner" style="padding: 24px 18px;">
+                                    <div class="photo-card-pill">MONTAJE PROFESIONAL</div>
+                                    <div class="photo-card-title" style="font-size: 12pt; color: #facc15;">{{ $dossierPhotos[0]['title'] }}</div>
                                     @if(!empty($dossierPhotos[0]['desc']))
-                                        <div class="photo-card-desc">{{ $dossierPhotos[0]['desc'] }}</div>
+                                        <div class="photo-card-desc" style="font-size: 8.5pt; margin-top: 6px;">{{ $dossierPhotos[0]['desc'] }}</div>
                                     @endif
                                 </div>
                             @endif
@@ -840,29 +849,53 @@
                 </table>
             @endif
 
-            <!-- Bloque Cómo Trabajamos -->
-            <div class="work-box">
-                <div class="work-box-title">{{ $dossierWorkTitle }}</div>
-                <ul class="work-box-list">
-                    @if(!empty($dossierWorkItem1))
-                        <li>
-                            <span class="bullet">&bull;</span>
-                            <strong>Montaje y prueba:</strong> {{ $dossierWorkItem1 }}
-                        </li>
-                    @endif
-                    @if(!empty($dossierWorkItem2))
-                        <li>
-                            <span class="bullet">&bull;</span>
-                            <strong>Personalización:</strong> {{ $dossierWorkItem2 }}
-                        </li>
-                    @endif
-                    @if(!empty($dossierWorkItem3))
-                        <li>
-                            <span class="bullet">&bull;</span>
-                            <strong>Desmontaje:</strong> {{ $dossierWorkItem3 }}
-                        </li>
-                    @endif
-                </ul>
+            <!-- PROCESO CÓMO TRABAJAMOS EN 3 PASOS -->
+            <div style="margin-top: 14px; margin-bottom: 12px;">
+                <div style="font-size: 8.5pt; font-weight: 800; color: #0f172a; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">
+                    {{ $dossierWorkTitle }}
+                </div>
+                <table style="width: 100%; border-collapse: separate; border-spacing: 8px 0;">
+                    <tr>
+                        <td style="width: 33.3%; vertical-align: top; background-color: #f8fafc; border: 1px solid #e2e8f0; border-top: 3px solid #d97706; border-radius: 6px; padding: 10px 12px;">
+                            <div style="font-size: 6.5pt; font-weight: 800; color: #d97706; text-transform: uppercase; letter-spacing: 1px;">PASO 1</div>
+                            <div style="font-size: 8.5pt; font-weight: 800; color: #0f172a; margin: 2px 0 4px 0;">Montaje y prueba</div>
+                            <div style="font-size: 7pt; color: #475569; line-height: 1.35;">{{ $dossierWorkItem1 }}</div>
+                        </td>
+                        <td style="width: 33.3%; vertical-align: top; background-color: #f8fafc; border: 1px solid #e2e8f0; border-top: 3px solid #3b82f6; border-radius: 6px; padding: 10px 12px;">
+                            <div style="font-size: 6.5pt; font-weight: 800; color: #3b82f6; text-transform: uppercase; letter-spacing: 1px;">PASO 2</div>
+                            <div style="font-size: 8.5pt; font-weight: 800; color: #0f172a; margin: 2px 0 4px 0;">Personalización</div>
+                            <div style="font-size: 7pt; color: #475569; line-height: 1.35;">{{ $dossierWorkItem2 }}</div>
+                        </td>
+                        <td style="width: 33.3%; vertical-align: top; background-color: #f8fafc; border: 1px solid #e2e8f0; border-top: 3px solid #10b981; border-radius: 6px; padding: 10px 12px;">
+                            <div style="font-size: 6.5pt; font-weight: 800; color: #10b981; text-transform: uppercase; letter-spacing: 1px;">PASO 3</div>
+                            <div style="font-size: 8.5pt; font-weight: 800; color: #0f172a; margin: 2px 0 4px 0;">Desmontaje</div>
+                            <div style="font-size: 7pt; color: #475569; line-height: 1.35;">{{ $dossierWorkItem3 }}</div>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- COMPROMISO & GARANTÍAS DE CALIDAD -->
+            <div style="background-color: #0b1329; border: 1px solid #1e293b; border-radius: 8px; padding: 10px 14px; color: #ffffff; margin-top: 10px;">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tr>
+                        <td style="width: 33.3%; vertical-align: middle; text-align: center; border-right: 1px solid #1e293b; padding: 0 10px;">
+                            <div style="font-size: 13pt; margin-bottom: 2px;">⚡</div>
+                            <div style="font-size: 8pt; font-weight: 800; color: #eab308;">Equipos 100% Propios</div>
+                            <div style="font-size: 6.5pt; color: #94a3b8; margin-top: 2px; line-height: 1.25;">Sonido e iluminación profesional revisados antes de cada evento.</div>
+                        </td>
+                        <td style="width: 33.3%; vertical-align: middle; text-align: center; border-right: 1px solid #1e293b; padding: 0 10px;">
+                            <div style="font-size: 13pt; margin-bottom: 2px;">🎧</div>
+                            <div style="font-size: 8pt; font-weight: 800; color: #eab308;">DJ Profesional Asignado</div>
+                            <div style="font-size: 6.5pt; color: #94a3b8; margin-top: 2px; line-height: 1.25;">Mezclas en directo, animación cercana y lectura de pista.</div>
+                        </td>
+                        <td style="width: 33.3%; vertical-align: middle; text-align: center; padding: 0 10px;">
+                            <div style="font-size: 13pt; margin-bottom: 2px;">📱</div>
+                            <div style="font-size: 8pt; font-weight: 800; color: #eab308;">Panel Musical Online</div>
+                            <div style="font-size: 6.5pt; color: #94a3b8; margin-top: 2px; line-height: 1.25;">Pedid vuestras canciones favoritas y lista negra desde el móvil.</div>
+                        </td>
+                    </tr>
+                </table>
             </div>
         </div>
 
@@ -1060,6 +1093,26 @@
                     </td>
                 </tr>
             </table>
+
+            <!-- 5. PASOS PARA CONFIRMAR LA RESERVA -->
+            <div style="margin-top: 8px; margin-bottom: 6px; background-color: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 8px; padding: 7px 10px; text-align: center;">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tr>
+                        <td style="width: 33.3%; text-align: center; vertical-align: middle; border-right: 1px dashed #cbd5e1; padding: 0 6px;">
+                            <div style="font-weight: 800; color: #1e3a8a; font-size: 7.5pt;">1. Bloqueo de Fecha</div>
+                            <div style="font-size: 6.5pt; color: #64748b; line-height: 1.25; margin-top: 1px;">Abona la señal ({{ number_format($quote->signal_amount, 2, ',', '.') }}€) vía Bizum o Transferencia.</div>
+                        </td>
+                        <td style="width: 33.3%; text-align: center; vertical-align: middle; border-right: 1px dashed #cbd5e1; padding: 0 6px;">
+                            <div style="font-weight: 800; color: #1e3a8a; font-size: 7.5pt;">2. Firma Digital</div>
+                            <div style="font-size: 6.5pt; color: #64748b; line-height: 1.25; margin-top: 1px;">Firma tu contrato en 1 clic desde el portal con total validez legal.</div>
+                        </td>
+                        <td style="width: 33.3%; text-align: center; vertical-align: middle; padding: 0 6px;">
+                            <div style="font-weight: 800; color: #1e3a8a; font-size: 7.5pt;">3. Cuestionario Musical</div>
+                            <div style="font-size: 6.5pt; color: #64748b; line-height: 1.25; margin-top: 1px;">Indica momentos especiales, canciones clave y lista negra.</div>
+                        </td>
+                    </tr>
+                </table>
+            </div>
 
             <div class="tax-note">
                 Precios finales, impuestos incluidos &bull; Propuesta válida durante 15 días desde su fecha de emisión &bull; Formalización por estricto orden de reserva
