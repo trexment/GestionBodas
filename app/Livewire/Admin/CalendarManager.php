@@ -83,7 +83,7 @@ class CalendarManager extends Component
             'new_client_id' => 'nullable|exists:users,id',
             'new_dj_id' => 'nullable|exists:users,id',
             'new_assistant_id' => 'nullable|exists:users,id',
-            'new_status' => 'required|in:draft,confirmed,completed,cancelled',
+            'new_status' => 'required|in:draft,no_response,confirmed,completed,rejected,cancelled',
         ]);
 
         $event = Event::create([

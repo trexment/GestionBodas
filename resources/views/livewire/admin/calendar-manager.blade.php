@@ -36,7 +36,9 @@
                     <option value="">Todos los Estados</option>
                     <option value="confirmed">🟢 Confirmados</option>
                     <option value="draft">🟡 Borradores / Pendientes</option>
+                    <option value="no_response">🟣 Sin Respuesta</option>
                     <option value="completed">🔵 Completados</option>
+                    <option value="rejected">⚪ Rechazados</option>
                     <option value="cancelled">🔴 Cancelados</option>
                 </select>
 
@@ -67,7 +69,9 @@
             <span class="text-gray-400">Leyenda:</span>
             <span class="inline-flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Confirmado</span>
             <span class="inline-flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span> Borrador / Pendiente</span>
+            <span class="inline-flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-purple-500"></span> Sin Respuesta</span>
             <span class="inline-flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span> Completado</span>
+            <span class="inline-flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-slate-400"></span> Rechazado</span>
             <span class="inline-flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span> Cancelado</span>
         </div>
 
@@ -110,6 +114,8 @@
                                             $borderClass = match($eventItem->status) {
                                                 'confirmed' => 'border-emerald-500 bg-emerald-50 text-emerald-900 hover:bg-emerald-100',
                                                 'completed' => 'border-blue-500 bg-blue-50 text-blue-900 hover:bg-blue-100',
+                                                'no_response' => 'border-purple-500 bg-purple-50 text-purple-900 hover:bg-purple-100',
+                                                'rejected' => 'border-slate-400 bg-slate-100 text-slate-700 hover:bg-slate-200 opacity-60 line-through',
                                                 'cancelled' => 'border-rose-500 bg-rose-50 text-rose-900 hover:bg-rose-100 opacity-60 line-through',
                                                 default => 'border-amber-500 bg-amber-50 text-amber-900 hover:bg-amber-100',
                                             };
@@ -237,9 +243,11 @@
                                 <div>
                                     <label class="block text-xs font-bold text-gray-700 mb-1">Estado *</label>
                                     <select wire:model="new_status" required class="block w-full border-gray-300 rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500 bg-white">
-                                        <option value="draft">🟡 Borrador</option>
+                                        <option value="draft">🟡 Borrador / Pendiente</option>
+                                        <option value="no_response">🟣 Sin Respuesta</option>
                                         <option value="confirmed">🟢 Confirmado</option>
                                         <option value="completed">🔵 Completado</option>
+                                        <option value="rejected">⚪ Rechazado</option>
                                         <option value="cancelled">🔴 Cancelado</option>
                                     </select>
                                 </div>

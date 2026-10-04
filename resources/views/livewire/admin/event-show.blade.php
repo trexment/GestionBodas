@@ -142,30 +142,30 @@
 
                 <!-- Selector de Estado del Evento -->
                 <div class="relative" x-data="{ openStatusDropdown: false }">
-                    <button type="button" @click="openStatusDropdown = !openStatusDropdown" class="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full font-bold transition cursor-pointer shadow-2xs {{ $event->status === 'confirmed' ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border border-emerald-300' : ($event->status === 'completed' ? 'bg-blue-100 text-blue-800 hover:bg-blue-200 border border-blue-300' : ($event->status === 'cancelled' ? 'bg-rose-100 text-rose-800 hover:bg-rose-200 border border-rose-300' : 'bg-amber-100 text-amber-800 hover:bg-amber-200 border border-amber-300')) }}" title="Cambiar estado del evento">
-                        <span>
-                            @if($event->status === 'confirmed') 🟢
-                            @elseif($event->status === 'completed') 🔵
-                            @elseif($event->status === 'cancelled') 🔴
-                            @else 📝
-                            @endif
-                        </span>
-                        <span>{{ ucfirst($event->status) }}</span>
+                    <button type="button" @click="openStatusDropdown = !openStatusDropdown" class="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full font-bold transition cursor-pointer shadow-2xs border {{ $event->status_badge_class }}" title="Cambiar estado del evento">
+                        <span>{{ $event->status_icon }}</span>
+                        <span>{{ $event->status_label }}</span>
                         <span class="text-[9px] opacity-70">▼</span>
                     </button>
-                    <div x-show="openStatusDropdown" @click.away="openStatusDropdown = false" class="absolute left-0 mt-1.5 w-56 bg-white border border-slate-200 rounded-2xl shadow-xl z-30 p-1.5 divide-y divide-slate-100 text-xs animate-in fade-in zoom-in-95 duration-100" style="display: none;">
+                    <div x-show="openStatusDropdown" @click.away="openStatusDropdown = false" class="absolute left-0 mt-1.5 w-60 bg-white border border-slate-200 rounded-2xl shadow-xl z-30 p-1.5 divide-y divide-slate-100 text-xs animate-in fade-in zoom-in-95 duration-100" style="display: none;">
                         <div class="space-y-0.5">
                             <button type="button" wire:click="changeStatus('draft')" @click="openStatusDropdown = false" class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 font-semibold flex items-center gap-2 cursor-pointer {{ $event->status === 'draft' ? 'bg-amber-50 text-amber-800 font-bold' : 'text-slate-700' }}">
-                                <span>📝</span> Borrador / Pendiente
+                                <span>📝</span> Borrador / Presupuesto
+                            </button>
+                            <button type="button" wire:click="changeStatus('no_response')" @click="openStatusDropdown = false" class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 font-semibold flex items-center gap-2 cursor-pointer {{ $event->status === 'no_response' ? 'bg-purple-50 text-purple-800 font-bold' : 'text-slate-700' }}">
+                                <span>⏳</span> Sin Respuesta (Esperando)
                             </button>
                             <button type="button" wire:click="changeStatus('confirmed')" @click="openStatusDropdown = false" class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 font-semibold flex items-center gap-2 cursor-pointer {{ $event->status === 'confirmed' ? 'bg-emerald-50 text-emerald-800 font-bold' : 'text-slate-700' }}">
-                                <span>🟢</span> Confirmado (Señal)
+                                <span>🟢</span> Confirmado (Señal Pagada)
                             </button>
                             <button type="button" wire:click="changeStatus('completed')" @click="openStatusDropdown = false" class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 font-semibold flex items-center gap-2 cursor-pointer {{ $event->status === 'completed' ? 'bg-blue-50 text-blue-800 font-bold' : 'text-slate-700' }}">
-                                <span>🔵</span> Completado (Pago Final)
+                                <span>🔵</span> Completado (Finalizado)
+                            </button>
+                            <button type="button" wire:click="changeStatus('rejected')" @click="openStatusDropdown = false" class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 font-semibold flex items-center gap-2 cursor-pointer {{ $event->status === 'rejected' ? 'bg-slate-100 text-slate-800 font-bold' : 'text-slate-700' }}">
+                                <span>❌</span> Rechazado (No Acepta)
                             </button>
                             <button type="button" wire:click="changeStatus('cancelled')" @click="openStatusDropdown = false" class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 font-semibold flex items-center gap-2 cursor-pointer {{ $event->status === 'cancelled' ? 'bg-rose-50 text-rose-800 font-bold' : 'text-slate-700' }}">
-                                <span>🔴</span> Cancelado
+                                <span>🔴</span> Cancelado (Anulación)
                             </button>
                         </div>
                     </div>
@@ -312,11 +312,13 @@
                 💬 WhatsApp Hub
             </button>
 
-            <div class="flex items-center text-sm shadow-xs rounded-lg overflow-hidden border border-gray-200 ml-2">
-                <button wire:click="changeStatus('draft')" class="px-2.5 py-1.5 text-xs font-medium {{ $event->status == 'draft' ? 'bg-amber-100 text-amber-900 font-bold' : 'bg-white hover:bg-gray-50' }}">Borrador</button>
-                <button wire:click="changeStatus('confirmed')" class="px-2.5 py-1.5 text-xs font-medium border-l border-r border-gray-200 {{ $event->status == 'confirmed' ? 'bg-emerald-100 text-emerald-900 font-bold' : 'bg-white hover:bg-gray-50' }}">Confirmado</button>
-                <button wire:click="changeStatus('completed')" class="px-2.5 py-1.5 text-xs font-medium border-r border-gray-200 {{ $event->status == 'completed' ? 'bg-blue-100 text-blue-900 font-bold' : 'bg-white hover:bg-gray-50' }}">Completado</button>
-                <button wire:click="changeStatus('cancelled')" class="px-2.5 py-1.5 text-xs font-medium {{ $event->status == 'cancelled' ? 'bg-rose-100 text-rose-900 font-bold' : 'bg-white hover:bg-gray-50' }}">Cancelado</button>
+            <div class="hidden lg:flex items-center text-xs shadow-xs rounded-xl overflow-hidden border border-gray-200 ml-2 bg-white">
+                <button wire:click="changeStatus('draft')" title="Borrador / Pendiente" class="px-2.5 py-1.5 font-medium transition cursor-pointer {{ $event->status == 'draft' ? 'bg-amber-100 text-amber-900 font-bold' : 'bg-white hover:bg-gray-50 text-gray-700' }}">📝 Borrador</button>
+                <button wire:click="changeStatus('no_response')" title="Sin Respuesta del Cliente" class="px-2.5 py-1.5 font-medium border-l border-gray-200 transition cursor-pointer {{ $event->status == 'no_response' ? 'bg-purple-100 text-purple-900 font-bold' : 'bg-white hover:bg-gray-50 text-gray-700' }}">⏳ Sin Resp.</button>
+                <button wire:click="changeStatus('confirmed')" title="Confirmado (Señal Cobrada)" class="px-2.5 py-1.5 font-medium border-l border-gray-200 transition cursor-pointer {{ $event->status == 'confirmed' ? 'bg-emerald-100 text-emerald-900 font-bold' : 'bg-white hover:bg-gray-50 text-gray-700' }}">🟢 Confirmado</button>
+                <button wire:click="changeStatus('completed')" title="Completado / Celebrado" class="px-2.5 py-1.5 font-medium border-l border-gray-200 transition cursor-pointer {{ $event->status == 'completed' ? 'bg-blue-100 text-blue-900 font-bold' : 'bg-white hover:bg-gray-50 text-gray-700' }}">🔵 Completado</button>
+                <button wire:click="changeStatus('rejected')" title="Rechazado por el Cliente" class="px-2.5 py-1.5 font-medium border-l border-gray-200 transition cursor-pointer {{ $event->status == 'rejected' ? 'bg-slate-200 text-slate-900 font-bold' : 'bg-white hover:bg-gray-50 text-gray-700' }}">❌ Rechazado</button>
+                <button wire:click="changeStatus('cancelled')" title="Cancelado / Anulación" class="px-2.5 py-1.5 font-medium border-l border-gray-200 transition cursor-pointer {{ $event->status == 'cancelled' ? 'bg-rose-100 text-rose-900 font-bold' : 'bg-white hover:bg-gray-50 text-gray-700' }}">🔴 Cancelado</button>
             </div>
 
             @if(auth()->user()->role === 'admin')

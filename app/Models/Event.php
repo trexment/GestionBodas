@@ -133,6 +133,57 @@ class Event extends Model
     }
 
     /**
+     * Etiqueta legible del estado del evento
+     */
+    public function getStatusLabelAttribute(): string
+    {
+        $st = $this->attributes['status'] ?? 'draft';
+        return match($st) {
+            'draft' => 'Borrador / Pendiente',
+            'no_response' => 'Sin Respuesta',
+            'confirmed' => 'Confirmado',
+            'completed' => 'Completado',
+            'rejected' => 'Rechazado',
+            'cancelled' => 'Cancelado',
+            default => ucfirst($st),
+        };
+    }
+
+    /**
+     * Clases CSS para el badge de estado
+     */
+    public function getStatusBadgeClassAttribute(): string
+    {
+        $st = $this->attributes['status'] ?? 'draft';
+        return match($st) {
+            'draft' => 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950/60 dark:text-amber-300',
+            'no_response' => 'bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-950/60 dark:text-purple-300',
+            'confirmed' => 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300',
+            'completed' => 'bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-950/60 dark:text-blue-300',
+            'rejected' => 'bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-800 dark:text-slate-300',
+            'cancelled' => 'bg-rose-100 text-rose-800 border-rose-300 dark:bg-rose-950/60 dark:text-rose-300',
+            default => 'bg-gray-100 text-gray-800 border-gray-300',
+        };
+    }
+
+    /**
+     * Icono representativo del estado
+     */
+    public function getStatusIconAttribute(): string
+    {
+        $st = $this->attributes['status'] ?? 'draft';
+        return match($st) {
+            'draft' => '📝',
+            'no_response' => '⏳',
+            'confirmed' => '🟢',
+            'completed' => '🔵',
+            'rejected' => '❌',
+            'cancelled' => '🔴',
+            default => '📌',
+        };
+    }
+
+    /**
      * Etiqueta legible del método de pago de la señal
      */
     public function getDepositMethodLabelAttribute(): string

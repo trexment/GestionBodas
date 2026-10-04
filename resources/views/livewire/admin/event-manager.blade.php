@@ -49,12 +49,8 @@
                             </span>
                         </div>
                     </div>
-                    <span class="shrink-0 px-2 py-0.5 text-[11px] font-bold rounded-full 
-                        @if($event->status == 'draft') bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300
-                        @elseif($event->status == 'confirmed') bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300
-                        @elseif($event->status == 'completed') bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300
-                        @else bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 @endif">
-                        {{ ucfirst($event->status) }}
+                    <span class="shrink-0 px-2.5 py-0.5 text-[11px] font-bold rounded-full border {{ $event->status_badge_class }}">
+                        {{ $event->status_icon }} {{ $event->status_label }}
                     </span>
                 </div>
 
@@ -218,12 +214,8 @@
                             @endif
                         </td>
                         <td class="px-4 py-3 whitespace-nowrap">
-                            <span class="px-2 py-0.5 inline-flex text-[11px] leading-5 font-bold rounded-full 
-                                @if($event->status == 'draft') bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300
-                                @elseif($event->status == 'confirmed') bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300
-                                @elseif($event->status == 'completed') bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300
-                                @else bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 @endif">
-                                {{ ucfirst($event->status) }}
+                            <span class="px-2.5 py-0.5 inline-flex text-[11px] leading-5 font-bold rounded-full border {{ $event->status_badge_class }}">
+                                {{ $event->status_icon }} {{ $event->status_label }}
                             </span>
                         </td>
                         <td class="px-4 py-3 whitespace-nowrap text-right text-xs font-medium">
