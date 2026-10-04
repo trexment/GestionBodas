@@ -4,294 +4,573 @@
 <meta charset="UTF-8">
 <title>Manual Técnico y Arquitectura del Código - Eventos Musicales</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+  
   @page {
     size: A4;
-    margin: 18mm 15mm 18mm 15mm;
+    margin: 15mm 14mm 18mm 14mm;
+    @bottom-right {
+      content: "Página " counter(page);
+      font-size: 9px;
+      color: #94a3b8;
+      font-family: 'Inter', sans-serif;
+    }
   }
+
   * { box-sizing: border-box; }
+  
   body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     color: #1e293b;
-    line-height: 1.55;
-    font-size: 12px;
+    line-height: 1.5;
+    font-size: 11px;
     margin: 0;
     padding: 0;
     background: #fff;
   }
-  .cover {
+
+  .cover-page {
     height: 100vh;
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    page-break-after: always;
-    background: linear-gradient(135deg, #090d16 0%, #172554 100%);
+    justify-content: space-between;
+    background: linear-gradient(135deg, #020617 0%, #0f172a 40%, #1e3a8a 100%);
     color: #fff;
-    padding: 40px;
-    border-radius: 8px;
+    padding: 45px;
+    border-radius: 12px;
+    page-break-after: always;
+    position: relative;
+    overflow: hidden;
   }
-  .cover h1 {
-    font-size: 30px;
-    font-weight: 800;
-    margin-bottom: 12px;
-    letter-spacing: -0.5px;
-    color: #f8fafc;
+
+  .cover-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
   }
-  .cover .subtitle {
-    font-size: 16px;
-    color: #93c5fd;
-    margin-bottom: 24px;
-    font-weight: 400;
-  }
-  .cover .badge-brand {
-    display: inline-block;
+
+  .brand-pill {
     background: rgba(255, 255, 255, 0.12);
     border: 1px solid rgba(255, 255, 255, 0.25);
     padding: 6px 16px;
     border-radius: 50px;
-    font-size: 12px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #cbd5e1;
+  }
+
+  .version-tag {
+    font-size: 11px;
+    color: #60a5fa;
     font-weight: 600;
-    color: #e2e8f0;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .cover-center {
+    margin: 30px 0;
+  }
+
+  .cover-center h1 {
+    font-size: 32px;
+    font-weight: 900;
+    line-height: 1.15;
+    margin: 0 0 14px 0;
+    letter-spacing: -0.8px;
+    background: linear-gradient(180deg, #ffffff 0%, #cbd5e1 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .cover-center .subtitle {
+    font-size: 15px;
+    color: #93c5fd;
+    font-weight: 400;
+    max-width: 580px;
+    line-height: 1.4;
     margin-bottom: 24px;
   }
-  .cover .meta {
-    font-size: 11px;
-    color: #94a3b8;
-    margin-top: 40px;
+
+  .cover-tech-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-top: 25px;
   }
+
+  .cover-tech-card {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    padding: 10px;
+    border-radius: 6px;
+    text-align: center;
+  }
+
+  .cover-tech-card strong {
+    display: block;
+    color: #38bdf8;
+    font-size: 12px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .cover-tech-card span {
+    font-size: 9.5px;
+    color: #94a3b8;
+  }
+
+  .cover-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+    padding-top: 16px;
+    font-size: 10px;
+    color: #94a3b8;
+  }
+
   h2 {
     color: #0f172a;
-    font-size: 16px;
-    font-weight: 700;
+    font-size: 15px;
+    font-weight: 800;
     border-bottom: 2px solid #e2e8f0;
     padding-bottom: 5px;
     margin-top: 24px;
     margin-bottom: 10px;
     page-break-after: avoid;
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
+
   h3 {
     color: #1e3a8a;
-    font-size: 13px;
-    font-weight: 600;
-    margin-top: 16px;
-    margin-bottom: 6px;
+    font-size: 12.5px;
+    font-weight: 700;
+    margin-top: 14px;
+    margin-bottom: 5px;
     page-break-after: avoid;
   }
-  p { margin: 0 0 8px 0; }
-  ul, ol { margin: 0 0 10px 0; padding-left: 20px; }
+
+  p { margin: 0 0 7px 0; }
+  ul, ol { margin: 0 0 9px 0; padding-left: 18px; }
   li { margin-bottom: 3px; }
-  .card {
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    border-radius: 6px;
-    padding: 10px 14px;
-    margin-bottom: 12px;
-    page-break-inside: avoid;
-  }
-  .card-header {
-    font-weight: 700;
-    color: #1e40af;
-    margin-bottom: 4px;
-    font-size: 12.5px;
-  }
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 10px 0;
-    font-size: 11.5px;
-    page-break-inside: avoid;
-  }
-  th, td {
-    border: 1px solid #cbd5e1;
-    padding: 6px 8px;
-    text-align: left;
-  }
-  th {
-    background: #f1f5f9;
-    color: #0f172a;
-    font-weight: 600;
-  }
+
+  /* Code & Syntax Styling */
   pre, code {
     font-family: 'JetBrains Mono', Consolas, Monaco, monospace;
   }
+
   code {
     background: #f1f5f9;
     color: #0f172a;
-    padding: 2px 4px;
+    padding: 2px 5px;
     border-radius: 4px;
-    font-size: 11px;
+    font-size: 10px;
+    border: 1px solid #e2e8f0;
   }
+
   pre {
-    background: #0f172a;
+    background: #090d16;
     color: #f8fafc;
     padding: 10px 14px;
     border-radius: 6px;
-    font-size: 10.5px;
+    font-size: 9.5px;
     line-height: 1.45;
     overflow-x: auto;
     page-break-inside: avoid;
+    border: 1px solid #1e293b;
+    margin: 8px 0 12px 0;
   }
-  .highlight-box {
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 9px;
+    font-weight: 700;
+  }
+
+  .badge-blue { background: #e0e7ff; color: #3730a3; }
+  .badge-green { background: #dcfce7; color: #166534; }
+  .badge-amber { background: #fef3c7; color: #92400e; }
+  .badge-red { background: #fee2e2; color: #991b1b; }
+  .badge-purple { background: #f3e8ff; color: #6b21a8; }
+  .badge-slate { background: #f1f5f9; color: #334155; }
+
+  /* Technical Diagrams */
+  .tech-diagram-container {
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 12px;
+    margin: 12px 0;
+    page-break-inside: avoid;
+  }
+
+  .schema-table-card {
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    margin-bottom: 10px;
+    overflow: hidden;
+    page-break-inside: avoid;
+  }
+
+  .schema-table-header {
+    background: #1e293b;
+    color: #f8fafc;
+    padding: 6px 10px;
+    font-weight: 700;
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .schema-table-body {
+    padding: 8px 10px;
+  }
+
+  .schema-field {
+    display: grid;
+    grid-template-columns: 140px 100px 1fr;
+    font-size: 10px;
+    padding: 3px 0;
+    border-bottom: 1px solid #f1f5f9;
+  }
+
+  .schema-field-name {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+    color: #1e3a8a;
+  }
+
+  .schema-field-type {
+    color: #64748b;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .schema-field-desc {
+    color: #334155;
+  }
+
+  .ui-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 10px;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    margin: 8px 0;
+    page-break-inside: avoid;
+  }
+
+  .ui-table th {
+    background: #f1f5f9;
+    padding: 5px 8px;
+    text-align: left;
+    color: #334155;
+    font-weight: 700;
+    border-bottom: 1px solid #cbd5e1;
+  }
+
+  .ui-table td {
+    padding: 5px 8px;
+    border-bottom: 1px solid #f1f5f9;
+  }
+
+  .callout-box {
+    background: #f8fafc;
     border-left: 4px solid #2563eb;
-    background: #eff6ff;
     padding: 8px 12px;
     border-radius: 0 6px 6px 0;
     margin: 10px 0;
     page-break-inside: avoid;
   }
+
+  .page-break {
+    page-break-after: always;
+  }
 </style>
 </head>
 <body>
 
-<div class="cover">
-  <div class="badge-brand">ARQUITECTURA &bull; LARAVEL 11 &bull; LIVEWIRE 3</div>
-  <h1>MANUAL TÉCNICO Y ARQUITECTURA DEL CÓDIGO</h1>
-  <div class="subtitle">Estructura Interna, Modelos, Servicios, APIs y Despliegue</div>
-  <p style="max-width: 500px; color: #cbd5e1; font-size: 12.5px;">
-    Documentación de referencia técnica para desarrolladores. Cubre el esquema de base de datos, flujo reactivo, motor de parseo de sesiones DJ, servicios de background y seguridad de firma.
-  </p>
-  <div class="meta">
-    Stack: PHP 8.2+ &bull; Livewire 3 &bull; Tailwind CSS &bull; DomPDF &bull; Fecha: Octubre 2026
+<!-- PORTADA TÉCNICA -->
+<div class="cover-page">
+  <div class="cover-top">
+    <div class="brand-pill">DOCUMENTACIÓN DE CÓDIGO Y ARQUITECTURA</div>
+    <div class="version-tag">LARAVEL 11 &bull; LIVEWIRE 3</div>
+  </div>
+
+  <div class="cover-center">
+    <h1>MANUAL TÉCNICO Y ESPECIFICACIÓN DEL SISTEMA</h1>
+    <div class="subtitle">
+      Arquitectura reactiva en tiempo real, esquemas de base de datos Eloquent, motores de parseo para DJ (Engine DJ, Rekordbox, M3U), automatización IMAP y seguridad legal de firma digital.
+    </div>
+
+    <div class="cover-tech-grid">
+      <div class="cover-tech-card">
+        <strong>Laravel 11.x</strong>
+        <span>Core Backend PHP 8.2+</span>
+      </div>
+      <div class="cover-tech-card">
+        <strong>Livewire 3.x</strong>
+        <span>Reactividad de Estado SPA</span>
+      </div>
+      <div class="cover-tech-card">
+        <strong>DomPDF Engine</strong>
+        <span>Renderizado Vectorial A4</span>
+      </div>
+      <div class="cover-tech-card">
+        <strong>Spotify &amp; IMAP</strong>
+        <span>Integraciones Cloud &amp; Mail</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="cover-footer">
+    <div>
+      <strong>Gestión de Eventos Musicales &bull; Repositorio GitHub</strong><br>
+      <code>https://github.com/trexment/GestionBodas.git</code>
+    </div>
+    <div style="text-align: right;">
+      Rama: <code>main</code> &bull; Octubre 2026
+    </div>
   </div>
 </div>
 
-<h2>1. Arquitectura General y Stack</h2>
+<!-- CAPÍTULO 1: ARQUITECTURA GENERAL -->
+<h2>1. Arquitectura del Sistema y Flujo de Datos</h2>
 <p>
-  La plataforma implementa una arquitectura basada en componentes reactivos con <strong>Laravel 11</strong> y <strong>Livewire 3</strong>, optimizando la experiencia de usuario tipo Single-Page Application (SPA) con renderizado rápido en servidor y sincronización bidireccional de estado.
+  El sistema sigue el patrón <strong>Single-Stack Reactive Architecture</strong>. No utiliza un frontend separado (como Vue/React standalone con API REST), sino que delega la reactividad y sincronización de estado a <strong>Livewire 3</strong> con hydration automática del DOM mediante AJAX y WebSockets:
 </p>
-<ul>
-  <li><strong>Backend:</strong> Laravel 11.x, PHP 8.2+</li>
-  <li><strong>Frontend:</strong> Livewire 3, Alpine.js, Tailwind CSS</li>
-  <li><strong>Generación de Documentos:</strong> <code>barryvdh/laravel-dompdf</code> (DomPDF)</li>
-  <li><strong>APIs Externas:</strong> Spotify Web API (Client Credentials), Apple Music API, Protocolo IMAP SSL/TLS, RFC 5545 iCal</li>
-</ul>
 
-<h2>2. Estructura de Directorios Clave</h2>
+<div class="tech-diagram-container">
+  <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; text-align: center;">
+    <div style="background: #eef2ff; border: 1px solid #c7d2fe; border-radius: 6px; padding: 10px;">
+      <strong style="color: #3730a3; font-size: 11px;">1. CLIENTE (Browser / Mobile)</strong>
+      <div style="font-size: 9.5px; color: #475569; margin-top: 4px;">
+        Alpine.js &bull; Tailwind CSS &bull; HTML5 Canvas (Firma) &bull; Web Audio API
+      </div>
+    </div>
+    <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 10px;">
+      <strong style="color: #166534; font-size: 11px;">2. COMPONENTES LIVEWIRE</strong>
+      <div style="font-size: 9.5px; color: #475569; margin-top: 4px;">
+        <code>EventShow.php</code> &bull; <code>ContractSign.php</code> &bull; <code>DjBoothMode.php</code>
+      </div>
+    </div>
+    <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px;">
+      <strong style="color: #0f172a; font-size: 11px;">3. SERVICIOS &amp; MODELOS</strong>
+      <div style="font-size: 9.5px; color: #475569; margin-top: 4px;">
+        Eloquent ORM &bull; <code>DjHistoryParser</code> &bull; <code>ImapLeadFetcher</code>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CAPÍTULO 2: ESQUEMA DE BASE DE DATOS -->
+<h2>2. Esquema de Base de Datos y Modelos Eloquent</h2>
+
+<!-- Schema Event -->
+<div class="schema-table-card">
+  <div class="schema-table-header">
+    <span>TABLA: events (Modelo: App\Models\Event)</span>
+    <span class="badge badge-blue">TABLA PRINCIPAL</span>
+  </div>
+  <div class="schema-table-body">
+    <div class="schema-field">
+      <span class="schema-field-name">id</span>
+      <span class="schema-field-type">BIGINT (PK)</span>
+      <span class="schema-field-desc">Identificador autonumérico interno</span>
+    </div>
+    <div class="schema-field">
+      <span class="schema-field-name">token</span>
+      <span class="schema-field-type">VARCHAR(64) UNIQUE</span>
+      <span class="schema-field-desc">UUID v4 opaco para acceso público de novios/invitados</span>
+    </div>
+    <div class="schema-field">
+      <span class="schema-field-name">brand</span>
+      <span class="schema-field-type">ENUM / VARCHAR</span>
+      <span class="schema-field-desc"><code>javnxdj</code> | <code>nunezandson</code> (determina toda la identidad)</span>
+    </div>
+    <div class="schema-field">
+      <span class="schema-field-name">status</span>
+      <span class="schema-field-type">VARCHAR(30)</span>
+      <span class="schema-field-desc"><code>new</code>, <code>budgeted</code>, <code>unresponsive</code>, <code>approved</code>, <code>planning</code>, <code>ready</code>, <code>in_progress</code>, <code>completed</code>, <code>rejected</code>, <code>cancelled</code></span>
+    </div>
+    <div class="schema-field">
+      <span class="schema-field-name">event_date, setup_date</span>
+      <span class="schema-field-type">DATE, DATETIME</span>
+      <span class="schema-field-desc">Fecha oficial del evento y fecha/hora prevista para el montaje de equipos</span>
+    </div>
+    <div class="schema-field">
+      <span class="schema-field-name">deposit_amount, deposit_paid</span>
+      <span class="schema-field-type">DECIMAL(10,2), BOOL</span>
+      <span class="schema-field-desc">Importe de fianza exigido y estado de confirmación del cobro</span>
+    </div>
+  </div>
+</div>
+
+<!-- Schema EventDjHistory -->
+<div class="schema-table-card">
+  <div class="schema-table-header">
+    <span>TABLA: event_dj_histories (Modelo: App\Models\EventDjHistory)</span>
+    <span class="badge badge-green">NUEVA &bull; HISTORIAL CABINA</span>
+  </div>
+  <div class="schema-table-body">
+    <div class="schema-field">
+      <span class="schema-field-name">event_id</span>
+      <span class="schema-field-type">FOREIGN KEY</span>
+      <span class="schema-field-desc">Vínculo con la tabla <code>events.id</code> (ON DELETE CASCADE)</span>
+    </div>
+    <div class="schema-field">
+      <span class="schema-field-name">artist, title</span>
+      <span class="schema-field-type">VARCHAR(255)</span>
+      <span class="schema-field-desc">Artista y título parseados y limpios de etiquetas o extensiones</span>
+    </div>
+    <div class="schema-field">
+      <span class="schema-field-name">bpm, key, duration_seconds</span>
+      <span class="schema-field-type">DECIMAL / VARCHAR</span>
+      <span class="schema-field-desc">Tempo, escala armónica (Camelot/OpenKey) y duración en segundos</span>
+    </div>
+    <div class="schema-field">
+      <span class="schema-field-name">played_at</span>
+      <span class="schema-field-type">DATETIME / TIME</span>
+      <span class="schema-field-desc">Hora exacta de reproducción registrada por la controladora</span>
+    </div>
+    <div class="schema-field">
+      <span class="schema-field-name">source_format</span>
+      <span class="schema-field-type">VARCHAR(30)</span>
+      <span class="schema-field-desc"><code>engine_dj</code>, <code>rekordbox</code>, <code>serato</code>, <code>m3u</code>, <code>manual</code></span>
+    </div>
+    <div class="schema-field">
+      <span class="schema-field-name">matched_request_id</span>
+      <span class="schema-field-type">FOREIGN KEY NULL</span>
+      <span class="schema-field-desc">Enlace con <code>event_music_requests.id</code> al detectarse coincidencia</span>
+    </div>
+  </div>
+</div>
+
+<!-- CAPÍTULO 3: SERVICIOS DE NEGOCIO -->
+<div class="page-break"></div>
+<h2>3. Servicios Especializados (`app/Services`)</h2>
+
+<h3>3.1. `DjHistoryParserService.php` (Motor de Parseo y Cruce)</h3>
+<p>
+  Diseñado para procesar archivos heterogéneos y normalizar cadenas para comparación difusa:
+</p>
 <pre>
-app/
-├── Console/Commands/FetchEmailLeadsCommand.php   # Comando cron emails:fetch-leads
-├── Http/Controllers/
-│   ├── PdfController.php                        # Generador de PDFs (Facturas, Contratos, etc.)
-│   ├── SpotifyAuthController.php               # Proxy de streaming y tokens Spotify/Apple
-│   └── CalendarFeedController.php               # Generador iCal (.ics)
-├── Livewire/
-│   ├── Admin/ (EventShow, Dashboard, EventManager, InventoryManager, MusicManager, etc.)
-│   └── Guest/ (ContractSign, LiveRequests, EventForm, QuoteCalculator, DjBoothMode)
-├── Models/ (Event, EventDjHistory, EventMusicRequest, Contract, Quote, Invoice, etc.)
-└── Services/
-    ├── DjHistoryParserService.php               # Parser Engine DJ / Rekordbox / M3U y matching
-    ├── ImapLeadFetcherService.php               # Ingesta y parseo regex de leads de correo
-    ├── SpotifyService.php                       # Búsqueda, caché de token y metadatos
-    ├── CloudMusicStorageService.php             # Streaming de audios y Google Drive
-    └── PostalCodeService.php                    # Cálculo kilométrico por código postal
+// Algoritmo de normalización y concordancia difusa
+public function normalizeString(string $str): string {
+    $str = mb_strtolower($str, 'UTF-8');
+    $str = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $str); // Elimina tildes
+    $str = preg_replace('/[^a-z0-9]/', '', $str);          // Elimina símbolos
+    return trim($str);
+}
+
+// Cruce difuso contra las peticiones del evento
+foreach ($requests as $req) {
+    similar_text($normTitle, $this->normalizeString($req->title), $percent);
+    if ($percent >= 80 || str_contains($normTitle, $this->normalizeString($req->title))) {
+        $track['matched_request_id'] = $req->id;
+        $req->update(['status' => 'played']); // Marca como sonada en directo
+    }
+}
 </pre>
 
-<h2>3. Modelos Eloquent Principales</h2>
-
-<div class="card">
-  <div class="card-header">Event (app/Models/Event.php)</div>
-  Entidad nuclear del sistema. Administra el token UUID de acceso público, la marca comercial (<code>brand</code>), fechas y horarios clave (<code>event_date</code>, <code>setup_date</code>, <code>dance_start_time</code>), fianza (<code>deposit_amount</code>, <code>deposit_paid</code>) y relaciones con presupuestos, contratos, facturas, reuniones, equipamiento e historial DJ.
-</div>
-
-<div class="card">
-  <div class="card-header">EventDjHistory (app/Models/EventDjHistory.php)</div>
-  Almacena el tracklist real de canciones pinchadas en la sesión. Campos: <code>track_number</code>, <code>artist</code>, <code>title</code>, <code>bpm</code>, <code>key</code>, <code>played_at</code>, <code>duration_seconds</code>, <code>source_format</code> y la relación <code>matched_request_id</code> apuntando a la petición del invitado/novio que fue complacida.
-</div>
-
-<div class="card">
-  <div class="card-header">Contract (app/Models/Contract.php)</div>
-  Gestiona la validez legal del contrato: almacena el vector de firma en Base64 (<code>signature_data</code>), fecha de firma (<code>signed_at</code>), IP del firmante (<code>signer_ip</code>), User-Agent y certificado de auditoría digital.
-</div>
-
-<h2>4. Capa de Servicios de Negocio (app/Services)</h2>
-
-<h3>4.1. DjHistoryParserService.php</h3>
+<h3>3.2. `ImapLeadFetcherService.php` (Automatización de Buzones IMAP)</h3>
 <p>
-  Procesa archivos exportados de cabinas y software de DJ:
+  Se conecta vía SSL a los servidores de correo de las marcas (p. ej. Roundcube / Postfix en Plesk):
 </p>
-<ul>
-  <li><strong>Engine DJ CSV:</strong> Parseo de columnas dinámicas (<code>#</code>, <code>Song Title</code>, <code>Artist</code>, <code>BPM</code>, <code>Key</code>, <code>Time Played</code>).</li>
-  <li><strong>Rekordbox CSV / TXT:</strong> Detección de cabeceras de Pioneer.</li>
-  <li><strong>Playlists M3U / M3U8:</strong> Extracción de directivas <code>#EXTINF</code> y rutas de archivo.</li>
-  <li><strong>Algoritmo de Cruce (Fuzzy Matching):</strong> Normaliza caracteres (sin tildes ni símbolos), analiza contención mutua y calcula similitud de Levenshtein (<code>similar_text > 80%</code>). Vincula automáticamente la petición y actualiza su estado a <code>played</code> ("Sonada en directo").</li>
-</ul>
+<pre>
+// Conexión por socket IMAP seguro
+$mailbox = '{' . $host . ':' . $port . '/imap/ssl/novalidate-cert}INBOX';
+$imap = @imap_open($mailbox, $username, $password);
 
-<h3>4.2. ImapLeadFetcherService.php</h3>
+// Búsqueda de correos no leídos y parseo mediante expresiones regulares
+$emails = imap_search($imap, 'UNSEEN');
+// Extrae: Nombre de novios, Teléfono, Fecha de boda, Finca, Marca de destino
+</pre>
+
+<!-- CAPÍTULO 4: CONTROLADORES Y PDF -->
+<h2>4. Generación de PDFs con DomPDF (`PdfController.php`)</h2>
 <p>
-  Conexión por socket IMAP SSL a los buzones corporativos. Extrae mediante expresiones regulares los datos de contacto, fecha del evento, lugar y presupuesto de los correos automáticos de <strong>bodas.net</strong> y formularios web, evitando duplicados por Message-ID.
+  El controlador <code>PdfController.php</code> compila vistas Blade con estilos CSS embebidos específicamente optimizados para el motor de paginación A4 de DomPDF:
 </p>
 
-<h3>4.3. SpotifyService.php</h3>
-<p>
-  Autenticación automática OAuth 2.0 (Client Credentials) con caché de token en memoria (55 min). Métodos para búsqueda de canciones, enriquecimiento de carátulas en alta resolución, duración, tempo (BPM) y escala musical.
-</p>
-
-<h2>5. Componente Central: EventShow.php</h2>
-<p>
-  Ubicado en <code>app/Livewire/Admin/EventShow.php</code>, gestiona el estado reactivo del evento mediante 10 pestañas:
-</p>
-<table>
+<table class="ui-table">
   <tr>
-    <th>Pestaña</th>
-    <th>Responsabilidad Técnica</th>
+    <th>Método</th>
+    <th>Ruta</th>
+    <th>Vista Blade</th>
   </tr>
   <tr>
-    <td><code>overview</code></td>
-    <td>Línea de tiempo, horarios de montaje/barra libre y contactos de la finca.</td>
+    <td><code>downloadQuote()</code></td>
+    <td><code>/quote/{quote}/pdf</code></td>
+    <td><code>resources/views/pdf/quote.blade.php</code></td>
   </tr>
   <tr>
-    <td><code>budget</code></td>
-    <td>Líneas de presupuesto, cálculo reactivo de IVA (21%) y control de fianza.</td>
+    <td><code>downloadContract()</code></td>
+    <td><code>/contract/{contract}/pdf</code></td>
+    <td><code>resources/views/pdf/contract.blade.php</code></td>
   </tr>
   <tr>
-    <td><code>contracts</code></td>
-    <td>Generación de contrato y verificación de firma digital.</td>
+    <td><code>downloadInvoice()</code></td>
+    <td><code>/invoice/{invoice}/pdf</code></td>
+    <td><code>resources/views/pdf/invoice.blade.php</code></td>
   </tr>
   <tr>
-    <td><code>invoices</code></td>
-    <td>Emisión de facturas oficiales y vinculación con presupuestos.</td>
+    <td><code>downloadPackingList()</code></td>
+    <td><code>/events/{event}/packing-list/pdf</code></td>
+    <td><code>resources/views/pdf/packing-list.blade.php</code></td>
   </tr>
   <tr>
-    <td><code>meetings</code></td>
-    <td>Actas de reuniones y llamadas con clientes.</td>
+    <td><code>downloadMusicEscaleta()</code></td>
+    <td><code>/events/{event}/music-escaleta/pdf</code></td>
+    <td><code>resources/views/pdf/music-escaleta.blade.php</code></td>
   </tr>
   <tr>
-    <td><code>music</code></td>
-    <td>Escaleta de momentos, importación de historial DJ y preescuchas.</td>
-  </tr>
-  <tr>
-    <td><code>inventory</code></td>
-    <td>Asignación de equipos del almacén y patch de canales DMX.</td>
-  </tr>
-  <tr>
-    <td><code>dossier</code></td>
-    <td>Especificaciones y requerimientos técnicos del evento.</td>
+    <td><code>downloadDjHistory()</code></td>
+    <td><code>/events/{event}/dj-history/pdf</code></td>
+    <td><code>resources/views/pdf/dj-session-history.blade.php</code></td>
   </tr>
 </table>
 
-<h2>6. Seguridad y Tokens Públicos</h2>
-<div class="highlight-box">
-  Los accesos para novios (<code>/guest/form/{token}</code>), firma de contratos (<code>/contrato/{token}</code>), peticiones de invitados (<code>/peticiones/{token}</code>) y modo cabina (<code>/live/{token}</code>) utilizan tokens <strong>UUID v4 aleatorios</strong>. Esto impide la enumeración o el acceso no autorizado a datos de otros eventos sin necesidad de autenticación por contraseña.
-</div>
+<!-- CAPÍTULO 5: SEGURIDAD Y FIRMA DIGITAL -->
+<h2>5. Seguridad, Tokens y Firma Digital Biométrica</h2>
+<ul>
+  <li><strong>Tokens Aleatorios Criptográficos:</strong> El acceso a portales públicos de novios (<code>/guest/form/{token}</code>) y contratos (<code>/contrato/{token}</code>) utiliza cadenas de 64 caracteres seguras contra ataques de fuerza bruta.</li>
+  <li><strong>Certificado de Firma Electrónica:</strong> Al firmar el contrato desde el navegador móvil, el componente <code>ContractSign.php</code> captura:
+    <ul>
+      <li>Trazo vectorial en Base64 PNG dibujado sobre el canvas táctil.</li>
+      <li>Dirección IP pública del cliente (<code>request()->ip()</code>).</li>
+      <li>Cabecera User-Agent completa del dispositivo.</li>
+      <li>Timestamp UTC con milisegundos y Hash de integridad SHA-256 del documento.</li>
+    </ul>
+  </li>
+</ul>
 
-<h2>7. Mantenimiento y Despliegue en Servidor</h2>
+<!-- CAPÍTULO 6: DESPLIEGUE Y MANTENIMIENTO -->
+<h2>6. Despliegue en Producción (Plesk / VPS)</h2>
 <pre>
-# 1. Actualizar repositorio
+# Actualización del código
 git pull origin main
 
-# 2. Ejecutar migraciones de base de datos
+# Aplicar migraciones
 php artisan migrate --force
 
-# 3. Limpiar y optimizar cachés de producción
+# Limpieza y optimización de cachés
 php artisan optimize:clear
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 
-# 4. Enlace de almacenamiento público
+# Enlace de almacenamiento público
 php artisan storage:link
+
+# Cron Job de lectura de correos en Crontab / Plesk:
+* * * * * cd /var/www/vhosts/tudominio.com/httpdocs && /opt/plesk/php/8.5/bin/php artisan schedule:run >> /dev/null 2>&1
 </pre>
 
 </body>

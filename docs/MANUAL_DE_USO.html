@@ -2,277 +2,795 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Manual de Uso - Sistema de Gestión de Eventos Musicales</title>
+<title>Manual Completo de Uso - Sistema de Gestión de Eventos Musicales</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap');
+  
   @page {
     size: A4;
-    margin: 18mm 15mm 18mm 15mm;
+    margin: 15mm 14mm 18mm 14mm;
+    @bottom-right {
+      content: "Página " counter(page);
+      font-size: 9px;
+      color: #94a3b8;
+      font-family: 'Inter', sans-serif;
+    }
   }
+
   * { box-sizing: border-box; }
+  
   body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     color: #1e293b;
-    line-height: 1.6;
-    font-size: 13px;
+    line-height: 1.55;
+    font-size: 11.5px;
     margin: 0;
     padding: 0;
     background: #fff;
   }
-  .cover {
+
+  .cover-page {
     height: 100vh;
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    page-break-after: always;
-    background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+    justify-content: space-between;
+    background: linear-gradient(135deg, #090d16 0%, #0f172a 40%, #1e1b4b 100%);
     color: #fff;
-    padding: 40px;
-    border-radius: 8px;
+    padding: 45px;
+    border-radius: 12px;
+    page-break-after: always;
+    position: relative;
+    overflow: hidden;
   }
-  .cover h1 {
-    font-size: 32px;
-    font-weight: 800;
-    margin-bottom: 12px;
-    letter-spacing: -0.5px;
-    color: #f8fafc;
+
+  .cover-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
   }
-  .cover .subtitle {
-    font-size: 18px;
-    color: #a5b4fc;
-    margin-bottom: 24px;
-    font-weight: 400;
-  }
-  .cover .badge-brand {
-    display: inline-block;
+
+  .brand-pill {
     background: rgba(255, 255, 255, 0.12);
     border: 1px solid rgba(255, 255, 255, 0.25);
-    padding: 8px 18px;
+    padding: 6px 16px;
     border-radius: 50px;
-    font-size: 13px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #cbd5e1;
+  }
+
+  .version-tag {
+    font-size: 11px;
+    color: #818cf8;
     font-weight: 600;
-    letter-spacing: 0.5px;
-    color: #e2e8f0;
-    margin-bottom: 30px;
   }
-  .cover .meta {
+
+  .cover-center {
+    margin: 40px 0;
+  }
+
+  .cover-center h1 {
+    font-size: 34px;
+    font-weight: 900;
+    line-height: 1.15;
+    margin: 0 0 16px 0;
+    letter-spacing: -0.8px;
+    background: linear-gradient(180deg, #ffffff 0%, #cbd5e1 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .cover-center .subtitle {
+    font-size: 16px;
+    color: #a5b4fc;
+    font-weight: 400;
+    max-width: 580px;
+    line-height: 1.4;
+    margin-bottom: 24px;
+  }
+
+  .cover-features-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+    margin-top: 30px;
+  }
+
+  .cover-feature {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 12px;
+    border-radius: 8px;
+  }
+
+  .cover-feature strong {
+    display: block;
+    color: #38bdf8;
     font-size: 12px;
-    color: #94a3b8;
-    margin-top: 40px;
+    margin-bottom: 4px;
   }
+
+  .cover-feature span {
+    font-size: 10.5px;
+    color: #94a3b8;
+  }
+
+  .cover-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+    padding-top: 20px;
+    font-size: 10.5px;
+    color: #94a3b8;
+  }
+
   h2 {
     color: #0f172a;
-    font-size: 18px;
-    font-weight: 700;
+    font-size: 16px;
+    font-weight: 800;
     border-bottom: 2px solid #e2e8f0;
     padding-bottom: 6px;
     margin-top: 28px;
     margin-bottom: 12px;
     page-break-after: avoid;
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
+
   h3 {
     color: #334155;
-    font-size: 14px;
-    font-weight: 600;
-    margin-top: 18px;
-    margin-bottom: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    margin-top: 16px;
+    margin-bottom: 6px;
     page-break-after: avoid;
   }
-  p { margin: 0 0 10px 0; }
-  ul, ol { margin: 0 0 12px 0; padding-left: 20px; }
-  li { margin-bottom: 4px; }
-  .card {
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    border-radius: 6px;
-    padding: 12px 16px;
-    margin-bottom: 14px;
+
+  h4 {
+    color: #475569;
+    font-size: 12px;
+    font-weight: 600;
+    margin-top: 12px;
+    margin-bottom: 4px;
+  }
+
+  p { margin: 0 0 8px 0; }
+  ul, ol { margin: 0 0 10px 0; padding-left: 18px; }
+  li { margin-bottom: 3px; }
+
+  /* UI Mockups & Visual Screens */
+  .ui-mockup {
+    background: #0f172a;
+    border-radius: 8px;
+    border: 1px solid #334155;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+    margin: 14px 0 18px 0;
+    overflow: hidden;
     page-break-inside: avoid;
   }
-  .card-header {
-    font-weight: 700;
-    color: #4338ca;
-    margin-bottom: 6px;
-    font-size: 13px;
+
+  .ui-mockup-header {
+    background: #1e293b;
+    padding: 6px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #334155;
   }
-  .badge {
-    display: inline-block;
-    padding: 2px 8px;
-    border-radius: 4px;
-    font-size: 11px;
+
+  .ui-dots {
+    display: flex;
+    gap: 4px;
+  }
+
+  .ui-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+  .ui-dot-red { background: #ef4444; }
+  .ui-dot-yellow { background: #eab308; }
+  .ui-dot-green { background: #22c55e; }
+
+  .ui-mockup-title {
+    color: #94a3b8;
+    font-size: 10px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .ui-mockup-body {
+    background: #f8fafc;
+    color: #1e293b;
+    padding: 14px;
+  }
+
+  .ui-mockup-body.dark {
+    background: #090d16;
+    color: #f8fafc;
+  }
+
+  /* Grid layouts inside mockups */
+  .ui-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .ui-stat-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    padding: 8px 10px;
+    border-radius: 6px;
+  }
+
+  .ui-stat-label {
+    font-size: 9.5px;
+    color: #64748b;
+    text-transform: uppercase;
     font-weight: 600;
   }
+
+  .ui-stat-val {
+    font-size: 16px;
+    font-weight: 800;
+    color: #0f172a;
+    margin-top: 2px;
+  }
+
+  .ui-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 10.5px;
+    background: #fff;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid #e2e8f0;
+  }
+
+  .ui-table th {
+    background: #f1f5f9;
+    padding: 6px 8px;
+    text-align: left;
+    color: #475569;
+    font-weight: 600;
+    border-bottom: 1px solid #cbd5e1;
+  }
+
+  .ui-table td {
+    padding: 6px 8px;
+    border-bottom: 1px solid #f1f5f9;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+  }
+
   .badge-blue { background: #e0e7ff; color: #3730a3; }
   .badge-green { background: #dcfce7; color: #166534; }
   .badge-amber { background: #fef3c7; color: #92400e; }
   .badge-red { background: #fee2e2; color: #991b1b; }
   .badge-purple { background: #f3e8ff; color: #6b21a8; }
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 12px 0;
-    font-size: 12px;
-    page-break-inside: avoid;
-  }
-  th, td {
-    border: 1px solid #cbd5e1;
-    padding: 8px 10px;
-    text-align: left;
-  }
-  th {
-    background: #f1f5f9;
-    color: #0f172a;
-    font-weight: 600;
-  }
-  .highlight-box {
+  .badge-slate { background: #e2e8f0; color: #334155; }
+  .badge-dark { background: #1e293b; color: #f8fafc; }
+
+  .callout-box {
+    background: #f8fafc;
     border-left: 4px solid #4f46e5;
-    background: #eef2ff;
     padding: 10px 14px;
     border-radius: 0 6px 6px 0;
     margin: 12px 0;
     page-break-inside: avoid;
   }
-  code {
-    background: #f1f5f9;
-    color: #0f172a;
-    padding: 2px 5px;
-    border-radius: 4px;
-    font-family: Consolas, Monaco, monospace;
+
+  .callout-box.tip {
+    border-left-color: #10b981;
+    background: #f0fdf4;
+  }
+
+  .callout-box.warning {
+    border-left-color: #f59e0b;
+    background: #fffbeb;
+  }
+
+  .callout-title {
+    font-weight: 700;
     font-size: 11.5px;
+    margin-bottom: 3px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  /* Workflow diagram */
+  .workflow-diagram {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 12px;
+    margin: 14px 0;
+    page-break-inside: avoid;
+  }
+
+  .workflow-step {
+    text-align: center;
+    flex: 1;
+    padding: 4px 6px;
+  }
+
+  .workflow-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #e0e7ff;
+    color: #4338ca;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 11px;
+    margin-bottom: 4px;
+  }
+
+  .workflow-name {
+    font-size: 10px;
+    font-weight: 700;
+    color: #0f172a;
+    display: block;
+  }
+
+  .workflow-desc {
+    font-size: 8.5px;
+    color: #64748b;
+  }
+
+  .workflow-arrow {
+    color: #94a3b8;
+    font-size: 14px;
+    font-weight: 800;
+    padding: 0 4px;
+  }
+
+  .page-break {
+    page-break-after: always;
   }
 </style>
 </head>
 <body>
 
-<div class="cover">
-  <div class="badge-brand">JAVNXDJ &bull; NÚÑEZ &amp; SON</div>
-  <h1>MANUAL DE USO DE LA APLICACIÓN</h1>
-  <div class="subtitle">Guía Integral de Operaciones, Gestión de Eventos y Sesiones DJ</div>
-  <p style="max-width: 500px; color: #cbd5e1; font-size: 13px;">
-    Documentación completa para la administración de eventos, presupuestos, contratos digitales, escaletas musicales, material técnico y control en cabina.
-  </p>
-  <div class="meta">
-    Versión del Sistema: 2026.1 &bull; Documento Oficial &bull; Fecha: Octubre 2026
+<!-- PORTADA -->
+<div class="cover-page">
+  <div class="cover-top">
+    <div class="brand-pill">JAVNXDJ &bull; NÚÑEZ &amp; SON</div>
+    <div class="version-tag">GUÍA OPERATIVA OFICIAL 2026</div>
+  </div>
+
+  <div class="cover-center">
+    <h1>MANUAL DE USO Y OPERACIONES</h1>
+    <div class="subtitle">
+      Guía integral para la gestión de bodas, presupuestos, contratos digitales con firma biométrica, escaletas musicales, control en cabina DJ y logística técnica.
+    </div>
+
+    <div class="cover-features-grid">
+      <div class="cover-feature">
+        <strong>🎧 Sesiones DJ en Directo</strong>
+        <span>Importación de Engine DJ, Rekordbox y cruce inteligente de peticiones.</span>
+      </div>
+      <div class="cover-feature">
+        <strong>✍️ Firma Digital Legal</strong>
+        <span>Firma online en smartphone con captura de IP, User-Agent y certificado.</span>
+      </div>
+      <div class="cover-feature">
+        <strong>⚡ Multi-Marca Nativo</strong>
+        <span>Gestión simultánea de JAVNXDJ y NÚÑEZ &amp; SON sin solapamiento fiscal.</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="cover-footer">
+    <div>
+      <strong>Sistema de Gestión de Eventos Musicales</strong><br>
+      Diseñado para DJs Profesionales, Empresas de Sonorización y Parejas de Novios
+    </div>
+    <div style="text-align: right;">
+      Versión: 2026.1 &bull; Documento A4 Oficial
+    </div>
   </div>
 </div>
 
-<h2>1. Filosofía Multi-Marca</h2>
+<!-- CAPÍTULO 1: INTRODUCCIÓN Y ARQUITECTURA DE MARCA -->
+<h2>1. Filosofía Multi-Marca (JAVNXDJ / NÚÑEZ &amp; SON)</h2>
 <p>
-  La aplicación está concebida para operar con dos identidades comerciales de forma simultánea e independiente:
+  La aplicación opera como un <strong>ERP especializado</strong> con motor multi-entidad que gestiona dos identidades comerciales independientes:
 </p>
-<ul>
-  <li><strong>JAVNXDJ:</strong> Enfocada a sesiones de DJ de autor, eventos corporativos, festivales y fiestas privadas de alto nivel.</li>
-  <li><strong>NÚÑEZ &amp; SON (Eventos Musicales):</strong> Especializada en bodas integrales (ceremonia, cóctel, banquete y barra libre) con montaje de iluminación y sonido completo.</li>
-</ul>
-<div class="highlight-box">
-  Cada evento se asocia a una marca. Los logotipos, presupuestos en PDF, contratos, correos automáticos y facturas adoptan la identidad visual, CIF y cuentas bancarias de la marca elegida sin intervención manual.
-</div>
 
-<h2>2. Acceso y Roles de Usuario</h2>
-<p>El acceso al sistema se realiza a través de <code>/login</code> mediante credenciales seguras.</p>
-<table>
+<table class="ui-table">
   <tr>
-    <th>Rol</th>
-    <th>Alcance y Permisos</th>
+    <th style="width: 25%;">Marca</th>
+    <th style="width: 35%;">Enfoque y Servicios</th>
+    <th style="width: 40%;">Identidad Visual y Documentos</th>
   </tr>
   <tr>
-    <td><strong>Administrador</strong></td>
-    <td>Acceso total a finanzas, presupuestos, contratos, facturas, configuración, usuarios e inventario.</td>
+    <td><strong style="color: #6366f1;">JAVNXDJ</strong></td>
+    <td>Eventos corporativos, sesiones de autor, festivales, clubes y fiestas privadas exclusivas.</td>
+    <td>Paleta oscura y neón, logotipo de DJ, tarifas por sesión/hora, facturación de autor.</td>
   </tr>
   <tr>
-    <td><strong>Staff / DJ Auxiliar</strong></td>
-    <td>Acceso al calendario, modo cabina en vivo, escaletas de eventos asignados y packing list.</td>
-  </tr>
-  <tr>
-    <td><strong>Clientes / Invitados (Público)</strong></td>
-    <td>Acceso limitado a sus portales específicos mediante <strong>tokens únicos seguros</strong> (sin contraseñas).</td>
+    <td><strong style="color: #059669;">NÚÑEZ &amp; SON</strong></td>
+    <td>Bodas completas (ceremonia, cóctel, banquete y barra libre), sonorizaciones e iluminación.</td>
+    <td>Estilo elegante y prémium, datos fiscales de empresa, packing list completo de equipos.</td>
   </tr>
 </table>
 
-<h2>3. Gestión del Ciclo de Vida del Evento</h2>
-<p>Cada evento transiciona por los siguientes estados:</p>
+<div class="callout-box tip">
+  <div class="callout-title">💡 Automatización inteligente de identidad</div>
+  Al seleccionar la marca en el evento, el sistema cambia automáticamente los logotipos en los PDF, las plantillas de mensajes de WhatsApp, el remitente de correo electrónico, el CIF y las cuentas bancarias para transferencias o Bizum.
+</div>
+
+<!-- FLUJO DE TRABAJO -->
+<h2>2. Flujo Completo de un Evento (Ciclo de Vida)</h2>
+<div class="workflow-diagram">
+  <div class="workflow-step">
+    <div class="workflow-icon">1</div>
+    <span class="workflow-name">Lead / Entrada</span>
+    <span class="workflow-desc">Web, bodas.net o manual</span>
+  </div>
+  <div class="workflow-arrow">&rarr;</div>
+  <div class="workflow-step">
+    <div class="workflow-icon">2</div>
+    <span class="workflow-name">Presupuesto</span>
+    <span class="workflow-desc">Cálculo + IVA + Fianza</span>
+  </div>
+  <div class="workflow-arrow">&rarr;</div>
+  <div class="workflow-step">
+    <div class="workflow-icon">3</div>
+    <span class="workflow-name">Firma Digital</span>
+    <span class="workflow-desc">Enlace móvil con IP</span>
+  </div>
+  <div class="workflow-arrow">&rarr;</div>
+  <div class="workflow-step">
+    <div class="workflow-icon">4</div>
+    <span class="workflow-name">Escaleta / Música</span>
+    <span class="workflow-desc">Momentos clave</span>
+  </div>
+  <div class="workflow-arrow">&rarr;</div>
+  <div class="workflow-step">
+    <div class="workflow-icon">5</div>
+    <span class="workflow-name">Evento / DJ Live</span>
+    <span class="workflow-desc">QR invitados + Cabina</span>
+  </div>
+  <div class="workflow-arrow">&rarr;</div>
+  <div class="workflow-step">
+    <div class="workflow-icon">6</div>
+    <span class="workflow-name">Cierre / Historial</span>
+    <span class="workflow-desc">Import Engine DJ + PDF</span>
+  </div>
+</div>
+
+<h3>Significado de los Estados del Evento</h3>
 <ul>
-  <li><span class="badge badge-blue">Nuevo</span> Lead o solicitud recién registrada.</li>
-  <li><span class="badge badge-purple">Presupuestado</span> Propuesta económica elaborada y enviada al cliente.</li>
-  <li><span class="badge badge-amber">No responde</span> Se ha realizado seguimiento pero el cliente no ha contestado.</li>
-  <li><span class="badge badge-green">Aprobado</span> El cliente ha aceptado el presupuesto o abonado la señal de reserva.</li>
-  <li><span class="badge badge-blue">Planificando</span> En proceso de selección de escaleta musical y requisitos técnicos.</li>
-  <li><span class="badge badge-green">Listo</span> Material, personal y música 100% coordinados para la fecha.</li>
-  <li><span class="badge badge-purple">En curso</span> El evento se está celebrando en tiempo real.</li>
-  <li><span class="badge badge-green">Finalizado</span> Evento concluido con éxito.</li>
-  <li><span class="badge badge-red">Rechazado</span> El cliente declinó formalmente la propuesta.</li>
-  <li><span class="badge badge-red">Cancelado</span> Evento suspendido tras haber estado confirmado.</li>
+  <li><span class="badge badge-blue">Nuevo</span> Solicitud inicial pendiente de llamada o primer contacto.</li>
+  <li><span class="badge badge-purple">Presupuestado</span> Propuesta económica enviada a los novios.</li>
+  <li><span class="badge badge-amber">No responde</span> Se ha realizado seguimiento pero la pareja no ha dado respuesta.</li>
+  <li><span class="badge badge-green">Aprobado</span> El cliente ha aceptado el presupuesto y abonado la señal de reserva.</li>
+  <li><span class="badge badge-blue">Planificando</span> Coordinando escaleta musical, visitas técnicas y reuniones.</li>
+  <li><span class="badge badge-green">Listo</span> Material revisado, personal asignado y escaleta completada al 100%.</li>
+  <li><span class="badge badge-dark">En curso</span> El evento se está celebrando en este momento.</li>
+  <li><span class="badge badge-slate">Finalizado</span> Evento concluido satisfactoriamente.</li>
+  <li><span class="badge badge-red">Rechazado</span> El cliente declinó formalmente (por precio, fecha ocupada u otro proveedor).</li>
+  <li><span class="badge badge-red">Cancelado</span> Evento anulado con posterioridad a su aprobación.</li>
 </ul>
 
-<h2>4. Ficha del Evento (Pestañas Principales)</h2>
-
-<div class="card">
-  <div class="card-header">1. Resumen y Datos Generales</div>
-  Permite gestionar horarios de montaje, ceremonia, cóctel, banquete y fin de barra libre. Incluye libreta de contactos directos (maître, fotógrafo, wedding planner) y enlace al formulario de los novios.
-</div>
-
-<div class="card">
-  <div class="card-header">2. Presupuestos y Fianza</div>
-  Añade líneas de servicio, cálculo automático de IVA (21%) o exento. Control del estado de la señal de reserva (importe, porcentaje, fecha de cobro y casilla de pago recibido). Generación de PDF formal.
-</div>
-
-<div class="card">
-  <div class="card-header">3. Contratos y Firma Digital</div>
-  Genera el contrato oficial con todas las cláusulas legales. Los novios acceden mediante el enlace <code>/contrato/{token}</code> y firman en pantalla táctil. El sistema registra IP, navegador y fecha con valor de auditoría legal.
-</div>
-
-<div class="card">
-  <div class="card-header">4. Reuniones y Actas de Seguimiento</div>
-  Historial cronológico de videollamadas, llamadas telefónicas o reuniones presenciales con notas y compromisos acordados.
-</div>
-
-<div class="card">
-  <div class="card-header">5. Escaleta Musical y Momentos Especiales</div>
-  Configuración de canciones clave (Entrada, Tarta, Ramos, Baile Nupcial), pistas imprescindibles (<em>Must Play</em>) y prohibidas (<em>Do Not Play</em>). Descarga de la escaleta para cabina en PDF.
-</div>
-
-<div class="card">
-  <div class="card-header">6. Historial de Sesión DJ (Engine DJ / Rekordbox / M3U)</div>
-  Permite importar el CSV o playlist real exportada de la controladora. Cruza automáticamente las canciones reproducidas con las peticiones de los invitados y genera el <strong>Tracklist PDF Oficial</strong>.
-</div>
-
-<div class="card">
-  <div class="card-header">7. Material Técnico y DMX</div>
-  Selección de altavoces, iluminación y cableado. Asignación de universo DMX y direccionamiento de canales. Generación de <strong>Packing List PDF</strong> de carga para la furgoneta.
-</div>
-
-<h2>5. Modo Cabina DJ en Directo (DJ Booth Live)</h2>
+<!-- CAPÍTULO 3: PANEL DE CONTROL Y DASHBOARD -->
+<h2>3. Panel de Control (Dashboard)</h2>
 <p>
-  Accediendo a <code>/admin/events/{id}/live</code> (o con el enlace público con token para tablets):
+  Al acceder al sistema, el Dashboard ofrece métricas financieras en tiempo real, alarmas de seguimiento y la lista de bodas más inmediatas:
 </p>
+
+<!-- Mockup Dashboard -->
+<div class="ui-mockup">
+  <div class="ui-mockup-header">
+    <div class="ui-dots">
+      <div class="ui-dot ui-dot-red"></div>
+      <div class="ui-dot ui-dot-yellow"></div>
+      <div class="ui-dot ui-dot-green"></div>
+    </div>
+    <div class="ui-mockup-title">admin.eventosmusicales.es/admin/dashboard</div>
+    <span class="badge badge-green">SISTEMA ACTIVO</span>
+  </div>
+  <div class="ui-mockup-body">
+    <div class="ui-stats-grid">
+      <div class="ui-stat-card">
+        <div class="ui-stat-label">Total Ingresos 2026</div>
+        <div class="ui-stat-val">34.850 €</div>
+      </div>
+      <div class="ui-stat-card">
+        <div class="ui-stat-label">Fianzas Cobradas</div>
+        <div class="ui-stat-val" style="color: #059669;">5.200 €</div>
+      </div>
+      <div class="ui-stat-card">
+        <div class="ui-stat-label">Eventos Confirmados</div>
+        <div class="ui-stat-val" style="color: #2563eb;">28 Bodas</div>
+      </div>
+      <div class="ui-stat-card">
+        <div class="ui-stat-label">Tasa Conversión</div>
+        <div class="ui-stat-val" style="color: #7c3aed;">68.4 %</div>
+      </div>
+    </div>
+
+    <table class="ui-table">
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Evento / Novios</th>
+          <th>Marca</th>
+          <th>Lugar / Finca</th>
+          <th>Estado</th>
+          <th>Fianza</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>12/10/2026</strong></td>
+          <td>Boda Carlos &amp; Elena</td>
+          <td><span class="badge badge-green">NÚÑEZ &amp; SON</span></td>
+          <td>Finca Los Olivos (La Rioja)</td>
+          <td><span class="badge badge-green">LISTO</span></td>
+          <td><span class="badge badge-green">PAGADA (200€)</span></td>
+        </tr>
+        <tr>
+          <td><strong>18/10/2026</strong></td>
+          <td>Boda Marcos &amp; Lucía</td>
+          <td><span class="badge badge-blue">JAVNXDJ</span></td>
+          <td>Bodega Marqués de Riscal</td>
+          <td><span class="badge badge-blue">PLANIFICANDO</span></td>
+          <td><span class="badge badge-green">PAGADA (250€)</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- CAPÍTULO 4: FICHA DEL EVENTO -->
+<div class="page-break"></div>
+<h2>4. Ficha Integral del Evento (Las 10 Pestañas)</h2>
+<p>
+  La ficha del evento (<code>/admin/events/{id}</code>) organiza toda la operativa en 10 secciones modulares:
+</p>
+
+<!-- Mockup Ficha del Evento -->
+<div class="ui-mockup">
+  <div class="ui-mockup-header">
+    <div class="ui-dots"><div class="ui-dot ui-dot-red"></div><div class="ui-dot ui-dot-yellow"></div><div class="ui-dot ui-dot-green"></div></div>
+    <div class="ui-mockup-title">Ficha del Evento: Boda Carlos &amp; Elena &bull; Token #e9a2f1b0</div>
+    <span class="badge badge-purple">ESTADO: PLANIFICANDO</span>
+  </div>
+  <div class="ui-mockup-body" style="padding: 8px 12px;">
+    <div style="display: flex; gap: 6px; border-bottom: 2px solid #e2e8f0; padding-bottom: 6px; margin-bottom: 10px; font-size: 10px; font-weight: 700;">
+      <span style="color: #4f46e5; border-bottom: 2px solid #4f46e5; padding-bottom: 6px;">1. Resumen</span>
+      <span style="color: #64748b;">2. Presupuesto</span>
+      <span style="color: #64748b;">3. Contrato</span>
+      <span style="color: #64748b;">4. Facturas</span>
+      <span style="color: #64748b;">5. Reuniones</span>
+      <span style="color: #64748b;">6. Música &amp; Sesión</span>
+      <span style="color: #64748b;">7. Equipos &amp; DMX</span>
+      <span style="color: #64748b;">8. Dossier</span>
+    </div>
+    
+    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 10px;">
+      <div style="background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px;">
+        <h4 style="margin-top: 0;">⏱️ Horarios y Cronograma</h4>
+        <p style="font-size: 10.5px;">
+          <strong>Montaje:</strong> 11:30 | <strong>Ceremonia:</strong> 13:00 | <strong>Cóctel:</strong> 14:15 | <strong>Banquete:</strong> 15:30 | <strong>Barra Libre:</strong> 19:00 - 02:00
+        </p>
+        <p style="font-size: 10.5px; color: #475569;">
+          <strong>Lugar:</strong> Finca Señorío de Nevada &bull; <strong>Contacto Maître:</strong> Pedro (+34 611 22 33 44)
+        </p>
+      </div>
+      <div style="background: #eef2ff; border: 1px solid #c7d2fe; border-radius: 6px; padding: 10px; text-align: center;">
+        <span style="font-size: 10px; color: #3730a3; font-weight: 700;">ENLACE FORMULARIO NOVIOS</span>
+        <div style="font-size: 9px; font-family: monospace; background: #fff; padding: 4px; margin: 4px 0; border-radius: 4px; border: 1px dashed #818cf8;">
+          /guest/form/e9a2f1b0
+        </div>
+        <button style="background: #4f46e5; color: #fff; border: none; padding: 3px 8px; border-radius: 4px; font-size: 9px; font-weight: 600;">Copiar Enlace WhatsApp</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h3>Detalle de Pestañas Clave:</h3>
 <ul>
-  <li>Interfaz oscura de alto contraste optimizada para poca luz.</li>
-  <li>Visualización en tiempo real de peticiones de los invitados enviadas desde la pista.</li>
-  <li>Marcado rápido: <strong>Pinchada</strong>, <strong>Pendiente</strong> o <strong>Descartada</strong>.</li>
-  <li>Consulta instantánea de la escaleta de momentos de la boda.</li>
+  <li><strong>Presupuestos:</strong> Añade conceptos (Pack Boda Completa, Iluminación Guirnalda, Fuego Frío, Máquina Humo Bajo). Desglose dinámico de Base Imponible + IVA (21%) y casilla de <strong>"Fianza Pagada"</strong> con registro de fecha.</li>
+  <li><strong>Contratos y Firma Online:</strong> El sistema genera el contrato con cláusulas preconfiguradas. Se envía el enlace <code>/contrato/{token}</code> a la pareja para que firmen con el dedo o ratón. Al firmar, se guarda la imagen PNG, la dirección IP, el navegador y la fecha con hash de auditoría legal.</li>
+  <li><strong>Actas de Reunión:</strong> Registro de acuerdos, llamadas telefónicas y decisiones de los novios para evitar malentendidos el día de la boda.</li>
+  <li><strong>Escaleta Musical:</strong> Selección de temas para Entrada, Tarta, Entrega de Ramos, Baile Nupcial y canciones prohibidas (*Do Not Play*).</li>
 </ul>
 
-<h2>6. Portal de Peticiones para Invitados (Código QR)</h2>
+<!-- CAPÍTULO 5: HISTORIAL DJ Y ENGINE DJ -->
+<h2>5. Importación de Sesiones DJ (Engine DJ / Rekordbox / M3U)</h2>
 <p>
-  Mediante el enlace <code>/peticiones/{token}</code> o su código QR proyectado/impreso:
+  Esta funcionalidad exclusiva permite registrar lo que <strong>realmente sonó en la pista</strong> durante el evento y cruzarlo automáticamente con las peticiones de los novios e invitados:
 </p>
+
+<!-- Mockup Importación DJ -->
+<div class="ui-mockup">
+  <div class="ui-mockup-header">
+    <div class="ui-dots"><div class="ui-dot ui-dot-red"></div><div class="ui-dot ui-dot-yellow"></div><div class="ui-dot ui-dot-green"></div></div>
+    <div class="ui-mockup-title">🎧 Historial de Sesión DJ en Directo &bull; 84 Temas Reproducidos</div>
+    <button style="background: #059669; color: #fff; border: none; font-size: 9px; padding: 2px 8px; border-radius: 4px; font-weight: 700;">Descargar Tracklist PDF</button>
+  </div>
+  <div class="ui-mockup-body" style="padding: 10px;">
+    <div class="ui-stats-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 8px;">
+      <div class="ui-stat-card"><div class="ui-stat-label">Total Pistas</div><div class="ui-stat-val">84 Canciones</div></div>
+      <div class="ui-stat-card"><div class="ui-stat-label">Duración Sesión</div><div class="ui-stat-val">4h 32m</div></div>
+      <div class="ui-stat-card"><div class="ui-stat-label">Peticiones Cumplidas</div><div class="ui-stat-val" style="color: #059669;">19 / 22 (86%)</div></div>
+    </div>
+
+    <table class="ui-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Hora</th>
+          <th>Artista &amp; Título</th>
+          <th>BPM / Tono</th>
+          <th>Formato</th>
+          <th>Coincidencia Petición</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>01</td>
+          <td>19:05</td>
+          <td><strong>Coldplay</strong> - Viva La Vida</td>
+          <td>138 BPM &bull; 8A</td>
+          <td><span class="badge badge-slate">Engine DJ CSV</span></td>
+          <td><span class="badge badge-green">✓ Petición Novios (Entrada)</span></td>
+        </tr>
+        <tr>
+          <td>02</td>
+          <td>19:09</td>
+          <td><strong>Dua Lipa</strong> - Levitating</td>
+          <td>103 BPM &bull; 7B</td>
+          <td><span class="badge badge-slate">Engine DJ CSV</span></td>
+          <td><span class="badge badge-green">✓ Petición Invitados (Mesa 4)</span></td>
+        </tr>
+        <tr>
+          <td>03</td>
+          <td>19:13</td>
+          <td><strong>Gala</strong> - Freed from Desire</td>
+          <td>130 BPM &bull; 4A</td>
+          <td><span class="badge badge-slate">Engine DJ CSV</span></td>
+          <td><span class="badge badge-blue">Setlist DJ</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<h3>Cómo exportar desde tu software de cabina:</h3>
+<ol>
+  <li><strong>Denon Engine DJ:</strong> En el menú lateral de tu unidad USB o software de PC, haz clic derecho sobre la sesión en <em>History</em> &rarr; <em>Export as CSV</em> (o M3U).</li>
+  <li><strong>Pioneer Rekordbox:</strong> En <em>Historiales</em> &rarr; Clic derecho en la fecha &rarr; <em>Exportar lista como archivo (.csv o .txt)</em>.</li>
+  <li><strong>Carga en la aplicación:</strong> Pulsa <em>"Importar Sesión DJ"</em>, arrastra el archivo y la app procesará títulos, horas y vinculará las peticiones de los invitados en segundos.</li>
+</ol>
+
+<!-- CAPÍTULO 6: MODO CABINA Y QR INVITADOS -->
+<div class="page-break"></div>
+<h2>6. Modo Cabina DJ en Vivo y Peticiones QR para Invitados</h2>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+  <div>
+    <h3>🎧 Modo Cabina DJ (`/live/{token}`)</h3>
+    <p>Diseñado para colocarse en un iPad o tablet en el soporte de la controladora:</p>
+    <ul>
+      <li>Tema ultra-oscuro antirreflejos para cabinas nocturnas.</li>
+      <li>Recepción en tiempo real mediante actualización automática de las peticiones que envían los invitados desde la pista.</li>
+      <li>Botones táctiles grandes para marcar como: <strong>"Pinchada"</strong> (verde), <strong>"Pendiente"</strong> o <strong>"Descartada"</strong>.</li>
+      <li>Acceso rápido a las canciones prohibidas por los novios para evitar poner temas vetados por error.</li>
+    </ul>
+  </div>
+
+  <div>
+    <h3>📱 Portal de Invitados con QR (`/peticiones/{token}`)</h3>
+    <p>Se coloca en código QR en las mesas o barras del banquete:</p>
+    <ul>
+      <li>Buscador conectado directamente con <strong>Spotify y Apple Music</strong>.</li>
+      <li>Los invitados buscan la canción exacta, ven la carátula y añaden su nombre ("De parte de los primos").</li>
+      <li>Límite de peticiones configurable por usuario para evitar spam.</li>
+      <li>Sin descargas de apps ni registros: funciona en cualquier navegador móvil al instante.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- Mockup Modo Cabina -->
+<div class="ui-mockup">
+  <div class="ui-mockup-header">
+    <div class="ui-dots"><div class="ui-dot ui-dot-red"></div><div class="ui-dot ui-dot-yellow"></div><div class="ui-dot ui-dot-green"></div></div>
+    <div class="ui-mockup-title">MODO CABINA EN VIVO (DJ BOOTH LIVE) &bull; ACTUALIZACIÓN ACTIVA</div>
+    <span class="badge badge-red">● EN DIRECTO</span>
+  </div>
+  <div class="ui-mockup-body dark" style="padding: 10px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1e293b; padding-bottom: 6px; margin-bottom: 8px;">
+      <span style="font-weight: 800; font-size: 11px; color: #38bdf8;">📥 PETICIONES RECIBIDAS DE LA PISTA (5 PENDIENTES)</span>
+      <span style="font-size: 9.5px; color: #94a3b8;">Sincronizado vía WebSocket / Polling</span>
+    </div>
+    
+    <div style="background: #1e293b; border: 1px solid #334155; border-radius: 6px; padding: 8px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center;">
+      <div>
+        <strong style="color: #f8fafc; font-size: 11px;">Raffaella Carrà - Far l'amore</strong>
+        <div style="font-size: 9.5px; color: #94a3b8;">Pedida por: <span style="color: #a5b4fc;">Amigas de la novia (Mesa 3)</span> &bull; Hace 2 min</div>
+      </div>
+      <div style="display: flex; gap: 4px;">
+        <button style="background: #059669; color: #fff; border: none; padding: 4px 8px; border-radius: 4px; font-size: 9px; font-weight: 700;">✓ PINCHAR</button>
+        <button style="background: #dc2626; color: #fff; border: none; padding: 4px 8px; border-radius: 4px; font-size: 9px; font-weight: 700;">✕ DESCARTAR</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CAPÍTULO 7: DOCUMENTOS PDF OFICIALES -->
+<h2>7. Catálogo de Documentos Oficiales en PDF</h2>
+<p>
+  Todos los documentos se generan con un formato vectorial A4 listo para imprimir o enviar por WhatsApp/Email:
+</p>
+
+<table class="ui-table">
+  <tr>
+    <th style="width: 25%;">Documento</th>
+    <th style="width: 45%;">Contenido Principal</th>
+    <th style="width: 30%;">Destinatario</th>
+  </tr>
+  <tr>
+    <td><strong>Presupuesto Formal</strong></td>
+    <td>Desglose de servicios, equipos contratados, fianza requerida, IVA y condiciones de pago.</td>
+    <td>Clientes / Novios</td>
+  </tr>
+  <tr>
+    <td><strong>Contrato con Firma Digital</strong></td>
+    <td>Cláusulas legales, firmas incrustadas, certificado de IP y timestamp de auditoría.</td>
+    <td>Clientes y Archivo Legal</td>
+  </tr>
+  <tr>
+    <td><strong>Factura Oficial / Proforma</strong></td>
+    <td>Numeración correlativa por serie y año, CIF/NIF, desglose fiscal e IBAN bancario.</td>
+    <td>Gestoría y Clientes</td>
+  </tr>
+  <tr>
+    <td><strong>Packing List de Equipos</strong></td>
+    <td>Lista de altavoces, puentes de luces, cableado y direccionamiento de canales DMX.</td>
+    <td>Técnicos de Montaje</td>
+  </tr>
+  <tr>
+    <td><strong>Escaleta Musical</strong></td>
+    <td>Momentos de la boda, canciones seleccionadas, tiempos y notas del evento.</td>
+    <td>DJ en Cabina</td>
+  </tr>
+  <tr>
+    <td><strong>Tracklist DJ Oficial</strong></td>
+    <td>Historial de temas reproducidos, horas de sesión y canciones de invitados complacidas.</td>
+    <td>Recuerdo para los Novios</td>
+  </tr>
+</table>
+
+<!-- CAPÍTULO 8: SINCRONIZACIÓN ICAL Y COMANDOS -->
+<h2>8. Calendario iCal y Automatización de Correo</h2>
 <ul>
-  <li>Los invitados buscan cualquier tema mediante el motor de Spotify / Apple Music.</li>
-  <li>Añaden su nombre o dedicatoria personalizada.</li>
-  <li>Aparece automáticamente en la pantalla de cabina del DJ sin interrumpir la sesión.</li>
+  <li><strong>Suscripción de Calendario (RFC 5545):</strong> Desde <code>/admin/calendar</code> obtendrás tu URL iCal secreta. Al pegarla en el calendario de tu iPhone, Google Calendar o Mac, verás automáticamente los días de evento, horas de montaje y fin de fiesta en tu bolsillo.</li>
+  <li><strong>Captación Automática de Leads:</strong> El sistema se sincroniza periódicamente con tus cuentas de correo mediante el comando <code>php artisan emails:fetch-leads</code>, creando automáticamente las fichas de los novios que solicitan presupuesto a través de <strong>bodas.net</strong> o tu página web.</li>
 </ul>
-
-<h2>7. Sincronización de Calendario (iCal)</h2>
-<p>
-  En <code>/admin/calendar</code> se encuentra el enlace de suscripción iCal (<code>/calendar/feed/{token}.ics</code>). Añadiendo este enlace a Google Calendar, Apple Calendar (iPhone/Mac) o Microsoft Outlook, todos los eventos y montajes se sincronizan automáticamente en tu móvil.
-</p>
-
-<h2>8. Automatización de Leads por Email</h2>
-<p>
-  El sistema se conecta a los buzones de correo de las marcas e importa automáticamente las solicitudes de contacto recibidas de <strong>bodas.net</strong> o formularios web, extrayendo nombres, teléfonos, fecha de boda y lugar sin teclear nada a mano.
-</p>
 
 </body>
 </html>
