@@ -249,43 +249,144 @@
             font-weight: bold;
         }
 
-        /* ==================== PÁGINA 3: OPCIONES Y PACKS ==================== */
+        /* ==================== PÁGINA 3: OPCIONES Y PROPUESTA SELECCIONADA ==================== */
+        .quote-selection-card {
+            background-color: #ffffff;
+            border: 1.5px solid #0b1329;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+        .quote-selection-header {
+            background-color: #0b1329;
+            color: #ffffff;
+            padding: 6px 12px;
+            font-size: 8.5pt;
+            font-weight: 800;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .quote-items-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .quote-items-table th {
+            background-color: #f8fafc;
+            color: #475569;
+            font-size: 7pt;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 5px 12px;
+            border-bottom: 1px solid #e2e8f0;
+            text-align: left;
+        }
+        .quote-items-table td {
+            padding: 6px 12px;
+            font-size: 7.5pt;
+            color: #1e293b;
+            border-bottom: 1px solid #f1f5f9;
+            vertical-align: middle;
+        }
+        .quote-items-table tr:last-child td {
+            border-bottom: none;
+        }
+        .quote-item-title {
+            font-weight: 700;
+            color: #0f172a;
+            font-size: 8pt;
+        }
+        .quote-item-desc {
+            font-size: 6.5pt;
+            color: #64748b;
+            line-height: 1.2;
+            margin-top: 1px;
+        }
+        .quote-item-discount {
+            color: #16a34a;
+            font-weight: 700;
+        }
+
+        /* BANNER DE TOTAL DESTACADO */
+        .quote-total-banner {
+            background-color: #0b1329;
+            color: #ffffff;
+            border-radius: 8px;
+            padding: 8px 14px;
+            margin-bottom: 10px;
+            border: 1px solid #eab308;
+        }
+        .quote-total-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .quote-total-table td {
+            vertical-align: middle;
+        }
+        .quote-total-label {
+            font-size: 7pt;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: #93c5fd;
+            font-weight: 800;
+        }
+        .quote-total-amount {
+            font-size: 21pt;
+            font-weight: 900;
+            color: #ffffff;
+            line-height: 1.05;
+        }
+        .quote-total-amount span {
+            color: #eab308;
+            font-size: 15pt;
+        }
+        .quote-signal-box {
+            font-size: 7.5pt;
+            color: #cbd5e1;
+            line-height: 1.35;
+        }
+        .quote-signal-box strong {
+            color: #eab308;
+            font-size: 8.5pt;
+        }
+
+        /* 3 Columnas de Packs Comparativos */
         .packs-table {
             width: 100%;
             border-collapse: separate;
-            border-spacing: 7px;
-            margin-bottom: 10px;
+            border-spacing: 6px;
+            margin-bottom: 8px;
         }
         .pack-col {
             width: 33.33%;
             vertical-align: top;
         }
         .pack-card {
-            background-color: #ffffff;
+            background-color: #f8fafc;
             border: 1px solid #cbd5e1;
-            border-radius: 8px;
-            padding: 12px 10px;
+            border-radius: 6px;
+            padding: 8px 6px;
             text-align: center;
         }
         .pack-card.highlighted {
             background-color: #0b1329;
-            border: 2px solid #eab308;
+            border: 1.5px solid #eab308;
             color: #ffffff;
         }
         .pack-badge {
             background-color: #eab308;
             color: #0f172a;
-            font-size: 6.5pt;
+            font-size: 6pt;
             font-weight: 900;
             letter-spacing: 1px;
             text-transform: uppercase;
-            padding: 2px 6px;
+            padding: 1.5px 5px;
             border-radius: 3px;
             display: inline-block;
-            margin-bottom: 6px;
+            margin-bottom: 4px;
         }
         .pack-title {
-            font-size: 12pt;
+            font-size: 10pt;
             font-weight: 800;
             color: #0f172a;
             margin-bottom: 1px;
@@ -294,25 +395,25 @@
             color: #ffffff;
         }
         .pack-schedule {
-            font-size: 7.5pt;
+            font-size: 6.5pt;
             color: #64748b;
-            margin-bottom: 8px;
+            margin-bottom: 4px;
         }
         .pack-card.highlighted .pack-schedule {
             color: #94a3b8;
         }
         .pack-price {
-            font-size: 18pt;
+            font-size: 14pt;
             font-weight: 900;
             color: #0f172a;
-            margin-bottom: 8px;
+            margin-bottom: 4px;
         }
         .pack-card.highlighted .pack-price {
             color: #eab308;
         }
         .pack-features {
             border-top: 1px solid #e2e8f0;
-            padding-top: 6px;
+            padding-top: 4px;
             text-align: center;
             list-style: none;
             margin: 0;
@@ -321,9 +422,9 @@
             border-top: 1px solid rgba(255, 255, 255, 0.15);
         }
         .pack-features li {
-            font-size: 7.5pt;
+            font-size: 6.5pt;
             color: #475569;
-            padding: 2.5px 0;
+            padding: 1.5px 0;
             border-bottom: 1px solid #f1f5f9;
         }
         .pack-card.highlighted .pack-features li {
@@ -338,49 +439,30 @@
         .info-card {
             background-color: #ffffff;
             border: 1px solid #e2e8f0;
-            border-left: 3.5px solid #d97706;
-            border-radius: 6px;
-            padding: 8px 12px;
-            margin-bottom: 7px;
+            border-left: 3px solid #d97706;
+            border-radius: 5px;
+            padding: 6px 10px;
+            margin-bottom: 5px;
         }
         .info-card-title {
-            font-size: 8.5pt;
+            font-size: 7.5pt;
             font-weight: 800;
             color: #0f172a;
-            margin-bottom: 2px;
+            margin-bottom: 1px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
         .info-card-body {
-            font-size: 7.5pt;
+            font-size: 6.5pt;
             color: #475569;
-            line-height: 1.3;
-        }
-
-        .custom-selection-card {
-            background-color: #f0fdf4;
-            border: 1px solid #bbf7d0;
-            border-left: 3.5px solid #16a34a;
-            border-radius: 6px;
-            padding: 8px 12px;
-            margin-bottom: 7px;
-        }
-        .custom-selection-title {
-            font-size: 8.5pt;
-            font-weight: 800;
-            color: #15803d;
-            margin-bottom: 2px;
-        }
-        .custom-selection-body {
-            font-size: 7.5pt;
-            color: #166534;
-            line-height: 1.3;
+            line-height: 1.25;
         }
 
         .tax-note {
-            font-size: 7pt;
+            font-size: 6.5pt;
             color: #94a3b8;
-            margin-top: 3px;
+            margin-top: 2px;
+            text-align: center;
         }
     </style>
 </head>
@@ -650,31 +732,106 @@
     </div>
 
     <!-- ==========================================
-         PÁGINA 3: OPCIONES Y PACKS
+         PÁGINA 3: PROPUESTA Y DETALLE DE SERVICIOS
          ========================================== -->
     <div class="page page-last">
         <!-- Cabecera Azul Marino -->
         <div class="page-header-banner">
-            <div class="page-header-sub">OPCIONES Y TARIFAS</div>
-            <div class="page-header-title">Elige la que mejor encaja</div>
+            <div class="page-header-sub">PROPUESTA ECONÓMICA & SERVICIOS</div>
+            <div class="page-header-title">Detalle de vuestro Presupuesto #PRE-{{ str_pad($quote->id, 5, '0', STR_PAD_LEFT) }}</div>
         </div>
 
         <div class="page-content">
-            <!-- 3 Columnas de Packs -->
+            <!-- 1. BLOQUE PRINCIPAL: DESGLOSE DE SERVICIOS CONTRATADOS / SOLICITADOS -->
+            <div class="quote-selection-card">
+                <div class="quote-selection-header">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <tr>
+                            <td style="color: #ffffff; font-weight: 800;">SERVICIOS SOLICITADOS PARA VUESTRO EVENTO</td>
+                            <td style="text-align: right; color: #eab308; font-size: 7.5pt; font-weight: 700;">{{ $dateFormatted }}</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <table class="quote-items-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 60%;">Concepto / Equipamiento</th>
+                            <th style="width: 15%; text-align: center;">Horas / Ud</th>
+                            <th style="width: 25%; text-align: right;">Importe</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($quote->items as $item)
+                            <tr>
+                                <td>
+                                    <div class="quote-item-title {{ $item->price < 0 ? 'quote-item-discount' : '' }}">
+                                        @if($item->price < 0) 🎁 @else • @endif {{ $item->service_name }}
+                                    </div>
+                                    @if(!empty($item->description))
+                                        <div class="quote-item-desc">{{ $item->description }}</div>
+                                    @endif
+                                </td>
+                                <td style="text-align: center; color: #64748b; font-weight: 600;">
+                                    {{ $item->quantity ?: 1 }}
+                                </td>
+                                <td style="text-align: right; font-weight: 800; font-size: 8.5pt;" class="{{ $item->price < 0 ? 'quote-item-discount' : '' }}">
+                                    @if($item->price < 0)
+                                        -{{ number_format(abs($item->total), 2, ',', '.') }} €
+                                    @elseif($item->total == 0 && (str_contains(mb_strtolower($item->service_name), 'consultar') || str_contains(mb_strtolower($item->service_name), 'extra')))
+                                        <span style="font-size: 7pt; color: #d97706; font-weight: 700;">A consultar</span>
+                                    @else
+                                        {{ number_format($item->total, 2, ',', '.') }} €
+                                    @endif
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="3" style="text-align: center; color: #64748b; padding: 12px;">
+                                    Propuesta base para el evento: {{ $event->name }}
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 2. BANNER DE TOTAL Y SEÑAL DESTACADOS EN GRANDE -->
+            <div class="quote-total-banner">
+                <table class="quote-total-table">
+                    <tr>
+                        <td style="width: 55%;" class="quote-signal-box">
+                            <div style="font-size: 6.5pt; text-transform: uppercase; letter-spacing: 1px; color: #93c5fd; font-weight: 700; margin-bottom: 2px;">CONDICIONES DE PAGO</div>
+                            <div>• Señal de Reserva: <strong>{{ number_format($quote->signal_amount, 2, ',', '.') }} €</strong> <span style="font-size: 6.5pt; opacity: 0.85;">(bloqueo de fecha vía Bizum/Transf.)</span></div>
+                            <div style="margin-top: 2px;">• Restante: <strong>{{ number_format(max(0, $quote->amount - $quote->signal_amount), 2, ',', '.') }} €</strong> <span style="font-size: 6.5pt; opacity: 0.85;">(a liquidar al finalizar el evento)</span></div>
+                        </td>
+                        <td style="width: 45%; text-align: right;">
+                            <div class="quote-total-label">TOTAL PRESUPUESTO</div>
+                            <div class="quote-total-amount">{{ number_format($quote->amount, 2, ',', '.') }} <span>€</span></div>
+                            <div style="font-size: 6pt; color: #94a3b8; margin-top: 1px;">Precios finales &bull; IVA / Impuestos incluidos</div>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- 3. COMPARATIVA DE PACKS DE FIESTA / REFERENCIA RÁPIDA -->
+            <div style="margin-bottom: 4px; font-size: 7pt; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">
+                Catálogo de Packs DJ & Opciones de Fiesta:
+            </div>
             <table class="packs-table">
                 <tr>
                     <!-- PACK BÁSICO -->
                     <td class="pack-col">
                         <div class="pack-card {{ $hasBasicPack ? 'highlighted' : '' }}">
                             @if($hasBasicPack)
-                                <div class="pack-badge">SELECCIONADO</div>
+                                <div class="pack-badge">✓ VUESTRA ELECCIÓN</div>
                             @endif
                             <div class="pack-title">Básico</div>
                             <div class="pack-schedule">{{ $packBasicHours }} Horas de servicio</div>
                             <div class="pack-price">{{ number_format($packBasicPrice, 0, ',', '.') }}€</div>
                             <ul class="pack-features">
                                 <li>DJ durante {{ $packBasicHours }} horas</li>
-                                <li>Equipo de sonido</li>
+                                <li>Equipo de sonido profesional</li>
                                 <li>Iluminación de pista</li>
                                 <li>Montaje y desmontaje</li>
                             </ul>
@@ -685,7 +842,9 @@
                     <td class="pack-col">
                         <div class="pack-card {{ $hasMediumPack ? 'highlighted' : '' }}">
                             @if($hasMediumPack)
-                                <div class="pack-badge">MÁS POPULAR</div>
+                                <div class="pack-badge">✓ VUESTRA ELECCIÓN</div>
+                            @else
+                                <div class="pack-badge" style="background-color: #3b82f6; color: #ffffff;">MÁS POPULAR</div>
                             @endif
                             <div class="pack-title">Medio</div>
                             <div class="pack-schedule">Hasta {{ $packMediumHours }} Horas de servicio</div>
@@ -703,15 +862,15 @@
                     <td class="pack-col">
                         <div class="pack-card {{ $hasPremiumPack ? 'highlighted' : '' }}">
                             @if($hasPremiumPack)
-                                <div class="pack-badge">SELECCIONADO</div>
+                                <div class="pack-badge">✓ VUESTRA ELECCIÓN</div>
                             @endif
                             <div class="pack-title">Premium</div>
                             <div class="pack-schedule">Hasta {{ $packPremiumHours }} Horas de servicio</div>
                             <div class="pack-price">{{ number_format($packPremiumPrice, 0, ',', '.') }}€</div>
                             <ul class="pack-features">
                                 <li>Todo lo del pack Medio</li>
-                                <li>Efecto de humo para la pista</li>
-                                <li>Karaoke / Efectos especiales</li>
+                                <li>Efectos de humo y ambientación</li>
+                                <li>Fuego frío / Efectos show</li>
                                 <li>Montaje y desmontaje</li>
                             </ul>
                         </div>
@@ -719,46 +878,30 @@
                 </tr>
             </table>
 
-            <!-- Si la propuesta tiene servicios personalizados contratados -->
-            @if($isCustomQuote && count($quote->items) > 0)
-                <div class="custom-selection-card">
-                    <div class="custom-selection-title">PRESUPUESTO SELECCIONADO (#PRE-{{ str_pad($quote->id, 5, '0', STR_PAD_LEFT) }})</div>
-                    <div class="custom-selection-body">
-                        <strong>Total Presupuestado: {{ number_format($quote->amount, 2, ',', '.') }} €</strong>
-                        &bull; Incluye: 
-                        @foreach($quote->items as $idx => $item)
-                            {{ $item->service_name }}{{ $idx < count($quote->items) - 1 ? ', ' : '.' }}
-                        @endforeach
-                    </div>
-                </div>
-            @endif
-
-            <!-- Tarjeta Informativa 1 (Horas extra) -->
-            <div class="info-card">
-                <div class="info-card-title">{{ $dossierExtraHoursTitle }}</div>
-                <div class="info-card-body">
-                    {{ $dossierExtraHoursDesc }} (Tarifa: <strong>{{ number_format($extraHourPrice, 0, ',', '.') }}€/hora adicional</strong>).
-                </div>
-            </div>
-
-            <!-- Tarjeta Informativa 2 (Personalización musical) -->
-            <div class="info-card">
-                <div class="info-card-title">{{ $dossierMusicCustomTitle }}</div>
-                <div class="info-card-body">
-                    {{ $dossierMusicCustomDesc }}
-                </div>
-            </div>
-
-            <!-- Tarjeta Reserva -->
-            <div class="info-card">
-                <div class="info-card-title">Reserva y Condiciones</div>
-                <div class="info-card-body">
-                    La reserva de fecha se formaliza por estricto orden de contratación. Señal estipulada: <strong>{{ number_format($quote->signal_amount, 2, ',', '.') }} €</strong> vía Bizum o Transferencia. Las condiciones y detalles se consolidan al aceptar la propuesta.
-                </div>
-            </div>
+            <!-- 4. BLOQUES DE INFORMACIÓN Y CONDICIONES -->
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 4px;">
+                <tr>
+                    <td style="width: 50%; padding-right: 4px; vertical-align: top;">
+                        <div class="info-card">
+                            <div class="info-card-title">{{ $dossierExtraHoursTitle }}</div>
+                            <div class="info-card-body">
+                                {{ $dossierExtraHoursDesc }} (Tarifa: <strong>{{ number_format($extraHourPrice, 0, ',', '.') }}€/h extra</strong>).
+                            </div>
+                        </div>
+                    </td>
+                    <td style="width: 50%; padding-left: 4px; vertical-align: top;">
+                        <div class="info-card">
+                            <div class="info-card-title">{{ $dossierMusicCustomTitle }}</div>
+                            <div class="info-card-body">
+                                {{ $dossierMusicCustomDesc }}
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            </table>
 
             <div class="tax-note">
-                Precios finales, impuestos incluidos. Propuesta válida durante 15 días desde su fecha de emisión.
+                Precios finales, impuestos incluidos &bull; Propuesta válida durante 15 días desde su fecha de emisión &bull; Formalización por estricto orden de reserva
             </div>
         </div>
 
