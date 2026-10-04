@@ -17,17 +17,22 @@ class PdfController extends Controller
     {
         $invoice->load(['event.client', 'quote.items']);
 
+        $brandKey = $invoice->event ? ($invoice->event->brand_clean ?? null) : null;
+        $brand = Setting::getBrandInfo($brandKey);
+
         $company = [
-            'name' => Setting::getCompanyName('Núñez and Son'),
-            'subtitle' => Setting::get('company_subtitle', 'Sound in Motion'),
-            'cif' => Setting::get('company_cif', 'B-12345678'),
-            'phone' => Setting::get('company_phone', '+34 622 634 790'),
-            'email' => Setting::get('company_email', 'info@eventosmusicales.es'),
+            'name' => $brand['name'] ?: Setting::getCompanyName('Núñez and Son'),
+            'subtitle' => $brand['subtitle'] ?: Setting::get('company_subtitle', 'Sound in Motion'),
+            'cif' => Setting::get('company_cif', '78902362B'),
+            'phone' => $brand['phone'] ?: Setting::get('company_phone', '+34 622 62 47 90'),
+            'phone_2' => $brand['phone_2'] ?: Setting::get('company_phone_2', ''),
+            'email' => $brand['email'] ?: Setting::get('company_email', 'info@nunezandson.com'),
+            'website' => $brand['website'] ?: Setting::get('company_website', 'landing-bodas.es/nunez-and-son'),
             'address' => Setting::get('company_address', 'Calle Principal s/n'),
-            'city' => Setting::get('company_city', 'Navarrete'),
-            'iban' => Setting::get('company_iban', 'ES00 0000 0000 0000 0000 0000'),
+            'city' => Setting::get('company_city', 'Logroño'),
+            'iban' => Setting::get('company_iban', 'ES39 3035 0241 13 2411043571'),
             'bizum' => Setting::get('company_bizum', '622634790'),
-            'logo' => Setting::get('company_logo'),
+            'logo' => $brand['logo_path'] ?: Setting::getLogoPathForPdf(),
         ];
 
         $data = [
