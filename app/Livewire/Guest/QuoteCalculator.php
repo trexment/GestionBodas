@@ -448,15 +448,30 @@ class QuoteCalculator extends Component
             ]);
         }
 
-        // 7. Enviar notificación por email al Administrador / Empresa
+        // 7. Enviar notificaciones por email:
+        // A) A los Administradores de la Empresa y de la Marca
         try {
-            $adminEmail = Setting::get('company_email', config('mail.from.address'));
-            if ($adminEmail && filter_var($adminEmail, FILTER_VALIDATE_EMAIL)) {
-                \Illuminate\Support\Facades\Mail::to($adminEmail)
-                    ->send(new \App\Mail\NewQuoteRequestAdminMail($event, $quote, $requestedServicesList, $typeConfig));
+            $adminEmails = Setting::getAdminNotificationEmails($event->brand_clean);
+            if (!empty($adminEmails)) {
+                $primaryAdmin = array_shift($adminEmails);
+                $mail = \Illuminate\Support\Facades\Mail::to($primaryAdmin);
+                if (!empty($adminEmails)) {
+                    $mail->bcc($adminEmails);
+                }
+                $mail->send(new \App\Mail\NewQuoteRequestAdminMail($event, $quote, $requestedServicesList, $typeConfig));
             }
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::warning('No se pudo enviar el email de aviso de presupuesto: ' . $e->getMessage());
+            \Illuminate\Support\Facades\Log::warning('No se pudo enviar el email de aviso a administradores: ' . $e->getMessage());
+        }
+
+        // B) Al Cliente (Confirmación de recepción con mensaje personalizado y desglose)
+        try {
+            if ($client && !empty($client->email) && filter_var($client->email, FILTER_VALIDATE_EMAIL)) {
+                \Illuminate\Support\Facades\Mail::to($client->email)
+                    ->send(new \App\Mail\QuoteRequestConfirmationClientMail($event, $quote, $requestedServicesList, $typeConfig));
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('No se pudo enviar el email de confirmación al cliente: ' . $e->getMessage());
         }
 
         $this->is_submitted = true;

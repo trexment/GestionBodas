@@ -445,12 +445,21 @@ class EventForm extends Component
                 'Temazos Favoritos' => $this->party_favs,
                 'Lista Negra (Prohibidas)' => $this->blacklist,
                 'Comentarios / Notas' => $this->comments,
-            ];
-
-            if (!empty($adminEmail)) {
+        // Send email notification to all admins & assigned DJ
+        try {
+            $brandKey = $this->event->brand_clean ?? 'nunez_and_son';
+            $adminEmails = \App\Models\Setting::getAdminNotificationEmails($brandKey);
+            
+            if (!empty($adminEmails)) {
+                $primaryAdmin = array_shift($adminEmails);
                 $mailable = new \App\Mail\ClientMusicFormSubmittedMail($this->event, $summary);
-                $mail = \Illuminate\Support\Facades\Mail::to($adminEmail);
-                if ($this->event->dj && !empty($this->event->dj->email) && $this->event->dj->email !== $adminEmail) {
+                $mail = \Illuminate\Support\Facades\Mail::to($primaryAdmin);
+                
+                if (!empty($adminEmails)) {
+                    $mail->bcc($adminEmails);
+                }
+                
+                if ($this->event->dj && !empty($this->event->dj->email) && $this->event->dj->email !== $primaryAdmin) {
                     $mail->cc($this->event->dj->email);
                 }
                 $mail->send($mailable);

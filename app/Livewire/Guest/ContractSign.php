@@ -267,16 +267,21 @@ class ContractSign extends Component
             ]);
         }
 
-        // Send contract signed email notification to admin & assigned DJ
+        // Send contract signed email notification to all admins & assigned DJ
         try {
             $brandKey = $this->event ? ($this->event->brand_clean ?? 'nunez_and_son') : 'nunez_and_son';
-            $brand = \App\Models\Setting::getBrandInfo($brandKey);
-            $adminEmail = $brand['email'] ?: \App\Models\Setting::get('company_email', config('mail.from.address'));
+            $adminEmails = \App\Models\Setting::getAdminNotificationEmails($brandKey);
 
-            if (!empty($adminEmail)) {
+            if (!empty($adminEmails)) {
+                $primaryAdmin = array_shift($adminEmails);
                 $mailable = new \App\Mail\ContractSignedNotificationMail($this->contract);
-                $mail = \Illuminate\Support\Facades\Mail::to($adminEmail);
-                if ($this->event && $this->event->dj && !empty($this->event->dj->email) && $this->event->dj->email !== $adminEmail) {
+                $mail = \Illuminate\Support\Facades\Mail::to($primaryAdmin);
+                
+                if (!empty($adminEmails)) {
+                    $mail->bcc($adminEmails);
+                }
+                
+                if ($this->event && $this->event->dj && !empty($this->event->dj->email) && $this->event->dj->email !== $primaryAdmin) {
                     $mail->cc($this->event->dj->email);
                 }
                 $mail->send($mailable);

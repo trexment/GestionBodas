@@ -223,6 +223,53 @@ class Setting extends Model
     }
 
     /**
+     * Devuelve la lista de correos electrónicos de los administradores de la empresa y de la marca.
+     */
+    public static function getAdminNotificationEmails(?string $brandKey = null): array
+    {
+        $emails = [];
+
+        // 1. Emails de los usuarios administradores registrados en la plataforma
+        try {
+            $adminUserEmails = \App\Models\User::where('role', 'admin')
+                ->whereNotNull('email')
+                ->pluck('email')
+                ->toArray();
+            $emails = array_merge($emails, $adminUserEmails);
+        } catch (\Throwable $e) {
+            // Ignorar en caso de error
+        }
+
+        // 2. Email de la marca específica (según dominio/marca del evento)
+        $brandInfo = self::getBrandInfo($brandKey);
+        if (!empty($brandInfo['email'])) {
+            $emails[] = $brandInfo['email'];
+        }
+
+        // 3. Fallback a email general de la empresa y from.address
+        $companyEmail = self::get('company_email');
+        if (!empty($companyEmail)) {
+            $emails[] = $companyEmail;
+        }
+
+        $mailFrom = config('mail.from.address');
+        if (!empty($mailFrom)) {
+            $emails[] = $mailFrom;
+        }
+
+        // Normalizar, limpiar y eliminar duplicados
+        $validEmails = [];
+        foreach ($emails as $email) {
+            $email = trim(mb_strtolower($email));
+            if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                $validEmails[] = $email;
+            }
+        }
+
+        return array_values(array_unique($validEmails));
+    }
+
+    /**
      * Get the public website URL (auto-detects domain or uses custom setting).
      * e.g., app.javnxdj.com -> https://javnxdj.com
      *       app.nunezandson.com -> https://nunezandson.com
