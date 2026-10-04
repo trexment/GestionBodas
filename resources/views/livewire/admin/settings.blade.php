@@ -809,20 +809,20 @@
             </div>
 
             <!-- SECCIÓN 3: GALERÍA DE MONTAJES Y FOTOS REALES (1 A 4 FOTOS) -->
-            <div class="bg-white shadow-sm rounded-xl border border-gray-200 p-6 space-y-6">
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 pb-3">
+            <div class="bg-white dark:bg-slate-900 shadow-sm rounded-xl border border-gray-200 dark:border-slate-800 p-6 space-y-6">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 dark:border-slate-800 pb-4">
                     <div>
-                        <h4 class="text-sm font-black text-gray-900 flex items-center gap-2">
+                        <h4 class="text-base font-black text-gray-900 dark:text-white flex items-center gap-2">
                             <span>📸</span> 3. Fotos de Montajes y Equipamiento Real
                         </h4>
-                        <p class="text-xs text-gray-500 mt-0.5">Sube libremente de 1 a 4 fotos de tus montajes (reales, cabinas de madera o discoteca, iluminación, fiesta o renders). El dossier PDF organizará las fotos automáticamente en un mosaico profesional.</p>
+                        <p class="text-xs text-gray-500 dark:text-slate-400 mt-0.5">Sube libremente de 1 a 4 fotos de tus montajes (reales, cabinas de madera o discoteca, iluminación, fiesta o renders). El dossier PDF organizará las fotos automáticamente en un mosaico profesional.</p>
                     </div>
-                    <span class="text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full whitespace-nowrap self-start sm:self-auto">
+                    <span class="text-xs font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 px-3 py-1 rounded-full whitespace-nowrap self-start sm:self-auto">
                         Galería Adaptable (1 a 4 fotos)
                     </span>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     
                     @php
                         $photoSlots = [
@@ -843,53 +843,66 @@
                             $currentUpload = $$uploadProp;
                         @endphp
                         
-                        <div class="bg-slate-50/80 p-4 rounded-xl border border-slate-200 flex flex-col justify-between space-y-3.5 hover:border-slate-300 transition">
-                            <div class="space-y-3">
-                                <div class="flex items-center justify-between border-b border-slate-200/60 pb-2">
-                                    <span class="text-xs font-black text-slate-800 flex items-center gap-1.5">
-                                        <span>{{ $slot['icon'] }}</span> Foto {{ $idx }}
-                                    </span>
+                        <div class="p-5 rounded-2xl border transition bg-slate-50 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700/80 shadow-xs flex flex-col justify-between space-y-4">
+                            <div class="space-y-4">
+                                <!-- Cabecera de la Tarjeta -->
+                                <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-700/80 pb-3">
+                                    <div class="flex items-center gap-2 font-black text-xs text-slate-800 dark:text-white uppercase tracking-wider">
+                                        <span class="h-6 w-6 rounded-lg bg-amber-500/15 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center text-sm font-normal">
+                                            {{ $slot['icon'] }}
+                                        </span>
+                                        <span>Foto {{ $idx }} &bull; {{ $slot['defaultTitle'] }}</span>
+                                    </div>
                                     @if($currentImg)
-                                        <button type="button" wire:click="deleteDossierImage('{{ $slot['key'] }}')" class="text-[11px] text-rose-600 hover:text-rose-800 font-bold transition cursor-pointer">
-                                            ✕ Quitar
+                                        <button type="button" wire:click="deleteDossierImage('{{ $slot['key'] }}')" class="text-[11px] text-rose-600 hover:text-rose-800 dark:text-rose-400 dark:hover:text-rose-300 font-bold px-2.5 py-1 rounded-md bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/50 transition cursor-pointer">
+                                            ✕ Quitar Foto
                                         </button>
                                     @endif
                                 </div>
 
-                                <!-- Preview o Subida de Foto -->
+                                <!-- Preview / Marco de Imagen -->
                                 <div class="space-y-2">
                                     @if ($currentUpload)
-                                        <div class="relative rounded-lg overflow-hidden border-2 border-amber-500 h-28 bg-slate-900 shadow-inner">
-                                            <img src="{{ $currentUpload->temporaryUrl() }}" class="w-full h-full object-cover">
-                                            <span class="absolute bottom-1 right-1 bg-amber-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded">Nueva Foto</span>
+                                        <div class="relative rounded-xl overflow-hidden border-2 border-amber-500 h-44 bg-slate-950 shadow-inner flex items-center justify-center">
+                                            <img src="{{ $currentUpload->temporaryUrl() }}" class="w-full h-full object-contain">
+                                            <span class="absolute bottom-2 right-2 bg-amber-500 text-slate-950 text-[10px] font-black px-2 py-0.5 rounded-md shadow">
+                                                Nueva Foto Seleccionada
+                                            </span>
                                         </div>
                                     @elseif ($currentImg)
-                                        <div class="relative rounded-lg overflow-hidden border border-slate-300 h-28 bg-slate-900 shadow-inner">
-                                            <img src="{{ asset('storage/' . $currentImg) }}" class="w-full h-full object-cover">
-                                            <span class="absolute bottom-1 right-1 bg-slate-900/80 text-white text-[9px] font-bold px-1.5 py-0.5 rounded">Guardada</span>
+                                        <div class="relative rounded-xl overflow-hidden border border-slate-300 dark:border-slate-700 h-44 bg-slate-950 shadow-inner flex items-center justify-center">
+                                            <img src="{{ asset('storage/' . $currentImg) }}" class="w-full h-full object-contain">
+                                            <span class="absolute bottom-2 right-2 bg-slate-900/90 border border-slate-700 text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded-md">
+                                                ✓ Foto Activa
+                                            </span>
                                         </div>
                                     @else
-                                        <div class="rounded-lg border-2 border-dashed border-slate-300 h-28 flex flex-col items-center justify-center text-slate-400 bg-white">
-                                            <span class="text-2xl opacity-60">{{ $slot['icon'] }}</span>
-                                            <span class="text-[10px] font-medium mt-1 text-slate-400">Sin foto</span>
+                                        <div class="rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-700/80 h-36 flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 bg-white dark:bg-slate-900/60">
+                                            <span class="text-3xl opacity-70 mb-1">{{ $slot['icon'] }}</span>
+                                            <span class="text-xs font-semibold text-slate-600 dark:text-slate-400">Sin foto asignada</span>
+                                            <span class="text-[10px] text-slate-400 dark:text-slate-500">Se mostrará el diseño estándar en el PDF</span>
                                         </div>
                                     @endif
 
-                                    <div>
-                                        <label class="block text-[10px] font-bold text-slate-600 mb-1">Subir imagen:</label>
-                                        <input type="file" wire:model="{{ $uploadProp }}" accept="image/*" class="w-full text-[11px] text-slate-500 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-[10px] file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer">
-                                        @error($uploadProp) <span class="text-rose-500 text-[10px] block mt-1">{{ $message }}</span> @enderror
+                                    <!-- Selector de Archivo -->
+                                    <div class="pt-1">
+                                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Subir / Cambiar Foto:</label>
+                                        <input type="file" wire:model="{{ $uploadProp }}" accept="image/*" class="w-full text-xs text-slate-600 dark:text-slate-300 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-indigo-50 dark:file:bg-indigo-900/50 file:text-indigo-700 dark:file:text-indigo-300 hover:file:bg-indigo-100 dark:hover:file:bg-indigo-900/80 cursor-pointer bg-white dark:bg-slate-900 rounded-lg p-1.5 border border-slate-200 dark:border-slate-700">
+                                        @error($uploadProp) <span class="text-rose-500 text-xs font-bold block mt-1">{{ $message }}</span> @enderror
                                     </div>
                                 </div>
 
-                                <div>
-                                    <label class="block text-[11px] font-bold text-gray-700 mb-1">Título / Etiqueta (Opcional)</label>
-                                    <input type="text" wire:model="{{ $titleProp }}" placeholder="{{ $slot['defaultTitle'] }}" class="w-full border-gray-300 rounded-lg shadow-2xs text-xs font-semibold">
-                                </div>
+                                <!-- Inputs de Texto -->
+                                <div class="space-y-3 pt-1">
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Título / Etiqueta del Montaje (Opcional)</label>
+                                        <input type="text" wire:model="{{ $titleProp }}" placeholder="{{ $slot['defaultTitle'] }}" class="w-full bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-700 rounded-lg shadow-2xs text-xs font-bold text-gray-900 dark:text-white p-2.5 focus:ring-amber-500 focus:border-amber-500">
+                                    </div>
 
-                                <div>
-                                    <label class="block text-[11px] font-bold text-gray-700 mb-1">Pie de Foto / Nota (Opcional)</label>
-                                    <textarea wire:model="{{ $descProp }}" rows="2" placeholder="Breve detalle sobre este montaje..." class="w-full border-gray-300 rounded-lg shadow-2xs text-xs text-gray-700"></textarea>
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Pie de Foto / Descripción (Opcional)</label>
+                                        <textarea wire:model="{{ $descProp }}" rows="2" placeholder="Breve detalle sobre este montaje o servicio..." class="w-full bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-700 rounded-lg shadow-2xs text-xs text-gray-800 dark:text-slate-200 p-2.5 focus:ring-amber-500 focus:border-amber-500"></textarea>
+                                    </div>
                                 </div>
                             </div>
                         </div>
