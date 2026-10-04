@@ -431,18 +431,18 @@ class Settings extends Component
             'contract_body' => 'required|string',
             'contract_footer' => 'nullable|string',
 
-            'dossier_cover_title' => 'required|string|max:255',
+            'dossier_cover_title' => 'nullable|string|max:255',
             'dossier_page2_subtitle' => 'nullable|string|max:255',
-            'dossier_page2_title' => 'required|string|max:255',
-            'dossier_intro_text' => 'required|string',
-            'dossier_work_title' => 'required|string|max:255',
-            'dossier_work_item1' => 'required|string',
-            'dossier_work_item2' => 'required|string',
-            'dossier_work_item3' => 'required|string',
-            'dossier_extra_hours_title' => 'required|string|max:255',
-            'dossier_extra_hours_desc' => 'required|string',
-            'dossier_music_custom_title' => 'required|string|max:255',
-            'dossier_music_custom_desc' => 'required|string',
+            'dossier_page2_title' => 'nullable|string|max:255',
+            'dossier_intro_text' => 'nullable|string',
+            'dossier_work_title' => 'nullable|string|max:255',
+            'dossier_work_item1' => 'nullable|string',
+            'dossier_work_item2' => 'nullable|string',
+            'dossier_work_item3' => 'nullable|string',
+            'dossier_extra_hours_title' => 'nullable|string|max:255',
+            'dossier_extra_hours_desc' => 'nullable|string',
+            'dossier_music_custom_title' => 'nullable|string|max:255',
+            'dossier_music_custom_desc' => 'nullable|string',
 
             'dossier_photo1_title' => 'nullable|string|max:255',
             'dossier_photo1_desc' => 'nullable|string|max:500',
@@ -619,7 +619,21 @@ class Settings extends Component
         }
 
         $this->spotifyUser = SpotifyService::getUserDetails();
-        session()->flash('message', 'Configuración guardada correctamente.');
+        session()->flash('message', '¡Configuración y Dossier guardados correctamente!');
+        $this->dispatch('settings-saved');
+    }
+
+    public function disconnectSpotify()
+    {
+        Setting::set('spotify_access_token', null);
+        Setting::set('spotify_refresh_token', null);
+        Setting::set('spotify_token_expires_at', null);
+        Setting::set('spotify_user_id', null);
+        Setting::set('spotify_user_name', null);
+        Setting::set('spotify_user_product', null);
+        Setting::set('spotify_user_image', null);
+        $this->spotifyUser = SpotifyService::getUserDetails();
+        session()->flash('message', 'Cuenta de Spotify desconectada correctamente.');
     }
 
     public function syncDriveLibrary()

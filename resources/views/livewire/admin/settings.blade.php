@@ -109,7 +109,7 @@
     </div>
 
     <!-- FORM GLOBAL -->
-    <form wire:submit.prevent="save">
+    <form wire:submit.prevent="save" novalidate>
         
         <!-- PESTAÑA: DATOS GENERALES -->
         <div class="{{ $activeTab === 'general' ? 'block' : 'hidden' }} space-y-6">
@@ -729,7 +729,7 @@
         <!-- PESTAÑA: CONFIGURACIÓN DE DOSSIER Y PROPUESTAS COMERCIALES -->
         <div class="{{ $activeTab === 'dossier' ? 'block' : 'hidden' }} space-y-6">
             
-            <!-- HEADER DE SECCIÓN CON PRESETS -->
+            <!-- HEADER DE SECCIÓN CON PRESETS & BOTÓN GUARDAR -->
             <div class="bg-white shadow-sm rounded-xl border border-gray-200 p-6 space-y-4">
                 <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-gray-100 pb-4">
                     <div>
@@ -739,16 +739,43 @@
                         <p class="text-xs text-gray-500 mt-0.5">Configura los textos de presentación, bloques de equipamiento y fotos reales de tus montajes que verán tus clientes al descargar o recibir la propuesta comercial.</p>
                     </div>
 
-                    <!-- BOTONES DE PRESETS / PLANTILLAS RÁPIDAS -->
-                    <div class="flex flex-wrap items-center gap-2">
-                        <span class="text-xs font-bold text-gray-500 mr-1">Cargar Plantilla:</span>
-                        @foreach($dossierPresets as $key => $preset)
-                            <button type="button" wire:click="loadDossierPreset('{{ $key }}')" class="px-3 py-1.5 text-xs font-bold rounded-xl border transition flex items-center gap-1.5 shadow-2xs {{ $selectedDossierPreset === $key ? 'bg-amber-100 text-amber-900 border-amber-400 font-black' : 'bg-white text-gray-700 border-gray-300 hover:bg-amber-50 hover:text-amber-800' }}">
-                                {{ $preset['name'] }}
-                            </button>
-                        @endforeach
+                    <div class="flex flex-wrap items-center gap-3">
+                        <!-- BOTONES DE PRESETS / PLANTILLAS RÁPIDAS -->
+                        <div class="flex flex-wrap items-center gap-1.5">
+                            <span class="text-xs font-bold text-gray-500 mr-1">Plantilla:</span>
+                            @foreach($dossierPresets as $key => $preset)
+                                <button type="button" wire:click="loadDossierPreset('{{ $key }}')" class="px-2.5 py-1.5 text-xs font-bold rounded-xl border transition flex items-center gap-1 shadow-2xs {{ $selectedDossierPreset === $key ? 'bg-amber-100 text-amber-900 border-amber-400 font-black' : 'bg-white text-gray-700 border-gray-300 hover:bg-amber-50 hover:text-amber-800' }}">
+                                    {{ $preset['name'] }}
+                                </button>
+                            @endforeach
+                        </div>
+
+                        <!-- BOTÓN DIRECTO GUARDAR DOSSIER -->
+                        <button 
+                            type="button" 
+                            wire:click="save"
+                            wire:loading.attr="disabled"
+                            wire:target="save"
+                            class="px-4 py-2 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white font-black text-xs rounded-xl shadow-md transition flex items-center gap-2 cursor-pointer disabled:opacity-50 shrink-0"
+                        >
+                            <span wire:loading.remove wire:target="save">💾 Guardar Dossier</span>
+                            <span wire:loading wire:target="save" class="inline-flex items-center gap-1.5">
+                                <svg class="animate-spin h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+                                Guardando...
+                            </span>
+                        </button>
                     </div>
                 </div>
+
+                @if(session()->has('message'))
+                    <div class="p-3.5 bg-emerald-50 text-emerald-900 border-2 border-emerald-300 rounded-xl text-xs font-bold flex items-center justify-between shadow-xs animate-pulse">
+                        <div class="flex items-center gap-2">
+                            <span class="text-base">✅</span>
+                            <span>{{ session('message') }}</span>
+                        </div>
+                        <span class="text-[10px] uppercase font-black tracking-wider bg-emerald-200 text-emerald-800 px-2 py-0.5 rounded-md">Guardado</span>
+                    </div>
+                @endif
 
                 @if(session()->has('dossier_preset_loaded'))
                     <div class="p-3 bg-amber-50 text-amber-900 border border-amber-200 rounded-xl text-xs font-semibold flex items-center gap-2">
@@ -1130,14 +1157,16 @@
                         </div>
 
                         <!-- BOTONES DE CONEXIÓN OAUTH -->
-                        <div class="flex items-center gap-2 self-start sm:self-auto" wire:ignore>
+                        <div class="flex items-center gap-2 self-start sm:self-auto">
                             @if(!empty($spotifyUser['connected']))
-                                <form method="POST" action="{{ route('spotify.disconnect') }}" onsubmit="return confirm('¿Seguro que deseas desconectar tu cuenta de Spotify?')">
-                                    @csrf
-                                    <button type="submit" class="px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-xs rounded-xl transition cursor-pointer">
-                                        Desconectar Cuenta
-                                    </button>
-                                </form>
+                                <button 
+                                    type="button" 
+                                    wire:click="disconnectSpotify" 
+                                    wire:confirm="¿Seguro que deseas desconectar tu cuenta de Spotify?"
+                                    class="px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-xs rounded-xl transition cursor-pointer"
+                                >
+                                    Desconectar Cuenta
+                                </button>
                             @else
                                 <a href="{{ route('spotify.connect') }}" class="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-xl shadow-md shadow-emerald-600/30 transition transform hover:-translate-y-0.5">
                                     <span>🟢</span> Conectar Cuenta de Spotify
@@ -1474,6 +1503,7 @@ MAIL_FROM_NAME="{{ $company_name }}"</pre>
 
                 <button 
                     type="submit" 
+                    wire:click="save"
                     wire:loading.attr="disabled"
                     wire:target="save"
                     class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-black py-2.5 px-7 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 text-sm"
