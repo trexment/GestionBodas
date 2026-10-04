@@ -49,6 +49,8 @@ class MusicSearchService
                         'spotify_uri' => "spotify:search:" . rawurlencode($searchQuery),
                         'apple_music_url' => $dt->apple_music_url ?: "https://music.apple.com/es/search?term={$searchQuery}",
                         'apple_music_uri' => "music://music.apple.com/search?term=" . $searchQuery,
+                        'tidal_url' => $dt->tidal_url ?: "https://listen.tidal.com/search?q={$searchQuery}",
+                        'tidal_uri' => "tidal://search?q=" . rawurlencode($searchQuery),
                         'youtube_url' => $dt->youtube_url ?: "https://www.youtube.com/results?search_query={$searchQuery}",
                     ];
                 }
@@ -101,6 +103,8 @@ class MusicSearchService
                                 'spotify_uri' => $spotifyUri,
                                 'apple_music_url' => $appleUrl ?: "https://music.apple.com/es/search?term={$searchQuery}",
                                 'apple_music_uri' => $appleUri,
+                                'tidal_url' => "https://listen.tidal.com/search?q={$searchQuery}",
+                                'tidal_uri' => "tidal://search?q=" . rawurlencode($artist . ' ' . $title),
                                 'youtube_url' => "https://www.youtube.com/results?search_query={$searchQuery}",
                             ];
                         }
@@ -191,6 +195,8 @@ class MusicSearchService
                         'spotify_uri' => $spotifyUri,
                         'apple_music_url' => "https://music.apple.com/es/search?term={$searchQuery}",
                         'apple_music_uri' => "music://music.apple.com/search?term=" . $searchQuery,
+                        'tidal_url' => "https://listen.tidal.com/search?q={$searchQuery}",
+                        'tidal_uri' => "tidal://search?q=" . rawurlencode($artist . ' ' . $title),
                         'youtube_url' => "https://www.youtube.com/results?search_query={$searchQuery}",
                     ];
                 }
@@ -323,6 +329,7 @@ class MusicSearchService
 
             // Fallbacks if not exact link found
             $encodedQuery = urlencode($query);
+            $tidalUrl = "https://listen.tidal.com/search?q={$encodedQuery}";
             if (empty($spotifyUrl)) {
                 $spotifyUrl = "https://open.spotify.com/search/{$encodedQuery}";
             }
@@ -337,6 +344,7 @@ class MusicSearchService
                 'is_drive_library' => $isDriveLibrary,
                 'spotify_url' => $spotifyUrl,
                 'apple_music_url' => $appleMusicUrl,
+                'tidal_url' => $tidalUrl,
                 'youtube_url' => $youtubeUrl,
                 'preview_url' => $previewUrl,
                 'cover_url' => $coverUrl,
@@ -406,6 +414,8 @@ class MusicSearchService
                                     'spotify_url' => $spotifyUrl ?: "https://open.spotify.com/search/{$searchQuery}",
                                     'spotify_uri' => $item['uri'] ?? ("spotify:search:" . rawurlencode($artist . ' ' . $title)),
                                     'apple_music_url' => "https://music.apple.com/es/search?term={$searchQuery}",
+                                    'tidal_url' => "https://listen.tidal.com/search?q={$searchQuery}",
+                                    'tidal_uri' => "tidal://search?q=" . rawurlencode($artist . ' ' . $title),
                                     'youtube_url' => "https://www.youtube.com/results?search_query={$searchQuery}",
                                 ];
                             }
@@ -447,6 +457,8 @@ class MusicSearchService
                                     'spotify_url' => "https://open.spotify.com/search/{$searchQuery}",
                                     'spotify_uri' => "spotify:search:" . rawurlencode($artist . ' ' . $title),
                                     'apple_music_url' => $appleUrl ?: "https://music.apple.com/es/search?term={$searchQuery}",
+                                    'tidal_url' => "https://listen.tidal.com/search?q={$searchQuery}",
+                                    'tidal_uri' => "tidal://search?q=" . rawurlencode($artist . ' ' . $title),
                                     'youtube_url' => "https://www.youtube.com/results?search_query={$searchQuery}",
                                 ];
                             }

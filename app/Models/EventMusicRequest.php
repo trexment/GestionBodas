@@ -20,6 +20,7 @@ class EventMusicRequest extends Model
         'youtube_url',
         'spotify_url',
         'apple_music_url',
+        'tidal_url',
         'audio_file',
         'cue_time',
         'status',
@@ -45,9 +46,10 @@ class EventMusicRequest extends Model
             if (!empty($title)) {
                 $needsSpotify = empty($request->spotify_url) || str_contains($request->spotify_url, 'open.spotify.com/search/');
                 $needsApple = empty($request->apple_music_url) || str_contains($request->apple_music_url, 'music.apple.com/es/search');
+                $needsTidal = empty($request->tidal_url) || str_contains($request->tidal_url, 'listen.tidal.com/search');
                 $needsYoutube = empty($request->youtube_url) || str_contains($request->youtube_url, 'youtube.com/results');
 
-                if ($needsSpotify || $needsApple || $needsYoutube) {
+                if ($needsSpotify || $needsApple || $needsTidal || $needsYoutube) {
                     $meta = \App\Services\MusicSearchService::resolveTrackMetadata($title, $artist);
                     
                     if ($needsSpotify && !empty($meta['spotify_url'])) {
@@ -55,6 +57,9 @@ class EventMusicRequest extends Model
                     }
                     if ($needsApple && !empty($meta['apple_music_url'])) {
                         $request->apple_music_url = $meta['apple_music_url'];
+                    }
+                    if ($needsTidal && !empty($meta['tidal_url'])) {
+                        $request->tidal_url = $meta['tidal_url'];
                     }
                     if ($needsYoutube && !empty($meta['youtube_url'])) {
                         $request->youtube_url = $meta['youtube_url'];

@@ -1240,6 +1240,36 @@
                 </div>
             </div>
 
+            <!-- SECCIÓN 2.5: INTEGRACIÓN TIDAL HI-FI & ENGINE DJ -->
+            <div class="bg-white shadow-sm rounded-xl border border-gray-200 p-6 space-y-5">
+                <div class="flex items-center justify-between pb-4 border-b border-gray-100">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 rounded-2xl bg-cyan-100 text-cyan-800 flex items-center justify-center font-bold text-2xl shadow-sm">
+                            🌊
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-black text-gray-900">Tidal Hi-Fi &amp; Denon Engine DJ</h3>
+                            <p class="text-xs text-gray-500">Enlaces directos a canciones en máxima calidad de audio (FLAC/Lossless) y compatibilidad nativa con cabinas y controladoras DJ.</p>
+                        </div>
+                    </div>
+                    <span class="px-3 py-1 rounded-full text-xs font-bold bg-cyan-50 text-cyan-800 border border-cyan-200 flex items-center gap-1.5">
+                        ✓ Enlace Tidal Activo
+                    </span>
+                </div>
+
+                <div class="bg-gradient-to-r from-slate-900 to-cyan-950 p-4 rounded-xl border border-cyan-900/50 text-white space-y-2">
+                    <h4 class="text-sm font-bold text-cyan-300 flex items-center gap-2">
+                        <span>🎛️</span> ¿Cómo usar tu suscripción de Tidal en tu equipo DJ?
+                    </h4>
+                    <p class="text-xs text-slate-300 leading-relaxed">
+                        1. <strong>En la App Web:</strong> Todas las peticiones de música, escaletas y búsquedas generan enlaces directos a <strong>Tidal</strong> para que puedas abrir o guardar cualquier canción en tu biblioteca con 1 clic.
+                    </p>
+                    <p class="text-xs text-slate-300 leading-relaxed">
+                        2. <strong>En tu Denon DJ / Engine DJ:</strong> En la pantalla táctil de tu controladora (Prime 4, SC Live, etc.), ve a <em>Source &gt; Tidal</em>, inicia sesión con tu cuenta de pago de Tidal vía Wi-Fi y podrás cargar instantáneamente cualquier canción solicitada por los invitados en calidad Lossless.
+                    </p>
+                </div>
+            </div>
+
             <!-- SECCIÓN 3: ALMACENAMIENTO EN LA NUBE (GOOGLE DRIVE & ONEDRIVE) -->
             <div class="bg-white shadow-sm rounded-xl border border-gray-200 p-6 space-y-5">
                 <div class="flex items-center justify-between pb-4 border-b border-gray-100">

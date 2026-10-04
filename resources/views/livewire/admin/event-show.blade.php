@@ -1436,6 +1436,16 @@
                                             </a>
                                         @endif
 
+                                        @if($song->tidal_url)
+                                            <a href="{{ $song->tidal_url }}" target="_blank" class="bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-400 border border-cyan-500/30 text-xs font-semibold px-2.5 py-1.5 rounded-md inline-flex items-center gap-1.5 transition" title="Abrir en Tidal (Hi-Fi / Denon DJ)">
+                                                <span>🌊 Tidal</span>
+                                            </a>
+                                        @else
+                                            <a href="https://listen.tidal.com/search?q={{ urlencode($song->title . ' ' . $song->artist) }}" target="_blank" class="bg-cyan-950/40 hover:bg-cyan-900/40 text-cyan-300 border border-cyan-800/40 text-xs px-2.5 py-1.5 rounded-md inline-flex items-center gap-1.5 transition" title="Buscar automáticamente en Tidal">
+                                                <span>🌊 Tidal</span>
+                                            </a>
+                                        @endif
+
                                         @if($song->audio_file)
                                             <a href="{{ route('admin.music.download', $song->id) }}" target="_blank" class="bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 text-xs font-semibold px-2.5 py-1.5 rounded-md inline-flex items-center gap-1 transition" title="Descargar MP3 para DJ">
                                                 <span>⬇️ MP3</span>
@@ -3450,7 +3460,7 @@
                                     </div>
                                 @endif
 
-                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
                                     <div>
                                         <label class="block text-xs font-semibold text-gray-700 mb-1">Enlace YouTube</label>
                                         <input type="text" wire:model="req_youtube_url" placeholder="https://youtube.com/watch?v=..." class="w-full border-gray-300 rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500">
@@ -3465,6 +3475,11 @@
                                         <label class="block text-xs font-semibold text-gray-700 mb-1">🍎 Apple Music</label>
                                         <input type="text" wire:model="req_apple_music_url" placeholder="https://music.apple.com/..." class="w-full border-gray-300 rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500">
                                         @error('req_apple_music_url') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-semibold text-gray-700 mb-1">🌊 Tidal URL</label>
+                                        <input type="text" wire:model="req_tidal_url" placeholder="https://listen.tidal.com/..." class="w-full border-gray-300 rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500">
+                                        @error('req_tidal_url') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                                     </div>
                                 </div>
                             </div>

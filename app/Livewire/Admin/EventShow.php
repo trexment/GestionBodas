@@ -145,6 +145,7 @@ class EventShow extends Component
     public $req_youtube_url = '';
     public $req_spotify_url = '';
     public $req_apple_music_url = '';
+    public $req_tidal_url = '';
     public $req_audio_file = null;
     public $existing_audio_file = null;
     public $req_cue_time = '';
@@ -823,6 +824,7 @@ class EventShow extends Component
         $this->req_artist = $track['artist'] ?? '';
         $this->req_spotify_url = $track['spotify_url'] ?? '';
         $this->req_apple_music_url = $track['apple_music_url'] ?? '';
+        $this->req_tidal_url = $track['tidal_url'] ?? '';
         $this->req_youtube_url = $track['youtube_url'] ?? '';
         if (!empty($track['is_drive_library']) && !empty($track['preview_url'])) {
             $this->existing_audio_file = $track['preview_url'];
@@ -838,7 +840,7 @@ class EventShow extends Component
         $this->resetValidation();
         $this->reset([
             'req_title', 'req_artist', 'req_requested_by', 'req_notes',
-            'req_youtube_url', 'req_spotify_url', 'req_apple_music_url', 'req_audio_file', 'existing_audio_file', 'req_cue_time',
+            'req_youtube_url', 'req_spotify_url', 'req_apple_music_url', 'req_tidal_url', 'req_audio_file', 'existing_audio_file', 'req_cue_time',
             'musicSearchQuery', 'musicSearchResults'
         ]);
 
@@ -854,6 +856,7 @@ class EventShow extends Component
             $this->req_youtube_url = $song->youtube_url;
             $this->req_spotify_url = $song->spotify_url;
             $this->req_apple_music_url = $song->apple_music_url;
+            $this->req_tidal_url = $song->tidal_url;
             $this->existing_audio_file = $song->audio_file;
             $this->req_cue_time = $song->cue_time;
             $this->req_status = $song->status;
@@ -1060,6 +1063,7 @@ class EventShow extends Component
             'req_youtube_url' => 'nullable|string|max:1000',
             'req_spotify_url' => 'nullable|string|max:1000',
             'req_apple_music_url' => 'nullable|string|max:1000',
+            'req_tidal_url' => 'nullable|string|max:1000',
             'req_audio_file' => 'nullable|file|mimes:mp3,wav,ogg,m4a|max:25600', // 25MB max
             'req_cue_time' => 'nullable|string|max:50',
             'req_status' => 'nullable|string|max:50',
@@ -1076,13 +1080,16 @@ class EventShow extends Component
         }
 
         // Auto-resolver enlaces si alguno quedó en blanco
-        if (empty($this->req_spotify_url) || empty($this->req_apple_music_url) || empty($this->req_youtube_url)) {
+        if (empty($this->req_spotify_url) || empty($this->req_apple_music_url) || empty($this->req_tidal_url) || empty($this->req_youtube_url)) {
             $meta = \App\Services\MusicSearchService::resolveTrackMetadata($this->req_title, $this->req_artist ?? '');
             if (empty($this->req_spotify_url) && !empty($meta['spotify_url'])) {
                 $this->req_spotify_url = $meta['spotify_url'];
             }
             if (empty($this->req_apple_music_url) && !empty($meta['apple_music_url'])) {
                 $this->req_apple_music_url = $meta['apple_music_url'];
+            }
+            if (empty($this->req_tidal_url) && !empty($meta['tidal_url'])) {
+                $this->req_tidal_url = $meta['tidal_url'];
             }
             if (empty($this->req_youtube_url) && !empty($meta['youtube_url'])) {
                 $this->req_youtube_url = $meta['youtube_url'];
@@ -1103,6 +1110,7 @@ class EventShow extends Component
                 'youtube_url' => $this->req_youtube_url,
                 'spotify_url' => $this->req_spotify_url,
                 'apple_music_url' => $this->req_apple_music_url,
+                'tidal_url' => $this->req_tidal_url,
                 'audio_file' => $audioPath,
                 'cue_time' => $this->req_cue_time,
                 'status' => $finalStatus,
@@ -1120,6 +1128,7 @@ class EventShow extends Component
                 'youtube_url' => $this->req_youtube_url,
                 'spotify_url' => $this->req_spotify_url,
                 'apple_music_url' => $this->req_apple_music_url,
+                'tidal_url' => $this->req_tidal_url,
                 'audio_file' => $audioPath,
                 'cue_time' => $this->req_cue_time,
                 'status' => $finalStatus,
@@ -1131,7 +1140,7 @@ class EventShow extends Component
         $this->showSongModal = false;
         $this->reset([
             'req_title', 'req_artist', 'req_requested_by', 'req_notes',
-            'req_youtube_url', 'req_spotify_url', 'req_apple_music_url',
+            'req_youtube_url', 'req_spotify_url', 'req_apple_music_url', 'req_tidal_url',
             'req_audio_file', 'existing_audio_file', 'req_cue_time',
             'musicSearchQuery', 'musicSearchResults', 'editingSongId'
         ]);

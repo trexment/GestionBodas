@@ -19,6 +19,7 @@ class Track extends Model
         'source',
         'spotify_url',
         'apple_music_url',
+        'tidal_url',
         'youtube_url',
     ];
 

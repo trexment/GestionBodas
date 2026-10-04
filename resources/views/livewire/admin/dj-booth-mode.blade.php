@@ -1602,6 +1602,14 @@
                             <span>🍎</span> Apple
                         </a>
                         <a 
+                            :href="tidalExternalUrl" 
+                            target="_blank" 
+                            class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-cyan-950/80 text-cyan-300 hover:bg-cyan-800 hover:text-white border border-cyan-700/50 transition flex items-center gap-1"
+                            title="Abrir en Tidal (Hi-Fi / Denon DJ)"
+                        >
+                            <span>🌊</span> Tidal
+                        </a>
+                        <a 
                             :href="youtubeExternalUrl" 
                             target="_blank" 
                             class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-rose-950/80 text-rose-300 hover:bg-rose-800 hover:text-white border border-rose-700/50 transition flex items-center gap-1"
@@ -1765,6 +1773,7 @@ function djAudioPlayer() {
         spotifyExternalUrl: '',
         youtubeExternalUrl: '',
         appleMusicExternalUrl: '',
+        tidalExternalUrl: '',
 
         cachedSongIds: [],
         cacheStorageUsage: { count: 0, bytes: 0, mb: '0.0' },
@@ -2235,6 +2244,7 @@ function djAudioPlayer() {
             this.spotifyExternalUrl = spotifyUrl || (`https://open.spotify.com/search/${queryParam}`);
             this.youtubeExternalUrl = youtubeUrl || (`https://www.youtube.com/results?search_query=${queryParam}`);
             this.appleMusicExternalUrl = appleMusicUrl || (`https://music.apple.com/es/search?term=${queryParam}`);
+            this.tidalExternalUrl = `https://listen.tidal.com/search?q=${queryParam}`;
 
             // 0. PRIORIDAD ABSOLUTA 0: REPRODUCCIÓN DESDE CACHÉ LOCAL / OFFLINE (MODO SIN COBERTURA)
             if (window.OfflineAudioCache) {
