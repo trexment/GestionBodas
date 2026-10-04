@@ -490,12 +490,25 @@
         $dossierPhotos = [];
         for ($i = 1; $i <= 4; $i++) {
             $img = \App\Models\Setting::get("dossier_photo{$i}_image", \App\Models\Setting::get("dossier_block{$i}_image"));
-            $title = \App\Models\Setting::get("dossier_photo{$i}_title", \App\Models\Setting::get("dossier_block{$i}_title"));
-            $desc = \App\Models\Setting::get("dossier_photo{$i}_desc", \App\Models\Setting::get("dossier_block{$i}_desc"));
+            $defaultTitle = $dDefaults["dossier_block{$i}_title"] ?? '';
+            $defaultDesc = $dDefaults["dossier_block{$i}_desc"] ?? '';
+            
+            $title = \App\Models\Setting::get("dossier_photo{$i}_title", \App\Models\Setting::get("dossier_block{$i}_title", $defaultTitle));
+            $desc = \App\Models\Setting::get("dossier_photo{$i}_desc", \App\Models\Setting::get("dossier_block{$i}_desc", $defaultDesc));
 
-            $imgPath = ($img && \Illuminate\Support\Facades\Storage::disk('public')->exists($img))
-                ? storage_path('app/public/' . $img)
-                : null;
+            $imgPath = null;
+            if (!empty($img)) {
+                $cleanImg = ltrim($img, '/');
+                if (\Illuminate\Support\Facades\Storage::disk('public')->exists($cleanImg)) {
+                    $imgPath = storage_path('app/public/' . $cleanImg);
+                } elseif (file_exists(storage_path('app/public/' . $cleanImg))) {
+                    $imgPath = storage_path('app/public/' . $cleanImg);
+                } elseif (file_exists(public_path('storage/' . $cleanImg))) {
+                    $imgPath = public_path('storage/' . $cleanImg);
+                } elseif (file_exists(public_path($cleanImg))) {
+                    $imgPath = public_path($cleanImg);
+                }
+            }
 
             if ($imgPath || !empty($title) || !empty($desc)) {
                 $dossierPhotos[] = [
@@ -503,6 +516,18 @@
                     'path' => $imgPath,
                     'title' => $title ?: "Montaje {$i}",
                     'desc' => $desc ?: '',
+                ];
+            }
+        }
+
+        // Si no hay fotos ni textos guardados, cargar los 3 bloques predeterminados
+        if (empty($dossierPhotos)) {
+            for ($i = 1; $i <= 3; $i++) {
+                $dossierPhotos[] = [
+                    'index' => $i,
+                    'path' => null,
+                    'title' => $dDefaults["dossier_block{$i}_title"] ?? "Bloque {$i}",
+                    'desc' => $dDefaults["dossier_block{$i}_desc"] ?? '',
                 ];
             }
         }
@@ -625,8 +650,6 @@
                 {{ $dossierIntroText }}
             </p>
 
-            <!-- Mosaico de Bloques de Equipamiento -->
-            <table class="photo-mosaic-table">
             <!-- Mosaico Adaptable de Fotos de Montajes y Equipamiento -->
             @php
                 $photoCount = count($dossierPhotos);
