@@ -27,7 +27,7 @@ class PdfController extends Controller
             'phone' => $brand['phone'] ?: Setting::get('company_phone', '+34 622 62 47 90'),
             'phone_2' => $brand['phone_2'] ?: Setting::get('company_phone_2', ''),
             'email' => $brand['email'] ?: Setting::get('company_email', 'info@nunezandson.com'),
-            'website' => $brand['website'] ?: Setting::get('company_website', 'landing-bodas.es/nunez-and-son'),
+            'website' => $brand['website'] ?: Setting::get('company_website', 'nunezandson.com'),
             'address' => Setting::get('company_address', 'Calle Principal s/n'),
             'city' => Setting::get('company_city', 'Logroño'),
             'iban' => Setting::get('company_iban', 'ES39 3035 0241 13 2411043571'),

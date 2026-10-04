@@ -163,6 +163,9 @@ class Setting extends Model
             }
             $email = self::get('brand_leugim_email', self::get('company_email', 'magoleugim@gmail.com'));
             $website = self::get('brand_leugim_website', 'magoleugim.es');
+            if (empty($website) || str_contains($website, 'landing-bodas')) {
+                $website = 'magoleugim.es';
+            }
             $logo = self::get('brand_leugim_logo', self::get('company_logo'));
         } elseif ($brandKey === 'javnx') {
             $name = self::get('brand_javnx_name', 'JAVNX DJ');
@@ -174,6 +177,9 @@ class Setting extends Model
             $phone2 = self::get('brand_javnx_phone_2', '');
             $email = self::get('brand_javnx_email', self::get('company_email', 'info@javnxdj.com'));
             $website = self::get('brand_javnx_website', 'javnxdj.com');
+            if (empty($website) || str_contains($website, 'landing-bodas')) {
+                $website = 'javnxdj.com';
+            }
             $logo = self::get('brand_javnx_logo', self::get('company_logo'));
         } else {
             // Default: Núñez and Son
@@ -188,7 +194,10 @@ class Setting extends Model
                 $phone2 = '+34 674 37 89 93 (Miguel)';
             }
             $email = self::get('brand_nunez_email', self::get('company_email', 'info@eventosmusicales.es'));
-            $website = self::get('brand_nunez_website', self::get('company_website', 'landing-bodas.es/nunez-and-son'));
+            $website = self::get('brand_nunez_website', self::get('company_website', 'nunezandson.com'));
+            if (empty($website) || str_contains($website, 'landing-bodas')) {
+                $website = 'nunezandson.com';
+            }
             $logo = self::get('brand_nunez_logo', self::get('company_logo'));
         }
 

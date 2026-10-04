@@ -191,7 +191,10 @@ class Settings extends Component
         $this->brand_nunez_phone = Setting::get('brand_nunez_phone', '+34 622 62 47 90 (Fran)');
         $this->brand_nunez_phone_2 = Setting::get('brand_nunez_phone_2', '+34 674 37 89 93 (Miguel)');
         $this->brand_nunez_email = Setting::get('brand_nunez_email', 'info@eventosmusicales.es');
-        $this->brand_nunez_website = Setting::get('brand_nunez_website', 'landing-bodas.es/nunez-and-son');
+        $this->brand_nunez_website = Setting::get('brand_nunez_website', 'nunezandson.com');
+        if (str_contains($this->brand_nunez_website, 'landing-bodas')) {
+            $this->brand_nunez_website = 'nunezandson.com';
+        }
 
         $this->brand_javnx_name = Setting::get('brand_javnx_name', 'JAVNX DJ');
         $this->brand_javnx_subtitle = Setting::get('brand_javnx_subtitle', 'DJ & Producción de Eventos');
