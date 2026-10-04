@@ -5,7 +5,7 @@
     <title>{{ $invoice->isReceipt() ? 'Recibo' : 'Factura' }} {{ $invoice->invoice_number }} - {{ $event->name }}</title>
     <style>
         @page {
-            margin: 12mm 14mm 12mm 14mm;
+            margin: 8mm 10mm 8mm 10mm;
             size: a4 portrait;
         }
         * {
@@ -18,8 +18,8 @@
             color: #1e293b;
             margin: 0;
             padding: 0;
-            font-size: 8.5pt;
-            line-height: 1.4;
+            font-size: 8pt;
+            line-height: 1.35;
             background-color: #ffffff;
         }
         
@@ -33,15 +33,16 @@
         .header-table {
             width: 100%;
             border-bottom: 2px solid {{ $invoice->isReceipt() ? '#059669' : '#1e3a8a' }};
-            padding-bottom: 10px;
-            margin-bottom: 14px;
+            padding-bottom: 6px;
+            margin-bottom: 8px;
+            page-break-inside: avoid;
         }
         .header-logo {
-            max-height: 55px;
-            max-width: 190px;
+            max-height: 50px;
+            max-width: 180px;
         }
         .company-name {
-            font-size: 15pt;
+            font-size: 14pt;
             font-weight: 800;
             color: {{ $invoice->isReceipt() ? '#065f46' : '#1e3a8a' }};
             margin: 0;
@@ -49,12 +50,12 @@
             letter-spacing: 0.5px;
         }
         .company-subtitle {
-            font-size: 8pt;
+            font-size: 7.5pt;
             color: #64748b;
             margin: 2px 0 0 0;
         }
         .doc-badge-title {
-            font-size: 15pt;
+            font-size: 14pt;
             font-weight: 800;
             color: {{ $invoice->isReceipt() ? '#059669' : '#1e3a8a' }};
             margin: 0 0 2px 0;
@@ -62,17 +63,18 @@
             letter-spacing: 0.5px;
         }
         .doc-badge-meta {
-            font-size: 8pt;
+            font-size: 7.5pt;
             color: #334155;
-            line-height: 1.35;
+            line-height: 1.3;
         }
 
         /* BLOQUES DATOS FISCALES */
         .parties-table {
             width: 100%;
-            margin-bottom: 14px;
+            margin-bottom: 8px;
             border-collapse: separate;
             border-spacing: 8px 0;
+            page-break-inside: avoid;
         }
         .parties-table td {
             vertical-align: top;
@@ -83,21 +85,20 @@
             background-color: #f8fafc;
             border: 1px solid #e2e8f0;
             border-radius: 6px;
-            padding: 9px 12px;
-            min-height: 105px;
+            padding: 8px 10px;
         }
         .party-title {
-            font-size: 7.5pt;
+            font-size: 7pt;
             font-weight: 800;
             text-transform: uppercase;
             color: #475569;
             border-bottom: 1px solid #cbd5e1;
-            padding-bottom: 3px;
-            margin-bottom: 5px;
+            padding-bottom: 2px;
+            margin-bottom: 4px;
             letter-spacing: 0.5px;
         }
         .party-name {
-            font-size: 9.5pt;
+            font-size: 9pt;
             font-weight: 800;
             color: #0f172a;
             margin-bottom: 2px;
@@ -105,15 +106,16 @@
         .party-line {
             font-size: 7.5pt;
             color: #475569;
-            line-height: 1.35;
+            line-height: 1.3;
         }
 
         /* TABLA DE CONCEPTOS */
         .items-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 6px;
-            margin-bottom: 14px;
+            margin-top: 4px;
+            margin-bottom: 8px;
+            page-break-inside: avoid;
         }
         .items-table th {
             background-color: {{ $invoice->isReceipt() ? '#065f46' : '#1e3a8a' }};
@@ -121,7 +123,7 @@
             font-size: 7.5pt;
             font-weight: 800;
             text-transform: uppercase;
-            padding: 6px 10px;
+            padding: 5px 8px;
             text-align: left;
             border: none;
             letter-spacing: 0.5px;
@@ -130,9 +132,9 @@
             text-align: right;
         }
         .items-table td {
-            padding: 7px 10px;
+            padding: 6px 8px;
             border-bottom: 1px solid #e2e8f0;
-            font-size: 8pt;
+            font-size: 7.5pt;
             vertical-align: middle;
         }
         .items-table tr:nth-child(even) td {
@@ -158,8 +160,9 @@
         .bottom-table {
             width: 100%;
             border-collapse: separate;
-            border-spacing: 10px 0;
+            border-spacing: 8px 0;
             margin-top: 4px;
+            page-break-inside: avoid;
         }
         .bottom-table td {
             vertical-align: top;
@@ -169,9 +172,8 @@
             background-color: #f8fafc;
             border: 1px solid #e2e8f0;
             border-radius: 6px;
-            padding: 10px 12px;
+            padding: 8px 10px;
             font-size: 7.5pt;
-            height: 100%;
         }
         .totals-box {
             border: 1.5px solid {{ $invoice->isReceipt() ? '#059669' : '#1e3a8a' }};
@@ -182,30 +184,31 @@
         .totals-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 8pt;
+            font-size: 7.5pt;
         }
         .totals-table td {
-            padding: 5px 10px;
+            padding: 4px 8px;
         }
         .total-highlight-row td {
             background-color: {{ $invoice->isReceipt() ? '#ecfdf5' : '#eff6ff' }};
             border-top: 1.5px solid {{ $invoice->isReceipt() ? '#059669' : '#1e3a8a' }};
-            font-size: 10pt;
+            font-size: 9.5pt;
             font-weight: 900;
             color: {{ $invoice->isReceipt() ? '#065f46' : '#1e3a8a' }};
-            padding: 7px 10px;
+            padding: 6px 8px;
             white-space: nowrap;
         }
 
         /* PIE DE PÁGINA */
         .footer {
-            margin-top: 20px;
+            margin-top: 10px;
             border-top: 1px solid #e2e8f0;
-            padding-top: 8px;
+            padding-top: 6px;
             text-align: center;
             font-size: 7pt;
             color: #94a3b8;
-            line-height: 1.35;
+            line-height: 1.3;
+            page-break-inside: avoid;
         }
     </style>
 </head>
