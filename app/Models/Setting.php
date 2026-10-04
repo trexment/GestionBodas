@@ -153,15 +153,24 @@ class Setting extends Model
         if ($brandKey === 'mago_leugim') {
             $name = self::get('brand_leugim_name', 'Mago Leugim');
             $subtitle = self::get('brand_leugim_subtitle', 'Ilusionismo, Magia de Cerca & Eventos');
-            $phone = self::get('brand_leugim_phone', '+34 674 37 89 93');
-            $phone2 = self::get('brand_leugim_phone_2', '+34 622 62 47 90');
+            $phone = self::get('brand_leugim_phone');
+            if (empty($phone) || strlen(trim(preg_replace('/[^0-9]/', '', $phone))) < 7) {
+                $phone = '+34 674 37 89 93 (Miguel)';
+            }
+            $phone2 = self::get('brand_leugim_phone_2');
+            if (empty($phone2) || strlen(trim(preg_replace('/[^0-9]/', '', $phone2))) < 7) {
+                $phone2 = '+34 622 62 47 90 (Fran)';
+            }
             $email = self::get('brand_leugim_email', self::get('company_email', 'magoleugim@gmail.com'));
             $website = self::get('brand_leugim_website', 'magoleugim.es');
             $logo = self::get('brand_leugim_logo', self::get('company_logo'));
         } elseif ($brandKey === 'javnx') {
             $name = self::get('brand_javnx_name', 'JAVNX DJ');
             $subtitle = self::get('brand_javnx_subtitle', 'DJ & Producción de Eventos');
-            $phone = self::get('brand_javnx_phone', self::get('company_phone', '+34 622 62 47 90'));
+            $phone = self::get('brand_javnx_phone', self::get('company_phone'));
+            if (empty($phone) || strlen(trim(preg_replace('/[^0-9]/', '', $phone))) < 7) {
+                $phone = '+34 622 62 47 90';
+            }
             $phone2 = self::get('brand_javnx_phone_2', '');
             $email = self::get('brand_javnx_email', self::get('company_email', 'info@javnxdj.com'));
             $website = self::get('brand_javnx_website', 'javnxdj.com');
@@ -170,8 +179,14 @@ class Setting extends Model
             // Default: Núñez and Son
             $name = self::get('brand_nunez_name', self::get('company_name', 'Núñez and Son'));
             $subtitle = self::get('brand_nunez_subtitle', self::get('company_subtitle', 'DJ & Sonido'));
-            $phone = self::get('brand_nunez_phone', self::get('company_phone', '+34 622 62 47 90'));
-            $phone2 = self::get('brand_nunez_phone_2', self::get('company_phone_2', '+34 674 37 89 93'));
+            $phone = self::get('brand_nunez_phone', self::get('company_phone'));
+            if (empty($phone) || strlen(trim(preg_replace('/[^0-9]/', '', $phone))) < 7) {
+                $phone = '+34 622 62 47 90 (Fran)';
+            }
+            $phone2 = self::get('brand_nunez_phone_2', self::get('company_phone_2'));
+            if (empty($phone2) || strlen(trim(preg_replace('/[^0-9]/', '', $phone2))) < 7) {
+                $phone2 = '+34 674 37 89 93 (Miguel)';
+            }
             $email = self::get('brand_nunez_email', self::get('company_email', 'info@eventosmusicales.es'));
             $website = self::get('brand_nunez_website', self::get('company_website', 'landing-bodas.es/nunez-and-son'));
             $logo = self::get('brand_nunez_logo', self::get('company_logo'));

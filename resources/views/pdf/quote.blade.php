@@ -763,25 +763,42 @@
                     </thead>
                     <tbody>
                         @forelse($quote->items as $item)
+                            @php
+                                $itemTitle = $item->service_name ?: ($item->concept ?: 'Servicio');
+                                $itemDesc = $item->description ?: $item->custom_note;
+                                $itemQty = (int)($item->quantity ?: 1);
+                                $itemUnitPrice = (float)($item->price ?? $item->unit_price ?? 0);
+                                $itemTotalPrice = (float)($item->total ?? $item->total_price ?? 0);
+                                
+                                if ($itemTotalPrice == 0 && $itemUnitPrice != 0) {
+                                    $itemTotalPrice = $itemUnitPrice * $itemQty;
+                                }
+                                if ($itemTotalPrice == 0 && $itemUnitPrice == 0 && count($quote->items) === 1 && (float)$quote->amount > 0) {
+                                    $itemTotalPrice = (float)$quote->amount;
+                                    $itemUnitPrice = $itemTotalPrice / max(1, $itemQty);
+                                }
+                                
+                                $isDiscount = $itemUnitPrice < 0 || $itemTotalPrice < 0;
+                            @endphp
                             <tr>
                                 <td>
-                                    <div class="quote-item-title {{ $item->price < 0 ? 'quote-item-discount' : '' }}">
-                                        @if($item->price < 0) 🎁 @else • @endif {{ $item->service_name }}
+                                    <div class="quote-item-title {{ $isDiscount ? 'quote-item-discount' : '' }}">
+                                        @if($isDiscount) [DESCUENTO] @else &bull; @endif {{ $itemTitle }}
                                     </div>
-                                    @if(!empty($item->description))
-                                        <div class="quote-item-desc">{{ $item->description }}</div>
+                                    @if(!empty($itemDesc))
+                                        <div class="quote-item-desc">{{ $itemDesc }}</div>
                                     @endif
                                 </td>
                                 <td style="text-align: center; color: #64748b; font-weight: 600;">
-                                    {{ $item->quantity ?: 1 }}
+                                    {{ $itemQty }}
                                 </td>
-                                <td style="text-align: right; font-weight: 800; font-size: 8.5pt;" class="{{ $item->price < 0 ? 'quote-item-discount' : '' }}">
-                                    @if($item->price < 0)
-                                        -{{ number_format(abs($item->total), 2, ',', '.') }} €
-                                    @elseif($item->total == 0 && (str_contains(mb_strtolower($item->service_name), 'consultar') || str_contains(mb_strtolower($item->service_name), 'extra')))
+                                <td style="text-align: right; font-weight: 800; font-size: 8.5pt;" class="{{ $isDiscount ? 'quote-item-discount' : '' }}">
+                                    @if($isDiscount)
+                                        -{{ number_format(abs($itemTotalPrice), 2, ',', '.') }} €
+                                    @elseif($itemTotalPrice == 0 && (str_contains(mb_strtolower($itemTitle), 'consultar') || str_contains(mb_strtolower($itemTitle), 'extra')))
                                         <span style="font-size: 7pt; color: #d97706; font-weight: 700;">A consultar</span>
                                     @else
-                                        {{ number_format($item->total, 2, ',', '.') }} €
+                                        {{ number_format($itemTotalPrice, 2, ',', '.') }} €
                                     @endif
                                 </td>
                             </tr>
@@ -824,7 +841,7 @@
                     <td class="pack-col">
                         <div class="pack-card {{ $hasBasicPack ? 'highlighted' : '' }}">
                             @if($hasBasicPack)
-                                <div class="pack-badge">✓ VUESTRA ELECCIÓN</div>
+                                <div class="pack-badge">VUESTRA ELECCIÓN</div>
                             @endif
                             <div class="pack-title">Básico</div>
                             <div class="pack-schedule">{{ $packBasicHours }} Horas de servicio</div>
@@ -842,7 +859,7 @@
                     <td class="pack-col">
                         <div class="pack-card {{ $hasMediumPack ? 'highlighted' : '' }}">
                             @if($hasMediumPack)
-                                <div class="pack-badge">✓ VUESTRA ELECCIÓN</div>
+                                <div class="pack-badge">VUESTRA ELECCIÓN</div>
                             @else
                                 <div class="pack-badge" style="background-color: #3b82f6; color: #ffffff;">MÁS POPULAR</div>
                             @endif
@@ -862,7 +879,7 @@
                     <td class="pack-col">
                         <div class="pack-card {{ $hasPremiumPack ? 'highlighted' : '' }}">
                             @if($hasPremiumPack)
-                                <div class="pack-badge">✓ VUESTRA ELECCIÓN</div>
+                                <div class="pack-badge">VUESTRA ELECCIÓN</div>
                             @endif
                             <div class="pack-title">Premium</div>
                             <div class="pack-schedule">Hasta {{ $packPremiumHours }} Horas de servicio</div>
