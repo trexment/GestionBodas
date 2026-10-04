@@ -146,6 +146,11 @@ class Settings extends Component
     public $spotifyConnectionStatus = null;
     public $spotifyUser = [];
 
+    // Tidal Developer API
+    public $tidal_client_id;
+    public $tidal_client_secret;
+    public $tidalConnectionStatus = null;
+
     // Apple Music (MusicKit)
     public $apple_music_developer_token;
     public $apple_music_country = 'es';
@@ -313,6 +318,8 @@ class Settings extends Component
         $this->spotify_client_id = Setting::get('spotify_client_id', '');
         $this->spotify_client_secret = Setting::get('spotify_client_secret', '');
         $this->spotify_launch_mode = Setting::get('spotify_launch_mode', 'app');
+        $this->tidal_client_id = Setting::get('tidal_client_id', '');
+        $this->tidal_client_secret = Setting::get('tidal_client_secret', '');
         $this->apple_music_developer_token = Setting::get('apple_music_developer_token', '');
         $this->apple_music_country = Setting::get('apple_music_country', 'es');
         $this->apple_music_launch_mode = Setting::get('apple_music_launch_mode', 'app');
@@ -420,6 +427,13 @@ class Settings extends Component
         Setting::set('spotify_client_id', $this->spotify_client_id);
         Setting::set('spotify_client_secret', $this->spotify_client_secret);
         $this->spotifyConnectionStatus = MusicSearchService::testSpotifyConnection();
+    }
+
+    public function testTidal()
+    {
+        Setting::set('tidal_client_id', $this->tidal_client_id);
+        Setting::set('tidal_client_secret', $this->tidal_client_secret);
+        $this->tidalConnectionStatus = MusicSearchService::testTidalConnection();
     }
 
     public function save()
@@ -642,6 +656,8 @@ class Settings extends Component
         Setting::set('spotify_client_id', $this->spotify_client_id);
         Setting::set('spotify_client_secret', $this->spotify_client_secret);
         Setting::set('spotify_launch_mode', $this->spotify_launch_mode);
+        Setting::set('tidal_client_id', $this->tidal_client_id);
+        Setting::set('tidal_client_secret', $this->tidal_client_secret);
         Setting::set('apple_music_developer_token', $this->apple_music_developer_token);
         Setting::set('apple_music_country', $this->apple_music_country);
         Setting::set('apple_music_launch_mode', $this->apple_music_launch_mode);

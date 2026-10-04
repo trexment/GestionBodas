@@ -1268,6 +1268,41 @@
                         2. <strong>En tu Denon DJ / Engine DJ:</strong> En la pantalla táctil de tu controladora (Prime 4, SC Live, etc.), ve a <em>Source &gt; Tidal</em>, inicia sesión con tu cuenta de pago de Tidal vía Wi-Fi y podrás cargar instantáneamente cualquier canción solicitada por los invitados en calidad Lossless.
                     </p>
                 </div>
+
+                <!-- CLAVES API DE TIDAL DEVELOPER (OPCIONAL) -->
+                <div class="bg-slate-900 text-white p-4 rounded-xl border border-slate-800 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <h4 class="text-xs font-bold text-cyan-400 flex items-center gap-2">
+                            <span>🔑</span> Claves de API de Tidal Developer (Opcional)
+                        </h4>
+                        <a href="https://developer.tidal.com" target="_blank" class="text-[11px] text-cyan-400 hover:text-cyan-300 underline font-semibold">
+                            developer.tidal.com ↗
+                        </a>
+                    </div>
+                    <p class="text-xs text-slate-300 leading-relaxed">
+                        Si deseas conectar la API directa de Tidal para búsqueda de metadatos oficiales en la app, puedes crear una App gratuita en el Portal de Desarrolladores de Tidal e introducir tus claves:
+                    </p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-300 mb-1">Tidal Client ID</label>
+                            <input type="text" wire:model="tidal_client_id" placeholder="ej. tid_client_id_..." class="w-full bg-slate-950 border-slate-700 text-white rounded-lg shadow-sm focus:ring-cyan-500 focus:border-cyan-500 text-xs font-mono">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-300 mb-1">Tidal Client Secret</label>
+                            <input type="password" wire:model="tidal_client_secret" placeholder="ej. tid_secret_..." class="w-full bg-slate-950 border-slate-700 text-white rounded-lg shadow-sm focus:ring-cyan-500 focus:border-cyan-500 text-xs font-mono">
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3 pt-2">
+                        <button type="button" wire:click="testTidal" class="px-4 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-700 text-white font-bold text-xs transition flex items-center gap-1.5 shadow-sm">
+                            <span>⚡</span> Probar Conexión Tidal API
+                        </button>
+                        @if($tidalConnectionStatus)
+                            <span class="text-xs font-semibold {{ $tidalConnectionStatus['success'] ? 'text-emerald-400' : 'text-rose-400' }}">
+                                {{ $tidalConnectionStatus['message'] }}
+                            </span>
+                        @endif
+                    </div>
+                </div>
             </div>
 
             <!-- SECCIÓN 3: ALMACENAMIENTO EN LA NUBE (GOOGLE DRIVE & ONEDRIVE) -->

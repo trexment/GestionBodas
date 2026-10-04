@@ -504,4 +504,59 @@ class MusicSearchService
             'message' => 'No se pudo autenticar con Spotify. Verifica que el Client ID y Client Secret sean correctos.',
         ];
     }
+
+    /**
+     * Get or cache Tidal OAuth 2.0 Access Token
+     */
+    public static function getTidalAccessToken(string $clientId, string $clientSecret): ?string
+    {
+        return Cache::remember('tidal_access_token', 3300, function () use ($clientId, $clientSecret) {
+            try {
+                $res = Http::asForm()
+                    ->withBasicAuth($clientId, $clientSecret)
+                    ->timeout(4)
+                    ->post('https://auth.tidal.com/v1/oauth2/token', [
+                        'grant_type' => 'client_credentials',
+                    ]);
+
+                if ($res->successful()) {
+                    return $res->json('access_token');
+                }
+            } catch (\Throwable $e) {
+                return null;
+            }
+            return null;
+        });
+    }
+
+    /**
+     * Test Tidal Developer API Connection
+     */
+    public static function testTidalConnection(): array
+    {
+        $clientId = Setting::get('tidal_client_id');
+        $clientSecret = Setting::get('tidal_client_secret');
+
+        if (empty($clientId) || empty($clientSecret)) {
+            return [
+                'success' => false,
+                'message' => 'Falta configurar el Client ID o Client Secret de Tidal Developer.',
+            ];
+        }
+
+        Cache::forget('tidal_access_token');
+        $token = self::getTidalAccessToken($clientId, $clientSecret);
+
+        if ($token) {
+            return [
+                'success' => true,
+                'message' => '¡Conexión con Tidal API establecida correctamente!',
+            ];
+        }
+
+        return [
+            'success' => false,
+            'message' => 'No se pudo autenticar con Tidal. Verifica que el Client ID y Client Secret de developer.tidal.com sean correctos.',
+        ];
+    }
 }
