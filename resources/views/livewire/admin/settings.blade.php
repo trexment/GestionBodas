@@ -104,7 +104,10 @@
             <span>🍎🟢</span> Apple Music & Spotify
         </button>
         <button type="button" wire:click="$set('activeTab', 'email_smtp')" class="py-3 px-4 text-xs font-bold uppercase tracking-wider border-b-2 transition-all flex items-center gap-2 {{ $activeTab === 'email_smtp' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700' }}">
-            <span>✉️</span> Correo (SMTP)
+            <span>✉️</span> Correo Saliente (SMTP)
+        </button>
+        <button type="button" wire:click="$set('activeTab', 'email_imap')" class="py-3 px-4 text-xs font-bold uppercase tracking-wider border-b-2 transition-all flex items-center gap-2 {{ $activeTab === 'email_imap' ? 'border-purple-600 text-purple-600' : 'border-transparent text-gray-500 hover:text-gray-700' }}">
+            <span>📥</span> Correos Entrantes (IMAP)
         </button>
     </div>
 
@@ -1446,12 +1449,276 @@ MAIL_FROM_NAME="{{ $company_name }}"</pre>
                             <div class="flex-1">
                                 <span class="block font-bold">{{ $smtpTestStatus['message'] }}</span>
                                 @if(!$smtpTestStatus['success'])
-                                    <p class="text-[11px] text-rose-700 mt-1">Revisa que <code>MAIL_HOST</code>, <code>MAIL_PORT</code>, <code>MAIL_USERNAME</code> y <code>MAIL_PASSWORD</code> en el <code>.env</code> coincidan exactamente con tu cuenta de correo en Plesk.</p>
+                                    <p class="text-[11px] text-rose-700 mt-1">Revisa que <code>MAIL_HOST</code>, <code>MAIL_PORT</code>, <code>MAIL_USERNAME</code> y <code>MAIL_PASSWORD</code> en el <code>.env</code> coincidan exactamente con tu cuenta de correo en el VPS.</p>
                                 @endif
                             </div>
                         </div>
                     </div>
                 @endif
+            </div>
+
+        </div>
+
+        <!-- PESTAÑA: CORREOS ENTRANTES (IMAP LEADS) -->
+        <div class="{{ $activeTab === 'email_imap' ? 'block' : 'hidden' }} space-y-6">
+            
+            <!-- Banner Explicativo & Sincronización Manual -->
+            <div class="bg-gradient-to-r from-purple-900 to-indigo-900 text-white rounded-2xl p-6 shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-6 border border-purple-800">
+                <div class="space-y-2 max-w-2xl">
+                    <div class="flex items-center gap-2">
+                        <span class="px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider bg-purple-500/30 text-purple-200 border border-purple-400/30">
+                            🤖 Automatización de Leads & Solicitudes
+                        </span>
+                    </div>
+                    <h3 class="text-xl font-black">Captura Automática de Solicitudes de Información</h3>
+                    <p class="text-xs text-purple-200 leading-relaxed">
+                        Conecta la aplicación a los buzones de correo de tu VPS (Postfix/Dovecot/Roundcube). La app escanea los correos no leídos, extrae los datos del cliente (nombre, teléfono, fecha, mensaje, formato Bodas.net/formulario web) y <strong>crea automáticamente el evento en la app asignándole su marca correspondiente</strong> (Núñez & Son o JAVNX DJ).
+                    </p>
+                </div>
+                <div class="shrink-0 flex flex-col items-end gap-2 w-full md:w-auto">
+                    <button type="button" wire:click="fetchImapLeadsNow" wire:loading.attr="disabled" class="w-full md:w-auto bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-black px-5 py-3 rounded-xl shadow-lg transition cursor-pointer flex items-center justify-center gap-2 text-xs">
+                        <span wire:loading.remove wire:target="fetchImapLeadsNow">📥 Sincronizar Correos Ahora</span>
+                        <span wire:loading wire:target="fetchImapLeadsNow" class="flex items-center gap-1.5">
+                            <svg class="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+                            Escaneando buzones...
+                        </span>
+                    </button>
+                    <span class="text-[10px] text-purple-300 text-center md:text-right">El Cron del servidor también lo escanea cada 5 min.</span>
+                </div>
+            </div>
+
+            <!-- Reporte del último escaneo si existe -->
+            @if($imapFetchStatus)
+                <div class="bg-white border border-purple-200 rounded-2xl p-5 shadow-sm space-y-3 animate-in fade-in duration-200">
+                    <div class="flex items-center justify-between border-b border-gray-100 pb-3">
+                        <h4 class="font-extrabold text-sm text-gray-900 flex items-center gap-2">
+                            <span>📊</span> Resultado del Último Escaneo IMAP
+                        </h4>
+                        <span class="text-xs text-gray-500 font-medium">Ejecutado hace un momento</span>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+                        <div class="bg-purple-50 p-3 rounded-xl border border-purple-100">
+                            <span class="text-2xl font-black text-purple-700 block">{{ $imapFetchStatus['total_scanned'] }}</span>
+                            <span class="text-[11px] font-bold text-purple-900 uppercase">Correos Analizados</span>
+                        </div>
+                        <div class="bg-emerald-50 p-3 rounded-xl border border-emerald-100">
+                            <span class="text-2xl font-black text-emerald-700 block">{{ $imapFetchStatus['total_leads_created'] }}</span>
+                            <span class="text-[11px] font-bold text-emerald-900 uppercase">Nuevos Leads Creados</span>
+                        </div>
+                    </div>
+
+                    @if(!empty($imapFetchStatus['details']))
+                        <div class="space-y-2 pt-2">
+                            @foreach($imapFetchStatus['details'] as $bKey => $detail)
+                                <div class="p-3 bg-gray-50 rounded-xl border border-gray-200 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                    <div class="flex items-center gap-2">
+                                        <span class="font-bold text-gray-900">{{ $bKey === 'javnx' ? '🎧 JAVNX DJ' : ($bKey === 'mago_leugim' ? '🎩 Mago Leugim' : '👑 Núñez & Son') }}</span>
+                                        <span class="text-gray-500">({{ $detail['email'] }})</span>
+                                    </div>
+                                    <div class="flex items-center gap-3">
+                                        <span class="text-gray-600">Analizados: <strong>{{ $detail['scanned'] }}</strong></span>
+                                        <span class="text-emerald-700 font-bold">Leads creados: <strong>{{ $detail['created'] }}</strong></span>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
+                </div>
+            @endif
+
+            <!-- Configuración del Servidor IMAP Global -->
+            <div class="bg-white shadow-sm rounded-2xl border border-gray-200 p-6 space-y-4">
+                <h3 class="text-base font-extrabold text-gray-900 border-b border-gray-100 pb-3 flex items-center gap-2">
+                    <span>⚙️</span> Parámetros del Servidor IMAP (Dovecot / Postfix en VPS)
+                </h3>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Servidor Host IMAP *</label>
+                        <input type="text" wire:model="imap_host" placeholder="127.0.0.1 o localhost" class="w-full border-gray-300 rounded-xl shadow-xs text-xs font-mono">
+                        <span class="text-[10px] text-gray-400 mt-1 block">En el mismo VPS suele ser <code>127.0.0.1</code></span>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Puerto IMAP *</label>
+                        <input type="number" wire:model="imap_port" placeholder="993" class="w-full border-gray-300 rounded-xl shadow-xs text-xs font-mono">
+                        <span class="text-[10px] text-gray-400 mt-1 block">993 (SSL) o 143 (STARTTLS/TLS)</span>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Cifrado de Conexión *</label>
+                        <select wire:model="imap_encryption" class="w-full border-gray-300 rounded-xl shadow-xs text-xs bg-white">
+                            <option value="ssl">SSL (Recomendado - Puerto 993)</option>
+                            <option value="tls">TLS / STARTTLS (Puerto 143)</option>
+                            <option value="none">Sin cifrado (Local 127.0.0.1 Puerto 143)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-gray-100">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Estado Inicial del Evento Creado</label>
+                        <select wire:model="imap_default_status" class="w-full border-gray-300 rounded-xl shadow-xs text-xs bg-white">
+                            <option value="no_response">⏳ Sin Respuesta (Esperando contactar con cliente)</option>
+                            <option value="draft">📝 Borrador / Pendiente de Presupuesto</option>
+                        </select>
+                    </div>
+
+                    <div class="flex items-center gap-3 pt-4">
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" wire:model="imap_mark_as_read" class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                        </label>
+                        <span class="text-xs font-bold text-gray-700">Marcar correos como leídos en el buzón tras procesarlos</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BUZÓN 1: NÚÑEZ & SON -->
+            <div class="bg-white shadow-sm rounded-2xl border-2 border-amber-200 p-6 space-y-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-amber-100 pb-3">
+                    <div class="flex items-center gap-2.5">
+                        <span class="text-2xl p-2 bg-amber-50 rounded-xl border border-amber-200">👑</span>
+                        <div>
+                            <h3 class="text-base font-black text-gray-900">Buzón 1: Núñez & Son</h3>
+                            <p class="text-xs text-amber-700 font-semibold">Las solicitudes entrantes se crearán con la marca <strong>Núñez and Son</strong></p>
+                        </div>
+                    </div>
+                    <label class="inline-flex items-center gap-2 cursor-pointer bg-amber-50 px-3 py-1.5 rounded-xl border border-amber-200">
+                        <input type="checkbox" wire:model="imap_nunez_enabled" class="rounded text-amber-600 focus:ring-amber-500 h-4 w-4">
+                        <span class="text-xs font-bold text-amber-900">Escanear este buzón</span>
+                    </label>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Dirección de Email de Núñez & Son *</label>
+                        <input type="email" wire:model="imap_nunez_email" placeholder="info@nunezadson.com" class="w-full border-gray-300 rounded-xl shadow-xs text-xs">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Contraseña del Buzón IMAP *</label>
+                        <input type="password" wire:model="imap_nunez_password" placeholder="••••••••••••" class="w-full border-gray-300 rounded-xl shadow-xs text-xs">
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between pt-2">
+                    <button type="button" wire:click="testImapConnection('nunez_and_son')" wire:loading.attr="disabled" class="bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold px-4 py-2 rounded-xl text-xs transition cursor-pointer inline-flex items-center gap-1.5 shadow-2xs">
+                        <span wire:loading.remove wire:target="testImapConnection('nunez_and_son')">🔌 Probar Conexión Núñez & Son</span>
+                        <span wire:loading wire:target="testImapConnection('nunez_and_son')">Verificando...</span>
+                    </button>
+                </div>
+
+                @if(isset($imapTestStatus['nunez_and_son']))
+                    <div class="p-3.5 rounded-xl text-xs font-semibold {{ $imapTestStatus['nunez_and_son']['success'] ? 'bg-emerald-50 text-emerald-800 border border-emerald-300' : 'bg-rose-50 text-rose-800 border border-rose-300' }}">
+                        <span>{{ $imapTestStatus['nunez_and_son']['success'] ? '✅' : '❌' }}</span>
+                        <span>{{ $imapTestStatus['nunez_and_son']['message'] }}</span>
+                    </div>
+                @endif
+            </div>
+
+            <!-- BUZÓN 2: JAVNX DJ -->
+            <div class="bg-white shadow-sm rounded-2xl border-2 border-indigo-200 p-6 space-y-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-indigo-100 pb-3">
+                    <div class="flex items-center gap-2.5">
+                        <span class="text-2xl p-2 bg-indigo-50 rounded-xl border border-indigo-200">🎧</span>
+                        <div>
+                            <h3 class="text-base font-black text-gray-900">Buzón 2: JAVNX DJ</h3>
+                            <p class="text-xs text-indigo-700 font-semibold">Las solicitudes entrantes se crearán con la marca <strong>JAVNX DJ</strong></p>
+                        </div>
+                    </div>
+                    <label class="inline-flex items-center gap-2 cursor-pointer bg-indigo-50 px-3 py-1.5 rounded-xl border border-indigo-200">
+                        <input type="checkbox" wire:model="imap_javnx_enabled" class="rounded text-indigo-600 focus:ring-indigo-500 h-4 w-4">
+                        <span class="text-xs font-bold text-indigo-900">Escanear este buzón</span>
+                    </label>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Dirección de Email de JAVNX DJ *</label>
+                        <input type="email" wire:model="imap_javnx_email" placeholder="info@javnxdj.com" class="w-full border-gray-300 rounded-xl shadow-xs text-xs">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Contraseña del Buzón IMAP *</label>
+                        <input type="password" wire:model="imap_javnx_password" placeholder="••••••••••••" class="w-full border-gray-300 rounded-xl shadow-xs text-xs">
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between pt-2">
+                    <button type="button" wire:click="testImapConnection('javnx')" wire:loading.attr="disabled" class="bg-indigo-100 hover:bg-indigo-200 text-indigo-900 font-bold px-4 py-2 rounded-xl text-xs transition cursor-pointer inline-flex items-center gap-1.5 shadow-2xs">
+                        <span wire:loading.remove wire:target="testImapConnection('javnx')">🔌 Probar Conexión JAVNX DJ</span>
+                        <span wire:loading wire:target="testImapConnection('javnx')">Verificando...</span>
+                    </button>
+                </div>
+
+                @if(isset($imapTestStatus['javnx']))
+                    <div class="p-3.5 rounded-xl text-xs font-semibold {{ $imapTestStatus['javnx']['success'] ? 'bg-emerald-50 text-emerald-800 border border-emerald-300' : 'bg-rose-50 text-rose-800 border border-rose-300' }}">
+                        <span>{{ $imapTestStatus['javnx']['success'] ? '✅' : '❌' }}</span>
+                        <span>{{ $imapTestStatus['javnx']['message'] }}</span>
+                    </div>
+                @endif
+            </div>
+
+            <!-- BUZÓN 3: MAGO LEUGIM (OPCIONAL) -->
+            <div class="bg-white shadow-sm rounded-2xl border border-gray-200 p-6 space-y-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 pb-3">
+                    <div class="flex items-center gap-2.5">
+                        <span class="text-2xl p-2 bg-slate-50 rounded-xl border border-gray-200">🎩</span>
+                        <div>
+                            <h3 class="text-base font-black text-gray-900">Buzón 3: Mago Leugim (Opcional)</h3>
+                            <p class="text-xs text-gray-500 font-semibold">Las solicitudes entrantes se crearán con la marca <strong>Mago Leugim</strong></p>
+                        </div>
+                    </div>
+                    <label class="inline-flex items-center gap-2 cursor-pointer bg-gray-50 px-3 py-1.5 rounded-xl border border-gray-200">
+                        <input type="checkbox" wire:model="imap_leugim_enabled" class="rounded text-purple-600 focus:ring-purple-500 h-4 w-4">
+                        <span class="text-xs font-bold text-gray-700">Escanear este buzón</span>
+                    </label>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Dirección de Email de Mago Leugim</label>
+                        <input type="email" wire:model="imap_leugim_email" placeholder="info@magoleugim.com" class="w-full border-gray-300 rounded-xl shadow-xs text-xs">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Contraseña del Buzón IMAP</label>
+                        <input type="password" wire:model="imap_leugim_password" placeholder="••••••••••••" class="w-full border-gray-300 rounded-xl shadow-xs text-xs">
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between pt-2">
+                    <button type="button" wire:click="testImapConnection('mago_leugim')" wire:loading.attr="disabled" class="bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold px-4 py-2 rounded-xl text-xs transition cursor-pointer inline-flex items-center gap-1.5 shadow-2xs">
+                        <span wire:loading.remove wire:target="testImapConnection('mago_leugim')">🔌 Probar Conexión Mago Leugim</span>
+                        <span wire:loading wire:target="testImapConnection('mago_leugim')">Verificando...</span>
+                    </button>
+                </div>
+
+                @if(isset($imapTestStatus['mago_leugim']))
+                    <div class="p-3.5 rounded-xl text-xs font-semibold {{ $imapTestStatus['mago_leugim']['success'] ? 'bg-emerald-50 text-emerald-800 border border-emerald-300' : 'bg-rose-50 text-rose-800 border border-rose-300' }}">
+                        <span>{{ $imapTestStatus['mago_leugim']['success'] ? '✅' : '❌' }}</span>
+                        <span>{{ $imapTestStatus['mago_leugim']['message'] }}</span>
+                    </div>
+                @endif
+            </div>
+
+            <!-- INSTRUCCIONES VPS CRON -->
+            <div class="bg-slate-900 text-white rounded-2xl p-6 space-y-3 shadow-md border border-slate-800 text-xs">
+                <div class="flex items-center gap-2">
+                    <span class="text-xl">⏱️</span>
+                    <h4 class="text-sm font-bold text-amber-400">Automatización Periódica en tu VPS (Cron Job)</h4>
+                </div>
+                <p class="text-slate-300">
+                    Para que la aplicación revise los correos de forma 100% automática cada 5 minutos sin que tengas que pulsar el botón manual, añade esta línea en el <code>crontab -e</code> de tu servidor:
+                </p>
+                <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800 font-mono text-[11px] text-emerald-400 select-all overflow-x-auto">
+                    * * * * * cd /ruta/de/tu/app && php artisan schedule:run >> /dev/null 2>&1
+                </div>
+                <p class="text-slate-400 text-[11px]">
+                    O si prefieres ejecutar directamente el comando del escáner de correos cada 5 minutos:
+                </p>
+                <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 font-mono text-[11px] text-amber-300 select-all overflow-x-auto">
+                    */5 * * * * cd /ruta/de/tu/app && php artisan emails:fetch-leads >> /dev/null 2>&1
+                </div>
             </div>
 
         </div>

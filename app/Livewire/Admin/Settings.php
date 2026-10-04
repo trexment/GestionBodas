@@ -160,6 +160,28 @@ class Settings extends Component
     public $test_email_recipient = '';
     public $smtpTestStatus = null;
 
+    // Integración de Correo Entrante (IMAP Leads)
+    public $imap_host = '127.0.0.1';
+    public $imap_port = 993;
+    public $imap_encryption = 'ssl'; // ssl, tls, none
+    public $imap_mark_as_read = true;
+    public $imap_default_status = 'no_response'; // draft, no_response
+
+    public $imap_nunez_email = 'info@nunezadson.com';
+    public $imap_nunez_password = '';
+    public $imap_nunez_enabled = true;
+
+    public $imap_javnx_email = 'info@javnxdj.com';
+    public $imap_javnx_password = '';
+    public $imap_javnx_enabled = true;
+
+    public $imap_leugim_email = 'info@magoleugim.com';
+    public $imap_leugim_password = '';
+    public $imap_leugim_enabled = false;
+
+    public $imapTestStatus = [];
+    public $imapFetchStatus = null;
+
     public function mount()
     {
         if (auth()->user()->role !== 'admin') {
@@ -298,6 +320,25 @@ class Settings extends Component
         $this->google_drive_library_folder = Setting::get('google_drive_library_folder', '');
         $this->spotifyUser = SpotifyService::getUserDetails();
         $this->test_email_recipient = $this->company_email ?: 'info@javnxdj.com';
+
+        // Cargar ajustes IMAP (Correos entrantes / Leads)
+        $this->imap_host = Setting::get('imap_host', '127.0.0.1');
+        $this->imap_port = (int)Setting::get('imap_port', 993);
+        $this->imap_encryption = Setting::get('imap_encryption', 'ssl');
+        $this->imap_mark_as_read = Setting::get('imap_mark_as_read', '1') === '1';
+        $this->imap_default_status = Setting::get('imap_default_status', 'no_response');
+
+        $this->imap_nunez_email = Setting::get('imap_nunez_email', Setting::get('brand_nunez_email', 'info@nunezadson.com'));
+        $this->imap_nunez_password = Setting::get('imap_nunez_password', '');
+        $this->imap_nunez_enabled = Setting::get('imap_nunez_enabled', '1') === '1';
+
+        $this->imap_javnx_email = Setting::get('imap_javnx_email', Setting::get('brand_javnx_email', 'info@javnxdj.com'));
+        $this->imap_javnx_password = Setting::get('imap_javnx_password', '');
+        $this->imap_javnx_enabled = Setting::get('imap_javnx_enabled', '1') === '1';
+
+        $this->imap_leugim_email = Setting::get('imap_leugim_email', Setting::get('brand_leugim_email', 'info@magoleugim.com'));
+        $this->imap_leugim_password = Setting::get('imap_leugim_password', '');
+        $this->imap_leugim_enabled = Setting::get('imap_leugim_enabled', '0') === '1';
     }
 
     public function loadPreset($presetKey)
@@ -607,6 +648,9 @@ class Settings extends Component
         Setting::set('google_drive_api_key', $this->google_drive_api_key);
         Setting::set('google_drive_library_folder', $this->google_drive_library_folder);
 
+        // Guardar ajustes IMAP (Correos entrantes / Leads)
+        $this->saveImapSettings();
+
         if ($this->logo) {
             if ($this->current_logo) {
                 Storage::disk('public')->delete($this->current_logo);
@@ -621,6 +665,51 @@ class Settings extends Component
         $this->spotifyUser = SpotifyService::getUserDetails();
         session()->flash('message', '¡Configuración y Dossier guardados correctamente!');
         $this->dispatch('settings-saved');
+    }
+
+    public function testImapConnection(string $brandKey)
+    {
+        $this->saveImapSettings();
+
+        $service = app(\App\Services\ImapLeadFetcherService::class);
+        $result = $service->testConnection($brandKey);
+        $this->imapTestStatus[$brandKey] = $result;
+    }
+
+    public function fetchImapLeadsNow()
+    {
+        $this->saveImapSettings();
+
+        $service = app(\App\Services\ImapLeadFetcherService::class);
+        $result = $service->fetchAllActiveMailboxes();
+        $this->imapFetchStatus = $result;
+
+        if ($result['total_leads_created'] > 0) {
+            session()->flash('message', "🎉 ¡Sincronización completada! Se han analizado {$result['total_scanned']} correos y se han creado {$result['total_leads_created']} nuevos eventos/leads.");
+        } else {
+            session()->flash('message', "ℹ️ Escaneo completado: Se han analizado {$result['total_scanned']} correos no leídos. No se encontraron nuevas solicitudes de presupuesto.");
+        }
+    }
+
+    protected function saveImapSettings()
+    {
+        Setting::set('imap_host', $this->imap_host);
+        Setting::set('imap_port', $this->imap_port);
+        Setting::set('imap_encryption', $this->imap_encryption);
+        Setting::set('imap_mark_as_read', $this->imap_mark_as_read ? '1' : '0');
+        Setting::set('imap_default_status', $this->imap_default_status);
+
+        Setting::set('imap_nunez_email', $this->imap_nunez_email);
+        Setting::set('imap_nunez_password', $this->imap_nunez_password);
+        Setting::set('imap_nunez_enabled', $this->imap_nunez_enabled ? '1' : '0');
+
+        Setting::set('imap_javnx_email', $this->imap_javnx_email);
+        Setting::set('imap_javnx_password', $this->imap_javnx_password);
+        Setting::set('imap_javnx_enabled', $this->imap_javnx_enabled ? '1' : '0');
+
+        Setting::set('imap_leugim_email', $this->imap_leugim_email);
+        Setting::set('imap_leugim_password', $this->imap_leugim_password);
+        Setting::set('imap_leugim_enabled', $this->imap_leugim_enabled ? '1' : '0');
     }
 
     public function disconnectSpotify()
