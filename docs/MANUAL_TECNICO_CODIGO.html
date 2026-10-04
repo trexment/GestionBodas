@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Manual Técnico y Arquitectura del Código - Eventos Musicales</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+  @page {
+    size: A4;
+    margin: 18mm 15mm 18mm 15mm;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color: #1e293b;
+    line-height: 1.55;
+    font-size: 12px;
+    margin: 0;
+    padding: 0;
+    background: #fff;
+  }
+  .cover {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    page-break-after: always;
+    background: linear-gradient(135deg, #090d16 0%, #172554 100%);
+    color: #fff;
+    padding: 40px;
+    border-radius: 8px;
+  }
+  .cover h1 {
+    font-size: 30px;
+    font-weight: 800;
+    margin-bottom: 12px;
+    letter-spacing: -0.5px;
+    color: #f8fafc;
+  }
+  .cover .subtitle {
+    font-size: 16px;
+    color: #93c5fd;
+    margin-bottom: 24px;
+    font-weight: 400;
+  }
+  .cover .badge-brand {
+    display: inline-block;
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    padding: 6px 16px;
+    border-radius: 50px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #e2e8f0;
+    margin-bottom: 24px;
+  }
+  .cover .meta {
+    font-size: 11px;
+    color: #94a3b8;
+    margin-top: 40px;
+  }
+  h2 {
+    color: #0f172a;
+    font-size: 16px;
+    font-weight: 700;
+    border-bottom: 2px solid #e2e8f0;
+    padding-bottom: 5px;
+    margin-top: 24px;
+    margin-bottom: 10px;
+    page-break-after: avoid;
+  }
+  h3 {
+    color: #1e3a8a;
+    font-size: 13px;
+    font-weight: 600;
+    margin-top: 16px;
+    margin-bottom: 6px;
+    page-break-after: avoid;
+  }
+  p { margin: 0 0 8px 0; }
+  ul, ol { margin: 0 0 10px 0; padding-left: 20px; }
+  li { margin-bottom: 3px; }
+  .card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 10px 14px;
+    margin-bottom: 12px;
+    page-break-inside: avoid;
+  }
+  .card-header {
+    font-weight: 700;
+    color: #1e40af;
+    margin-bottom: 4px;
+    font-size: 12.5px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 10px 0;
+    font-size: 11.5px;
+    page-break-inside: avoid;
+  }
+  th, td {
+    border: 1px solid #cbd5e1;
+    padding: 6px 8px;
+    text-align: left;
+  }
+  th {
+    background: #f1f5f9;
+    color: #0f172a;
+    font-weight: 600;
+  }
+  pre, code {
+    font-family: 'JetBrains Mono', Consolas, Monaco, monospace;
+  }
+  code {
+    background: #f1f5f9;
+    color: #0f172a;
+    padding: 2px 4px;
+    border-radius: 4px;
+    font-size: 11px;
+  }
+  pre {
+    background: #0f172a;
+    color: #f8fafc;
+    padding: 10px 14px;
+    border-radius: 6px;
+    font-size: 10.5px;
+    line-height: 1.45;
+    overflow-x: auto;
+    page-break-inside: avoid;
+  }
+  .highlight-box {
+    border-left: 4px solid #2563eb;
+    background: #eff6ff;
+    padding: 8px 12px;
+    border-radius: 0 6px 6px 0;
+    margin: 10px 0;
+    page-break-inside: avoid;
+  }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <div class="badge-brand">ARQUITECTURA &bull; LARAVEL 11 &bull; LIVEWIRE 3</div>
+  <h1>MANUAL TÉCNICO Y ARQUITECTURA DEL CÓDIGO</h1>
+  <div class="subtitle">Estructura Interna, Modelos, Servicios, APIs y Despliegue</div>
+  <p style="max-width: 500px; color: #cbd5e1; font-size: 12.5px;">
+    Documentación de referencia técnica para desarrolladores. Cubre el esquema de base de datos, flujo reactivo, motor de parseo de sesiones DJ, servicios de background y seguridad de firma.
+  </p>
+  <div class="meta">
+    Stack: PHP 8.2+ &bull; Livewire 3 &bull; Tailwind CSS &bull; DomPDF &bull; Fecha: Octubre 2026
+  </div>
+</div>
+
+<h2>1. Arquitectura General y Stack</h2>
+<p>
+  La plataforma implementa una arquitectura basada en componentes reactivos con <strong>Laravel 11</strong> y <strong>Livewire 3</strong>, optimizando la experiencia de usuario tipo Single-Page Application (SPA) con renderizado rápido en servidor y sincronización bidireccional de estado.
+</p>
+<ul>
+  <li><strong>Backend:</strong> Laravel 11.x, PHP 8.2+</li>
+  <li><strong>Frontend:</strong> Livewire 3, Alpine.js, Tailwind CSS</li>
+  <li><strong>Generación de Documentos:</strong> <code>barryvdh/laravel-dompdf</code> (DomPDF)</li>
+  <li><strong>APIs Externas:</strong> Spotify Web API (Client Credentials), Apple Music API, Protocolo IMAP SSL/TLS, RFC 5545 iCal</li>
+</ul>
+
+<h2>2. Estructura de Directorios Clave</h2>
+<pre>
+app/
+├── Console/Commands/FetchEmailLeadsCommand.php   # Comando cron emails:fetch-leads
+├── Http/Controllers/
+│   ├── PdfController.php                        # Generador de PDFs (Facturas, Contratos, etc.)
+│   ├── SpotifyAuthController.php               # Proxy de streaming y tokens Spotify/Apple
+│   └── CalendarFeedController.php               # Generador iCal (.ics)
+├── Livewire/
+│   ├── Admin/ (EventShow, Dashboard, EventManager, InventoryManager, MusicManager, etc.)
+│   └── Guest/ (ContractSign, LiveRequests, EventForm, QuoteCalculator, DjBoothMode)
+├── Models/ (Event, EventDjHistory, EventMusicRequest, Contract, Quote, Invoice, etc.)
+└── Services/
+    ├── DjHistoryParserService.php               # Parser Engine DJ / Rekordbox / M3U y matching
+    ├── ImapLeadFetcherService.php               # Ingesta y parseo regex de leads de correo
+    ├── SpotifyService.php                       # Búsqueda, caché de token y metadatos
+    ├── CloudMusicStorageService.php             # Streaming de audios y Google Drive
+    └── PostalCodeService.php                    # Cálculo kilométrico por código postal
+</pre>
+
+<h2>3. Modelos Eloquent Principales</h2>
+
+<div class="card">
+  <div class="card-header">Event (app/Models/Event.php)</div>
+  Entidad nuclear del sistema. Administra el token UUID de acceso público, la marca comercial (<code>brand</code>), fechas y horarios clave (<code>event_date</code>, <code>setup_date</code>, <code>dance_start_time</code>), fianza (<code>deposit_amount</code>, <code>deposit_paid</code>) y relaciones con presupuestos, contratos, facturas, reuniones, equipamiento e historial DJ.
+</div>
+
+<div class="card">
+  <div class="card-header">EventDjHistory (app/Models/EventDjHistory.php)</div>
+  Almacena el tracklist real de canciones pinchadas en la sesión. Campos: <code>track_number</code>, <code>artist</code>, <code>title</code>, <code>bpm</code>, <code>key</code>, <code>played_at</code>, <code>duration_seconds</code>, <code>source_format</code> y la relación <code>matched_request_id</code> apuntando a la petición del invitado/novio que fue complacida.
+</div>
+
+<div class="card">
+  <div class="card-header">Contract (app/Models/Contract.php)</div>
+  Gestiona la validez legal del contrato: almacena el vector de firma en Base64 (<code>signature_data</code>), fecha de firma (<code>signed_at</code>), IP del firmante (<code>signer_ip</code>), User-Agent y certificado de auditoría digital.
+</div>
+
+<h2>4. Capa de Servicios de Negocio (app/Services)</h2>
+
+<h3>4.1. DjHistoryParserService.php</h3>
+<p>
+  Procesa archivos exportados de cabinas y software de DJ:
+</p>
+<ul>
+  <li><strong>Engine DJ CSV:</strong> Parseo de columnas dinámicas (<code>#</code>, <code>Song Title</code>, <code>Artist</code>, <code>BPM</code>, <code>Key</code>, <code>Time Played</code>).</li>
+  <li><strong>Rekordbox CSV / TXT:</strong> Detección de cabeceras de Pioneer.</li>
+  <li><strong>Playlists M3U / M3U8:</strong> Extracción de directivas <code>#EXTINF</code> y rutas de archivo.</li>
+  <li><strong>Algoritmo de Cruce (Fuzzy Matching):</strong> Normaliza caracteres (sin tildes ni símbolos), analiza contención mutua y calcula similitud de Levenshtein (<code>similar_text > 80%</code>). Vincula automáticamente la petición y actualiza su estado a <code>played</code> ("Sonada en directo").</li>
+</ul>
+
+<h3>4.2. ImapLeadFetcherService.php</h3>
+<p>
+  Conexión por socket IMAP SSL a los buzones corporativos. Extrae mediante expresiones regulares los datos de contacto, fecha del evento, lugar y presupuesto de los correos automáticos de <strong>bodas.net</strong> y formularios web, evitando duplicados por Message-ID.
+</p>
+
+<h3>4.3. SpotifyService.php</h3>
+<p>
+  Autenticación automática OAuth 2.0 (Client Credentials) con caché de token en memoria (55 min). Métodos para búsqueda de canciones, enriquecimiento de carátulas en alta resolución, duración, tempo (BPM) y escala musical.
+</p>
+
+<h2>5. Componente Central: EventShow.php</h2>
+<p>
+  Ubicado en <code>app/Livewire/Admin/EventShow.php</code>, gestiona el estado reactivo del evento mediante 10 pestañas:
+</p>
+<table>
+  <tr>
+    <th>Pestaña</th>
+    <th>Responsabilidad Técnica</th>
+  </tr>
+  <tr>
+    <td><code>overview</code></td>
+    <td>Línea de tiempo, horarios de montaje/barra libre y contactos de la finca.</td>
+  </tr>
+  <tr>
+    <td><code>budget</code></td>
+    <td>Líneas de presupuesto, cálculo reactivo de IVA (21%) y control de fianza.</td>
+  </tr>
+  <tr>
+    <td><code>contracts</code></td>
+    <td>Generación de contrato y verificación de firma digital.</td>
+  </tr>
+  <tr>
+    <td><code>invoices</code></td>
+    <td>Emisión de facturas oficiales y vinculación con presupuestos.</td>
+  </tr>
+  <tr>
+    <td><code>meetings</code></td>
+    <td>Actas de reuniones y llamadas con clientes.</td>
+  </tr>
+  <tr>
+    <td><code>music</code></td>
+    <td>Escaleta de momentos, importación de historial DJ y preescuchas.</td>
+  </tr>
+  <tr>
+    <td><code>inventory</code></td>
+    <td>Asignación de equipos del almacén y patch de canales DMX.</td>
+  </tr>
+  <tr>
+    <td><code>dossier</code></td>
+    <td>Especificaciones y requerimientos técnicos del evento.</td>
+  </tr>
+</table>
+
+<h2>6. Seguridad y Tokens Públicos</h2>
+<div class="highlight-box">
+  Los accesos para novios (<code>/guest/form/{token}</code>), firma de contratos (<code>/contrato/{token}</code>), peticiones de invitados (<code>/peticiones/{token}</code>) y modo cabina (<code>/live/{token}</code>) utilizan tokens <strong>UUID v4 aleatorios</strong>. Esto impide la enumeración o el acceso no autorizado a datos de otros eventos sin necesidad de autenticación por contraseña.
+</div>
+
+<h2>7. Mantenimiento y Despliegue en Servidor</h2>
+<pre>
+# 1. Actualizar repositorio
+git pull origin main
+
+# 2. Ejecutar migraciones de base de datos
+php artisan migrate --force
+
+# 3. Limpiar y optimizar cachés de producción
+php artisan optimize:clear
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+
+# 4. Enlace de almacenamiento público
+php artisan storage:link
+</pre>
+
+</body>
+</html>

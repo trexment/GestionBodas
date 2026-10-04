@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Manual de Uso - Sistema de Gestión de Eventos Musicales</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+  @page {
+    size: A4;
+    margin: 18mm 15mm 18mm 15mm;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color: #1e293b;
+    line-height: 1.6;
+    font-size: 13px;
+    margin: 0;
+    padding: 0;
+    background: #fff;
+  }
+  .cover {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    page-break-after: always;
+    background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+    color: #fff;
+    padding: 40px;
+    border-radius: 8px;
+  }
+  .cover h1 {
+    font-size: 32px;
+    font-weight: 800;
+    margin-bottom: 12px;
+    letter-spacing: -0.5px;
+    color: #f8fafc;
+  }
+  .cover .subtitle {
+    font-size: 18px;
+    color: #a5b4fc;
+    margin-bottom: 24px;
+    font-weight: 400;
+  }
+  .cover .badge-brand {
+    display: inline-block;
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    padding: 8px 18px;
+    border-radius: 50px;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    color: #e2e8f0;
+    margin-bottom: 30px;
+  }
+  .cover .meta {
+    font-size: 12px;
+    color: #94a3b8;
+    margin-top: 40px;
+  }
+  h2 {
+    color: #0f172a;
+    font-size: 18px;
+    font-weight: 700;
+    border-bottom: 2px solid #e2e8f0;
+    padding-bottom: 6px;
+    margin-top: 28px;
+    margin-bottom: 12px;
+    page-break-after: avoid;
+  }
+  h3 {
+    color: #334155;
+    font-size: 14px;
+    font-weight: 600;
+    margin-top: 18px;
+    margin-bottom: 8px;
+    page-break-after: avoid;
+  }
+  p { margin: 0 0 10px 0; }
+  ul, ol { margin: 0 0 12px 0; padding-left: 20px; }
+  li { margin-bottom: 4px; }
+  .card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 12px 16px;
+    margin-bottom: 14px;
+    page-break-inside: avoid;
+  }
+  .card-header {
+    font-weight: 700;
+    color: #4338ca;
+    margin-bottom: 6px;
+    font-size: 13px;
+  }
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .badge-blue { background: #e0e7ff; color: #3730a3; }
+  .badge-green { background: #dcfce7; color: #166534; }
+  .badge-amber { background: #fef3c7; color: #92400e; }
+  .badge-red { background: #fee2e2; color: #991b1b; }
+  .badge-purple { background: #f3e8ff; color: #6b21a8; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0;
+    font-size: 12px;
+    page-break-inside: avoid;
+  }
+  th, td {
+    border: 1px solid #cbd5e1;
+    padding: 8px 10px;
+    text-align: left;
+  }
+  th {
+    background: #f1f5f9;
+    color: #0f172a;
+    font-weight: 600;
+  }
+  .highlight-box {
+    border-left: 4px solid #4f46e5;
+    background: #eef2ff;
+    padding: 10px 14px;
+    border-radius: 0 6px 6px 0;
+    margin: 12px 0;
+    page-break-inside: avoid;
+  }
+  code {
+    background: #f1f5f9;
+    color: #0f172a;
+    padding: 2px 5px;
+    border-radius: 4px;
+    font-family: Consolas, Monaco, monospace;
+    font-size: 11.5px;
+  }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <div class="badge-brand">JAVNXDJ &bull; NÚÑEZ &amp; SON</div>
+  <h1>MANUAL DE USO DE LA APLICACIÓN</h1>
+  <div class="subtitle">Guía Integral de Operaciones, Gestión de Eventos y Sesiones DJ</div>
+  <p style="max-width: 500px; color: #cbd5e1; font-size: 13px;">
+    Documentación completa para la administración de eventos, presupuestos, contratos digitales, escaletas musicales, material técnico y control en cabina.
+  </p>
+  <div class="meta">
+    Versión del Sistema: 2026.1 &bull; Documento Oficial &bull; Fecha: Octubre 2026
+  </div>
+</div>
+
+<h2>1. Filosofía Multi-Marca</h2>
+<p>
+  La aplicación está concebida para operar con dos identidades comerciales de forma simultánea e independiente:
+</p>
+<ul>
+  <li><strong>JAVNXDJ:</strong> Enfocada a sesiones de DJ de autor, eventos corporativos, festivales y fiestas privadas de alto nivel.</li>
+  <li><strong>NÚÑEZ &amp; SON (Eventos Musicales):</strong> Especializada en bodas integrales (ceremonia, cóctel, banquete y barra libre) con montaje de iluminación y sonido completo.</li>
+</ul>
+<div class="highlight-box">
+  Cada evento se asocia a una marca. Los logotipos, presupuestos en PDF, contratos, correos automáticos y facturas adoptan la identidad visual, CIF y cuentas bancarias de la marca elegida sin intervención manual.
+</div>
+
+<h2>2. Acceso y Roles de Usuario</h2>
+<p>El acceso al sistema se realiza a través de <code>/login</code> mediante credenciales seguras.</p>
+<table>
+  <tr>
+    <th>Rol</th>
+    <th>Alcance y Permisos</th>
+  </tr>
+  <tr>
+    <td><strong>Administrador</strong></td>
+    <td>Acceso total a finanzas, presupuestos, contratos, facturas, configuración, usuarios e inventario.</td>
+  </tr>
+  <tr>
+    <td><strong>Staff / DJ Auxiliar</strong></td>
+    <td>Acceso al calendario, modo cabina en vivo, escaletas de eventos asignados y packing list.</td>
+  </tr>
+  <tr>
+    <td><strong>Clientes / Invitados (Público)</strong></td>
+    <td>Acceso limitado a sus portales específicos mediante <strong>tokens únicos seguros</strong> (sin contraseñas).</td>
+  </tr>
+</table>
+
+<h2>3. Gestión del Ciclo de Vida del Evento</h2>
+<p>Cada evento transiciona por los siguientes estados:</p>
+<ul>
+  <li><span class="badge badge-blue">Nuevo</span> Lead o solicitud recién registrada.</li>
+  <li><span class="badge badge-purple">Presupuestado</span> Propuesta económica elaborada y enviada al cliente.</li>
+  <li><span class="badge badge-amber">No responde</span> Se ha realizado seguimiento pero el cliente no ha contestado.</li>
+  <li><span class="badge badge-green">Aprobado</span> El cliente ha aceptado el presupuesto o abonado la señal de reserva.</li>
+  <li><span class="badge badge-blue">Planificando</span> En proceso de selección de escaleta musical y requisitos técnicos.</li>
+  <li><span class="badge badge-green">Listo</span> Material, personal y música 100% coordinados para la fecha.</li>
+  <li><span class="badge badge-purple">En curso</span> El evento se está celebrando en tiempo real.</li>
+  <li><span class="badge badge-green">Finalizado</span> Evento concluido con éxito.</li>
+  <li><span class="badge badge-red">Rechazado</span> El cliente declinó formalmente la propuesta.</li>
+  <li><span class="badge badge-red">Cancelado</span> Evento suspendido tras haber estado confirmado.</li>
+</ul>
+
+<h2>4. Ficha del Evento (Pestañas Principales)</h2>
+
+<div class="card">
+  <div class="card-header">1. Resumen y Datos Generales</div>
+  Permite gestionar horarios de montaje, ceremonia, cóctel, banquete y fin de barra libre. Incluye libreta de contactos directos (maître, fotógrafo, wedding planner) y enlace al formulario de los novios.
+</div>
+
+<div class="card">
+  <div class="card-header">2. Presupuestos y Fianza</div>
+  Añade líneas de servicio, cálculo automático de IVA (21%) o exento. Control del estado de la señal de reserva (importe, porcentaje, fecha de cobro y casilla de pago recibido). Generación de PDF formal.
+</div>
+
+<div class="card">
+  <div class="card-header">3. Contratos y Firma Digital</div>
+  Genera el contrato oficial con todas las cláusulas legales. Los novios acceden mediante el enlace <code>/contrato/{token}</code> y firman en pantalla táctil. El sistema registra IP, navegador y fecha con valor de auditoría legal.
+</div>
+
+<div class="card">
+  <div class="card-header">4. Reuniones y Actas de Seguimiento</div>
+  Historial cronológico de videollamadas, llamadas telefónicas o reuniones presenciales con notas y compromisos acordados.
+</div>
+
+<div class="card">
+  <div class="card-header">5. Escaleta Musical y Momentos Especiales</div>
+  Configuración de canciones clave (Entrada, Tarta, Ramos, Baile Nupcial), pistas imprescindibles (<em>Must Play</em>) y prohibidas (<em>Do Not Play</em>). Descarga de la escaleta para cabina en PDF.
+</div>
+
+<div class="card">
+  <div class="card-header">6. Historial de Sesión DJ (Engine DJ / Rekordbox / M3U)</div>
+  Permite importar el CSV o playlist real exportada de la controladora. Cruza automáticamente las canciones reproducidas con las peticiones de los invitados y genera el <strong>Tracklist PDF Oficial</strong>.
+</div>
+
+<div class="card">
+  <div class="card-header">7. Material Técnico y DMX</div>
+  Selección de altavoces, iluminación y cableado. Asignación de universo DMX y direccionamiento de canales. Generación de <strong>Packing List PDF</strong> de carga para la furgoneta.
+</div>
+
+<h2>5. Modo Cabina DJ en Directo (DJ Booth Live)</h2>
+<p>
+  Accediendo a <code>/admin/events/{id}/live</code> (o con el enlace público con token para tablets):
+</p>
+<ul>
+  <li>Interfaz oscura de alto contraste optimizada para poca luz.</li>
+  <li>Visualización en tiempo real de peticiones de los invitados enviadas desde la pista.</li>
+  <li>Marcado rápido: <strong>Pinchada</strong>, <strong>Pendiente</strong> o <strong>Descartada</strong>.</li>
+  <li>Consulta instantánea de la escaleta de momentos de la boda.</li>
+</ul>
+
+<h2>6. Portal de Peticiones para Invitados (Código QR)</h2>
+<p>
+  Mediante el enlace <code>/peticiones/{token}</code> o su código QR proyectado/impreso:
+</p>
+<ul>
+  <li>Los invitados buscan cualquier tema mediante el motor de Spotify / Apple Music.</li>
+  <li>Añaden su nombre o dedicatoria personalizada.</li>
+  <li>Aparece automáticamente en la pantalla de cabina del DJ sin interrumpir la sesión.</li>
+</ul>
+
+<h2>7. Sincronización de Calendario (iCal)</h2>
+<p>
+  En <code>/admin/calendar</code> se encuentra el enlace de suscripción iCal (<code>/calendar/feed/{token}.ics</code>). Añadiendo este enlace a Google Calendar, Apple Calendar (iPhone/Mac) o Microsoft Outlook, todos los eventos y montajes se sincronizan automáticamente en tu móvil.
+</p>
+
+<h2>8. Automatización de Leads por Email</h2>
+<p>
+  El sistema se conecta a los buzones de correo de las marcas e importa automáticamente las solicitudes de contacto recibidas de <strong>bodas.net</strong> o formularios web, extrayendo nombres, teléfonos, fecha de boda y lugar sin teclear nada a mano.
+</p>
+
+</body>
+</html>
