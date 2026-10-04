@@ -31,7 +31,41 @@
         </div>
     </div>
 
-    <!-- FLASH MESSAGES -->
+    <!-- FLOATING TOAST NOTIFICATION -->
+    @if (session()->has('message'))
+        <div x-data="{ show: true }" 
+             x-init="setTimeout(() => show = false, 5000)" 
+             x-show="show" 
+             x-transition:enter="transition ease-out duration-300 transform"
+             x-transition:enter-start="opacity-0 translate-y-4 scale-95"
+             x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+             x-transition:leave="transition ease-in duration-200 transform"
+             x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+             x-transition:leave-end="opacity-0 translate-y-4 scale-95"
+             class="fixed bottom-6 right-6 z-50 bg-emerald-600 text-white px-5 py-3.5 rounded-2xl shadow-2xl flex items-center gap-3 border border-emerald-400/40">
+            <span class="text-2xl">✨</span>
+            <div>
+                <div class="text-[10px] font-black uppercase tracking-wider text-emerald-100">Guardado con Éxito</div>
+                <div class="text-sm font-bold">{{ session('message') }}</div>
+            </div>
+            <button type="button" @click="show = false" class="ml-2 text-emerald-200 hover:text-white text-xl font-black cursor-pointer">&times;</button>
+        </div>
+    @endif
+
+    @if (session()->has('error'))
+        <div x-data="{ show: true }" 
+             x-show="show" 
+             class="fixed bottom-6 right-6 z-50 bg-rose-600 text-white px-5 py-3.5 rounded-2xl shadow-2xl flex items-center gap-3 border border-rose-400/40">
+            <span class="text-2xl">⚠️</span>
+            <div>
+                <div class="text-[10px] font-black uppercase tracking-wider text-rose-100">Aviso del Sistema</div>
+                <div class="text-sm font-bold">{{ session('error') }}</div>
+            </div>
+            <button type="button" @click="show = false" class="ml-2 text-rose-200 hover:text-white text-xl font-black cursor-pointer">&times;</button>
+        </div>
+    @endif
+
+    <!-- FLASH MESSAGES INLINE -->
     @if (session()->has('message'))
         <div class="bg-emerald-50 border-l-4 border-emerald-500 p-4 rounded-xl text-emerald-800 text-sm font-semibold shadow-xs flex items-center justify-between">
             <div class="flex items-center gap-2">
@@ -774,171 +808,92 @@
                 </div>
             </div>
 
-            <!-- SECCIÓN 3: MOSAICO DE EQUIPAMIENTO Y SUBIDA DE FOTOS REALES -->
+            <!-- SECCIÓN 3: GALERÍA DE MONTAJES Y FOTOS REALES (1 A 4 FOTOS) -->
             <div class="bg-white shadow-sm rounded-xl border border-gray-200 p-6 space-y-6">
-                <div class="flex items-center justify-between border-b border-gray-100 pb-3">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 pb-3">
                     <div>
                         <h4 class="text-sm font-black text-gray-900 flex items-center gap-2">
-                            <span>📸</span> 3. Bloques de Equipamiento y Fotos Reales
+                            <span>📸</span> 3. Fotos de Montajes y Equipamiento Real
                         </h4>
-                        <p class="text-xs text-gray-500 mt-0.5">Puedes subir fotos de tus montajes reales para cada bloque. Si no subes foto, se mostrará el icono representativo.</p>
+                        <p class="text-xs text-gray-500 mt-0.5">Sube libremente de 1 a 4 fotos de tus montajes (reales, cabinas de madera o discoteca, iluminación, fiesta o renders). El dossier PDF organizará las fotos automáticamente en un mosaico profesional.</p>
                     </div>
-                    <span class="text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
-                        Fotos de Alta Calidad
+                    <span class="text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full whitespace-nowrap self-start sm:self-auto">
+                        Galería Adaptable (1 a 4 fotos)
                     </span>
                 </div>
 
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     
-                    <!-- BLOQUE 1: SONIDO PROFESIONAL -->
-                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-col justify-between space-y-4">
-                        <div class="space-y-3">
-                            <div class="flex items-center justify-between">
-                                <span class="text-xs font-black text-slate-800 uppercase tracking-wider">🔊 Bloque 1 (Sonido)</span>
-                                @if($dossier_block1_image)
-                                    <button type="button" wire:click="deleteDossierImage('block1')" class="text-[11px] text-rose-600 hover:text-rose-800 font-bold">
-                                        ✕ Quitar Foto
-                                    </button>
-                                @endif
-                            </div>
+                    @php
+                        $photoSlots = [
+                            1 => ['key' => 'photo1', 'defaultTitle' => 'Montaje de Sonido & Acústica', 'icon' => '🔊', 'color' => 'amber'],
+                            2 => ['key' => 'photo2', 'defaultTitle' => 'Iluminación & Efectos Visuales', 'icon' => '💡', 'color' => 'indigo'],
+                            3 => ['key' => 'photo3', 'defaultTitle' => 'Cabina DJ & Fiesta en Directo', 'icon' => '🎧', 'color' => 'purple'],
+                            4 => ['key' => 'photo4', 'defaultTitle' => 'Montajes Especiales & Fincas', 'icon' => '🌟', 'color' => 'emerald'],
+                        ];
+                    @endphp
 
-                            <!-- Preview o Subida de Foto -->
-                            <div class="space-y-2">
-                                @if ($dossier_block1_image_upload)
-                                    <div class="relative rounded-lg overflow-hidden border-2 border-amber-500 h-32 bg-slate-900">
-                                        <img src="{{ $dossier_block1_image_upload->temporaryUrl() }}" class="w-full h-full object-cover">
-                                        <span class="absolute bottom-1 right-1 bg-amber-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">Nueva Foto</span>
+                    @foreach($photoSlots as $idx => $slot)
+                        @php
+                            $imgProp = "dossier_{$slot['key']}_image";
+                            $uploadProp = "dossier_{$slot['key']}_image_upload";
+                            $titleProp = "dossier_{$slot['key']}_title";
+                            $descProp = "dossier_{$slot['key']}_desc";
+                            $currentImg = $$imgProp;
+                            $currentUpload = $$uploadProp;
+                        @endphp
+                        
+                        <div class="bg-slate-50/80 p-4 rounded-xl border border-slate-200 flex flex-col justify-between space-y-3.5 hover:border-slate-300 transition">
+                            <div class="space-y-3">
+                                <div class="flex items-center justify-between border-b border-slate-200/60 pb-2">
+                                    <span class="text-xs font-black text-slate-800 flex items-center gap-1.5">
+                                        <span>{{ $slot['icon'] }}</span> Foto {{ $idx }}
+                                    </span>
+                                    @if($currentImg)
+                                        <button type="button" wire:click="deleteDossierImage('{{ $slot['key'] }}')" class="text-[11px] text-rose-600 hover:text-rose-800 font-bold transition cursor-pointer">
+                                            ✕ Quitar
+                                        </button>
+                                    @endif
+                                </div>
+
+                                <!-- Preview o Subida de Foto -->
+                                <div class="space-y-2">
+                                    @if ($currentUpload)
+                                        <div class="relative rounded-lg overflow-hidden border-2 border-amber-500 h-28 bg-slate-900 shadow-inner">
+                                            <img src="{{ $currentUpload->temporaryUrl() }}" class="w-full h-full object-cover">
+                                            <span class="absolute bottom-1 right-1 bg-amber-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded">Nueva Foto</span>
+                                        </div>
+                                    @elseif ($currentImg)
+                                        <div class="relative rounded-lg overflow-hidden border border-slate-300 h-28 bg-slate-900 shadow-inner">
+                                            <img src="{{ asset('storage/' . $currentImg) }}" class="w-full h-full object-cover">
+                                            <span class="absolute bottom-1 right-1 bg-slate-900/80 text-white text-[9px] font-bold px-1.5 py-0.5 rounded">Guardada</span>
+                                        </div>
+                                    @else
+                                        <div class="rounded-lg border-2 border-dashed border-slate-300 h-28 flex flex-col items-center justify-center text-slate-400 bg-white">
+                                            <span class="text-2xl opacity-60">{{ $slot['icon'] }}</span>
+                                            <span class="text-[10px] font-medium mt-1 text-slate-400">Sin foto</span>
+                                        </div>
+                                    @endif
+
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-slate-600 mb-1">Subir imagen:</label>
+                                        <input type="file" wire:model="{{ $uploadProp }}" accept="image/*" class="w-full text-[11px] text-slate-500 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-[10px] file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer">
+                                        @error($uploadProp) <span class="text-rose-500 text-[10px] block mt-1">{{ $message }}</span> @enderror
                                     </div>
-                                @elseif ($dossier_block1_image)
-                                    <div class="relative rounded-lg overflow-hidden border border-slate-300 h-32 bg-slate-900">
-                                        <img src="{{ asset('storage/' . $dossier_block1_image) }}" class="w-full h-full object-cover">
-                                        <span class="absolute bottom-1 right-1 bg-slate-900/80 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">Foto Actual</span>
-                                    </div>
-                                @else
-                                    <div class="rounded-lg border-2 border-dashed border-slate-300 h-32 flex flex-col items-center justify-center text-slate-400 bg-white">
-                                        <span class="text-2xl">🔊</span>
-                                        <span class="text-[11px] font-medium mt-1">Sin foto (Usa icono)</span>
-                                    </div>
-                                @endif
+                                </div>
 
                                 <div>
-                                    <label class="block text-[11px] font-bold text-slate-600 mb-1">Subir / Cambiar Foto de Sonido:</label>
-                                    <input type="file" wire:model="dossier_block1_image_upload" accept="image/*" class="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
-                                    @error('dossier_block1_image_upload') <span class="text-rose-500 text-xs block mt-1">{{ $message }}</span> @enderror
+                                    <label class="block text-[11px] font-bold text-gray-700 mb-1">Título / Etiqueta (Opcional)</label>
+                                    <input type="text" wire:model="{{ $titleProp }}" placeholder="{{ $slot['defaultTitle'] }}" class="w-full border-gray-300 rounded-lg shadow-2xs text-xs font-semibold">
                                 </div>
-                            </div>
-
-                            <div>
-                                <label class="block text-xs font-bold text-gray-700 mb-1">Título del Bloque 1</label>
-                                <input type="text" wire:model="dossier_block1_title" class="w-full border-gray-300 rounded-lg shadow-sm text-xs font-bold">
-                            </div>
-
-                            <div>
-                                <label class="block text-xs font-bold text-gray-700 mb-1">Descripción del Bloque 1</label>
-                                <textarea wire:model="dossier_block1_desc" rows="3" class="w-full border-gray-300 rounded-lg shadow-sm text-xs text-gray-700"></textarea>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- BLOQUE 2: ILUMINACIÓN -->
-                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-col justify-between space-y-4">
-                        <div class="space-y-3">
-                            <div class="flex items-center justify-between">
-                                <span class="text-xs font-black text-slate-800 uppercase tracking-wider">💡 Bloque 2 (Iluminación)</span>
-                                @if($dossier_block2_image)
-                                    <button type="button" wire:click="deleteDossierImage('block2')" class="text-[11px] text-rose-600 hover:text-rose-800 font-bold">
-                                        ✕ Quitar Foto
-                                    </button>
-                                @endif
-                            </div>
-
-                            <!-- Preview o Subida de Foto -->
-                            <div class="space-y-2">
-                                @if ($dossier_block2_image_upload)
-                                    <div class="relative rounded-lg overflow-hidden border-2 border-amber-500 h-32 bg-slate-900">
-                                        <img src="{{ $dossier_block2_image_upload->temporaryUrl() }}" class="w-full h-full object-cover">
-                                        <span class="absolute bottom-1 right-1 bg-amber-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">Nueva Foto</span>
-                                    </div>
-                                @elseif ($dossier_block2_image)
-                                    <div class="relative rounded-lg overflow-hidden border border-slate-300 h-32 bg-slate-900">
-                                        <img src="{{ asset('storage/' . $dossier_block2_image) }}" class="w-full h-full object-cover">
-                                        <span class="absolute bottom-1 right-1 bg-slate-900/80 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">Foto Actual</span>
-                                    </div>
-                                @else
-                                    <div class="rounded-lg border-2 border-dashed border-slate-300 h-32 flex flex-col items-center justify-center text-slate-400 bg-white">
-                                        <span class="text-2xl">💡</span>
-                                        <span class="text-[11px] font-medium mt-1">Sin foto (Usa icono)</span>
-                                    </div>
-                                @endif
 
                                 <div>
-                                    <label class="block text-[11px] font-bold text-slate-600 mb-1">Subir / Cambiar Foto de Luces:</label>
-                                    <input type="file" wire:model="dossier_block2_image_upload" accept="image/*" class="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
-                                    @error('dossier_block2_image_upload') <span class="text-rose-500 text-xs block mt-1">{{ $message }}</span> @enderror
+                                    <label class="block text-[11px] font-bold text-gray-700 mb-1">Pie de Foto / Nota (Opcional)</label>
+                                    <textarea wire:model="{{ $descProp }}" rows="2" placeholder="Breve detalle sobre este montaje..." class="w-full border-gray-300 rounded-lg shadow-2xs text-xs text-gray-700"></textarea>
                                 </div>
                             </div>
-
-                            <div>
-                                <label class="block text-xs font-bold text-gray-700 mb-1">Título del Bloque 2</label>
-                                <input type="text" wire:model="dossier_block2_title" class="w-full border-gray-300 rounded-lg shadow-sm text-xs font-bold">
-                            </div>
-
-                            <div>
-                                <label class="block text-xs font-bold text-gray-700 mb-1">Descripción del Bloque 2</label>
-                                <textarea wire:model="dossier_block2_desc" rows="3" class="w-full border-gray-300 rounded-lg shadow-sm text-xs text-gray-700"></textarea>
-                            </div>
                         </div>
-                    </div>
-
-                    <!-- BLOQUE 3: SESIÓN DJ EN DIRECTO -->
-                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-col justify-between space-y-4">
-                        <div class="space-y-3">
-                            <div class="flex items-center justify-between">
-                                <span class="text-xs font-black text-slate-800 uppercase tracking-wider">🎧 Bloque 3 (DJ / Cabina)</span>
-                                @if($dossier_block3_image)
-                                    <button type="button" wire:click="deleteDossierImage('block3')" class="text-[11px] text-rose-600 hover:text-rose-800 font-bold">
-                                        ✕ Quitar Foto
-                                    </button>
-                                @endif
-                            </div>
-
-                            <!-- Preview o Subida de Foto -->
-                            <div class="space-y-2">
-                                @if ($dossier_block3_image_upload)
-                                    <div class="relative rounded-lg overflow-hidden border-2 border-amber-500 h-32 bg-slate-900">
-                                        <img src="{{ $dossier_block3_image_upload->temporaryUrl() }}" class="w-full h-full object-cover">
-                                        <span class="absolute bottom-1 right-1 bg-amber-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">Nueva Foto</span>
-                                    </div>
-                                @elseif ($dossier_block3_image)
-                                    <div class="relative rounded-lg overflow-hidden border border-slate-300 h-32 bg-slate-900">
-                                        <img src="{{ asset('storage/' . $dossier_block3_image) }}" class="w-full h-full object-cover">
-                                        <span class="absolute bottom-1 right-1 bg-slate-900/80 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">Foto Actual</span>
-                                    </div>
-                                @else
-                                    <div class="rounded-lg border-2 border-dashed border-slate-300 h-32 flex flex-col items-center justify-center text-slate-400 bg-white">
-                                        <span class="text-2xl">🎧</span>
-                                        <span class="text-[11px] font-medium mt-1">Sin foto (Usa icono)</span>
-                                    </div>
-                                @endif
-
-                                <div>
-                                    <label class="block text-[11px] font-bold text-slate-600 mb-1">Subir / Cambiar Foto de Cabina/DJ:</label>
-                                    <input type="file" wire:model="dossier_block3_image_upload" accept="image/*" class="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
-                                    @error('dossier_block3_image_upload') <span class="text-rose-500 text-xs block mt-1">{{ $message }}</span> @enderror
-                                </div>
-                            </div>
-
-                            <div>
-                                <label class="block text-xs font-bold text-gray-700 mb-1">Título del Bloque 3</label>
-                                <input type="text" wire:model="dossier_block3_title" class="w-full border-gray-300 rounded-lg shadow-sm text-xs font-bold">
-                            </div>
-
-                            <div>
-                                <label class="block text-xs font-bold text-gray-700 mb-1">Descripción del Bloque 3</label>
-                                <textarea wire:model="dossier_block3_desc" rows="3" class="w-full border-gray-300 rounded-lg shadow-sm text-xs text-gray-700"></textarea>
-                            </div>
-                        </div>
-                    </div>
+                    @endforeach
 
                 </div>
             </div>
@@ -1459,14 +1414,61 @@ MAIL_FROM_NAME="{{ $company_name }}"</pre>
 
         </div>
 
-        <!-- BOTÓN DE GUARDAR GLOBAL -->
-        <div class="mt-6 flex items-center justify-between bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-            <span class="text-xs text-gray-500">
-                Los cambios aplicados se guardarán para todas las fichas de evento, modo cabina y peticiones QR.
-            </span>
-            <button type="submit" class="bg-indigo-600 text-white font-bold py-2.5 px-8 rounded-lg shadow-md hover:bg-indigo-700 transition-all flex items-center gap-2 cursor-pointer">
-                <span>💾</span> Guardar Configuración
-            </button>
+        <!-- ERRORES DE VALIDACIÓN SI EXISTEN -->
+        @if ($errors->any())
+            <div class="mt-6 p-4 rounded-xl bg-rose-50 border-2 border-rose-300 text-rose-900 text-xs font-bold space-y-1.5 shadow-sm">
+                <div class="flex items-center gap-2 text-sm text-rose-800 font-black">
+                    <span>⚠️</span> <span>Hay datos pendientes de corregir para poder guardar:</span>
+                </div>
+                <ul class="list-disc list-inside text-[11px] text-rose-700 font-medium pl-2 space-y-0.5">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
+        <!-- BARRA FLOTANTE DE GUARDAR GLOBAL -->
+        <div class="mt-6 sticky bottom-4 z-40 bg-white/95 backdrop-blur-md p-4 rounded-2xl border-2 border-indigo-200 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <div class="h-10 w-10 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center font-black text-lg border border-indigo-100 shrink-0">
+                    💾
+                </div>
+                <div>
+                    <span class="block text-xs font-bold text-gray-900">
+                        Guardado de Configuración General
+                    </span>
+                    <span class="block text-[11px] text-gray-500">
+                        Aplica a todas las fichas de eventos, portal de clientes y propuestas PDF.
+                    </span>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
+                @if (session()->has('message'))
+                    <div x-data="{ show: true }" x-init="setTimeout(() => show = false, 4000)" x-show="show" class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-800 border border-emerald-300 rounded-lg text-xs font-black shadow-xs">
+                        <span>✅</span> <span>¡Guardado con éxito!</span>
+                    </div>
+                @endif
+
+                <div wire:loading wire:target="save" class="flex items-center gap-2 text-xs font-bold text-indigo-700 bg-indigo-50 px-3 py-2 rounded-lg border border-indigo-200">
+                    <svg class="animate-spin h-4 w-4 text-indigo-600" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                    </svg>
+                    <span>Guardando cambios...</span>
+                </div>
+
+                <button 
+                    type="submit" 
+                    wire:loading.attr="disabled"
+                    wire:target="save"
+                    class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-black py-2.5 px-7 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 text-sm"
+                >
+                    <span wire:loading.remove wire:target="save">💾 Guardar Configuración</span>
+                    <span wire:loading wire:target="save">Procesando...</span>
+                </button>
+            </div>
         </div>
 
     </form>

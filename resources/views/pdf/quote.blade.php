@@ -486,15 +486,28 @@
         $dossierPage2Title = \App\Models\Setting::get('dossier_page2_title', $dDefaults['dossier_page2_title']);
         $dossierIntroText = \App\Models\Setting::get('dossier_intro_text', $dDefaults['dossier_intro_text']);
         
-        $dossierBlock1Title = \App\Models\Setting::get('dossier_block1_title', $dDefaults['dossier_block1_title']);
-        $dossierBlock1Desc = \App\Models\Setting::get('dossier_block1_desc', $dDefaults['dossier_block1_desc']);
-        
-        $dossierBlock2Title = \App\Models\Setting::get('dossier_block2_title', $dDefaults['dossier_block2_title']);
-        $dossierBlock2Desc = \App\Models\Setting::get('dossier_block2_desc', $dDefaults['dossier_block2_desc']);
-        
-        $dossierBlock3Title = \App\Models\Setting::get('dossier_block3_title', $dDefaults['dossier_block3_title']);
-        $dossierBlock3Desc = \App\Models\Setting::get('dossier_block3_desc', $dDefaults['dossier_block3_desc']);
-        
+        // Cargar fotos de montajes y equipamiento (1 a 4 fotos)
+        $dossierPhotos = [];
+        for ($i = 1; $i <= 4; $i++) {
+            $img = \App\Models\Setting::get("dossier_photo{$i}_image", \App\Models\Setting::get("dossier_block{$i}_image"));
+            $title = \App\Models\Setting::get("dossier_photo{$i}_title", \App\Models\Setting::get("dossier_block{$i}_title"));
+            $desc = \App\Models\Setting::get("dossier_photo{$i}_desc", \App\Models\Setting::get("dossier_block{$i}_desc"));
+
+            $imgPath = ($img && \Illuminate\Support\Facades\Storage::disk('public')->exists($img))
+                ? storage_path('app/public/' . $img)
+                : null;
+
+            if ($imgPath || !empty($title) || !empty($desc)) {
+                $dossierPhotos[] = [
+                    'index' => $i,
+                    'path' => $imgPath,
+                    'title' => $title ?: "Montaje {$i}",
+                    'desc' => $desc ?: '',
+                ];
+            }
+        }
+
+        // Textos de Cómo trabajamos y condiciones
         $dossierWorkTitle = \App\Models\Setting::get('dossier_work_title', $dDefaults['dossier_work_title']);
         $dossierWorkItem1 = \App\Models\Setting::get('dossier_work_item1', $dDefaults['dossier_work_item1']);
         $dossierWorkItem2 = \App\Models\Setting::get('dossier_work_item2', $dDefaults['dossier_work_item2']);
@@ -504,16 +517,6 @@
         $dossierExtraHoursDesc = \App\Models\Setting::get('dossier_extra_hours_desc', $dDefaults['dossier_extra_hours_desc']);
         $dossierMusicCustomTitle = \App\Models\Setting::get('dossier_music_custom_title', $dDefaults['dossier_music_custom_title']);
         $dossierMusicCustomDesc = \App\Models\Setting::get('dossier_music_custom_desc', $dDefaults['dossier_music_custom_desc']);
-
-        // Imágenes de Bloques
-        $b1Img = \App\Models\Setting::get('dossier_block1_image');
-        $block1ImgPath = $b1Img && \Illuminate\Support\Facades\Storage::disk('public')->exists($b1Img) ? storage_path('app/public/' . $b1Img) : null;
-
-        $b2Img = \App\Models\Setting::get('dossier_block2_image');
-        $block2ImgPath = $b2Img && \Illuminate\Support\Facades\Storage::disk('public')->exists($b2Img) ? storage_path('app/public/' . $b2Img) : null;
-
-        $b3Img = \App\Models\Setting::get('dossier_block3_image');
-        $block3ImgPath = $b3Img && \Illuminate\Support\Facades\Storage::disk('public')->exists($b3Img) ? storage_path('app/public/' . $b3Img) : null;
 
         // Pack settings
         $packBasicPrice = (float)\App\Models\Setting::get('pack_basic_price', 400);
@@ -624,77 +627,195 @@
 
             <!-- Mosaico de Bloques de Equipamiento -->
             <table class="photo-mosaic-table">
-                <tr>
-                    <td colspan="2" class="photo-card" style="background-color: #111c34;">
-                        @if($block1ImgPath)
-                            <table style="width: 100%; border-collapse: collapse;">
-                                <tr>
-                                    <td style="width: 36%; padding: 6px; vertical-align: middle; text-align: center;">
-                                        <img src="{{ $block1ImgPath }}" style="width: 100%; height: 100px; object-fit: cover; border-radius: 6px; display: block;">
-                                    </td>
-                                    <td style="width: 64%; padding: 8px 12px; vertical-align: middle; text-align: left; color: #ffffff;">
-                                        <div class="photo-card-pill">SONIDO PROFESIONAL</div>
-                                        <div class="photo-card-title" style="color: #eab308;">{{ $dossierBlock1Title }}</div>
-                                        <div class="photo-card-desc">{{ $dossierBlock1Desc }}</div>
-                                    </td>
-                                </tr>
-                            </table>
-                        @else
-                            <div class="photo-card-inner">
-                                <div class="photo-card-pill">SONIDO DE ALTA DEFINICIÓN</div>
-                                <div class="photo-card-title">{{ $dossierBlock1Title }}</div>
-                                <div class="photo-card-desc">{{ $dossierBlock1Desc }}</div>
-                            </div>
-                        @endif
-                    </td>
-                </tr>
-                <tr>
-                    <td class="photo-card" style="width: 50%; background-color: #16223f;">
-                        @if($block2ImgPath)
-                            <table style="width: 100%; border-collapse: collapse;">
-                                <tr>
-                                    <td style="width: 38%; padding: 6px; vertical-align: middle; text-align: center;">
-                                        <img src="{{ $block2ImgPath }}" style="width: 100%; height: 90px; object-fit: cover; border-radius: 6px; display: block;">
-                                    </td>
-                                    <td style="width: 62%; padding: 6px 8px; vertical-align: middle; text-align: left; color: #ffffff;">
-                                        <div class="photo-card-pill">ILUMINACIÓN</div>
-                                        <div class="photo-card-title" style="color: #eab308;">{{ $dossierBlock2Title }}</div>
-                                        <div class="photo-card-desc">{{ $dossierBlock2Desc }}</div>
-                                    </td>
-                                </tr>
-                            </table>
-                        @else
-                            <div class="photo-card-inner">
-                                <div class="photo-card-pill">ILUMINACIÓN & SHOW</div>
-                                <div class="photo-card-title">{{ $dossierBlock2Title }}</div>
-                                <div class="photo-card-desc">{{ $dossierBlock2Desc }}</div>
-                            </div>
-                        @endif
-                    </td>
-                    <td class="photo-card" style="width: 50%; background-color: #1e293b;">
-                        @if($block3ImgPath)
-                            <table style="width: 100%; border-collapse: collapse;">
-                                <tr>
-                                    <td style="width: 38%; padding: 6px; vertical-align: middle; text-align: center;">
-                                        <img src="{{ $block3ImgPath }}" style="width: 100%; height: 90px; object-fit: cover; border-radius: 6px; display: block;">
-                                    </td>
-                                    <td style="width: 62%; padding: 6px 8px; vertical-align: middle; text-align: left; color: #ffffff;">
-                                        <div class="photo-card-pill">SESIÓN DJ</div>
-                                        <div class="photo-card-title" style="color: #eab308;">{{ $dossierBlock3Title }}</div>
-                                        <div class="photo-card-desc">{{ $dossierBlock3Desc }}</div>
-                                    </td>
-                                </tr>
-                            </table>
-                        @else
-                            <div class="photo-card-inner">
-                                <div class="photo-card-pill">SESIÓN EN DIRECTO</div>
-                                <div class="photo-card-title">{{ $dossierBlock3Title }}</div>
-                                <div class="photo-card-desc">{{ $dossierBlock3Desc }}</div>
-                            </div>
-                        @endif
-                    </td>
-                </tr>
-            </table>
+            <!-- Mosaico Adaptable de Fotos de Montajes y Equipamiento -->
+            @php
+                $photoCount = count($dossierPhotos);
+                $bgColors = ['#111c34', '#16223f', '#1e293b', '#0f172a'];
+            @endphp
+
+            @if($photoCount === 4)
+                <!-- CUADRÍCULA 2x2 (4 FOTOS) -->
+                <table class="photo-mosaic-table">
+                    <tr>
+                        @foreach([$dossierPhotos[0], $dossierPhotos[1]] as $k => $p)
+                            <td class="photo-card" style="width: 50%; background-color: {{ $bgColors[$k] }};">
+                                @if($p['path'])
+                                    <table style="width: 100%; border-collapse: collapse;">
+                                        <tr>
+                                            <td style="width: 38%; padding: 5px; vertical-align: middle; text-align: center;">
+                                                <img src="{{ $p['path'] }}" style="width: 100%; height: 75px; object-fit: cover; border-radius: 5px; display: block;">
+                                            </td>
+                                            <td style="width: 62%; padding: 5px 8px; vertical-align: middle; text-align: left; color: #ffffff;">
+                                                <div class="photo-card-title" style="color: #eab308; font-size: 8.5pt;">{{ $p['title'] }}</div>
+                                                @if(!empty($p['desc']))
+                                                    <div class="photo-card-desc" style="font-size: 7pt;">{{ $p['desc'] }}</div>
+                                                @endif
+                                            </td>
+                                        </tr>
+                                    </table>
+                                @else
+                                    <div class="photo-card-inner" style="padding: 10px 8px;">
+                                        <div class="photo-card-title" style="font-size: 8.5pt;">{{ $p['title'] }}</div>
+                                        @if(!empty($p['desc']))
+                                            <div class="photo-card-desc" style="font-size: 7pt;">{{ $p['desc'] }}</div>
+                                        @endif
+                                    </div>
+                                @endif
+                            </td>
+                        @endforeach
+                    </tr>
+                    <tr>
+                        @foreach([$dossierPhotos[2], $dossierPhotos[3]] as $k => $p)
+                            <td class="photo-card" style="width: 50%; background-color: {{ $bgColors[$k + 2] }};">
+                                @if($p['path'])
+                                    <table style="width: 100%; border-collapse: collapse;">
+                                        <tr>
+                                            <td style="width: 38%; padding: 5px; vertical-align: middle; text-align: center;">
+                                                <img src="{{ $p['path'] }}" style="width: 100%; height: 75px; object-fit: cover; border-radius: 5px; display: block;">
+                                            </td>
+                                            <td style="width: 62%; padding: 5px 8px; vertical-align: middle; text-align: left; color: #ffffff;">
+                                                <div class="photo-card-title" style="color: #eab308; font-size: 8.5pt;">{{ $p['title'] }}</div>
+                                                @if(!empty($p['desc']))
+                                                    <div class="photo-card-desc" style="font-size: 7pt;">{{ $p['desc'] }}</div>
+                                                @endif
+                                            </td>
+                                        </tr>
+                                    </table>
+                                @else
+                                    <div class="photo-card-inner" style="padding: 10px 8px;">
+                                        <div class="photo-card-title" style="font-size: 8.5pt;">{{ $p['title'] }}</div>
+                                        @if(!empty($p['desc']))
+                                            <div class="photo-card-desc" style="font-size: 7pt;">{{ $p['desc'] }}</div>
+                                        @endif
+                                    </div>
+                                @endif
+                            </td>
+                        @endforeach
+                    </tr>
+                </table>
+            @elseif($photoCount === 3)
+                <!-- 1 PRINCIPAL + 2 SECUNDARIAS (3 FOTOS) -->
+                <table class="photo-mosaic-table">
+                    <tr>
+                        <td colspan="2" class="photo-card" style="background-color: #111c34;">
+                            @if($dossierPhotos[0]['path'])
+                                <table style="width: 100%; border-collapse: collapse;">
+                                    <tr>
+                                        <td style="width: 36%; padding: 6px; vertical-align: middle; text-align: center;">
+                                            <img src="{{ $dossierPhotos[0]['path'] }}" style="width: 100%; height: 95px; object-fit: cover; border-radius: 6px; display: block;">
+                                        </td>
+                                        <td style="width: 64%; padding: 8px 12px; vertical-align: middle; text-align: left; color: #ffffff;">
+                                            <div class="photo-card-pill">MONTAJE DESTACADO</div>
+                                            <div class="photo-card-title" style="color: #eab308;">{{ $dossierPhotos[0]['title'] }}</div>
+                                            @if(!empty($dossierPhotos[0]['desc']))
+                                                <div class="photo-card-desc">{{ $dossierPhotos[0]['desc'] }}</div>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                </table>
+                            @else
+                                <div class="photo-card-inner">
+                                    <div class="photo-card-title">{{ $dossierPhotos[0]['title'] }}</div>
+                                    @if(!empty($dossierPhotos[0]['desc']))
+                                        <div class="photo-card-desc">{{ $dossierPhotos[0]['desc'] }}</div>
+                                    @endif
+                                </div>
+                            @endif
+                        </td>
+                    </tr>
+                    <tr>
+                        @foreach([$dossierPhotos[1], $dossierPhotos[2]] as $k => $p)
+                            <td class="photo-card" style="width: 50%; background-color: {{ $bgColors[$k + 1] }};">
+                                @if($p['path'])
+                                    <table style="width: 100%; border-collapse: collapse;">
+                                        <tr>
+                                            <td style="width: 38%; padding: 6px; vertical-align: middle; text-align: center;">
+                                                <img src="{{ $p['path'] }}" style="width: 100%; height: 85px; object-fit: cover; border-radius: 6px; display: block;">
+                                            </td>
+                                            <td style="width: 62%; padding: 6px 8px; vertical-align: middle; text-align: left; color: #ffffff;">
+                                                <div class="photo-card-title" style="color: #eab308;">{{ $p['title'] }}</div>
+                                                @if(!empty($p['desc']))
+                                                    <div class="photo-card-desc">{{ $p['desc'] }}</div>
+                                                @endif
+                                            </td>
+                                        </tr>
+                                    </table>
+                                @else
+                                    <div class="photo-card-inner">
+                                        <div class="photo-card-title">{{ $p['title'] }}</div>
+                                        @if(!empty($p['desc']))
+                                            <div class="photo-card-desc">{{ $p['desc'] }}</div>
+                                        @endif
+                                    </div>
+                                @endif
+                            </td>
+                        @endforeach
+                    </tr>
+                </table>
+            @elseif($photoCount === 2)
+                <!-- 2 FOTOS EN COLUMNAS -->
+                <table class="photo-mosaic-table">
+                    <tr>
+                        @foreach($dossierPhotos as $k => $p)
+                            <td class="photo-card" style="width: 50%; background-color: {{ $bgColors[$k] }};">
+                                @if($p['path'])
+                                    <table style="width: 100%; border-collapse: collapse;">
+                                        <tr>
+                                            <td style="width: 42%; padding: 6px; vertical-align: middle; text-align: center;">
+                                                <img src="{{ $p['path'] }}" style="width: 100%; height: 110px; object-fit: cover; border-radius: 6px; display: block;">
+                                            </td>
+                                            <td style="width: 58%; padding: 8px 10px; vertical-align: middle; text-align: left; color: #ffffff;">
+                                                <div class="photo-card-title" style="color: #eab308;">{{ $p['title'] }}</div>
+                                                @if(!empty($p['desc']))
+                                                    <div class="photo-card-desc">{{ $p['desc'] }}</div>
+                                                @endif
+                                            </td>
+                                        </tr>
+                                    </table>
+                                @else
+                                    <div class="photo-card-inner">
+                                        <div class="photo-card-title">{{ $p['title'] }}</div>
+                                        @if(!empty($p['desc']))
+                                            <div class="photo-card-desc">{{ $p['desc'] }}</div>
+                                        @endif
+                                    </div>
+                                @endif
+                            </td>
+                        @endforeach
+                    </tr>
+                </table>
+            @elseif($photoCount === 1)
+                <!-- 1 FOTO PANORÁMICA -->
+                <table class="photo-mosaic-table">
+                    <tr>
+                        <td colspan="2" class="photo-card" style="background-color: #111c34;">
+                            @if($dossierPhotos[0]['path'])
+                                <table style="width: 100%; border-collapse: collapse;">
+                                    <tr>
+                                        <td style="width: 40%; padding: 8px; vertical-align: middle; text-align: center;">
+                                            <img src="{{ $dossierPhotos[0]['path'] }}" style="width: 100%; height: 130px; object-fit: cover; border-radius: 6px; display: block;">
+                                        </td>
+                                        <td style="width: 60%; padding: 12px 16px; vertical-align: middle; text-align: left; color: #ffffff;">
+                                            <div class="photo-card-pill">MONTAJE PROFESIONAL</div>
+                                            <div class="photo-card-title" style="color: #eab308; font-size: 11pt;">{{ $dossierPhotos[0]['title'] }}</div>
+                                            @if(!empty($dossierPhotos[0]['desc']))
+                                                <div class="photo-card-desc" style="font-size: 8.5pt; margin-top: 4px;">{{ $dossierPhotos[0]['desc'] }}</div>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                </table>
+                            @else
+                                <div class="photo-card-inner">
+                                    <div class="photo-card-title">{{ $dossierPhotos[0]['title'] }}</div>
+                                    @if(!empty($dossierPhotos[0]['desc']))
+                                        <div class="photo-card-desc">{{ $dossierPhotos[0]['desc'] }}</div>
+                                    @endif
+                                </div>
+                            @endif
+                        </td>
+                    </tr>
+                </table>
+            @endif
 
             <!-- Bloque Cómo Trabajamos -->
             <div class="work-box">

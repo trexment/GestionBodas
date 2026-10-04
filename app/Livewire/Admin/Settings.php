@@ -102,12 +102,6 @@ class Settings extends Component
     public $dossier_page2_subtitle;
     public $dossier_page2_title;
     public $dossier_intro_text;
-    public $dossier_block1_title;
-    public $dossier_block1_desc;
-    public $dossier_block2_title;
-    public $dossier_block2_desc;
-    public $dossier_block3_title;
-    public $dossier_block3_desc;
     public $dossier_work_title;
     public $dossier_work_item1;
     public $dossier_work_item2;
@@ -118,13 +112,26 @@ class Settings extends Component
     public $dossier_music_custom_desc;
     public $selectedDossierPreset = 'bodas';
 
-    // Imágenes del Dossier
-    public $dossier_block1_image;
-    public $dossier_block1_image_upload;
-    public $dossier_block2_image;
-    public $dossier_block2_image_upload;
-    public $dossier_block3_image;
-    public $dossier_block3_image_upload;
+    // Fotos de Montajes y Equipamiento del Dossier (1 a 4 fotos)
+    public $dossier_photo1_image;
+    public $dossier_photo1_image_upload;
+    public $dossier_photo1_title;
+    public $dossier_photo1_desc;
+
+    public $dossier_photo2_image;
+    public $dossier_photo2_image_upload;
+    public $dossier_photo2_title;
+    public $dossier_photo2_desc;
+
+    public $dossier_photo3_image;
+    public $dossier_photo3_image_upload;
+    public $dossier_photo3_title;
+    public $dossier_photo3_desc;
+
+    public $dossier_photo4_image;
+    public $dossier_photo4_image_upload;
+    public $dossier_photo4_title;
+    public $dossier_photo4_desc;
 
     public $logo;
     public $current_logo;
@@ -249,12 +256,6 @@ class Settings extends Component
         $this->dossier_page2_subtitle = Setting::get('dossier_page2_subtitle', $dDefaults['dossier_page2_subtitle']);
         $this->dossier_page2_title = Setting::get('dossier_page2_title', $dDefaults['dossier_page2_title']);
         $this->dossier_intro_text = Setting::get('dossier_intro_text', $dDefaults['dossier_intro_text']);
-        $this->dossier_block1_title = Setting::get('dossier_block1_title', $dDefaults['dossier_block1_title']);
-        $this->dossier_block1_desc = Setting::get('dossier_block1_desc', $dDefaults['dossier_block1_desc']);
-        $this->dossier_block2_title = Setting::get('dossier_block2_title', $dDefaults['dossier_block2_title']);
-        $this->dossier_block2_desc = Setting::get('dossier_block2_desc', $dDefaults['dossier_block2_desc']);
-        $this->dossier_block3_title = Setting::get('dossier_block3_title', $dDefaults['dossier_block3_title']);
-        $this->dossier_block3_desc = Setting::get('dossier_block3_desc', $dDefaults['dossier_block3_desc']);
         $this->dossier_work_title = Setting::get('dossier_work_title', $dDefaults['dossier_work_title']);
         $this->dossier_work_item1 = Setting::get('dossier_work_item1', $dDefaults['dossier_work_item1']);
         $this->dossier_work_item2 = Setting::get('dossier_work_item2', $dDefaults['dossier_work_item2']);
@@ -264,9 +265,21 @@ class Settings extends Component
         $this->dossier_music_custom_title = Setting::get('dossier_music_custom_title', $dDefaults['dossier_music_custom_title']);
         $this->dossier_music_custom_desc = Setting::get('dossier_music_custom_desc', $dDefaults['dossier_music_custom_desc']);
 
-        $this->dossier_block1_image = Setting::get('dossier_block1_image');
-        $this->dossier_block2_image = Setting::get('dossier_block2_image');
-        $this->dossier_block3_image = Setting::get('dossier_block3_image');
+        $this->dossier_photo1_image = Setting::get('dossier_photo1_image', Setting::get('dossier_block1_image'));
+        $this->dossier_photo1_title = Setting::get('dossier_photo1_title', Setting::get('dossier_block1_title', 'Montaje de Sonido'));
+        $this->dossier_photo1_desc = Setting::get('dossier_photo1_desc', Setting::get('dossier_block1_desc', ''));
+
+        $this->dossier_photo2_image = Setting::get('dossier_photo2_image', Setting::get('dossier_block2_image'));
+        $this->dossier_photo2_title = Setting::get('dossier_photo2_title', Setting::get('dossier_block2_title', 'Iluminación y Efectos'));
+        $this->dossier_photo2_desc = Setting::get('dossier_photo2_desc', Setting::get('dossier_block2_desc', ''));
+
+        $this->dossier_photo3_image = Setting::get('dossier_photo3_image', Setting::get('dossier_block3_image'));
+        $this->dossier_photo3_title = Setting::get('dossier_photo3_title', Setting::get('dossier_block3_title', 'Cabina DJ'));
+        $this->dossier_photo3_desc = Setting::get('dossier_photo3_desc', Setting::get('dossier_block3_desc', ''));
+
+        $this->dossier_photo4_image = Setting::get('dossier_photo4_image');
+        $this->dossier_photo4_title = Setting::get('dossier_photo4_title', 'Montaje Especial / Fiesta');
+        $this->dossier_photo4_desc = Setting::get('dossier_photo4_desc', '');
 
         $this->current_logo = Setting::get('company_logo');
 
@@ -306,7 +319,22 @@ class Settings extends Component
         $presets = DossierTemplateService::presets();
         if (isset($presets[$presetKey])) {
             foreach ($presets[$presetKey]['values'] as $key => $val) {
-                $this->$key = $val;
+                if (property_exists($this, $key)) {
+                    $this->$key = $val;
+                }
+            }
+            // Map legacy block titles/descs to photo titles/descs if present
+            if (isset($presets[$presetKey]['values']['dossier_block1_title'])) {
+                $this->dossier_photo1_title = $presets[$presetKey]['values']['dossier_block1_title'];
+                $this->dossier_photo1_desc = $presets[$presetKey]['values']['dossier_block1_desc'] ?? '';
+            }
+            if (isset($presets[$presetKey]['values']['dossier_block2_title'])) {
+                $this->dossier_photo2_title = $presets[$presetKey]['values']['dossier_block2_title'];
+                $this->dossier_photo2_desc = $presets[$presetKey]['values']['dossier_block2_desc'] ?? '';
+            }
+            if (isset($presets[$presetKey]['values']['dossier_block3_title'])) {
+                $this->dossier_photo3_title = $presets[$presetKey]['values']['dossier_block3_title'];
+                $this->dossier_photo3_desc = $presets[$presetKey]['values']['dossier_block3_desc'] ?? '';
             }
             $this->selectedDossierPreset = $presetKey;
             session()->flash('dossier_preset_loaded', 'Plantilla de dossier "' . $presets[$presetKey]['name'] . '" cargada en el editor. Recuerda hacer clic en "Guardar Configuración".');
@@ -315,16 +343,32 @@ class Settings extends Component
 
     public function deleteDossierImage($slot)
     {
-        $key = 'dossier_' . $slot . '_image';
-        $current = Setting::get($key);
-        if ($current) {
-            Storage::disk('public')->delete($current);
+        $keysMap = [
+            'photo1' => ['dossier_photo1_image', 'dossier_block1_image'],
+            'photo2' => ['dossier_photo2_image', 'dossier_block2_image'],
+            'photo3' => ['dossier_photo3_image', 'dossier_block3_image'],
+            'photo4' => ['dossier_photo4_image'],
+            'block1' => ['dossier_photo1_image', 'dossier_block1_image'],
+            'block2' => ['dossier_photo2_image', 'dossier_block2_image'],
+            'block3' => ['dossier_photo3_image', 'dossier_block3_image'],
+        ];
+
+        $keys = $keysMap[$slot] ?? ['dossier_' . $slot . '_image'];
+        foreach ($keys as $key) {
+            $current = Setting::get($key);
+            if ($current) {
+                Storage::disk('public')->delete($current);
+            }
+            Setting::set($key, null);
+            if (property_exists($this, $key)) {
+                $this->$key = null;
+            }
+            $uploadKey = $key . '_upload';
+            if (property_exists($this, $uploadKey)) {
+                $this->$uploadKey = null;
+            }
         }
-        Setting::set($key, null);
-        $this->$key = null;
-        $uploadKey = $key . '_upload';
-        $this->$uploadKey = null;
-        session()->flash('message', 'Imagen de dossier eliminada correctamente.');
+        session()->flash('message', 'Foto eliminada correctamente.');
     }
 
     public function testSpotify()
@@ -388,12 +432,6 @@ class Settings extends Component
             'dossier_page2_subtitle' => 'nullable|string|max:255',
             'dossier_page2_title' => 'required|string|max:255',
             'dossier_intro_text' => 'required|string',
-            'dossier_block1_title' => 'required|string|max:255',
-            'dossier_block1_desc' => 'required|string',
-            'dossier_block2_title' => 'required|string|max:255',
-            'dossier_block2_desc' => 'required|string',
-            'dossier_block3_title' => 'required|string|max:255',
-            'dossier_block3_desc' => 'required|string',
             'dossier_work_title' => 'required|string|max:255',
             'dossier_work_item1' => 'required|string',
             'dossier_work_item2' => 'required|string',
@@ -403,9 +441,21 @@ class Settings extends Component
             'dossier_music_custom_title' => 'required|string|max:255',
             'dossier_music_custom_desc' => 'required|string',
 
-            'dossier_block1_image_upload' => 'nullable|image|max:4096',
-            'dossier_block2_image_upload' => 'nullable|image|max:4096',
-            'dossier_block3_image_upload' => 'nullable|image|max:4096',
+            'dossier_photo1_title' => 'nullable|string|max:255',
+            'dossier_photo1_desc' => 'nullable|string|max:500',
+            'dossier_photo1_image_upload' => 'nullable|image|max:8192',
+
+            'dossier_photo2_title' => 'nullable|string|max:255',
+            'dossier_photo2_desc' => 'nullable|string|max:500',
+            'dossier_photo2_image_upload' => 'nullable|image|max:8192',
+
+            'dossier_photo3_title' => 'nullable|string|max:255',
+            'dossier_photo3_desc' => 'nullable|string|max:500',
+            'dossier_photo3_image_upload' => 'nullable|image|max:8192',
+
+            'dossier_photo4_title' => 'nullable|string|max:255',
+            'dossier_photo4_desc' => 'nullable|string|max:500',
+            'dossier_photo4_image_upload' => 'nullable|image|max:8192',
 
             'logo' => 'nullable|image|max:2048',
             'primary_streaming_service' => 'required|in:auto,apple_music,spotify',
@@ -504,12 +554,6 @@ class Settings extends Component
         Setting::set('dossier_page2_subtitle', $this->dossier_page2_subtitle);
         Setting::set('dossier_page2_title', $this->dossier_page2_title);
         Setting::set('dossier_intro_text', $this->dossier_intro_text);
-        Setting::set('dossier_block1_title', $this->dossier_block1_title);
-        Setting::set('dossier_block1_desc', $this->dossier_block1_desc);
-        Setting::set('dossier_block2_title', $this->dossier_block2_title);
-        Setting::set('dossier_block2_desc', $this->dossier_block2_desc);
-        Setting::set('dossier_block3_title', $this->dossier_block3_title);
-        Setting::set('dossier_block3_desc', $this->dossier_block3_desc);
         Setting::set('dossier_work_title', $this->dossier_work_title);
         Setting::set('dossier_work_item1', $this->dossier_work_item1);
         Setting::set('dossier_work_item2', $this->dossier_work_item2);
@@ -519,35 +563,34 @@ class Settings extends Component
         Setting::set('dossier_music_custom_title', $this->dossier_music_custom_title);
         Setting::set('dossier_music_custom_desc', $this->dossier_music_custom_desc);
 
-        // Guardar Fotos del Dossier
-        if ($this->dossier_block1_image_upload) {
-            if ($this->dossier_block1_image) {
-                Storage::disk('public')->delete($this->dossier_block1_image);
-            }
-            $path = $this->dossier_block1_image_upload->store('dossier', 'public');
-            Setting::set('dossier_block1_image', $path);
-            $this->dossier_block1_image = $path;
-            $this->dossier_block1_image_upload = null;
-        }
+        // Guardar Textos y Fotos del Dossier (1 a 4 fotos)
+        for ($i = 1; $i <= 4; $i++) {
+            $titleProp = "dossier_photo{$i}_title";
+            $descProp = "dossier_photo{$i}_desc";
+            $uploadProp = "dossier_photo{$i}_image_upload";
+            $imgProp = "dossier_photo{$i}_image";
 
-        if ($this->dossier_block2_image_upload) {
-            if ($this->dossier_block2_image) {
-                Storage::disk('public')->delete($this->dossier_block2_image);
-            }
-            $path = $this->dossier_block2_image_upload->store('dossier', 'public');
-            Setting::set('dossier_block2_image', $path);
-            $this->dossier_block2_image = $path;
-            $this->dossier_block2_image_upload = null;
-        }
+            Setting::set("dossier_photo{$i}_title", $this->$titleProp);
+            Setting::set("dossier_photo{$i}_desc", $this->$descProp);
 
-        if ($this->dossier_block3_image_upload) {
-            if ($this->dossier_block3_image) {
-                Storage::disk('public')->delete($this->dossier_block3_image);
+            // Backwards compatibility
+            if ($i <= 3) {
+                Setting::set("dossier_block{$i}_title", $this->$titleProp);
+                Setting::set("dossier_block{$i}_desc", $this->$descProp);
             }
-            $path = $this->dossier_block3_image_upload->store('dossier', 'public');
-            Setting::set('dossier_block3_image', $path);
-            $this->dossier_block3_image = $path;
-            $this->dossier_block3_image_upload = null;
+
+            if ($this->$uploadProp) {
+                if ($this->$imgProp) {
+                    Storage::disk('public')->delete($this->$imgProp);
+                }
+                $path = $this->$uploadProp->store('dossier', 'public');
+                Setting::set("dossier_photo{$i}_image", $path);
+                if ($i <= 3) {
+                    Setting::set("dossier_block{$i}_image", $path);
+                }
+                $this->$imgProp = $path;
+                $this->$uploadProp = null;
+            }
         }
 
         // Guardar ajustes musicales
