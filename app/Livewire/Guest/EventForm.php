@@ -429,22 +429,19 @@ class EventForm extends Component
         $this->submitted = true;
         $this->showSuccessModal = true;
 
-        // Enviar email de notificación al Administrador y al DJ asignado
-        try {
-            $brand = \App\Models\Setting::getBrandInfo($this->event->brand_clean);
-            $adminEmail = $brand['email'] ?: \App\Models\Setting::get('company_email', config('mail.from.address'));
+        $summary = [
+            'Ceremonia' => $this->ceremony_songs,
+            'Cóctel / Aperitivo' => $this->cocktail_songs,
+            'Entrada Salón' => $this->entrance_song,
+            'Corte de Tarta' => $this->cake_song,
+            'Regalos / Sorpresas' => $this->gifts_songs,
+            'Baile Nupcial' => $this->dance_song,
+            'Momentos Especiales' => $this->special_moments,
+            'Temazos Favoritos' => $this->party_favs,
+            'Lista Negra (Prohibidas)' => $this->blacklist,
+            'Comentarios / Notas' => $this->comments,
+        ];
 
-            $summary = [
-                'Ceremonia' => $this->ceremony_songs,
-                'Cóctel / Aperitivo' => $this->cocktail_songs,
-                'Entrada Salón' => $this->entrance_song,
-                'Corte de Tarta' => $this->cake_song,
-                'Regalos / Sorpresas' => $this->gifts_songs,
-                'Baile Nupcial' => $this->dance_song,
-                'Momentos Especiales' => $this->special_moments,
-                'Temazos Favoritos' => $this->party_favs,
-                'Lista Negra (Prohibidas)' => $this->blacklist,
-                'Comentarios / Notas' => $this->comments,
         // Send email notification to all admins & assigned DJ
         try {
             $brandKey = $this->event->brand_clean ?? 'nunez_and_son';
