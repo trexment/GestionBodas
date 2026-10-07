@@ -338,7 +338,7 @@
                                 </div>
                             </div>
 
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-purple-200/60 dark:border-purple-900/60">
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2 border-t border-purple-200/60 dark:border-purple-900/60">
                                 <div>
                                     <label class="block text-purple-900 dark:text-purple-300 text-xs font-bold mb-1">🎧 Inicio Baile (24h)</label>
                                     <input type="time" wire:model="dance_start_time" class="border border-purple-200 dark:border-purple-800 rounded-xl w-full py-1.5 px-2 text-gray-700 dark:text-slate-200 text-xs font-bold bg-white dark:bg-slate-800">
@@ -349,6 +349,10 @@
                                         <input type="number" step="0.5" min="1" max="24" wire:model="dance_duration_hours" class="border border-purple-200 dark:border-purple-800 rounded-xl w-full py-1.5 px-2 text-gray-700 dark:text-slate-200 text-xs font-bold bg-white dark:bg-slate-800 pr-6">
                                         <span class="absolute right-2 top-1.5 text-[10px] text-gray-400 font-bold">h</span>
                                     </div>
+                                </div>
+                                <div>
+                                    <label class="block text-purple-900 dark:text-purple-300 text-xs font-bold mb-1">🛑 Límite / Hora Máx.</label>
+                                    <input type="time" wire:model="max_end_time" class="border border-purple-200 dark:border-purple-800 rounded-xl w-full py-1.5 px-2 text-gray-700 dark:text-slate-200 text-xs font-bold bg-white dark:bg-slate-800" title="Hora máxima permitida / Límite finca">
                                 </div>
                             </div>
                         </div>

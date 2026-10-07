@@ -19,6 +19,7 @@ class EventManager extends Component
     public $start_time;
     public $dance_start_time;
     public $dance_duration_hours = 4.0;
+    public $max_end_time;
     public $location;
     public $client_id;
     public $dj_id;
@@ -48,6 +49,7 @@ class EventManager extends Component
         'banquet_time' => 'nullable|string|max:20',
         'dance_start_time' => 'nullable|string|max:20',
         'dance_duration_hours' => 'nullable|numeric|min:0.5|max:24',
+        'max_end_time' => 'nullable|string|max:20',
         'location' => 'required|string|max:255',
         'client_id' => 'nullable|exists:users,id',
         'dj_id' => 'nullable|exists:users,id',
@@ -91,7 +93,7 @@ class EventManager extends Component
         }
         $this->resetValidation();
         $this->editing_event_id = null;
-        $this->reset(['name', 'brand', 'event_type', 'event_date', 'setup_date', 'start_time', 'ceremony_time', 'cocktail_time', 'banquet_time', 'dance_start_time', 'dance_duration_hours', 'location', 'client_id', 'dj_id', 'assistant_id', 'notes']);
+        $this->reset(['name', 'brand', 'event_type', 'event_date', 'setup_date', 'start_time', 'ceremony_time', 'cocktail_time', 'banquet_time', 'dance_start_time', 'dance_duration_hours', 'max_end_time', 'location', 'client_id', 'dj_id', 'assistant_id', 'notes']);
         $this->brand = \App\Models\Setting::getDetectedBrand();
         $this->event_type = 'boda';
         $this->dance_duration_hours = 4.0;
@@ -120,6 +122,7 @@ class EventManager extends Component
         $this->banquet_time = $event->banquet_time;
         $this->dance_start_time = $event->dance_start_time;
         $this->dance_duration_hours = $event->dance_duration_hours ?: 4.0;
+        $this->max_end_time = $event->max_end_time;
         $this->location = $event->location;
         $this->client_id = $event->client_id;
         $this->dj_id = $event->dj_id;
@@ -141,7 +144,7 @@ class EventManager extends Component
 
         try {
             // Si las columnas aún no existen, intentamos aplicar migraciones automáticamente
-            if (!\Illuminate\Support\Facades\Schema::hasColumn('events', 'setup_date') || !\Illuminate\Support\Facades\Schema::hasColumn('events', 'dance_start_time')) {
+            if (!\Illuminate\Support\Facades\Schema::hasColumn('events', 'setup_date') || !\Illuminate\Support\Facades\Schema::hasColumn('events', 'dance_start_time') || !\Illuminate\Support\Facades\Schema::hasColumn('events', 'max_end_time')) {
                 try {
                     \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
                 } catch (\Throwable $migEx) {
@@ -169,6 +172,7 @@ class EventManager extends Component
                 'banquet_time' => $this->banquet_time ?: null,
                 'dance_start_time' => $this->dance_start_time ?: null,
                 'dance_duration_hours' => $this->dance_duration_hours ? (float)$this->dance_duration_hours : null,
+                'max_end_time' => $this->max_end_time ?: null,
             ];
 
             foreach ($scheduleFields as $col => $val) {

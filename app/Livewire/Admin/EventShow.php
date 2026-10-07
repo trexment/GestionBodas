@@ -46,6 +46,7 @@ class EventShow extends Component
     public $dance_start_time;
     public $dance_duration_hours;
     public $dance_end_time;
+    public $max_end_time;
     public $start_time;
     public $ceremony_time;
     public $cocktail_time;
@@ -2109,6 +2110,7 @@ class EventShow extends Component
         $this->dance_start_time = $this->event->dance_start_time;
         $this->dance_duration_hours = $this->event->dance_duration_hours ?: $this->event->suggested_dance_hours;
         $this->dance_end_time = $this->event->dance_end_time ?: $this->event->calculated_dance_end_time;
+        $this->max_end_time = $this->event->max_end_time;
         $this->start_time = $this->event->start_time;
         $this->ceremony_time = $this->event->ceremony_time;
         $this->cocktail_time = $this->event->cocktail_time;
@@ -2167,6 +2169,7 @@ class EventShow extends Component
             'dance_start_time' => 'nullable|string|max:20',
             'dance_duration_hours' => 'nullable|numeric|min:0.5|max:24',
             'dance_end_time' => 'nullable|string|max:20',
+            'max_end_time' => 'nullable|string|max:20',
             'start_time' => 'nullable|string|max:20',
             'ceremony_time' => 'nullable|string|max:20',
             'cocktail_time' => 'nullable|string|max:20',
@@ -2180,7 +2183,7 @@ class EventShow extends Component
 
         try {
             // Si las columnas aún no existen, intentamos aplicar migraciones automáticamente
-            if (!\Illuminate\Support\Facades\Schema::hasColumn('events', 'setup_date') || !\Illuminate\Support\Facades\Schema::hasColumn('events', 'dance_start_time')) {
+            if (!\Illuminate\Support\Facades\Schema::hasColumn('events', 'setup_date') || !\Illuminate\Support\Facades\Schema::hasColumn('events', 'dance_start_time') || !\Illuminate\Support\Facades\Schema::hasColumn('events', 'max_end_time')) {
                 try {
                     \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
                 } catch (\Throwable $migEx) {
@@ -2194,6 +2197,7 @@ class EventShow extends Component
                 'dance_start_time' => $this->dance_start_time ?: null,
                 'dance_duration_hours' => $this->dance_duration_hours ? (float)$this->dance_duration_hours : null,
                 'dance_end_time' => $this->dance_end_time ?: null,
+                'max_end_time' => $this->max_end_time ?: null,
                 'start_time' => $this->start_time ?: null,
                 'ceremony_time' => $this->ceremony_time ?: null,
                 'cocktail_time' => $this->cocktail_time ?: null,

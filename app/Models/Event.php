@@ -23,6 +23,7 @@ class Event extends Model
         'ceremony_time',
         'cocktail_time',
         'banquet_time',
+        'max_end_time',
         'schedule_notes',
         'location',
         'venue_contact_name',
@@ -388,11 +389,14 @@ class Event extends Model
 
         $start = substr((string)$danceStart, 0, 5) . ' h';
         $end = $this->calculated_dance_end_time ? (substr((string)$this->calculated_dance_end_time, 0, 5) . ' h') : null;
+        $maxEnd = !empty($this->attributes['max_end_time']) ? (substr((string)$this->attributes['max_end_time'], 0, 5) . ' h') : null;
         $hours = !empty($this->attributes['dance_duration_hours']) 
             ? (rtrim(rtrim(number_format((float)$this->attributes['dance_duration_hours'], 1, ',', '.'), '0'), ',') . 'h') 
             : null;
 
-        if ($end && $hours) {
+        if ($end && $maxEnd && $end !== $maxEnd) {
+            return "De {$start} a {$end} ({$hours} aprox., máx. {$maxEnd})";
+        } elseif ($end && $hours) {
             return "De {$start} a {$end} ({$hours})";
         } elseif ($end) {
             return "De {$start} a {$end}";
@@ -479,33 +483,40 @@ class Event extends Model
      */
     public function getEffectiveEndTimeAttribute(): string
     {
+        $baseEnd = null;
+
         // 1. Hora de fin explícita del baile
         if (!empty($this->dance_end_time)) {
-            return substr(trim((string)$this->dance_end_time), 0, 5);
-        }
-
-        // 2. Hora de fin calculada del baile (dance_start_time + dance_duration_hours)
-        if (!empty($this->calculated_dance_end_time)) {
-            return substr(trim((string)$this->calculated_dance_end_time), 0, 5);
-        }
-
-        // 3. Si hay dance_start_time y horas sugeridas por presupuesto
-        if (!empty($this->dance_start_time)) {
+            $baseEnd = substr(trim((string)$this->dance_end_time), 0, 5);
+        } elseif (!empty($this->calculated_dance_end_time)) {
+            $baseEnd = substr(trim((string)$this->calculated_dance_end_time), 0, 5);
+        } elseif (!empty($this->dance_start_time)) {
             try {
                 $start = \Carbon\Carbon::createFromFormat('H:i', substr(trim((string)$this->dance_start_time), 0, 5));
                 $hours = $this->suggested_dance_hours ?: 4.0;
-                return $start->addMinutes((int)($hours * 60))->format('H:i');
+                $baseEnd = $start->addMinutes((int)($hours * 60))->format('H:i');
             } catch (\Throwable $e) {}
         }
 
-        // 4. Si hay effective_start_time con formato válido y horas estimadas
-        $startStr = $this->effective_start_time;
-        if (!empty($startStr) && $startStr !== 'Por determinar' && preg_match('/^\d{1,2}:\d{2}$/', $startStr)) {
-            try {
-                $start = \Carbon\Carbon::createFromFormat('H:i', $startStr);
-                $hours = $this->suggested_dance_hours ?: 4.0;
-                return $start->addMinutes((int)($hours * 60))->format('H:i');
-            } catch (\Throwable $e) {}
+        if (!$baseEnd) {
+            $startStr = $this->effective_start_time;
+            if (!empty($startStr) && $startStr !== 'Por determinar' && preg_match('/^\d{1,2}:\d{2}$/', $startStr)) {
+                try {
+                    $start = \Carbon\Carbon::createFromFormat('H:i', $startStr);
+                    $hours = $this->suggested_dance_hours ?: 4.0;
+                    $baseEnd = $start->addMinutes((int)($hours * 60))->format('H:i');
+                } catch (\Throwable $e) {}
+            }
+        }
+
+        $maxEnd = !empty($this->attributes['max_end_time']) ? substr(trim((string)$this->attributes['max_end_time']), 0, 5) : null;
+
+        if ($baseEnd && $maxEnd && $baseEnd !== $maxEnd) {
+            return "{$baseEnd} (límite máx. {$maxEnd})";
+        } elseif ($baseEnd) {
+            return $baseEnd;
+        } elseif ($maxEnd) {
+            return "Hasta las {$maxEnd} (límite máx.)";
         }
 
         return 'Fin de fiesta / Según desarrollo';

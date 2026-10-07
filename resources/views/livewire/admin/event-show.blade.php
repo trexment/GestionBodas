@@ -3733,7 +3733,7 @@
                                 </span>
                             </div>
 
-                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
                                 <div>
                                     <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Hora Inicio (24h)</label>
                                     <input type="time" wire:model.live="dance_start_time" class="w-full border-gray-300 dark:border-slate-700 dark:bg-slate-950 dark:text-white rounded-xl text-sm font-bold focus:ring-purple-500 focus:border-purple-500 p-2.5">
@@ -3750,6 +3750,11 @@
                                     <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Fin Previsto (24h)</label>
                                     <input type="time" wire:model="dance_end_time" class="w-full border-gray-300 dark:border-slate-700 dark:bg-slate-950 dark:text-white rounded-xl text-sm font-bold focus:ring-purple-500 focus:border-purple-500 p-2.5">
                                     <span class="text-[10px] text-gray-500 mt-0.5 block">Calculado automáticamente</span>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Hora Límite / Máx.</label>
+                                    <input type="time" wire:model="max_end_time" class="w-full border-gray-300 dark:border-slate-700 dark:bg-slate-950 dark:text-white rounded-xl text-sm font-bold focus:ring-purple-500 focus:border-purple-500 p-2.5">
+                                    <span class="text-[10px] text-purple-700 dark:text-purple-400 mt-0.5 block font-medium">Opcional (Límite finca)</span>
                                 </div>
                             </div>
 
