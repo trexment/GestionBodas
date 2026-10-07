@@ -218,6 +218,10 @@ class Setting extends Model
             $logoPath = storage_path('app/public/logos/BqwZKGcLFmX0kuiPh9EWKg3BKmHnRB3puOsxm9TI.png');
         }
 
+        $cif = self::get('brand_' . $brandKey . '_cif', self::get('company_cif', 'B-12345678'));
+        $iban = self::get('brand_' . $brandKey . '_iban', self::get('company_iban', 'ES00 0000 0000 0000 0000 0000'));
+        $bizum = self::get('brand_' . $brandKey . '_bizum', self::get('company_bizum', '622634790'));
+
         return [
             'key' => $brandKey,
             'name' => $name,
@@ -228,6 +232,9 @@ class Setting extends Model
             'website' => $website,
             'logo' => $logo,
             'logo_path' => $logoPath,
+            'cif' => $cif,
+            'iban' => $iban,
+            'bizum' => $bizum,
         ];
     }
 

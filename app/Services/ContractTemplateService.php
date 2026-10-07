@@ -200,14 +200,14 @@ TEXT
 
         $brandKey = $event ? $event->brand_clean : ($quote ? $quote->brand_clean : null);
         $brand = Setting::getBrandInfo($brandKey);
-        $companyName = $brand['name'] ?: Setting::getCompanyName('Núñez and Son');
-        $companyCif = $brand['cif'] ?? Setting::get('company_cif', 'B-12345678');
-        $companyEmail = $brand['email'] ?: Setting::get('company_email', 'info@eventosmusicales.es');
-        $companyPhone = $brand['phone'] ?: Setting::get('company_phone', '+34 622 634 790');
+        $companyName = (!empty($brand['name'])) ? $brand['name'] : Setting::getCompanyName('Núñez and Son');
+        $companyCif = (!empty($brand['cif'])) ? $brand['cif'] : Setting::get('company_cif', 'B-12345678');
+        $companyEmail = (!empty($brand['email'])) ? $brand['email'] : Setting::get('company_email', 'info@eventosmusicales.es');
+        $companyPhone = (!empty($brand['phone'])) ? $brand['phone'] : Setting::get('company_phone', '+34 622 634 790');
         $companyAddress = Setting::get('company_address', 'Calle Principal s/n');
         $companyCity = Setting::get('company_city', 'Navarrete');
-        $companyIban = $brand['iban'] ?: Setting::get('company_iban', 'ES00 0000 0000 0000 0000 0000');
-        $companyBizum = $brand['bizum'] ?: Setting::get('company_bizum', '622634790');
+        $companyIban = (!empty($brand['iban'])) ? $brand['iban'] : Setting::get('company_iban', 'ES00 0000 0000 0000 0000 0000');
+        $companyBizum = (!empty($brand['bizum'])) ? $brand['bizum'] : Setting::get('company_bizum', '622634790');
 
         $signingCity = $clientCity ?: $companyCity;
         $courtCity = Setting::get('company_court_city', $companyCity === 'Navarrete' ? 'Logroño (La Rioja)' : $companyCity);
