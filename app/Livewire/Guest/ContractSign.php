@@ -287,11 +287,22 @@ class ContractSign extends Component
                 $mail->send($mailable);
             }
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('Error enviando email de contrato firmado: ' . $e->getMessage());
+            \Illuminate\Support\Facades\Log::error('Error enviando email de contrato firmado a admin: ' . $e->getMessage());
+        }
+
+        // Send signed contract copy with attached PDF to the client
+        try {
+            $clientEmail = trim((string)$this->contract->client_email_signed);
+            if (!empty($clientEmail) && filter_var($clientEmail, FILTER_VALIDATE_EMAIL)) {
+                $clientMailable = new \App\Mail\ContractSignedClientCopyMail($this->contract);
+                \Illuminate\Support\Facades\Mail::to($clientEmail)->send($clientMailable);
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Error enviando copia de contrato firmado al cliente: ' . $e->getMessage());
         }
 
         $this->isSigned = true;
-        session()->flash('success_message', '¡Contrato firmado y aceptado correctamente! Muchas gracias.');
+        session()->flash('success_message', '¡Contrato firmado y formalizado correctamente! Se ha enviado una copia en PDF a tu correo electrónico.');
     }
 
     public function render()
