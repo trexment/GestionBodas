@@ -76,7 +76,12 @@
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <div>
             <div class="flex flex-wrap items-center gap-3">
-                <h2 class="text-2xl font-bold text-gray-800">{{ $event->name }}</h2>
+                <div class="flex items-center gap-2.5">
+                    <h2 class="text-2xl font-bold text-gray-800">{{ $event->name }}</h2>
+                    <button type="button" wire:click="openEditEventModal" class="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-xl font-bold bg-white hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 border border-slate-200 hover:border-indigo-300 shadow-2xs transition cursor-pointer" title="Editar nombre, fecha, lugar o notas del evento">
+                        <span>✏️</span> Editar
+                    </button>
+                </div>
 
                 <!-- Selector de Marca Comercial -->
                 <div class="relative" x-data="{ openBrandDropdown: false }">
@@ -3548,6 +3553,96 @@
                         </button>
                         <button type="button" wire:click="$set('showSongModal', false)" class="w-full sm:w-auto mt-2 sm:mt-0 inline-flex justify-center rounded-lg border border-gray-300 shadow-sm px-4 py-2 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none transition cursor-pointer">
                             Cancelar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    @endif
+
+    <!-- Modal Editar Datos Generales del Evento (Nombre, Fecha, Lugar, Marca, Tipo, Estado, Notas) -->
+    @if($showEditEventModal)
+    <div class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-edit-event-title" role="dialog" aria-modal="true">
+        <div class="flex items-center justify-center min-h-screen p-3 sm:p-4 text-center">
+            <div class="fixed inset-0 bg-slate-950/80 backdrop-blur-xs transition-opacity" wire:click="closeEditEventModal"></div>
+            
+            <div class="relative bg-white dark:bg-slate-900 rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all w-full max-w-lg max-h-[90vh] flex flex-col border border-gray-200 dark:border-slate-800">
+                <div class="bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-4 flex items-center justify-between text-white shrink-0">
+                    <div class="flex items-center gap-2.5">
+                        <span class="text-2xl">✏️</span>
+                        <div>
+                            <h3 class="font-extrabold text-base sm:text-lg leading-tight" id="modal-edit-event-title">Editar Detalles del Evento</h3>
+                            <p class="text-xs text-indigo-100">Modifica el nombre, fecha, lugar o marca comercial</p>
+                        </div>
+                    </div>
+                    <button type="button" wire:click="closeEditEventModal" class="text-indigo-200 hover:text-white text-2xl font-bold leading-none cursor-pointer">&times;</button>
+                </div>
+
+                <form wire:submit.prevent="saveEventDetails" class="flex flex-col flex-1 overflow-hidden">
+                    <div class="p-6 space-y-4 overflow-y-auto flex-1 text-xs">
+                        <div>
+                            <label class="block font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1">Nombre del Evento *</label>
+                            <input type="text" wire:model="event_edit_name" placeholder="Ej: Enlace Vidalia y Omar / Boda Carlos y Laura" class="w-full border-gray-300 dark:border-slate-700 dark:bg-slate-950 dark:text-white rounded-xl text-sm font-bold focus:ring-indigo-500 focus:border-indigo-500 p-2.5">
+                            @error('event_edit_name') <span class="text-rose-500 text-[11px] font-semibold">{{ $message }}</span> @enderror
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1">Fecha del Evento *</label>
+                                <input type="date" wire:model="event_edit_date" class="w-full border-gray-300 dark:border-slate-700 dark:bg-slate-950 dark:text-white rounded-xl text-sm font-bold focus:ring-indigo-500 focus:border-indigo-500 p-2.5">
+                                @error('event_edit_date') <span class="text-rose-500 text-[11px] font-semibold">{{ $message }}</span> @enderror
+                            </div>
+                            <div>
+                                <label class="block font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1">Lugar / Finca / Salón *</label>
+                                <input type="text" wire:model="event_edit_location" placeholder="Ej: Andere Vitoria / Bodega Hika" class="w-full border-gray-300 dark:border-slate-700 dark:bg-slate-950 dark:text-white rounded-xl text-sm font-semibold focus:ring-indigo-500 focus:border-indigo-500 p-2.5">
+                                @error('event_edit_location') <span class="text-rose-500 text-[11px] font-semibold">{{ $message }}</span> @enderror
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1">Tipo de Evento *</label>
+                                <select wire:model="event_edit_type" class="w-full border-gray-300 dark:border-slate-700 dark:bg-slate-950 dark:text-white rounded-xl text-sm font-bold p-2.5">
+                                    <option value="boda">💍 Boda / Enlace</option>
+                                    <option value="empresa">🏢 Evento de Empresa</option>
+                                    <option value="cumpleanos">🎂 Cumpleaños / Aniversario</option>
+                                    <option value="comunion">🕊️ Comunión</option>
+                                    <option value="otro">🎉 Fiesta Privada / Otro</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1">Marca Comercial *</label>
+                                <select wire:model="event_edit_brand" class="w-full border-gray-300 dark:border-slate-700 dark:bg-slate-950 dark:text-white rounded-xl text-sm font-bold p-2.5">
+                                    <option value="nunez_and_son">👑 Núñez and Son</option>
+                                    <option value="javnx">🎧 JAVNX DJ</option>
+                                    <option value="mago_leugim">🎩 Mago Leugim</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1">Estado del Evento *</label>
+                            <select wire:model="event_edit_status" class="w-full border-gray-300 dark:border-slate-700 dark:bg-slate-950 dark:text-white rounded-xl text-sm font-bold p-2.5">
+                                <option value="draft">🟡 Borrador / En preparación</option>
+                                <option value="confirmed">🟢 Confirmado</option>
+                                <option value="completed">🔵 Finalizado / Realizado</option>
+                                <option value="cancelled">🔴 Cancelado</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1">Notas / Observaciones del Evento</label>
+                            <textarea wire:model="event_edit_notes" rows="2" placeholder="Detalles o anotaciones generales sobre el evento..." class="w-full border-gray-300 dark:border-slate-700 dark:bg-slate-950 dark:text-white rounded-xl text-xs p-2.5"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-50 dark:bg-slate-950 px-6 py-3.5 border-t border-gray-100 dark:border-slate-800 flex justify-end gap-2 shrink-0">
+                        <button type="button" wire:click="closeEditEventModal" class="bg-white dark:bg-slate-900 hover:bg-gray-100 text-gray-700 dark:text-gray-300 font-bold text-xs px-4 py-2 border border-gray-300 dark:border-slate-700 rounded-xl transition cursor-pointer">
+                            Cancelar
+                        </button>
+                        <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-5 py-2 rounded-xl shadow-xs transition cursor-pointer">
+                            💾 Guardar Cambios
                         </button>
                     </div>
                 </form>

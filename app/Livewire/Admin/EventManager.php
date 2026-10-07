@@ -25,6 +25,11 @@ class EventManager extends Component
     public $assistant_id;
     public $notes;
     
+    public $editing_event_id = null;
+    public $ceremony_time;
+    public $cocktail_time;
+    public $banquet_time;
+    
     public $clients = [];
     public $djs = [];
     public $assistants = [];
@@ -38,6 +43,9 @@ class EventManager extends Component
         'event_date' => 'required|date',
         'setup_date' => 'nullable|date',
         'start_time' => 'nullable|string|max:20',
+        'ceremony_time' => 'nullable|string|max:20',
+        'cocktail_time' => 'nullable|string|max:20',
+        'banquet_time' => 'nullable|string|max:20',
         'dance_start_time' => 'nullable|string|max:20',
         'dance_duration_hours' => 'nullable|numeric|min:0.5|max:24',
         'location' => 'required|string|max:255',
@@ -82,7 +90,8 @@ class EventManager extends Component
             return;
         }
         $this->resetValidation();
-        $this->reset(['name', 'brand', 'event_type', 'event_date', 'setup_date', 'start_time', 'dance_start_time', 'dance_duration_hours', 'location', 'client_id', 'dj_id', 'assistant_id', 'notes']);
+        $this->editing_event_id = null;
+        $this->reset(['name', 'brand', 'event_type', 'event_date', 'setup_date', 'start_time', 'ceremony_time', 'cocktail_time', 'banquet_time', 'dance_start_time', 'dance_duration_hours', 'location', 'client_id', 'dj_id', 'assistant_id', 'notes']);
         $this->brand = \App\Models\Setting::getDetectedBrand();
         $this->event_type = 'boda';
         $this->dance_duration_hours = 4.0;
@@ -91,9 +100,39 @@ class EventManager extends Component
         $this->showCreateModal = true;
     }
 
+    public function openEditModal($eventId)
+    {
+        if (!in_array(auth()->user()->role, ['admin', 'dj'])) {
+            session()->flash('error', 'Solo los administradores y DJs autorizados pueden editar eventos.');
+            return;
+        }
+        $this->resetValidation();
+        $event = Event::findOrFail($eventId);
+        $this->editing_event_id = $event->id;
+        $this->name = $event->name;
+        $this->brand = $event->brand ?: 'nunez_and_son';
+        $this->event_type = $event->event_type ?: 'boda';
+        $this->event_date = $event->event_date ? $event->event_date->format('Y-m-d') : null;
+        $this->setup_date = $event->setup_date ? \Carbon\Carbon::parse($event->setup_date)->format('Y-m-d') : null;
+        $this->start_time = $event->start_time;
+        $this->ceremony_time = $event->ceremony_time;
+        $this->cocktail_time = $event->cocktail_time;
+        $this->banquet_time = $event->banquet_time;
+        $this->dance_start_time = $event->dance_start_time;
+        $this->dance_duration_hours = $event->dance_duration_hours ?: 4.0;
+        $this->location = $event->location;
+        $this->client_id = $event->client_id;
+        $this->dj_id = $event->dj_id;
+        $this->assistant_id = $event->assistant_id;
+        $this->notes = $event->notes;
+        $this->loadStaff();
+        $this->showCreateModal = true;
+    }
+
     public function closeCreateModal()
     {
         $this->showCreateModal = false;
+        $this->editing_event_id = null;
     }
 
     public function saveEvent()
@@ -110,7 +149,7 @@ class EventManager extends Component
                 }
             }
 
-            $createData = [
+            $eventData = [
                 'name' => $this->name,
                 'brand' => $this->brand ?: 'nunez_and_son',
                 'event_type' => $this->event_type ?: 'boda',
@@ -119,32 +158,42 @@ class EventManager extends Component
                 'client_id' => $this->client_id ?: null,
                 'dj_id' => $this->dj_id ?: auth()->id(),
                 'assistant_id' => $this->assistant_id ?: null,
-                'status' => 'draft',
                 'notes' => $this->notes,
             ];
 
             $scheduleFields = [
                 'setup_date' => $this->setup_date ?: null,
                 'start_time' => $this->start_time ?: null,
+                'ceremony_time' => $this->ceremony_time ?: null,
+                'cocktail_time' => $this->cocktail_time ?: null,
+                'banquet_time' => $this->banquet_time ?: null,
                 'dance_start_time' => $this->dance_start_time ?: null,
                 'dance_duration_hours' => $this->dance_duration_hours ? (float)$this->dance_duration_hours : null,
             ];
 
             foreach ($scheduleFields as $col => $val) {
                 if (\Illuminate\Support\Facades\Schema::hasColumn('events', $col)) {
-                    $createData[$col] = $val;
+                    $eventData[$col] = $val;
                 }
             }
 
-            Event::create($createData);
+            if ($this->editing_event_id) {
+                $event = Event::findOrFail($this->editing_event_id);
+                $event->update($eventData);
+                $msg = '¡Evento "' . $this->name . '" actualizado exitosamente!';
+            } else {
+                $eventData['status'] = 'draft';
+                Event::create($eventData);
+                $msg = '¡Evento creado exitosamente con DJ y Asistente asignados!';
+            }
 
             $this->closeCreateModal();
             $this->loadEvents();
             
-            session()->flash('message', 'Evento creado exitosamente con DJ y Asistente asignados.');
+            session()->flash('message', $msg);
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('Error creating event: ' . $e->getMessage());
-            session()->flash('error', 'Error al crear el evento: ' . $e->getMessage() . '. Si faltan columnas, ejecuta "php artisan migrate".');
+            \Illuminate\Support\Facades\Log::error('Error saving event: ' . $e->getMessage());
+            session()->flash('error', 'Error al guardar el evento: ' . $e->getMessage());
         }
     }
 

@@ -434,12 +434,24 @@ class Event extends Model
     }
 
     /**
-     * Hora de inicio del servicio musical contratado para el evento.
-     * Si se ha definido ceremonia, cóctel, banquete o baile, toma la primera fase cronológica.
+     * Hora de inicio del servicio/trabajo para el evento.
+     * Si el montaje es el mismo día y tiene hora especificada, toma la hora de montaje.
+     * Si el montaje es otro día (o no se especifica hora de montaje), toma la primera fase cronológica (Ceremonia, Cóctel, Banquete o Baile).
      */
     public function getEffectiveStartTimeAttribute(): string
     {
-        // 1. Fases del evento en orden cronológico habitual
+        // 1. Si hay fecha de montaje y fecha de evento, comprobar si es el mismo día
+        $isSameDaySetup = true;
+        if (!empty($this->setup_date) && !empty($this->event_date)) {
+            $isSameDaySetup = \Carbon\Carbon::parse($this->setup_date)->isSameDay(\Carbon\Carbon::parse($this->event_date));
+        }
+
+        // Si el montaje es el mismo día y se especificó hora de montaje, el trabajo en el recinto arranca con el montaje
+        if ($isSameDaySetup && !empty($this->start_time)) {
+            return substr(trim((string)$this->start_time), 0, 5);
+        }
+
+        // 2. Si el montaje es en otra fecha (víspera) o no hay hora de montaje: tomar la primera fase del evento
         if (!empty($this->ceremony_time)) {
             return substr(trim((string)$this->ceremony_time), 0, 5);
         }
@@ -453,7 +465,7 @@ class Event extends Model
             return substr(trim((string)$this->dance_start_time), 0, 5);
         }
 
-        // 2. Si no hay fases pero se especificó hora general
+        // Fallback si hay start_time general
         if (!empty($this->start_time)) {
             return substr(trim((string)$this->start_time), 0, 5);
         }

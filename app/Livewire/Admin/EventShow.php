@@ -30,6 +30,16 @@ class EventShow extends Component
     public $venue_notes;
     public $showVenueModal = false;
 
+    // Edición General del Evento
+    public $showEditEventModal = false;
+    public $event_edit_name;
+    public $event_edit_date;
+    public $event_edit_location;
+    public $event_edit_type;
+    public $event_edit_brand;
+    public $event_edit_status;
+    public $event_edit_notes;
+
     // Horarios del Evento y Baile
     public $showScheduleModal = false;
     public $setup_date;
@@ -2047,6 +2057,50 @@ class EventShow extends Component
 
         $this->showVenueModal = false;
         session()->flash('venue_message', 'Contacto de la finca/bodega guardado correctamente.');
+    }
+
+    public function openEditEventModal()
+    {
+        $this->event_edit_name = $this->event->name;
+        $this->event_edit_date = $this->event->event_date ? $this->event->event_date->format('Y-m-d') : null;
+        $this->event_edit_location = $this->event->location;
+        $this->event_edit_type = $this->event->event_type_clean ?: 'boda';
+        $this->event_edit_brand = $this->event->brand_clean ?: 'nunez_and_son';
+        $this->event_edit_status = $this->event->status ?: 'draft';
+        $this->event_edit_notes = $this->event->notes;
+        $this->showEditEventModal = true;
+    }
+
+    public function closeEditEventModal()
+    {
+        $this->showEditEventModal = false;
+    }
+
+    public function saveEventDetails()
+    {
+        $this->validate([
+            'event_edit_name' => 'required|string|max:255',
+            'event_edit_date' => 'required|date',
+            'event_edit_location' => 'required|string|max:255',
+            'event_edit_type' => 'required|string|in:boda,empresa,cumpleanos,comunion,otro',
+            'event_edit_brand' => 'required|string|in:nunez_and_son,javnx,mago_leugim',
+            'event_edit_status' => 'required|in:draft,confirmed,completed,cancelled',
+            'event_edit_notes' => 'nullable|string',
+        ]);
+
+        $this->event->update([
+            'name' => $this->event_edit_name,
+            'event_date' => $this->event_edit_date,
+            'location' => $this->event_edit_location,
+            'event_type' => $this->event_edit_type,
+            'brand' => $this->event_edit_brand,
+            'status' => $this->event_edit_status,
+            'notes' => $this->event_edit_notes,
+        ]);
+
+        $this->event->refresh();
+        $this->showEditEventModal = false;
+        session()->flash('message', '¡Detalles y nombre del evento actualizados correctamente!');
     }
 
     public function openScheduleModal()

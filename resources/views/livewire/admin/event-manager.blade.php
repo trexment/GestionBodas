@@ -220,6 +220,9 @@
                         </td>
                         <td class="px-4 py-3 whitespace-nowrap text-right text-xs font-medium">
                             <a href="{{ route('admin.events.show', $event->id) }}" class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 font-extrabold bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 border border-indigo-200 dark:border-indigo-800 px-3 py-1.5 rounded-xl transition">Gestionar</a>
+                            <button type="button" wire:click="openEditModal({{ $event->id }})" class="text-amber-600 hover:text-amber-900 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/60 border border-amber-200 dark:border-amber-800 px-2.5 py-1.5 rounded-xl transition ml-1 cursor-pointer" title="Editar Evento">
+                                ✏️
+                            </button>
                             @if(auth()->user()->role === 'admin')
                                 <button type="button" wire:click="deleteEvent({{ $event->id }})" wire:confirm="¿Estás seguro de que deseas eliminar permanentemente el evento '{{ $event->name }}' y todos sus presupuestos, contratos y música?" class="text-rose-600 hover:text-rose-900 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/60 px-2 py-1.5 rounded-xl transition ml-1 cursor-pointer" title="Eliminar Evento">
                                     🗑️
@@ -237,7 +240,7 @@
     </div>
 
     <!-- ============================================== -->
-    <!-- MODAL DE CREACIÓN DE EVENTO (SCROLLABLE MÓVIL) -->
+    <!-- MODAL DE CREACIÓN / EDICIÓN DE EVENTO (SCROLLABLE MÓVIL) -->
     <!-- ============================================== -->
     @if($showCreateModal)
     <div class="fixed z-50 inset-0 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
@@ -250,8 +253,8 @@
                 <!-- Header Modal -->
                 <div class="px-5 py-4 border-b border-gray-100 dark:border-slate-800 flex items-center justify-between bg-gray-50 dark:bg-slate-950">
                     <h3 class="text-base sm:text-lg font-black text-gray-900 dark:text-white flex items-center gap-2" id="modal-title">
-                        <span>✨</span>
-                        <span>Crear Nuevo Evento</span>
+                        <span>{{ $editing_event_id ? '✏️' : '✨' }}</span>
+                        <span>{{ $editing_event_id ? 'Editar Evento: ' . $name : 'Crear Nuevo Evento' }}</span>
                     </h3>
                     <button type="button" wire:click="closeCreateModal" class="text-gray-400 hover:text-gray-700 dark:hover:text-white p-1 rounded-xl text-lg font-black">&times;</button>
                 </div>
@@ -262,7 +265,7 @@
                         <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 mb-3">
                             <div class="sm:col-span-2">
                                 <label class="block text-gray-700 dark:text-slate-300 text-xs font-bold mb-1">Nombre del Evento *</label>
-                                <input type="text" wire:model="name" placeholder="Ej: Boda Laura y Carlos / Fiesta ACME" class="border dark:border-slate-700 rounded-xl w-full py-2 px-3 text-gray-700 dark:text-slate-200 bg-white dark:bg-slate-800 text-sm focus:ring-indigo-500 focus:border-indigo-500">
+                                <input type="text" wire:model="name" placeholder="Ej: Enlace Vidalia y Omar / Boda Laura y Carlos" class="border dark:border-slate-700 rounded-xl w-full py-2 px-3 text-gray-700 dark:text-slate-200 bg-white dark:bg-slate-800 text-sm focus:ring-indigo-500 focus:border-indigo-500 font-bold">
                                 @error('name') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                             </div>
                             <div>
@@ -316,6 +319,22 @@
                                 <div>
                                     <label class="block text-amber-900 dark:text-amber-300 text-xs font-bold mb-1">🚗 Hora Montaje (24h)</label>
                                     <input type="time" wire:model="start_time" class="border border-amber-300 dark:border-amber-700 rounded-xl w-full py-1.5 px-2 text-gray-700 dark:text-slate-200 text-xs bg-white dark:bg-slate-800 font-bold">
+                                </div>
+                            </div>
+
+                            <!-- Fases: Ceremonia, Cóctel, Banquete -->
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2 border-t border-purple-200/60 dark:border-purple-900/60">
+                                <div>
+                                    <label class="block text-[11px] font-bold text-gray-700 dark:text-slate-300 mb-0.5">💍 Ceremonia</label>
+                                    <input type="time" wire:model="ceremony_time" class="border border-purple-200 dark:border-purple-800 rounded-xl w-full py-1 px-2 text-gray-700 dark:text-slate-200 text-xs font-bold bg-white dark:bg-slate-800">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold text-gray-700 dark:text-slate-300 mb-0.5">🍸 Cóctel</label>
+                                    <input type="time" wire:model="cocktail_time" class="border border-purple-200 dark:border-purple-800 rounded-xl w-full py-1 px-2 text-gray-700 dark:text-slate-200 text-xs font-bold bg-white dark:bg-slate-800">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold text-gray-700 dark:text-slate-300 mb-0.5">🍽️ Banquete</label>
+                                    <input type="time" wire:model="banquet_time" class="border border-purple-200 dark:border-purple-800 rounded-xl w-full py-1 px-2 text-gray-700 dark:text-slate-200 text-xs font-bold bg-white dark:bg-slate-800">
                                 </div>
                             </div>
 
@@ -380,7 +399,7 @@
                         Cancelar
                     </button>
                     <button wire:click="saveEvent" type="button" class="w-full sm:w-auto inline-flex justify-center rounded-xl border border-transparent shadow-md px-5 py-2.5 bg-indigo-600 text-xs font-extrabold text-white hover:bg-indigo-700 focus:outline-none transition cursor-pointer">
-                        Guardar Evento
+                        {{ $editing_event_id ? '💾 Guardar Cambios' : '🚀 Crear Evento' }}
                     </button>
                 </div>
 
