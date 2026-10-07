@@ -434,6 +434,94 @@ class Event extends Model
     }
 
     /**
+     * Hora de inicio del servicio musical contratado para el evento.
+     * Si se ha definido ceremonia, cóctel, banquete o baile, toma la primera fase cronológica.
+     */
+    public function getEffectiveStartTimeAttribute(): string
+    {
+        // 1. Fases del evento en orden cronológico habitual
+        if (!empty($this->ceremony_time)) {
+            return substr(trim((string)$this->ceremony_time), 0, 5);
+        }
+        if (!empty($this->cocktail_time)) {
+            return substr(trim((string)$this->cocktail_time), 0, 5);
+        }
+        if (!empty($this->banquet_time)) {
+            return substr(trim((string)$this->banquet_time), 0, 5);
+        }
+        if (!empty($this->dance_start_time)) {
+            return substr(trim((string)$this->dance_start_time), 0, 5);
+        }
+
+        // 2. Si no hay fases pero se especificó hora general
+        if (!empty($this->start_time)) {
+            return substr(trim((string)$this->start_time), 0, 5);
+        }
+
+        return 'Por determinar';
+    }
+
+    /**
+     * Hora de fin estimada del servicio musical contratado.
+     * Toma el fin del baile, o lo calcula a partir del inicio y duración del baile o presupuesto.
+     */
+    public function getEffectiveEndTimeAttribute(): string
+    {
+        // 1. Hora de fin explícita del baile
+        if (!empty($this->dance_end_time)) {
+            return substr(trim((string)$this->dance_end_time), 0, 5);
+        }
+
+        // 2. Hora de fin calculada del baile (dance_start_time + dance_duration_hours)
+        if (!empty($this->calculated_dance_end_time)) {
+            return substr(trim((string)$this->calculated_dance_end_time), 0, 5);
+        }
+
+        // 3. Si hay dance_start_time y horas sugeridas por presupuesto
+        if (!empty($this->dance_start_time)) {
+            try {
+                $start = \Carbon\Carbon::createFromFormat('H:i', substr(trim((string)$this->dance_start_time), 0, 5));
+                $hours = $this->suggested_dance_hours ?: 4.0;
+                return $start->addMinutes((int)($hours * 60))->format('H:i');
+            } catch (\Throwable $e) {}
+        }
+
+        // 4. Si hay effective_start_time con formato válido y horas estimadas
+        $startStr = $this->effective_start_time;
+        if (!empty($startStr) && $startStr !== 'Por determinar' && preg_match('/^\d{1,2}:\d{2}$/', $startStr)) {
+            try {
+                $start = \Carbon\Carbon::createFromFormat('H:i', $startStr);
+                $hours = $this->suggested_dance_hours ?: 4.0;
+                return $start->addMinutes((int)($hours * 60))->format('H:i');
+            } catch (\Throwable $e) {}
+        }
+
+        return 'Fin de fiesta / Según desarrollo';
+    }
+
+    /**
+     * Resumen completo de todas las fases del evento con sus horarios
+     */
+    public function getScheduleBreakdownAttribute(): string
+    {
+        $parts = [];
+        if (!empty($this->ceremony_time)) {
+            $parts[] = "Ceremonia: " . substr(trim((string)$this->ceremony_time), 0, 5) . "h";
+        }
+        if (!empty($this->cocktail_time)) {
+            $parts[] = "Cóctel: " . substr(trim((string)$this->cocktail_time), 0, 5) . "h";
+        }
+        if (!empty($this->banquet_time)) {
+            $parts[] = "Banquete: " . substr(trim((string)$this->banquet_time), 0, 5) . "h";
+        }
+        if (!empty($this->dance_start_time)) {
+            $danceEnd = $this->effective_end_time;
+            $parts[] = "Baile / Barra Libre: " . substr(trim((string)$this->dance_start_time), 0, 5) . "h a " . $danceEnd . "h";
+        }
+        return !empty($parts) ? implode(' • ', $parts) : ($this->effective_start_time . ' a ' . $this->effective_end_time);
+    }
+
+    /**
      * Devuelve la lista de momentos musicales sugeridos según el tipo de evento
      */
     public function getSuggestedMomentsAttribute(): array

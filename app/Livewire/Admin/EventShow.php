@@ -2120,6 +2120,10 @@ class EventShow extends Component
             'schedule_notes' => 'nullable|string',
         ]);
 
+        if (!empty($this->dance_start_time) && !empty($this->dance_duration_hours) && empty($this->dance_end_time)) {
+            $this->recalculateDanceEndTime();
+        }
+
         try {
             // Si las columnas aún no existen, intentamos aplicar migraciones automáticamente
             if (!\Illuminate\Support\Facades\Schema::hasColumn('events', 'setup_date') || !\Illuminate\Support\Facades\Schema::hasColumn('events', 'dance_start_time')) {

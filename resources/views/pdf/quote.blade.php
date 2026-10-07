@@ -561,10 +561,10 @@
 
         // Schedule string
         $scheduleStr = 'Horario personalizado a convenir';
-        if ($event->start_time && $event->end_time) {
-            $scheduleStr = 'De ' . $event->start_time . ' a ' . $event->end_time;
-        } elseif ($event->start_time) {
-            $scheduleStr = 'A partir de las ' . $event->start_time;
+        if ($event->dance_start_time) {
+            $scheduleStr = $event->dance_schedule_label;
+        } elseif ($event->effective_start_time !== 'Por determinar') {
+            $scheduleStr = 'A partir de las ' . $event->effective_start_time . ' h';
         }
 
         // Check which pack matches the current quote
