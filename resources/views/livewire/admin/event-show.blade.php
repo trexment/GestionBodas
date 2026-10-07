@@ -2695,6 +2695,10 @@
                                             ✓ Marcar Firmado
                                         </button>
                                     @endif
+
+                                    <button type="button" wire:click="deleteContract({{ $contract->id }})" wire:confirm="¿Estás seguro de que deseas eliminar este contrato?" class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer" title="Eliminar contrato">
+                                        🗑️ Eliminar
+                                    </button>
                                 </div>
                             </div>
 

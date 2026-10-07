@@ -41,6 +41,8 @@ class ContractTemplateService
             '{{ servicios_contratados }}' => 'Listado y desglose de servicios contratados (DJ, Fotografía, Cóctel, etc.)',
             '{{ iban_empresa }}' => 'IBAN de la empresa para pagos',
             '{{ bizum_empresa }}' => 'Teléfono Bizum de la empresa',
+            '{{ formas_pago }}' => 'Formas de pago aceptadas (Transferencia, Bizum, Metálico/Efectivo, Tarjeta, etc. según la propuesta)',
+            '{{ metodos_pago }}' => 'Alias de formas de pago aceptadas',
             '{{ numero_presupuesto }}' => 'Número de presupuesto',
             '{{ numero_contrato }}' => 'Número de contrato',
             '{{ fecha_emision }}' => 'Fecha de emisión del contrato',
@@ -88,7 +90,7 @@ TERCERA. PRECIO Y FORMA DE PAGO
 El precio total pactado asciende a {{ importe }} (IVA incluido o aplicable según normativa). El pago se formalizará conforme a las siguientes condiciones:
 1. Un importe de {{ importe_senal }} en concepto de señal y reserva en firme de la fecha y bloqueo de equipamiento técnico a la firma del presente contrato.
 2. El importe restante de {{ importe_restante }} a abonar el día de la celebración del evento o con anterioridad al inicio de la actuación.
-Formas de pago aceptadas: Transferencia bancaria al IBAN {{ iban_empresa }} o Bizum al {{ bizum_empresa }}.
+Formas de pago aceptadas: {{ formas_pago }}.
 Cualquier ampliación horaria o extra no contemplado en el presupuesto inicial se abonará conforme a la tarifa por hora extra establecida.
 
 CUARTA. CONDICIONES TÉCNICAS, SUMINISTRO ELÉCTRICO Y CLIMATOLOGÍA (CARPA)
@@ -194,21 +196,59 @@ TEXT
             $clientCityInfo = ', ' . implode(' ', $parts);
         }
 
+        $brandKey = $event ? $event->brand_clean : ($quote ? $quote->brand_clean : null);
+        $brand = Setting::getBrandInfo($brandKey);
+        $companyName = $brand['name'] ?: Setting::getCompanyName('Núñez and Son');
+        $companyCif = $brand['cif'] ?? Setting::get('company_cif', 'B-12345678');
+        $companyEmail = $brand['email'] ?: Setting::get('company_email', 'info@eventosmusicales.es');
+        $companyPhone = $brand['phone'] ?: Setting::get('company_phone', '+34 622 634 790');
+        $companyAddress = Setting::get('company_address', 'Calle Principal s/n');
         $companyCity = Setting::get('company_city', 'Navarrete');
+        $companyIban = $brand['iban'] ?: Setting::get('company_iban', 'ES00 0000 0000 0000 0000 0000');
+        $companyBizum = $brand['bizum'] ?: Setting::get('company_bizum', '622634790');
+
         $signingCity = $clientCity ?: $companyCity;
         $courtCity = Setting::get('company_court_city', $companyCity === 'Navarrete' ? 'Logroño (La Rioja)' : $companyCity);
 
+        // Resolve active payment methods
+        $activePaymentMethods = $quote ? $quote->active_payment_methods : ['transfer', 'bizum'];
+        $paymentMethodTexts = [];
+        foreach ($activePaymentMethods as $pm) {
+            if ($pm === 'transfer') {
+                $paymentMethodTexts[] = "Transferencia bancaria al IBAN {$companyIban}";
+            } elseif ($pm === 'bizum') {
+                $paymentMethodTexts[] = "Bizum al {$companyBizum}";
+            } elseif ($pm === 'cash') {
+                $paymentMethodTexts[] = "Abono en efectivo / metálico al DJ / técnico el día del evento";
+            } elseif ($pm === 'card') {
+                $paymentMethodTexts[] = "Tarjeta / TPV";
+            } elseif ($pm === 'other') {
+                $paymentMethodTexts[] = "Otro método previamente acordado";
+            }
+        }
+        if (empty($paymentMethodTexts)) {
+            $paymentMethodTexts[] = "Transferencia bancaria al IBAN {$companyIban} o Bizum al {$companyBizum}";
+        }
+        if (count($paymentMethodTexts) === 1) {
+            $formattedPaymentMethods = $paymentMethodTexts[0];
+        } else {
+            $last = array_pop($paymentMethodTexts);
+            $formattedPaymentMethods = implode(', ', $paymentMethodTexts) . ' o ' . $last;
+        }
+
         $replacements = [
-            '{{ empresa }}' => Setting::getCompanyName('Núñez and Son'),
-            '{{ cif_empresa }}' => Setting::get('company_cif', 'B-12345678'),
-            '{{ email_empresa }}' => Setting::get('company_email', 'info@eventosmusicales.es'),
-            '{{ telefono_empresa }}' => Setting::get('company_phone', '+34 622 634 790'),
-            '{{ direccion_empresa }}' => Setting::get('company_address', 'Calle Principal s/n'),
+            '{{ empresa }}' => $companyName,
+            '{{ cif_empresa }}' => $companyCif,
+            '{{ email_empresa }}' => $companyEmail,
+            '{{ telefono_empresa }}' => $companyPhone,
+            '{{ direccion_empresa }}' => $companyAddress,
             '{{ ciudad_empresa }}' => $companyCity,
             '{{ ciudad_firma }}' => $signingCity,
             '{{ ciudad_juzgados }}' => $courtCity,
-            '{{ iban_empresa }}' => Setting::get('company_iban', 'ES00 0000 0000 0000 0000 0000'),
-            '{{ bizum_empresa }}' => Setting::get('company_bizum', '622634790'),
+            '{{ iban_empresa }}' => $companyIban,
+            '{{ bizum_empresa }}' => $companyBizum,
+            '{{ formas_pago }}' => $formattedPaymentMethods,
+            '{{ metodos_pago }}' => $formattedPaymentMethods,
             '{{ cliente }}' => $clientName,
             '{{ nif_cliente }}' => $clientDni,
             '{{ email_cliente }}' => $clientEmail,
@@ -238,6 +278,13 @@ TEXT
         $titleTemplate = self::getDefaultTitle();
         $bodyTemplate = self::getDefaultBody();
         $footerTemplate = self::getDefaultFooter();
+
+        if (!str_contains($bodyTemplate, '{{ formas_pago }}') && !str_contains($bodyTemplate, '{{ metodos_pago }}')) {
+            $bodyTemplate = str_replace([
+                'Transferencia bancaria al IBAN {{ iban_empresa }} o Bizum al {{ bizum_empresa }}.',
+                'Transferencia bancaria al IBAN {{ iban_empresa }} o Bizum al {{ bizum_empresa }}',
+            ], '{{ formas_pago }}.', $bodyTemplate);
+        }
 
         $renderedTitle = str_replace(array_keys($replacements), array_values($replacements), $titleTemplate);
         $renderedBody = str_replace(array_keys($replacements), array_values($replacements), $bodyTemplate);

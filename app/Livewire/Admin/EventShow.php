@@ -2002,6 +2002,16 @@ class EventShow extends Component
         session()->flash('contract_message', 'Contrato borrador generado con enlace para firma online.');
     }
 
+    public function deleteContract($contractId)
+    {
+        $contract = Contract::find($contractId);
+        if ($contract && $contract->event_id == $this->event->id) {
+            $contract->delete();
+            $this->event->load('contracts');
+            session()->flash('contract_message', 'Contrato eliminado correctamente.');
+        }
+    }
+
     public function signContract($contractId)
     {
         $contract = Contract::find($contractId);
