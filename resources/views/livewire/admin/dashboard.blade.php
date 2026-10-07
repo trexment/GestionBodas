@@ -164,9 +164,12 @@
                                         </span>
                                     @endif
 
-                                    @if($ev->assistant)
+                                    @php
+                                        $dashAsts = $ev->all_assistants;
+                                    @endphp
+                                    @if($dashAsts->isNotEmpty())
                                         <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-200 text-[11px] font-semibold">
-                                            <span>🛠️ Asistente:</span> {{ $ev->assistant->name }}
+                                            <span>🛠️ Asistente(s):</span> {{ $dashAsts->pluck('name')->implode(', ') }}
                                         </span>
                                     @endif
 

@@ -91,6 +91,11 @@ class Event extends Model
         return $this->belongsTo(User::class, 'assistant_id');
     }
 
+    public function assistants()
+    {
+        return $this->belongsToMany(User::class, 'event_assistants', 'event_id', 'user_id')->withTimestamps();
+    }
+
     public function quotes()
     {
         return $this->hasMany(Quote::class);
@@ -679,6 +684,123 @@ class Event extends Model
             'baile' => '💃 Baile / Fiesta',
             'lista_negra' => '🚫 Lista Negra',
         ];
+    }
+
+    /**
+     * Obtiene la lista completa de asistentes (soporta relación N:M y fallback a assistant_id)
+     */
+    public function getAllAssistantsAttribute()
+    {
+        try {
+            if (\Illuminate\Support\Facades\Schema::hasTable('event_assistants')) {
+                $list = $this->assistants;
+                if ($list && $list->isNotEmpty()) {
+                    return $list;
+                }
+            }
+        } catch (\Throwable $e) {}
+
+        if ($this->assistant) {
+            return collect([$this->assistant]);
+        }
+        return collect([]);
+    }
+
+    /**
+     * Número total de integrantes del equipo técnico (DJ + Asistentes)
+     */
+    public function getStaffCountAttribute(): int
+    {
+        $djCount = $this->dj_id || $this->dj ? 1 : 1; // Mínimo 1 DJ por defecto
+        $astCount = $this->all_assistants->count();
+        return max(1, $djCount + $astCount);
+    }
+
+    /**
+     * Desglose detallado del equipo técnico asignado
+     */
+    public function getStaffBreakdownTextAttribute(): string
+    {
+        $djName = $this->dj ? $this->dj->name : 'DJ Titular';
+        $assistants = $this->all_assistants;
+        $astCount = $assistants->count();
+
+        if ($astCount === 0) {
+            return "1 persona (1 DJ: {$djName})";
+        }
+
+        $astNames = $assistants->pluck('name')->filter()->implode(', ');
+        $astLabel = $astCount === 1 ? '1 Asistente' : "{$astCount} Asistentes";
+        $total = 1 + $astCount;
+
+        return "{$total} personas (1 DJ: {$djName} y {$astLabel}" . ($astNames ? ": {$astNames}" : "") . ")";
+    }
+
+    /**
+     * Listado resumido de nombres de los técnicos
+     */
+    public function getStaffNamesTextAttribute(): string
+    {
+        $names = [];
+        if ($this->dj) {
+            $names[] = $this->dj->name . ' (DJ)';
+        }
+        foreach ($this->all_assistants as $ast) {
+            $names[] = $ast->name . ' (Asistente)';
+        }
+        return !empty($names) ? implode(', ', $names) : 'Personal asignado';
+    }
+
+    /**
+     * Determina si el evento requiere manutención / menú de staff (cóctel, banquete o larga duración)
+     */
+    public function getRequiresStaffMealAttribute(): bool
+    {
+        if (!empty($this->cocktail_time) || !empty($this->banquet_time) || !empty($this->ceremony_time)) {
+            return true;
+        }
+
+        // Si la hora de inicio es anterior a las 20:30 o cubre tarde/noche completa
+        $start = $this->effective_start_time;
+        if (!empty($start) && $start !== 'Por determinar' && preg_match('/^\d{1,2}:\d{2}$/', $start)) {
+            $hour = (int)explode(':', $start)[0];
+            if ($hour < 21) {
+                return true;
+            }
+        }
+
+        try {
+            $quote = $this->quotes()->latest()->first();
+            if ($quote && $quote->items) {
+                foreach ($quote->items as $item) {
+                    $text = mb_strtolower(($item->service_name ?? '') . ' ' . ($item->description ?? ''));
+                    if (str_contains($text, 'coctel') || str_contains($text, 'cóctel') || 
+                        str_contains($text, 'banquet') || str_contains($text, 'comida') || 
+                        str_contains($text, 'cena') || str_contains($text, 'ceremon') ||
+                        str_contains($text, 'completo') || str_contains($text, 'dia')) {
+                        return true;
+                    }
+                }
+            }
+        } catch (\Throwable $e) {}
+
+        return false;
+    }
+
+    /**
+     * Redacción de la cláusula de manutención / menú de personal para el contrato
+     */
+    public function getStaffMealClauseTextAttribute(): string
+    {
+        $count = $this->staff_count;
+        $countStr = $count === 1 ? '1 persona' : "{$count} personas";
+        $breakdown = $this->staff_breakdown_text;
+
+        if ($this->requires_staff_meal) {
+            return "Al prestarse servicios durante las fases de cóctel y/o banquete (o servicios continuados de larga duración), EL CLIENTE se compromete a facilitar la manutención / menú de personal (plato de comida caliente y bebida) para los integrantes del equipo técnico desplazados ({$breakdown}).";
+        }
+
+        return "En caso de que los servicios contratados se amplíen o cubran las fases de cóctel y/o banquete (o superen las 4 horas de servicio in situ), EL CLIENTE facilitará la correspondiente manutención / menú de personal para los integrantes del equipo ({$countStr}).";
     }
 }
 

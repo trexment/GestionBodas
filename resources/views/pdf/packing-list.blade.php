@@ -74,8 +74,17 @@
             <tr>
                 <td class="info-label">🎧 DJ Asignado:</td>
                 <td class="info-val"><strong>{{ $dj->name ?? 'Sin asignar' }}</strong> {{ isset($dj->phone) ? '('.$dj->phone.')' : '' }}</td>
-                <td class="info-label">👷‍♂️ Asistente:</td>
-                <td class="info-val"><strong>{{ $assistant->name ?? 'Sin asignar' }}</strong> {{ isset($assistant->phone) ? '('.$assistant->phone.')' : '' }}</td>
+                <td class="info-label">👷‍♂️ Asistente(s):</td>
+                <td class="info-val">
+                    @php
+                        $packingAssistants = $event->all_assistants;
+                    @endphp
+                    @if($packingAssistants->isNotEmpty())
+                        <strong>{{ $packingAssistants->map(fn($a) => $a->name . ($a->phone ? ' ('.$a->phone.')' : ''))->implode(', ') }}</strong>
+                    @else
+                        <strong>Sin asignar</strong>
+                    @endif
+                </td>
             </tr>
             @if($event->notes)
             <tr>

@@ -43,6 +43,12 @@ class ContractTemplateService
             '{{ importe_senal }}' => 'Importe del 40% de señal de reserva con €',
             '{{ importe_restante }}' => 'Importe del 60% restante con €',
             '{{ servicios_contratados }}' => 'Listado y desglose de servicios contratados (DJ, Fotografía, Cóctel, etc.)',
+            '{{ clausula_manutencion }}' => 'Cláusula de manutención / menú de personal del equipo (cóctel, banquete y larga duración)',
+            '{{ clausula_comida }}' => 'Alias de la cláusula de manutención y menú de personal',
+            '{{ numero_staff }}' => 'Número total de personas del equipo técnico desplazados (ej: 1, 2, 3)',
+            '{{ texto_staff }}' => 'Texto de persona / personas según el número de integrantes',
+            '{{ desglose_staff }}' => 'Desglose detallado del equipo técnico (DJ + Asistentes)',
+            '{{ personal_asignado }}' => 'Listado de nombres del equipo técnico asignado al evento',
             '{{ iban_empresa }}' => 'IBAN de la empresa para pagos',
             '{{ bizum_empresa }}' => 'Teléfono Bizum de la empresa',
             '{{ formas_pago }}' => 'Formas de pago aceptadas (Transferencia, Bizum, Metálico/Efectivo, Tarjeta, etc. según la propuesta)',
@@ -58,7 +64,7 @@ class ContractTemplateService
         return [
             'servicio_dj' => [
                 'name' => 'Servicio DJ / Discomóvil / Eventos Musicales y Bodas',
-                'description' => 'Plantilla integral y blindada para bodas y eventos con decibelios, horas extra según límite legal, pagos escalonados (40% señal / 60% evento), roturas por invitados, SGAE, climatología, RRSS y RGPD.',
+                'description' => 'Plantilla integral y blindada para bodas y eventos con decibelios, manutención de personal, horas extra según límite legal, pagos escalonados (40% señal / 60% evento), roturas por invitados, SGAE, climatología, RRSS y RGPD.',
                 'title' => 'Contrato de Prestación de Servicios Musicales, Sonorización e Iluminación - {{ evento }}',
                 'body' => <<<'TEXT'
 En {{ ciudad_firma }}, a {{ fecha_emision }}.
@@ -101,25 +107,28 @@ CUARTA. CONDICIONES TÉCNICAS, SUMINISTRO ELÉCTRICO Y CLIMATOLOGÍA (CARPA)
 EL CLIENTE garantizará el acceso de los técnicos al recinto con antelación suficiente para el montaje y pruebas de sonido, así como una toma de corriente estable y adecuada (230V con toma de tierra).
 En eventos al aire libre, si las condiciones climatológicas fuesen adversas (lluvia, tormenta, viento severo o humedad extrema), EL CLIENTE deberá facilitar un espacio cubierto o carpa debidamente impermeabilizada que garantice la seguridad del público, técnicos y material.
 
-QUINTA. LIMITACIÓN DE DECIBELIOS Y NORMATIVAS ACÚSTICAS
+QUINTA. MANUTENCIÓN Y MENÚ DE PERSONAL (STAFF)
+{{ clausula_manutencion }}
+
+SEXTA. LIMITACIÓN DE DECIBELIOS Y NORMATIVAS ACÚSTICAS
 EL CLIENTE manifiesta ser conocedor de las ordenanzas municipales sobre medio ambiente, límites de decibelios y aforo aplicables en el recinto. A estos efectos, LA EMPRESA / DJ se reserva la facultad técnica de moderar el volumen de emisión sonora con el fin de respetar en todo momento la normativa acústica vigente y evitar sanciones administrativas.
 
-SEXTA. RESPONSABILIDAD, CUSTODIA Y DAÑOS AL EQUIPAMIENTO POR INVITADOS
+SÉPTIMA. RESPONSABILIDAD, CUSTODIA Y DAÑOS AL EQUIPAMIENTO POR INVITADOS
 EL CLIENTE asume la custodia del equipamiento técnico instalado durante el desarrollo del evento. Cualquier daño, rotura, caída, sustracción o vertido de bebidas/líquidos sobre altavoces, mesas de mezclas, cabina DJ, micrófonos, ordenadores o iluminación provocado por la imprudencia, descuido, tropiezo o negligencia de los invitados, asistentes o terceros presentes en el evento será RESPONSABILIDAD ECONÓMICA EXCLUSIVA DEL CLIENTE. Éste abonará el coste íntegro de la reparación técnica oficial o sustitución a nuevo del material a precio de mercado en un plazo máximo de siete (7) días naturales.
 
-SÉPTIMA. DERECHOS DE AUTOR Y PROPIEDAD INTELECTUAL (SGAE / AGEDI-AIE)
+OCTAVA. DERECHOS DE AUTOR Y PROPIEDAD INTELECTUAL (SGAE / AGEDI-AIE)
 Los cánones, licencias y autorizaciones que pudieran devengarse ante entidades de gestión de derechos de autor (SGAE, AGEDI-AIE) por la comunicación pública musical en el recinto corresponden al organizador del evento o a la finca/establecimiento conforme a la legislación aplicable.
 
-OCTAVA. SEGURIDAD Y SUSPENSIÓN DEL SERVICIO
+NOVENA. SEGURIDAD Y SUSPENSIÓN DEL SERVICIO
 Si durante el desarrollo del evento se suscitaran altercados, actos vandálicos, agresiones verbales o físicas al personal técnico/DJ, o un riesgo eléctrico o meteorológico inminente que ponga en peligro vidas o bienes, LA EMPRESA podrá suspender cautelarmente la actividad sin que ello genere derecho a devolución de los importes abonados ni indemnización alguna.
 
-NOVENA. CANCELACIÓN Y REPROGRAMACIÓN POR FUERZA MAYOR
+DÉCIMA. CANCELACIÓN Y REPROGRAMACIÓN POR FUERZA MAYOR
 En caso de desistimiento unilateral o cancelación por parte del CLIENTE no imputable a LA EMPRESA, se retendrán las cantidades abonadas en concepto de reserva y gastos de gestión. Si la cancelación se produjera por causa demostrable de fuerza mayor sobrevenida (incluyendo fallecimiento o enfermedad grave de familiar directo de primer grado), LA EMPRESA reservará íntegramente las cantidades entregadas para aplicarlas a una nueva fecha consensuada según disponibilidad.
 
-DÉCIMA. PROTECCIÓN DE DATOS (RGPD / LOPD-GDD)
+DÉCIMO PRIMERA. PROTECCIÓN DE DATOS (RGPD / LOPD-GDD)
 Los datos personales facilitados serán tratados exclusivamente para la gestión, ejecución y facturación del presente contrato. Las partes podrán ejercer sus derechos de acceso, rectificación, supresión y portabilidad dirigiéndose a las direcciones indicadas en el encabezamiento.
 
-DÉCIMO PRIMERA. JURISDICCIÓN Y COMPETENCIA
+DÉCIMO SEGUNDA. JURISDICCIÓN Y COMPETENCIA
 Para cualquier discrepancia, litigio o reclamación derivada de la interpretación o ejecución del presente contrato, ambas partes acuerdan someterse expresamente a los Juzgados y Tribunales correspondientes al partido judicial de {{ ciudad_juzgados }}, con renuncia expresa a cualquier otro fuero que pudiera corresponderles.
 TEXT
                 ,
@@ -278,6 +287,12 @@ TEXT
             '{{ importe_restante }}' => number_format($remainingAmount, 2, ',', '.') . ' €',
             '{{ servicios_contratados }}' => $renderedServices,
             '{{ desglose_servicios }}' => $renderedServices,
+            '{{ clausula_manutencion }}' => $event ? $event->staff_meal_clause_text : 'Al cubrirse fases de cóctel/banquete o servicios superiores a 4 horas, el cliente proporcionará menú de staff.',
+            '{{ clausula_comida }}' => $event ? $event->staff_meal_clause_text : 'Al cubrirse fases de cóctel/banquete o servicios superiores a 4 horas, el cliente proporcionará menú de staff.',
+            '{{ numero_staff }}' => $event ? (string)$event->staff_count : '1',
+            '{{ texto_staff }}' => $event && $event->staff_count === 1 ? 'persona' : 'personas',
+            '{{ desglose_staff }}' => $event ? $event->staff_breakdown_text : '1 persona (DJ)',
+            '{{ personal_asignado }}' => $event ? $event->staff_names_text : 'DJ',
             '{{ numero_presupuesto }}' => $quote ? 'PRE-' . str_pad($quote->id, 5, '0', STR_PAD_LEFT) : 'PRE-' . str_pad($event->id ?? 1, 5, '0', STR_PAD_LEFT),
             '{{ numero_contrato }}' => 'CTR-' . str_pad($contract->id, 5, '0', STR_PAD_LEFT),
             '{{ fecha_emision }}' => ($contract->created_at ?? now())->format('d/m/Y'),
@@ -292,6 +307,29 @@ TEXT
                 'Transferencia bancaria al IBAN {{ iban_empresa }} o Bizum al {{ bizum_empresa }}.',
                 'Transferencia bancaria al IBAN {{ iban_empresa }} o Bizum al {{ bizum_empresa }}',
             ], '{{ formas_pago }}.', $bodyTemplate);
+        }
+
+        // Si la plantilla guardada en Settings no incluye aún la cláusula de manutención, la inyectamos
+        if (!str_contains($bodyTemplate, '{{ clausula_manutencion }}') && !str_contains($bodyTemplate, 'MANUTENCIÓN') && !str_contains($bodyTemplate, 'manutención')) {
+            if (str_contains($bodyTemplate, 'QUINTA. LIMITACIÓN DE DECIBELIOS')) {
+                $bodyTemplate = str_replace(
+                    'QUINTA. LIMITACIÓN DE DECIBELIOS',
+                    "QUINTA. MANUTENCIÓN Y MENÚ DE PERSONAL (STAFF)\n{{ clausula_manutencion }}\n\nSEXTA. LIMITACIÓN DE DECIBELIOS",
+                    $bodyTemplate
+                );
+                $bodyTemplate = str_replace(
+                    ['SEXTA. RESPONSABILIDAD', 'SÉPTIMA. DERECHOS', 'OCTAVA. SEGURIDAD', 'NOVENA. CANCELACIÓN', 'DÉCIMA. PROTECCIÓN', 'DÉCIMO PRIMERA. JURISDICCIÓN'],
+                    ['SÉPTIMA. RESPONSABILIDAD', 'OCTAVA. DERECHOS', 'NOVENA. SEGURIDAD', 'DÉCIMA. CANCELACIÓN', 'DÉCIMO PRIMERA. PROTECCIÓN', 'DÉCIMO SEGUNDA. JURISDICCIÓN'],
+                    $bodyTemplate
+                );
+            } elseif (str_contains($bodyTemplate, 'CUARTA. CONDICIONES TÉCNICAS')) {
+                $bodyTemplate = str_replace(
+                    'CUARTA. CONDICIONES TÉCNICAS',
+                    "CUARTA. CONDICIONES TÉCNICAS",
+                    $bodyTemplate
+                );
+                $bodyTemplate .= "\n\nMANUTENCIÓN / MENÚ DE PERSONAL (STAFF):\n{{ clausula_manutencion }}";
+            }
         }
 
         $renderedTitle = str_replace(array_keys($replacements), array_values($replacements), $titleTemplate);

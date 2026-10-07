@@ -174,9 +174,12 @@
                                         🎧 {{ $event->dj->name }}
                                     </span>
                                 @endif
-                                @if($event->assistant)
+                                @php
+                                    $assignedAsts = $event->all_assistants;
+                                @endphp
+                                @if($assignedAsts->isNotEmpty())
                                     <span class="text-[11px] text-amber-700 dark:text-amber-400 font-semibold inline-flex items-center gap-1">
-                                        👷‍♂️ {{ $event->assistant->name }}
+                                        👷‍♂️ {{ $assignedAsts->pluck('name')->implode(', ') }}
                                     </span>
                                 @endif
                             </div>
@@ -368,25 +371,38 @@
                             @error('client_id') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                         </div>
 
-                        <!-- Asignación de Personal: DJ y Asistente -->
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3 bg-indigo-50/60 dark:bg-indigo-950/40 p-3 rounded-2xl border border-indigo-100 dark:border-indigo-900/50">
+                        <!-- Asignación de Personal: DJ y Asistentes -->
+                        <div class="mb-3 bg-indigo-50/60 dark:bg-indigo-950/40 p-3 rounded-2xl border border-indigo-100 dark:border-indigo-900/50 space-y-3">
                             <div>
-                                <label class="block text-indigo-900 dark:text-indigo-300 text-xs font-bold mb-1">🎧 DJ (Baile / Fiesta)</label>
-                                <select wire:model="dj_id" class="border dark:border-slate-700 rounded-xl w-full py-2 px-3 text-gray-700 dark:text-slate-200 text-sm focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-slate-800">
+                                <label class="block text-indigo-900 dark:text-indigo-300 text-xs font-bold mb-1">🎧 DJ Principal (Baile / Fiesta)</label>
+                                <select wire:model="dj_id" class="border dark:border-slate-700 rounded-xl w-full py-2 px-3 text-gray-700 dark:text-slate-200 text-sm focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-slate-800 font-bold">
                                     <option value="">-- Seleccionar DJ --</option>
                                     @foreach($djs as $djItem)
                                         <option value="{{ $djItem->id }}">{{ $djItem->name }}</option>
                                     @endforeach
                                 </select>
                             </div>
+
                             <div>
-                                <label class="block text-amber-900 dark:text-amber-300 text-xs font-bold mb-1">👷‍♂️ Asistente (Ceremonia / Banquete)</label>
-                                <select wire:model="assistant_id" class="border dark:border-slate-700 rounded-xl w-full py-2 px-3 text-gray-700 dark:text-slate-200 text-sm focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-slate-800">
-                                    <option value="">-- Sin Asistente (Opcional) --</option>
+                                <div class="flex items-center justify-between mb-1.5">
+                                    <label class="block text-amber-900 dark:text-amber-300 text-xs font-bold">👷‍♂️ Asistentes / Personal (Selección múltiple)</label>
+                                    <span class="text-[10px] font-bold bg-amber-100 dark:bg-amber-900 text-amber-900 dark:text-amber-200 px-2 py-0.5 rounded-full">
+                                        {{ count($assistant_ids) }} {{ count($assistant_ids) === 1 ? 'asistente' : 'asistentes' }}
+                                    </span>
+                                </div>
+                                <div class="space-y-1 max-h-36 overflow-y-auto border border-amber-200 dark:border-amber-800/60 rounded-xl p-2 bg-white/80 dark:bg-slate-900/80">
                                     @foreach($assistants as $ast)
-                                        <option value="{{ $ast->id }}">{{ $ast->name }}</option>
+                                        <label class="flex items-center gap-2 p-1.5 rounded-lg cursor-pointer hover:bg-amber-50/60 dark:hover:bg-slate-800 transition text-xs font-semibold text-gray-800 dark:text-slate-200">
+                                            <input type="checkbox" wire:model="assistant_ids" value="{{ $ast->id }}" class="rounded text-amber-600 focus:ring-amber-500 border-gray-300 h-3.5 w-3.5">
+                                            <span class="flex-1 truncate">{{ $ast->name }}</span>
+                                            <span class="text-[10px] px-1.5 py-0.2 rounded font-bold {{ $ast->role === 'assistant' ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300' : 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300' }}">{{ ucfirst($ast->role) }}</span>
+                                        </label>
                                     @endforeach
-                                </select>
+                                </div>
+                                <div class="flex items-center justify-between text-[11px] text-indigo-900 dark:text-indigo-300 font-bold mt-2 pt-1 border-t border-indigo-100 dark:border-indigo-900/40">
+                                    <span>🍽️ Menú Staff / Manutención:</span>
+                                    <span class="text-purple-700 dark:text-purple-300 font-extrabold">{{ 1 + count($assistant_ids) }} {{ (1 + count($assistant_ids)) === 1 ? 'persona' : 'personas' }} (1 DJ + {{ count($assistant_ids) }} {{ count($assistant_ids) === 1 ? 'Asist.' : 'Asists.' }})</span>
+                                </div>
                             </div>
                         </div>
 

@@ -19,9 +19,10 @@ class EventShow extends Component
     public Event $event;
     public $activeTab = 'dossier'; // dossier, music, equipment, quotes, contracts, invoices
 
-    // Personal asignado (DJ y Asistente)
+    // Personal asignado (DJ y Asistentes)
     public $assigned_dj_id;
     public $assigned_assistant_id;
+    public $assigned_assistant_ids = [];
     public $showStaffModal = false;
 
     // Contacto Finca / Bodega / Lugar
@@ -210,13 +211,26 @@ class EventShow extends Component
     public function mount(Event $event)
     {
         $user = auth()->user();
-        if ($user->role !== 'admin' && $event->dj_id != $user->id && $event->assistant_id != $user->id) {
+        $isAssignedAssistant = false;
+        try {
+            if (\Illuminate\Support\Facades\Schema::hasTable('event_assistants')) {
+                $isAssignedAssistant = $event->assistants()->where('users.id', $user->id)->exists();
+            }
+        } catch (\Throwable $e) {}
+
+        if ($user->role !== 'admin' && $event->dj_id != $user->id && $event->assistant_id != $user->id && !$isAssignedAssistant) {
             abort(403, 'Acceso denegado: No estás asignado a este evento.');
         }
 
-        $this->event = $event->load(['client', 'dj', 'assistant', 'invoices', 'quotes.items', 'contracts', 'dossiers', 'equipment', 'musicRequests', 'meetings.staff', 'djHistories.matchedRequest']);
+        $relations = ['client', 'dj', 'assistant', 'invoices', 'quotes.items', 'contracts', 'dossiers', 'equipment', 'musicRequests', 'meetings.staff', 'djHistories.matchedRequest'];
+        if (\Illuminate\Support\Facades\Schema::hasTable('event_assistants')) {
+            $relations[] = 'assistants';
+        }
+
+        $this->event = $event->load($relations);
         $this->assigned_dj_id = $this->event->dj_id;
         $this->assigned_assistant_id = $this->event->assistant_id;
+        $this->assigned_assistant_ids = $this->event->all_assistants->pluck('id')->map(fn($id) => (int)$id)->toArray();
         $this->venue_contact_name = $this->event->venue_contact_name;
         $this->venue_contact_phone = $this->event->venue_contact_phone;
         $this->venue_notes = $this->event->venue_notes;
@@ -546,24 +560,43 @@ class EventShow extends Component
     {
         $this->assigned_dj_id = $this->event->dj_id;
         $this->assigned_assistant_id = $this->event->assistant_id;
+        $this->assigned_assistant_ids = $this->event->all_assistants->pluck('id')->map(fn($id) => (int)$id)->toArray();
         $this->showStaffModal = true;
     }
 
     public function saveStaff()
     {
+        if (!\Illuminate\Support\Facades\Schema::hasTable('event_assistants')) {
+            try {
+                \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+            } catch (\Throwable $migEx) {}
+        }
+
         $this->validate([
             'assigned_dj_id' => 'nullable|exists:users,id',
-            'assigned_assistant_id' => 'nullable|exists:users,id',
+            'assigned_assistant_ids' => 'nullable|array',
+            'assigned_assistant_ids.*' => 'exists:users,id',
         ]);
+
+        $firstAssistantId = !empty($this->assigned_assistant_ids) ? (int)$this->assigned_assistant_ids[0] : null;
 
         $this->event->update([
             'dj_id' => $this->assigned_dj_id ?: null,
-            'assistant_id' => $this->assigned_assistant_id ?: null,
+            'assistant_id' => $firstAssistantId,
         ]);
 
-        $this->event->load(['dj', 'assistant']);
+        if (\Illuminate\Support\Facades\Schema::hasTable('event_assistants')) {
+            $this->event->assistants()->sync($this->assigned_assistant_ids ?: []);
+        }
+
+        $relations = ['dj', 'assistant'];
+        if (\Illuminate\Support\Facades\Schema::hasTable('event_assistants')) {
+            $relations[] = 'assistants';
+        }
+        $this->event->load($relations);
+        $this->assigned_assistant_ids = $this->event->all_assistants->pluck('id')->map(fn($id) => (int)$id)->toArray();
         $this->showStaffModal = false;
-        session()->flash('message', 'Personal asignado (DJ y Asistente) actualizado correctamente.');
+        session()->flash('message', 'Personal asignado (DJ y Asistentes) actualizado correctamente.');
     }
 
     public function openClientModal()

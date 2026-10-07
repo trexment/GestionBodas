@@ -72,8 +72,17 @@
             <tr>
                 <td class="info-label">🎧 DJ (Baile):</td>
                 <td class="info-val"><strong>{{ $dj->name ?? 'Sin asignar' }}</strong> {{ isset($dj->phone) ? '('.$dj->phone.')' : '' }}</td>
-                <td class="info-label">👷‍♂️ Asistente (Ceremonia/Banquete):</td>
-                <td class="info-val"><strong>{{ $assistant->name ?? 'Sin asignar' }}</strong> {{ isset($assistant->phone) ? '('.$assistant->phone.')' : '' }}</td>
+                <td class="info-label">👷‍♂️ Asistente(s):</td>
+                <td class="info-val">
+                    @php
+                        $escaletaAssistants = $event->all_assistants;
+                    @endphp
+                    @if($escaletaAssistants->isNotEmpty())
+                        <strong>{{ $escaletaAssistants->map(fn($a) => $a->name . ($a->phone ? ' ('.$a->phone.')' : ''))->implode(', ') }}</strong>
+                    @else
+                        <strong>Sin asignar</strong>
+                    @endif
+                </td>
             </tr>
         </table>
     </div>

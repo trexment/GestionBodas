@@ -126,8 +126,11 @@
                                             @if($eventItem->dj)
                                                 <div class="text-[10px] text-indigo-700 font-semibold truncate mt-0.5">🎧 {{ $eventItem->dj->name }}</div>
                                             @endif
-                                            @if($eventItem->assistant)
-                                                <div class="text-[10px] text-amber-700 font-semibold truncate">👷‍♂️ {{ $eventItem->assistant->name }}</div>
+                                            @php
+                                                $calAssistants = $eventItem->all_assistants;
+                                            @endphp
+                                            @if($calAssistants->isNotEmpty())
+                                                <div class="text-[10px] text-amber-700 font-semibold truncate">👷‍♂️ {{ $calAssistants->pluck('name')->implode(', ') }}</div>
                                             @endif
                                         </a>
                                     @endforeach

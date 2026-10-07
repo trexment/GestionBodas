@@ -243,15 +243,32 @@
                     @endif
                 </span>
 
-                <!-- Asistente (Ceremonia, Cóctel, Banquete) -->
-                <span class="inline-flex items-center gap-1.5 text-amber-800 font-semibold bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200">
-                    👷‍♂️ Asistente: {{ $event->assistant ? $event->assistant->name : 'Sin asignar' }}
-                    @if($assistantPhone)
-                        <a href="https://wa.me/{{ $assistantPhone }}" target="_blank" class="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 bg-white hover:bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded transition" title="Contactar Asistente por WhatsApp">
-                            💬
-                        </a>
-                    @endif
-                </span>
+                <!-- Asistente(s) (Ceremonia, Cóctel, Banquete) -->
+                @php
+                    $allAssignedAssistants = $event->all_assistants;
+                @endphp
+                @if($allAssignedAssistants->isNotEmpty())
+                    @foreach($allAssignedAssistants as $ast)
+                        @php
+                            $aPhone = $ast->phone ? preg_replace('/[^0-9]/', '', $ast->phone) : '';
+                            if (strlen($aPhone) === 9 && in_array(substr($aPhone, 0, 1), ['6', '7'])) {
+                                $aPhone = '34' . $aPhone;
+                            }
+                        @endphp
+                        <span class="inline-flex items-center gap-1.5 text-amber-800 font-semibold bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200">
+                            👷‍♂️ Asistente: {{ $ast->name }}
+                            @if($aPhone)
+                                <a href="https://wa.me/{{ $aPhone }}" target="_blank" class="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 bg-white hover:bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded transition" title="Contactar Asistente por WhatsApp">
+                                    💬
+                                </a>
+                            @endif
+                        </span>
+                    @endforeach
+                @else
+                    <span class="inline-flex items-center gap-1.5 text-amber-800 font-semibold bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200">
+                        👷‍♂️ Asistente: Sin asignar
+                    </span>
+                @endif
 
                 <!-- Horarios de Montaje y Baile -->
                 @if(!empty($event->setup_date) || !empty($event->start_time))
@@ -3274,7 +3291,7 @@
                         <div class="space-y-4">
                             <div>
                                 <label class="block text-xs font-bold text-indigo-900 mb-1">🎧 DJ Principal (Baile / Fiesta)</label>
-                                <select wire:model="assigned_dj_id" class="w-full border-gray-300 rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500">
+                                <select wire:model="assigned_dj_id" class="w-full border-gray-300 rounded-xl text-sm focus:ring-indigo-500 focus:border-indigo-500 bg-white p-2.5">
                                     <option value="">-- Sin DJ asignado --</option>
                                     @foreach($allDjs as $d)
                                         <option value="{{ $d->id }}">{{ $d->name }} {{ $d->phone ? '('.$d->phone.')' : '' }}</option>
@@ -3283,13 +3300,38 @@
                             </div>
 
                             <div>
-                                <label class="block text-xs font-bold text-amber-900 mb-1">👷‍♂️ Asistente (Ceremonia, Cóctel, Banquete)</label>
-                                <select wire:model="assigned_assistant_id" class="w-full border-gray-300 rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500">
-                                    <option value="">-- Sin asistente asignado --</option>
+                                <div class="flex items-center justify-between mb-1.5">
+                                    <label class="block text-xs font-bold text-amber-900">👷‍♂️ Asistentes / Personal de Apoyo</label>
+                                    <span class="text-[10px] font-bold bg-amber-100 text-amber-900 px-2 py-0.5 rounded-full">
+                                        {{ count($assigned_assistant_ids) }} {{ count($assigned_assistant_ids) === 1 ? 'asistente' : 'asistentes' }}
+                                    </span>
+                                </div>
+                                <div class="space-y-1 max-h-48 overflow-y-auto border border-amber-200 rounded-xl p-2 bg-amber-50/40">
                                     @foreach($allAssistants as $a)
-                                        <option value="{{ $a->id }}">{{ $a->name }} {{ $a->phone ? '('.$a->phone.')' : '' }}</option>
+                                        <label class="flex items-center gap-2.5 p-2 rounded-lg cursor-pointer hover:bg-white transition text-xs font-semibold text-gray-800 border border-transparent hover:border-amber-200 shadow-2xs">
+                                            <input type="checkbox" wire:model="assigned_assistant_ids" value="{{ $a->id }}" class="rounded text-amber-600 focus:ring-amber-500 border-gray-300 h-4 w-4">
+                                            <div class="flex-1 min-w-0">
+                                                <div class="font-bold text-gray-900 truncate">{{ $a->name }}</div>
+                                                @if($a->phone)<div class="text-[10px] text-gray-500 font-normal">📞 {{ $a->phone }}</div>@endif
+                                            </div>
+                                            <span class="text-[10px] font-bold px-1.5 py-0.5 rounded {{ $a->role === 'assistant' ? 'bg-amber-100 text-amber-800' : 'bg-indigo-100 text-indigo-800' }}">
+                                                {{ ucfirst($a->role) }}
+                                            </span>
+                                        </label>
                                     @endforeach
-                                </select>
+                                </div>
+                                <span class="text-[10px] text-gray-500 mt-1 block">Puedes seleccionar varios asistentes (ej: Ezequiel, montadores, etc.).</span>
+                            </div>
+
+                            <!-- Resumen del Equipo y Manutención -->
+                            <div class="p-3 bg-purple-50 rounded-xl border border-purple-200 text-xs text-purple-950 space-y-1">
+                                <div class="flex items-center justify-between font-bold">
+                                    <span class="flex items-center gap-1.5">🍽️ Manutención / Menú de Staff:</span>
+                                    <span class="text-purple-700 text-sm font-black">{{ 1 + count($assigned_assistant_ids) }} {{ (1 + count($assigned_assistant_ids)) === 1 ? 'persona' : 'personas' }}</span>
+                                </div>
+                                <p class="text-[11px] text-purple-800 leading-relaxed">
+                                    1 DJ Titular + {{ count($assigned_assistant_ids) }} {{ count($assigned_assistant_ids) === 1 ? 'Asistente' : 'Asistentes' }}. Esta cantidad se reflejará automáticamente en la cláusula de comida del contrato para fases de cóctel/banquete.
+                                </p>
                             </div>
                         </div>
 

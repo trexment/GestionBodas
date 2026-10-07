@@ -263,7 +263,7 @@
                         <span>👥</span>
                         <span>
                             DJ: <strong class="text-cyan-400">{{ $event->dj ? $event->dj->name : 'Sin asignar' }}</strong>
-                            &bull; Asistente: <strong class="text-amber-400">{{ $event->assistant ? $event->assistant->name : 'Sin asignar' }}</strong>
+                            &bull; Asistente(s): <strong class="text-amber-400">{{ $event->all_assistants->isNotEmpty() ? $event->all_assistants->pluck('name')->implode(', ') : 'Sin asignar' }}</strong>
                         </span>
                     </div>
                 </div>

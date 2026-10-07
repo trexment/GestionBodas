@@ -24,6 +24,7 @@ class EventManager extends Component
     public $client_id;
     public $dj_id;
     public $assistant_id;
+    public $assistant_ids = [];
     public $notes;
     
     public $editing_event_id = null;
@@ -54,6 +55,8 @@ class EventManager extends Component
         'client_id' => 'nullable|exists:users,id',
         'dj_id' => 'nullable|exists:users,id',
         'assistant_id' => 'nullable|exists:users,id',
+        'assistant_ids' => 'nullable|array',
+        'assistant_ids.*' => 'exists:users,id',
     ];
 
     public function mount()
@@ -72,13 +75,21 @@ class EventManager extends Component
     public function loadEvents()
     {
         $user = auth()->user();
+        $relations = ['client', 'dj', 'assistant'];
+        if (\Illuminate\Support\Facades\Schema::hasTable('event_assistants')) {
+            $relations[] = 'assistants';
+        }
+
         if ($user->role === 'admin') {
-            $this->events = Event::with(['client', 'dj', 'assistant'])->orderBy('event_date', 'asc')->get();
+            $this->events = Event::with($relations)->orderBy('event_date', 'asc')->get();
         } else {
-            $this->events = Event::with(['client', 'dj', 'assistant'])
+            $this->events = Event::with($relations)
                 ->where(function ($q) use ($user) {
                     $q->where('dj_id', $user->id)
                       ->orWhere('assistant_id', $user->id);
+                    if (\Illuminate\Support\Facades\Schema::hasTable('event_assistants')) {
+                        $q->orWhereHas('assistants', fn($sq) => $sq->where('users.id', $user->id));
+                    }
                 })
                 ->orderBy('event_date', 'asc')
                 ->get();
@@ -93,11 +104,12 @@ class EventManager extends Component
         }
         $this->resetValidation();
         $this->editing_event_id = null;
-        $this->reset(['name', 'brand', 'event_type', 'event_date', 'setup_date', 'start_time', 'ceremony_time', 'cocktail_time', 'banquet_time', 'dance_start_time', 'dance_duration_hours', 'max_end_time', 'location', 'client_id', 'dj_id', 'assistant_id', 'notes']);
+        $this->reset(['name', 'brand', 'event_type', 'event_date', 'setup_date', 'start_time', 'ceremony_time', 'cocktail_time', 'banquet_time', 'dance_start_time', 'dance_duration_hours', 'max_end_time', 'location', 'client_id', 'dj_id', 'assistant_id', 'assistant_ids', 'notes']);
         $this->brand = \App\Models\Setting::getDetectedBrand();
         $this->event_type = 'boda';
         $this->dance_duration_hours = 4.0;
         $this->dj_id = auth()->id(); // default current logged admin/dj
+        $this->assistant_ids = [];
         $this->loadStaff();
         $this->showCreateModal = true;
     }
@@ -127,6 +139,7 @@ class EventManager extends Component
         $this->client_id = $event->client_id;
         $this->dj_id = $event->dj_id;
         $this->assistant_id = $event->assistant_id;
+        $this->assistant_ids = $event->all_assistants->pluck('id')->map(fn($id) => (int)$id)->toArray();
         $this->notes = $event->notes;
         $this->loadStaff();
         $this->showCreateModal = true;
@@ -143,14 +156,16 @@ class EventManager extends Component
         $this->validate();
 
         try {
-            // Si las columnas aún no existen, intentamos aplicar migraciones automáticamente
-            if (!\Illuminate\Support\Facades\Schema::hasColumn('events', 'setup_date') || !\Illuminate\Support\Facades\Schema::hasColumn('events', 'dance_start_time') || !\Illuminate\Support\Facades\Schema::hasColumn('events', 'max_end_time')) {
+            // Si las columnas o tablas aún no existen, intentamos aplicar migraciones automáticamente
+            if (!\Illuminate\Support\Facades\Schema::hasColumn('events', 'setup_date') || !\Illuminate\Support\Facades\Schema::hasColumn('events', 'dance_start_time') || !\Illuminate\Support\Facades\Schema::hasColumn('events', 'max_end_time') || !\Illuminate\Support\Facades\Schema::hasTable('event_assistants')) {
                 try {
                     \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
                 } catch (\Throwable $migEx) {
                     // Ignorar si no se puede ejecutar artisan en este contexto
                 }
             }
+
+            $firstAssistantId = !empty($this->assistant_ids) ? (int)$this->assistant_ids[0] : ($this->assistant_id ?: null);
 
             $eventData = [
                 'name' => $this->name,
@@ -160,7 +175,7 @@ class EventManager extends Component
                 'location' => $this->location,
                 'client_id' => $this->client_id ?: null,
                 'dj_id' => $this->dj_id ?: auth()->id(),
-                'assistant_id' => $this->assistant_id ?: null,
+                'assistant_id' => $firstAssistantId,
                 'notes' => $this->notes,
             ];
 
@@ -184,11 +199,17 @@ class EventManager extends Component
             if ($this->editing_event_id) {
                 $event = Event::findOrFail($this->editing_event_id);
                 $event->update($eventData);
+                if (\Illuminate\Support\Facades\Schema::hasTable('event_assistants')) {
+                    $event->assistants()->sync($this->assistant_ids ?: []);
+                }
                 $msg = '¡Evento "' . $this->name . '" actualizado exitosamente!';
             } else {
                 $eventData['status'] = 'draft';
-                Event::create($eventData);
-                $msg = '¡Evento creado exitosamente con DJ y Asistente asignados!';
+                $event = Event::create($eventData);
+                if (\Illuminate\Support\Facades\Schema::hasTable('event_assistants')) {
+                    $event->assistants()->sync($this->assistant_ids ?: []);
+                }
+                $msg = '¡Evento creado exitosamente con personal y equipo asignados!';
             }
 
             $this->closeCreateModal();
