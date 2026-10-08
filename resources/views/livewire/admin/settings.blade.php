@@ -200,25 +200,115 @@
                     </div>
                 </div>
 
-                <div class="pt-4 border-t border-gray-100 space-y-3">
-                    <label class="block text-xs font-bold text-gray-700 mb-1">✍️ Firma / Sello Oficial de la Empresa (PNG transparente o JPG)</label>
-                    <div class="flex items-center gap-4">
-                        @if($company_signature)
-                            <div class="flex flex-col items-center gap-1">
-                                <img src="{{ $company_signature->temporaryUrl() }}" alt="Previsualización Firma" class="h-16 w-28 object-contain rounded-xl border-2 border-indigo-500 p-1 bg-white shadow-xs">
-                                <span class="text-[10px] text-indigo-600 font-bold">Nueva firma</span>
+                <!-- SECCIÓN FIRMA / SELLO DE LA EMPRESA (DIBUJAR O SUBIR ARCHIVO) -->
+                <div class="pt-5 border-t border-gray-100 space-y-4" x-data="adminSignaturePad()" wire:ignore>
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-900">✍️ Firma / Sello Oficial de la Empresa Prestadora</label>
+                            <span class="text-[11px] text-gray-500 block mt-0.5">
+                                Aparecerá estampada automáticamente en los contratos, facturas y presupuestos PDF oficiales.
+                            </span>
+                        </div>
+                        <!-- Botones de Alternancia: Dibujar / Subir -->
+                        <div class="inline-flex rounded-xl bg-gray-100 p-1 border border-gray-200">
+                            <button 
+                                type="button" 
+                                @click="mode = 'draw'" 
+                                :class="mode === 'draw' ? 'bg-white text-indigo-600 shadow-xs font-bold' : 'text-gray-600 hover:text-gray-900 font-medium'"
+                                class="px-3 py-1.5 text-xs rounded-lg transition-all flex items-center gap-1.5 cursor-pointer"
+                            >
+                                <span>✍️</span> Dibujar en Pantalla
+                            </button>
+                            <button 
+                                type="button" 
+                                @click="mode = 'upload'" 
+                                :class="mode === 'upload' ? 'bg-white text-indigo-600 shadow-xs font-bold' : 'text-gray-600 hover:text-gray-900 font-medium'"
+                                class="px-3 py-1.5 text-xs rounded-lg transition-all flex items-center gap-1.5 cursor-pointer"
+                            >
+                                <span>📁</span> Subir Archivo
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- PREVISUALIZACIÓN DE FIRMA ACTUAL GUARDADA -->
+                    @if(\App\Models\Setting::getCompanySignatureUrl())
+                        <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between gap-4">
+                            <div class="flex items-center gap-3">
+                                <div class="bg-white p-1.5 rounded-lg border border-slate-200 shadow-2xs">
+                                    <img src="{{ \App\Models\Setting::getCompanySignatureUrl() }}" alt="Firma Guardada" class="h-12 w-28 object-contain">
+                                </div>
+                                <div>
+                                    <span class="text-xs font-bold text-slate-800 block">Firma / Sello actual en uso</span>
+                                    <span class="text-[11px] text-emerald-600 font-semibold flex items-center gap-1">
+                                        <span>✔</span> Lista y activa en todos los contratos PDF
+                                    </span>
+                                </div>
                             </div>
-                        @elseif(\App\Models\Setting::getCompanySignatureUrl())
-                            <div class="flex flex-col items-center gap-1">
-                                <img src="{{ \App\Models\Setting::getCompanySignatureUrl() }}" alt="Firma actual" class="h-16 w-28 object-contain rounded-xl border border-gray-200 p-1 bg-white shadow-xs">
-                                <span class="text-[10px] text-gray-500 font-semibold">Firma actual</span>
+                            <span class="text-[11px] text-slate-400 hidden sm:inline">Si dibujas o subes otra, reemplazará la actual al guardar</span>
+                        </div>
+                    @endif
+
+                    <!-- MODO A: DIBUJAR FIRMA EN PANTALLA (CANVAS) -->
+                    <div x-show="mode === 'draw'" class="space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-slate-700 flex items-center gap-1">
+                                <span>🖊️</span> Dibuja tu firma con el dedo (táctil) o con el ratón:
+                            </span>
+                            <button 
+                                type="button" 
+                                @click="clearSignature()" 
+                                class="text-xs font-bold text-slate-600 hover:text-rose-600 px-3 py-1 rounded-lg bg-slate-100 hover:bg-rose-50 border border-slate-200 transition cursor-pointer flex items-center gap-1"
+                            >
+                                <span>🔄</span> Limpiar y Repetir
+                            </button>
+                        </div>
+
+                        <div 
+                            class="relative bg-white border-2 border-dashed border-indigo-300 hover:border-indigo-500 rounded-xl overflow-hidden shadow-inner touch-none select-none w-full"
+                            style="height: 180px; touch-action: none;"
+                        >
+                            <canvas 
+                                x-ref="canvas" 
+                                class="w-full h-full cursor-crosshair block bg-white"
+                                style="touch-action: none;"
+                            ></canvas>
+
+                            <!-- Guía de firma -->
+                            <div class="absolute bottom-4 left-6 right-6 pointer-events-none border-b border-dashed border-slate-300 flex items-center justify-between text-[11px] text-slate-400 font-sans pb-1 select-none">
+                                <span class="font-semibold flex items-center gap-1">
+                                    <span class="text-slate-500 font-bold">✕</span> Firma de la Empresa Prestadora
+                                </span>
+                                <span class="text-[10px] text-slate-400">Núñez and Son / JAVNX DJ</span>
                             </div>
-                        @endif
-                        <div class="flex-1">
-                            <input type="file" wire:model="company_signature" accept="image/*" class="w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer">
-                            <span class="text-[11px] text-gray-400 mt-1 block">Aparecerá estampada automáticamente en el recuadro "Por la Empresa Prestadora" en los contratos y presupuestos.</span>
-                            <div wire:loading wire:target="company_signature" class="text-xs text-indigo-600 font-medium mt-1">
-                                ⏳ Subiendo firma temporal...
+
+                            <!-- Mensaje indicativo si está vacío -->
+                            <div x-show="!hasDrawn" class="absolute inset-0 pointer-events-none flex flex-col items-center justify-center text-slate-400 text-xs font-medium gap-1 select-none p-4 text-center">
+                                <span class="text-2xl">✍️</span>
+                                <span class="text-slate-700 font-bold text-xs">Estampa tu firma aquí</span>
+                                <span class="text-[10px] text-slate-400">Dibuja con el ratón o con el dedo en pantalla táctil</span>
+                            </div>
+                        </div>
+                        <span class="text-[11px] text-indigo-600 font-semibold block" x-show="hasDrawn">
+                            ✨ Firma capturada correctamente. Haz clic en "Guardar Configuración" abajo para aplicarla.
+                        </span>
+                    </div>
+
+                    <!-- MODO B: SUBIR ARCHIVO (PNG/JPG) -->
+                    <div x-show="mode === 'upload'" class="space-y-2" style="display: none;">
+                        <div class="flex items-center gap-4 p-4 bg-slate-50 border border-slate-200 rounded-xl">
+                            @if($company_signature)
+                                <div class="flex flex-col items-center gap-1">
+                                    <img src="{{ $company_signature->temporaryUrl() }}" alt="Previsualización Firma" class="h-14 w-24 object-contain rounded-lg border border-indigo-400 p-1 bg-white shadow-xs">
+                                    <span class="text-[10px] text-indigo-600 font-bold">Nueva firma</span>
+                                </div>
+                            @endif
+                            <div class="flex-1">
+                                <label class="block text-xs font-bold text-gray-700 mb-1">Seleccionar archivo de firma / sello digital (PNG transparente recomendado)</label>
+                                <input type="file" wire:model="company_signature" accept="image/*" class="w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer">
+                                <span class="text-[11px] text-gray-400 mt-1 block">Formatos permitidos: PNG, JPG o SVG (máx. 2MB).</span>
+                                <div wire:loading wire:target="company_signature" class="text-xs text-indigo-600 font-medium mt-1">
+                                    ⏳ Subiendo firma temporal...
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1872,3 +1962,131 @@ MAIL_FROM_NAME="{{ $company_name }}"</pre>
 
     </form>
 </div>
+
+<script>
+function adminSignaturePad() {
+    return {
+        mode: 'draw',
+        canvas: null,
+        ctx: null,
+        isDrawing: false,
+        hasDrawn: false,
+        lastX: 0,
+        lastY: 0,
+
+        init() {
+            this.$nextTick(() => {
+                this.canvas = this.$refs.canvas;
+                if (!this.canvas) return;
+                this.ctx = this.canvas.getContext('2d');
+                this.resizeCanvas();
+                this.setupEvents();
+            });
+
+            window.addEventListener('resize', () => {
+                if (this.mode === 'draw') {
+                    this.resizeCanvas();
+                }
+            });
+        },
+
+        resizeCanvas() {
+            if (!this.canvas) return;
+            const rect = this.canvas.getBoundingClientRect();
+            if (rect.width === 0 || rect.height === 0) return;
+
+            const tempImage = this.hasDrawn ? this.canvas.toDataURL() : null;
+
+            const dpr = window.devicePixelRatio || 1;
+            this.canvas.width = rect.width * dpr;
+            this.canvas.height = rect.height * dpr;
+
+            this.ctx.scale(dpr, dpr);
+            this.ctx.strokeStyle = '#0f172a';
+            this.ctx.lineWidth = 2.5;
+            this.ctx.lineCap = 'round';
+            this.ctx.lineJoin = 'round';
+
+            if (tempImage) {
+                const img = new Image();
+                img.onload = () => {
+                    this.ctx.drawImage(img, 0, 0, rect.width, rect.height);
+                };
+                img.src = tempImage;
+            }
+        },
+
+        setupEvents() {
+            const getPos = (e) => {
+                const rect = this.canvas.getBoundingClientRect();
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                return {
+                    x: clientX - rect.left,
+                    y: clientY - rect.top
+                };
+            };
+
+            const start = (e) => {
+                e.preventDefault();
+                this.isDrawing = true;
+                const pos = getPos(e);
+                this.lastX = pos.x;
+                this.lastY = pos.y;
+                
+                this.ctx.beginPath();
+                this.ctx.arc(this.lastX, this.lastY, 1.25, 0, Math.PI * 2);
+                this.ctx.fillStyle = '#0f172a';
+                this.ctx.fill();
+            };
+
+            const move = (e) => {
+                if (!this.isDrawing) return;
+                e.preventDefault();
+                const pos = getPos(e);
+
+                this.ctx.beginPath();
+                this.ctx.moveTo(this.lastX, this.lastY);
+                this.ctx.lineTo(pos.x, pos.y);
+                this.ctx.stroke();
+
+                this.lastX = pos.x;
+                this.lastY = pos.y;
+                this.hasDrawn = true;
+            };
+
+            const end = (e) => {
+                if (!this.isDrawing) return;
+                e.preventDefault();
+                this.isDrawing = false;
+                this.syncSignature();
+            };
+
+            // Mouse events
+            this.canvas.addEventListener('mousedown', start);
+            this.canvas.addEventListener('mousemove', move);
+            window.addEventListener('mouseup', end);
+
+            // Touch events
+            this.canvas.addEventListener('touchstart', start, { passive: false });
+            this.canvas.addEventListener('touchmove', move, { passive: false });
+            window.addEventListener('touchend', end, { passive: false });
+        },
+
+        clearSignature() {
+            if (!this.canvas || !this.ctx) return;
+            const rect = this.canvas.getBoundingClientRect();
+            this.ctx.clearRect(0, 0, rect.width, rect.height);
+            this.hasDrawn = false;
+            this.$wire.set('company_signature_canvas', '');
+        },
+
+        syncSignature() {
+            if (!this.hasDrawn) return;
+            const dataUrl = this.canvas.toDataURL('image/png');
+            this.$wire.set('company_signature_canvas', dataUrl);
+        }
+    };
+}
+</script>
+

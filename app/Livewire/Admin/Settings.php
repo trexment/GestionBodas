@@ -138,6 +138,7 @@ class Settings extends Component
 
     public $company_signature;
     public $current_company_signature;
+    public $company_signature_canvas;
 
     // Integraciones Musicales (Spotify & Apple Music)
     public $primary_streaming_service = 'auto'; // 'auto', 'apple_music', 'spotify'
@@ -527,6 +528,7 @@ class Settings extends Component
 
             'logo' => 'nullable|image|max:2048',
             'company_signature' => 'nullable|image|max:2048',
+            'company_signature_canvas' => 'nullable|string',
             'primary_streaming_service' => 'required|in:auto,apple_music,spotify',
             'spotify_client_id' => 'nullable|string|max:255',
             'spotify_client_secret' => 'nullable|string|max:255',
@@ -698,6 +700,22 @@ class Settings extends Component
             Setting::set('company_signature', $sigPath);
             $this->current_company_signature = $sigPath;
             $this->company_signature = null;
+        } elseif (!empty($this->company_signature_canvas) && str_starts_with($this->company_signature_canvas, 'data:image/')) {
+            if ($this->current_company_signature) {
+                Storage::disk('public')->delete($this->current_company_signature);
+            }
+            
+            $imageParts = explode(';base64,', $this->company_signature_canvas);
+            $imageTypeAux = explode('image/', $imageParts[0]);
+            $imageType = $imageTypeAux[1] ?? 'png';
+            $imageBase64 = base64_decode($imageParts[1] ?? '');
+            
+            $fileName = 'signatures/company_sig_' . time() . '.' . $imageType;
+            Storage::disk('public')->put($fileName, $imageBase64);
+            
+            Setting::set('company_signature', $fileName);
+            $this->current_company_signature = $fileName;
+            $this->company_signature_canvas = null;
         }
 
         $this->spotifyUser = SpotifyService::getUserDetails();
