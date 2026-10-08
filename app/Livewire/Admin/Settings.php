@@ -201,7 +201,10 @@ class Settings extends Component
         $this->company_subtitle = Setting::get('company_subtitle', 'Sound in Motion');
         $this->company_phone = Setting::get('company_phone', '+34 622 634 790');
         $this->company_cif = Setting::get('company_cif', 'B-12345678');
-        $this->company_email = Setting::get('company_email', 'info@eventosmusicales.es');
+        $this->company_email = Setting::get('company_email', 'info@nunezandson.com');
+        if ($this->company_email === 'info@eventosmusicales.es') {
+            $this->company_email = 'info@nunezandson.com';
+        }
         $this->company_address = Setting::get('company_address', 'Calle Principal s/n');
         $this->company_city = Setting::get('company_city', 'Navarrete');
         $this->company_season = Setting::get('company_season', 'Temporada 2026/2027');
@@ -217,7 +220,10 @@ class Settings extends Component
         $this->brand_nunez_subtitle = Setting::get('brand_nunez_subtitle', 'DJ & Sonido');
         $this->brand_nunez_phone = Setting::get('brand_nunez_phone', '+34 622 62 47 90 (Fran)');
         $this->brand_nunez_phone_2 = Setting::get('brand_nunez_phone_2', '+34 674 37 89 93 (Miguel)');
-        $this->brand_nunez_email = Setting::get('brand_nunez_email', 'info@eventosmusicales.es');
+        $this->brand_nunez_email = Setting::get('brand_nunez_email', 'info@nunezandson.com');
+        if ($this->brand_nunez_email === 'info@eventosmusicales.es') {
+            $this->brand_nunez_email = 'info@nunezandson.com';
+        }
         $this->brand_nunez_website = Setting::get('brand_nunez_website', 'nunezandson.com');
         if (str_contains($this->brand_nunez_website, 'landing-bodas')) {
             $this->brand_nunez_website = 'nunezandson.com';

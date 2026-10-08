@@ -193,7 +193,10 @@ class Setting extends Model
             if (empty($phone2) || strlen(trim(preg_replace('/[^0-9]/', '', $phone2))) < 7) {
                 $phone2 = '+34 674 37 89 93 (Miguel)';
             }
-            $email = self::get('brand_nunez_email', self::get('company_email', 'info@eventosmusicales.es'));
+            $email = self::get('brand_nunez_email', self::get('company_email', 'info@nunezandson.com'));
+            if (empty($email) || $email === 'info@eventosmusicales.es') {
+                $email = 'info@nunezandson.com';
+            }
             $website = self::get('brand_nunez_website', self::get('company_website', 'nunezandson.com'));
             if (empty($website) || str_contains($website, 'landing-bodas')) {
                 $website = 'nunezandson.com';
@@ -273,13 +276,24 @@ class Setting extends Model
             $emails[] = $mailFrom;
         }
 
-        // Normalizar, limpiar y eliminar duplicados
+        // Normalizar, limpiar y eliminar duplicados y dominios dummy/inválidos
         $validEmails = [];
         foreach ($emails as $email) {
             $email = trim(mb_strtolower($email));
-            if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                $validEmails[] = $email;
+            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                continue;
             }
+            // Filtrar dominios dummy de pruebas y dominios no existentes
+            if (
+                str_ends_with($email, '@example.com') ||
+                str_ends_with($email, '@example.org') ||
+                str_ends_with($email, '@test.com') ||
+                str_ends_with($email, '@localhost') ||
+                str_ends_with($email, '@eventosmusicales.es')
+            ) {
+                continue;
+            }
+            $validEmails[] = $email;
         }
 
         return array_values(array_unique($validEmails));
