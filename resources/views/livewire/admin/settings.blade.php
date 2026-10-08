@@ -251,45 +251,46 @@
                     <!-- MODO A: DIBUJAR FIRMA EN PANTALLA (CANVAS) -->
                     <div x-show="mode === 'draw'" class="space-y-2">
                         <div class="flex items-center justify-between">
-                            <span class="text-xs font-bold text-slate-700 flex items-center gap-1">
-                                <span>🖊️</span> Dibuja tu firma con el dedo (táctil) o con el ratón:
+                            <span class="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                                <span>🖊️</span> Dibuja tu firma en el recuadro blanco:
                             </span>
                             <button 
                                 type="button" 
                                 @click="clearSignature()" 
-                                class="text-xs font-bold text-slate-600 hover:text-rose-600 px-3 py-1 rounded-lg bg-slate-100 hover:bg-rose-50 border border-slate-200 transition cursor-pointer flex items-center gap-1"
+                                class="text-xs font-bold text-slate-700 dark:text-slate-200 hover:text-rose-600 px-3.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-rose-50 border border-slate-300 dark:border-slate-600 transition cursor-pointer flex items-center gap-1.5 shadow-2xs"
                             >
                                 <span>🔄</span> Limpiar y Repetir
                             </button>
                         </div>
 
+                        <!-- Contenedor del lienzo siempre en blanco puro para máximo contraste -->
                         <div 
-                            class="relative bg-white border-2 border-dashed border-indigo-300 hover:border-indigo-500 rounded-xl overflow-hidden shadow-inner touch-none select-none w-full"
-                            style="height: 180px; touch-action: none;"
+                            class="relative border-2 border-indigo-400 dark:border-indigo-500 rounded-2xl overflow-hidden shadow-inner touch-none select-none w-full"
+                            style="background-color: #ffffff !important; height: 210px; touch-action: none; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none;"
                         >
                             <canvas 
                                 x-ref="canvas" 
-                                class="w-full h-full cursor-crosshair block bg-white"
-                                style="touch-action: none;"
+                                class="w-full h-full cursor-crosshair block"
+                                style="background-color: #ffffff !important; touch-action: none;"
                             ></canvas>
 
                             <!-- Guía de firma -->
-                            <div class="absolute bottom-4 left-6 right-6 pointer-events-none border-b border-dashed border-slate-300 flex items-center justify-between text-[11px] text-slate-400 font-sans pb-1 select-none">
-                                <span class="font-semibold flex items-center gap-1">
-                                    <span class="text-slate-500 font-bold">✕</span> Firma de la Empresa Prestadora
+                            <div class="absolute bottom-4 left-6 right-6 pointer-events-none border-b border-dashed border-slate-400 flex items-center justify-between text-[11px] text-slate-500 font-sans pb-1 select-none">
+                                <span class="font-bold flex items-center gap-1 text-slate-700">
+                                    <span class="text-slate-600 font-black">✕</span> Firma de la Empresa Prestadora
                                 </span>
-                                <span class="text-[10px] text-slate-400">Núñez and Son / JAVNX DJ</span>
+                                <span class="text-[10px] text-slate-500">Núñez and Son / JAVNX DJ</span>
                             </div>
 
                             <!-- Mensaje indicativo si está vacío -->
-                            <div x-show="!hasDrawn" class="absolute inset-0 pointer-events-none flex flex-col items-center justify-center text-slate-400 text-xs font-medium gap-1 select-none p-4 text-center">
+                            <div x-show="!hasDrawn" class="absolute inset-0 pointer-events-none flex flex-col items-center justify-center text-slate-500 text-xs font-medium gap-1.5 select-none p-4 text-center">
                                 <span class="text-2xl">✍️</span>
-                                <span class="text-slate-700 font-bold text-xs">Estampa tu firma aquí</span>
-                                <span class="text-[10px] text-slate-400">Dibuja con el ratón o con el dedo en pantalla táctil</span>
+                                <span class="text-slate-800 font-bold text-sm">Estampa tu firma aquí</span>
+                                <span class="text-[11px] text-slate-500">Dibuja con el ratón o desliza el dedo en pantalla táctil</span>
                             </div>
                         </div>
-                        <span class="text-[11px] text-indigo-600 font-semibold block" x-show="hasDrawn">
-                            ✨ Firma capturada correctamente. Haz clic en "Guardar Configuración" abajo para aplicarla.
+                        <span class="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold block" x-show="hasDrawn">
+                            ✨ Firma capturada correctamente. Haz clic en "Guardar Configuración" para aplicarla a todos los contratos.
                         </span>
                     </div>
 
@@ -1973,116 +1974,170 @@ function adminSignaturePad() {
         hasDrawn: false,
         lastX: 0,
         lastY: 0,
+        points: [],
 
         init() {
             this.$nextTick(() => {
                 this.canvas = this.$refs.canvas;
                 if (!this.canvas) return;
+
                 this.ctx = this.canvas.getContext('2d');
                 this.resizeCanvas();
-                this.setupEvents();
-            });
 
-            window.addEventListener('resize', () => {
-                if (this.mode === 'draw') {
-                    this.resizeCanvas();
+                let resizeTimer;
+                const debouncedResize = () => {
+                    clearTimeout(resizeTimer);
+                    resizeTimer = setTimeout(() => this.resizeCanvas(), 100);
+                };
+
+                window.addEventListener('resize', debouncedResize);
+                window.addEventListener('orientationchange', debouncedResize);
+
+                if (window.ResizeObserver && this.canvas.parentElement) {
+                    const ro = new ResizeObserver(debouncedResize);
+                    ro.observe(this.canvas.parentElement);
                 }
+
+                // Eventos de ratón
+                this.canvas.addEventListener('mousedown', (e) => this.start(e));
+                this.canvas.addEventListener('mousemove', (e) => this.move(e));
+                window.addEventListener('mouseup', () => this.stop());
+
+                // Eventos táctiles para móviles y tablets
+                this.canvas.addEventListener('touchstart', (e) => this.start(e), { passive: false });
+                this.canvas.addEventListener('touchmove', (e) => this.move(e), { passive: false });
+                window.addEventListener('touchend', (e) => this.stop(e), { passive: false });
+                window.addEventListener('touchcancel', (e) => this.stop(e), { passive: false });
             });
+        },
+
+        getCoords(e) {
+            if (!this.canvas) return { x: 0, y: 0 };
+            const rect = this.canvas.getBoundingClientRect();
+            
+            let clientX = e.clientX;
+            let clientY = e.clientY;
+
+            if (e.touches && e.touches.length > 0) {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            } else if (e.changedTouches && e.changedTouches.length > 0) {
+                clientX = e.changedTouches[0].clientX;
+                clientY = e.changedTouches[0].clientY;
+            }
+
+            const scaleX = this.canvas.width / (rect.width || 1);
+            const scaleY = this.canvas.height / (rect.height || 1);
+
+            return {
+                x: (clientX - rect.left) * scaleX,
+                y: (clientY - rect.top) * scaleY
+            };
         },
 
         resizeCanvas() {
             if (!this.canvas) return;
             const rect = this.canvas.getBoundingClientRect();
-            if (rect.width === 0 || rect.height === 0) return;
+            const dpr = Math.max(window.devicePixelRatio || 1, 1);
 
-            const tempImage = this.hasDrawn ? this.canvas.toDataURL() : null;
+            let tempImage = null;
+            if (this.hasDrawn) {
+                tempImage = this.canvas.toDataURL();
+            }
 
-            const dpr = window.devicePixelRatio || 1;
-            this.canvas.width = rect.width * dpr;
-            this.canvas.height = rect.height * dpr;
+            const w = Math.max(rect.width, 280);
+            const h = Math.max(rect.height, 190);
 
-            this.ctx.scale(dpr, dpr);
-            this.ctx.strokeStyle = '#0f172a';
-            this.ctx.lineWidth = 2.5;
+            this.canvas.width = Math.round(w * dpr);
+            this.canvas.height = Math.round(h * dpr);
+
+            this.ctx = this.canvas.getContext('2d');
+            this.ctx.lineWidth = Math.max(3 * dpr, 2.8);
             this.ctx.lineCap = 'round';
             this.ctx.lineJoin = 'round';
+            this.ctx.strokeStyle = '#1e3a8a'; // Tinta azul marino oscuro de máxima legibilidad
 
             if (tempImage) {
                 const img = new Image();
                 img.onload = () => {
-                    this.ctx.drawImage(img, 0, 0, rect.width, rect.height);
+                    this.ctx.drawImage(img, 0, 0, this.canvas.width, this.canvas.height);
                 };
                 img.src = tempImage;
             }
         },
 
-        setupEvents() {
-            const getPos = (e) => {
-                const rect = this.canvas.getBoundingClientRect();
-                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-                return {
-                    x: clientX - rect.left,
-                    y: clientY - rect.top
-                };
-            };
-
-            const start = (e) => {
+        start(e) {
+            if (e.type.startsWith('touch')) {
                 e.preventDefault();
-                this.isDrawing = true;
-                const pos = getPos(e);
-                this.lastX = pos.x;
-                this.lastY = pos.y;
-                
-                this.ctx.beginPath();
-                this.ctx.arc(this.lastX, this.lastY, 1.25, 0, Math.PI * 2);
-                this.ctx.fillStyle = '#0f172a';
-                this.ctx.fill();
-            };
+            }
+            this.isDrawing = true;
+            this.hasDrawn = true;
+            const coords = this.getCoords(e);
+            this.lastX = coords.x;
+            this.lastY = coords.y;
+            this.points = [coords];
 
-            const move = (e) => {
-                if (!this.isDrawing) return;
+            // Punto inicial
+            this.ctx.beginPath();
+            this.ctx.arc(coords.x, coords.y, this.ctx.lineWidth / 2.2, 0, Math.PI * 2);
+            this.ctx.fillStyle = '#1e3a8a';
+            this.ctx.fill();
+        },
+
+        move(e) {
+            if (!this.isDrawing) return;
+            if (e.type.startsWith('touch')) {
                 e.preventDefault();
-                const pos = getPos(e);
+            }
+            const coords = this.getCoords(e);
+            this.points.push(coords);
+
+            // Suavizado por curvas cuadráticas de Bézier
+            if (this.points.length >= 3) {
+                const len = this.points.length;
+                const p1 = this.points[len - 2];
+                const p2 = this.points[len - 1];
+                const midX = (p1.x + p2.x) / 2;
+                const midY = (p1.y + p2.y) / 2;
 
                 this.ctx.beginPath();
                 this.ctx.moveTo(this.lastX, this.lastY);
-                this.ctx.lineTo(pos.x, pos.y);
+                this.ctx.quadraticCurveTo(p1.x, p1.y, midX, midY);
                 this.ctx.stroke();
 
-                this.lastX = pos.x;
-                this.lastY = pos.y;
-                this.hasDrawn = true;
-            };
+                this.lastX = midX;
+                this.lastY = midY;
+            } else {
+                this.ctx.beginPath();
+                this.ctx.moveTo(this.lastX, this.lastY);
+                this.ctx.lineTo(coords.x, coords.y);
+                this.ctx.stroke();
+                this.lastX = coords.x;
+                this.lastY = coords.y;
+            }
+        },
 
-            const end = (e) => {
-                if (!this.isDrawing) return;
-                e.preventDefault();
+        stop(e) {
+            if (this.isDrawing) {
+                if (e && e.type && e.type.startsWith('touch')) {
+                    e.preventDefault();
+                }
                 this.isDrawing = false;
+                this.points = [];
                 this.syncSignature();
-            };
-
-            // Mouse events
-            this.canvas.addEventListener('mousedown', start);
-            this.canvas.addEventListener('mousemove', move);
-            window.addEventListener('mouseup', end);
-
-            // Touch events
-            this.canvas.addEventListener('touchstart', start, { passive: false });
-            this.canvas.addEventListener('touchmove', move, { passive: false });
-            window.addEventListener('touchend', end, { passive: false });
+            }
         },
 
         clearSignature() {
-            if (!this.canvas || !this.ctx) return;
-            const rect = this.canvas.getBoundingClientRect();
-            this.ctx.clearRect(0, 0, rect.width, rect.height);
+            if (!this.canvas) return;
+            this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
             this.hasDrawn = false;
+            this.points = [];
             this.$wire.set('company_signature_canvas', '');
         },
 
         syncSignature() {
-            if (!this.hasDrawn) return;
+            if (!this.canvas || !this.hasDrawn) return;
             const dataUrl = this.canvas.toDataURL('image/png');
             this.$wire.set('company_signature_canvas', dataUrl);
         }
