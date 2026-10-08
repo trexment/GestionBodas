@@ -294,30 +294,48 @@
 
                 <!-- OPCIÓN A: LIENZO CANVAS DE FIRMA MANUSCRITA -->
                 <div x-show="signatureType === 'canvas'" class="space-y-3" wire:ignore>
-                    <div class="flex items-center justify-between">
-                        <p class="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                            <span>✍️</span> Dibuja tu firma en el recuadro blanco con el dedo (móvil/tablet) o el ratón:
-                        </p>
-                        <button type="button" @click="clearSignature()" class="text-xs font-bold text-slate-700 dark:text-slate-200 hover:text-rose-600 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-rose-50 dark:hover:bg-rose-950/50 border border-slate-200 dark:border-slate-700 transition cursor-pointer flex items-center gap-1">
-                            🔄 Borrar / Repetir Firma
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div>
+                            <p class="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                                <span>✍️</span> Dibuja tu firma en el recuadro blanco:
+                            </p>
+                            <span class="text-[11px] text-slate-500 dark:text-slate-400 block mt-0.5">
+                                Con el dedo en el móvil/tablet o con el ratón. (Si lo prefieres, puedes girar el móvil en horizontal).
+                            </span>
+                        </div>
+                        <button 
+                            type="button" 
+                            @click="clearSignature()" 
+                            class="self-end sm:self-auto text-xs font-bold text-slate-700 dark:text-slate-200 hover:text-rose-600 px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-rose-50 dark:hover:bg-rose-950/50 border border-slate-200 dark:border-slate-700 transition cursor-pointer flex items-center gap-1.5 shadow-2xs shrink-0"
+                        >
+                            <span>🔄</span> Borrar y Repetir Firma
                         </button>
                     </div>
 
-                    <div class="relative bg-white border-2 border-indigo-300 dark:border-indigo-400 rounded-2xl overflow-hidden shadow-inner touch-none select-none" style="height: 190px;">
+                    <div 
+                        class="relative bg-white border-2 border-indigo-300 dark:border-indigo-400 rounded-2xl overflow-hidden shadow-inner touch-none select-none w-full" 
+                        style="height: 220px; touch-action: none; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none;"
+                    >
                         <!-- Canvas siempre sobre fondo blanco para máximo contraste y legibilidad -->
-                        <canvas x-ref="canvas" class="w-full h-full cursor-crosshair block bg-white"></canvas>
+                        <canvas 
+                            x-ref="canvas" 
+                            class="w-full h-full cursor-crosshair block bg-white" 
+                            style="touch-action: none;"
+                        ></canvas>
                         
                         <!-- Línea guía de firma -->
-                        <div class="absolute bottom-5 left-8 right-8 pointer-events-none border-b border-dashed border-slate-300 flex items-center justify-between text-[11px] text-slate-400 font-sans pb-1 select-none">
-                            <span class="font-medium">✕ Firma del Cliente</span>
-                            <span class="text-[10px] text-slate-300">Validez Legal Electrónica</span>
+                        <div class="absolute bottom-6 left-6 right-6 pointer-events-none border-b border-dashed border-slate-300 flex items-center justify-between text-[11px] text-slate-400 font-sans pb-1 select-none">
+                            <span class="font-medium flex items-center gap-1">
+                                <span class="text-slate-500 font-bold">✕</span> Firma del Cliente
+                            </span>
+                            <span class="text-[10px] text-slate-400 hidden sm:inline">Validez Legal Electrónica</span>
                         </div>
 
-                        <!-- Marca de agua instructiva -->
-                        <div x-show="!hasDrawn" class="absolute inset-0 pointer-events-none flex flex-col items-center justify-center text-slate-400 text-xs font-medium gap-1 select-none">
-                            <span class="text-xl">✍️</span>
-                            <span class="text-slate-500 font-bold">Pulsa y estampa aquí tu firma</span>
-                            <span class="text-[10px] text-slate-400">(Usa el dedo, lápiz táctil o ratón)</span>
+                        <!-- Marca de agua instructiva cuando está vacío -->
+                        <div x-show="!hasDrawn" class="absolute inset-0 pointer-events-none flex flex-col items-center justify-center text-slate-400 text-xs font-medium gap-1.5 select-none p-4 text-center">
+                            <span class="text-2xl">✍️</span>
+                            <span class="text-slate-600 font-bold text-sm">Estampa aquí tu firma</span>
+                            <span class="text-[11px] text-slate-400">Desliza el dedo sobre la pantalla táctil</span>
                         </div>
                     </div>
                     @error('signature_data') <span class="text-rose-600 text-xs mt-1 block font-bold">{{ $message }}</span> @enderror
@@ -407,7 +425,7 @@
 
 </div>
 
-<!-- JAVASCRIPT FIRMA CANVAS & CERTIFICADO -->
+<!-- JAVASCRIPT FIRMA CANVAS & CERTIFICADO (OPTIMIZADO PARA MÓVILES) -->
 <script>
 function signaturePad() {
     return {
@@ -416,6 +434,9 @@ function signaturePad() {
         ctx: null,
         isDrawing: false,
         hasDrawn: false,
+        lastX: 0,
+        lastY: 0,
+        points: [],
         certIssuer: 'AC FNMT Usuarios / RCM',
         certValidated: false,
         certHash: '',
@@ -429,21 +450,29 @@ function signaturePad() {
                 this.resizeCanvas();
 
                 let resizeTimer;
-                window.addEventListener('resize', () => {
+                const debouncedResize = () => {
                     clearTimeout(resizeTimer);
-                    resizeTimer = setTimeout(() => this.resizeCanvas(), 120);
-                });
+                    resizeTimer = setTimeout(() => this.resizeCanvas(), 100);
+                };
+
+                window.addEventListener('resize', debouncedResize);
+                window.addEventListener('orientationchange', debouncedResize);
+
+                if (window.ResizeObserver && this.canvas.parentElement) {
+                    const ro = new ResizeObserver(debouncedResize);
+                    ro.observe(this.canvas.parentElement);
+                }
 
                 // Eventos de ratón
                 this.canvas.addEventListener('mousedown', (e) => this.start(e));
                 this.canvas.addEventListener('mousemove', (e) => this.move(e));
                 window.addEventListener('mouseup', () => this.stop());
 
-                // Eventos táctiles para móviles y tablets
+                // Eventos táctiles para móviles y tablets (bloqueo estricto de scroll durante el trazo)
                 this.canvas.addEventListener('touchstart', (e) => this.start(e), { passive: false });
                 this.canvas.addEventListener('touchmove', (e) => this.move(e), { passive: false });
-                window.addEventListener('touchend', () => this.stop());
-                window.addEventListener('touchcancel', () => this.stop());
+                window.addEventListener('touchend', (e) => this.stop(e), { passive: false });
+                window.addEventListener('touchcancel', (e) => this.stop(e), { passive: false });
 
                 // Restaurar si ya existía una firma previa
                 const existingData = this.$wire.get('signature_data');
@@ -492,17 +521,17 @@ function signaturePad() {
                 tempImage = this.canvas.toDataURL();
             }
 
-            const w = Math.max(rect.width, 300);
-            const h = Math.max(rect.height, 180);
+            const w = Math.max(rect.width, 280);
+            const h = Math.max(rect.height, 190);
 
             this.canvas.width = Math.round(w * dpr);
             this.canvas.height = Math.round(h * dpr);
 
             this.ctx = this.canvas.getContext('2d');
-            this.ctx.lineWidth = Math.max(2.8 * dpr, 2.5);
+            this.ctx.lineWidth = Math.max(3 * dpr, 2.8);
             this.ctx.lineCap = 'round';
             this.ctx.lineJoin = 'round';
-            this.ctx.strokeStyle = '#1e3a8a'; // Tinta azul marino oscura de máxima resolución y contraste
+            this.ctx.strokeStyle = '#1e3a8a'; // Tinta azul marino de alta densidad
 
             if (tempImage) {
                 const img = new Image();
@@ -520,8 +549,15 @@ function signaturePad() {
             this.isDrawing = true;
             this.hasDrawn = true;
             const coords = this.getCoords(e);
+            this.lastX = coords.x;
+            this.lastY = coords.y;
+            this.points = [coords];
+
+            // Punto inicial suave
             this.ctx.beginPath();
-            this.ctx.moveTo(coords.x, coords.y);
+            this.ctx.arc(coords.x, coords.y, this.ctx.lineWidth / 2.2, 0, Math.PI * 2);
+            this.ctx.fillStyle = '#1e3a8a';
+            this.ctx.fill();
         },
 
         move(e) {
@@ -530,13 +566,40 @@ function signaturePad() {
                 e.preventDefault();
             }
             const coords = this.getCoords(e);
-            this.ctx.lineTo(coords.x, coords.y);
-            this.ctx.stroke();
+            this.points.push(coords);
+
+            // Suavizado por curvas cuadráticas de Bézier para dedos y pantallas táctiles
+            if (this.points.length >= 3) {
+                const len = this.points.length;
+                const p1 = this.points[len - 2];
+                const p2 = this.points[len - 1];
+                const midX = (p1.x + p2.x) / 2;
+                const midY = (p1.y + p2.y) / 2;
+
+                this.ctx.beginPath();
+                this.ctx.moveTo(this.lastX, this.lastY);
+                this.ctx.quadraticCurveTo(p1.x, p1.y, midX, midY);
+                this.ctx.stroke();
+
+                this.lastX = midX;
+                this.lastY = midY;
+            } else {
+                this.ctx.beginPath();
+                this.ctx.moveTo(this.lastX, this.lastY);
+                this.ctx.lineTo(coords.x, coords.y);
+                this.ctx.stroke();
+                this.lastX = coords.x;
+                this.lastY = coords.y;
+            }
         },
 
-        stop() {
+        stop(e) {
             if (this.isDrawing) {
+                if (e && e.type && e.type.startsWith('touch')) {
+                    e.preventDefault();
+                }
                 this.isDrawing = false;
+                this.points = [];
                 this.syncSignature();
             }
         },
@@ -545,6 +608,7 @@ function signaturePad() {
             if (!this.canvas) return;
             this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
             this.hasDrawn = false;
+            this.points = [];
             this.$wire.set('signature_data', '');
         },
 
