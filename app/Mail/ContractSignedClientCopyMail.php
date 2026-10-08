@@ -36,7 +36,9 @@ class ContractSignedClientCopyMail extends Mailable
 
         $brandName = $this->brand['name'] ?? Setting::getCompanyName('Núñez and Son');
         $eventName = $this->event ? $this->event->name : 'Evento';
-        $filename = 'Contrato_Firmado_' . Str::slug($eventName) . '.pdf';
+        $safeName = preg_replace('/[^\p{L}\p{N}\s\-_]/u', '', $eventName);
+        $safeName = trim(preg_replace('/\s+/', ' ', $safeName));
+        $filename = 'Contrato ' . ($safeName ?: 'Evento_' . $this->contract->id) . '.pdf';
 
         $mail = $this->subject("📄 Copia de tu Contrato Firmado: {$eventName} - {$brandName}")
                      ->view('emails.contract-signed-client-copy');

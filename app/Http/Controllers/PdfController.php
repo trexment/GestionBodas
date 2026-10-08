@@ -58,8 +58,13 @@ class PdfController extends Controller
             'client' => $quote->event->client,
         ];
 
+        $eventName = $quote->event ? $quote->event->name : 'Evento';
+        $safeName = preg_replace('/[^\p{L}\p{N}\s\-_]/u', '', $eventName);
+        $safeName = trim(preg_replace('/\s+/', ' ', $safeName));
+        $filename = 'Presupuesto ' . ($safeName ?: 'Evento_' . $quote->id) . '.pdf';
+
         $pdf = Pdf::loadView('pdf.quote', $data);
-        return $pdf->download('presupuesto_evento_' . $quote->event->id . '.pdf');
+        return $pdf->download($filename);
     }
     
     public function downloadContract(Contract $contract)
@@ -69,8 +74,13 @@ class PdfController extends Controller
         $renderedData = ContractTemplateService::renderContract($contract);
         $renderedData['company_logo'] = Setting::get('company_logo');
 
+        $eventName = $contract->event ? $contract->event->name : 'Evento';
+        $safeName = preg_replace('/[^\p{L}\p{N}\s\-_]/u', '', $eventName);
+        $safeName = trim(preg_replace('/\s+/', ' ', $safeName));
+        $filename = 'Contrato ' . ($safeName ?: 'Evento_' . $contract->id) . '.pdf';
+
         $pdf = Pdf::loadView('pdf.contract', $renderedData);
-        return $pdf->download('contrato_evento_' . ($contract->event->id ?? $contract->id) . '.pdf');
+        return $pdf->download($filename);
     }
 
     public function downloadPackingList(Event $event)
