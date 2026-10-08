@@ -84,6 +84,9 @@ class Setting extends Model
             return null;
         }
 
+        return asset('storage/' . $cleanPath);
+    }
+
     /**
      * Get the absolute filesystem path for the company signature / stamp (used in PDFs).
      */
