@@ -74,17 +74,6 @@
                 </a>
             </div>
 
-            @if($event && $event->token)
-                <div style="background-color: #f1f5f9; border-radius: 12px; padding: 14px; text-align: center; margin-top: 18px;">
-                    <p style="margin: 0 0 8px 0; font-size: 12px; color: #475569; font-weight: bold;">
-                        🎵 ¿Quieres gestionar la música y momentos de tu boda/evento?
-                    </p>
-                    <a href="{{ url('/invitado/evento/' . $event->token) }}" class="btn-portal">
-                        Acceder a tu Portal Musical &rarr;
-                    </a>
-                </div>
-            @endif
-
             <p style="font-size: 12px; color: #64748b; margin-top: 24px; line-height: 1.5;">
                 Si tienes cualquier duda o necesitas modificar algún detalle, puedes responder a este correo o contactarnos al teléfono <strong>{{ $brand['phone'] ?? '+34 622 634 790' }}</strong>.
             </p>
