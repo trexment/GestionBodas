@@ -34,6 +34,12 @@ class ContractSign extends Component
     public $client_province;
     public $client_address;
 
+    // Partner fields
+    public $partner_name;
+    public $partner_phone;
+    public $partner_email;
+    public $partner_dni;
+
     // Signature options
     public $signature_type = 'canvas'; // 'canvas' or 'certificate'
     public $signature_data; // Base64 PNG for canvas or digital seal
@@ -73,6 +79,11 @@ class ContractSign extends Component
 
         $this->event = $this->contract->event;
         $this->client = $this->event ? $this->event->client : null;
+
+        $this->partner_name = $this->event ? $this->event->partner_name : '';
+        $this->partner_phone = $this->event ? $this->event->partner_phone : '';
+        $this->partner_email = $this->event ? $this->event->partner_email : '';
+        $this->partner_dni = $this->event ? $this->event->partner_dni : '';
 
         // Check if already signed
         if ($this->contract->status === 'signed') {
@@ -119,7 +130,7 @@ class ContractSign extends Component
 
     public function updated($propertyName)
     {
-        if (str_starts_with($propertyName, 'client_')) {
+        if (str_starts_with($propertyName, 'client_') || str_starts_with($propertyName, 'partner_')) {
             $this->renderLiveContract();
         }
     }
@@ -151,6 +162,10 @@ class ContractSign extends Component
             'client_postal_code' => $this->client_postal_code ?: null,
             'client_city' => $this->client_city ?: null,
             'client_province' => $this->client_province ?: null,
+            'partner_name' => $this->partner_name ?: null,
+            'partner_phone' => $this->partner_phone ?: null,
+            'partner_email' => $this->partner_email ?: null,
+            'partner_dni' => $this->partner_dni ?: null,
         ]);
 
         $rendered = ContractTemplateService::renderContract($this->contract, $overrides);
@@ -264,6 +279,16 @@ class ContractSign extends Component
                 'postal_code' => $this->client_postal_code,
                 'city' => $this->client_city,
                 'province' => $this->client_province,
+            ]);
+        }
+
+        // Update event partner details if provided
+        if ($this->event) {
+            $this->event->update([
+                'partner_name' => $this->partner_name ?: $this->event->partner_name,
+                'partner_phone' => $this->partner_phone ?: $this->event->partner_phone,
+                'partner_email' => $this->partner_email ?: $this->event->partner_email,
+                'partner_dni' => $this->partner_dni ?: $this->event->partner_dni,
             ]);
         }
 

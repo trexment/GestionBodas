@@ -215,21 +215,34 @@
             <div class="flex flex-wrap items-center gap-3 text-sm text-gray-500 mt-2">
                 <span>📅 {{ \Carbon\Carbon::parse($event->event_date)->format('d/m/Y') }}</span>
                 <span>📍 {{ $event->location }}</span>
-                @if($event->client)
-                    <span class="inline-flex items-center gap-1.5 text-gray-700 bg-emerald-50/70 border border-emerald-200 px-2.5 py-1 rounded-lg">
-                        👤 <strong>{{ $event->client->name }}</strong>
+                @if($event->client || $event->partner_name)
+                    <span class="inline-flex flex-wrap items-center gap-1.5 text-gray-700 dark:text-gray-200 bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 px-2.5 py-1 rounded-lg">
+                        👤 <strong>{{ $event->client ? $event->client->name : 'Sin cliente principal' }}</strong>
                         @if($clientPhone)
-                            <a href="https://wa.me/{{ $clientPhone }}" target="_blank" class="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-white hover:bg-emerald-100 border border-emerald-300 px-1.5 py-0.5 rounded transition" title="Abrir chat de WhatsApp">
+                            <a href="https://wa.me/{{ $clientPhone }}" target="_blank" class="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-white hover:bg-emerald-100 border border-emerald-300 px-1.5 py-0.5 rounded transition" title="WhatsApp Cliente Principal ({{ $event->client->phone }})">
                                 💬
                             </a>
                         @endif
-                        <button type="button" wire:click="openClientModal" class="inline-flex items-center gap-0.5 text-[11px] font-bold text-amber-800 bg-amber-100 hover:bg-amber-200 border border-amber-300 px-1.5 py-0.5 rounded transition cursor-pointer" title="Editar datos o cambiar cliente">
-                            ✏️ Editar / Cambiar
+
+                        @if($event->partner_name)
+                            <span class="text-gray-300 dark:text-gray-600 font-normal">|</span>
+                            <span class="inline-flex items-center gap-1 text-pink-700 dark:text-pink-300 font-bold">
+                                💍 {{ $event->partner_name }}
+                            </span>
+                            @if($event->partner_clean_phone)
+                                <a href="https://wa.me/{{ $event->partner_clean_phone }}" target="_blank" class="inline-flex items-center gap-1 text-[11px] font-bold text-pink-700 bg-white hover:bg-pink-100 border border-pink-300 px-1.5 py-0.5 rounded transition" title="WhatsApp Pareja / Cónyuge ({{ $event->partner_phone }})">
+                                    💬
+                                </a>
+                            @endif
+                        @endif
+
+                        <button type="button" wire:click="openClientModal" class="inline-flex items-center gap-0.5 text-[11px] font-bold text-amber-800 bg-amber-100 hover:bg-amber-200 border border-amber-300 px-1.5 py-0.5 rounded transition cursor-pointer" title="Editar datos del cliente y pareja">
+                            ✏️ Editar / Pareja
                         </button>
                     </span>
                 @else
                     <button type="button" wire:click="openClientModal" class="inline-flex items-center gap-1.5 text-xs font-bold text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-300 px-2.5 py-1 rounded-lg transition cursor-pointer shadow-2xs" title="Asociar o crear cliente para este evento">
-                        👤 <span>+ Asociar Cliente</span>
+                        👤 <span>+ Asociar Cliente / Pareja</span>
                     </button>
                 @endif
 
@@ -3955,6 +3968,34 @@
                             <div>
                                 <label class="block font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">DNI / NIF</label>
                                 <input type="text" wire:model="client_edit_dni" placeholder="12345678Z" class="w-full border-slate-300 dark:border-slate-700 rounded-xl p-2.5 text-xs font-mono font-bold text-slate-800 dark:text-white bg-slate-50 dark:bg-slate-950 uppercase">
+                            </div>
+                        </div>
+
+                        <!-- Datos de la Pareja / Cónyuge (Novio/Novia) -->
+                        <div class="p-3 bg-pink-50/70 dark:bg-pink-950/40 rounded-2xl border border-pink-200 dark:border-pink-900/50 space-y-2">
+                            <div class="flex items-center justify-between">
+                                <span class="font-bold text-pink-900 dark:text-pink-200 uppercase tracking-wider block text-[11px] flex items-center gap-1">
+                                    <span>💍</span> Datos de la Pareja / Cónyuge (Novio / Novia)
+                                </span>
+                                <span class="text-[10px] text-pink-700 dark:text-pink-300 font-bold bg-pink-100 dark:bg-pink-900/60 px-2 py-0.5 rounded-md">2º Contacto</span>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-700 dark:text-slate-300 mb-1">Nombre Completo Pareja</label>
+                                    <input type="text" wire:model="partner_edit_name" placeholder="Ej: Vidalia / Omar" class="w-full border-pink-200 dark:border-pink-800 rounded-xl p-2 text-xs font-semibold text-slate-800 dark:text-white bg-white dark:bg-slate-900">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-700 dark:text-slate-300 mb-1">Teléfono Pareja (WhatsApp)</label>
+                                    <input type="text" wire:model="partner_edit_phone" placeholder="612345678" class="w-full border-pink-200 dark:border-pink-800 rounded-xl p-2 text-xs text-slate-800 dark:text-white bg-white dark:bg-slate-900">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-700 dark:text-slate-300 mb-1">Correo Pareja (Opcional)</label>
+                                    <input type="email" wire:model="partner_edit_email" placeholder="pareja@email.com" class="w-full border-pink-200 dark:border-pink-800 rounded-xl p-2 text-xs text-slate-800 dark:text-white bg-white dark:bg-slate-900">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-700 dark:text-slate-300 mb-1">DNI / NIF Pareja (Opcional)</label>
+                                    <input type="text" wire:model="partner_edit_dni" placeholder="12345678Z" class="w-full border-pink-200 dark:border-pink-800 rounded-xl p-2 text-xs font-mono font-bold text-slate-800 dark:text-white bg-white dark:bg-slate-900 uppercase">
+                                </div>
                             </div>
                         </div>
 

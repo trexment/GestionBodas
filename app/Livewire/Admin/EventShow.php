@@ -54,7 +54,7 @@ class EventShow extends Component
     public $banquet_time;
     public $schedule_notes;
 
-    // Edición de Cliente
+    // Edición de Cliente y Pareja
     public $showClientModal = false;
     public $selected_client_id = '';
     public $client_edit_name;
@@ -67,6 +67,10 @@ class EventShow extends Component
     public $client_edit_city;
     public $client_edit_province;
     public $client_edit_password;
+    public $partner_edit_name;
+    public $partner_edit_phone;
+    public $partner_edit_email;
+    public $partner_edit_dni;
 
     // Facturas y Recibos
     public $invoice_type = 'factura'; // 'factura' | 'recibo'
@@ -217,6 +221,12 @@ class EventShow extends Component
                 $isAssignedAssistant = $event->assistants()->where('users.id', $user->id)->exists();
             }
         } catch (\Throwable $e) {}
+
+        if (!\Illuminate\Support\Facades\Schema::hasColumn('events', 'partner_name')) {
+            try {
+                \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+            } catch (\Throwable $e) {}
+        }
 
         if ($user->role !== 'admin' && $event->dj_id != $user->id && $event->assistant_id != $user->id && !$isAssignedAssistant) {
             abort(403, 'Acceso denegado: No estás asignado a este evento.');
@@ -628,6 +638,12 @@ class EventShow extends Component
             $this->client_edit_province = '';
             $this->client_edit_password = '';
         }
+
+        $this->partner_edit_name = $this->event->partner_name;
+        $this->partner_edit_phone = $this->event->partner_phone;
+        $this->partner_edit_email = $this->event->partner_email;
+        $this->partner_edit_dni = $this->event->partner_dni;
+
         $this->showClientModal = true;
     }
 
@@ -674,6 +690,20 @@ class EventShow extends Component
 
     public function saveClientDetails()
     {
+        // Auto-migrar si la columna partner_name no existe todavía
+        if (!\Illuminate\Support\Facades\Schema::hasColumn('events', 'partner_name')) {
+            try {
+                \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+            } catch (\Throwable $migEx) {}
+        }
+
+        $partnerData = [
+            'partner_name' => $this->partner_edit_name ?: null,
+            'partner_phone' => $this->partner_edit_phone ?: null,
+            'partner_email' => $this->partner_edit_email ?: null,
+            'partner_dni' => $this->partner_edit_dni ?: null,
+        ];
+
         if (!empty($this->selected_client_id)) {
             // Existing client selected or editing current client
             $client = User::findOrFail($this->selected_client_id);
@@ -689,6 +719,10 @@ class EventShow extends Component
                 'client_edit_city' => 'nullable|string|max:100',
                 'client_edit_province' => 'nullable|string|max:100',
                 'client_edit_password' => 'nullable|string|min:4',
+                'partner_edit_name' => 'nullable|string|max:255',
+                'partner_edit_phone' => 'nullable|string|max:50',
+                'partner_edit_email' => 'nullable|email|max:255',
+                'partner_edit_dni' => 'nullable|string|max:50',
             ], [
                 'client_edit_name.required' => 'El nombre del cliente es obligatorio.',
                 'client_edit_email.unique' => 'Este email ya está en uso por otro usuario.',
@@ -717,10 +751,10 @@ class EventShow extends Component
 
             $client->update($updateData);
 
-            $this->event->update(['client_id' => $client->id]);
+            $this->event->update(array_merge(['client_id' => $client->id], $partnerData));
             $this->event->load('client');
             $this->showClientModal = false;
-            session()->flash('message', '¡Cliente asignado y datos actualizados correctamente!');
+            session()->flash('message', '¡Cliente y datos de la pareja actualizados correctamente!');
         } else {
             // Creating new client and assigning to event
             $this->validate([
@@ -734,6 +768,10 @@ class EventShow extends Component
                 'client_edit_city' => 'nullable|string|max:100',
                 'client_edit_province' => 'nullable|string|max:100',
                 'client_edit_password' => 'nullable|string|min:4',
+                'partner_edit_name' => 'nullable|string|max:255',
+                'partner_edit_phone' => 'nullable|string|max:50',
+                'partner_edit_email' => 'nullable|email|max:255',
+                'partner_edit_dni' => 'nullable|string|max:50',
             ], [
                 'client_edit_name.required' => 'El nombre del cliente es obligatorio.',
                 'client_edit_email.unique' => 'Este email ya está en uso por otro usuario.',
@@ -758,10 +796,10 @@ class EventShow extends Component
                 'password' => \Illuminate\Support\Facades\Hash::make($password),
             ]);
 
-            $this->event->update(['client_id' => $newClient->id]);
+            $this->event->update(array_merge(['client_id' => $newClient->id], $partnerData));
             $this->event->load('client');
             $this->showClientModal = false;
-            session()->flash('message', '¡Nuevo cliente creado y asignado al evento con éxito!');
+            session()->flash('message', '¡Nuevo cliente y datos de pareja guardados con éxito!');
         }
     }
 

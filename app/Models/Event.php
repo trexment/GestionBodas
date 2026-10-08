@@ -38,6 +38,10 @@ class Event extends Model
         'token',
         'is_dossier_completed',
         'client_id',
+        'partner_name',
+        'partner_phone',
+        'partner_email',
+        'partner_dni',
         'dj_id',
         'assistant_id',
         'notes',
@@ -801,6 +805,33 @@ class Event extends Model
         }
 
         return "En caso de que los servicios contratados se amplíen o cubran las fases de cóctel y/o banquete (o superen las 4 horas de servicio in situ), EL CLIENTE facilitará la correspondiente manutención / menú de personal para los integrantes del equipo ({$countStr}).";
+    }
+
+    /**
+     * Limpia el teléfono de la pareja para enlace de WhatsApp / llamada
+     */
+    public function getPartnerCleanPhoneAttribute(): ?string
+    {
+        if (empty($this->partner_phone)) {
+            return null;
+        }
+        $phone = preg_replace('/[^0-9]/', '', $this->partner_phone);
+        if (strlen($phone) === 9 && in_array(substr($phone, 0, 1), ['6', '7'])) {
+            $phone = '34' . $phone;
+        }
+        return $phone;
+    }
+
+    /**
+     * Devuelve los nombres combinados de la pareja / novios
+     */
+    public function getCoupleNamesAttribute(): string
+    {
+        $clientName = $this->client?->name;
+        if (!empty($this->partner_name)) {
+            return $clientName ? "{$clientName} y {$this->partner_name}" : $this->partner_name;
+        }
+        return $clientName ?: ($this->name ?: 'Cliente');
     }
 }
 

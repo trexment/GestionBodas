@@ -213,6 +213,54 @@
                         >
                     </div>
                 </div>
+
+                <!-- DATOS DE LA PAREJA / CÓNYUGE (OPCIONAL) -->
+                <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 bg-pink-50/50 dark:bg-pink-950/20 p-4 rounded-2xl border border-pink-100 dark:border-pink-900/40 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-pink-950 dark:text-pink-300 uppercase tracking-wider flex items-center gap-1.5">
+                            <span>💍</span> Datos de la Pareja / Cónyuge (Opcional)
+                        </span>
+                        <span class="text-[10px] text-pink-600 dark:text-pink-400 bg-pink-100/70 dark:bg-pink-900/60 px-2 py-0.5 rounded-full font-bold">2º Miembro</span>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">Nombre Completo Pareja</label>
+                            <input 
+                                type="text" 
+                                wire:model.live.debounce.250ms="partner_name" 
+                                class="w-full bg-white dark:bg-slate-900 border border-pink-200 dark:border-pink-800 rounded-xl text-xs font-semibold text-slate-900 dark:text-white p-2.5 shadow-xs focus:ring-2 focus:ring-pink-500" 
+                                placeholder="Nombre de tu pareja"
+                            >
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">Teléfono Pareja (WhatsApp)</label>
+                            <input 
+                                type="text" 
+                                wire:model.live.debounce.250ms="partner_phone" 
+                                class="w-full bg-white dark:bg-slate-900 border border-pink-200 dark:border-pink-800 rounded-xl text-xs text-slate-900 dark:text-white p-2.5 shadow-xs focus:ring-2 focus:ring-pink-500" 
+                                placeholder="612345678"
+                            >
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">Email Pareja (Opcional)</label>
+                            <input 
+                                type="email" 
+                                wire:model.live.debounce.250ms="partner_email" 
+                                class="w-full bg-white dark:bg-slate-900 border border-pink-200 dark:border-pink-800 rounded-xl text-xs text-slate-900 dark:text-white p-2.5 shadow-xs focus:ring-2 focus:ring-pink-500" 
+                                placeholder="pareja@email.com"
+                            >
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">DNI / NIF Pareja (Opcional)</label>
+                            <input 
+                                type="text" 
+                                wire:model.live.debounce.250ms="partner_dni" 
+                                class="w-full bg-white dark:bg-slate-900 border border-pink-200 dark:border-pink-800 rounded-xl text-xs font-mono uppercase text-slate-900 dark:text-white p-2.5 shadow-xs focus:ring-2 focus:ring-pink-500" 
+                                placeholder="12345678Z"
+                            >
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- PASO 2: LECTURA DE CLÁUSULAS -->

@@ -28,6 +28,13 @@ class ContractTemplateService
             '{{ codigo_postal_cliente }}' => 'Código postal del cliente',
             '{{ ciudad_cliente }}' => 'Ciudad / Población del cliente',
             '{{ provincia_cliente }}' => 'Provincia del cliente',
+            '{{ pareja }}' => 'Nombre completo de la pareja / cónyuge / 2º contratante',
+            '{{ nombre_pareja }}' => 'Nombre de la pareja / cónyuge',
+            '{{ telefono_pareja }}' => 'Teléfono de la pareja',
+            '{{ email_pareja }}' => 'Correo de la pareja',
+            '{{ nif_pareja }}' => 'NIF/DNI de la pareja',
+            '{{ cliente_y_pareja }}' => 'Nombre del cliente y de su pareja combinados',
+            '{{ novios }}' => 'Alias de cliente y pareja',
             '{{ evento }}' => 'Nombre del evento',
             '{{ tipo_evento }}' => 'Tipo de evento (Boda, Fiesta, etc.)',
             '{{ fecha_evento }}' => 'Fecha del evento (dd/mm/aaaa)',
@@ -202,6 +209,13 @@ TEXT
         $clientCity = $overrides['client_city'] ?? ($contract->client_city_signed ?: ($client?->city ?? ''));
         $clientProvince = $overrides['client_province'] ?? ($contract->client_province_signed ?: ($client?->province ?? ''));
 
+        $partnerName = $overrides['partner_name'] ?? ($event->partner_name ?? '');
+        $partnerPhone = $overrides['partner_phone'] ?? ($event->partner_phone ?? '');
+        $partnerEmail = $overrides['partner_email'] ?? ($event->partner_email ?? '');
+        $partnerDni = $overrides['partner_dni'] ?? ($event->partner_dni ?? '');
+
+        $coupleNames = !empty($partnerName) ? "{$clientName} y {$partnerName}" : $clientName;
+
         // Formatted client city string: e.g. ", 26370 Navarrete (La Rioja)"
         $clientCityInfo = '';
         if ($clientCity || $clientPostalCode) {
@@ -274,6 +288,15 @@ TEXT
             '{{ ciudad_cliente }}' => $clientCity,
             '{{ provincia_cliente }}' => $clientProvince,
             '{{ ciudad_cliente_info }}' => $clientCityInfo,
+            '{{ pareja }}' => $partnerName,
+            '{{ nombre_pareja }}' => $partnerName,
+            '{{ telefono_pareja }}' => $partnerPhone,
+            '{{ email_pareja }}' => $partnerEmail,
+            '{{ nif_pareja }}' => $partnerDni,
+            '{{ dni_pareja }}' => $partnerDni,
+            '{{ cliente_y_pareja }}' => $coupleNames,
+            '{{ pareja_o_cliente }}' => $coupleNames,
+            '{{ novios }}' => $coupleNames,
             '{{ evento }}' => $event ? $event->name : 'Evento',
             '{{ tipo_evento }}' => $event?->type ?? 'Boda / Evento',
             '{{ fecha_evento }}' => $event && $event->event_date ? Carbon::parse($event->event_date)->format('d/m/Y') : 'Por determinar',

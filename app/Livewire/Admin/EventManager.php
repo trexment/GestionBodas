@@ -20,8 +20,11 @@ class EventManager extends Component
     public $dance_start_time;
     public $dance_duration_hours = 4.0;
     public $max_end_time;
-    public $location;
     public $client_id;
+    public $partner_name;
+    public $partner_phone;
+    public $partner_email;
+    public $partner_dni;
     public $dj_id;
     public $assistant_id;
     public $assistant_ids = [];
@@ -53,6 +56,10 @@ class EventManager extends Component
         'max_end_time' => 'nullable|string|max:20',
         'location' => 'required|string|max:255',
         'client_id' => 'nullable|exists:users,id',
+        'partner_name' => 'nullable|string|max:255',
+        'partner_phone' => 'nullable|string|max:50',
+        'partner_email' => 'nullable|email|max:255',
+        'partner_dni' => 'nullable|string|max:50',
         'dj_id' => 'nullable|exists:users,id',
         'assistant_id' => 'nullable|exists:users,id',
         'assistant_ids' => 'nullable|array',
@@ -104,7 +111,7 @@ class EventManager extends Component
         }
         $this->resetValidation();
         $this->editing_event_id = null;
-        $this->reset(['name', 'brand', 'event_type', 'event_date', 'setup_date', 'start_time', 'ceremony_time', 'cocktail_time', 'banquet_time', 'dance_start_time', 'dance_duration_hours', 'max_end_time', 'location', 'client_id', 'dj_id', 'assistant_id', 'assistant_ids', 'notes']);
+        $this->reset(['name', 'brand', 'event_type', 'event_date', 'setup_date', 'start_time', 'ceremony_time', 'cocktail_time', 'banquet_time', 'dance_start_time', 'dance_duration_hours', 'max_end_time', 'location', 'client_id', 'partner_name', 'partner_phone', 'partner_email', 'partner_dni', 'dj_id', 'assistant_id', 'assistant_ids', 'notes']);
         $this->brand = \App\Models\Setting::getDetectedBrand();
         $this->event_type = 'boda';
         $this->dance_duration_hours = 4.0;
@@ -137,6 +144,10 @@ class EventManager extends Component
         $this->max_end_time = $event->max_end_time;
         $this->location = $event->location;
         $this->client_id = $event->client_id;
+        $this->partner_name = $event->partner_name;
+        $this->partner_phone = $event->partner_phone;
+        $this->partner_email = $event->partner_email;
+        $this->partner_dni = $event->partner_dni;
         $this->dj_id = $event->dj_id;
         $this->assistant_id = $event->assistant_id;
         $this->assistant_ids = $event->all_assistants->pluck('id')->map(fn($id) => (int)$id)->toArray();
@@ -157,7 +168,7 @@ class EventManager extends Component
 
         try {
             // Si las columnas o tablas aún no existen, intentamos aplicar migraciones automáticamente
-            if (!\Illuminate\Support\Facades\Schema::hasColumn('events', 'setup_date') || !\Illuminate\Support\Facades\Schema::hasColumn('events', 'dance_start_time') || !\Illuminate\Support\Facades\Schema::hasColumn('events', 'max_end_time') || !\Illuminate\Support\Facades\Schema::hasTable('event_assistants')) {
+            if (!\Illuminate\Support\Facades\Schema::hasColumn('events', 'partner_name') || !\Illuminate\Support\Facades\Schema::hasColumn('events', 'setup_date') || !\Illuminate\Support\Facades\Schema::hasColumn('events', 'dance_start_time') || !\Illuminate\Support\Facades\Schema::hasColumn('events', 'max_end_time') || !\Illuminate\Support\Facades\Schema::hasTable('event_assistants')) {
                 try {
                     \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
                 } catch (\Throwable $migEx) {
@@ -174,6 +185,10 @@ class EventManager extends Component
                 'event_date' => $this->event_date,
                 'location' => $this->location,
                 'client_id' => $this->client_id ?: null,
+                'partner_name' => $this->partner_name ?: null,
+                'partner_phone' => $this->partner_phone ?: null,
+                'partner_email' => $this->partner_email ?: null,
+                'partner_dni' => $this->partner_dni ?: null,
                 'dj_id' => $this->dj_id ?: auth()->id(),
                 'assistant_id' => $firstAssistantId,
                 'notes' => $this->notes,

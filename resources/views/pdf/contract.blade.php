@@ -207,7 +207,15 @@
             </tr>
             <tr>
                 <td class="summary-label">Cliente:</td>
-                <td class="summary-value">{{ $r['cliente'] ?? '' }}</td>
+                <td class="summary-value">
+                    <strong>{{ $r['cliente'] ?? '' }}</strong>
+                    @if(!empty($r['pareja']))
+                        <div style="font-size: 7.5pt; color: #475569; margin-top: 1px;">
+                            <strong>Pareja / Cónyuge:</strong> {{ $r['pareja'] }}
+                            @if(!empty($r['telefono_pareja'])) &bull; {{ $r['telefono_pareja'] }} @endif
+                        </div>
+                    @endif
+                </td>
                 <td class="summary-label">Ubicación:</td>
                 <td class="summary-value">{{ $r['ubicacion'] ?? '' }}</td>
             </tr>

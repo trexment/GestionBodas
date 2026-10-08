@@ -361,7 +361,7 @@
                         </div>
 
                         <div class="mb-3">
-                            <label class="block text-gray-700 dark:text-slate-300 text-xs font-bold mb-1">Cliente / Novios (Opcional)</label>
+                            <label class="block text-gray-700 dark:text-slate-300 text-xs font-bold mb-1">Cliente Principal / Contratante (Opcional)</label>
                             <select wire:model="client_id" class="border dark:border-slate-700 rounded-xl w-full py-2 px-3 text-gray-700 dark:text-slate-200 text-sm focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-slate-800">
                                 <option value="">-- Sin asignar --</option>
                                 @foreach($clients as $c)
@@ -369,6 +369,34 @@
                                 @endforeach
                             </select>
                             @error('client_id') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                        </div>
+
+                        <!-- Datos de la Pareja / Cónyuge (Especial Bodas o Pareja) -->
+                        <div class="mb-3 bg-pink-50/60 dark:bg-pink-950/30 p-3 rounded-2xl border border-pink-100 dark:border-pink-900/40 space-y-2">
+                            <div class="flex items-center justify-between">
+                                <label class="block text-pink-900 dark:text-pink-300 text-xs font-bold">💍 Datos de la Pareja / Cónyuge (Novio/Novia)</label>
+                                <span class="text-[10px] text-pink-700 dark:text-pink-300 font-bold bg-pink-100 dark:bg-pink-900/60 px-2 py-0.5 rounded-md">Contacto adicional</span>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                <div>
+                                    <label class="block text-[11px] font-bold text-gray-700 dark:text-slate-300 mb-0.5">Nombre y Apellidos</label>
+                                    <input type="text" wire:model="partner_name" placeholder="Ej: Vidalia / Omar" class="border border-pink-200 dark:border-pink-800 rounded-xl w-full py-1.5 px-2 text-gray-700 dark:text-slate-200 text-xs bg-white dark:bg-slate-800 font-semibold">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold text-gray-700 dark:text-slate-300 mb-0.5">Teléfono / WhatsApp</label>
+                                    <input type="text" wire:model="partner_phone" placeholder="612345678" class="border border-pink-200 dark:border-pink-800 rounded-xl w-full py-1.5 px-2 text-gray-700 dark:text-slate-200 text-xs bg-white dark:bg-slate-800">
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                <div>
+                                    <label class="block text-[11px] font-bold text-gray-700 dark:text-slate-300 mb-0.5">Email (Opcional)</label>
+                                    <input type="email" wire:model="partner_email" placeholder="pareja@email.com" class="border border-pink-200 dark:border-pink-800 rounded-xl w-full py-1.5 px-2 text-gray-700 dark:text-slate-200 text-xs bg-white dark:bg-slate-800">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold text-gray-700 dark:text-slate-300 mb-0.5">DNI / NIF (Opcional)</label>
+                                    <input type="text" wire:model="partner_dni" placeholder="12345678Z" class="border border-pink-200 dark:border-pink-800 rounded-xl w-full py-1.5 px-2 text-gray-700 dark:text-slate-200 text-xs bg-white dark:bg-slate-800 uppercase font-mono">
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Asignación de Personal: DJ y Asistentes -->
