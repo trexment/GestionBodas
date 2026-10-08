@@ -336,6 +336,12 @@ TEXT
         $renderedBody = str_replace(array_keys($replacements), array_values($replacements), $bodyTemplate);
         $renderedFooter = str_replace(array_keys($replacements), array_values($replacements), $footerTemplate);
 
+        $cleanReplacements = [];
+        foreach ($replacements as $k => $v) {
+            $cleanKey = trim(str_replace(['{{', '}}'], '', (string)$k));
+            $cleanReplacements[$cleanKey] = $v;
+        }
+
         return [
             'title' => $renderedTitle,
             'body' => $renderedBody,
@@ -345,6 +351,8 @@ TEXT
             'client' => $client,
             'amount' => $amount,
             'replacements' => $replacements,
+            'r' => $cleanReplacements,
         ];
     }
 }
+

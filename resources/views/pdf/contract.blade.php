@@ -164,6 +164,15 @@
     </style>
 </head>
 <body>
+@php
+    $r = $r ?? [];
+    if (empty($r) && !empty($replacements)) {
+        foreach ($replacements as $k => $v) {
+            $cleanKey = trim(str_replace(['{{', '}}'], '', (string)$k));
+            $r[$cleanKey] = $v;
+        }
+    }
+@endphp
 
     <!-- CABECERA -->
     <table class="header-table">
@@ -173,15 +182,15 @@
                 @if($contractLogoPath)
                     <img src="{{ $contractLogoPath }}" class="header-logo" alt="Logo">
                 @else
-                    <h1 class="company-title">{{ $replacements['{{ empresa }}'] }}</h1>
+                    <h1 class="company-title">{{ $r['empresa'] ?? 'Núñez and Son' }}</h1>
                     <p class="company-subtitle">{{ \App\Models\Setting::get('company_subtitle', 'Servicios Musicales, Sonorización e Iluminación') }}</p>
                 @endif
             </td>
             <td class="doc-badge">
                 <h2 class="doc-badge-title">Contrato de Servicios</h2>
                 <div class="doc-badge-meta">
-                    <strong>Nº Contrato:</strong> {{ $replacements['{{ numero_contrato }}'] }} &bull; 
-                    <strong>Emisión:</strong> {{ $replacements['{{ fecha_emision }}'] }}
+                    <strong>Nº Contrato:</strong> {{ $r['numero_contrato'] ?? '' }} &bull; 
+                    <strong>Emisión:</strong> {{ $r['fecha_emision'] ?? '' }}
                 </div>
             </td>
         </tr>
@@ -192,21 +201,21 @@
         <table class="summary-table">
             <tr>
                 <td class="summary-label">Evento:</td>
-                <td class="summary-value"><strong>{{ $replacements['{{ evento }}'] }}</strong></td>
+                <td class="summary-value"><strong>{{ $r['evento'] ?? 'Evento' }}</strong></td>
                 <td class="summary-label">Fecha Evento:</td>
-                <td class="summary-value"><strong>{{ $replacements['{{ fecha_evento }}'] }}</strong></td>
+                <td class="summary-value"><strong>{{ $r['fecha_evento'] ?? 'Por determinar' }}</strong></td>
             </tr>
             <tr>
                 <td class="summary-label">Cliente:</td>
-                <td class="summary-value">{{ $replacements['{{ cliente }}'] }}</td>
+                <td class="summary-value">{{ $r['cliente'] ?? '' }}</td>
                 <td class="summary-label">Ubicación:</td>
-                <td class="summary-value">{{ $replacements['{{ ubicacion }}'] }}</td>
+                <td class="summary-value">{{ $r['ubicacion'] ?? '' }}</td>
             </tr>
             <tr>
                 <td class="summary-label">Horario:</td>
-                <td class="summary-value">{{ $replacements['{{ hora_inicio }}'] }} - {{ $replacements['{{ hora_fin }}'] }}</td>
+                <td class="summary-value">{{ $r['hora_inicio'] ?? '' }} - {{ $r['hora_fin'] ?? '' }}</td>
                 <td class="summary-label">Importe Total:</td>
-                <td class="summary-value" style="color: #1d4ed8; font-weight: bold; font-size: 10.5pt;">{{ $replacements['{{ importe }}'] }}</td>
+                <td class="summary-value" style="color: #1d4ed8; font-weight: bold; font-size: 10.5pt;">{{ $r['importe'] ?? '' }}</td>
             </tr>
         </table>
     </div>
@@ -220,7 +229,7 @@
     <div class="consent-box">
         <div class="consent-title">Autorización de Difusión en Redes Sociales y Portfolio</div>
         <p style="margin: 0 0 6px 0; color: #475569;">
-            Autorizo a {{ $replacements['{{ empresa }}'] }} a capturar y publicar fotografías o vídeos del montaje técnico, efectos de iluminación y ambiente general de la fiesta en sus canales profesionales oficiales (Instagram, TikTok o web corporativa), con derecho de revocación en cualquier momento:
+            Autorizo a {{ $r['empresa'] ?? 'la empresa' }} a capturar y publicar fotografías o vídeos del montaje técnico, efectos de iluminación y ambiente general de la fiesta en sus canales profesionales oficiales (Instagram, TikTok o web corporativa), con derecho de revocación en cualquier momento:
         </p>
         <table style="width: 100%; font-size: 8pt; color: #1e293b;">
             <tr>
@@ -236,8 +245,8 @@
             <td class="signature-box">
                 <div class="sign-title">Por la Empresa Prestadora</div>
                 <div class="signature-graphic"></div>
-                <p class="sign-name">{{ $replacements['{{ empresa }}'] }}</p>
-                <p class="sign-sub">NIF/CIF: {{ $replacements['{{ cif_empresa }}'] }}</p>
+                <p class="sign-name">{{ $r['empresa'] ?? 'Núñez and Son' }}</p>
+                <p class="sign-sub">NIF/CIF: {{ $r['cif_empresa'] ?? '' }}</p>
             </td>
             <td class="signature-spacer"></td>
             <td class="signature-box">
@@ -247,16 +256,16 @@
                         <div style="border: 1px solid #2563eb; background: #eff6ff; padding: 4px 6px; border-radius: 4px; text-align: left; font-size: 6.5pt; color: #1e3a8a; line-height: 1.25;">
                             <strong style="color: #1d4ed8;">&#x1F510; SELLO DE CERTIFICADO DIGITAL</strong><br>
                             <strong>Emisor:</strong> {{ $contract->certificate_issuer ?? 'FNMT / DNIe' }}<br>
-                            <strong>Titular:</strong> {{ $contract->certificate_subject ?? $replacements['{{ cliente }}'] }}<br>
+                            <strong>Titular:</strong> {{ $contract->certificate_subject ?? ($r['cliente'] ?? '') }}<br>
                             <strong>SHA-256:</strong> <span style="font-family: monospace; font-size: 5pt;">{{ substr($contract->certificate_hash ?? '', 0, 28) }}...</span>
                         </div>
                     @elseif(!empty($contract->signature_data))
                         <img src="{{ $contract->signature_data }}" alt="Firma Digital">
                     @endif
                 </div>
-                <p class="sign-name">{{ $replacements['{{ cliente }}'] }}</p>
+                <p class="sign-name">{{ $r['cliente'] ?? '' }}</p>
                 <p class="sign-sub">
-                    DNI/NIF: {{ $replacements['{{ nif_cliente }}'] }}
+                    DNI/NIF: {{ $r['nif_cliente'] ?? '' }}
                     @if(!empty($contract->signed_at))
                         <br><span style="font-size: 6.5pt; color: #16a34a; font-weight: bold;">
                             @if(($contract->signature_type ?? '') === 'certificate')
