@@ -200,6 +200,30 @@
                     </div>
                 </div>
 
+                <div class="pt-4 border-t border-gray-100 space-y-3">
+                    <label class="block text-xs font-bold text-gray-700 mb-1">✍️ Firma / Sello Oficial de la Empresa (PNG transparente o JPG)</label>
+                    <div class="flex items-center gap-4">
+                        @if($company_signature)
+                            <div class="flex flex-col items-center gap-1">
+                                <img src="{{ $company_signature->temporaryUrl() }}" alt="Previsualización Firma" class="h-16 w-28 object-contain rounded-xl border-2 border-indigo-500 p-1 bg-white shadow-xs">
+                                <span class="text-[10px] text-indigo-600 font-bold">Nueva firma</span>
+                            </div>
+                        @elseif(\App\Models\Setting::getCompanySignatureUrl())
+                            <div class="flex flex-col items-center gap-1">
+                                <img src="{{ \App\Models\Setting::getCompanySignatureUrl() }}" alt="Firma actual" class="h-16 w-28 object-contain rounded-xl border border-gray-200 p-1 bg-white shadow-xs">
+                                <span class="text-[10px] text-gray-500 font-semibold">Firma actual</span>
+                            </div>
+                        @endif
+                        <div class="flex-1">
+                            <input type="file" wire:model="company_signature" accept="image/*" class="w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer">
+                            <span class="text-[11px] text-gray-400 mt-1 block">Aparecerá estampada automáticamente en el recuadro "Por la Empresa Prestadora" en los contratos y presupuestos.</span>
+                            <div wire:loading wire:target="company_signature" class="text-xs text-indigo-600 font-medium mt-1">
+                                ⏳ Subiendo firma temporal...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- SECCIÓN MULTI-MARCA (NÚÑEZ AND SON & JAVNX DJ) -->
                 <div class="pt-6 border-t border-gray-200 space-y-4">
                     <div>

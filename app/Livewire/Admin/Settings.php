@@ -136,6 +136,9 @@ class Settings extends Component
     public $logo;
     public $current_logo;
 
+    public $company_signature;
+    public $current_company_signature;
+
     // Integraciones Musicales (Spotify & Apple Music)
     public $primary_streaming_service = 'auto'; // 'auto', 'apple_music', 'spotify'
     
@@ -318,6 +321,7 @@ class Settings extends Component
         $this->dossier_photo4_desc = Setting::get('dossier_photo4_desc', '');
 
         $this->current_logo = Setting::get('company_logo');
+        $this->current_company_signature = Setting::get('company_signature');
 
         // Cargar ajustes musicales
         $this->primary_streaming_service = Setting::get('primary_streaming_service', 'auto');
@@ -522,6 +526,7 @@ class Settings extends Component
             'dossier_photo4_image_upload' => 'nullable|image|max:8192',
 
             'logo' => 'nullable|image|max:2048',
+            'company_signature' => 'nullable|image|max:2048',
             'primary_streaming_service' => 'required|in:auto,apple_music,spotify',
             'spotify_client_id' => 'nullable|string|max:255',
             'spotify_client_secret' => 'nullable|string|max:255',
@@ -682,6 +687,17 @@ class Settings extends Component
             Setting::set('company_logo', $path);
             $this->current_logo = $path;
             $this->logo = null;
+        }
+
+        if ($this->company_signature) {
+            if ($this->current_company_signature) {
+                Storage::disk('public')->delete($this->current_company_signature);
+            }
+            
+            $sigPath = $this->company_signature->store('signatures', 'public');
+            Setting::set('company_signature', $sigPath);
+            $this->current_company_signature = $sigPath;
+            $this->company_signature = null;
         }
 
         $this->spotifyUser = SpotifyService::getUserDetails();

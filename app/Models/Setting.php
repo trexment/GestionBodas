@@ -84,6 +84,72 @@ class Setting extends Model
             return null;
         }
 
+    /**
+     * Get the absolute filesystem path for the company signature / stamp (used in PDFs).
+     */
+    public static function getCompanySignaturePathForPdf(?string $brandKey = null): ?string
+    {
+        $sig = null;
+        if (!empty($brandKey)) {
+            $sig = self::get('brand_' . $brandKey . '_signature');
+        }
+        if (!$sig) {
+            $sig = self::get('company_signature');
+        }
+
+        if (!$sig) {
+            return null;
+        }
+
+        $cleanPath = ltrim($sig, '/');
+
+        // Check storage/app/public/
+        if (file_exists(storage_path('app/public/' . $cleanPath))) {
+            return storage_path('app/public/' . $cleanPath);
+        }
+
+        // Check public/storage/
+        if (file_exists(public_path('storage/' . $cleanPath))) {
+            return public_path('storage/' . $cleanPath);
+        }
+
+        // Check public/
+        if (file_exists(public_path($cleanPath))) {
+            return public_path($cleanPath);
+        }
+
+        return null;
+    }
+
+    /**
+     * Get the public URL for the company signature / stamp.
+     */
+    public static function getCompanySignatureUrl(?string $brandKey = null): ?string
+    {
+        $sig = null;
+        if (!empty($brandKey)) {
+            $sig = self::get('brand_' . $brandKey . '_signature');
+        }
+        if (!$sig) {
+            $sig = self::get('company_signature');
+        }
+
+        if (!$sig) {
+            return null;
+        }
+
+        if (str_starts_with($sig, 'http://') || str_starts_with($sig, 'https://')) {
+            return $sig;
+        }
+
+        $cleanPath = ltrim($sig, '/');
+
+        if (!file_exists(storage_path('app/public/' . $cleanPath)) &&
+            !file_exists(public_path('storage/' . $cleanPath)) &&
+            !file_exists(public_path($cleanPath))) {
+            return null;
+        }
+
         return asset('storage/' . $cleanPath);
     }
 

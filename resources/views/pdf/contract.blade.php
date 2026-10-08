@@ -244,9 +244,31 @@
         <tr>
             <td class="signature-box">
                 <div class="sign-title">Por la Empresa Prestadora</div>
-                <div class="signature-graphic"></div>
+                <div class="signature-graphic">
+                    @php
+                        $brandKey = $event ? $event->brand_clean : ($contract->event ? $contract->event->brand_clean : null);
+                        $companySigPath = \App\Models\Setting::getCompanySignaturePathForPdf($brandKey);
+                    @endphp
+                    @if($companySigPath)
+                        <img src="{{ $companySigPath }}" alt="Firma Empresa">
+                    @else
+                        <div style="border: 1px solid #16a34a; background: #f0fdf4; padding: 4px 6px; border-radius: 4px; text-align: left; font-size: 6.5pt; color: #166534; line-height: 1.25;">
+                            <strong style="color: #15803d;">&#x2714; SELLO DE CONFORMIDAD EMPRESA</strong><br>
+                            <strong>Entidad:</strong> {{ $r['empresa'] ?? 'Núñez and Son' }}<br>
+                            <strong>CIF/NIF:</strong> {{ $r['cif_empresa'] ?? '' }}<br>
+                            <strong>Validez:</strong> Expedido y formalizado electrónicamente
+                        </div>
+                    @endif
+                </div>
                 <p class="sign-name">{{ $r['empresa'] ?? 'Núñez and Son' }}</p>
-                <p class="sign-sub">NIF/CIF: {{ $r['cif_empresa'] ?? '' }}</p>
+                <p class="sign-sub">
+                    NIF/CIF: {{ $r['cif_empresa'] ?? '' }}
+                    @if(!empty($contract->created_at))
+                        <br><span style="font-size: 6.5pt; color: #16a34a; font-weight: bold;">
+                            (Expedido el {{ $contract->created_at->format('d/m/Y') }})
+                        </span>
+                    @endif
+                </p>
             </td>
             <td class="signature-spacer"></td>
             <td class="signature-box">
