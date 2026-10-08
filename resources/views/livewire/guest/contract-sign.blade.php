@@ -293,20 +293,31 @@
                 </div>
 
                 <!-- OPCIÓN A: LIENZO CANVAS DE FIRMA MANUSCRITA -->
-                <div x-show="signatureType === 'canvas'" class="space-y-3">
+                <div x-show="signatureType === 'canvas'" class="space-y-3" wire:ignore>
                     <div class="flex items-center justify-between">
-                        <p class="text-xs text-slate-500 dark:text-slate-400">
-                            Dibuja tu firma en el recuadro con el dedo (móvil/tablet) o el ratón:
+                        <p class="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                            <span>✍️</span> Dibuja tu firma en el recuadro blanco con el dedo (móvil/tablet) o el ratón:
                         </p>
-                        <button type="button" @click="clearSignature()" class="text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-rose-600 px-3 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-rose-50 dark:hover:bg-rose-950/50 transition">
-                            🔄 Limpiar Firma
+                        <button type="button" @click="clearSignature()" class="text-xs font-bold text-slate-700 dark:text-slate-200 hover:text-rose-600 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-rose-50 dark:hover:bg-rose-950/50 border border-slate-200 dark:border-slate-700 transition cursor-pointer flex items-center gap-1">
+                            🔄 Borrar / Repetir Firma
                         </button>
                     </div>
 
-                    <div class="relative bg-slate-50 dark:bg-slate-950 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl overflow-hidden touch-none" style="height: 180px;">
-                        <canvas x-ref="canvas" class="w-full h-full cursor-crosshair"></canvas>
-                        <div x-show="!hasDrawn" class="absolute inset-0 pointer-events-none flex items-center justify-center text-slate-400 dark:text-slate-500 text-xs font-medium">
-                            ✍️ Estampa aquí tu firma digital con el dedo o ratón
+                    <div class="relative bg-white border-2 border-indigo-300 dark:border-indigo-400 rounded-2xl overflow-hidden shadow-inner touch-none select-none" style="height: 190px;">
+                        <!-- Canvas siempre sobre fondo blanco para máximo contraste y legibilidad -->
+                        <canvas x-ref="canvas" class="w-full h-full cursor-crosshair block bg-white"></canvas>
+                        
+                        <!-- Línea guía de firma -->
+                        <div class="absolute bottom-5 left-8 right-8 pointer-events-none border-b border-dashed border-slate-300 flex items-center justify-between text-[11px] text-slate-400 font-sans pb-1 select-none">
+                            <span class="font-medium">✕ Firma del Cliente</span>
+                            <span class="text-[10px] text-slate-300">Validez Legal Electrónica</span>
+                        </div>
+
+                        <!-- Marca de agua instructiva -->
+                        <div x-show="!hasDrawn" class="absolute inset-0 pointer-events-none flex flex-col items-center justify-center text-slate-400 text-xs font-medium gap-1 select-none">
+                            <span class="text-xl">✍️</span>
+                            <span class="text-slate-500 font-bold">Pulsa y estampa aquí tu firma</span>
+                            <span class="text-[10px] text-slate-400">(Usa el dedo, lápiz táctil o ratón)</span>
                         </div>
                     </div>
                     @error('signature_data') <span class="text-rose-600 text-xs mt-1 block font-bold">{{ $message }}</span> @enderror
@@ -386,7 +397,7 @@
                         <span x-text="signatureType === 'certificate' ? '🔐 Firmar Oficialmente con Certificado Digital' : '✍️ Firmar y Validar Contrato Electrónico'"></span>
                     </button>
                     <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-2">
-                        Al firmar, se generará una copia certificada en PDF accesible en cualquier momento.
+                        Al firmar, se generará una copia certificada en PDF accesible en cualquier momento y enviada a tu correo.
                     </p>
                 </div>
             </div>
@@ -416,69 +427,114 @@ function signaturePad() {
 
                 this.ctx = this.canvas.getContext('2d');
                 this.resizeCanvas();
-                window.addEventListener('resize', () => this.resizeCanvas());
 
-                // Mouse events
-                this.canvas.addEventListener('mousedown', (e) => this.startDrawing(e));
-                this.canvas.addEventListener('mousemove', (e) => this.draw(e));
-                this.canvas.addEventListener('mouseup', () => this.stopDrawing());
-                this.canvas.addEventListener('mouseleave', () => this.stopDrawing());
+                let resizeTimer;
+                window.addEventListener('resize', () => {
+                    clearTimeout(resizeTimer);
+                    resizeTimer = setTimeout(() => this.resizeCanvas(), 120);
+                });
 
-                // Touch events
-                this.canvas.addEventListener('touchstart', (e) => this.startTouch(e), { passive: false });
-                this.canvas.addEventListener('touchmove', (e) => this.drawTouch(e), { passive: false });
-                this.canvas.addEventListener('touchend', () => this.stopDrawing());
+                // Eventos de ratón
+                this.canvas.addEventListener('mousedown', (e) => this.start(e));
+                this.canvas.addEventListener('mousemove', (e) => this.move(e));
+                window.addEventListener('mouseup', () => this.stop());
+
+                // Eventos táctiles para móviles y tablets
+                this.canvas.addEventListener('touchstart', (e) => this.start(e), { passive: false });
+                this.canvas.addEventListener('touchmove', (e) => this.move(e), { passive: false });
+                window.addEventListener('touchend', () => this.stop());
+                window.addEventListener('touchcancel', () => this.stop());
+
+                // Restaurar si ya existía una firma previa
+                const existingData = this.$wire.get('signature_data');
+                if (existingData && existingData.startsWith('data:image')) {
+                    const img = new Image();
+                    img.onload = () => {
+                        this.ctx.drawImage(img, 0, 0, this.canvas.width, this.canvas.height);
+                        this.hasDrawn = true;
+                    };
+                    img.src = existingData;
+                }
             });
+        },
+
+        getCoords(e) {
+            if (!this.canvas) return { x: 0, y: 0 };
+            const rect = this.canvas.getBoundingClientRect();
+            
+            let clientX = e.clientX;
+            let clientY = e.clientY;
+
+            if (e.touches && e.touches.length > 0) {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            } else if (e.changedTouches && e.changedTouches.length > 0) {
+                clientX = e.changedTouches[0].clientX;
+                clientY = e.changedTouches[0].clientY;
+            }
+
+            const scaleX = this.canvas.width / (rect.width || 1);
+            const scaleY = this.canvas.height / (rect.height || 1);
+
+            return {
+                x: (clientX - rect.left) * scaleX,
+                y: (clientY - rect.top) * scaleY
+            };
         },
 
         resizeCanvas() {
             if (!this.canvas) return;
             const rect = this.canvas.getBoundingClientRect();
-            this.canvas.width = rect.width;
-            this.canvas.height = rect.height;
-            this.ctx.lineWidth = 2.5;
+            const dpr = Math.max(window.devicePixelRatio || 1, 1);
+
+            let tempImage = null;
+            if (this.hasDrawn) {
+                tempImage = this.canvas.toDataURL();
+            }
+
+            const w = Math.max(rect.width, 300);
+            const h = Math.max(rect.height, 180);
+
+            this.canvas.width = Math.round(w * dpr);
+            this.canvas.height = Math.round(h * dpr);
+
+            this.ctx = this.canvas.getContext('2d');
+            this.ctx.lineWidth = Math.max(2.8 * dpr, 2.5);
             this.ctx.lineCap = 'round';
             this.ctx.lineJoin = 'round';
-            this.ctx.strokeStyle = '#0f172a';
+            this.ctx.strokeStyle = '#1e3a8a'; // Tinta azul marino oscura de máxima resolución y contraste
+
+            if (tempImage) {
+                const img = new Image();
+                img.onload = () => {
+                    this.ctx.drawImage(img, 0, 0, this.canvas.width, this.canvas.height);
+                };
+                img.src = tempImage;
+            }
         },
 
-        startDrawing(e) {
+        start(e) {
+            if (e.type.startsWith('touch')) {
+                e.preventDefault();
+            }
             this.isDrawing = true;
             this.hasDrawn = true;
-            const rect = this.canvas.getBoundingClientRect();
+            const coords = this.getCoords(e);
             this.ctx.beginPath();
-            this.ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+            this.ctx.moveTo(coords.x, coords.y);
         },
 
-        draw(e) {
+        move(e) {
             if (!this.isDrawing) return;
-            const rect = this.canvas.getBoundingClientRect();
-            this.ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+            if (e.type.startsWith('touch')) {
+                e.preventDefault();
+            }
+            const coords = this.getCoords(e);
+            this.ctx.lineTo(coords.x, coords.y);
             this.ctx.stroke();
-            this.syncSignature();
         },
 
-        startTouch(e) {
-            e.preventDefault();
-            this.isDrawing = true;
-            this.hasDrawn = true;
-            const rect = this.canvas.getBoundingClientRect();
-            const touch = e.touches[0];
-            this.ctx.beginPath();
-            this.ctx.moveTo(touch.clientX - rect.left, touch.clientY - rect.top);
-        },
-
-        drawTouch(e) {
-            if (!this.isDrawing) return;
-            e.preventDefault();
-            const rect = this.canvas.getBoundingClientRect();
-            const touch = e.touches[0];
-            this.ctx.lineTo(touch.clientX - rect.left, touch.clientY - rect.top);
-            this.ctx.stroke();
-            this.syncSignature();
-        },
-
-        stopDrawing() {
+        stop() {
             if (this.isDrawing) {
                 this.isDrawing = false;
                 this.syncSignature();
