@@ -211,6 +211,8 @@ TEXT
 
         $brandKey = $event ? $event->brand_clean : ($quote ? $quote->brand_clean : null);
         $brand = Setting::getBrandInfo($brandKey);
+        $companyName = (!empty($brand['name'])) ? $brand['name'] : Setting::getCompanyName('Núñez and Son');
+        $companyCif = (!empty($brand['cif'])) ? $brand['cif'] : Setting::get('company_cif', 'B-12345678');
         $companyEmail = (!empty($brand['email']) && $brand['email'] !== 'info@eventosmusicales.es') ? $brand['email'] : Setting::get('company_email', 'info@nunezandson.com');
         if ($companyEmail === 'info@eventosmusicales.es') {
             $companyEmail = 'info@nunezandson.com';
