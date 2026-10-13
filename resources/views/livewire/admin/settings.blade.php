@@ -1078,6 +1078,69 @@
                 </div>
             </div>
 
+            <!-- SECCIÓN FOTO PANORÁMICA DE FIESTA / PIE DE PÁGINA 2 -->
+            <div class="bg-white dark:bg-slate-800/90 shadow-sm rounded-xl border border-gray-200 dark:border-slate-700/80 p-6 space-y-4">
+                <div class="flex items-center justify-between border-b border-gray-100 dark:border-slate-700 pb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="text-xl">📸</span>
+                        <div>
+                            <h4 class="text-sm font-black text-gray-900 dark:text-white flex items-center gap-2">
+                                Foto Panorámica de Fiesta & Montaje (Pie de Página 2 del Dossier)
+                            </h4>
+                            <p class="text-xs text-gray-500 dark:text-slate-400">Esta imagen horizontal ocupará todo el ancho inferior de la página 2 del dossier, cubriendo el hueco y enmarcando el pie de página de forma impecable.</p>
+                        </div>
+                    </div>
+                    @if($dossier_banner_image)
+                        <button type="button" wire:click="deleteDossierImage('banner')" class="text-[11px] text-rose-600 hover:text-rose-800 dark:text-rose-400 dark:hover:text-rose-300 font-bold px-2.5 py-1 rounded-md bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/50 transition cursor-pointer">
+                            ✕ Quitar Foto
+                        </button>
+                    @endif
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+                    <div>
+                        @if ($dossier_banner_image_upload)
+                            <div class="relative rounded-xl overflow-hidden border-2 border-amber-500 h-36 bg-slate-950 shadow-inner flex items-center justify-center">
+                                <img src="{{ $dossier_banner_image_upload->temporaryUrl() }}" class="w-full h-full object-cover">
+                                <span class="absolute bottom-2 right-2 bg-amber-500 text-slate-950 text-[10px] font-black px-2 py-0.5 rounded-md shadow">
+                                    Nueva Foto Seleccionada
+                                </span>
+                            </div>
+                        @elseif ($dossier_banner_image)
+                            <div class="relative rounded-xl overflow-hidden border border-slate-300 dark:border-slate-700 h-36 bg-slate-950 shadow-inner flex items-center justify-center">
+                                <img src="{{ asset('storage/' . $dossier_banner_image) }}" class="w-full h-full object-cover">
+                                <span class="absolute bottom-2 right-2 bg-slate-900/90 border border-slate-700 text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded-md">
+                                    ✓ Foto Activa en Dossier
+                                </span>
+                            </div>
+                        @else
+                            <div class="rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-700/80 h-36 flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-900/60 p-4 text-center">
+                                <span class="text-3xl opacity-70 mb-1">🎉</span>
+                                <span class="text-xs font-semibold text-slate-600 dark:text-slate-400">Sin foto panorámica asignada</span>
+                                <span class="text-[10px] text-slate-400 dark:text-slate-500 mt-1">Sube una foto horizontal de la pista de baile, cabina iluminada o fuegos fríos</span>
+                            </div>
+                        @endif
+
+                        <div class="pt-2">
+                            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Subir Foto Panorámica (Recomendado: horizontal de 1200x400 px aprox.):</label>
+                            <input type="file" wire:model="dossier_banner_image_upload" accept="image/*" class="w-full text-xs text-slate-600 dark:text-slate-300 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-indigo-50 dark:file:bg-indigo-900/50 file:text-indigo-700 dark:file:text-indigo-300 hover:file:bg-indigo-100 cursor-pointer bg-white dark:bg-slate-900 rounded-lg p-1.5 border border-slate-200 dark:border-slate-700">
+                            @error('dossier_banner_image_upload') <span class="text-rose-500 text-xs font-bold block mt-1">{{ $message }}</span> @enderror
+                        </div>
+                    </div>
+
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Título sobre la foto (Opcional)</label>
+                            <input type="text" wire:model="dossier_banner_title" placeholder="Fiesta en Directo & Iluminación Espectacular" class="w-full bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-700 rounded-lg shadow-2xs text-xs font-bold text-gray-900 dark:text-white p-2.5 focus:ring-amber-500 focus:border-amber-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Frase / Subtítulo descriptivo (Opcional)</label>
+                            <textarea wire:model="dossier_banner_subtitle" rows="3" placeholder="Pista de baile siempre llena con efectos visuales y sonido de máxima fidelidad..." class="w-full bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-700 rounded-lg shadow-2xs text-xs text-gray-800 dark:text-slate-200 p-2.5 focus:ring-amber-500 focus:border-amber-500"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- SECCIÓN 4: CÓMO TRABAJAMOS (PÁGINA 2) -->
             <div class="bg-white shadow-sm rounded-xl border border-gray-200 p-6 space-y-4">
                 <div class="flex items-center justify-between border-b border-gray-100 pb-3">

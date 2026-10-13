@@ -136,6 +136,12 @@ class Settings extends Component
     public $dossier_photo4_title;
     public $dossier_photo4_desc;
 
+    // Foto Panorámica de Fiesta / Montaje (Pie de Página 2 del Dossier)
+    public $dossier_banner_image;
+    public $dossier_banner_image_upload;
+    public $dossier_banner_title;
+    public $dossier_banner_subtitle;
+
     public $logo;
     public $current_logo;
 
@@ -355,6 +361,10 @@ class Settings extends Component
         $this->dossier_photo4_title = Setting::get('dossier_photo4_title', 'Montaje Especial / Fiesta');
         $this->dossier_photo4_desc = Setting::get('dossier_photo4_desc', '');
 
+        $this->dossier_banner_image = Setting::get('dossier_banner_image');
+        $this->dossier_banner_title = Setting::get('dossier_banner_title', 'Fiesta en Directo & Iluminación Espectacular');
+        $this->dossier_banner_subtitle = Setting::get('dossier_banner_subtitle', 'Pista de baile siempre activa con efectos visuales, sonido de alta fidelidad y máxima energía.');
+
         $this->current_logo = Setting::get('company_logo');
         $this->current_company_signature = Setting::get('company_signature');
 
@@ -444,6 +454,7 @@ class Settings extends Component
             'photo2' => ['dossier_photo2_image', 'dossier_block2_image'],
             'photo3' => ['dossier_photo3_image', 'dossier_block3_image'],
             'photo4' => ['dossier_photo4_image'],
+            'banner' => ['dossier_banner_image'],
             'block1' => ['dossier_photo1_image', 'dossier_block1_image'],
             'block2' => ['dossier_photo2_image', 'dossier_block2_image'],
             'block3' => ['dossier_photo3_image', 'dossier_block3_image'],
@@ -562,6 +573,10 @@ class Settings extends Component
             'dossier_photo4_title' => 'nullable|string|max:255',
             'dossier_photo4_desc' => 'nullable|string|max:500',
             'dossier_photo4_image_upload' => 'nullable|image|max:8192',
+
+            'dossier_banner_title' => 'nullable|string|max:255',
+            'dossier_banner_subtitle' => 'nullable|string|max:500',
+            'dossier_banner_image_upload' => 'nullable|image|max:10240',
 
             'logo' => 'nullable|image|max:2048',
             'company_signature' => 'nullable|image|max:2048',
@@ -702,6 +717,20 @@ class Settings extends Component
                 $this->$imgProp = $path;
                 $this->$uploadProp = null;
             }
+        }
+
+        // Guardar Foto Panorámica de Fiesta / Montaje del Dossier
+        Setting::set('dossier_banner_title', $this->dossier_banner_title);
+        Setting::set('dossier_banner_subtitle', $this->dossier_banner_subtitle);
+
+        if ($this->dossier_banner_image_upload) {
+            if ($this->dossier_banner_image) {
+                Storage::disk('public')->delete($this->dossier_banner_image);
+            }
+            $path = $this->dossier_banner_image_upload->store('dossier', 'public');
+            Setting::set('dossier_banner_image', $path);
+            $this->dossier_banner_image = $path;
+            $this->dossier_banner_image_upload = null;
         }
 
         // Guardar ajustes musicales

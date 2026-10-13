@@ -29,6 +29,7 @@
             position: relative;
             box-sizing: border-box;
             width: 100%;
+            padding-bottom: 35px;
         }
         .page-last {
             page-break-after: avoid;
@@ -151,15 +152,57 @@
         }
 
         .page-footer-banner {
+            position: fixed;
+            bottom: 0px;
+            left: 0px;
+            right: 0px;
+            width: 100%;
             background-color: #0b1329;
             color: #94a3b8;
-            padding: 9px 35px;
+            padding: 8px 35px;
             font-size: 7.5pt;
             text-align: center;
-            margin-top: 15px;
+            box-sizing: border-box;
+            z-index: 9999;
         }
         .page-footer-banner strong {
             color: #ffffff;
+        }
+
+        /* BANNER PANORÁMICO DE FIESTA / EFECTOS (PÁGINA 2) */
+        .dossier-panoramic-card {
+            margin-top: 10px;
+            border-radius: 8px;
+            overflow: hidden;
+            background-color: #0b1329;
+            border: 1px solid #1e293b;
+        }
+        .dossier-panoramic-img {
+            width: 100%;
+            height: 140px;
+            display: block;
+        }
+        .dossier-panoramic-caption {
+            background-color: #0b1329;
+            padding: 7px 12px;
+            border-top: 1px solid #1e293b;
+        }
+        .dossier-panoramic-title {
+            font-size: 9pt;
+            font-weight: 800;
+            color: #facc15;
+            letter-spacing: 0.5px;
+        }
+        .dossier-panoramic-sub {
+            font-size: 7pt;
+            color: #cbd5e1;
+            margin-top: 2px;
+            line-height: 1.25;
+        }
+        .dossier-panoramic-default {
+            background-color: #111c34;
+            padding: 12px 16px;
+            border: 1px solid #1e293b;
         }
 
         /* INTRO TEXT */
@@ -659,6 +702,14 @@
         }
     @endphp
 
+    <!-- PIE DE PÁGINA FIJADO EN EL BORDE INFERIOR DE TODAS LAS PÁGINAS A4 -->
+    <div class="page-footer-banner">
+        <strong>{{ $companyName }}</strong>
+        @if(!empty($companyPhone)) &bull; {{ $companyPhone }} @endif
+        @if(!empty($companyPhone2)) &bull; {{ $companyPhone2 }} @endif
+        @if(!empty($companyWebsite)) &bull; {{ $companyWebsite }} @endif
+    </div>
+
     <!-- ==========================================
          PÁGINA 1: PORTADA
          ========================================== -->
@@ -969,14 +1020,68 @@
                     </tr>
                 </table>
             </div>
-        </div>
 
-        <!-- Pie de página -->
-        <div class="page-footer-banner">
-            <strong>{{ $companyName }}</strong>
-            @if(!empty($companyPhone)) &bull; {{ $companyPhone }} @endif
-            @if(!empty($companyPhone2)) &bull; {{ $companyPhone2 }} @endif
-            @if(!empty($companyWebsite)) &bull; {{ $companyWebsite }} @endif
+            <!-- BANNER PANORÁMICO DE FIESTA / EFECTOS / PISTA DE BAILE -->
+            @php
+                $bannerImg = \App\Models\Setting::get('dossier_banner_image');
+                $bannerTitle = \App\Models\Setting::get('dossier_banner_title', 'Fiesta en Directo & Iluminación Espectacular');
+                $bannerSubtitle = \App\Models\Setting::get('dossier_banner_subtitle', 'Pista de baile siempre activa con efectos visuales, sonido de alta fidelidad y máxima energía.');
+                
+                $bannerImgPath = null;
+                if (!empty($bannerImg)) {
+                    $cleanBanner = ltrim($bannerImg, '/');
+                    if (\Illuminate\Support\Facades\Storage::disk('public')->exists($cleanBanner)) {
+                        $bannerImgPath = storage_path('app/public/' . $cleanBanner);
+                    } elseif (file_exists(storage_path('app/public/' . $cleanBanner))) {
+                        $bannerImgPath = storage_path('app/public/' . $cleanBanner);
+                    } elseif (file_exists(public_path('storage/' . $cleanBanner))) {
+                        $bannerImgPath = public_path('storage/' . $cleanBanner);
+                    } elseif (file_exists(public_path($cleanBanner))) {
+                        $bannerImgPath = public_path($cleanBanner);
+                    }
+                }
+            @endphp
+
+            @if($bannerImgPath)
+                <div class="dossier-panoramic-card">
+                    <img src="{{ $bannerImgPath }}" class="dossier-panoramic-img">
+                    @if(!empty($bannerTitle) || !empty($bannerSubtitle))
+                        <div class="dossier-panoramic-caption">
+                            <table style="width: 100%; border-collapse: collapse;">
+                                <tr>
+                                    <td style="vertical-align: middle;">
+                                        @if(!empty($bannerTitle))
+                                            <div class="dossier-panoramic-title">{{ $bannerTitle }}</div>
+                                        @endif
+                                        @if(!empty($bannerSubtitle))
+                                            <div class="dossier-panoramic-sub">{{ $bannerSubtitle }}</div>
+                                        @endif
+                                    </td>
+                                    <td style="width: 75px; text-align: right; vertical-align: middle;">
+                                        <span class="photo-card-pill" style="margin: 0; font-size: 6.5pt;">EN DIRECTO</span>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    @endif
+                </div>
+            @else
+                <div class="dossier-panoramic-card dossier-panoramic-default">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <tr>
+                            <td style="vertical-align: middle;">
+                                <div class="photo-card-pill" style="margin-bottom: 4px; font-size: 6.5pt;">EXPERIENCIA & ENERGÍA EN DIRECTO</div>
+                                <div style="font-size: 10pt; font-weight: 800; color: #ffffff; line-height: 1.2;">{{ $bannerTitle }}</div>
+                                <div style="font-size: 7pt; color: #cbd5e1; margin-top: 3px; line-height: 1.35;">{{ $bannerSubtitle }}</div>
+                            </td>
+                            <td style="width: 110px; text-align: right; vertical-align: middle; border-left: 1px solid rgba(255,255,255,0.12); padding-left: 14px;">
+                                <div style="font-size: 16pt; line-height: 1;">✨ 🎧 🔥</div>
+                                <div style="font-size: 6.5pt; color: #eab308; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; margin-top: 4px;">Pista Llena</div>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            @endif
         </div>
     </div>
 
@@ -1215,14 +1320,6 @@
             <div class="tax-note">
                 Precios finales, impuestos incluidos &bull; Propuesta emitida el {{ $issueDateShort }} y válida hasta el <strong>{{ $expiresDateShort }}</strong> &bull; Formalización por estricto orden de reserva &bull; Pasada la fecha límite, tarifas y disponibilidad quedan sujetas a revisión
             </div>
-        </div>
-
-        <!-- Pie de página -->
-        <div class="page-footer-banner">
-            <strong>{{ $companyName }}</strong>
-            @if(!empty($companyPhone)) &bull; {{ $companyPhone }} @endif
-            @if(!empty($companyPhone2)) &bull; {{ $companyPhone2 }} @endif
-            @if(!empty($companyWebsite)) &bull; {{ $companyWebsite }} @endif
         </div>
     </div>
 

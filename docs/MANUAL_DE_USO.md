@@ -144,8 +144,9 @@ El dossier descargable en PDF presenta una imagen de marca impecable e incluye *
 
 > **Protección Tarifaria:** Si un cliente tarda meses en responder y la oferta ha caducado, la empresa tiene el respaldo contractual para actualizar los precios a la temporada vigente.
 
-> **⚙️ ¿Dónde se configura el plazo de validez?**
-> Puedes personalizar los días de validez en el menú **Ajustes** &rarr; pestaña **"Dossier y Propuestas"** &rarr; sección **"⏳ Caducidad y Validez de las Propuestas (PDF & WhatsApp)"** en el campo *"Días de validez garantizada de la oferta"* (por defecto 15 días naturales). Al guardarlo, tanto el dossier PDF como las propuestas por WhatsApp y correo electrónico calcularán automáticamente la fecha de expiración con este nuevo plazo.
+> **⚙️ Personalización del Dossier (Ajustes &rarr; Dossier y Propuestas):**
+> - **Plazo de Validez:** Define los días naturales de vigencia en *"⏳ Caducidad y Validez de las Propuestas"* (por defecto 15 días).
+> - **Foto Panorámica de Fiesta & Montaje:** Sube una imagen horizontal amplia en *"📸 Foto Panorámica de Fiesta & Montaje"* para cubrir el pie de la página 2 con una fotografía real de cabina, pista llena o efectos especiales, manteniendo el pie de página corporativo anclado al borde inferior.
 
 ---
 
