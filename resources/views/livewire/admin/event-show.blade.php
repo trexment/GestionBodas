@@ -87,297 +87,364 @@
 @endphp
 
 <div x-data="{ openWhatsappHub: false, openQrModal: false }">
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-        <div>
-            <div class="flex flex-wrap items-center gap-3">
-                <div class="flex items-center gap-2.5">
-                    <h2 class="text-2xl font-bold text-gray-800">{{ $event->name }}</h2>
-                    <button type="button" wire:click="openEditEventModal" class="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-xl font-bold bg-white hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 border border-slate-200 hover:border-indigo-300 shadow-2xs transition cursor-pointer" title="Editar nombre, fecha, lugar o notas del evento">
+    <!-- ============================================================== -->
+    <!-- CABECERA PRINCIPAL DEL EVENTO: ESTRUCTURA LIMPIA Y ORDENADA   -->
+    <!-- ============================================================== -->
+    <div class="mb-6 space-y-3">
+        <!-- 1. Barra Superior: Navegación y Acciones Clave -->
+        <div class="flex flex-wrap items-center justify-between gap-3">
+            <!-- Migas de pan / Volver -->
+            <div class="flex items-center gap-2 text-xs">
+                <a href="{{ route('admin.events') }}" class="inline-flex items-center gap-1.5 font-bold text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 transition">
+                    <span>←</span>
+                    <span>Agenda de Eventos</span>
+                </a>
+                <span class="text-slate-300 dark:text-slate-700">/</span>
+                <span class="font-extrabold text-slate-800 dark:text-slate-200 truncate max-w-[220px] sm:max-w-none">{{ $event->name }}</span>
+            </div>
+
+            <!-- Botones de Acción de Cabecera (Agrupados y Alineados) -->
+            <div class="flex items-center gap-2">
+                <a href="{{ route('admin.events.live', $event->id) }}" class="inline-flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-amber-400 font-bold px-3.5 py-2 rounded-xl text-xs border border-slate-700/60 transition shadow-xs">
+                    <span>🎧</span>
+                    <span class="text-white">Modo Cabina DJ</span>
+                </a>
+                <button type="button" @click="openQrModal = true" class="inline-flex items-center gap-1.5 bg-gradient-to-r from-pink-600 to-indigo-600 hover:from-pink-700 hover:to-indigo-700 text-white font-bold px-3 py-2 rounded-xl text-xs shadow-xs transition cursor-pointer">
+                    <span>📱</span>
+                    <span>QR Invitados</span>
+                </button>
+                <button type="button" @click="openWhatsappHub = true" class="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3.5 py-2 rounded-xl text-xs shadow-xs transition cursor-pointer">
+                    <span>💬</span>
+                    <span>WhatsApp Hub</span>
+                </button>
+
+                @if(auth()->user()->role === 'admin')
+                    <!-- Menú de Acciones Administrativas (Discreto para no recargar) -->
+                    <div class="relative" x-data="{ openMoreMenu: false }">
+                        <button type="button" @click="openMoreMenu = !openMoreMenu" class="p-2 rounded-xl bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition cursor-pointer" title="Opciones avanzadas">
+                            <span class="text-xs font-black">⚙️</span>
+                        </button>
+                        <div x-show="openMoreMenu" @click.away="openMoreMenu = false" class="absolute right-0 mt-1.5 w-48 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl z-30 p-1 divide-y divide-slate-100 dark:divide-slate-800 text-xs animate-in fade-in zoom-in-95 duration-100" style="display: none;">
+                            <div class="p-1">
+                                <button type="button" wire:click="openEditEventModal" @click="openMoreMenu = false" class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 font-semibold flex items-center gap-2 cursor-pointer">
+                                    <span>✏️</span> Editar Datos Básicos
+                                </button>
+                                <button type="button" wire:click="openScheduleModal" @click="openMoreMenu = false" class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 font-semibold flex items-center gap-2 cursor-pointer">
+                                    <span>⏰</span> Horarios & Montaje
+                                </button>
+                                <button type="button" wire:click="openStaffModal" @click="openMoreMenu = false" class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 font-semibold flex items-center gap-2 cursor-pointer">
+                                    <span>👥</span> Asignar Personal
+                                </button>
+                            </div>
+                            <div class="p-1">
+                                <button type="button" wire:click="deleteEvent" wire:confirm="⚠️ ¿Estás seguro de que deseas eliminar permanentemente el evento '{{ $event->name }}' y todos sus presupuestos, contratos y música?" @click="openMoreMenu = false" class="w-full text-left px-3 py-2 rounded-xl hover:bg-rose-50 dark:hover:bg-rose-950/40 text-rose-600 dark:text-rose-400 font-semibold flex items-center gap-2 cursor-pointer">
+                                    <span>🗑️</span> Eliminar Evento
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                @endif
+            </div>
+        </div>
+
+        <!-- 2. Tarjeta Principal: Título, Selectores y Panel de Datos Organizado -->
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 sm:p-6 shadow-sm transition">
+            
+            <!-- Fila A: Título del Evento e Identificadores (Marca, Tipo, Estado Único) -->
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-5 border-b border-slate-100 dark:border-slate-800/80">
+                <div class="flex items-center gap-3 flex-wrap">
+                    <h1 class="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white tracking-tight">
+                        {{ $event->name }}
+                    </h1>
+                    <button type="button" wire:click="openEditEventModal" class="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-xl font-bold bg-slate-100 hover:bg-indigo-50 dark:bg-slate-800 dark:hover:bg-indigo-950/50 text-slate-700 hover:text-indigo-700 dark:text-slate-300 dark:hover:text-indigo-300 border border-slate-200 dark:border-slate-700 transition cursor-pointer" title="Editar nombre, fecha, lugar o notas">
                         <span>✏️</span> Editar
                     </button>
                 </div>
 
-                <!-- Selector de Marca Comercial -->
-                <div class="relative" x-data="{ openBrandDropdown: false }">
-                    <button type="button" @click="openBrandDropdown = !openBrandDropdown" class="inline-flex items-center gap-1.5 text-xs px-3 py-1 rounded-full font-bold bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs transition cursor-pointer" title="Cambiar marca comercial para presupuestos y contratos">
-                        <span>{{ $event->brand_icon }}</span>
-                        <span>{{ $event->brand_label }}</span>
-                        <span class="text-[9px] text-amber-500">▼</span>
-                    </button>
-                    <div x-show="openBrandDropdown" @click.away="openBrandDropdown = false" class="absolute left-0 mt-1.5 w-60 bg-white border border-slate-200 rounded-2xl shadow-xl z-30 p-1.5 divide-y divide-slate-100 text-xs animate-in fade-in zoom-in-95 duration-100" style="display: none;">
-                        <div class="space-y-0.5">
-                            <button type="button" wire:click="changeBrand('nunez_and_son')" @click="openBrandDropdown = false" class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 font-semibold flex items-center gap-2 cursor-pointer {{ $event->brand_clean === 'nunez_and_son' ? 'bg-amber-50 text-amber-900 font-bold' : 'text-slate-700' }}">
-                                <span class="text-base">👑</span>
-                                <div>
-                                    <div class="font-bold">Núñez and Son</div>
-                                    <div class="text-[10px] text-slate-500">DJ & Sonido (Bodas & Eventos)</div>
-                                </div>
-                            </button>
-                            <button type="button" wire:click="changeBrand('javnx')" @click="openBrandDropdown = false" class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 font-semibold flex items-center gap-2 cursor-pointer {{ $event->brand_clean === 'javnx' ? 'bg-indigo-50 text-indigo-900 font-bold' : 'text-slate-700' }}">
-                                <span class="text-base">🎧</span>
-                                <div>
-                                    <div class="font-bold">JAVNX DJ</div>
-                                    <div class="text-[10px] text-slate-500">DJ & Producción de Eventos</div>
-                                </div>
-                            </button>
-                            <button type="button" wire:click="changeBrand('mago_leugim')" @click="openBrandDropdown = false" class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 font-semibold flex items-center gap-2 cursor-pointer {{ $event->brand_clean === 'mago_leugim' ? 'bg-purple-50 text-purple-900 font-bold' : 'text-slate-700' }}">
-                                <span class="text-base">🎩</span>
-                                <div>
-                                    <div class="font-bold">Mago Leugim</div>
-                                    <div class="text-[10px] text-slate-500">Ilusionismo & Magia Profesional</div>
-                                </div>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Selector de Tipo de Evento -->
-                <div class="relative" x-data="{ openTypeDropdown: false }">
-                    <button type="button" @click="openTypeDropdown = !openTypeDropdown" class="inline-flex items-center gap-1.5 text-xs px-3 py-1 rounded-full font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-200 shadow-2xs transition cursor-pointer" title="Cambiar tipo de evento">
-                        <span>{{ $event->event_type_icon }}</span>
-                        <span>{{ $event->event_type_label }}</span>
-                        <span class="text-[9px] text-indigo-400">▼</span>
-                    </button>
-                    <div x-show="openTypeDropdown" @click.away="openTypeDropdown = false" class="absolute left-0 mt-1.5 w-56 bg-white border border-slate-200 rounded-2xl shadow-xl z-30 p-1.5 divide-y divide-slate-100 text-xs animate-in fade-in zoom-in-95 duration-100" style="display: none;">
-                        <div class="space-y-0.5">
-                            <button type="button" wire:click="changeEventType('boda')" @click="openTypeDropdown = false" class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 font-semibold flex items-center gap-2 cursor-pointer {{ $event->event_type_clean === 'boda' ? 'bg-indigo-50 text-indigo-700 font-bold' : 'text-slate-700' }}">
-                                <span>💍</span> Boda / Enlace
-                            </button>
-                            <button type="button" wire:click="changeEventType('empresa')" @click="openTypeDropdown = false" class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 font-semibold flex items-center gap-2 cursor-pointer {{ $event->event_type_clean === 'empresa' ? 'bg-indigo-50 text-indigo-700 font-bold' : 'text-slate-700' }}">
-                                <span>🏢</span> Evento de Empresa
-                            </button>
-                            <button type="button" wire:click="changeEventType('cumpleanos')" @click="openTypeDropdown = false" class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 font-semibold flex items-center gap-2 cursor-pointer {{ $event->event_type_clean === 'cumpleanos' ? 'bg-indigo-50 text-indigo-700 font-bold' : 'text-slate-700' }}">
-                                <span>🎂</span> Cumpleaños / Aniversario
-                            </button>
-                            <button type="button" wire:click="changeEventType('comunion')" @click="openTypeDropdown = false" class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 font-semibold flex items-center gap-2 cursor-pointer {{ $event->event_type_clean === 'comunion' ? 'bg-indigo-50 text-indigo-700 font-bold' : 'text-slate-700' }}">
-                                <span>🕊️</span> Comunión
-                            </button>
-                            <button type="button" wire:click="changeEventType('otro')" @click="openTypeDropdown = false" class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 font-semibold flex items-center gap-2 cursor-pointer {{ $event->event_type_clean === 'otro' ? 'bg-indigo-50 text-indigo-700 font-bold' : 'text-slate-700' }}">
-                                <span>🎉</span> Fiesta Privada / Otro
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Selector de Estado del Evento -->
-                <div class="relative" x-data="{ openStatusDropdown: false }">
-                    <button type="button" @click="openStatusDropdown = !openStatusDropdown" class="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full font-bold transition cursor-pointer shadow-2xs border {{ $event->status_badge_class }}" title="Cambiar estado del evento">
-                        <span>{{ $event->status_icon }}</span>
-                        <span>{{ $event->status_label }}</span>
-                        <span class="text-[9px] opacity-70">▼</span>
-                    </button>
-                    <div x-show="openStatusDropdown" @click.away="openStatusDropdown = false" class="absolute left-0 mt-1.5 w-60 bg-white border border-slate-200 rounded-2xl shadow-xl z-30 p-1.5 divide-y divide-slate-100 text-xs animate-in fade-in zoom-in-95 duration-100" style="display: none;">
-                        <div class="space-y-0.5">
-                            <button type="button" wire:click="changeStatus('draft')" @click="openStatusDropdown = false" class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 font-semibold flex items-center gap-2 cursor-pointer {{ $event->status === 'draft' ? 'bg-amber-50 text-amber-800 font-bold' : 'text-slate-700' }}">
-                                <span>📝</span> Borrador / Presupuesto
-                            </button>
-                            <button type="button" wire:click="changeStatus('no_response')" @click="openStatusDropdown = false" class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 font-semibold flex items-center gap-2 cursor-pointer {{ $event->status === 'no_response' ? 'bg-purple-50 text-purple-800 font-bold' : 'text-slate-700' }}">
-                                <span>⏳</span> Sin Respuesta (Esperando)
-                            </button>
-                            <button type="button" wire:click="changeStatus('confirmed')" @click="openStatusDropdown = false" class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 font-semibold flex items-center gap-2 cursor-pointer {{ $event->status === 'confirmed' ? 'bg-emerald-50 text-emerald-800 font-bold' : 'text-slate-700' }}">
-                                <span>🟢</span> Confirmado (Señal Pagada)
-                            </button>
-                            <button type="button" wire:click="changeStatus('completed')" @click="openStatusDropdown = false" class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 font-semibold flex items-center gap-2 cursor-pointer {{ $event->status === 'completed' ? 'bg-blue-50 text-blue-800 font-bold' : 'text-slate-700' }}">
-                                <span>🔵</span> Completado (Finalizado)
-                            </button>
-                            <button type="button" wire:click="changeStatus('rejected')" @click="openStatusDropdown = false" class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 font-semibold flex items-center gap-2 cursor-pointer {{ $event->status === 'rejected' ? 'bg-slate-100 text-slate-800 font-bold' : 'text-slate-700' }}">
-                                <span>❌</span> Rechazado (No Acepta)
-                            </button>
-                            <button type="button" wire:click="changeStatus('cancelled')" @click="openStatusDropdown = false" class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 font-semibold flex items-center gap-2 cursor-pointer {{ $event->status === 'cancelled' ? 'bg-rose-50 text-rose-800 font-bold' : 'text-slate-700' }}">
-                                <span>🔴</span> Cancelado (Anulación)
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                @if(($event->deposit_paid ?? false) && (float)($event->deposit_paid_amount ?? 0) > 0)
-                    <span class="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-300 px-3 py-1 rounded-xl shadow-2xs">
-                        <span>{{ $event->deposit_method_icon }}</span>
-                        <span>Señal: <strong>{{ number_format($event->deposit_paid_amount, 2, ',', '.') }} €</strong> ({{ $event->deposit_method_label }})</span>
-                        @if(!empty($event->deposit_paid_at))
-                            <span class="text-[11px] text-emerald-600 font-normal">el {{ \Carbon\Carbon::parse($event->deposit_paid_at)->format('d/m/Y') }}</span>
-                        @endif
-                        <button type="button" wire:click="openDepositModal('confirmed')" class="text-[11px] text-indigo-600 hover:text-indigo-800 font-bold ml-1 hover:underline cursor-pointer" title="Modificar importe, método o fecha de la señal">
-                            ✏️ Modificar
+                <!-- Selectores de Control (Marca, Tipo y Estado ÚNICO sin barra duplicada) -->
+                <div class="flex flex-wrap items-center gap-2">
+                    <!-- Selector de Marca Comercial -->
+                    <div class="relative" x-data="{ openBrandDropdown: false }">
+                        <button type="button" @click="openBrandDropdown = !openBrandDropdown" class="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-xl font-bold bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/50 dark:hover:bg-amber-900/60 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-800 shadow-2xs transition cursor-pointer" title="Cambiar marca comercial">
+                            <span>{{ $event->brand_icon }}</span>
+                            <span>{{ $event->brand_label }}</span>
+                            <span class="text-[9px] opacity-70">▼</span>
                         </button>
-                    </span>
-                    @if($quoteAmount > 0)
-                        @php
-                            $realRemaining = max(0, $quoteAmount - (float)($event->deposit_paid_amount ?? 0));
-                        @endphp
-                        <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-xl">
-                            <span>Pendiente:</span>
-                            <strong class="{{ $realRemaining == 0 ? 'text-emerald-700' : 'text-slate-900' }}">
-                                {{ number_format($realRemaining, 2, ',', '.') }} €
-                            </strong>
-                            @if($realRemaining == 0)
-                                <span class="text-[10px] bg-emerald-200 text-emerald-800 font-black px-1.5 py-0.5 rounded-md">¡100% Pagado!</span>
-                            @elseif($event->status === 'confirmed')
-                                <button type="button" wire:click="openFinalPaymentModal" class="text-[11px] font-bold text-blue-700 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-1.5 py-0.5 rounded ml-1 transition cursor-pointer" title="Cobrar restante y completar evento">
-                                    🔵 Cobrar y Completar
+                        <div x-show="openBrandDropdown" @click.away="openBrandDropdown = false" class="absolute right-0 lg:right-auto lg:left-0 mt-1.5 w-60 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl z-30 p-1.5 divide-y divide-slate-100 dark:divide-slate-800 text-xs animate-in fade-in zoom-in-95 duration-100" style="display: none;">
+                            <div class="space-y-0.5">
+                                <button type="button" wire:click="changeBrand('nunez_and_son')" @click="openBrandDropdown = false" class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold flex items-center gap-2 cursor-pointer {{ $event->brand_clean === 'nunez_and_son' ? 'bg-amber-50 dark:bg-amber-950/50 text-amber-900 dark:text-amber-200 font-bold' : 'text-slate-700 dark:text-slate-300' }}">
+                                    <span class="text-base">👑</span>
+                                    <div>
+                                        <div class="font-bold">Núñez and Son</div>
+                                        <div class="text-[10px] text-slate-500">DJ & Sonido (Bodas & Eventos)</div>
+                                    </div>
+                                </button>
+                                <button type="button" wire:click="changeBrand('javnx')" @click="openBrandDropdown = false" class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold flex items-center gap-2 cursor-pointer {{ $event->brand_clean === 'javnx' ? 'bg-indigo-50 dark:bg-indigo-950/50 text-indigo-900 dark:text-indigo-200 font-bold' : 'text-slate-700 dark:text-slate-300' }}">
+                                    <span class="text-base">🎧</span>
+                                    <div>
+                                        <div class="font-bold">JAVNX DJ</div>
+                                        <div class="text-[10px] text-slate-500">DJ & Producción de Eventos</div>
+                                    </div>
+                                </button>
+                                <button type="button" wire:click="changeBrand('mago_leugim')" @click="openBrandDropdown = false" class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold flex items-center gap-2 cursor-pointer {{ $event->brand_clean === 'mago_leugim' ? 'bg-purple-50 dark:bg-purple-950/50 text-purple-900 dark:text-purple-200 font-bold' : 'text-slate-700 dark:text-slate-300' }}">
+                                    <span class="text-base">🎩</span>
+                                    <div>
+                                        <div class="font-bold">Mago Leugim</div>
+                                        <div class="text-[10px] text-slate-500">Ilusionismo & Magia Profesional</div>
+                                    </div>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Selector de Tipo de Evento -->
+                    <div class="relative" x-data="{ openTypeDropdown: false }">
+                        <button type="button" @click="openTypeDropdown = !openTypeDropdown" class="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-xl font-bold bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/50 dark:hover:bg-indigo-900/60 text-indigo-800 dark:text-indigo-200 border border-indigo-200 dark:border-indigo-800 shadow-2xs transition cursor-pointer" title="Cambiar tipo de evento">
+                            <span>{{ $event->event_type_icon }}</span>
+                            <span>{{ $event->event_type_label }}</span>
+                            <span class="text-[9px] opacity-70">▼</span>
+                        </button>
+                        <div x-show="openTypeDropdown" @click.away="openTypeDropdown = false" class="absolute right-0 lg:right-auto lg:left-0 mt-1.5 w-56 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl z-30 p-1.5 divide-y divide-slate-100 dark:divide-slate-800 text-xs animate-in fade-in zoom-in-95 duration-100" style="display: none;">
+                            <div class="space-y-0.5">
+                                <button type="button" wire:click="changeEventType('boda')" @click="openTypeDropdown = false" class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold flex items-center gap-2 cursor-pointer {{ $event->event_type_clean === 'boda' ? 'bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 font-bold' : 'text-slate-700 dark:text-slate-300' }}">
+                                    <span>💍</span> Boda / Enlace
+                                </button>
+                                <button type="button" wire:click="changeEventType('empresa')" @click="openTypeDropdown = false" class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold flex items-center gap-2 cursor-pointer {{ $event->event_type_clean === 'empresa' ? 'bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 font-bold' : 'text-slate-700 dark:text-slate-300' }}">
+                                    <span>🏢</span> Evento de Empresa
+                                </button>
+                                <button type="button" wire:click="changeEventType('cumpleanos')" @click="openTypeDropdown = false" class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold flex items-center gap-2 cursor-pointer {{ $event->event_type_clean === 'cumpleanos' ? 'bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 font-bold' : 'text-slate-700 dark:text-slate-300' }}">
+                                    <span>🎂</span> Cumpleaños / Aniversario
+                                </button>
+                                <button type="button" wire:click="changeEventType('comunion')" @click="openTypeDropdown = false" class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold flex items-center gap-2 cursor-pointer {{ $event->event_type_clean === 'comunion' ? 'bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 font-bold' : 'text-slate-700 dark:text-slate-300' }}">
+                                    <span>🕊️</span> Comunión
+                                </button>
+                                <button type="button" wire:click="changeEventType('otro')" @click="openTypeDropdown = false" class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold flex items-center gap-2 cursor-pointer {{ $event->event_type_clean === 'otro' ? 'bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 font-bold' : 'text-slate-700 dark:text-slate-300' }}">
+                                    <span>🎉</span> Fiesta Privada / Otro
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Selector ÚNICO de Estado del Evento -->
+                    <div class="relative" x-data="{ openStatusDropdown: false }">
+                        <button type="button" @click="openStatusDropdown = !openStatusDropdown" class="inline-flex items-center gap-1.5 text-xs px-3.5 py-1.5 rounded-xl font-black transition cursor-pointer shadow-2xs border {{ $event->status_badge_class }}" title="Cambiar estado del evento">
+                            <span>{{ $event->status_icon }}</span>
+                            <span>{{ $event->status_label }}</span>
+                            <span class="text-[9px] opacity-70">▼</span>
+                        </button>
+                        <div x-show="openStatusDropdown" @click.away="openStatusDropdown = false" class="absolute right-0 mt-1.5 w-60 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl z-30 p-1.5 divide-y divide-slate-100 dark:divide-slate-800 text-xs animate-in fade-in zoom-in-95 duration-100" style="display: none;">
+                            <div class="space-y-0.5">
+                                <button type="button" wire:click="changeStatus('draft')" @click="openStatusDropdown = false" class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold flex items-center gap-2 cursor-pointer {{ $event->status === 'draft' ? 'bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 font-bold' : 'text-slate-700 dark:text-slate-300' }}">
+                                    <span>📝</span> Borrador / Presupuesto
+                                </button>
+                                <button type="button" wire:click="changeStatus('no_response')" @click="openStatusDropdown = false" class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold flex items-center gap-2 cursor-pointer {{ $event->status === 'no_response' ? 'bg-purple-50 dark:bg-purple-950/50 text-purple-800 dark:text-purple-300 font-bold' : 'text-slate-700 dark:text-slate-300' }}">
+                                    <span>⏳</span> Sin Respuesta (Esperando)
+                                </button>
+                                <button type="button" wire:click="changeStatus('confirmed')" @click="openStatusDropdown = false" class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold flex items-center gap-2 cursor-pointer {{ $event->status === 'confirmed' ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 font-bold' : 'text-slate-700 dark:text-slate-300' }}">
+                                    <span>🟢</span> Confirmado (Señal Pagada)
+                                </button>
+                                <button type="button" wire:click="changeStatus('completed')" @click="openStatusDropdown = false" class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold flex items-center gap-2 cursor-pointer {{ $event->status === 'completed' ? 'bg-blue-50 dark:bg-blue-950/50 text-blue-800 dark:text-blue-300 font-bold' : 'text-slate-700 dark:text-slate-300' }}">
+                                    <span>🔵</span> Completado (Finalizado)
+                                </button>
+                                <button type="button" wire:click="changeStatus('rejected')" @click="openStatusDropdown = false" class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold flex items-center gap-2 cursor-pointer {{ $event->status === 'rejected' ? 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-bold' : 'text-slate-700 dark:text-slate-300' }}">
+                                    <span>❌</span> Rechazado (No Acepta)
+                                </button>
+                                <button type="button" wire:click="changeStatus('cancelled')" @click="openStatusDropdown = false" class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold flex items-center gap-2 cursor-pointer {{ $event->status === 'cancelled' ? 'bg-rose-50 dark:bg-rose-950/50 text-rose-800 dark:text-rose-300 font-bold' : 'text-slate-700 dark:text-slate-300' }}">
+                                    <span>🔴</span> Cancelado (Anulación)
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pastillas Financieras: Señal / Pendiente (Si aplica) -->
+                    @if(($event->deposit_paid ?? false) && (float)($event->deposit_paid_amount ?? 0) > 0)
+                        <span class="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-300 dark:border-emerald-800 px-3 py-1.5 rounded-xl shadow-2xs">
+                            <span>{{ $event->deposit_method_icon }}</span>
+                            <span>Señal: <strong>{{ number_format($event->deposit_paid_amount, 2, ',', '.') }} €</strong></span>
+                            <button type="button" wire:click="openDepositModal('confirmed')" class="text-[11px] text-emerald-700 dark:text-emerald-400 hover:underline font-bold ml-1 cursor-pointer" title="Modificar señal">
+                                ✏️
+                            </button>
+                        </span>
+                        @if($quoteAmount > 0)
+                            @php
+                                $realRemaining = max(0, $quoteAmount - (float)($event->deposit_paid_amount ?? 0));
+                            @endphp
+                            <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-xl">
+                                <span>Pendiente:</span>
+                                <strong class="{{ $realRemaining == 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900 dark:text-white' }}">
+                                    {{ number_format($realRemaining, 2, ',', '.') }} €
+                                </strong>
+                                @if($realRemaining == 0)
+                                    <span class="text-[10px] bg-emerald-200 dark:bg-emerald-800 text-emerald-800 dark:text-emerald-200 font-black px-1.5 py-0.5 rounded-md">¡Pagado!</span>
+                                @elseif($event->status === 'confirmed')
+                                    <button type="button" wire:click="openFinalPaymentModal" class="text-[10px] font-bold text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50 bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800 px-1.5 py-0.5 rounded ml-1 transition cursor-pointer" title="Cobrar restante y completar evento">
+                                        🔵 Cobrar
+                                    </button>
+                                @endif
+                            </span>
+                        @endif
+                    @elseif($event->status === 'confirmed')
+                        <button type="button" wire:click="openDepositModal('confirmed')" class="inline-flex items-center gap-1 text-xs font-bold text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/50 hover:bg-amber-100 dark:hover:bg-amber-900/60 border border-amber-300 dark:border-amber-800 px-3 py-1.5 rounded-xl shadow-2xs transition cursor-pointer" title="Registrar el cobro de la señal">
+                            <span>💳 + Registrar Señal</span>
+                        </button>
+                    @endif
+                </div>
+            </div>
+
+            <!-- Fila B: Panel de Datos Organizado en 4 Bloques (Grid Limpio) -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 pt-5">
+                
+                <!-- Bloque 1: Pareja / Clientes -->
+                <div class="bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-3.5 flex flex-col justify-between gap-2.5">
+                    <div>
+                        <div class="flex items-center justify-between text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                            <span class="flex items-center gap-1">👥 Pareja / Clientes</span>
+                            <button type="button" wire:click="openClientModal" class="text-indigo-600 dark:text-indigo-400 hover:underline font-bold text-xs cursor-pointer" title="Editar datos del cliente y pareja">
+                                ✏️
+                            </button>
+                        </div>
+                        @if($event->client || $event->partner_name)
+                            <div class="space-y-1.5 text-xs">
+                                <div class="flex items-center justify-between gap-1.5">
+                                    <span class="font-extrabold text-slate-800 dark:text-slate-200 truncate" title="{{ $event->client ? $event->client->name : 'Sin cliente principal' }}">
+                                        {{ $event->client ? $event->client->name : 'Sin cliente principal' }}
+                                    </span>
+                                    @if($clientPhone)
+                                        <a href="https://wa.me/{{ $clientPhone }}" target="_blank" class="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-950 dark:border dark:border-emerald-800 px-1.5 py-0.5 rounded transition shrink-0" title="WhatsApp Cliente Principal ({{ $event->client->phone }})">
+                                            💬 WA
+                                        </a>
+                                    @endif
+                                </div>
+                                @if($event->partner_name)
+                                    <div class="flex items-center justify-between gap-1.5 pt-1 border-t border-slate-200/60 dark:border-slate-700/60">
+                                        <span class="font-bold text-pink-700 dark:text-pink-300 truncate" title="{{ $event->partner_name }}">
+                                            💍 {{ $event->partner_name }}
+                                        </span>
+                                        @if($event->partner_clean_phone)
+                                            <a href="https://wa.me/{{ $event->partner_clean_phone }}" target="_blank" class="inline-flex items-center gap-1 text-[10px] font-bold text-pink-700 dark:text-pink-300 bg-pink-100 hover:bg-pink-200 dark:bg-pink-950 dark:border dark:border-pink-800 px-1.5 py-0.5 rounded transition shrink-0" title="WhatsApp Pareja ({{ $event->partner_phone }})">
+                                                💬 WA
+                                            </a>
+                                        @endif
+                                    </div>
+                                @endif
+                            </div>
+                        @else
+                            <button type="button" wire:click="openClientModal" class="w-full py-2 border border-dashed border-slate-300 dark:border-slate-700 rounded-xl text-center text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 transition cursor-pointer">
+                                + Asociar Cliente / Pareja
+                            </button>
+                        @endif
+                    </div>
+                </div>
+
+                <!-- Bloque 2: Fecha y Horarios (Montaje & Baile 24h) -->
+                <div class="bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-3.5 flex flex-col justify-between gap-2.5">
+                    <div>
+                        <div class="flex items-center justify-between text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                            <span class="flex items-center gap-1">⏰ Horarios & Logística</span>
+                            <button type="button" wire:click="openScheduleModal" class="text-indigo-600 dark:text-indigo-400 hover:underline font-bold text-xs cursor-pointer" title="Configurar horarios de montaje y baile">
+                                ✏️
+                            </button>
+                        </div>
+                        <div class="space-y-1.5 text-xs">
+                            <div class="flex items-center justify-between">
+                                <span class="text-slate-500 dark:text-slate-400">📅 Fecha:</span>
+                                <strong class="text-slate-800 dark:text-slate-200">{{ \Carbon\Carbon::parse($event->event_date)->format('d/m/Y') }}</strong>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-slate-500 dark:text-slate-400">🚗 Montaje:</span>
+                                <strong class="text-amber-800 dark:text-amber-300 truncate max-w-[140px] text-right" title="{{ $event->setup_schedule_label }}">
+                                    {{ $event->setup_schedule_label }}
+                                </strong>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-slate-500 dark:text-slate-400">⏰ Baile (24h):</span>
+                                <strong class="text-purple-800 dark:text-purple-300 truncate max-w-[140px] text-right" title="{{ $event->dance_schedule_label }}">
+                                    {{ $event->dance_schedule_label }}
+                                </strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bloque 3: Personal Técnico (DJ y Asistente) -->
+                <div class="bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-3.5 flex flex-col justify-between gap-2.5">
+                    <div>
+                        <div class="flex items-center justify-between text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                            <span class="flex items-center gap-1">🎧 Personal Técnico</span>
+                            <button type="button" wire:click="openStaffModal" class="text-indigo-600 dark:text-indigo-400 hover:underline font-bold text-xs cursor-pointer" title="Asignar o cambiar DJ y asistentes">
+                                ✏️
+                            </button>
+                        </div>
+                        <div class="space-y-1.5 text-xs">
+                            <div class="flex items-center justify-between gap-1">
+                                <span class="text-slate-500 dark:text-slate-400">DJ:</span>
+                                <div class="flex items-center gap-1 truncate">
+                                    <strong class="text-indigo-700 dark:text-indigo-300 truncate" title="{{ $event->dj ? $event->dj->name : 'Sin asignar' }}">
+                                        {{ $event->dj ? $event->dj->name : 'Sin asignar' }}
+                                    </strong>
+                                    @if($djPhone)
+                                        <a href="https://wa.me/{{ $djPhone }}" target="_blank" class="text-[10px] text-emerald-600 hover:text-emerald-700 font-bold" title="WhatsApp DJ">
+                                            💬
+                                        </a>
+                                    @endif
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between gap-1">
+                                <span class="text-slate-500 dark:text-slate-400">Asistente:</span>
+                                <div class="flex items-center gap-1 truncate">
+                                    @php
+                                        $allAssignedAssistants = $event->all_assistants;
+                                    @endphp
+                                    @if($allAssignedAssistants->isNotEmpty())
+                                        <strong class="text-amber-800 dark:text-amber-300 truncate" title="{{ $allAssignedAssistants->pluck('name')->implode(', ') }}">
+                                            {{ $allAssignedAssistants->pluck('name')->implode(', ') }}
+                                        </strong>
+                                    @else
+                                        <span class="text-slate-400 italic">Sin asignar</span>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bloque 4: Finca / Contacto Lugar -->
+                <div class="bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-3.5 flex flex-col justify-between gap-2.5">
+                    <div>
+                        <div class="flex items-center justify-between text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                            <span class="flex items-center gap-1">🏢 Finca / Lugar</span>
+                            <button type="button" wire:click="openVenueModal" class="text-indigo-600 dark:text-indigo-400 hover:underline font-bold text-xs cursor-pointer" title="Editar contacto de finca">
+                                ✏️
+                            </button>
+                        </div>
+                        <div class="space-y-1 text-xs">
+                            <div class="font-extrabold text-slate-800 dark:text-slate-200 truncate" title="{{ $event->venue_contact_name ?: ($event->location ?: 'Sin contacto registrado') }}">
+                                {{ $event->venue_contact_name ?: ($event->location ?: 'Sin contacto') }}
+                            </div>
+                            <div class="text-[11px] text-slate-500 dark:text-slate-400 truncate" title="{{ $event->location }}">
+                                📍 {{ $event->location }}
+                            </div>
+                            @if($event->venue_contact_phone)
+                                <div class="flex items-center gap-1.5 pt-1">
+                                    <a href="tel:{{ $event->venue_contact_phone }}" class="inline-flex items-center gap-1 text-[10px] font-bold text-blue-700 dark:text-blue-300 bg-blue-100 hover:bg-blue-200 dark:bg-blue-950 dark:border dark:border-blue-800 px-2 py-0.5 rounded transition">
+                                        📞 {{ $event->venue_contact_phone }}
+                                    </a>
+                                    @if($venuePhone)
+                                        <a href="https://wa.me/{{ $venuePhone }}" target="_blank" class="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-950 dark:border dark:border-emerald-800 px-1.5 py-0.5 rounded transition" title="WhatsApp Finca">
+                                            💬
+                                        </a>
+                                    @endif
+                                </div>
+                            @else
+                                <button type="button" wire:click="openVenueModal" class="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer block pt-0.5">
+                                    + Añadir Teléfono Finca
                                 </button>
                             @endif
-                        </span>
-                    @endif
-                @elseif($event->status === 'confirmed')
-                    <button type="button" wire:click="openDepositModal('confirmed')" class="inline-flex items-center gap-1 text-xs font-bold text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-300 px-3 py-1 rounded-xl shadow-2xs transition cursor-pointer" title="Registrar el cobro de la señal">
-                        <span>💳 + Registrar Señal</span>
-                    </button>
-                @endif
+                        </div>
+                    </div>
+                </div>
+
             </div>
-            
-            <div class="flex flex-wrap items-center gap-3 text-sm text-gray-500 mt-2">
-                <span>📅 {{ \Carbon\Carbon::parse($event->event_date)->format('d/m/Y') }}</span>
-                <span>📍 {{ $event->location }}</span>
-                @if($event->client || $event->partner_name)
-                    <span class="inline-flex flex-wrap items-center gap-1.5 text-gray-700 dark:text-gray-200 bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 px-2.5 py-1 rounded-lg">
-                        👤 <strong>{{ $event->client ? $event->client->name : 'Sin cliente principal' }}</strong>
-                        @if($clientPhone)
-                            <a href="https://wa.me/{{ $clientPhone }}" target="_blank" class="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-white hover:bg-emerald-100 border border-emerald-300 px-1.5 py-0.5 rounded transition" title="WhatsApp Cliente Principal ({{ $event->client->phone }})">
-                                💬
-                            </a>
-                        @endif
-
-                        @if($event->partner_name)
-                            <span class="text-gray-300 dark:text-gray-600 font-normal">|</span>
-                            <span class="inline-flex items-center gap-1 text-pink-700 dark:text-pink-300 font-bold">
-                                💍 {{ $event->partner_name }}
-                            </span>
-                            @if($event->partner_clean_phone)
-                                <a href="https://wa.me/{{ $event->partner_clean_phone }}" target="_blank" class="inline-flex items-center gap-1 text-[11px] font-bold text-pink-700 bg-white hover:bg-pink-100 border border-pink-300 px-1.5 py-0.5 rounded transition" title="WhatsApp Pareja / Cónyuge ({{ $event->partner_phone }})">
-                                    💬
-                                </a>
-                            @endif
-                        @endif
-
-                        <button type="button" wire:click="openClientModal" class="inline-flex items-center gap-0.5 text-[11px] font-bold text-amber-800 bg-amber-100 hover:bg-amber-200 border border-amber-300 px-1.5 py-0.5 rounded transition cursor-pointer" title="Editar datos del cliente y pareja">
-                            ✏️ Editar / Pareja
-                        </button>
-                    </span>
-                @else
-                    <button type="button" wire:click="openClientModal" class="inline-flex items-center gap-1.5 text-xs font-bold text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-300 px-2.5 py-1 rounded-lg transition cursor-pointer shadow-2xs" title="Asociar o crear cliente para este evento">
-                        👤 <span>+ Asociar Cliente / Pareja</span>
-                    </button>
-                @endif
-
-                <!-- DJ Principal (Baile) -->
-                <span class="inline-flex items-center gap-1.5 text-indigo-700 font-semibold bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-100">
-                    🎧 DJ: {{ $event->dj ? $event->dj->name : 'Sin asignar' }}
-                    @if($djPhone)
-                        <a href="https://wa.me/{{ $djPhone }}" target="_blank" class="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 bg-white hover:bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded transition" title="Contactar DJ por WhatsApp">
-                            💬
-                        </a>
-                    @endif
-                </span>
-
-                <!-- Asistente(s) (Ceremonia, Cóctel, Banquete) -->
-                @php
-                    $allAssignedAssistants = $event->all_assistants;
-                @endphp
-                @if($allAssignedAssistants->isNotEmpty())
-                    @foreach($allAssignedAssistants as $ast)
-                        @php
-                            $aPhone = $ast->phone ? preg_replace('/[^0-9]/', '', $ast->phone) : '';
-                            if (strlen($aPhone) === 9 && in_array(substr($aPhone, 0, 1), ['6', '7'])) {
-                                $aPhone = '34' . $aPhone;
-                            }
-                        @endphp
-                        <span class="inline-flex items-center gap-1.5 text-amber-800 font-semibold bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200">
-                            👷‍♂️ Asistente: {{ $ast->name }}
-                            @if($aPhone)
-                                <a href="https://wa.me/{{ $aPhone }}" target="_blank" class="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 bg-white hover:bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded transition" title="Contactar Asistente por WhatsApp">
-                                    💬
-                                </a>
-                            @endif
-                        </span>
-                    @endforeach
-                @else
-                    <span class="inline-flex items-center gap-1.5 text-amber-800 font-semibold bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200">
-                        👷‍♂️ Asistente: Sin asignar
-                    </span>
-                @endif
-
-                <!-- Horarios de Montaje y Baile -->
-                @if(!empty($event->setup_date) || !empty($event->start_time))
-                    <span class="inline-flex items-center gap-1.5 text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-300 px-2.5 py-1 rounded-lg shadow-2xs transition">
-                        <span>🚗 <strong>Montaje:</strong> {{ $event->setup_schedule_label }}</span>
-                        <button type="button" wire:click="openScheduleModal" class="text-[11px] text-amber-700 hover:text-amber-900 font-bold ml-0.5 hover:underline cursor-pointer" title="Modificar fecha u hora de montaje">
-                            ✏️
-                        </button>
-                    </span>
-                @endif
-
-                @if(!empty($event->dance_start_time))
-                    <span class="inline-flex items-center gap-1.5 text-purple-900 bg-purple-50 hover:bg-purple-100 border border-purple-200 px-2.5 py-1 rounded-lg shadow-2xs transition">
-                        <span>⏰ <strong>Baile (24h):</strong> {{ $event->dance_schedule_label }}</span>
-                        <button type="button" wire:click="openScheduleModal" class="text-[11px] text-purple-700 hover:text-purple-900 font-bold ml-0.5 hover:underline cursor-pointer" title="Modificar horario de inicio y duración del baile">
-                            ✏️
-                        </button>
-                    </span>
-                @else
-                    <button type="button" wire:click="openScheduleModal" class="inline-flex items-center gap-1.5 text-xs font-bold text-purple-800 bg-purple-50 hover:bg-purple-100 border border-purple-200 px-2.5 py-1 rounded-lg transition cursor-pointer shadow-2xs" title="Establecer fecha de montaje, hora de inicio del baile y cronograma">
-                        <span>⏰ <span>+ Horarios & Montaje</span></span>
-                    </button>
-                @endif
-
-                <!-- Contacto Finca / Bodega / Restaurante -->
-                <span class="inline-flex items-center gap-1.5 text-slate-800 dark:text-slate-200 font-semibold bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 shadow-2xs">
-                    🏢 <strong>Finca/Bodega:</strong> {{ $event->venue_contact_name ?: ($event->location ?: 'Sin contacto') }}
-                    @if($event->venue_contact_phone)
-                        <a href="tel:{{ $event->venue_contact_phone }}" class="inline-flex items-center gap-1 text-xs font-bold text-blue-700 bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/60 dark:text-blue-300 border border-blue-300 dark:border-blue-700 px-2 py-0.5 rounded transition" title="Llamar directamente">
-                            📞 {{ $event->venue_contact_phone }}
-                        </a>
-                        @if($venuePhone)
-                            <a href="https://wa.me/{{ $venuePhone }}" target="_blank" class="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-900/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 px-1.5 py-0.5 rounded transition" title="Enviar WhatsApp a la finca">
-                                💬
-                            </a>
-                        @endif
-                    @endif
-                    <button wire:click="openVenueModal" class="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-bold ml-1 cursor-pointer" title="Editar contacto y notas de la finca/bodega">
-                        {{ $event->venue_contact_name || $event->venue_contact_phone ? '✏️' : '+ Añadir Teléfono' }}
-                    </button>
-                </span>
-
-                <!-- Botón rápido cambiar DJ / Asistente -->
-                <button wire:click="openStaffModal" class="text-xs bg-white hover:bg-gray-100 text-gray-700 border border-gray-300 font-bold px-2 py-1 rounded-lg shadow-xs transition">
-                    👥 Personal
-                </button>
-            </div>
-        </div>
-
-        <div class="flex flex-wrap items-center gap-2">
-            <!-- Botón Cabina En Vivo -->
-            <a href="{{ route('admin.events.live', $event->id) }}" class="inline-flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-amber-400 font-bold px-3.5 py-2 rounded-xl text-xs shadow-md border border-slate-700 transition">
-                🎧 <span class="text-white">Modo Cabina DJ</span>
-            </a>
-
-            <!-- Botón QR Invitados -->
-            <button type="button" @click="openQrModal = true" class="inline-flex items-center gap-1.5 bg-gradient-to-r from-pink-600 to-indigo-600 hover:from-pink-700 hover:to-indigo-700 text-white font-bold px-3 py-2 rounded-xl text-xs shadow-md transition">
-                📱 QR Invitados
-            </button>
-
-            <!-- Botón WhatsApp Hub -->
-            <button type="button" @click="openWhatsappHub = true" class="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-2 rounded-xl text-xs shadow-md transition">
-                💬 WhatsApp Hub
-            </button>
-
-            <div class="hidden lg:flex items-center text-xs shadow-xs rounded-xl overflow-hidden border border-gray-200 ml-2 bg-white">
-                <button wire:click="changeStatus('draft')" title="Borrador / Pendiente" class="px-2.5 py-1.5 font-medium transition cursor-pointer {{ $event->status == 'draft' ? 'bg-amber-100 text-amber-900 font-bold' : 'bg-white hover:bg-gray-50 text-gray-700' }}">📝 Borrador</button>
-                <button wire:click="changeStatus('no_response')" title="Sin Respuesta del Cliente" class="px-2.5 py-1.5 font-medium border-l border-gray-200 transition cursor-pointer {{ $event->status == 'no_response' ? 'bg-purple-100 text-purple-900 font-bold' : 'bg-white hover:bg-gray-50 text-gray-700' }}">⏳ Sin Resp.</button>
-                <button wire:click="changeStatus('confirmed')" title="Confirmado (Señal Cobrada)" class="px-2.5 py-1.5 font-medium border-l border-gray-200 transition cursor-pointer {{ $event->status == 'confirmed' ? 'bg-emerald-100 text-emerald-900 font-bold' : 'bg-white hover:bg-gray-50 text-gray-700' }}">🟢 Confirmado</button>
-                <button wire:click="changeStatus('completed')" title="Completado / Celebrado" class="px-2.5 py-1.5 font-medium border-l border-gray-200 transition cursor-pointer {{ $event->status == 'completed' ? 'bg-blue-100 text-blue-900 font-bold' : 'bg-white hover:bg-gray-50 text-gray-700' }}">🔵 Completado</button>
-                <button wire:click="changeStatus('rejected')" title="Rechazado por el Cliente" class="px-2.5 py-1.5 font-medium border-l border-gray-200 transition cursor-pointer {{ $event->status == 'rejected' ? 'bg-slate-200 text-slate-900 font-bold' : 'bg-white hover:bg-gray-50 text-gray-700' }}">❌ Rechazado</button>
-                <button wire:click="changeStatus('cancelled')" title="Cancelado / Anulación" class="px-2.5 py-1.5 font-medium border-l border-gray-200 transition cursor-pointer {{ $event->status == 'cancelled' ? 'bg-rose-100 text-rose-900 font-bold' : 'bg-white hover:bg-gray-50 text-gray-700' }}">🔴 Cancelado</button>
-            </div>
-
-            @if(auth()->user()->role === 'admin')
-                <button type="button" wire:click="deleteEvent" wire:confirm="⚠️ ¿Estás seguro de que deseas eliminar permanentemente el evento '{{ $event->name }}' y todos sus presupuestos, facturas, contratos y canciones asociadas? Esta acción no se puede deshacer." class="inline-flex items-center gap-1 bg-rose-50 hover:bg-rose-100 text-rose-700 hover:text-rose-800 border border-rose-200 font-bold px-2.5 py-2 rounded-xl text-xs transition cursor-pointer" title="Eliminar este evento">
-                    <span>🗑️</span>
-                    <span>Eliminar</span>
-                </button>
-            @endif
-            
-            <a href="{{ route('admin.events') }}" class="text-gray-500 hover:text-gray-700 text-sm font-medium ml-2">← Volver</a>
         </div>
     </div>
 
