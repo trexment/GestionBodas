@@ -277,7 +277,7 @@
                                         {{ $event->no_response_time_label }}
                                     </span>
                                     @if($event->no_response_whatsapp_url)
-                                        <a href="{{ $event->no_response_whatsapp_url }}" target="_blank" class="inline-flex items-center gap-1 text-[10px] bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 px-1.5 py-0.5 rounded font-bold transition" title="Enviar recordatorio táctico de WhatsApp (Técnica del NO)">
+                                        <a href="{{ $event->no_response_whatsapp_url }}" target="_blank" class="inline-flex items-center gap-1 text-[10px] bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 px-1.5 py-0.5 rounded font-bold transition" title="Enviar recordatorio táctico de WhatsApp (Técnica del NO)">
                                             💬 Recordar
                                         </a>
                                     @endif

@@ -382,8 +382,12 @@
     </div>
 
     @if (session()->has('message'))
-        <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6 rounded shadow-sm">
-            {{ session('message') }}
+        <div class="bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 p-3.5 mb-5 rounded-2xl shadow-xs flex items-center justify-between gap-3">
+            <div class="flex items-center gap-2">
+                <span class="text-base">✅</span>
+                <span class="text-xs sm:text-sm font-bold">{{ session('message') }}</span>
+            </div>
+            <button type="button" onclick="this.parentElement.remove()" class="text-emerald-600 dark:text-emerald-400 hover:text-emerald-900 font-black p-1 text-sm cursor-pointer">&times;</button>
         </div>
     @endif
 
@@ -395,18 +399,18 @@
             $clientPhone = $event->client ? $event->client->phone : ($event->partner_phone ?? '');
             $followupData = \App\Services\WhatsAppTemplateService::followupReminder($event, 'pregunta_no');
         @endphp
-        <div class="p-4 sm:p-5 mb-6 rounded-2xl border transition shadow-sm {{ $urgency === 'critical' ? 'bg-gradient-to-r from-rose-50 via-rose-50/70 to-amber-50/40 border-rose-300 ring-1 ring-rose-200' : ($urgency === 'warning' ? 'bg-gradient-to-r from-amber-50 via-amber-50/70 to-purple-50/40 border-amber-300 ring-1 ring-amber-200' : 'bg-gradient-to-r from-purple-50 via-purple-50/70 to-indigo-50/40 border-purple-200') }}">
+        <div class="bg-white dark:bg-slate-900 p-4 sm:p-5 mb-6 rounded-2xl border transition shadow-sm {{ $urgency === 'critical' ? 'border-rose-400 dark:border-rose-600/70' : ($urgency === 'warning' ? 'border-amber-400 dark:border-amber-600/70' : 'border-purple-300 dark:border-purple-600/60') }}">
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div class="flex items-start gap-3.5">
-                    <div class="w-11 h-11 rounded-2xl flex items-center justify-center text-xl shrink-0 {{ $urgency === 'critical' ? 'bg-rose-500 text-white animate-pulse shadow-md shadow-rose-500/30' : ($urgency === 'warning' ? 'bg-amber-500 text-white shadow-md shadow-amber-500/30' : 'bg-purple-600 text-white shadow-md shadow-purple-600/30') }}">
+                    <div class="w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0 {{ $urgency === 'critical' ? 'bg-rose-100 dark:bg-rose-900/60 text-rose-600 dark:text-rose-300' : ($urgency === 'warning' ? 'bg-amber-100 dark:bg-amber-900/60 text-amber-600 dark:text-amber-300' : 'bg-purple-100 dark:bg-purple-900/60 text-purple-600 dark:text-purple-300') }}">
                         ⏳
                     </div>
                     <div>
                         <div class="flex items-center gap-2 flex-wrap">
-                            <h4 class="font-extrabold text-sm sm:text-base {{ $urgency === 'critical' ? 'text-rose-900' : ($urgency === 'warning' ? 'text-amber-900' : 'text-purple-950') }}">
+                            <h4 class="font-extrabold text-sm sm:text-base text-gray-900 dark:text-white">
                                 Recordatorio de Seguimiento: Cliente Sin Respuesta
                             </h4>
-                            <span class="text-[11px] font-bold px-2.5 py-0.5 rounded-full border {{ $urgency === 'critical' ? 'bg-rose-100 text-rose-800 border-rose-300' : ($urgency === 'warning' ? 'bg-amber-100 text-amber-800 border-amber-300' : 'bg-purple-100 text-purple-800 border-purple-300') }}">
+                            <span class="text-[11px] font-bold px-2.5 py-0.5 rounded-full border {{ $urgency === 'critical' ? 'bg-rose-100 text-rose-800 border-rose-300 dark:bg-rose-900/60 dark:text-rose-200 dark:border-rose-700' : ($urgency === 'warning' ? 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-900/60 dark:text-amber-200 dark:border-amber-700' : 'bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-900/60 dark:text-purple-200 dark:border-purple-700') }}">
                                 {{ $event->no_response_time_label }}
                             </span>
                             @if($urgency === 'critical')
@@ -415,11 +419,11 @@
                                 </span>
                             @endif
                         </div>
-                        <p class="text-xs {{ $urgency === 'critical' ? 'text-rose-700' : ($urgency === 'warning' ? 'text-amber-800' : 'text-purple-800') }} mt-1 leading-relaxed">
+                        <p class="text-xs text-gray-600 dark:text-slate-300 mt-1 leading-relaxed">
                             @if($daysWaiting >= 4)
-                                ⚠️ El cliente lleva <strong>{{ $daysWaiting }} días</strong> sin responder tras el presupuesto. Utiliza la <strong>técnica del "NO" o psicología inversa</strong> para saber si liberamos la fecha sin parecer insistente.
+                                ⚠️ El cliente lleva <strong class="text-rose-600 dark:text-rose-400 font-bold">{{ $daysWaiting }} días</strong> sin responder tras el presupuesto. Utiliza la <strong>técnica del "NO" o psicología inversa</strong> para saber si liberamos la fecha sin parecer insistente.
                             @elseif($daysWaiting >= 2)
-                                Han pasado <strong>{{ $daysWaiting }} días</strong> desde que se marcó en espera. Es buen momento para enviar un toque rápido antes de que se enfríe la fecha.
+                                Han pasado <strong class="text-amber-600 dark:text-amber-400 font-bold">{{ $daysWaiting }} días</strong> desde que se marcó en espera. Es buen momento para enviar un toque rápido antes de que se enfríe la fecha.
                             @else
                                 Evento marcado en espera de respuesta. Tienes disponibles las plantillas tácticas de Chris Voss para cuando toque hacer seguimiento.
                             @endif
@@ -431,35 +435,35 @@
                 <div class="flex flex-wrap items-center gap-2 w-full md:w-auto shrink-0">
                     <!-- Botón Enviar WhatsApp Táctico 1-Clic -->
                     @if(!empty($clientPhone))
-                        <a href="{{ $followupData['url'] }}" target="_blank" class="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-md shadow-emerald-600/25 transition transform hover:-translate-y-0.5">
+                        <a href="{{ $followupData['url'] }}" target="_blank" class="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-xs px-3.5 py-2.5 rounded-xl shadow-xs transition">
                             <span>💬</span>
                             <span>Enviar WhatsApp (Técnica NO)</span>
                         </a>
                     @endif
 
                     <!-- Abrir todas las plantillas de seguimiento del Hub -->
-                    <button type="button" @click="openWhatsappHub = true" class="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 bg-white hover:bg-gray-50 text-gray-700 font-bold text-xs px-3.5 py-2.5 rounded-xl border border-gray-300 shadow-xs transition cursor-pointer">
+                    <button type="button" @click="openWhatsappHub = true" class="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs px-3 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 transition cursor-pointer">
                         <span>🔥</span>
-                        <span>Más Opciones de Reactivación</span>
+                        <span>Más Opciones</span>
                     </button>
 
                     <!-- Si responde: Cambiar a Borrador o Confirmar -->
                     <div class="relative inline-block text-left" x-data="{ openResolveMenu: false }">
-                        <button type="button" @click="openResolveMenu = !openResolveMenu" class="inline-flex items-center gap-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs px-3 py-2.5 rounded-xl border border-indigo-200 transition cursor-pointer">
+                        <button type="button" @click="openResolveMenu = !openResolveMenu" class="inline-flex items-center gap-1.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/70 dark:hover:bg-indigo-900/80 text-indigo-700 dark:text-indigo-300 font-bold text-xs px-3 py-2.5 rounded-xl border border-indigo-200 dark:border-indigo-800 transition cursor-pointer">
                             <span>⚡ ¿Ha respondido?</span>
                             <span class="text-[9px]">▼</span>
                         </button>
-                        <div x-show="openResolveMenu" @click.away="openResolveMenu = false" class="absolute right-0 mt-1.5 w-48 bg-white border border-slate-200 rounded-xl shadow-xl z-20 p-1 divide-y divide-slate-100 text-xs" style="display: none;">
+                        <div x-show="openResolveMenu" @click.away="openResolveMenu = false" class="absolute right-0 mt-1.5 w-48 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl z-20 p-1 divide-y divide-slate-100 dark:divide-slate-800 text-xs" style="display: none;">
                             <div class="py-0.5">
-                                <button type="button" wire:click="changeStatus('draft')" @click="openResolveMenu = false" class="w-full text-left px-3 py-2 rounded-lg hover:bg-amber-50 text-amber-900 font-semibold flex items-center gap-1.5 cursor-pointer">
+                                <button type="button" wire:click="changeStatus('draft')" @click="openResolveMenu = false" class="w-full text-left px-3 py-2 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-950/40 text-amber-800 dark:text-amber-300 font-semibold flex items-center gap-1.5 cursor-pointer">
                                     <span>📝</span> Pasar a Borrador
                                 </button>
-                                <button type="button" wire:click="changeStatus('confirmed')" @click="openResolveMenu = false" class="w-full text-left px-3 py-2 rounded-lg hover:bg-emerald-50 text-emerald-900 font-semibold flex items-center gap-1.5 cursor-pointer">
+                                <button type="button" wire:click="changeStatus('confirmed')" @click="openResolveMenu = false" class="w-full text-left px-3 py-2 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 font-semibold flex items-center gap-1.5 cursor-pointer">
                                     <span>🟢</span> Confirmar (Cobrar señal)
                                 </button>
                             </div>
                             <div class="py-0.5">
-                                <button type="button" wire:click="changeStatus('rejected')" @click="openResolveMenu = false" class="w-full text-left px-3 py-2 rounded-lg hover:bg-rose-50 text-rose-900 font-semibold flex items-center gap-1.5 cursor-pointer">
+                                <button type="button" wire:click="changeStatus('rejected')" @click="openResolveMenu = false" class="w-full text-left px-3 py-2 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 text-rose-800 dark:text-rose-300 font-semibold flex items-center gap-1.5 cursor-pointer">
                                     <span>❌</span> Descartar (Rechazado)
                                 </button>
                             </div>
