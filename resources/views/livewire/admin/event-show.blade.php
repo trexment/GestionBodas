@@ -67,6 +67,16 @@
     $liquidacionMsg = \App\Services\WhatsAppTemplateService::liquidacion($event);
     $liquidacionWaUrl = \App\Services\WhatsAppTemplateService::getLink($clientPhone, $liquidacionMsg);
 
+    // Mensajes tácticos de seguimiento si el cliente no responde (Técnica del NO y Psicología Inversa)
+    $followupNoMsg = \App\Services\WhatsAppTemplateService::seguimientoPreguntaNo($event);
+    $followupNoWaUrl = \App\Services\WhatsAppTemplateService::getLink($clientPhone, $followupNoMsg);
+
+    $followupReverseMsg = \App\Services\WhatsAppTemplateService::seguimientoPsicologiaInversa($event);
+    $followupReverseWaUrl = \App\Services\WhatsAppTemplateService::getLink($clientPhone, $followupReverseMsg);
+
+    $followupBudgetMsg = \App\Services\WhatsAppTemplateService::seguimientoPresupuestoNo($event);
+    $followupBudgetWaUrl = \App\Services\WhatsAppTemplateService::getLink($clientPhone, $followupBudgetMsg);
+
     $djMsg = \App\Services\WhatsAppTemplateService::hojaRutaDj($event);
     $djWaUrl = \App\Services\WhatsAppTemplateService::getLink($djPhone, $djMsg);
     $astWaUrl = \App\Services\WhatsAppTemplateService::getLink($assistantPhone, $djMsg);
@@ -445,6 +455,16 @@
                 </div>
 
                 <div class="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+                    <!-- SECCIÓN: PRESUPUESTO & RESERVA -->
+                    <div class="pb-1">
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="text-xs font-black uppercase tracking-wider text-gray-500 flex items-center gap-1.5">
+                                <span>📋</span> Propuesta Inicial & Reserva
+                            </span>
+                            <div class="h-px bg-gray-200 flex-1"></div>
+                        </div>
+                    </div>
+
                     <!-- Opción 1: Propuesta y Desglose -->
                     <div class="p-4 rounded-xl border border-gray-200 hover:border-emerald-300 bg-gray-50 hover:bg-emerald-50/40 transition">
                         <div class="flex items-start justify-between gap-4">
@@ -490,6 +510,140 @@
                             @else
                                 <button disabled class="bg-gray-300 text-gray-500 font-bold text-xs px-3.5 py-2 rounded-xl cursor-not-allowed">Sin propuesta</button>
                             @endif
+                        </div>
+                    </div>
+
+                    <!-- SECCIÓN: ESTRATEGIA DE SEGUIMIENTO (SI NO RESPONDEN) -->
+                    <div class="pt-2 pb-1">
+                        <div class="flex items-center gap-2 mb-1.5">
+                            <span class="text-xs font-black uppercase tracking-wider text-rose-600 flex items-center gap-1.5">
+                                <span>🔥</span> Si no responden (Psicología Inversa & Técnica del NO)
+                            </span>
+                            <div class="h-px bg-rose-200 flex-1"></div>
+                        </div>
+                        <p class="text-[11px] text-gray-500">
+                            Respuestas tácticas para reactivar parejas o clientes que no contestan tras enviarles presupuesto, <strong>para no ser pesado ni parecer desesperado</strong>. Aplican el principio de autonomía de la pregunta del "NO" (Chris Voss) y el cierre de expediente con psicología inversa.
+                        </p>
+                    </div>
+
+                    <!-- Seguimiento 1: Técnica del NO (¿Descartáis la fecha?) -->
+                    <div x-data="{ showText: false, copied: false }" class="p-4 rounded-xl border border-rose-200 bg-rose-50/40 hover:bg-rose-50/70 transition space-y-2.5">
+                        <div class="flex items-start justify-between gap-4">
+                            <div>
+                                <h4 class="font-bold text-gray-900 text-sm flex items-center gap-2">
+                                    <span>🎯 ¿Descartáis la fecha? (Técnica del "NO")</span>
+                                    <span class="text-[10px] bg-rose-100 text-rose-800 font-extrabold px-2 py-0.5 rounded-full">Recomendado ⭐</span>
+                                </h4>
+                                <p class="text-xs text-gray-600 mt-1">
+                                    Pregunta directa: <em>"¿Habéis decidido descartar la opción...?"</em>. Activa la urgencia y el deseo de decir <strong>"¡No, no lo descartamos!"</strong> para no perder el día ante otra consulta, sin presionar.
+                                </p>
+                            </div>
+                            <div class="flex items-center gap-1.5 shrink-0">
+                                <button type="button" @click="showText = !showText" class="bg-white hover:bg-rose-100 text-rose-700 font-bold text-xs px-2.5 py-2 rounded-xl border border-rose-300 transition" :title="showText ? 'Ocultar mensaje' : 'Ver mensaje completo'">
+                                    <span x-text="showText ? '👁️ Ocultar' : '👁️ Ver'"></span>
+                                </button>
+                                <a href="{{ $followupNoWaUrl }}" target="_blank" class="bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition">
+                                    💬 Enviar
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Panel desplegable con el texto y botón de copiar -->
+                        <div x-show="showText" class="bg-white p-3.5 rounded-xl border border-rose-200 text-xs text-gray-700 space-y-2" style="display: none;">
+                            <div class="font-mono text-[11px] leading-relaxed whitespace-pre-line bg-gray-50 p-2.5 rounded-lg border border-gray-100 text-gray-800">{{ $followupNoMsg }}</div>
+                            <div class="flex items-center justify-between pt-1">
+                                <span class="text-[11px] text-gray-500">Puedes enviar directamente o copiar para adaptar.</span>
+                                <button type="button" 
+                                    @click="navigator.clipboard.writeText(@js($followupNoMsg)); copied = true; setTimeout(() => copied = false, 2500)"
+                                    class="text-xs font-bold px-3 py-1.5 rounded-lg border transition inline-flex items-center gap-1.5 cursor-pointer"
+                                    :class="copied ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-rose-50 text-rose-700 hover:bg-rose-100 border-rose-200'">
+                                    <span x-text="copied ? '✅ ¡Copiado al portapapeles!' : '📋 Copiar Texto'"></span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Seguimiento 2: Psicología Inversa & Cierre de Expediente (Para no ser pesado) -->
+                    <div x-data="{ showText: false, copied: false }" class="p-4 rounded-xl border border-amber-200 bg-amber-50/40 hover:bg-amber-50/70 transition space-y-2.5">
+                        <div class="flex items-start justify-between gap-4">
+                            <div>
+                                <h4 class="font-bold text-gray-900 text-sm flex items-center gap-2">
+                                    <span>🧠 Cierre de Expediente (Psicología Inversa)</span>
+                                    <span class="text-[10px] bg-amber-100 text-amber-800 font-extrabold px-2 py-0.5 rounded-full">Para no ser pesado ⚡</span>
+                                </h4>
+                                <p class="text-xs text-gray-600 mt-1">
+                                    Asume educadamente que han elegido otra alternativa: <em>"Para no ser pesados, cierro vuestro expediente..."</em>. Elimina la culpa social y provoca el instinto de responder para no perder la fecha definitivamente.
+                                </p>
+                            </div>
+                            <div class="flex items-center gap-1.5 shrink-0">
+                                <button type="button" @click="showText = !showText" class="bg-white hover:bg-amber-100 text-amber-800 font-bold text-xs px-2.5 py-2 rounded-xl border border-amber-300 transition" :title="showText ? 'Ocultar mensaje' : 'Ver mensaje completo'">
+                                    <span x-text="showText ? '👁️ Ocultar' : '👁️ Ver'"></span>
+                                </button>
+                                <a href="{{ $followupReverseWaUrl }}" target="_blank" class="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition">
+                                    💬 Enviar
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Panel desplegable con el texto y botón de copiar -->
+                        <div x-show="showText" class="bg-white p-3.5 rounded-xl border border-amber-200 text-xs text-gray-700 space-y-2" style="display: none;">
+                            <div class="font-mono text-[11px] leading-relaxed whitespace-pre-line bg-gray-50 p-2.5 rounded-lg border border-gray-100 text-gray-800">{{ $followupReverseMsg }}</div>
+                            <div class="flex items-center justify-between pt-1">
+                                <span class="text-[11px] text-gray-500">Eficacia probada en clientes fríos o silenciosos.</span>
+                                <button type="button" 
+                                    @click="navigator.clipboard.writeText(@js($followupReverseMsg)); copied = true; setTimeout(() => copied = false, 2500)"
+                                    class="text-xs font-bold px-3 py-1.5 rounded-lg border transition inline-flex items-center gap-1.5 cursor-pointer"
+                                    :class="copied ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-amber-50 text-amber-800 hover:bg-amber-100 border-amber-200'">
+                                    <span x-text="copied ? '✅ ¡Copiado al portapapeles!' : '📋 Copiar Texto'"></span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Seguimiento 3: ¿Descarte por Presupuesto? (Negociación abierta) -->
+                    <div x-data="{ showText: false, copied: false }" class="p-4 rounded-xl border border-indigo-200 bg-indigo-50/40 hover:bg-indigo-50/70 transition space-y-2.5">
+                        <div class="flex items-start justify-between gap-4">
+                            <div>
+                                <h4 class="font-bold text-gray-900 text-sm flex items-center gap-2">
+                                    <span>💡 ¿Descartado por Presupuesto? (Adaptar Pack)</span>
+                                    <span class="text-[10px] bg-indigo-100 text-indigo-800 font-extrabold px-2 py-0.5 rounded-full">Objeción de Precio</span>
+                                </h4>
+                                <p class="text-xs text-gray-600 mt-1">
+                                    Pregunta si la duda era el importe y ofrece ajustar el equipamiento o pack a su presupuesto real antes de liberar la fecha en el calendario.
+                                </p>
+                            </div>
+                            <div class="flex items-center gap-1.5 shrink-0">
+                                <button type="button" @click="showText = !showText" class="bg-white hover:bg-indigo-100 text-indigo-700 font-bold text-xs px-2.5 py-2 rounded-xl border border-indigo-300 transition" :title="showText ? 'Ocultar mensaje' : 'Ver mensaje completo'">
+                                    <span x-text="showText ? '👁️ Ocultar' : '👁️ Ver'"></span>
+                                </button>
+                                <a href="{{ $followupBudgetWaUrl }}" target="_blank" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition">
+                                    💬 Enviar
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Panel desplegable con el texto y botón de copiar -->
+                        <div x-show="showText" class="bg-white p-3.5 rounded-xl border border-indigo-200 text-xs text-gray-700 space-y-2" style="display: none;">
+                            <div class="font-mono text-[11px] leading-relaxed whitespace-pre-line bg-gray-50 p-2.5 rounded-lg border border-gray-100 text-gray-800">{{ $followupBudgetMsg }}</div>
+                            <div class="flex items-center justify-between pt-1">
+                                <span class="text-[11px] text-gray-500">Abre la puerta a renegociar sin perder la venta.</span>
+                                <button type="button" 
+                                    @click="navigator.clipboard.writeText(@js($followupBudgetMsg)); copied = true; setTimeout(() => copied = false, 2500)"
+                                    class="text-xs font-bold px-3 py-1.5 rounded-lg border transition inline-flex items-center gap-1.5 cursor-pointer"
+                                    :class="copied ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border-indigo-200'">
+                                    <span x-text="copied ? '✅ ¡Copiado al portapapeles!' : '📋 Copiar Texto'"></span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Separador a opciones de formalización -->
+                    <div class="pt-2 pb-1">
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="text-xs font-black uppercase tracking-wider text-gray-400 flex items-center gap-1.5">
+                                <span>📜</span> Formalización & Planificación
+                            </span>
+                            <div class="h-px bg-gray-200 flex-1"></div>
                         </div>
                     </div>
 
@@ -548,6 +702,16 @@
                             <a href="{{ $liquidacionWaUrl }}" target="_blank" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition">
                                 💬 Enviar
                             </a>
+                        </div>
+                    </div>
+
+                    <!-- Separador a opciones de Staff -->
+                    <div class="pt-2 pb-1">
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="text-xs font-black uppercase tracking-wider text-gray-400 flex items-center gap-1.5">
+                                <span>🎧</span> Coordinación del Staff Técnico
+                            </span>
+                            <div class="h-px bg-gray-200 flex-1"></div>
                         </div>
                     </div>
 
