@@ -201,20 +201,20 @@
                 </div>
 
                 <!-- SECCIÓN FIRMA / SELLO DE LA EMPRESA (DIBUJAR O SUBIR ARCHIVO) -->
-                <div class="pt-5 border-t border-gray-100 space-y-4" x-data="adminSignaturePad()" wire:ignore>
+                <div class="pt-5 border-t border-gray-100 dark:border-slate-800 space-y-4" x-data="adminSignaturePad()" wire:ignore>
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                         <div>
-                            <label class="block text-xs font-bold text-gray-900">✍️ Firma / Sello Oficial de la Empresa Prestadora</label>
-                            <span class="text-[11px] text-gray-500 block mt-0.5">
+                            <label class="block text-xs font-bold text-gray-900 dark:text-white">✍️ Firma / Sello Oficial de la Empresa Prestadora</label>
+                            <span class="text-[11px] text-gray-500 dark:text-slate-400 block mt-0.5">
                                 Aparecerá estampada automáticamente en los contratos, facturas y presupuestos PDF oficiales.
                             </span>
                         </div>
                         <!-- Botones de Alternancia: Dibujar / Subir -->
-                        <div class="inline-flex rounded-xl bg-gray-100 p-1 border border-gray-200">
+                        <div class="inline-flex rounded-xl bg-gray-100 dark:bg-slate-800 p-1 border border-gray-200 dark:border-slate-700">
                             <button 
                                 type="button" 
                                 @click="mode = 'draw'" 
-                                :class="mode === 'draw' ? 'bg-white text-indigo-600 shadow-xs font-bold' : 'text-gray-600 hover:text-gray-900 font-medium'"
+                                :class="mode === 'draw' ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs font-bold' : 'text-gray-600 dark:text-slate-300 hover:text-gray-900 dark:hover:text-white font-medium'"
                                 class="px-3 py-1.5 text-xs rounded-lg transition-all flex items-center gap-1.5 cursor-pointer"
                             >
                                 <span>✍️</span> Dibujar en Pantalla
@@ -222,7 +222,7 @@
                             <button 
                                 type="button" 
                                 @click="mode = 'upload'" 
-                                :class="mode === 'upload' ? 'bg-white text-indigo-600 shadow-xs font-bold' : 'text-gray-600 hover:text-gray-900 font-medium'"
+                                :class="mode === 'upload' ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs font-bold' : 'text-gray-600 dark:text-slate-300 hover:text-gray-900 dark:hover:text-white font-medium'"
                                 class="px-3 py-1.5 text-xs rounded-lg transition-all flex items-center gap-1.5 cursor-pointer"
                             >
                                 <span>📁</span> Subir Archivo
@@ -232,19 +232,27 @@
 
                     <!-- PREVISUALIZACIÓN DE FIRMA ACTUAL GUARDADA -->
                     @if(\App\Models\Setting::getCompanySignatureUrl())
-                        <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between gap-4">
-                            <div class="flex items-center gap-3">
-                                <div class="bg-white p-1.5 rounded-lg border border-slate-200 shadow-2xs">
-                                    <img src="{{ \App\Models\Setting::getCompanySignatureUrl() }}" alt="Firma Guardada" class="h-12 w-28 object-contain">
+                        <div class="p-4 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition shadow-2xs">
+                            <div class="flex items-center gap-3.5">
+                                <!-- Lienzo blanco papel con fondo blanco puro garantizado para ver la tinta oscura -->
+                                <div class="rounded-xl border border-slate-300 dark:border-slate-600 p-2.5 shadow-xs flex items-center justify-center shrink-0" style="background-color: #ffffff !important; min-width: 150px; min-height: 68px;">
+                                    <img src="{{ \App\Models\Setting::getCompanySignatureUrl() }}" alt="Firma Guardada" class="h-14 sm:h-16 w-36 sm:w-48 object-contain">
                                 </div>
                                 <div>
-                                    <span class="text-xs font-bold text-slate-800 block">Firma / Sello actual en uso</span>
-                                    <span class="text-[11px] text-emerald-600 font-semibold flex items-center gap-1">
-                                        <span>✔</span> Lista y activa en todos los contratos PDF
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-sm font-extrabold text-slate-800 dark:text-white block">Firma / Sello actual en uso</span>
+                                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                                            Activa
+                                        </span>
+                                    </div>
+                                    <span class="text-xs text-emerald-700 dark:text-emerald-400 font-semibold flex items-center gap-1 mt-0.5">
+                                        <span>✔</span> Lista y activa en todos los contratos, presupuestos y facturas PDF
                                     </span>
                                 </div>
                             </div>
-                            <span class="text-[11px] text-slate-400 hidden sm:inline">Si dibujas o subes otra, reemplazará la actual al guardar</span>
+                            <span class="text-xs text-slate-400 dark:text-slate-400 hidden lg:inline-block max-w-xs text-right">
+                                Si dibujas una nueva firma abajo o subes una imagen, reemplazará a esta al guardar.
+                            </span>
                         </div>
                     @endif
 
@@ -296,18 +304,20 @@
 
                     <!-- MODO B: SUBIR ARCHIVO (PNG/JPG) -->
                     <div x-show="mode === 'upload'" class="space-y-2" style="display: none;">
-                        <div class="flex items-center gap-4 p-4 bg-slate-50 border border-slate-200 rounded-xl">
+                        <div class="flex items-center gap-4 p-4 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl">
                             @if($company_signature)
                                 <div class="flex flex-col items-center gap-1">
-                                    <img src="{{ $company_signature->temporaryUrl() }}" alt="Previsualización Firma" class="h-14 w-24 object-contain rounded-lg border border-indigo-400 p-1 bg-white shadow-xs">
-                                    <span class="text-[10px] text-indigo-600 font-bold">Nueva firma</span>
+                                    <div class="rounded-xl border border-indigo-400 p-1.5 shadow-xs flex items-center justify-center shrink-0" style="background-color: #ffffff !important;">
+                                        <img src="{{ $company_signature->temporaryUrl() }}" alt="Previsualización Firma" class="h-14 w-28 object-contain">
+                                    </div>
+                                    <span class="text-[10px] text-indigo-600 dark:text-indigo-400 font-bold">Nueva firma</span>
                                 </div>
                             @endif
                             <div class="flex-1">
-                                <label class="block text-xs font-bold text-gray-700 mb-1">Seleccionar archivo de firma / sello digital (PNG transparente recomendado)</label>
-                                <input type="file" wire:model="company_signature" accept="image/*" class="w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer">
-                                <span class="text-[11px] text-gray-400 mt-1 block">Formatos permitidos: PNG, JPG o SVG (máx. 2MB).</span>
-                                <div wire:loading wire:target="company_signature" class="text-xs text-indigo-600 font-medium mt-1">
+                                <label class="block text-xs font-bold text-gray-700 dark:text-slate-200 mb-1">Seleccionar archivo de firma / sello digital (PNG transparente recomendado)</label>
+                                <input type="file" wire:model="company_signature" accept="image/*" class="w-full text-xs text-gray-500 dark:text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 dark:file:bg-indigo-950/70 file:text-indigo-700 dark:file:text-indigo-300 hover:file:bg-indigo-100 cursor-pointer">
+                                <span class="text-[11px] text-gray-400 dark:text-slate-400 mt-1 block">Formatos permitidos: PNG, JPG o SVG (máx. 2MB).</span>
+                                <div wire:loading wire:target="company_signature" class="text-xs text-indigo-600 dark:text-indigo-400 font-medium mt-1">
                                     ⏳ Subiendo firma temporal...
                                 </div>
                             </div>
@@ -316,133 +326,133 @@
                 </div>
 
                 <!-- SECCIÓN MULTI-MARCA (NÚÑEZ AND SON & JAVNX DJ) -->
-                <div class="pt-6 border-t border-gray-200 space-y-4">
+                <div class="pt-6 border-t border-gray-200 dark:border-slate-800 space-y-4">
                     <div>
-                        <h4 class="text-sm font-extrabold text-gray-900 flex items-center gap-2">
+                        <h4 class="text-sm font-extrabold text-gray-900 dark:text-white flex items-center gap-2">
                             <span>👑🎧</span> Configuración de Marcas Comerciales (Multi-Marca)
                         </h4>
-                        <p class="text-xs text-gray-500 mt-0.5">
+                        <p class="text-xs text-gray-500 dark:text-slate-400 mt-0.5">
                             Define los datos que aparecerán automáticamente en las propuestas según la marca que selecciones en cada evento.
                         </p>
                     </div>
 
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
                         <!-- PERFIL 1: NÚÑEZ AND SON -->
-                        <div class="p-4 bg-amber-50/60 rounded-2xl border border-amber-200 space-y-3">
-                            <div class="flex items-center gap-2 border-b border-amber-200 pb-2">
+                        <div class="p-4 bg-amber-50/60 dark:bg-amber-950/30 rounded-2xl border border-amber-200 dark:border-amber-800/60 space-y-3">
+                            <div class="flex items-center gap-2 border-b border-amber-200 dark:border-amber-800/60 pb-2">
                                 <span class="text-xl">👑</span>
                                 <div>
-                                    <strong class="text-xs font-black text-amber-950 block">Marca 1: Núñez and Son</strong>
-                                    <span class="text-[11px] text-amber-800">Bodas, eventos familiares y sonorización tradicional</span>
+                                    <strong class="text-xs font-black text-amber-950 dark:text-amber-200 block">Marca 1: Núñez and Son</strong>
+                                    <span class="text-[11px] text-amber-800 dark:text-amber-300">Bodas, eventos familiares y sonorización tradicional</span>
                                 </div>
                             </div>
 
                             <div class="space-y-2.5 text-xs">
                                 <div>
-                                    <label class="block font-bold text-amber-900 mb-0.5">Nombre Comercial</label>
-                                    <input type="text" wire:model="brand_nunez_name" class="w-full border-amber-300 rounded-lg p-2 text-xs bg-white text-slate-800 font-bold">
+                                    <label class="block font-bold text-amber-900 dark:text-amber-200 mb-0.5">Nombre Comercial</label>
+                                    <input type="text" wire:model="brand_nunez_name" class="w-full border-amber-300 dark:border-amber-800 rounded-lg p-2 text-xs bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 font-bold">
                                 </div>
                                 <div>
-                                    <label class="block font-bold text-amber-900 mb-0.5">Subtítulo / Especialidad</label>
-                                    <input type="text" wire:model="brand_nunez_subtitle" class="w-full border-amber-300 rounded-lg p-2 text-xs bg-white text-slate-800">
+                                    <label class="block font-bold text-amber-900 dark:text-amber-200 mb-0.5">Subtítulo / Especialidad</label>
+                                    <input type="text" wire:model="brand_nunez_subtitle" class="w-full border-amber-300 dark:border-amber-800 rounded-lg p-2 text-xs bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100">
                                 </div>
                                 <div class="grid grid-cols-2 gap-2">
                                     <div>
-                                        <label class="block font-bold text-amber-900 mb-0.5">Teléfono 1 (Fran)</label>
-                                        <input type="text" wire:model="brand_nunez_phone" class="w-full border-amber-300 rounded-lg p-2 text-xs bg-white text-slate-800">
+                                        <label class="block font-bold text-amber-900 dark:text-amber-200 mb-0.5">Teléfono 1 (Fran)</label>
+                                        <input type="text" wire:model="brand_nunez_phone" class="w-full border-amber-300 dark:border-amber-800 rounded-lg p-2 text-xs bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100">
                                     </div>
                                     <div>
-                                        <label class="block font-bold text-amber-900 mb-0.5">Teléfono 2 (Miguel)</label>
-                                        <input type="text" wire:model="brand_nunez_phone_2" class="w-full border-amber-300 rounded-lg p-2 text-xs bg-white text-slate-800">
+                                        <label class="block font-bold text-amber-900 dark:text-amber-200 mb-0.5">Teléfono 2 (Miguel)</label>
+                                        <input type="text" wire:model="brand_nunez_phone_2" class="w-full border-amber-300 dark:border-amber-800 rounded-lg p-2 text-xs bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100">
                                     </div>
                                 </div>
                                 <div>
-                                    <label class="block font-bold text-amber-900 mb-0.5">Página Web / Landing</label>
-                                    <input type="text" wire:model="brand_nunez_website" class="w-full border-amber-300 rounded-lg p-2 text-xs bg-white text-slate-800">
+                                    <label class="block font-bold text-amber-900 dark:text-amber-200 mb-0.5">Página Web / Landing</label>
+                                    <input type="text" wire:model="brand_nunez_website" class="w-full border-amber-300 dark:border-amber-800 rounded-lg p-2 text-xs bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100">
                                 </div>
                                 <div>
-                                    <label class="block font-bold text-amber-900 mb-0.5">Email de Contacto</label>
-                                    <input type="email" wire:model="brand_nunez_email" class="w-full border-amber-300 rounded-lg p-2 text-xs bg-white text-slate-800">
+                                    <label class="block font-bold text-amber-900 dark:text-amber-200 mb-0.5">Email de Contacto</label>
+                                    <input type="email" wire:model="brand_nunez_email" class="w-full border-amber-300 dark:border-amber-800 rounded-lg p-2 text-xs bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100">
                                 </div>
                             </div>
                         </div>
 
                         <!-- PERFIL 2: JAVNX DJ -->
-                        <div class="p-4 bg-indigo-50/60 rounded-2xl border border-indigo-200 space-y-3">
-                            <div class="flex items-center gap-2 border-b border-indigo-200 pb-2">
+                        <div class="p-4 bg-indigo-50/60 dark:bg-indigo-950/30 rounded-2xl border border-indigo-200 dark:border-indigo-800/60 space-y-3">
+                            <div class="flex items-center gap-2 border-b border-indigo-200 dark:border-indigo-800/60 pb-2">
                                 <span class="text-xl">🎧</span>
                                 <div>
-                                    <strong class="text-xs font-black text-indigo-950 block">Marca 2: JAVNX DJ</strong>
-                                    <span class="text-[11px] text-indigo-800">Fiestas, sesiones DJ, eventos de empresa y festivales</span>
+                                    <strong class="text-xs font-black text-indigo-950 dark:text-indigo-200 block">Marca 2: JAVNX DJ</strong>
+                                    <span class="text-[11px] text-indigo-800 dark:text-indigo-300">Fiestas, sesiones DJ, eventos de empresa y festivales</span>
                                 </div>
                             </div>
 
                             <div class="space-y-2.5 text-xs">
                                 <div>
-                                    <label class="block font-bold text-indigo-900 mb-0.5">Nombre Comercial</label>
-                                    <input type="text" wire:model="brand_javnx_name" class="w-full border-indigo-300 rounded-lg p-2 text-xs bg-white text-slate-800 font-bold">
+                                    <label class="block font-bold text-indigo-900 dark:text-indigo-200 mb-0.5">Nombre Comercial</label>
+                                    <input type="text" wire:model="brand_javnx_name" class="w-full border-indigo-300 dark:border-indigo-800 rounded-lg p-2 text-xs bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 font-bold">
                                 </div>
                                 <div>
-                                    <label class="block font-bold text-indigo-900 mb-0.5">Subtítulo / Especialidad</label>
-                                    <input type="text" wire:model="brand_javnx_subtitle" class="w-full border-indigo-300 rounded-lg p-2 text-xs bg-white text-slate-800">
+                                    <label class="block font-bold text-indigo-900 dark:text-indigo-200 mb-0.5">Subtítulo / Especialidad</label>
+                                    <input type="text" wire:model="brand_javnx_subtitle" class="w-full border-indigo-300 dark:border-indigo-800 rounded-lg p-2 text-xs bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100">
                                 </div>
                                 <div class="grid grid-cols-2 gap-2">
                                     <div>
-                                        <label class="block font-bold text-indigo-900 mb-0.5">Teléfono Principal</label>
-                                        <input type="text" wire:model="brand_javnx_phone" class="w-full border-indigo-300 rounded-lg p-2 text-xs bg-white text-slate-800">
+                                        <label class="block font-bold text-indigo-900 dark:text-indigo-200 mb-0.5">Teléfono Principal</label>
+                                        <input type="text" wire:model="brand_javnx_phone" class="w-full border-indigo-300 dark:border-indigo-800 rounded-lg p-2 text-xs bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100">
                                     </div>
                                     <div>
-                                        <label class="block font-bold text-indigo-900 mb-0.5">Teléfono Secundario (Opcional)</label>
-                                        <input type="text" wire:model="brand_javnx_phone_2" class="w-full border-indigo-300 rounded-lg p-2 text-xs bg-white text-slate-800">
+                                        <label class="block font-bold text-indigo-900 dark:text-indigo-200 mb-0.5">Teléfono Secundario (Opcional)</label>
+                                        <input type="text" wire:model="brand_javnx_phone_2" class="w-full border-indigo-300 dark:border-indigo-800 rounded-lg p-2 text-xs bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100">
                                     </div>
                                 </div>
                                 <div>
-                                    <label class="block font-bold text-indigo-900 mb-0.5">Página Web / Redes</label>
-                                    <input type="text" wire:model="brand_javnx_website" class="w-full border-indigo-300 rounded-lg p-2 text-xs bg-white text-slate-800">
+                                    <label class="block font-bold text-indigo-900 dark:text-indigo-200 mb-0.5">Página Web / Redes</label>
+                                    <input type="text" wire:model="brand_javnx_website" class="w-full border-indigo-300 dark:border-indigo-800 rounded-lg p-2 text-xs bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100">
                                 </div>
                                 <div>
-                                    <label class="block font-bold text-indigo-900 mb-0.5">Email de Contacto</label>
-                                    <input type="email" wire:model="brand_javnx_email" class="w-full border-indigo-300 rounded-lg p-2 text-xs bg-white text-slate-800">
+                                    <label class="block font-bold text-indigo-900 dark:text-indigo-200 mb-0.5">Email de Contacto</label>
+                                    <input type="email" wire:model="brand_javnx_email" class="w-full border-indigo-300 dark:border-indigo-800 rounded-lg p-2 text-xs bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100">
                                 </div>
                             </div>
                         </div>
 
                         <!-- PERFIL 3: MAGO LEUGIM -->
-                        <div class="p-4 bg-purple-50/60 rounded-2xl border border-purple-200 space-y-3">
-                            <div class="flex items-center gap-2 border-b border-purple-200 pb-2">
+                        <div class="p-4 bg-purple-50/60 dark:bg-purple-950/30 rounded-2xl border border-purple-200 dark:border-purple-800/60 space-y-3">
+                            <div class="flex items-center gap-2 border-b border-purple-200 dark:border-purple-800/60 pb-2">
                                 <span class="text-xl">🎩</span>
                                 <div>
-                                    <strong class="text-xs font-black text-purple-950 block">Marca 3: Mago Leugim</strong>
-                                    <span class="text-[11px] text-purple-800">Ilusionismo, magia de cerca, espectáculos y bodas</span>
+                                    <strong class="text-xs font-black text-purple-950 dark:text-purple-200 block">Marca 3: Mago Leugim</strong>
+                                    <span class="text-[11px] text-purple-800 dark:text-purple-300">Ilusionismo, magia de cerca, espectáculos y bodas</span>
                                 </div>
                             </div>
 
                             <div class="space-y-2.5 text-xs">
                                 <div>
-                                    <label class="block font-bold text-purple-900 mb-0.5">Nombre Comercial</label>
-                                    <input type="text" wire:model="brand_leugim_name" class="w-full border-purple-300 rounded-lg p-2 text-xs bg-white text-slate-800 font-bold">
+                                    <label class="block font-bold text-purple-900 dark:text-purple-200 mb-0.5">Nombre Comercial</label>
+                                    <input type="text" wire:model="brand_leugim_name" class="w-full border-purple-300 dark:border-purple-800 rounded-lg p-2 text-xs bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 font-bold">
                                 </div>
                                 <div>
-                                    <label class="block font-bold text-purple-900 mb-0.5">Subtítulo / Especialidad</label>
-                                    <input type="text" wire:model="brand_leugim_subtitle" class="w-full border-purple-300 rounded-lg p-2 text-xs bg-white text-slate-800">
+                                    <label class="block font-bold text-purple-900 dark:text-purple-200 mb-0.5">Subtítulo / Especialidad</label>
+                                    <input type="text" wire:model="brand_leugim_subtitle" class="w-full border-purple-300 dark:border-purple-800 rounded-lg p-2 text-xs bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100">
                                 </div>
                                 <div class="grid grid-cols-2 gap-2">
                                     <div>
-                                        <label class="block font-bold text-purple-900 mb-0.5">Teléfono Principal (Miguel)</label>
-                                        <input type="text" wire:model="brand_leugim_phone" class="w-full border-purple-300 rounded-lg p-2 text-xs bg-white text-slate-800">
+                                        <label class="block font-bold text-purple-900 dark:text-purple-200 mb-0.5">Teléfono Principal (Miguel)</label>
+                                        <input type="text" wire:model="brand_leugim_phone" class="w-full border-purple-300 dark:border-purple-800 rounded-lg p-2 text-xs bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100">
                                     </div>
                                     <div>
-                                        <label class="block font-bold text-purple-900 mb-0.5">Teléfono Secundario</label>
-                                        <input type="text" wire:model="brand_leugim_phone_2" class="w-full border-purple-300 rounded-lg p-2 text-xs bg-white text-slate-800">
+                                        <label class="block font-bold text-purple-900 dark:text-purple-200 mb-0.5">Teléfono Secundario</label>
+                                        <input type="text" wire:model="brand_leugim_phone_2" class="w-full border-purple-300 dark:border-purple-800 rounded-lg p-2 text-xs bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100">
                                     </div>
                                 </div>
                                 <div>
-                                    <label class="block font-bold text-purple-900 mb-0.5">Página Web / Redes</label>
-                                    <input type="text" wire:model="brand_leugim_website" class="w-full border-purple-300 rounded-lg p-2 text-xs bg-white text-slate-800">
+                                    <label class="block font-bold text-purple-900 dark:text-purple-200 mb-0.5">Página Web / Redes</label>
+                                    <input type="text" wire:model="brand_leugim_website" class="w-full border-purple-300 dark:border-purple-800 rounded-lg p-2 text-xs bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100">
                                 </div>
                                 <div>
-                                    <label class="block font-bold text-purple-900 mb-0.5">Email de Contacto</label>
-                                    <input type="email" wire:model="brand_leugim_email" class="w-full border-purple-300 rounded-lg p-2 text-xs bg-white text-slate-800">
+                                    <label class="block font-bold text-purple-900 dark:text-purple-200 mb-0.5">Email de Contacto</label>
+                                    <input type="email" wire:model="brand_leugim_email" class="w-full border-purple-300 dark:border-purple-800 rounded-lg p-2 text-xs bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100">
                                 </div>
                             </div>
                         </div>
@@ -1961,30 +1971,30 @@ MAIL_FROM_NAME="{{ $company_name }}"</pre>
         @endif
 
         <!-- BARRA FLOTANTE DE GUARDAR GLOBAL -->
-        <div class="mt-6 sticky bottom-4 z-40 bg-white/95 backdrop-blur-md p-4 rounded-2xl border-2 border-indigo-200 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div class="flex items-center gap-3">
-                <div class="h-10 w-10 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center font-black text-lg border border-indigo-100 shrink-0">
+        <div class="mt-8 sticky bottom-4 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md p-4 sm:p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-4 transition">
+            <div class="flex items-center gap-3.5">
+                <div class="h-11 w-11 rounded-2xl bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-black text-xl border border-indigo-200 dark:border-indigo-800 shrink-0 shadow-2xs">
                     💾
                 </div>
                 <div>
-                    <span class="block text-xs font-bold text-gray-900">
+                    <span class="block text-sm font-extrabold text-gray-900 dark:text-white">
                         Guardado de Configuración General
                     </span>
-                    <span class="block text-[11px] text-gray-500">
-                        Aplica a todas las fichas de eventos, portal de clientes y propuestas PDF.
+                    <span class="block text-xs text-gray-500 dark:text-slate-400 mt-0.5">
+                        Aplica a todas las fichas de eventos, portal de clientes y propuestas PDF oficiales.
                     </span>
                 </div>
             </div>
 
             <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
                 @if (session()->has('message'))
-                    <div x-data="{ show: true }" x-init="setTimeout(() => show = false, 4000)" x-show="show" class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-800 border border-emerald-300 rounded-lg text-xs font-black shadow-xs">
+                    <div x-data="{ show: true }" x-init="setTimeout(() => show = false, 4000)" x-show="show" class="hidden sm:flex items-center gap-1.5 px-3.5 py-2 bg-emerald-50 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-700 rounded-xl text-xs font-bold shadow-xs">
                         <span>✅</span> <span>¡Guardado con éxito!</span>
                     </div>
                 @endif
 
-                <div wire:loading wire:target="save" class="flex items-center gap-2 text-xs font-bold text-indigo-700 bg-indigo-50 px-3 py-2 rounded-lg border border-indigo-200">
-                    <svg class="animate-spin h-4 w-4 text-indigo-600" fill="none" viewBox="0 0 24 24">
+                <div wire:loading wire:target="save" class="flex items-center gap-2 text-xs font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/70 px-3.5 py-2 rounded-xl border border-indigo-200 dark:border-indigo-800">
+                    <svg class="animate-spin h-4 w-4 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24">
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
                     </svg>
@@ -1996,7 +2006,7 @@ MAIL_FROM_NAME="{{ $company_name }}"</pre>
                     wire:click="save"
                     wire:loading.attr="disabled"
                     wire:target="save"
-                    class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-black py-2.5 px-7 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 text-sm"
+                    class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-extrabold py-3 px-8 rounded-2xl shadow-lg shadow-indigo-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 text-sm"
                 >
                     <span wire:loading.remove wire:target="save">💾 Guardar Configuración</span>
                     <span wire:loading wire:target="save">Procesando...</span>
