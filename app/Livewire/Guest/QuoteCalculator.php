@@ -226,6 +226,22 @@ class QuoteCalculator extends Component
                 'name' => '', 
                 'description' => ''
             ],
+            'smoke_machine' => [
+                'selected' => false, 
+                'quantity' => 1, 
+                'icon' => '💨',
+                'name' => 'Máquina de Humo', 
+                'description' => 'Efecto de humo para ambientar la pista de baile y realzar los haces de luces.',
+                'included' => false,
+            ],
+            'cold_sparks' => [
+                'selected' => false, 
+                'quantity' => 1, 
+                'icon' => '✨',
+                'name' => 'Fuego Frío / Chispas Frías', 
+                'description' => 'Efecto especial de chispas frías sin combustión para momentos cumbre (apertura de baile o corte de tarta).',
+                'included' => false,
+            ],
             'karaoke' => [
                 'selected' => false, 
                 'quantity' => 1, 
@@ -250,6 +266,7 @@ class QuoteCalculator extends Component
         ];
 
         $this->updateServiceLabels();
+        $this->syncPackEffects();
     }
 
     /**
@@ -262,6 +279,8 @@ class QuoteCalculator extends Component
             'cocktail' => (float) Setting::get('price_cocktail', 150),
             'restaurant' => (float) Setting::get('price_restaurant', 150),
             'dj' => (float) Setting::get('price_dj', 150),
+            'smoke_machine' => (float) Setting::get('price_effects_smoke', 60),
+            'cold_sparks' => (float) Setting::get('price_effects_sparks', 150),
             'karaoke' => (float) Setting::get('price_karaoke', 80),
             'extra_hours' => (float) Setting::get('price_extra_hours', 120),
             'photobooth' => (float) Setting::get('price_photobooth', 350),
@@ -294,6 +313,77 @@ class QuoteCalculator extends Component
         return Setting::getDjPackForHours($hours);
     }
 
+    public function setDjHours(int $hours)
+    {
+        $this->services['dj']['quantity'] = max(2, min(9, $hours));
+        if (isset($this->services['smoke_machine'])) {
+            unset($this->services['smoke_machine']['manually_toggled']);
+        }
+        if (isset($this->services['cold_sparks'])) {
+            unset($this->services['cold_sparks']['manually_toggled']);
+        }
+        $this->syncPackEffects();
+    }
+
+    public function toggleService(string $key)
+    {
+        if (!isset($this->services[$key])) {
+            return;
+        }
+
+        $this->services[$key]['selected'] = !$this->services[$key]['selected'];
+
+        if ($key === 'smoke_machine' || $key === 'cold_sparks') {
+            $this->services[$key]['manually_toggled'] = true;
+        }
+
+        if ($key === 'dj') {
+            $this->syncPackEffects();
+        }
+    }
+
+    public function updatedServices($value, $key)
+    {
+        if (str_starts_with($key, 'dj.')) {
+            $this->syncPackEffects();
+        }
+    }
+
+    public function syncPackEffects()
+    {
+        if (empty($this->services['dj']['selected'])) {
+            if (isset($this->services['smoke_machine'])) {
+                $this->services['smoke_machine']['included'] = false;
+            }
+            if (isset($this->services['cold_sparks'])) {
+                $this->services['cold_sparks']['included'] = false;
+            }
+            return;
+        }
+
+        $pack = $this->dj_pack_info;
+        $includesSmoke = !empty($pack['includes_smoke']);
+        $includesSparks = !empty($pack['includes_sparks']);
+
+        if (isset($this->services['smoke_machine'])) {
+            $this->services['smoke_machine']['included'] = $includesSmoke;
+            if ($includesSmoke) {
+                $this->services['smoke_machine']['selected'] = true;
+            } elseif (empty($this->services['smoke_machine']['manually_toggled'])) {
+                $this->services['smoke_machine']['selected'] = false;
+            }
+        }
+
+        if (isset($this->services['cold_sparks'])) {
+            $this->services['cold_sparks']['included'] = $includesSparks;
+            if ($includesSparks) {
+                $this->services['cold_sparks']['selected'] = true;
+            } elseif (empty($this->services['cold_sparks']['manually_toggled'])) {
+                $this->services['cold_sparks']['selected'] = false;
+            }
+        }
+    }
+
     public function submitRequest()
     {
         $this->validate([
@@ -314,6 +404,9 @@ class QuoteCalculator extends Component
             if ($service['selected']) {
                 if ($key === 'dj' && $djPack) {
                     $totalEstimated += (float)$djPack['total_price'];
+                } elseif (($key === 'smoke_machine' || $key === 'cold_sparks') && !empty($service['included'])) {
+                    // Included in DJ pack, 0€ additional
+                    continue;
                 } else {
                     $qty = (int)($service['quantity'] ?: 1);
                     $price = $catalog[$key] ?? 0;
@@ -345,6 +438,8 @@ class QuoteCalculator extends Component
             if ($service['selected']) {
                 if ($key === 'dj' && $djPack) {
                     $requestedServicesList[] = "• " . $service['name'] . " (" . $djPack['requested_hours'] . "h) ➔ " . $djPack['badge'];
+                } elseif (($key === 'smoke_machine' || $key === 'cold_sparks') && !empty($service['included'])) {
+                    $requestedServicesList[] = "• " . $service['name'] . " (✅ Incluido en " . ($djPack['base_name'] ?? 'Pack') . ")";
                 } else {
                     $qty = (int)($service['quantity'] ?: 1);
                     $qtyText = $qty > 1 ? " ({$qty} uds)" : "";
@@ -413,6 +508,26 @@ class QuoteCalculator extends Component
                             'total' => $djPack['extra_hours'] * $djPack['extra_hour_price'],
                         ]);
                     }
+                } elseif ($key === 'smoke_machine') {
+                    $isIncluded = !empty($service['included']);
+                    $p = $isIncluded ? 0 : ($catalog['smoke_machine'] ?? 60);
+                    $quote->items()->create([
+                        'service_name' => $isIncluded ? 'Máquina de Humo (Incluido en ' . ($djPack['base_name'] ?? 'Pack') . ')' : 'Máquina de Humo (Efecto pista)',
+                        'description' => $isIncluded ? 'Efecto de máquina de humo para ambientar la pista de baile (incluido en el pack contratado).' : $service['description'],
+                        'quantity' => 1,
+                        'price' => $p,
+                        'total' => $p,
+                    ]);
+                } elseif ($key === 'cold_sparks') {
+                    $isIncluded = !empty($service['included']);
+                    $p = $isIncluded ? 0 : ($catalog['cold_sparks'] ?? 150);
+                    $quote->items()->create([
+                        'service_name' => $isIncluded ? 'Fuego Frío / Chispas Frías (Incluido en ' . ($djPack['base_name'] ?? 'Pack') . ')' : 'Fuego Frío / Chispas Frías (Cold Sparks)',
+                        'description' => $isIncluded ? 'Efecto especial de chispas frías para apertura de baile y momentos clave (incluido en el pack contratado).' : $service['description'],
+                        'quantity' => 1,
+                        'price' => $p,
+                        'total' => $p,
+                    ]);
                 } else {
                     $qty = (int)($service['quantity'] ?: 1);
                     $price = $catalog[$key] ?? 0;

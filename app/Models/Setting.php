@@ -495,6 +495,9 @@ class Setting extends Model
                 'description' => $premiumDesc . ($extra > 0 ? " Incluye {$extra} hora(s) adicional(es) de fiesta." : ''),
                 'badge' => '👑 ' . $premiumName . ($extra > 0 ? " +{$extra}h Extra" : ''),
                 'tag' => $premiumName . ' (' . $hours . 'h)',
+                'includes_smoke' => true,
+                'includes_sparks' => true,
+                'effects_badge' => 'Máquina de Humo + Chispas Frías (Fuego frío)',
             ];
         }
 
@@ -514,6 +517,9 @@ class Setting extends Model
                 'description' => $mediumDesc . ($extra > 0 ? " Incluye {$extra} hora(s) adicional(es) de fiesta." : ''),
                 'badge' => '🌟 ' . $mediumName . ($extra > 0 ? " +{$extra}h Extra" : ''),
                 'tag' => $mediumName . ' (' . $hours . 'h)',
+                'includes_smoke' => true,
+                'includes_sparks' => false,
+                'effects_badge' => 'Máquina de Humo para pista',
             ];
         }
 
@@ -533,6 +539,9 @@ class Setting extends Model
             'description' => $basicDesc . ($extra > 0 ? " Incluye {$extra} hora(s) adicional(es) de fiesta." : ''),
             'badge' => '✨ ' . $basicName . ($hours < $basicHours ? ' (Base técnica completa)' : ''),
             'tag' => $basicName . ' (' . $hours . 'h)',
+            'includes_smoke' => false,
+            'includes_sparks' => false,
+            'effects_badge' => '',
         ];
     }
 }

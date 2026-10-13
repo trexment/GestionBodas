@@ -2080,7 +2080,7 @@
                         <button type="button" wire:click="selectPack('medium')" class="p-3 rounded-xl border text-left transition relative flex flex-col justify-between {{ $selected_pack_type === 'medium' ? 'bg-white text-indigo-900 border-white shadow-lg ring-2 ring-emerald-400' : 'bg-white/10 hover:bg-white/20 border-white/20 text-white' }}">
                             <span class="absolute -top-2 right-2 bg-emerald-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full uppercase">Top</span>
                             <div>
-                                <span class="text-[10px] uppercase font-bold tracking-wider opacity-80">5h + Subgraves</span>
+                                <span class="text-[10px] uppercase font-bold tracking-wider opacity-80">5h + Subgraves + Humo</span>
                                 <h6 class="font-extrabold text-xs mt-0.5">{{ $quote_services['pack_medium']['name'] ?? 'Pack Signature' }} ⭐</h6>
                             </div>
                             <span class="font-black text-sm mt-2">{{ number_format($quote_services['pack_medium']['price'], 0) }} €</span>
@@ -2088,7 +2088,7 @@
 
                         <button type="button" wire:click="selectPack('premium')" class="p-3 rounded-xl border text-left transition flex flex-col justify-between {{ $selected_pack_type === 'premium' ? 'bg-white text-indigo-900 border-white shadow-lg ring-2 ring-amber-400' : 'bg-white/10 hover:bg-white/20 border-white/20 text-white' }}">
                             <div>
-                                <span class="text-[10px] uppercase font-bold tracking-wider opacity-80">Hasta 6h + Show</span>
+                                <span class="text-[10px] uppercase font-bold tracking-wider opacity-80">Hasta 6h + Humo & Fuego Frío</span>
                                 <h6 class="font-extrabold text-xs mt-0.5">{{ $quote_services['pack_premium']['name'] ?? 'Pack Deluxe Show' }}</h6>
                             </div>
                             <span class="font-black text-sm mt-2">{{ number_format($quote_services['pack_premium']['price'], 0) }} €</span>
@@ -2326,6 +2326,70 @@
                                             <span class="text-xs text-gray-400">x</span>
                                             <input type="number" step="0.01" wire:model.live="quote_services.photobooth.price" class="w-16 border rounded p-1 text-xs text-right font-bold text-indigo-700">
                                             <span class="text-xs text-gray-600">€</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- SECCIÓN: EFECTOS ESPECIALES & SHOW -->
+                            <div class="bg-white p-4 rounded-xl border border-gray-200 space-y-3 shadow-xs">
+                                <div class="flex items-center justify-between border-b pb-2">
+                                    <h6 class="text-xs font-black uppercase text-indigo-900 tracking-wider flex items-center gap-1.5">
+                                        <span>✨</span> Efectos Especiales & Ambientación
+                                    </h6>
+                                    @if(!empty($quote_services['smoke_machine']['included']) || !empty($quote_services['cold_sparks']['included']))
+                                        <span class="text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 px-2 py-0.5 rounded-full">
+                                            🎁 Efectos incluidos en Pack DJ
+                                        </span>
+                                    @endif
+                                </div>
+
+                                <div class="space-y-2">
+                                    <!-- Máquina de Humo -->
+                                    <div class="flex items-center justify-between p-2.5 rounded-lg border {{ !empty($quote_services['smoke_machine']['included']) ? 'bg-emerald-50/50 border-emerald-300' : ($quote_services['smoke_machine']['selected'] ? 'bg-indigo-50/50 border-indigo-300' : 'border-gray-100 hover:bg-gray-50') }} gap-2">
+                                        <label class="flex items-center cursor-pointer flex-1 gap-2">
+                                            <input type="checkbox" wire:model.live="quote_services.smoke_machine.selected" class="rounded text-indigo-600 focus:ring-indigo-500 h-4 w-4">
+                                            <div>
+                                                <div class="flex items-center gap-2">
+                                                    <span class="text-xs font-bold text-gray-800">💨 Máquina de Humo</span>
+                                                    @if(!empty($quote_services['smoke_machine']['included']))
+                                                        <span class="text-[9px] font-bold bg-emerald-600 text-white px-1.5 py-0.2 rounded uppercase">✅ Incluido en Pack (0 €)</span>
+                                                    @endif
+                                                </div>
+                                                <span class="block text-[10px] text-gray-500">{{ $quote_services['smoke_machine']['desc'] }}</span>
+                                            </div>
+                                        </label>
+                                        <div class="flex items-center gap-1">
+                                            @if(!empty($quote_services['smoke_machine']['included']))
+                                                <span class="text-xs font-black text-emerald-700 bg-emerald-100 px-2 py-1 rounded">0,00 €</span>
+                                            @else
+                                                <input type="number" step="0.01" wire:model.live="quote_services.smoke_machine.price" class="w-16 border rounded p-1 text-xs text-right font-bold">
+                                                <span class="text-xs text-gray-600">€</span>
+                                            @endif
+                                        </div>
+                                    </div>
+
+                                    <!-- Fuego Frío / Chispas Frías -->
+                                    <div class="flex items-center justify-between p-2.5 rounded-lg border {{ !empty($quote_services['cold_sparks']['included']) ? 'bg-amber-50/50 border-amber-300' : ($quote_services['cold_sparks']['selected'] ? 'bg-indigo-50/50 border-indigo-300' : 'border-gray-100 hover:bg-gray-50') }} gap-2">
+                                        <label class="flex items-center cursor-pointer flex-1 gap-2">
+                                            <input type="checkbox" wire:model.live="quote_services.cold_sparks.selected" class="rounded text-indigo-600 focus:ring-indigo-500 h-4 w-4">
+                                            <div>
+                                                <div class="flex items-center gap-2">
+                                                    <span class="text-xs font-bold text-gray-800">✨ Fuego Frío / Chispas Frías (Cold Sparks)</span>
+                                                    @if(!empty($quote_services['cold_sparks']['included']))
+                                                        <span class="text-[9px] font-bold bg-amber-600 text-white px-1.5 py-0.2 rounded uppercase">✅ Incluido en Pack (0 €)</span>
+                                                    @endif
+                                                </div>
+                                                <span class="block text-[10px] text-gray-500">{{ $quote_services['cold_sparks']['desc'] }}</span>
+                                            </div>
+                                        </label>
+                                        <div class="flex items-center gap-1">
+                                            @if(!empty($quote_services['cold_sparks']['included']))
+                                                <span class="text-xs font-black text-amber-700 bg-amber-100 px-2 py-1 rounded">0,00 €</span>
+                                            @else
+                                                <input type="number" step="0.01" wire:model.live="quote_services.cold_sparks.price" class="w-16 border rounded p-1 text-xs text-right font-bold">
+                                                <span class="text-xs text-gray-600">€</span>
+                                            @endif
                                         </div>
                                     </div>
                                 </div>

@@ -61,6 +61,9 @@
                                 @if($key === 'dj')
                                     <span class="text-xs bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-full">{{ $this->dj_pack_info['badge'] }}</span>
                                 @endif
+                                @if(($key === 'smoke_machine' || $key === 'cold_sparks') && !empty($serv['included']))
+                                    <span class="text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full">✅ Incluido en {{ $this->dj_pack_info['base_name'] ?? 'Pack' }}</span>
+                                @endif
                                 @if(($key === 'cocktail' || $key === 'restaurant') && $this->has_cocktail_restaurant_pack && $this->cocktail_restaurant_pack_info['enabled'])
                                     <span class="text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full">🎁 En Pack Cóctel+Banquete</span>
                                 @endif
@@ -118,7 +121,7 @@
                     <div class="space-y-3">
                         @foreach($services as $key => $service)
                             <div wire:key="service-{{ $key }}"
-                                 wire:click="$toggle('services.{{ $key }}.selected')"
+                                 wire:click="toggleService('{{ $key }}')"
                                  class="relative p-5 rounded-2xl border transition-all cursor-pointer select-none {{ $service['selected'] ? 'bg-indigo-950/60 border-indigo-500/60 shadow-lg shadow-indigo-950/50 ring-1 ring-indigo-500/50' : 'bg-slate-800/40 border-slate-700/60 hover:border-slate-600 hover:bg-slate-800/70' }}">
                                 
                                 <div class="flex items-start gap-4">
@@ -134,7 +137,11 @@
                                                 {{ $service['name'] }}
                                             </h3>
                                             @if($service['selected'])
-                                                @if(($key === 'cocktail' || $key === 'restaurant') && $this->has_cocktail_restaurant_pack && $this->cocktail_restaurant_pack_info['enabled'])
+                                                @if(($key === 'smoke_machine' || $key === 'cold_sparks') && !empty($service['included']))
+                                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/30 text-emerald-300 border border-emerald-500/40">
+                                                        ✅ INCLUIDO EN {{ strtoupper($this->dj_pack_info['base_name'] ?? 'PACK') }} (0 €)
+                                                    </span>
+                                                @elseif(($key === 'cocktail' || $key === 'restaurant') && $this->has_cocktail_restaurant_pack && $this->cocktail_restaurant_pack_info['enabled'])
                                                     <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/30 text-emerald-300 border border-emerald-500/40">
                                                         🎁 EN PACK CON DESCUENTO
                                                     </span>
@@ -142,6 +149,12 @@
                                                     <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/30 text-indigo-300 border border-indigo-500/40">
                                                         INCLUIDO
                                                     </span>
+                                                @endif
+                                            @else
+                                                @if($key === 'smoke_machine')
+                                                    <span class="text-[10px] text-emerald-400/90 font-medium">✨ Incluido gratis desde 5h DJ</span>
+                                                @elseif($key === 'cold_sparks')
+                                                    <span class="text-[10px] text-amber-400/90 font-medium">👑 Incluido gratis en Pack Deluxe Show</span>
                                                 @endif
                                             @endif
                                         </div>
@@ -165,11 +178,11 @@
                                                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
                                                     <span class="text-xs font-semibold text-slate-300">Duración estimada del baile / fiesta:</span>
                                                     <div class="inline-flex items-center bg-slate-900/90 rounded-xl p-1 border border-indigo-500/40 shadow-inner">
-                                                        <button type="button" wire:click="$set('services.dj.quantity', {{ max(2, $service['quantity'] - 1) }})" class="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-800 hover:bg-indigo-600 text-white font-bold text-base transition">
+                                                        <button type="button" wire:click="setDjHours({{ max(2, $service['quantity'] - 1) }})" class="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-800 hover:bg-indigo-600 text-white font-bold text-base transition">
                                                             -
                                                         </button>
                                                         <span class="px-4 text-xs font-extrabold text-indigo-200 tracking-wide">{{ $service['quantity'] }} Horas</span>
-                                                        <button type="button" wire:click="$set('services.dj.quantity', {{ min(9, $service['quantity'] + 1) }})" class="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-800 hover:bg-indigo-600 text-white font-bold text-base transition">
+                                                        <button type="button" wire:click="setDjHours({{ min(9, $service['quantity'] + 1) }})" class="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-800 hover:bg-indigo-600 text-white font-bold text-base transition">
                                                             +
                                                         </button>
                                                     </div>
@@ -188,6 +201,12 @@
                                                         <p class="text-[11px] text-slate-300 mt-0.5 leading-snug">
                                                             {{ $this->dj_pack_info['description'] }}
                                                         </p>
+                                                        @if(!empty($this->dj_pack_info['effects_badge']))
+                                                            <div class="mt-2 pt-2 border-t border-indigo-500/20 flex items-center gap-1.5 text-[11px] text-emerald-300 font-semibold">
+                                                                <span>✨</span>
+                                                                <span>Efectos incluidos automáticamente: <strong>{{ $this->dj_pack_info['effects_badge'] }}</strong></span>
+                                                            </div>
+                                                        @endif
                                                     </div>
                                                 </div>
                                             </div>

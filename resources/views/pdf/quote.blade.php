@@ -1044,6 +1044,8 @@
                                 <td style="text-align: right; font-weight: 800; font-size: 8.5pt;" class="{{ $isDiscount ? 'quote-item-discount' : '' }}">
                                     @if($isDiscount)
                                         -{{ number_format(abs($itemTotalPrice), 2, ',', '.') }} €
+                                    @elseif($itemTotalPrice == 0 && (str_contains(mb_strtolower($itemTitle), 'incluido') || str_contains(mb_strtolower($itemDesc ?? ''), 'incluido')))
+                                        <span style="font-size: 7.5pt; color: #059669; font-weight: 800;">INCLUIDO (0,00 €)</span>
                                     @elseif($itemTotalPrice == 0 && (str_contains(mb_strtolower($itemTitle), 'consultar') || str_contains(mb_strtolower($itemTitle), 'extra')))
                                         <span style="font-size: 7pt; color: #d97706; font-weight: 700;">A consultar</span>
                                     @else

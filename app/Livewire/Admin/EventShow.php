@@ -133,6 +133,8 @@ class EventShow extends Component
         'photo_full_pack' => ['selected' => false, 'quantity' => 1, 'price' => 800, 'desc' => 'Fotografía Completa: Ceremonia, Restaurante, Fiesta, Álbum digital maquetado, fotos en alta calidad sin marcas de agua.'],
         'karaoke' => ['selected' => false, 'quantity' => 1, 'price' => 80, 'desc' => 'Karaoke interactivo para invitados.'],
         'photobooth' => ['selected' => false, 'quantity' => 1, 'price' => 350, 'desc' => 'Fotomatón con impresión instantánea, atrezzo y libro de firmas.'],
+        'smoke_machine' => ['selected' => false, 'quantity' => 1, 'price' => 60, 'included' => false, 'desc' => 'Efecto de máquina de humo para ambientar la pista y realzar la iluminación.'],
+        'cold_sparks' => ['selected' => false, 'quantity' => 1, 'price' => 150, 'included' => false, 'desc' => 'Efecto especial de fuego frío / chispas frías para momentos clave (apertura de baile / corte de tarta).'],
     ];
 
     public $custom_extras = [
@@ -316,6 +318,8 @@ class EventShow extends Component
         $this->quote_services['dj_custom']['price'] = (float)\App\Models\Setting::get('price_dj', 150);
         $this->quote_services['karaoke']['price'] = (float)\App\Models\Setting::get('price_karaoke', 80);
         $this->quote_services['photobooth']['price'] = (float)\App\Models\Setting::get('price_photobooth', 350);
+        $this->quote_services['smoke_machine']['price'] = (float)\App\Models\Setting::get('price_effects_smoke', 60);
+        $this->quote_services['cold_sparks']['price'] = (float)\App\Models\Setting::get('price_effects_sparks', 150);
         $this->quote_services['extra_hours']['price'] = (float)\App\Models\Setting::get('price_extra_hours', 120);
 
         // Fotografía
@@ -1516,6 +1520,61 @@ class EventShow extends Component
         session()->flash('notes_message', 'Conversación / Acuerdos de WhatsApp añadidos a las notas del evento.');
     }
 
+    public function updatedQuoteServices($value, $key)
+    {
+        if (str_starts_with($key, 'pack_')) {
+            $parts = explode('.', $key);
+            $packName = $parts[0] ?? '';
+            if ($value) {
+                if ($packName === 'pack_basic') {
+                    $this->quote_services['pack_medium']['selected'] = false;
+                    $this->quote_services['pack_premium']['selected'] = false;
+                    $this->selected_pack_type = 'basic';
+                } elseif ($packName === 'pack_medium') {
+                    $this->quote_services['pack_basic']['selected'] = false;
+                    $this->quote_services['pack_premium']['selected'] = false;
+                    $this->selected_pack_type = 'medium';
+                } elseif ($packName === 'pack_premium') {
+                    $this->quote_services['pack_basic']['selected'] = false;
+                    $this->quote_services['pack_medium']['selected'] = false;
+                    $this->selected_pack_type = 'premium';
+                }
+            } else {
+                $this->selected_pack_type = 'custom';
+            }
+            $this->syncPackEffectsAdmin();
+        }
+    }
+
+    public function syncPackEffectsAdmin()
+    {
+        $hasPremium = !empty($this->quote_services['pack_premium']['selected']);
+        $hasMedium = !empty($this->quote_services['pack_medium']['selected']);
+
+        if ($hasPremium) {
+            $this->quote_services['smoke_machine']['included'] = true;
+            $this->quote_services['smoke_machine']['selected'] = true;
+            $this->quote_services['cold_sparks']['included'] = true;
+            $this->quote_services['cold_sparks']['selected'] = true;
+        } elseif ($hasMedium) {
+            $this->quote_services['smoke_machine']['included'] = true;
+            $this->quote_services['smoke_machine']['selected'] = true;
+            if (!empty($this->quote_services['cold_sparks']['included'])) {
+                $this->quote_services['cold_sparks']['selected'] = false;
+            }
+            $this->quote_services['cold_sparks']['included'] = false;
+        } else {
+            if (!empty($this->quote_services['smoke_machine']['included'])) {
+                $this->quote_services['smoke_machine']['selected'] = false;
+            }
+            if (!empty($this->quote_services['cold_sparks']['included'])) {
+                $this->quote_services['cold_sparks']['selected'] = false;
+            }
+            $this->quote_services['smoke_machine']['included'] = false;
+            $this->quote_services['cold_sparks']['included'] = false;
+        }
+    }
+
     public function selectPack($packKey)
     {
         $this->selected_pack_type = $packKey;
@@ -1528,27 +1587,34 @@ class EventShow extends Component
 
         if ($packKey === 'basic') {
             $this->quote_services['pack_basic']['selected'] = true;
+            $this->syncPackEffectsAdmin();
         } elseif ($packKey === 'medium') {
             $this->quote_services['pack_medium']['selected'] = true;
+            $this->syncPackEffectsAdmin();
         } elseif ($packKey === 'premium') {
             $this->quote_services['pack_premium']['selected'] = true;
+            $this->syncPackEffectsAdmin();
         } elseif ($packKey === 'wedding_dj') {
             // Pack Boda Típico DJ: Cóctel + Banquete/Regalos + Pack Básico (4h DJ, Sonido + Iluminación)
             $this->quote_services['cocktail']['selected'] = true;
             $this->quote_services['restaurant']['selected'] = true;
             $this->quote_services['pack_basic']['selected'] = true;
+            $this->syncPackEffectsAdmin();
         } elseif ($packKey === 'wedding_full') {
             // Pack Boda Completo: Cóctel + Banquete + Pack Medio (5h DJ, Sonido Alta Gama + Luces + Humo) + Pack Completo Fotos
             $this->quote_services['cocktail']['selected'] = true;
             $this->quote_services['restaurant']['selected'] = true;
             $this->quote_services['pack_medium']['selected'] = true;
             $this->quote_services['photo_full_pack']['selected'] = true;
+            $this->syncPackEffectsAdmin();
         } elseif ($packKey === 'clear') {
             foreach ($this->quote_services as $k => $v) {
                 if (isset($this->quote_services[$k]['selected'])) {
                     $this->quote_services[$k]['selected'] = false;
                 }
             }
+            $this->quote_services['smoke_machine']['included'] = false;
+            $this->quote_services['cold_sparks']['included'] = false;
             $this->quote_services['extra_hours']['quantity'] = 0;
             $this->custom_extras = [
                 ['name' => '', 'price' => 0, 'desc' => '', 'consult' => false]
@@ -1641,6 +1707,15 @@ class EventShow extends Component
         if (!empty($this->quote_services['photobooth']['selected'])) {
             $total += (float)$this->quote_services['photobooth']['price'] * (int)($this->quote_services['photobooth']['quantity'] ?: 1);
         }
+
+        // Efectos Especiales (0€ si están incluidos en el Pack contratado)
+        if (!empty($this->quote_services['smoke_machine']['selected']) && empty($this->quote_services['smoke_machine']['included'])) {
+            $total += (float)$this->quote_services['smoke_machine']['price'] * (int)($this->quote_services['smoke_machine']['quantity'] ?: 1);
+        }
+        if (!empty($this->quote_services['cold_sparks']['selected']) && empty($this->quote_services['cold_sparks']['included'])) {
+            $total += (float)$this->quote_services['cold_sparks']['price'] * (int)($this->quote_services['cold_sparks']['quantity'] ?: 1);
+        }
+
         if (!empty($this->custom_extras)) {
             foreach ($this->custom_extras as $extra) {
                 if (!empty(trim($extra['name'] ?? '')) && empty($extra['consult'])) {
@@ -1835,6 +1910,39 @@ class EventShow extends Component
             $items[] = ['service_name' => 'Fotomatón & Photocall', 'description' => $this->quote_services['photobooth']['desc'], 'price' => $p, 'quantity' => $qty];
             $total += ($p * $qty);
         }
+
+        // 5. Efectos Especiales (Máquina de Humo & Fuego Frío)
+        if (!empty($this->quote_services['smoke_machine']['selected'])) {
+            $isIncluded = !empty($this->quote_services['smoke_machine']['included']);
+            $packName = !empty($this->quote_services['pack_premium']['selected']) 
+                ? ($this->quote_services['pack_premium']['name'] ?? 'Pack') 
+                : ($this->quote_services['pack_medium']['name'] ?? 'Pack');
+            $p = $isIncluded ? 0 : (float)($this->quote_services['smoke_machine']['price'] ?: 0);
+            $qty = (int)($this->quote_services['smoke_machine']['quantity'] ?: 1);
+
+            $items[] = [
+                'service_name' => $isIncluded ? 'Máquina de Humo (Incluido en ' . $packName . ')' : 'Máquina de Humo (Efecto pista)',
+                'description' => $isIncluded ? 'Efecto de máquina de humo para ambientar la pista de baile (incluido en el pack contratado).' : ($this->quote_services['smoke_machine']['desc'] ?? 'Efecto de humo para pista de baile.'),
+                'price' => $p,
+                'quantity' => $qty,
+            ];
+            $total += ($p * $qty);
+        }
+
+        if (!empty($this->quote_services['cold_sparks']['selected'])) {
+            $isIncluded = !empty($this->quote_services['cold_sparks']['included']);
+            $packName = $this->quote_services['pack_premium']['name'] ?? 'Pack';
+            $p = $isIncluded ? 0 : (float)($this->quote_services['cold_sparks']['price'] ?: 0);
+            $qty = (int)($this->quote_services['cold_sparks']['quantity'] ?: 1);
+
+            $items[] = [
+                'service_name' => $isIncluded ? 'Fuego Frío / Chispas Frías (Incluido en ' . $packName . ')' : 'Fuego Frío / Chispas Frías (Cold Sparks)',
+                'description' => $isIncluded ? 'Efecto especial de chispas frías para momentos clave (incluido en el pack contratado).' : ($this->quote_services['cold_sparks']['desc'] ?? 'Efecto especial de fuego frío / chispas frías.'),
+                'price' => $p,
+                'quantity' => $qty,
+            ];
+            $total += ($p * $qty);
+        }
         
         if (!empty($this->custom_extras)) {
             foreach ($this->custom_extras as $extra) {
@@ -2025,6 +2133,16 @@ class EventShow extends Component
                 $this->quote_services['photobooth']['selected'] = true;
                 $this->quote_services['photobooth']['quantity'] = (int)($item->quantity ?: 1);
                 $this->quote_services['photobooth']['price'] = (float)$item->price;
+            } elseif (str_contains($name, 'máquina de humo') || str_contains($name, 'maquina de humo') || str_contains($name, 'humo')) {
+                $this->quote_services['smoke_machine']['selected'] = true;
+                $this->quote_services['smoke_machine']['quantity'] = (int)($item->quantity ?: 1);
+                $this->quote_services['smoke_machine']['price'] = (float)$item->price;
+                $this->quote_services['smoke_machine']['included'] = ((float)$item->price == 0 || str_contains($name, 'incluido'));
+            } elseif (str_contains($name, 'fuego frío') || str_contains($name, 'fuego frio') || str_contains($name, 'chispas frías') || str_contains($name, 'chispas frias') || str_contains($name, 'cold sparks')) {
+                $this->quote_services['cold_sparks']['selected'] = true;
+                $this->quote_services['cold_sparks']['quantity'] = (int)($item->quantity ?: 1);
+                $this->quote_services['cold_sparks']['price'] = (float)$item->price;
+                $this->quote_services['cold_sparks']['included'] = ((float)$item->price == 0 || str_contains($name, 'incluido'));
             } elseif (str_contains($name, 'descuento especial pack') || str_contains($name, 'descuento pack')) {
                 // Descuento automático de pack cóctel+banquete, no agregarlo como extra personalizado
                 continue;
