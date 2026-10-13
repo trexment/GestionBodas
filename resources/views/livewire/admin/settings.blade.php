@@ -1148,30 +1148,30 @@
                 </div>
 
                 <!-- VALIDEZ Y CADUCIDAD DE LAS PROPUESTAS COMERCIALES -->
-                <div class="mt-6 pt-6 border-t border-gray-200">
+                <div class="mt-6 pt-6 border-t border-gray-200 dark:border-slate-800">
                     <div class="flex items-center gap-2 mb-3">
                         <span class="text-lg">⏳</span>
                         <div>
-                            <h4 class="font-bold text-gray-800 text-xs uppercase tracking-wider">Caducidad y Validez de las Propuestas (PDF & WhatsApp)</h4>
-                            <p class="text-[11px] text-gray-500">Configura el plazo de días naturales tras el cual la propuesta comercial caduca para poder revisar o actualizar tarifas si no responden.</p>
+                            <h4 class="font-bold text-gray-800 dark:text-white text-xs uppercase tracking-wider">Caducidad y Validez de las Propuestas (PDF & WhatsApp)</h4>
+                            <p class="text-[11px] text-gray-500 dark:text-slate-400">Configura el plazo de días naturales tras el cual la propuesta comercial caduca para poder revisar o actualizar tarifas si no responden.</p>
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-center bg-amber-50/50 p-4 rounded-xl border border-amber-200/80">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-center bg-amber-50/50 dark:bg-amber-950/20 p-4 rounded-xl border border-amber-200/80 dark:border-amber-800/40">
                         <div>
-                            <label class="block text-xs font-bold text-gray-700 mb-1">Días de validez garantizada de la oferta</label>
+                            <label class="block text-xs font-bold text-gray-700 dark:text-slate-300 mb-1">Días de validez garantizada de la oferta</label>
                             <div class="flex items-center gap-2">
-                                <input type="number" min="1" max="365" wire:model="quote_validity_days" class="w-24 border-gray-300 rounded-lg text-xs font-bold text-center">
-                                <span class="text-xs font-semibold text-gray-600">días naturales desde la fecha de emisión</span>
+                                <input type="number" min="1" max="365" wire:model="quote_validity_days" class="w-24 border-gray-300 dark:border-slate-700 dark:bg-slate-900 dark:text-white rounded-lg text-xs font-bold text-center focus:ring-amber-500 focus:border-amber-500">
+                                <span class="text-xs font-semibold text-gray-600 dark:text-slate-300">días naturales desde la fecha de emisión</span>
                             </div>
-                            <p class="text-[11px] text-gray-400 mt-1">Por defecto: 15 días (o 30 días si prefieres mayor margen).</p>
+                            <p class="text-[11px] text-gray-400 dark:text-slate-400 mt-1">Por defecto: 15 días (o 30 días si prefieres mayor margen).</p>
                         </div>
 
-                        <div class="p-3 bg-white rounded-xl border border-amber-200 text-xs text-amber-900 space-y-1 shadow-2xs">
+                        <div class="p-3 bg-white dark:bg-slate-900 rounded-xl border border-amber-200 dark:border-amber-800/50 text-xs text-amber-900 dark:text-amber-300 space-y-1 shadow-2xs">
                             <div class="font-bold flex items-center gap-1 text-[11px]">
                                 <span>💡</span> ¿Cómo se refleja en el PDF y en WhatsApp?
                             </div>
-                            <p class="text-[11px] text-gray-600 leading-relaxed">
+                            <p class="text-[11px] text-gray-600 dark:text-slate-300 leading-relaxed">
                                 El PDF calculará la fecha límite exacta (ej: <em>"Válido hasta el 28 de octubre de 2026"</em>) tanto en la portada como en el desglose de tarifas. Pasada esa fecha, el presupuesto figurará como caducado y podrás actualizar las tarifas con total justificación.
                             </p>
                         </div>

@@ -144,6 +144,9 @@ El dossier descargable en PDF presenta una imagen de marca impecable e incluye *
 
 > **Protección Tarifaria:** Si un cliente tarda meses en responder y la oferta ha caducado, la empresa tiene el respaldo contractual para actualizar los precios a la temporada vigente.
 
+> **⚙️ ¿Dónde se configura el plazo de validez?**
+> Puedes personalizar los días de validez en el menú **Ajustes** &rarr; pestaña **"Dossier y Propuestas"** &rarr; sección **"⏳ Caducidad y Validez de las Propuestas (PDF & WhatsApp)"** en el campo *"Días de validez garantizada de la oferta"* (por defecto 15 días naturales). Al guardarlo, tanto el dossier PDF como las propuestas por WhatsApp y correo electrónico calcularán automáticamente la fecha de expiración con este nuevo plazo.
+
 ---
 
 ## 9. Contratos y Firma Digital Online con Auditoría
