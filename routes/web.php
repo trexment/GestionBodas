@@ -57,6 +57,34 @@ Route::get('/calendar/feed/{token}.ics', [CalendarFeedController::class, 'feed']
 // Public Quote Calculator
 Route::get('/presupuesto', \App\Livewire\Guest\QuoteCalculator::class)->name('guest.quote');
 
+// Manual Oficial de Uso (Web Interactiva & Descarga PDF)
+Route::get('/manual', function () {
+    $htmlPath = base_path('docs/MANUAL_DE_USO.html');
+    if (!file_exists($htmlPath)) {
+        $htmlPath = public_path('docs/index.html');
+    }
+    if (file_exists($htmlPath)) {
+        return response()->file($htmlPath, [
+            'Content-Type' => 'text/html; charset=UTF-8'
+        ]);
+    }
+    abort(404);
+})->name('manual');
+
+Route::get('/manual/pdf', function () {
+    $pdfPath = base_path('docs/MANUAL_DE_USO.pdf');
+    if (!file_exists($pdfPath)) {
+        $pdfPath = public_path('docs/MANUAL_DE_USO.pdf');
+    }
+    if (file_exists($pdfPath)) {
+        return response()->file($pdfPath, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="Manual_de_Uso_Eventos_Musicales.pdf"'
+        ]);
+    }
+    abort(404);
+})->name('manual.pdf');
+
 // Spotify & Apple Music & Full Audio Streaming API Endpoints
 Route::get('/spotify/connect', [SpotifyAuthController::class, 'connect'])->name('spotify.connect');
 Route::get('/spotify/callback', [SpotifyAuthController::class, 'callback'])->name('spotify.callback');

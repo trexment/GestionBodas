@@ -470,6 +470,14 @@
                     <span class="text-slate-400 text-[10px]">&nearr;</span>
                 </a>
 
+                <a href="{{ route('manual') }}" target="_blank" class="flex items-center justify-between px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800/60 transition" title="Manual Oficial de Uso con capturas y guía paso a paso">
+                    <span class="flex items-center gap-2.5">
+                        <span>📖</span>
+                        <span>Manual de Uso</span>
+                    </span>
+                    <span class="text-slate-400 text-[10px]">&nearr;</span>
+                </a>
+
             </div>
 
             <!-- FOOTER SIDEBAR: TEMA & PERFIL DE USUARIO & LOGOUT -->

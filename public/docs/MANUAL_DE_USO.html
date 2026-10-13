@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manual Oficial de Uso - Sistema de Gestión de Eventos Musicales</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap');
+  
+  @page {
+    size: A4;
+    margin: 16mm 14mm 18mm 14mm;
+    @bottom-right {
+      content: "Página " counter(page);
+      font-size: 8.5px;
+      color: #94a3b8;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-weight: 600;
+    }
+    @bottom-left {
+      content: "Núñez & Son • JAVNXDJ — Manual de Usuario";
+      font-size: 8.5px;
+      color: #94a3b8;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  
+  body {
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color: #1e293b;
+    line-height: 1.55;
+    font-size: 11.5px;
+    margin: 0;
+    padding: 0;
+    background: #ffffff;
+  }
+
+  /* Portada */
+  .cover-page {
+    min-height: 94vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    background: radial-gradient(circle at top right, #1e1b4b 0%, #0f172a 45%, #030712 100%);
+    color: #fff;
+    padding: 44px;
+    border-radius: 16px;
+    page-break-after: always;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 30px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+  }
+
+  .cover-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .brand-pill {
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    padding: 6px 16px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: #e2e8f0;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .version-tag {
+    font-size: 11px;
+    color: #a5b4fc;
+    font-weight: 700;
+    background: rgba(99, 102, 241, 0.2);
+    padding: 5px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(165, 180, 252, 0.3);
+  }
+
+  .cover-center {
+    margin: 35px 0;
+  }
+
+  .cover-center h1 {
+    font-size: 34px;
+    font-weight: 900;
+    line-height: 1.15;
+    margin: 0 0 16px 0;
+    letter-spacing: -0.9px;
+    background: linear-gradient(180deg, #ffffff 0%, #cbd5e1 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .cover-center .subtitle {
+    font-size: 15px;
+    color: #c7d2fe;
+    font-weight: 400;
+    max-width: 620px;
+    line-height: 1.45;
+    margin-bottom: 24px;
+  }
+
+  .cover-features-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+    margin-top: 25px;
+  }
+
+  .cover-feature {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    padding: 14px;
+    border-radius: 12px;
+    backdrop-filter: blur(10px);
+  }
+
+  .cover-feature strong {
+    display: block;
+    color: #38bdf8;
+    font-size: 12px;
+    margin-bottom: 4px;
+  }
+
+  .cover-feature span {
+    font-size: 10.5px;
+    color: #94a3b8;
+    line-height: 1.35;
+    display: block;
+  }
+
+  .cover-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+    padding-top: 18px;
+    font-size: 10.5px;
+    color: #94a3b8;
+  }
+
+  /* Encabezados y Secciones */
+  h2 {
+    color: #0f172a;
+    font-size: 16px;
+    font-weight: 800;
+    border-bottom: 2px solid #f1f5f9;
+    padding-bottom: 8px;
+    margin-top: 32px;
+    margin-bottom: 14px;
+    page-break-after: avoid;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  h2 span.num-badge {
+    background: #6366f1;
+    color: white;
+    font-size: 11px;
+    font-weight: 800;
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  h3 {
+    color: #334155;
+    font-size: 13px;
+    font-weight: 700;
+    margin-top: 18px;
+    margin-bottom: 6px;
+    page-break-after: avoid;
+  }
+
+  p { margin: 0 0 10px 0; }
+  ul, ol { margin: 0 0 12px 0; padding-left: 20px; }
+  li { margin-bottom: 4px; }
+
+  /* Marco de Capturas de Pantalla (Screenshot Frame) */
+  .screenshot-frame {
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 12px;
+    overflow: hidden;
+    margin: 16px 0 20px 0;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+    page-break-inside: avoid;
+  }
+
+  .screenshot-bar {
+    background: #0f172a;
+    color: #94a3b8;
+    padding: 7px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 9.5px;
+    font-family: 'JetBrains Mono', monospace;
+    border-bottom: 1px solid #1e293b;
+  }
+
+  .screenshot-dots {
+    display: flex;
+    gap: 5px;
+  }
+
+  .screenshot-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+  .dot-red { background: #ef4444; }
+  .dot-yellow { background: #eab308; }
+  .dot-green { background: #22c55e; }
+
+  .screenshot-title {
+    color: #e2e8f0;
+    font-weight: 600;
+  }
+
+  .screenshot-url {
+    color: #64748b;
+    font-size: 9px;
+  }
+
+  .screenshot-img {
+    width: 100%;
+    height: auto;
+    display: block;
+    object-fit: cover;
+  }
+
+  .screenshot-caption {
+    background: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+    padding: 8px 12px;
+    font-size: 10px;
+    color: #475569;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+  }
+
+  .screenshot-caption strong {
+    color: #0f172a;
+  }
+
+  /* Cajas de Aviso / Callouts */
+  .callout {
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin: 12px 0 16px 0;
+    font-size: 11px;
+    line-height: 1.45;
+    page-break-inside: avoid;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .callout-icon {
+    font-size: 16px;
+    line-height: 1;
+    shrink-0: 0;
+  }
+
+  .callout-tip {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    color: #166534;
+  }
+  .callout-tip strong { color: #14532d; }
+
+  .callout-warn {
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    color: #92400e;
+  }
+  .callout-warn strong { color: #78350f; }
+
+  .callout-info {
+    background: #eef2ff;
+    border: 1px solid #c7d2fe;
+    color: #3730a3;
+  }
+  .callout-info strong { color: #312e81; }
+
+  .callout-danger {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+  }
+
+  /* Grid de dos columnas para texto y datos */
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 12px;
+  }
+
+  .card-box {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 12px;
+  }
+
+  .card-box h4 {
+    margin: 0 0 6px 0;
+    font-size: 12px;
+    color: #0f172a;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  /* Badges y Pastillas */
+  .badge {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: 6px;
+    font-size: 9.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+  .badge-purple { background: #ede9fe; color: #5b21b6; border: 1px solid #ddd6fe; }
+  .badge-emerald { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
+  .badge-amber { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+  .badge-rose { background: #ffe4e6; color: #9f1239; border: 1px solid #fecdd3; }
+  .badge-indigo { background: #e0e7ff; color: #3730a3; border: 1px solid #c7d2fe; }
+
+  /* Tabla estilizada */
+  table.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0 16px 0;
+    font-size: 10.5px;
+    page-break-inside: avoid;
+  }
+
+  table.data-table th {
+    background: #0f172a;
+    color: #ffffff;
+    text-align: left;
+    padding: 8px 10px;
+    font-weight: 700;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  table.data-table td {
+    padding: 7px 10px;
+    border-bottom: 1px solid #e2e8f0;
+    color: #334155;
+  }
+
+  table.data-table tr:nth-child(even) td {
+    background: #f8fafc;
+  }
+
+  .page-break {
+    page-break-after: always;
+  }
+</style>
+</head>
+<body>
+
+<!-- ========================================== -->
+<!-- 1. PORTADA OFICIAL                         -->
+<!-- ========================================== -->
+<div class="cover-page">
+  <div class="cover-top">
+    <div class="brand-pill">
+      <span>🎧</span>
+      <span>JAVNXDJ &bull; NÚÑEZ & SON</span>
+    </div>
+    <div class="version-tag">VERSIÓN 2026.10 &bull; MANUAL DE USUARIO</div>
+  </div>
+
+  <div class="cover-center">
+    <h1>Manual Integral de Uso y Operaciones</h1>
+    <div class="subtitle">
+      Guía visual y paso a paso para la gestión integral de eventos, presupuestos con efectos automáticos, seguimiento táctico por WhatsApp, escaletas musicales y modo cabina DJ en directo.
+    </div>
+
+    <div class="cover-features-grid">
+      <div class="cover-feature">
+        <strong>⚡ Gestión y Agenda 360°</strong>
+        <span>Control de ciclo de vida completo: Nuevo, Presupuestado, Sin respuesta, Confirmado y Finalizado.</span>
+      </div>
+      <div class="cover-feature">
+        <strong>💬 Seguimiento Táctico WhatsApp</strong>
+        <span>Hub con metodología de psicología inversa y técnica del NO de Chris Voss con 1 solo clic.</span>
+      </div>
+      <div class="cover-feature">
+        <strong>✨ Packs y Efectos Automáticos</strong>
+        <span>Selección de Premium y Exclusivo con máquinas de humo y cálculo de fuego frío por unidad.</span>
+      </div>
+      <div class="cover-feature">
+        <strong>📄 Dossier PDF con Caducidad</strong>
+        <span>Propuestas elegantes con fecha límite de validez para proteger la variación de tarifas.</span>
+      </div>
+      <div class="cover-feature">
+        <strong>✍️ Firma Digital de Contratos</strong>
+        <span>Portal de firma táctil para novios con auditoría forense de IP, fecha y hash legal.</span>
+      </div>
+      <div class="cover-feature">
+        <strong>🎛️ Modo Cabina DJ & QR Invitados</strong>
+        <span>Pantalla táctil para DJs en directo con peticiones recibidas en tiempo real desde el móvil.</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="cover-footer">
+    <div>
+      <strong>Plataforma:</strong> app.nunezandson.com &bull; Entorno Cloud Plesk<br>
+      <strong>Dirigido a:</strong> Administradores, DJs Residentes y Personal Staff
+    </div>
+    <div style="text-align: right;">
+      <strong>Fecha de Publicación:</strong> Octubre 2026<br>
+      <strong>Estado:</strong> Documento Oficial y Actualizado
+    </div>
+  </div>
+</div>
+
+<!-- ========================================== -->
+<!-- 2. ÍNDICE DE CONTENIDOS                    -->
+<!-- ========================================== -->
+<h2><span class="num-badge">📑</span> Índice General de Contenidos</h2>
+
+<div class="grid-2">
+  <div class="card-box">
+    <h4>🚀 Módulos Principales</h4>
+    <ul>
+      <li><strong>1. Introducción y Filosofía Multi-Marca:</strong> JAVNXDJ y Núñez & Son.</li>
+      <li><strong>2. Acceso al Sistema y Roles:</strong> Inicio de sesión y seguridad.</li>
+      <li><strong>3. Panel de Control (Dashboard):</strong> Métricas, KPIs y alertas activas.</li>
+      <li><strong>4. Agenda y Listado de Eventos:</strong> Filtros por estado y vista móvil.</li>
+      <li><strong>5. Ficha del Evento y Estados:</strong> Ciclo de vida y horarios 24h.</li>
+      <li><strong>6. Seguimiento Táctico de Clientes "Sin Respuesta":</strong> Psicología inversa por WhatsApp.</li>
+      <li><strong>7. Presupuestos, Packs y Efectos Especiales:</strong> Máquina de humo y fuego frío.</li>
+    </ul>
+  </div>
+  <div class="card-box">
+    <h4>📑 Documentación y Operativa en Directo</h4>
+    <ul>
+      <li><strong>8. Dossier y Presupuesto en PDF:</strong> Fecha de caducidad e imagen de marca.</li>
+      <li><strong>9. Contratos y Firma Digital Online:</strong> Legalidad y trazabilidad.</li>
+      <li><strong>10. Escaleta Musical y Formulario de Novios:</strong> Canciones clave.</li>
+      <li><strong>11. Modo Cabina DJ en Directo:</strong> Interfaz de actuación para DJs.</li>
+      <li><strong>12. Peticiones de Invitados (QR):</strong> Interacción en pista en tiempo real.</li>
+      <li><strong>13. Inventario y Material Técnico:</strong> Almacén y asignación de equipos.</li>
+      <li><strong>14. Calculadora Pública de Presupuestos:</strong> Captación web de clientes.</li>
+    </ul>
+  </div>
+</div>
+
+<div class="callout callout-info">
+  <div class="callout-icon">💡</div>
+  <div>
+    <strong>Estructura Visual:</strong> A lo largo de este manual encontrarás capturas de pantalla reales de la aplicación, indicando la ubicación de cada botón, selector y flujo de trabajo tanto en ordenadores de sobremesa como en teléfonos móviles.
+  </div>
+</div>
+
+<div class="page-break"></div>
+
+<!-- ======================================================= -->
+<!-- SECCIÓN 1: INTRODUCCIÓN Y ARQUITECTURA MULTI-MARCA     -->
+<!-- ======================================================= -->
+<h2><span class="num-badge">1</span> Introducción y Filosofía Multi-Marca</h2>
+
+<p>La plataforma está concebida como una herramienta integral para centralizar la gestión de contrataciones, propuesta comercial, logística y ejecución musical para empresas de eventos. Integra soporte nativo para <strong>dos marcas comerciales independientes</strong> bajo un único panel de control:</p>
+
+<table class="data-table">
+  <thead>
+    <tr>
+      <th style="width: 25%;">Marca Comercial</th>
+      <th style="width: 35%;">Enfoque y Tipología</th>
+      <th style="width: 40%;">Comportamiento en la Plataforma</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>JAVNXDJ</strong></td>
+      <td>Eventos de autor, sesiones exclusivas de DJ, música electrónica, discotecas y eventos corporativos de alto nivel.</td>
+      <td>Los presupuestos, contratos y correos adoptan el logotipo, colores oscuros y datos fiscales específicos de JAVNXDJ.</td>
+    </tr>
+    <tr>
+      <td><strong>NÚÑEZ & SON</strong></td>
+      <td>Bodas integrales, ceremonias civiles/religiosas, cócteles, banquetes y montajes completos de sonido e iluminación.</td>
+      <td>Aplica el logotipo clásico, paleta corporativa elegante, cláusulas nupciales y cuentas bancarias de Núñez & Son.</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- ======================================================= -->
+<!-- SECCIÓN 2: ACCESO AL SISTEMA Y ROLES DE USUARIO        -->
+<!-- ======================================================= -->
+<h2><span class="num-badge">2</span> Acceso al Sistema y Seguridad</h2>
+
+<p>Para acceder a la consola de administración, dirígete a la URL oficial del servicio:</p>
+<p><strong>🌐 URL de Acceso:</strong> <code>https://app.nunezandson.com/login</code></p>
+
+<div class="screenshot-frame">
+  <div class="screenshot-bar">
+    <div class="screenshot-dots">
+      <div class="screenshot-dot dot-red"></div>
+      <div class="screenshot-dot dot-yellow"></div>
+      <div class="screenshot-dot dot-green"></div>
+    </div>
+    <div class="screenshot-title">Acceso Staff • app.nunezandson.com/login</div>
+    <div class="screenshot-url">https://app.nunezandson.com/login</div>
+  </div>
+  <img src="images/login.png" alt="Pantalla de Acceso Staff" class="screenshot-img" style="max-height: 290px;">
+  <div class="screenshot-caption">
+    <span>🔒 <strong>Figura 2.1:</strong> Pantalla de bienvenida y autenticación segura para administradores y equipo técnico de cabina.</span>
+  </div>
+</div>
+
+<div class="grid-2">
+  <div class="card-box">
+    <h4>👑 Rol Administrador</h4>
+    <p>Control integral sobre todos los eventos, facturación, cuentas bancarias, usuarios, inventario, precios de packs y configuración del sistema.</p>
+  </div>
+  <div class="card-box">
+    <h4>🎧 Rol DJ / Staff de Montaje</h4>
+    <p>Acceso directo a su agenda asignada, horarios de montaje, escaletas musicales de las parejas y activación del <strong>Modo Cabina DJ en Directo</strong>.</p>
+  </div>
+</div>
+
+<div class="page-break"></div>
+
+<!-- ======================================================= -->
+<!-- SECCIÓN 3: PANEL DE CONTROL (DASHBOARD)                 -->
+<!-- ======================================================= -->
+<h2><span class="num-badge">3</span> Panel de Control (Dashboard) y Alertas</h2>
+
+<p>Al acceder al sistema, la pantalla de inicio presenta una radiografía en tiempo real del estado comercial y logístico de la empresa:</p>
+
+<div class="screenshot-frame">
+  <div class="screenshot-bar">
+    <div class="screenshot-dots">
+      <div class="screenshot-dot dot-red"></div>
+      <div class="screenshot-dot dot-yellow"></div>
+      <div class="screenshot-dot dot-green"></div>
+    </div>
+    <div class="screenshot-title">Dashboard Principal • Métricas, Alertas y Próximos Eventos</div>
+    <div class="screenshot-url">https://app.nunezandson.com/admin/dashboard</div>
+  </div>
+  <img src="images/dashboard.png" alt="Panel de Control Dashboard" class="screenshot-img">
+  <div class="screenshot-caption">
+    <span>📊 <strong>Figura 3.1:</strong> Panel general con métricas de facturación, pendiente de cobro, eventos próximos y banner de reactivación rápida.</span>
+  </div>
+</div>
+
+<h3>Elementos clave del Dashboard:</h3>
+<ul>
+  <li><strong>Métricas Financieras (KPIs):</strong> Facturación total emitida, importe pendiente de cobro y previsión de ingresos por fianzas.</li>
+  <li><strong>Banner de Seguimiento Activo:</strong> Muestra el número de clientes que llevan días sin responder al presupuesto, permitiendo lanzar recordatorios inmediatos sin entrar en cada ficha.</li>
+  <li><strong>Próximos Eventos:</strong> Lista de las bodas y fiestas más cercanas con acceso directo a la ficha técnica y contacto del cliente.</li>
+</ul>
+
+<!-- ======================================================= -->
+<!-- SECCIÓN 4: AGENDA Y GESTIÓN DE EVENTOS                  -->
+<!-- ======================================================= -->
+<h2><span class="num-badge">4</span> Agenda y Listado de Eventos</h2>
+
+<p>El módulo <strong>Eventos</strong> (<code>/admin/events</code>) permite supervisar todas las fechas contratadas o en negociación. Cuenta con un sistema de filtros rápidos por estado:</p>
+
+<div class="screenshot-frame">
+  <div class="screenshot-bar">
+    <div class="screenshot-dots">
+      <div class="screenshot-dot dot-red"></div>
+      <div class="screenshot-dot dot-yellow"></div>
+      <div class="screenshot-dot dot-green"></div>
+    </div>
+    <div class="screenshot-title">Listado de Eventos • Filtros y Vista de Tabla</div>
+    <div class="screenshot-url">https://app.nunezandson.com/admin/events</div>
+  </div>
+  <img src="images/event_manager.png" alt="Listado de eventos con filtros" class="screenshot-img">
+  <div class="screenshot-caption">
+    <span>📅 <strong>Figura 4.1:</strong> Vista de tabla con filtros superiores por estado (<span class="badge badge-purple">Sin Respuesta</span>, <span class="badge badge-emerald">Confirmados</span>, etc.) y botón <strong>"💬 Recordar"</strong> directo.</span>
+  </div>
+</div>
+
+<div class="grid-2">
+  <div>
+    <h3>Vista Móvil Optimizada para el DJ</h3>
+    <p>Desde el teléfono móvil, el listado se reorganiza en tarjetas táctiles compactas con acceso a:</p>
+    <ul>
+      <li><strong>Horarios 24h:</strong> Hora de montaje de furgoneta y hora de inicio de barra libre.</li>
+      <li><strong>Enlace directo a WhatsApp:</strong> Inicia conversación con el cliente con un toque.</li>
+      <li><strong>Lugar del evento:</strong> Enlace a Google Maps para navegación.</li>
+    </ul>
+  </div>
+  <div>
+    <div class="screenshot-frame" style="margin: 0;">
+      <img src="images/event_manager_mobile.png" alt="Vista móvil del listado de eventos" class="screenshot-img" style="max-height: 280px; object-fit: contain; background: #0f172a;">
+      <div class="screenshot-caption">
+        <span>📱 <strong>Figura 4.2:</strong> Tarjeta móvil de evento con botón gestionar y recordatorio.</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page-break"></div>
+
+<!-- ======================================================= -->
+<!-- SECCIÓN 5: FICHA DEL EVENTO Y ESTADO SIN RESPUESTA      -->
+<!-- ======================================================= -->
+<h2><span class="num-badge">5</span> Ficha del Evento y Estados de Seguimiento</h2>
+
+<p>Al pulsar en <strong>"Gestionar"</strong> sobre cualquier evento, se abre su ficha detallada. En la parte superior encontramos el selector de estado:</p>
+
+<table class="data-table">
+  <thead>
+    <tr>
+      <th>Estado</th>
+      <th>Distintivo</th>
+      <th>Significado y Acción Recomendada</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Borrador / Nuevo</strong></td>
+      <td><span class="badge badge-indigo">📝 Borrador</span></td>
+      <td>Petición recién recibida. Se están definiendo las horas y necesidades.</td>
+    </tr>
+    <tr>
+      <td><strong>Sin Respuesta</strong></td>
+      <td><span class="badge badge-purple">⏳ Sin Respuesta</span></td>
+      <td>Presupuesto enviado hace días sin contestación del cliente. Activa el banner táctico.</td>
+    </tr>
+    <tr>
+      <td><strong>Confirmado</strong></td>
+      <td><span class="badge badge-emerald">🟢 Confirmado</span></td>
+      <td>Cliente ha aprobado el presupuesto o pagado la fianza. Fecha 100% bloqueada en agenda.</td>
+    </tr>
+    <tr>
+      <td><strong>Rechazado / Descartado</strong></td>
+      <td><span class="badge badge-rose">❌ Rechazado</span></td>
+      <td>El cliente no contrata (por precio, fecha ocupada u otro proveedor). Libera la fecha.</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="screenshot-frame">
+  <div class="screenshot-bar">
+    <div class="screenshot-dots">
+      <div class="screenshot-dot dot-red"></div>
+      <div class="screenshot-dot dot-yellow"></div>
+      <div class="screenshot-dot dot-green"></div>
+    </div>
+    <div class="screenshot-title">Ficha de Evento • Banner Inteligente de Seguimiento (Modo Oscuro)</div>
+    <div class="screenshot-url">https://app.nunezandson.com/admin/events/{id}</div>
+  </div>
+  <img src="images/event_show_no_response.png" alt="Banner inteligente de seguimiento" class="screenshot-img">
+  <div class="screenshot-caption">
+    <span>⏳ <strong>Figura 5.1:</strong> Banner de seguimiento en ficha con contador de días, urgencia dinámica, botón de 1-clic a WhatsApp y menú rápido "¿Ha respondido?".</span>
+  </div>
+</div>
+
+<!-- ======================================================= -->
+<!-- SECCIÓN 6: SEGUIMIENTO CON PSICOLOGÍA INVERSA (WHATSAPP)-->
+<!-- ======================================================= -->
+<h2><span class="num-badge">6</span> Seguimiento Táctico con Psicología Inversa</h2>
+
+<p>Uno de los mayores retos de una empresa de eventos es reactivar a clientes que piden presupuesto y dejan de responder, sin resultar insistentes ni pesados. Para ello, el sistema integra la <strong>Técnica del NO de Chris Voss</strong> y el <strong>Cierre de Expediente por Silencio</strong>:</p>
+
+<div class="screenshot-frame">
+  <div class="screenshot-bar">
+    <div class="screenshot-dots">
+      <div class="screenshot-dot dot-red"></div>
+      <div class="screenshot-dot dot-yellow"></div>
+      <div class="screenshot-dot dot-green"></div>
+    </div>
+    <div class="screenshot-title">Hub de Plantillas WhatsApp • Estrategia de Reactivación de Clientes</div>
+    <div class="screenshot-url">https://app.nunezandson.com/admin/events/{id} (Modal WhatsApp)</div>
+  </div>
+  <img src="images/whatsapp_followup_hub.png" alt="Hub de WhatsApp con psicología inversa" class="screenshot-img">
+  <div class="screenshot-caption">
+    <span>💬 <strong>Figura 6.1:</strong> Listado de plantillas de seguimiento con previsualización del mensaje personalizado y botón de apertura directa en WhatsApp.</span>
+  </div>
+</div>
+
+<div class="grid-2">
+  <div class="card-box">
+    <h4>🎯 1. La Técnica del "NO" (Psicología Inversa)</h4>
+    <p>A la gente le cuesta decir que "SÍ", pero le resulta muy fácil y seguro decir que "NO". En lugar de preguntar <em>"¿Habéis mirado el presupuesto?"</em>, enviamos:</p>
+    <blockquote style="font-style: italic; color: #4338ca; background: #eef2ff; padding: 8px; border-radius: 6px; margin: 4px 0;">
+      "Hola [Novios], ¿habéis descartado ya contar con nosotros para la música de vuestra boda el [Fecha]?"
+    </blockquote>
+    <p style="font-size: 10px; color: #64748b;">El cliente siente la necesidad inmediata de responder: <em>"¡No, para nada! Es que hemos estado liados..."</em>, reactivando la conversación en minutos.</p>
+  </div>
+
+  <div class="card-box">
+    <h4>📁 2. Cierre de Expediente por Silencio</h4>
+    <p>Para no ser pesado cuando llevan muchos días sin contestar, damos por cerrada la fecha con elegancia:</p>
+    <blockquote style="font-style: italic; color: #4338ca; background: #eef2ff; padding: 8px; border-radius: 6px; margin: 4px 0;">
+      "Hola [Novios], para no ser pesados y dado que no hemos tenido respuesta, damos por hecho que habéis elegido otra opción y procedemos a liberar vuestra fecha en agenda. Si aún os interesa, avisadnos hoy."
+    </blockquote>
+    <p style="font-size: 10px; color: #64748b;">Genera sensación de escasez y urgencia real sin perder profesionalidad.</p>
+  </div>
+</div>
+
+<div class="screenshot-frame">
+  <div class="screenshot-bar">
+    <div class="screenshot-dots">
+      <div class="screenshot-dot dot-red"></div>
+      <div class="screenshot-dot dot-yellow"></div>
+      <div class="screenshot-dot dot-green"></div>
+    </div>
+    <div class="screenshot-title">Selector Rápido de Plantillas de Seguimiento</div>
+  </div>
+  <img src="images/whatsapp_options.png" alt="Opciones de plantillas WhatsApp" class="screenshot-img" style="max-height: 220px; object-fit: contain; background: #0f172a;">
+  <div class="screenshot-caption">
+    <span>🔥 <strong>Figura 6.2:</strong> Selector con acceso a Técnica del NO, Cierre de Expediente, Toque Amable y Recordatorio de Oferta Próxima a Caducar.</span>
+  </div>
+</div>
+
+<div class="page-break"></div>
+
+<!-- ======================================================= -->
+<!-- SECCIÓN 7: PRESUPUESTOS, PACKS Y EFECTOS ESPECIALES    -->
+<!-- ======================================================= -->
+<h2><span class="num-badge">7</span> Presupuestos Inteligentes, Packs y Efectos</h2>
+
+<p>La pestaña <strong>Presupuesto</strong> permite generar propuestas comerciales con suma precisión. Los packs prediseñados integran efectos especiales de forma automática:</p>
+
+<div class="screenshot-frame">
+  <div class="screenshot-bar">
+    <div class="screenshot-dots">
+      <div class="screenshot-dot dot-red"></div>
+      <div class="screenshot-dot dot-yellow"></div>
+      <div class="screenshot-dot dot-green"></div>
+    </div>
+    <div class="screenshot-title">Configurador de Packs y Efectos Especiales</div>
+    <div class="screenshot-url">https://app.nunezandson.com/admin/events/{id}#budget</div>
+  </div>
+  <img src="images/budget_packs_effects.png" alt="Packs y efectos especiales" class="screenshot-img">
+  <div class="screenshot-caption">
+    <span>✨ <strong>Figura 7.1:</strong> Selección de Pack (Básico, Premium, Exclusivo) con activación automática de Máquina de Humo y Efectos Especiales.</span>
+  </div>
+</div>
+
+<h3>Automatización de Efectos Especiales por Pack:</h3>
+<table class="data-table">
+  <thead>
+    <tr>
+      <th>Pack Seleccionado</th>
+      <th>Efecto de Humo (Atmósfera)</th>
+      <th>Fuego Frío (Sparkulars)</th>
+      <th>Comportamiento en el Presupuesto</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Pack Básico</strong></td>
+      <td>No incluido (Opcional)</td>
+      <td>No incluido (Opcional)</td>
+      <td>Configuración esencial de sonido e iluminación básica para baile.</td>
+    </tr>
+    <tr>
+      <td><strong>Pack Premium</strong></td>
+      <td><span class="badge badge-emerald">✅ Incluido (0,00 €)</span></td>
+      <td>Opcional por máquinas</td>
+      <td>Se marca automáticamente la opción de <strong>Máquina de Humo</strong> incluida sin coste adicional.</td>
+    </tr>
+    <tr>
+      <td><strong>Pack Exclusivo</strong></td>
+      <td><span class="badge badge-emerald">✅ Incluido (0,00 €)</span></td>
+      <td><span class="badge badge-purple">💥 Activo por máquinas</span></td>
+      <td>Marca automáticamente Humo + Fuego Frío para entrada/baile nupcial.</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="screenshot-frame">
+  <div class="screenshot-bar">
+    <div class="screenshot-dots">
+      <div class="screenshot-dot dot-red"></div>
+      <div class="screenshot-dot dot-yellow"></div>
+      <div class="screenshot-dot dot-green"></div>
+    </div>
+    <div class="screenshot-title">Cálculo de Fuego Frío por Número de Máquinas</div>
+  </div>
+  <img src="images/budget_cold_fire.png" alt="Cálculo de fuego frío por máquinas" class="screenshot-img">
+  <div class="screenshot-caption">
+    <span>🔥 <strong>Figura 7.2:</strong> Tarifa por máquina: Si el cliente solicita 2 fuentes de fuego frío, el sistema calcula <code>60 € x 2 = 120 €</code> automáticamente.</span>
+  </div>
+</div>
+
+<div class="callout callout-tip">
+  <div class="callout-icon">💡</div>
+  <div>
+    <strong>Regla de Negocio - Fuego Frío:</strong> El fuego frío se tarifica por <strong>número de máquinas físicas</strong> (60 € por máquina). Si una pareja desea 2 máquinas (para los laterales del baile), el sistema calcula 120 €. Si desean 4 máquinas para una entrada espectacular, el cálculo será 240 €.
+  </div>
+</div>
+
+<div class="screenshot-frame">
+  <div class="screenshot-bar">
+    <div class="screenshot-dots">
+      <div class="screenshot-dot dot-red"></div>
+      <div class="screenshot-dot dot-yellow"></div>
+      <div class="screenshot-dot dot-green"></div>
+    </div>
+    <div class="screenshot-title">Resumen Económico, Base Imponible y Fianza de Reserva</div>
+  </div>
+  <img src="images/budget_overview.png" alt="Resumen de presupuesto" class="screenshot-img">
+  <div class="screenshot-caption">
+    <span>💶 <strong>Figura 7.3:</strong> Desglose financiero con Base Imponible, IVA (21%), Total Presupuestado y Fianza de Reserva para formalizar el contrato.</span>
+  </div>
+</div>
+
+<div class="page-break"></div>
+
+<!-- ======================================================= -->
+<!-- SECCIÓN 8: DOSSIER COMERCIAL PDF CON CADUCIDAD          -->
+<!-- ======================================================= -->
+<h2><span class="num-badge">8</span> Dossier Comercial en PDF con Fecha de Caducidad</h2>
+
+<p>Para evitar que un cliente pretenda contratar meses después exigiendo precios antiguos de una temporada anterior, todos los presupuestos y dossiers generados en PDF incluyen una <strong>fecha de caducidad automática</strong> (validez habitual de 15 a 30 días desde su emisión):</p>
+
+<div class="screenshot-frame">
+  <div class="screenshot-bar">
+    <div class="screenshot-dots">
+      <div class="screenshot-dot dot-red"></div>
+      <div class="screenshot-dot dot-yellow"></div>
+      <div class="screenshot-dot dot-green"></div>
+    </div>
+    <div class="screenshot-title">Dossier PDF Oficial con Sello de Validez Temporal</div>
+    <div class="screenshot-url">https://app.nunezandson.com/quote/{quote}/pdf</div>
+  </div>
+  <img src="images/pdf_dossier.png" alt="Dossier en PDF con fecha de caducidad" class="screenshot-img">
+  <div class="screenshot-caption">
+    <span>📄 <strong>Figura 8.1:</strong> Dossier comercial oficial descargado en formato PDF con especificación de servicios, packs y cláusula de caducidad de oferta.</span>
+  </div>
+</div>
+
+<div class="callout callout-warn">
+  <div class="callout-icon">⚠️</div>
+  <div>
+    <strong>Protección ante fluctuación de precios:</strong> Si un cliente contacta habiendo vencido la fecha de validez indicada en el dossier, tienes el respaldo contractual para recalcular el presupuesto con las tarifas vigentes o aplicar suplementos de temporada alta.
+  </div>
+</div>
+
+<!-- ======================================================= -->
+<!-- SECCIÓN 9: CONTRATOS Y FIRMA DIGITAL ONLINE             -->
+<!-- ======================================================= -->
+<h2><span class="num-badge">9</span> Contratos Digitales y Firma Online Certificada</h2>
+
+<p>Una vez aprobado el presupuesto, el sistema genera un contrato vinculante. La pareja puede firmar cómodamente en pantalla desde su propio teléfono móvil sin imprimir un solo papel:</p>
+<p><strong>🔗 Enlace del Portal de Firma:</strong> <code>https://app.nunezandson.com/contrato/{token_seguro}</code></p>
+
+<div class="screenshot-frame">
+  <div class="screenshot-bar">
+    <div class="screenshot-dots">
+      <div class="screenshot-dot dot-red"></div>
+      <div class="screenshot-dot dot-yellow"></div>
+      <div class="screenshot-dot dot-green"></div>
+    </div>
+    <div class="screenshot-title">Portal de Firma Digital en Pantalla para Clientes</div>
+    <div class="screenshot-url">https://app.nunezandson.com/contrato/a8b9...f2</div>
+  </div>
+  <img src="images/contract_signing.png" alt="Firma digital online en móvil" class="screenshot-img">
+  <div class="screenshot-caption">
+    <span>✍️ <strong>Figura 9.1:</strong> Lienzo interactivo donde los novios firman con el dedo desde su smartphone, registrando IP, navegador y marca de tiempo legal.</span>
+  </div>
+</div>
+
+<div class="page-break"></div>
+
+<!-- ======================================================= -->
+<!-- SECCIÓN 10: ESCALETA MUSICAL Y PETICIONES DE LOS NOVIOS -->
+<!-- ======================================================= -->
+<h2><span class="num-badge">10</span> Escaleta Musical y Momentos Especiales</h2>
+
+<p>La pestaña <strong>Música</strong> centraliza la planificación de canciones para cada momento clave del banquete y la fiesta:</p>
+
+<div class="screenshot-frame">
+  <div class="screenshot-bar">
+    <div class="screenshot-dots">
+      <div class="screenshot-dot dot-red"></div>
+      <div class="screenshot-dot dot-yellow"></div>
+      <div class="screenshot-dot dot-green"></div>
+    </div>
+    <div class="screenshot-title">Escaleta de Momentos Clave • Entrada, Tarta, Ramos y Baile</div>
+    <div class="screenshot-url">https://app.nunezandson.com/admin/events/{id}#music</div>
+  </div>
+  <img src="images/music_escaleta.png" alt="Escaleta musical" class="screenshot-img">
+  <div class="screenshot-caption">
+    <span>🎵 <strong>Figura 10.1:</strong> Planificación de temas imprescindibles por momento (Entrada al banquete, Corte de tarta, Entrega de ramos, Primer baile).</span>
+  </div>
+</div>
+
+<div class="grid-2">
+  <div>
+    <h3>Formulario Online para los Novios</h3>
+    <p>A través del enlace público <code>/guest/form/{token}</code>, la pareja introduce sus canciones favoritas, los temas que <strong>imprescindiblemente deben sonar</strong> (<em>Must Play</em>) y aquellos que <strong>bajo ningún concepto deben sonar</strong> (<em>Do Not Play</em>).</p>
+  </div>
+  <div>
+    <div class="screenshot-frame" style="margin: 0;">
+      <img src="images/music_requests.png" alt="Peticiones musicales novios" class="screenshot-img">
+      <div class="screenshot-caption">
+        <span>📋 <strong>Figura 10.2:</strong> Listado de peticiones de los novios con notas especiales.</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ======================================================= -->
+<!-- SECCIÓN 11: MODO CABINA DJ EN DIRECTO Y QR INVITADOS    -->
+<!-- ======================================================= -->
+<h2><span class="num-badge">11</span> Modo Cabina DJ en Directo y Peticiones QR</h2>
+
+<p>Durante la noche del evento, el DJ puede abrir el <strong>Modo Cabina Live</strong> (<code>/live/{token}</code>) en un iPad o tablet sobre su cabina:</p>
+
+<div class="screenshot-frame">
+  <div class="screenshot-bar">
+    <div class="screenshot-dots">
+      <div class="screenshot-dot dot-red"></div>
+      <div class="screenshot-dot dot-yellow"></div>
+      <div class="screenshot-dot dot-green"></div>
+    </div>
+    <div class="screenshot-title">Modo Cabina DJ en Directo • Interfaz Táctil de Alta Visibilidad</div>
+    <div class="screenshot-url">https://app.nunezandson.com/live/{token}</div>
+  </div>
+  <img src="images/dj_booth_live.png" alt="Modo cabina DJ en directo" class="screenshot-img">
+  <div class="screenshot-caption">
+    <span>🎛️ <strong>Figura 11.1:</strong> Pantalla táctil de directo para el DJ con escaleta de momentos en tiempo real y bandeja de peticiones de invitados vía QR.</span>
+  </div>
+</div>
+
+<div class="callout callout-info">
+  <div class="callout-icon">📱</div>
+  <div>
+    <strong>Código QR para Invitados:</strong> Colocando el cartel con código QR en la barra o en las mesas, los invitados acceden a <code>/peticiones/{token}</code> para pedir canciones desde su móvil sin interrumpir físicamente al DJ en la cabina. El DJ puede aprobar, reproducir o descartar cada petición con un solo toque.
+  </div>
+</div>
+
+<div class="page-break"></div>
+
+<!-- ======================================================= -->
+<!-- SECCIÓN 12: INVENTARIO Y MATERIAL TÉCNICO               -->
+<!-- ======================================================= -->
+<h2><span class="num-badge">12</span> Inventario y Material Técnico</h2>
+
+<p>El módulo <strong>Inventario</strong> (<code>/admin/inventory</code>) asegura el control absoluto de los equipos de sonido, iluminación, microfonía y efectos para evitar olvidos antes de cargar la furgoneta:</p>
+
+<div class="screenshot-frame">
+  <div class="screenshot-bar">
+    <div class="screenshot-dots">
+      <div class="screenshot-dot dot-red"></div>
+      <div class="screenshot-dot dot-yellow"></div>
+      <div class="screenshot-dot dot-green"></div>
+    </div>
+    <div class="screenshot-title">Control de Inventario y Almacén Técnico</div>
+    <div class="screenshot-url">https://app.nunezandson.com/admin/inventory</div>
+  </div>
+  <img src="images/inventory.png" alt="Control de inventario de equipos" class="screenshot-img">
+  <div class="screenshot-caption">
+    <span>📦 <strong>Figura 12.1:</strong> Registro de altavoces, puentes de iluminación, máquinas de humo, cables y direccionamiento DMX por evento.</span>
+  </div>
+</div>
+
+<!-- ======================================================= -->
+<!-- SECCIÓN 13: CALCULADORA PÚBLICA DE PRESUPUESTOS         -->
+<!-- ======================================================= -->
+<h2><span class="num-badge">13</span> Calculadora Pública de Presupuestos (Web)</h2>
+
+<p>Para captar parejas directamente desde la página web corporativa o redes sociales, la aplicación incluye una calculadora interactiva abierta:</p>
+<p><strong>🌐 URL Pública:</strong> <code>https://app.nunezandson.com/presupuesto</code></p>
+
+<div class="screenshot-frame">
+  <div class="screenshot-bar">
+    <div class="screenshot-dots">
+      <div class="screenshot-dot dot-red"></div>
+      <div class="screenshot-dot dot-yellow"></div>
+      <div class="screenshot-dot dot-green"></div>
+    </div>
+    <div class="screenshot-title">Calculadora Pública de Presupuestos para Clientes</div>
+    <div class="screenshot-url">https://app.nunezandson.com/presupuesto</div>
+  </div>
+  <img src="images/public_calculator.png" alt="Calculadora pública de presupuestos" class="screenshot-img">
+  <div class="screenshot-caption">
+    <span>🧮 <strong>Figura 13.1:</strong> Cotizador interactivo donde los novios eligen horas de barra libre, ceremonia o cóctel y reciben una estimación al instante generando un nuevo lead en el sistema.</span>
+  </div>
+</div>
+
+<div class="page-break"></div>
+
+<!-- ======================================================= -->
+<!-- SECCIÓN 14: GUÍA RÁPIDA DE RESOLUCIÓN DE DUDAS          -->
+<!-- ======================================================= -->
+<h2><span class="num-badge">14</span> Resumen de Procedimientos y Buenas Prácticas</h2>
+
+<div class="grid-2">
+  <div class="card-box">
+    <h4>📋 Flujo de Trabajo Recomendado</h4>
+    <ol>
+      <li><strong>Entrada de Lead:</strong> Crear evento y rellenar fecha, lugar y horarios previstos.</li>
+      <li><strong>Elaborar Presupuesto:</strong> Elegir Pack (Básico, Premium o Exclusivo). El sistema añade el humo y ajusta el fuego frío según las máquinas deseadas.</li>
+      <li><strong>Descargar Dossier PDF:</strong> Verificar que la fecha de caducidad coincida con el plazo acordado.</li>
+      <li><strong>Si no responden en 2-4 días:</strong> Pasar el estado a <span class="badge badge-purple">Sin Respuesta</span> y pulsar el botón <em>"💬 Enviar WhatsApp (Técnica NO)"</em>.</li>
+      <li><strong>Al aceptar:</strong> Cambiar a <span class="badge badge-emerald">Confirmado</span> y enviar enlace de firma online.</li>
+    </ol>
+  </div>
+
+  <div class="card-box">
+    <h4>💡 Consejos Clave de Uso</h4>
+    <ul>
+      <li><strong>Modo Oscuro Integrado:</strong> La interfaz está 100% optimizada para trabajar con comodidad tanto de día como de noche en cabina.</li>
+      <li><strong>Horarios en Formato 24 Horas:</strong> Registra siempre las horas en formato 24h (ej. <code>23:30</code> o <code>04:00</code>) para evitar ambigüedades en el contrato.</li>
+      <li><strong>WhatsApp desde PC y Móvil:</strong> Los enlaces de WhatsApp funcionan de forma nativa en WhatsApp Web (ordenador) y en la app de WhatsApp del smartphone.</li>
+      <li><strong>Packing List en PDF:</strong> Antes de salir hacia la finca, descarga el Packing List desde la pestaña Inventario para verificar todo el material cargado.</li>
+    </ul>
+  </div>
+</div>
+
+<div style="margin-top: 30px; padding: 18px; background: #0f172a; color: #fff; border-radius: 12px; text-align: center;">
+  <div style="font-size: 14px; font-weight: 800; margin-bottom: 4px;">Sistema de Gestión Integral de Eventos Musicales</div>
+  <div style="font-size: 11px; color: #94a3b8;">Documentación técnica y operativa elaborada para Núñez & Son y JAVNXDJ &bull; 2026</div>
+</div>
+
+</body>
+</html>
