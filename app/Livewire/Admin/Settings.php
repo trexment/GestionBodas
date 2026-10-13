@@ -110,6 +110,7 @@ class Settings extends Component
     public $dossier_extra_hours_desc;
     public $dossier_music_custom_title;
     public $dossier_music_custom_desc;
+    public $quote_validity_days = 15;
     public $selectedDossierPreset = 'bodas';
 
     // Fotos de Montajes y Equipamiento del Dossier (1 a 4 fotos)
@@ -328,6 +329,7 @@ class Settings extends Component
         $this->dossier_extra_hours_desc = Setting::get('dossier_extra_hours_desc', $dDefaults['dossier_extra_hours_desc']);
         $this->dossier_music_custom_title = Setting::get('dossier_music_custom_title', $dDefaults['dossier_music_custom_title']);
         $this->dossier_music_custom_desc = Setting::get('dossier_music_custom_desc', $dDefaults['dossier_music_custom_desc']);
+        $this->quote_validity_days = (int)Setting::get('quote_validity_days', 15);
 
         $this->dossier_photo1_image = Setting::get('dossier_photo1_image', Setting::get('dossier_block1_image'));
         $this->dossier_photo1_title = Setting::get('dossier_photo1_title', Setting::get('dossier_block1_title', 'Montaje de Sonido'));
@@ -533,6 +535,7 @@ class Settings extends Component
             'dossier_extra_hours_desc' => 'nullable|string',
             'dossier_music_custom_title' => 'nullable|string|max:255',
             'dossier_music_custom_desc' => 'nullable|string',
+            'quote_validity_days' => 'required|integer|min:1|max:365',
 
             'dossier_photo1_title' => 'nullable|string|max:255',
             'dossier_photo1_desc' => 'nullable|string|max:500',
@@ -657,6 +660,7 @@ class Settings extends Component
         Setting::set('dossier_extra_hours_desc', $this->dossier_extra_hours_desc);
         Setting::set('dossier_music_custom_title', $this->dossier_music_custom_title);
         Setting::set('dossier_music_custom_desc', $this->dossier_music_custom_desc);
+        Setting::set('quote_validity_days', (int)$this->quote_validity_days);
 
         // Guardar Textos y Fotos del Dossier (1 a 4 fotos)
         for ($i = 1; $i <= 4; $i++) {

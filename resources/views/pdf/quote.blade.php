@@ -313,8 +313,60 @@
             color: #ffffff;
             border-radius: 8px;
             padding: 8px 14px;
-            margin-bottom: 10px;
+            margin-bottom: 5px;
             border: 1px solid #eab308;
+        }
+        /* AVISO DESTACADO DE VALIDEZ Y CADUCIDAD DE OFERTA */
+        .quote-validity-banner {
+            background-color: #fffbeb;
+            border: 1px solid #fde68a;
+            border-left: 4px solid #f59e0b;
+            border-radius: 6px;
+            padding: 4px 10px;
+            margin-bottom: 6px;
+        }
+        .quote-validity-banner.expired {
+            background-color: #fef2f2;
+            border: 1px solid #fecaca;
+            border-left: 4px solid #ef4444;
+        }
+        .quote-validity-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .quote-validity-title {
+            font-size: 6.8pt;
+            font-weight: 800;
+            color: #92400e;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .quote-validity-banner.expired .quote-validity-title {
+            color: #991b1b;
+        }
+        .quote-validity-text {
+            font-size: 6.2pt;
+            color: #b45309;
+            line-height: 1.25;
+            margin-top: 1px;
+        }
+        .quote-validity-banner.expired .quote-validity-text {
+            color: #b91c1c;
+        }
+        .quote-validity-badge {
+            display: inline-block;
+            background-color: #f59e0b;
+            color: #ffffff;
+            font-weight: 800;
+            font-size: 6.5pt;
+            padding: 2.5px 6px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+        .quote-validity-banner.expired .quote-validity-badge {
+            background-color: #ef4444;
         }
         .quote-total-table {
             width: 100%;
@@ -558,9 +610,20 @@
 
         $extraHourPrice = (float)\App\Models\Setting::get('price_extra_hours', 120);
 
-        // Formatted Date
+        // Formatted Date (del evento)
         $carbonDate = $event->event_date ? \Carbon\Carbon::parse($event->event_date)->locale('es') : null;
         $dateFormatted = $carbonDate ? ucfirst($carbonDate->isoFormat('dddd D [de] MMMM [de] YYYY')) : 'Fecha a convenir';
+
+        // Fechas de Emisión y Caducidad de la Propuesta
+        $validityDays = $quote->validity_days;
+        $issueDate = $quote->created_at ? \Carbon\Carbon::parse($quote->created_at)->locale('es') : now()->locale('es');
+        $expiresAt = $quote->expires_at->locale('es');
+        $isQuoteExpired = $quote->is_expired;
+        
+        $issueDateFormatted = $issueDate->isoFormat('D [de] MMMM [de] YYYY');
+        $expiresDateFormatted = $expiresAt->isoFormat('D [de] MMMM [de] YYYY');
+        $issueDateShort = $issueDate->format('d/m/Y');
+        $expiresDateShort = $expiresAt->format('d/m/Y');
 
         // Schedule string
         $scheduleStr = 'Horario personalizado a convenir';
@@ -630,6 +693,12 @@
                 <tr>
                     <td class="cover-meta-label">HORARIO</td>
                     <td class="cover-meta-value">{{ $scheduleStr }}</td>
+                </tr>
+                <tr>
+                    <td class="cover-meta-label">VALIDEZ</td>
+                    <td class="cover-meta-value" style="color: #fde047; font-weight: 800;">
+                        Hasta el {{ $expiresDateFormatted }} ({{ $validityDays }} días)
+                    </td>
                 </tr>
             </table>
         </div>
@@ -928,7 +997,7 @@
                     <table style="width: 100%; border-collapse: collapse;">
                         <tr>
                             <td style="color: #ffffff; font-weight: 800;">SERVICIOS SOLICITADOS PARA VUESTRO EVENTO</td>
-                            <td style="text-align: right; color: #eab308; font-size: 7.5pt; font-weight: 700;">{{ $dateFormatted }}</td>
+                            <td style="text-align: right; color: #eab308; font-size: 7.5pt; font-weight: 700;">Emisión: {{ $issueDateShort }} &bull; Validez: {{ $expiresDateShort }}</td>
                         </tr>
                     </table>
                 </div>
@@ -1006,6 +1075,28 @@
                             <div class="quote-total-label">TOTAL PRESUPUESTO</div>
                             <div class="quote-total-amount">{{ number_format($quote->amount, 2, ',', '.') }} <span>€</span></div>
                             <div style="font-size: 6pt; color: #94a3b8; margin-top: 1px;">Precios finales &bull; IVA / Impuestos incluidos</div>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- BANNER DE VALIDEZ Y CADUCIDAD DE OFERTA -->
+            <div class="quote-validity-banner {{ $isQuoteExpired ? 'expired' : '' }}">
+                <table class="quote-validity-table">
+                    <tr>
+                        <td style="width: 72%; vertical-align: middle;">
+                            <div class="quote-validity-title">
+                                ⏳ PLAZO DE VALIDEZ Y CADUCIDAD DE ESTA OFERTA
+                            </div>
+                            <div class="quote-validity-text">
+                                Propuesta emitida el <strong>{{ $issueDateShort }}</strong>. Tarifas y bloqueo de fecha garantizados hasta el <strong>{{ $expiresDateFormatted }}</strong> ({{ $validityDays }} días naturales).
+                                <span style="color: #78350f;">Pasada la fecha límite, la oferta caduca y las tarifas o fechas disponibles quedan sujetas a revisión.</span>
+                            </div>
+                        </td>
+                        <td style="width: 28%; text-align: right; vertical-align: middle;">
+                            <div class="quote-validity-badge">
+                                VÁLIDO HASTA: {{ $expiresDateShort }}
+                            </div>
                         </td>
                     </tr>
                 </table>
@@ -1120,7 +1211,7 @@
             </div>
 
             <div class="tax-note">
-                Precios finales, impuestos incluidos &bull; Propuesta válida durante 15 días desde su fecha de emisión &bull; Formalización por estricto orden de reserva
+                Precios finales, impuestos incluidos &bull; Propuesta emitida el {{ $issueDateShort }} y válida hasta el <strong>{{ $expiresDateShort }}</strong> &bull; Formalización por estricto orden de reserva &bull; Pasada la fecha límite, tarifas y disponibilidad quedan sujetas a revisión
             </div>
         </div>
 

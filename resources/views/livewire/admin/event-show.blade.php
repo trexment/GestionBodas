@@ -51,7 +51,11 @@
         }
     }
     $quoteItemsText = implode("\n", $quoteSummaryLines);
-    $quotePropuestaMsg = "¡Hola " . ($event->client ? $event->client->name : '') . "! 👋\n\nOs compartimos la propuesta detallada para vuestro evento *" . $event->name . "* (" . \Carbon\Carbon::parse($event->event_date)->format('d/m/Y') . " en " . $event->location . "):\n\n" . ($quoteItemsText ?: '• Servicios musicales y sonorización profesional.') . "\n\n💰 *TOTAL PRESUPUESTO:* " . number_format($quoteAmount, 2, ',', '.') . " €\n\n📌 *CONDICIONES DE PAGO:*\n• Señal de reserva (" . $signalLabel . "): " . number_format($signalAmount, 2, ',', '.') . " €\n• Restante el día del evento: " . number_format($remainingAmount, 2, ',', '.') . " €\n\nCualquier duda o ajuste, estamos a vuestra entera disposición. ¡Un saludo!";
+    $quoteValidityNotice = "";
+    if ($latestQuote && $latestQuote->expires_at) {
+        $quoteValidityNotice = "\n\n⏳ *VALIDEZ DE LA OFERTA:*\nPropuesta válida hasta el *" . $latestQuote->expires_at->format('d/m/Y') . "* (" . $latestQuote->validity_days . " días naturales). Pasada esta fecha, tarifas y disponibilidad quedan sujetas a revisión.";
+    }
+    $quotePropuestaMsg = "¡Hola " . ($event->client ? $event->client->name : '') . "! 👋\n\nOs compartimos la propuesta detallada para vuestro evento *" . $event->name . "* (" . \Carbon\Carbon::parse($event->event_date)->format('d/m/Y') . " en " . $event->location . "):\n\n" . ($quoteItemsText ?: '• Servicios musicales y sonorización profesional.') . "\n\n💰 *TOTAL PRESUPUESTO:* " . number_format($quoteAmount, 2, ',', '.') . " €\n\n📌 *CONDICIONES DE PAGO:*\n• Señal de reserva (" . $signalLabel . "): " . number_format($signalAmount, 2, ',', '.') . " €\n• Restante el día del evento: " . number_format($remainingAmount, 2, ',', '.') . " €" . $quoteValidityNotice . "\n\nCualquier duda o ajuste, estamos a vuestra entera disposición. ¡Un saludo!";
     $quotePropuestaWaUrl = \App\Services\WhatsAppTemplateService::getLink($clientPhone, $quotePropuestaMsg);
 
     $signalMsg = "¡Hola " . ($event->client ? $event->client->name : '') . "! 👋\n\nPara confirmar la fecha de vuestro evento *" . $event->name . "* (" . \Carbon\Carbon::parse($event->event_date)->format('d/m/Y') . "), podéis abonar la *Señal de reserva (" . number_format($signalAmount, 2, ',', '.') . " €)* mediante:\n\n" . ($iban ? "🏦 *Transferencia Bancaria:*\n" . $iban . "\n\n" : "") . ($bizum ? "📱 *Bizum:* " . $bizum . "\n\n" : "") . "Concepto: " . $event->name . "\n\n¡Muchas gracias y quedamos a vuestra disposición!";
@@ -2689,7 +2693,8 @@
                                         $isEditingThis = ($editing_quote_id === $quote->id);
                                         $versionNumber = $totalQuotesCount - $index;
                                         $taxLabel = $quote->tax_label;
-                                        $quoteMsg = "¡Hola " . ($event->client ? $event->client->name : 'pareja') . "! 👋\n\nTe adjuntamos el presupuesto detallado para *" . $event->name . "* por un importe total de *" . number_format($quote->amount, 2, ',', '.') . " €* (" . $taxLabel . " - Señal de reserva: *" . number_format($qSignal, 2, ',', '.') . " €* - " . $qLabel . ").\n\nPodéis consultarlo con calma y avisarnos para cualquier duda o cambio. ¡Un saludo!";
+                                        $quoteExpiresNotice = $quote->expires_at ? "\n\n⏳ *Validez:* Oferta vigente hasta el " . $quote->expires_at->format('d/m/Y') . " (" . $quote->validity_days . " días naturales)." : "";
+                                        $quoteMsg = "¡Hola " . ($event->client ? $event->client->name : 'pareja') . "! 👋\n\nTe adjuntamos el presupuesto detallado para *" . $event->name . "* por un importe total de *" . number_format($quote->amount, 2, ',', '.') . " €* (" . $taxLabel . " - Señal de reserva: *" . number_format($qSignal, 2, ',', '.') . " €* - " . $qLabel . ")." . $quoteExpiresNotice . "\n\nPodéis consultarlo con calma y avisarnos para cualquier duda o cambio. ¡Un saludo!";
                                         $qWaUrl = $clientPhone ? "https://wa.me/{$clientPhone}?text=" . rawurlencode($quoteMsg) : "https://api.whatsapp.com/send?text=" . rawurlencode($quoteMsg);
                                     @endphp
                                     <div class="p-4 border rounded-xl transition shadow-xs space-y-3 {{ $isEditingThis ? 'border-amber-400 bg-amber-50/40 ring-2 ring-amber-300' : ($isLatest ? 'border-emerald-300 bg-emerald-50/20' : 'border-gray-200 bg-gray-50/60 opacity-90') }}">
@@ -2723,9 +2728,19 @@
                                                     <span class="text-[10px] bg-slate-100 text-slate-700 font-bold px-1.5 py-0.5 rounded">
                                                         {{ $taxLabel }}
                                                     </span>
+
+                                                    @if($quote->is_expired)
+                                                        <span class="text-[10px] bg-rose-100 text-rose-800 border border-rose-300 font-bold px-2 py-0.5 rounded-full flex items-center gap-1" title="Caducó el {{ $quote->expires_at_formatted }}">
+                                                            ⚠️ Caducada ({{ $quote->expires_at ? $quote->expires_at->format('d/m/Y') : '' }})
+                                                        </span>
+                                                    @else
+                                                        <span class="text-[10px] bg-amber-100 text-amber-800 border border-amber-300 font-bold px-2 py-0.5 rounded-full flex items-center gap-1" title="Válida hasta el {{ $quote->expires_at_formatted }}">
+                                                            ⏳ Válida hasta {{ $quote->expires_at ? $quote->expires_at->format('d/m/Y') : '' }}
+                                                        </span>
+                                                    @endif
                                                 </div>
                                                 <p class="text-[11px] text-gray-500 mt-1">
-                                                    <strong>Propuesta #{{ $quote->id }}</strong> &bull; Emitida: {{ $quote->created_at->format('d/m/Y H:i') }} &bull; Señal: {{ $qLabel }}
+                                                    <strong>Propuesta #{{ $quote->id }}</strong> &bull; Emitida: {{ $quote->created_at->format('d/m/Y H:i') }} &bull; Validez: {{ $quote->expires_at ? $quote->expires_at->format('d/m/Y') : '' }} ({{ $quote->validity_days }} días) &bull; Señal: {{ $qLabel }}
                                                 </p>
 
                                                 @php

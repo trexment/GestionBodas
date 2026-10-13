@@ -180,4 +180,46 @@ class Quote extends Model
     {
         return Setting::getBrandInfo($this->brand_clean);
     }
+
+    /**
+     * Días de validez garantizada de esta propuesta comercial
+     */
+    public function getValidityDaysAttribute(): int
+    {
+        return (int)Setting::get('quote_validity_days', 15);
+    }
+
+    /**
+     * Fecha exacta de caducidad de la oferta
+     */
+    public function getExpiresAtAttribute(): \Carbon\Carbon
+    {
+        $baseDate = $this->created_at ? $this->created_at->copy() : now();
+        return $baseDate->addDays($this->validity_days);
+    }
+
+    /**
+     * Indica si la propuesta ya ha caducado
+     */
+    public function getIsExpiredAttribute(): bool
+    {
+        return now()->greaterThan($this->expires_at);
+    }
+
+    /**
+     * Fecha de caducidad en formato legible (ej: 28 de octubre de 2026)
+     */
+    public function getExpiresAtFormattedAttribute(): string
+    {
+        return $this->expires_at->locale('es')->isoFormat('D [de] MMMM [de] YYYY');
+    }
+
+    /**
+     * Fecha de emisión en formato legible (ej: 13 de octubre de 2026)
+     */
+    public function getCreatedAtFormattedAttribute(): string
+    {
+        $date = $this->created_at ?: now();
+        return $date->locale('es')->isoFormat('D [de] MMMM [de] YYYY');
+    }
 }

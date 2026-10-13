@@ -218,6 +218,10 @@
                 @endif
             </div>
 
+            <div style="background-color: #fffbeb; border: 1px solid #fde68a; border-left: 4px solid #f59e0b; border-radius: 8px; padding: 12px 16px; margin: 18px 0; font-size: 13px; color: #92400e; line-height: 1.45;">
+                <strong>⏳ Validez de la Oferta:</strong> Esta propuesta y la reserva provisional de vuestra fecha tienen una validez de <strong>{{ $quote->validity_days }} días naturales</strong> (hasta el <strong>{{ $quote->expires_at ? $quote->expires_at->format('d/m/Y') : '' }}</strong>). Pasada dicha fecha, las tarifas y la disponibilidad de calendario quedan sujetas a revisión.
+            </div>
+
             <div class="btn-wrapper">
                 <a href="{{ $portalUrl }}" class="btn">
                     ✨ Acceder a mi Portal de Evento
