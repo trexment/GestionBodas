@@ -1,34 +1,26 @@
 # 📖 MANUAL COMPLETO DE USO DE LA APLICACIÓN
 ## Sistema de Gestión Integral para Eventos Musicales y Bodas
+**Marcas Comerciales:** JAVNXDJ &bull; NÚÑEZ & SON  
+**Plataforma Web:** [app.nunezandson.com](https://app.nunezandson.com)  
+**Versión:** 2026.10 &bull; Actualizado con Capturas de Pantalla Reales
 
 ---
 
 ## 📑 Índice de Contenidos
 1. [Introducción y Filosofía Multi-Marca](#1-introducción-y-filosofía-multi-marca)
-2. [Acceso al Sistema y Seguridad](#2-acceso-al-sistema-y-seguridad)
-3. [Panel de Control (Dashboard)](#3-panel-de-control-dashboard)
-4. [Gestión de Eventos (Ciclo de Vida Completo)](#4-gestión-de-eventos-ciclo-de-vida-completo)
-   - 4.1. Creación de un Evento
-   - 4.2. Estados del Evento y su Significado
-   - 4.3. Datos Generales y Contactos de Finca/Proveedores
-   - 4.4. Presupuestos y Fianza de Reserva
-   - 4.5. Facturación Automática
-   - 4.6. Contratos y Firma Digital con Auditoría
-   - 4.7. Actas de Reunión con Clientes
-   - 4.8. Escaleta Musical y Peticiones de los Novios
-   - 4.9. Importación de Sesiones de DJ (Engine DJ, Rekordbox, M3U)
-   - 4.10. Asignación de Equipamiento y Direccionamiento DMX
-   - 4.11. Generación y Descarga de Documentos PDF
-5. [Modo Cabina DJ en Directo (DJ Booth Live Mode)](#5-modo-cabina-dj-en-directo-dj-booth-live-mode)
-6. [Portal de Peticiones en Vivo para Invitados (Código QR)](#6-portal-de-peticiones-en-vivo-para-invitados-código-qr)
-7. [Calculadora Pública de Presupuestos (Web / Embed)](#7-calculadora-pública-de-presupuestos-web--embed)
-8. [Automatización de Leads por Correo Electrónico](#8-automatización-de-leads-por-correo-electrónico)
-9. [Gestión de Clientes y Directorio](#9-gestión-de-clientes-y-directorio)
-10. [Calendario y Sincronización Externa (iCal)](#10-calendario-y-sincronización-externa-ical)
-11. [Inventario y Material Técnico](#11-inventario-y-material-técnico)
-12. [Biblioteca Musical y Servicios Cloud](#12-biblioteca-musical-y-servicios-cloud)
-13. [Analítica y Métricas de Rendimiento](#13-analítica-y-métricas-de-rendimiento)
-14. [Configuración del Sistema y Ajustes Globales](#14-configuración-del-sistema-y-ajustes-globales)
+2. [Acceso al Sistema y Roles de Usuario](#2-acceso-al-sistema-y-roles-de-usuario)
+3. [Panel de Control (Dashboard) y Métricas](#3-panel-de-control-dashboard-y-métricas)
+4. [Agenda y Gestión de Eventos](#4-agenda-y-gestión-de-eventos)
+5. [Ficha del Evento y Ciclo de Vida](#5-ficha-del-evento-y-ciclo-de-vida)
+6. [Seguimiento Táctico de Clientes "Sin Respuesta" (WhatsApp)](#6-seguimiento-táctico-de-clientes-sin-respuesta-whatsapp)
+7. [Presupuestos Inteligentes, Packs y Efectos Especiales](#7-presupuestos-inteligentes-packs-y-efectos-especiales)
+8. [Dossier Comercial y Presupuesto en PDF con Caducidad](#8-dossier-comercial-y-presupuesto-en-pdf-con-caducidad)
+9. [Contratos y Firma Digital Online con Auditoría](#9-contratos-y-firma-digital-online-con-auditoría)
+10. [Escaleta Musical y Peticiones de los Novios](#10-escaleta-musical-y-peticiones-de-los-novios)
+11. [Modo Cabina DJ en Directo y Peticiones QR para Invitados](#11-modo-cabina-dj-en-directo-y-peticiones-qr-para-invitados)
+12. [Control de Inventario y Material Técnico](#12-control-de-inventario-y-material-técnico)
+13. [Calculadora Pública de Presupuestos (Web / Embed)](#13-calculadora-pública-de-presupuestos-web--embed)
+14. [Resumen de Buenas Prácticas y Consejos](#14-resumen-de-buenas-prácticas-y-consejos)
 
 ---
 
@@ -43,208 +35,173 @@ Cada evento, presupuesto, contrato, correo y PDF adopta automáticamente la iden
 
 ---
 
-## 2. Acceso al Sistema y Seguridad
+## 2. Acceso al Sistema y Roles de Usuario
 
-- **URL de acceso**: `https://tudominio.com/login`
+- **URL de acceso oficial**: `https://app.nunezandson.com/login`
 - **Inicio de sesión**: Mediante correo electrónico y contraseña.
-- **Roles de usuario**:
-  - **Administrador**: Control total sobre eventos, finanzas, presupuestos, contratos, configuración, inventario y usuarios.
-  - **Staff / DJ Asistente**: Acceso al calendario, detalles técnicos de eventos asignados y modo cabina en directo.
-- **Tokens de acceso público seguro**: Los novios, invitados y DJs auxiliares pueden interactuar con partes específicas de la app mediante enlaces únicos con token seguro (sin necesidad de crear cuenta ni recordar contraseñas).
+
+![Acceso Staff](images/login.png)
+*Figura 2.1: Pantalla de inicio de sesión de Staff y Administradores.*
+
+### Roles de Usuario:
+- **Administrador**: Control total sobre eventos, finanzas, presupuestos, contratos, configuración, inventario y usuarios.
+- **Staff / DJ Residente**: Acceso al calendario, detalles técnicos de eventos asignados, escaletas musicales y activación del Modo Cabina en Directo.
 
 ---
 
-## 3. Panel de Control (Dashboard)
+## 3. Panel de Control (Dashboard) y Métricas
 
 Al iniciar sesión, el Dashboard ofrece una visión panorámica e inmediata del negocio:
-- **Resumen Financiero**: Ingresos previstos, fianzas cobradas, facturación pendiente y conversión de presupuestos.
-- **Próximos Eventos**: Lista interactiva de los eventos más inmediatos con fechas, horarios, lugar y estado.
-- **Accesos Rápidos**: Crear evento, nuevo presupuesto, revisar contratos pendientes de firma y comprobar el estado del material.
-- **Alertas de Acción Rápida**: Solicitudes de información sin responder, pagos de fianza próximos a vencer o escaletas musicales incompletas.
+
+![Dashboard Principal](images/dashboard.png)
+*Figura 3.1: Panel general con facturación total, facturación pendiente, banner de seguimiento activo y eventos próximos.*
+
+### Elementos Clave:
+1. **Resumen Financiero (KPIs)**: Facturación total emitida, facturas pendientes de cobro y previsión de ingresos.
+2. **Banner de Seguimiento Activo**: Detecta automáticamente cuántos clientes llevan días sin responder al presupuesto y ofrece botones directos para enviar WhatsApps de reactivación sin tener que buscar ficha por ficha.
+3. **Próximos Eventos**: Accesos directos a las fichas de los eventos más inmediatos.
 
 ---
 
-## 4. Gestión de Eventos (Ciclo de Vida Completo)
+## 4. Agenda y Gestión de Eventos
 
-La sección **Eventos** (`/admin/events`) es el núcleo del sistema. Permite filtrar por estado, marca, año y buscar por nombres de novios, finca o localidad.
+El módulo **Eventos** (`/admin/events`) centraliza todas las fechas y bodas de la temporada.
 
-### 4.1. Creación de un Evento
-Al pulsar en **"Nuevo Evento"**, se pueden introducir los datos clave:
-- **Marca**: JAVNXDJ o NÚÑEZ & SON.
-- **Tipo de evento**: Boda, Corporativo, Cumpleaños, Fiesta privada, etc.
-- **Cliente**: Selección de cliente existente o creación sobre la marcha.
-- **Fechas y Horarios**: Fecha del evento, hora de inicio/fin, hora prevista de montaje y hora límite de barra libre.
-- **Ubicación**: Nombre de la finca/restaurante, dirección y código postal.
+![Gestión de Eventos](images/event_manager.png)
+*Figura 4.1: Listado de eventos con filtros por estado y botón directo "💬 Recordar".*
 
-### 4.2. Estados del Evento y su Significado
-Cada evento progresa a través de una serie de estados bien definidos:
-1. **Nuevo**: Lead o solicitud inicial recibida.
-2. **Presupuestado**: Se ha elaborado y enviado una propuesta económica.
-3. **No responde**: El cliente ha recibido información pero no ha dado respuesta tras el seguimiento.
-4. **Aprobado**: El cliente ha aceptado la propuesta (o pagado la fianza).
-5. **Planificando**: Se está preparando la escaleta musical, detalles técnicos y logística.
-6. **Listo**: Todo el material, personal y música están 100% coordinados para el día D.
-7. **En curso**: El evento se está celebrando en este momento.
-8. **Finalizado**: El evento ha concluido con éxito.
-9. **Rechazado**: El cliente declinó la propuesta formalmente por presupuesto, fecha no disponible u otro motivo.
-10. **Cancelado**: El evento fue anulado tras haber estado aprobado previamente.
+### Características:
+- **Filtros por Estado**: Acceso rápido a eventos en estado `Sin respuesta`, `Borrador`, `Confirmado` o `Finalizado`.
+- **Botón Directo "💬 Recordar"**: Envía la plantilla táctica de WhatsApp al cliente con un solo clic desde la propia tabla.
+- **Vista Móvil Táctil**: Diseñada para revisar los montajes y horarios 24h directamente desde el teléfono del DJ.
 
-### 4.3. Datos Generales y Contactos de Finca/Proveedores
-Dentro de la ficha del evento (`/admin/events/{id}`):
-- **Pestaña Resumen**: Muestra la línea de tiempo, horas clave (ceremonia, cóctel, banquete, barra libre), y teléfonos de contacto directo (maître, fotógrafo, wedding planner, responsable de la finca).
-- **Enlace al Formulario de los Novios**: Enlace público único (`/guest/form/{token}`) para que la pareja rellene cómodamente sus datos y elecciones musicales desde el móvil.
-
-### 4.4. Presupuestos y Fianza de Reserva
-- **Líneas de servicio**: Añade equipos de sonido, iluminación ambiental, horas extra, microfonía, cabinas especiales o efectos especiales (fuego frío, humo bajo).
-- **Cálculo de impuestos**: Desglose automático de Base Imponible + IVA (21%) o exento.
-- **Fianza / Señal de Reserva**: Porcentaje o importe fijo de reserva (habitualmente 150€ - 300€).
-- **Control de Pago**: Casilla para marcar la fianza como **"Pagada"** registrando la fecha del cobro.
-- **Exportación en PDF**: Descarga instantánea de la propuesta formal con el diseño corporativo de la marca.
-
-### 4.5. Facturación Automática
-- Desde la pestaña de finanzas se puede convertir cualquier presupuesto en **Factura Oficial Proforma o Definitiva**.
-- Numeración correlativa automática por serie y año.
-- Descarga de factura en PDF con desglose fiscal y datos bancarios para transferencia o Bizum.
-
-### 4.6. Contratos y Firma Digital con Auditoría
-- **Generación automática**: El contrato extrae todas las cláusulas, datos de los novios, servicios contratados, importes y fechas.
-- **Portal de Firma Online (`/contrato/{token}`)**:
-  - Los novios acceden desde su teléfono u ordenador.
-  - Leen las condiciones y dibujan su firma con el dedo o ratón.
-  - El sistema registra la **dirección IP, navegador, fecha y hora exacta** de la firma como prueba de auditoría legal.
-- **Descarga del Contrato Firmado en PDF**: Documento listo para archivar con las firmas incrustadas y el sello digital.
-
-### 4.7. Actas de Reunión con Clientes
-- Registro de todas las llamadas, videollamadas o reuniones presenciales con los clientes.
-- Historial cronológico de notas, acuerdos tomados, cambios de última hora y compromisos adquiridos.
-
-### 4.8. Escaleta Musical y Peticiones de los Novios
-- **Momentos Especiales**:
-  - Entrada a la Ceremonia (Novio / Novia).
-  - Salida de la Ceremonia.
-  - Entrada al Banquete.
-  - Momento Tarta Nupcial.
-  - Entrega de Ramo / Regalos especiales.
-  - Baile Nupcial (Primer baile).
-  - Apertura de Barra Libre.
-- **Lista de Canciones Imprescindibles ("Must Play") y Prohibidas ("Do Not Play")**.
-- **Descarga de la Escaleta Musical en PDF**: Guía impresa o digital para el DJ durante el evento.
-
-### 4.9. Importación de Sesiones de DJ (Engine DJ, Rekordbox, M3U)
-Permite guardar el historial real de lo que sonó en la cabina durante el evento:
-1. En la pestaña **Música**, pulsa en **"🎧 Importar Sesión DJ (Engine / M3U)"**.
-2. Sube el archivo CSV exportado desde **Denon Engine DJ**, **Pioneer Rekordbox**, **Serato**, una lista **M3U/M3U8** o pega la lista de temas en texto.
-3. El sistema procesa todos los temas, calcula duraciones, BPMs y **cruza automáticamente la lista con las peticiones de los novios e invitados**.
-4. Las canciones que coincidieron se marcan en verde como **"Sonada en directo"**.
-5. Puedes descargar un **Tracklist Oficial en PDF** con toda la sesión para entregarlo como recuerdo a la pareja.
-
-### 4.10. Asignación de Equipamiento y Direccionamiento DMX
-- Pestaña **Material / Equipos**: Selecciona el material necesario del inventario (altavoces, subgraves, puentes de luces, cabezas móviles, máquinas de efectos).
-- **Gestión DMX**: Asignación de canal de inicio DMX, universo y modo de canales para preparar el software de luces (SoundSwitch, Daslight, etc.).
-- **Packing List en PDF**: Hoja de carga y comprobación de almacén para que el equipo técnico cargue la furgoneta sin olvidar ningún cable o equipo.
-
-### 4.11. Generación y Descarga de Documentos PDF
-Todos los documentos cuentan con un diseño gráfico profesional según la marca:
-- `Presupuesto PDF`
-- `Contrato Firmado PDF`
-- `Factura Oficial PDF`
-- `Packing List de Equipos PDF`
-- `Escaleta Musical de Momentos PDF`
-- `Historial de Sesión DJ PDF`
+![Vista Móvil de Eventos](images/event_manager_mobile.png)
+*Figura 4.2: Tarjeta táctil en smartphone con horarios de montaje y acceso a WhatsApp.*
 
 ---
 
-## 5. Modo Cabina DJ en Directo (DJ Booth Live Mode)
+## 5. Ficha del Evento y Ciclo de Vida
 
-- **Acceso**: `/admin/events/{id}/live` (o enlace directo con token para tablets en cabina).
-- **Interfaz Oscura de Alto Contraste**: Diseñada para visualizarse perfectamente en cabinas con poca luz.
-- **Funciones en vivo**:
-  - Consulta rápida de momentos especiales y canciones clave.
-  - Visualización en tiempo real de las **peticiones enviadas por los invitados desde la pista**.
-  - Botones de acción rápida para marcar canciones como *Pinchada*, *Pendiente* o *Descartada*.
-  - Vista del cronograma del evento.
+Al pulsar en **Gestionar**, accedemos a la ficha integral del evento. Si el evento se marca en estado **"Sin respuesta"**, se activa un banner inteligente de alerta:
 
----
+![Ficha con Banner Sin Respuesta](images/event_show_no_response.png)
+*Figura 5.1: Banner inteligente en la ficha del evento con contador de días, urgencia y acciones rápidas.*
 
-## 6. Portal de Peticiones en Vivo para Invitados (Código QR)
-
-- **Acceso**: `/peticiones/{token}` (se puede generar un código QR para colocar en las mesas o la barra).
-- **Experiencia de los invitados**:
-  - Buscan su canción favorita mediante el motor integrado de Spotify / Apple Music.
-  - Escriben su nombre o una dedicatoria ("De parte de los amigos del novio").
-  - La petición aparece al instante en la pantalla de cabina del DJ.
+### Estados del Evento:
+- **📝 Borrador**: Petición inicial o presupuesto en preparación.
+- **⏳ Sin Respuesta**: Presupuesto enviado hace días sin contestación del cliente.
+- **🟢 Confirmado**: Señal/fianza cobrada o contrato firmado. Fecha bloqueada en exclusiva.
+- **❌ Rechazado**: Cliente declinó formalmente. Fecha liberada.
 
 ---
 
-## 7. Calculadora Pública de Presupuestos (Web / Embed)
+## 6. Seguimiento Táctico de Clientes "Sin Respuesta" (WhatsApp)
 
-- **Acceso**: `/presupuesto`
-- **Uso**: Permite a futuros clientes calcular una estimación de su boda o evento directamente desde la web.
-- **Características**:
-  - Selección interactiva de paquetes y extras (iluminación, microfonía, horas adicionales).
-  - Introducción del código postal: el sistema calcula automáticamente los kilómetros de desplazamiento y suma el coste logístico exacto.
-  - Formulario de contacto final que crea automáticamente un nuevo evento/lead en el panel de administración.
+Para reactivar a novios que se lo están pensando sin resultar pesados ni insistentes, la plataforma incorpora un **Hub de WhatsApp con metodología de negociación y psicología inversa**:
 
----
+![Hub de WhatsApp](images/whatsapp_followup_hub.png)
+*Figura 6.1: Hub de reactivación táctica con previsualización del mensaje personalizado.*
 
-## 8. Automatización de Leads por Correo Electrónico
+![Opciones de Plantillas](images/whatsapp_options.png)
+*Figura 6.2: Menú con diferentes opciones tácticas según el tiempo transcurrido.*
 
-El comando de fondo `php artisan emails:fetch-leads` revisa periódicamente los buzones configurados (por ejemplo los correos de **bodas.net**, formularios web de contacto, etc.):
-- Conecta por protocolo seguro IMAP SSL a los buzones de `nunezandson.com` y `javnxdj.com`.
-- Extrae automáticamente el nombre de los novios, fecha de la boda, lugar, teléfono y notas.
-- Crea el evento en estado **Nuevo**, asigna la marca correcta y notifica en el panel.
-
----
-
-## 9. Gestión de Clientes y Directorio
-
-- Sección **Clientes** (`/admin/clients`): Ficha de cada cliente con historial completo de eventos pasados y futuros, presupuestos emitidos, facturas pagadas y notas de contacto.
-- Búsqueda por nombre, DNI, teléfono, email o población.
+### Estrategias Incluidas:
+1. **La Técnica del "NO" (Chris Voss)**:  
+   *«Hola [Novios], ¿habéis descartado ya contar con nosotros para la música de vuestra boda el [Fecha]?»*  
+   *Por qué funciona:* Decir que "NO" es fácil y seguro. El cliente suele responder de inmediato: *"¡No, para nada! Es que hemos estado liados..."*, reactivando la conversación.
+2. **Cierre de Expediente por Silencio**:  
+   *«Hola [Novios], para no ser pesados y al no tener respuesta, entendemos que habéis elegido otra opción y procedemos a liberar vuestra fecha en agenda. Si aún os interesa, avisadnos hoy.»*  
+   *Por qué funciona:* Genera escasez inmediata y activa la decisión sin parecer insistente.
 
 ---
 
-## 10. Calendario y Sincronización Externa (iCal)
+## 7. Presupuestos Inteligentes, Packs y Efectos Especiales
 
-- Sección **Calendario** (`/admin/calendar`): Vista mensual, semanal y diaria de todos los eventos y fechas de montaje.
-- **Feed iCal Privado (`/calendar/feed/{token}.ics`)**:
-  - Permite suscribirse desde **Google Calendar**, **Apple Calendar (iPhone/Mac)** o **Microsoft Outlook**.
-  - Cualquier evento nuevo, cambio de hora o aplazamiento se sincroniza automáticamente en tu teléfono móvil.
+La pestaña **Presupuesto** automatiza la inclusión de servicios y efectos según el pack seleccionado:
 
----
+![Packs y Efectos Especiales](images/budget_packs_effects.png)
+*Figura 7.1: Selección de Pack con activación automática de Máquina de Humo y Efectos.*
 
-## 11. Inventario y Material Técnico
+### Lógica Automática de Efectos:
+- **Pack Básico**: Sonido e iluminación esenciales.
+- **Pack Premium**: Incluye **Máquina de Humo** automáticamente a coste 0 € en el presupuesto.
+- **Pack Exclusivo**: Marca automáticamente **Máquina de Humo** y **Fuego Frío** para momentos clave (entrada o baile nupcial).
 
-- Sección **Inventario** (`/admin/inventory`):
-  - Catálogo de altavoces, iluminación, cableado, microfonía y estructuras.
-  - Control de unidades en stock, potencia en vatios (W), peso y estado de conservación.
-  - Configuración técnica de luces: universos DMX, canales ocupados y modos de funcionamiento.
+![Cálculo de Fuego Frío](images/budget_cold_fire.png)
+*Figura 7.2: Tarificación por máquina: 60 € por máquina física (ej. 2 máquinas = 120 €).*
 
----
-
-## 12. Biblioteca Musical y Servicios Cloud
-
-- Sección **Música** (`/admin/music`):
-  - Base de datos de temas musicales categorizados por géneros y momentos.
-  - Conexión con Spotify API para enriquecer metadatos (portadas, BPM, tono, popularidad).
-  - Reproductor y preescucha de audio integrado.
-  - Soporte para almacenamiento y streaming de audios locales o en la nube (Google Drive).
+![Resumen Presupuesto](images/budget_overview.png)
+*Figura 7.3: Desglose con Base Imponible, IVA (21%) y Fianza de Reserva formal.*
 
 ---
 
-## 13. Analítica y Métricas de Rendimiento
+## 8. Dossier Comercial y Presupuesto en PDF con Caducidad
 
-- Sección **Analítica** (`/admin/analytics`):
-  - Gráficas de eventos por mes y estacionalidad.
-  - Tasa de conversión de presupuestos a eventos confirmados.
-  - Rendimiento y facturación por marca comercial.
-  - Estadísticas de géneros y canciones más solicitadas en bodas.
+El dossier descargable en PDF presenta una imagen de marca impecable e incluye **Fecha de Caducidad de la Oferta**:
+
+![Dossier en PDF](images/pdf_dossier.png)
+*Figura 8.1: Dossier profesional en PDF con especificación de packs y validez temporal.*
+
+> **Protección Tarifaria:** Si un cliente tarda meses en responder y la oferta ha caducado, la empresa tiene el respaldo contractual para actualizar los precios a la temporada vigente.
 
 ---
 
-## 14. Configuración del Sistema y Ajustes Globales
+## 9. Contratos y Firma Digital Online con Auditoría
 
-- Sección **Ajustes** (`/admin/settings`):
-  - Configuración de datos fiscales, CIF, direcciones y cuentas bancarias de cada marca.
-  - Configuración del servidor de correo SMTP para el envío automático de presupuestos y contratos.
-  - Personalización de plantillas de mensajes para WhatsApp y correos electrónicos.
-  - Integración de claves de API (Spotify Client ID/Secret, Google Drive, etc.).
+Los novios pueden revisar su contrato y firmarlo digitalmente desde su teléfono móvil a través del enlace `/contrato/{token}`:
+
+![Firma de Contrato Online](images/contract_signing.png)
+*Figura 9.1: Lienzo de firma táctil con registro de IP, fecha, hora y validez legal.*
+
+---
+
+## 10. Escaleta Musical y Peticiones de los Novios
+
+Planifica la música exacta para cada instante inolvidable de la boda:
+
+![Escaleta Musical](images/music_escaleta.png)
+*Figura 10.1: Momentos especiales (Entrada al banquete, Tarta, Ramos, Baile nupcial).*
+
+![Peticiones Musicales](images/music_requests.png)
+*Figura 10.2: Peticiones Must Play y Do Not Play configuradas por los novios.*
+
+---
+
+## 11. Modo Cabina DJ en Directo y Peticiones QR para Invitados
+
+Durante la fiesta, el DJ utiliza una pantalla táctil optimizada para cabina (`/live/{token}`):
+
+![Modo Cabina DJ en Directo](images/dj_booth_live.png)
+*Figura 11.1: Interfaz en directo para el DJ con escaleta en vivo y cola de peticiones.*
+
+- **Código QR para Invitados**: Los invitados escanean el QR en las mesas y envían peticiones desde su móvil a `/peticiones/{token}` sin aglomerarse en la cabina.
+
+---
+
+## 12. Control de Inventario y Material Técnico
+
+Evita olvidos y averías con el módulo de inventario técnico (`/admin/inventory`):
+
+![Control de Inventario](images/inventory.png)
+*Figura 12.1: Gestión de altavoces, puentes de luces, máquinas de efectos y packing lists.*
+
+---
+
+## 13. Calculadora Pública de Presupuestos (Web / Embed)
+
+Captador web de clientes en `https://app.nunezandson.com/presupuesto`:
+
+![Calculadora Pública](images/public_calculator.png)
+*Figura 13.1: Cotizador interactivo online para generar nuevos leads desde la web.*
+
+---
+
+## 14. Resumen de Buenas Prácticas y Consejos
+
+1. **Mantén los estados al día**: Marca en *Sin Respuesta* a cualquier cliente que supere las 48-72h sin contestar tras el envío del dossier.
+2. **Utiliza la técnica del NO**: El mensaje pre-redactado de WhatsApp tiene una tasa de respuesta superior al 80%.
+3. **Revisa las máquinas de fuego frío**: Comprueba si el cliente requiere 2 máquinas (para laterales) o 4 (para pasillo completo) y ajusta la cantidad (60 €/ud).
+4. **Descarga el Packing List**: Antes de cada salida de furgoneta, imprime o visualiza el packing list para no olvidar cables de señal ni líquidos de humo.
+
+---
+*Documento oficial de la plataforma • Desarrollado para Núñez & Son y JAVNXDJ &bull; 2026*
