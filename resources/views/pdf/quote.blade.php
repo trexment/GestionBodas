@@ -544,13 +544,16 @@
         $dossierMusicCustomDesc = \App\Models\Setting::get('dossier_music_custom_desc', $dDefaults['dossier_music_custom_desc']);
 
         // Pack settings
-        $packBasicPrice = (float)\App\Models\Setting::get('pack_basic_price', 400);
+        $packBasicName = \App\Models\Setting::get('pack_basic_name', 'Pack Esencial');
+        $packBasicPrice = (float)\App\Models\Setting::get('pack_basic_price', 600);
         $packBasicHours = (int)\App\Models\Setting::get('pack_basic_hours', 4);
         
-        $packMediumPrice = (float)\App\Models\Setting::get('pack_medium_price', 700);
+        $packMediumName = \App\Models\Setting::get('pack_medium_name', 'Pack Signature');
+        $packMediumPrice = (float)\App\Models\Setting::get('pack_medium_price', 950);
         $packMediumHours = (int)\App\Models\Setting::get('pack_medium_hours', 5);
 
-        $packPremiumPrice = (float)\App\Models\Setting::get('pack_premium_price', 1000);
+        $packPremiumName = \App\Models\Setting::get('pack_premium_name', 'Pack Deluxe Show');
+        $packPremiumPrice = (float)\App\Models\Setting::get('pack_premium_price', 1350);
         $packPremiumHours = (int)\App\Models\Setting::get('pack_premium_hours', 6);
 
         $extraHourPrice = (float)\App\Models\Setting::get('price_extra_hours', 120);
@@ -575,12 +578,12 @@
         $isCustomQuote = false;
 
         foreach ($quote->items as $qItem) {
-            $sName = mb_strtolower($qItem->service_name);
-            if (str_contains($sName, 'básico') || str_contains($sName, 'basico')) {
+            $sName = mb_strtolower($qItem->service_name ?: $qItem->concept ?: '');
+            if (str_contains($sName, 'básico') || str_contains($sName, 'basico') || str_contains($sName, 'esencial') || str_contains($sName, 'clásico') || str_contains($sName, 'clasico')) {
                 $hasBasicPack = true;
-            } elseif (str_contains($sName, 'medio') || str_contains($sName, 'recomendado')) {
+            } elseif (str_contains($sName, 'medio') || str_contains($sName, 'signature') || str_contains($sName, 'recomendado')) {
                 $hasMediumPack = true;
-            } elseif (str_contains($sName, 'premium')) {
+            } elseif (str_contains($sName, 'premium') || str_contains($sName, 'deluxe') || str_contains($sName, 'show') || str_contains($sName, 'festival')) {
                 $hasPremiumPack = true;
             } else {
                 $isCustomQuote = true;
@@ -1014,58 +1017,60 @@
             </div>
             <table class="packs-table">
                 <tr>
-                    <!-- PACK BÁSICO -->
+                    <!-- PACK BÁSICO / ESENCIAL -->
                     <td class="pack-col">
                         <div class="pack-card {{ $hasBasicPack ? 'highlighted' : '' }}">
                             @if($hasBasicPack)
                                 <div class="pack-badge">VUESTRA ELECCIÓN</div>
                             @endif
-                            <div class="pack-title">Básico</div>
-                            <div class="pack-schedule">{{ $packBasicHours }} Horas de servicio</div>
+                            <div class="pack-title">{{ $packBasicName }}</div>
+                            <div class="pack-schedule">{{ $packBasicHours }} Horas de servicio DJ</div>
                             <div class="pack-price">{{ number_format($packBasicPrice, 0, ',', '.') }}€</div>
                             <ul class="pack-features">
-                                <li>DJ durante {{ $packBasicHours }} horas</li>
-                                <li>Equipo de sonido profesional</li>
-                                <li>Iluminación de pista</li>
-                                <li>Montaje y desmontaje</li>
+                                <li>{{ $packBasicHours }}h de sesión DJ profesional</li>
+                                <li>Sonido estéreo alta definición</li>
+                                <li>Iluminación rítmica LED de pista</li>
+                                <li>Microfonía inalámbrica</li>
                             </ul>
                         </div>
                     </td>
 
-                    <!-- PACK MEDIO (RECOMENDADO) -->
+                    <!-- PACK MEDIO / SIGNATURE (RECOMENDADO) -->
                     <td class="pack-col">
                         <div class="pack-card {{ $hasMediumPack ? 'highlighted' : '' }}">
                             @if($hasMediumPack)
                                 <div class="pack-badge">VUESTRA ELECCIÓN</div>
                             @else
-                                <div class="pack-badge" style="background-color: #3b82f6; color: #ffffff;">MÁS POPULAR</div>
+                                <div class="pack-badge" style="background-color: #3b82f6; color: #ffffff;">⭐ RECOMENDADO</div>
                             @endif
-                            <div class="pack-title">Medio</div>
-                            <div class="pack-schedule">Hasta {{ $packMediumHours }} Horas de servicio</div>
+                            <div class="pack-title">{{ $packMediumName }}</div>
+                            <div class="pack-schedule">{{ $packMediumHours }} Horas de servicio DJ</div>
                             <div class="pack-price">{{ number_format($packMediumPrice, 0, ',', '.') }}€</div>
                             <ul class="pack-features">
-                                <li>Todo lo del pack Básico</li>
-                                <li>Hasta {{ $packMediumHours }} horas completas</li>
-                                <li>Iluminación avanzada + robotizadas</li>
-                                <li>Máquina de humo en pista</li>
+                                <li>{{ $packMediumHours }}h de sesión DJ profesional</li>
+                                <li>Sonido reforzado con subgraves</li>
+                                <li>Cabina DJ retroiluminada</li>
+                                <li>Puente/barras LED sincronizadas</li>
                             </ul>
                         </div>
                     </td>
 
-                    <!-- PACK PREMIUM -->
+                    <!-- PACK PREMIUM / DELUXE SHOW -->
                     <td class="pack-col">
                         <div class="pack-card {{ $hasPremiumPack ? 'highlighted' : '' }}">
                             @if($hasPremiumPack)
                                 <div class="pack-badge">VUESTRA ELECCIÓN</div>
+                            @else
+                                <div class="pack-badge" style="background-color: #f59e0b; color: #ffffff;">SHOW COMPLETO</div>
                             @endif
-                            <div class="pack-title">Premium</div>
-                            <div class="pack-schedule">Hasta {{ $packPremiumHours }} Horas de servicio</div>
+                            <div class="pack-title">{{ $packPremiumName }}</div>
+                            <div class="pack-schedule">Hasta {{ $packPremiumHours }} Horas de cobertura</div>
                             <div class="pack-price">{{ number_format($packPremiumPrice, 0, ',', '.') }}€</div>
                             <ul class="pack-features">
-                                <li>Todo lo del pack Medio</li>
-                                <li>Efectos de humo y ambientación</li>
-                                <li>Fuego frío / Efectos show</li>
-                                <li>Montaje y desmontaje</li>
+                                <li>Hasta {{ $packPremiumHours }}h cobertura completa</li>
+                                <li>Sonido gran formato + subgraves</li>
+                                <li>Show iluminación sincronizada</li>
+                                <li>Efecto humo frío / chispas frías</li>
                             </ul>
                         </div>
                     </td>

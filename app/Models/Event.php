@@ -366,11 +366,11 @@ class Event extends Model
                     $name = mb_strtolower($item->service_name ?? '');
                     $desc = mb_strtolower($item->description ?? '');
                     
-                    // Pack Básico (4h), Pack Medio (5h), Pack Premium (6h)
+                    // Pack Esencial / Básico (4h), Pack Signature / Medio (5h), Pack Deluxe Show / Premium (6h)
                     if (str_contains($name, 'pack') || str_contains($desc, 'pack')) {
-                        if (str_contains($name, 'básico') || str_contains($name, 'basico')) return 4.0;
-                        if (str_contains($name, 'medio')) return 5.0;
-                        if (str_contains($name, 'premium')) return 6.0;
+                        if (str_contains($name, 'esencial') || str_contains($name, 'clásico') || str_contains($name, 'clasico') || str_contains($name, 'básico') || str_contains($name, 'basico')) return (float)\App\Models\Setting::get('pack_basic_hours', 4);
+                        if (str_contains($name, 'signature') || str_contains($name, 'medio')) return (float)\App\Models\Setting::get('pack_medium_hours', 5);
+                        if (str_contains($name, 'deluxe') || str_contains($name, 'festival') || str_contains($name, 'premium')) return (float)\App\Models\Setting::get('pack_premium_hours', 6);
                     }
 
                     // Horas de DJ

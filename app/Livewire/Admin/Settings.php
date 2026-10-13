@@ -248,20 +248,44 @@ class Settings extends Component
         $this->brand_leugim_website = Setting::get('brand_leugim_website', 'magoleugim.es');
 
         // Packs
-        $this->pack_basic_name = Setting::get('pack_basic_name', 'Pack Básico');
-        $this->pack_basic_price = Setting::get('pack_basic_price', 400);
+        $storedBasic = Setting::get('pack_basic_name');
+        if (empty($storedBasic) || $storedBasic === 'Pack Básico' || $storedBasic === 'Pack Basico') {
+            Setting::set('pack_basic_name', 'Pack Esencial');
+            Setting::set('pack_basic_price', 600);
+            Setting::set('pack_basic_hours', 4);
+            Setting::set('pack_basic_desc', '4 horas de sesión DJ. Sonido profesional estéreo (2 altavoces de alta definición) + iluminación rítmica básica de pista (2 focos/efectos LED). Microfonía inalámbrica para discursos.');
+        }
+
+        $storedMedium = Setting::get('pack_medium_name');
+        if (empty($storedMedium) || $storedMedium === 'Pack Medio (Recomendado)' || $storedMedium === 'Pack Medio') {
+            Setting::set('pack_medium_name', 'Pack Signature');
+            Setting::set('pack_medium_price', 950);
+            Setting::set('pack_medium_hours', 5);
+            Setting::set('pack_medium_desc', '5 horas de sesión DJ. Sonido reforzado con subgraves (impacto y pegada en pista). Cabina DJ retroiluminada + puente/barras de iluminación LED sincronizada y ambientación de pista. Microfonía inalámbrica.');
+        }
+
+        $storedPremium = Setting::get('pack_premium_name');
+        if (empty($storedPremium) || $storedPremium === 'Pack Premium') {
+            Setting::set('pack_premium_name', 'Pack Deluxe Show');
+            Setting::set('pack_premium_price', 1350);
+            Setting::set('pack_premium_hours', 6);
+            Setting::set('pack_premium_desc', 'Cobertura completa (hasta 6h). Montaje de gran formato: sonido multizona/subgraves potentes + show de iluminación avanzada sincronizada. Incluye efecto especial de máquina de humo frío / chispas frías para momentos clave (apertura de baile).');
+        }
+
+        $this->pack_basic_name = Setting::get('pack_basic_name', 'Pack Esencial');
+        $this->pack_basic_price = Setting::get('pack_basic_price', 600);
         $this->pack_basic_hours = Setting::get('pack_basic_hours', 4);
-        $this->pack_basic_desc = Setting::get('pack_basic_desc', '4 Horas de servicio DJ, Equipo de sonido profesional e iluminación de pista básica.');
+        $this->pack_basic_desc = Setting::get('pack_basic_desc', '4 horas de sesión DJ. Sonido profesional estéreo (2 altavoces de alta definición) + iluminación rítmica básica de pista (2 focos/efectos LED). Microfonía inalámbrica para discursos.');
 
-        $this->pack_medium_name = Setting::get('pack_medium_name', 'Pack Medio (Recomendado)');
-        $this->pack_medium_price = Setting::get('pack_medium_price', 700);
+        $this->pack_medium_name = Setting::get('pack_medium_name', 'Pack Signature');
+        $this->pack_medium_price = Setting::get('pack_medium_price', 950);
         $this->pack_medium_hours = Setting::get('pack_medium_hours', 5);
-        $this->pack_medium_desc = Setting::get('pack_medium_desc', 'Hasta 5 Horas de servicio DJ, Sonido alta gama, Iluminación avanzada de pista + Máquina de humo.');
+        $this->pack_medium_desc = Setting::get('pack_medium_desc', '5 horas de sesión DJ. Sonido reforzado con subgraves (impacto y pegada en pista). Cabina DJ retroiluminada + puente/barras de iluminación LED sincronizada y ambientación de pista. Microfonía inalámbrica.');
 
-        $this->pack_premium_name = Setting::get('pack_premium_name', 'Pack Premium');
-        $this->pack_premium_price = Setting::get('pack_premium_price', 1000);
+        $this->pack_premium_name = Setting::get('pack_premium_name', 'Pack Deluxe Show');
+        $this->pack_premium_price = Setting::get('pack_premium_price', 1350);
         $this->pack_premium_hours = Setting::get('pack_premium_hours', 6);
-        $this->pack_premium_desc = Setting::get('pack_premium_desc', 'Hasta 6 Horas de servicio DJ, Iluminación profesional gran potencia + Efectos especiales + Fuego frío.');
+        $this->pack_premium_desc = Setting::get('pack_premium_desc', 'Cobertura completa (hasta 6h). Montaje de gran formato: sonido multizona/subgraves potentes + show de iluminación avanzada sincronizada. Incluye efecto especial de máquina de humo frío / chispas frías para momentos clave (apertura de baile).');
         
         // Servicios
         $this->price_ceremony = Setting::get('price_ceremony', 180);

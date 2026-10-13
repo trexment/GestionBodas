@@ -118,9 +118,9 @@ class EventShow extends Component
 
     // Presupuestos & Packs
     public $quote_services = [
-        'pack_basic' => ['selected' => false, 'name' => 'Pack Básico', 'price' => 400, 'hours' => 4, 'desc' => '4 Horas de servicio DJ, Equipo de sonido profesional e iluminación de pista básica.'],
-        'pack_medium' => ['selected' => false, 'name' => 'Pack Medio (Recomendado)', 'price' => 700, 'hours' => 5, 'desc' => 'Hasta 5 Horas de servicio DJ, Sonido alta gama, Iluminación avanzada de pista + Máquina de humo.'],
-        'pack_premium' => ['selected' => false, 'name' => 'Pack Premium', 'price' => 1000, 'hours' => 6, 'desc' => 'Hasta 6 Horas de servicio DJ, Iluminación profesional gran potencia + Efectos especiales + Fuego frío.'],
+        'pack_basic' => ['selected' => false, 'name' => 'Pack Esencial', 'price' => 600, 'hours' => 4, 'desc' => '4 horas de sesión DJ. Sonido profesional estéreo (2 altavoces de alta definición) + iluminación rítmica básica de pista (2 focos/efectos LED). Microfonía inalámbrica para discursos.'],
+        'pack_medium' => ['selected' => false, 'name' => 'Pack Signature', 'price' => 950, 'hours' => 5, 'desc' => '5 horas de sesión DJ. Sonido reforzado con subgraves (impacto y pegada en pista). Cabina DJ retroiluminada + puente/barras de iluminación LED sincronizada y ambientación de pista. Microfonía inalámbrica.'],
+        'pack_premium' => ['selected' => false, 'name' => 'Pack Deluxe Show', 'price' => 1350, 'hours' => 6, 'desc' => 'Cobertura completa (hasta 6h). Montaje de gran formato: sonido multizona/subgraves potentes + show de iluminación avanzada sincronizada. Incluye efecto especial de máquina de humo frío / chispas frías para momentos clave (apertura de baile).'],
         'ceremony' => ['selected' => false, 'quantity' => 1, 'price' => 180, 'desc' => 'Sonorización + Música ambiente + Micrófonos inalámbricos.'],
         'cocktail' => ['selected' => false, 'quantity' => 1, 'price' => 150, 'desc' => 'Música ambiente durante el cóctel.'],
         'restaurant' => ['selected' => false, 'quantity' => 1, 'price' => 150, 'desc' => 'Música ambiente + Sonorización de regalos y detalles en el banquete.'],
@@ -270,20 +270,44 @@ class EventShow extends Component
     public function loadSettingsPrices()
     {
         // Packs
-        $this->quote_services['pack_basic']['name'] = \App\Models\Setting::get('pack_basic_name', 'Pack Básico');
-        $this->quote_services['pack_basic']['price'] = (float)\App\Models\Setting::get('pack_basic_price', 400);
+        $storedBasic = \App\Models\Setting::get('pack_basic_name');
+        if (empty($storedBasic) || $storedBasic === 'Pack Básico' || $storedBasic === 'Pack Basico') {
+            \App\Models\Setting::set('pack_basic_name', 'Pack Esencial');
+            \App\Models\Setting::set('pack_basic_price', 600);
+            \App\Models\Setting::set('pack_basic_hours', 4);
+            \App\Models\Setting::set('pack_basic_desc', '4 horas de sesión DJ. Sonido profesional estéreo (2 altavoces de alta definición) + iluminación rítmica básica de pista (2 focos/efectos LED). Microfonía inalámbrica para discursos.');
+        }
+
+        $storedMedium = \App\Models\Setting::get('pack_medium_name');
+        if (empty($storedMedium) || $storedMedium === 'Pack Medio (Recomendado)' || $storedMedium === 'Pack Medio') {
+            \App\Models\Setting::set('pack_medium_name', 'Pack Signature');
+            \App\Models\Setting::set('pack_medium_price', 950);
+            \App\Models\Setting::set('pack_medium_hours', 5);
+            \App\Models\Setting::set('pack_medium_desc', '5 horas de sesión DJ. Sonido reforzado con subgraves (impacto y pegada en pista). Cabina DJ retroiluminada + puente/barras de iluminación LED sincronizada y ambientación de pista. Microfonía inalámbrica.');
+        }
+
+        $storedPremium = \App\Models\Setting::get('pack_premium_name');
+        if (empty($storedPremium) || $storedPremium === 'Pack Premium') {
+            \App\Models\Setting::set('pack_premium_name', 'Pack Deluxe Show');
+            \App\Models\Setting::set('pack_premium_price', 1350);
+            \App\Models\Setting::set('pack_premium_hours', 6);
+            \App\Models\Setting::set('pack_premium_desc', 'Cobertura completa (hasta 6h). Montaje de gran formato: sonido multizona/subgraves potentes + show de iluminación avanzada sincronizada. Incluye efecto especial de máquina de humo frío / chispas frías para momentos clave (apertura de baile).');
+        }
+
+        $this->quote_services['pack_basic']['name'] = \App\Models\Setting::get('pack_basic_name', 'Pack Esencial');
+        $this->quote_services['pack_basic']['price'] = (float)\App\Models\Setting::get('pack_basic_price', 600);
         $this->quote_services['pack_basic']['hours'] = (int)\App\Models\Setting::get('pack_basic_hours', 4);
-        $this->quote_services['pack_basic']['desc'] = \App\Models\Setting::get('pack_basic_desc', '4 Horas de servicio DJ, Equipo de sonido profesional e iluminación de pista básica.');
+        $this->quote_services['pack_basic']['desc'] = \App\Models\Setting::get('pack_basic_desc', '4 horas de sesión DJ. Sonido profesional estéreo (2 altavoces de alta definición) + iluminación rítmica básica de pista (2 focos/efectos LED). Microfonía inalámbrica para discursos.');
 
-        $this->quote_services['pack_medium']['name'] = \App\Models\Setting::get('pack_medium_name', 'Pack Medio (Recomendado)');
-        $this->quote_services['pack_medium']['price'] = (float)\App\Models\Setting::get('pack_medium_price', 700);
+        $this->quote_services['pack_medium']['name'] = \App\Models\Setting::get('pack_medium_name', 'Pack Signature');
+        $this->quote_services['pack_medium']['price'] = (float)\App\Models\Setting::get('pack_medium_price', 950);
         $this->quote_services['pack_medium']['hours'] = (int)\App\Models\Setting::get('pack_medium_hours', 5);
-        $this->quote_services['pack_medium']['desc'] = \App\Models\Setting::get('pack_medium_desc', 'Hasta 5 Horas de servicio DJ, Sonido alta gama, Iluminación avanzada de pista + Máquina de humo.');
+        $this->quote_services['pack_medium']['desc'] = \App\Models\Setting::get('pack_medium_desc', '5 horas de sesión DJ. Sonido reforzado con subgraves (impacto y pegada en pista). Cabina DJ retroiluminada + puente/barras de iluminación LED sincronizada y ambientación de pista. Microfonía inalámbrica.');
 
-        $this->quote_services['pack_premium']['name'] = \App\Models\Setting::get('pack_premium_name', 'Pack Premium');
-        $this->quote_services['pack_premium']['price'] = (float)\App\Models\Setting::get('pack_premium_price', 1000);
+        $this->quote_services['pack_premium']['name'] = \App\Models\Setting::get('pack_premium_name', 'Pack Deluxe Show');
+        $this->quote_services['pack_premium']['price'] = (float)\App\Models\Setting::get('pack_premium_price', 1350);
         $this->quote_services['pack_premium']['hours'] = (int)\App\Models\Setting::get('pack_premium_hours', 6);
-        $this->quote_services['pack_premium']['desc'] = \App\Models\Setting::get('pack_premium_desc', 'Hasta 6 Horas de servicio DJ, Iluminación profesional gran potencia + Efectos especiales + Fuego frío.');
+        $this->quote_services['pack_premium']['desc'] = \App\Models\Setting::get('pack_premium_desc', 'Cobertura completa (hasta 6h). Montaje de gran formato: sonido multizona/subgraves potentes + show de iluminación avanzada sincronizada. Incluye efecto especial de máquina de humo frío / chispas frías para momentos clave (apertura de baile).');
 
         // Servicios individuales
         $this->quote_services['ceremony']['price'] = (float)\App\Models\Setting::get('price_ceremony', 180);
@@ -1947,15 +1971,15 @@ class EventShow extends Component
         foreach ($quote->items as $item) {
             $name = mb_strtolower($item->service_name ?: $item->concept ?: '');
             
-            if (str_contains($name, 'pack básico') || str_contains($name, 'pack basico')) {
+            if (str_contains($name, 'pack básico') || str_contains($name, 'pack basico') || str_contains($name, 'pack esencial') || str_contains($name, 'esencial') || str_contains($name, 'pack clásico') || str_contains($name, 'pack clasico')) {
                 $this->quote_services['pack_basic']['selected'] = true;
                 $this->quote_services['pack_basic']['price'] = (float)$item->price;
                 $this->selected_pack_type = 'basic';
-            } elseif (str_contains($name, 'pack medio')) {
+            } elseif (str_contains($name, 'pack medio') || str_contains($name, 'pack signature') || str_contains($name, 'signature') || str_contains($name, 'premium fiesta')) {
                 $this->quote_services['pack_medium']['selected'] = true;
                 $this->quote_services['pack_medium']['price'] = (float)$item->price;
                 $this->selected_pack_type = 'medium';
-            } elseif (str_contains($name, 'pack premium')) {
+            } elseif (str_contains($name, 'pack premium') || str_contains($name, 'pack deluxe') || str_contains($name, 'deluxe show') || str_contains($name, 'deluxe') || str_contains($name, 'pack festival')) {
                 $this->quote_services['pack_premium']['selected'] = true;
                 $this->quote_services['pack_premium']['price'] = (float)$item->price;
                 $this->selected_pack_type = 'premium';

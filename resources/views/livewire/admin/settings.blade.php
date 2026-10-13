@@ -466,11 +466,11 @@
                 </div>
 
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                    <!-- Pack Básico -->
+                    <!-- Pack 1: La Base / Esencial -->
                     <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
                         <div class="flex items-center justify-between">
-                            <span class="text-xs font-black uppercase text-slate-600">Pack Básico</span>
-                            <span class="text-xs bg-slate-200 text-slate-800 font-bold px-2 py-0.5 rounded">Estándar</span>
+                            <span class="text-xs font-black uppercase text-slate-600">Pack 1: Esencial / Base</span>
+                            <span class="text-xs bg-slate-200 text-slate-800 font-bold px-2 py-0.5 rounded">La Base</span>
                         </div>
                         <div>
                             <label class="block text-[11px] font-bold text-gray-700 mb-0.5">Nombre del Pack</label>
@@ -492,10 +492,10 @@
                         </div>
                     </div>
 
-                    <!-- Pack Medio -->
+                    <!-- Pack 2: La Opción Estrella -->
                     <div class="p-4 bg-indigo-50/60 rounded-xl border-2 border-indigo-200 space-y-3 relative">
                         <div class="flex items-center justify-between">
-                            <span class="text-xs font-black uppercase text-indigo-800">Pack Medio</span>
+                            <span class="text-xs font-black uppercase text-indigo-800">Pack 2: Opción Estrella</span>
                             <span class="text-[10px] bg-indigo-600 text-white font-bold px-2 py-0.5 rounded-full">⭐ Recomendado</span>
                         </div>
                         <div>
@@ -518,11 +518,11 @@
                         </div>
                     </div>
 
-                    <!-- Pack Premium -->
+                    <!-- Pack 3: La Experiencia Completa -->
                     <div class="p-4 bg-amber-50/60 rounded-xl border border-amber-200 space-y-3">
                         <div class="flex items-center justify-between">
-                            <span class="text-xs font-black uppercase text-amber-800">Pack Premium</span>
-                            <span class="text-xs bg-amber-200 text-amber-900 font-bold px-2 py-0.5 rounded">👑 Alta Gama</span>
+                            <span class="text-xs font-black uppercase text-amber-800">Pack 3: Experiencia Completa</span>
+                            <span class="text-xs bg-amber-200 text-amber-900 font-bold px-2 py-0.5 rounded">👑 Show Completo</span>
                         </div>
                         <div>
                             <label class="block text-[11px] font-bold text-gray-700 mb-0.5">Nombre del Pack</label>

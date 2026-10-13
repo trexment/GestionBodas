@@ -462,20 +462,20 @@ class Setting extends Model
     {
         $hours = max(1, $hours);
 
-        $basicName = self::get('pack_basic_name', 'Pack Básico');
-        $basicPrice = (float)self::get('pack_basic_price', 400);
+        $basicName = self::get('pack_basic_name', 'Pack Esencial');
+        $basicPrice = (float)self::get('pack_basic_price', 600);
         $basicHours = (int)self::get('pack_basic_hours', 4);
-        $basicDesc = self::get('pack_basic_desc', '4 Horas de servicio DJ, Equipo de sonido profesional e iluminación de pista básica.');
+        $basicDesc = self::get('pack_basic_desc', '4 horas de sesión DJ. Sonido profesional estéreo (2 altavoces de alta definición) + iluminación rítmica básica de pista (2 focos/efectos LED). Microfonía inalámbrica para discursos.');
 
-        $mediumName = self::get('pack_medium_name', 'Pack Medio (Recomendado)');
-        $mediumPrice = (float)self::get('pack_medium_price', 700);
+        $mediumName = self::get('pack_medium_name', 'Pack Signature');
+        $mediumPrice = (float)self::get('pack_medium_price', 950);
         $mediumHours = (int)self::get('pack_medium_hours', 5);
-        $mediumDesc = self::get('pack_medium_desc', 'Hasta 5 Horas de servicio DJ, Sonido alta gama, Iluminación avanzada de pista + Máquina de humo.');
+        $mediumDesc = self::get('pack_medium_desc', '5 horas de sesión DJ. Sonido reforzado con subgraves (impacto y pegada en pista). Cabina DJ retroiluminada + puente/barras de iluminación LED sincronizada y ambientación de pista. Microfonía inalámbrica.');
 
-        $premiumName = self::get('pack_premium_name', 'Pack Premium');
-        $premiumPrice = (float)self::get('pack_premium_price', 1000);
+        $premiumName = self::get('pack_premium_name', 'Pack Deluxe Show');
+        $premiumPrice = (float)self::get('pack_premium_price', 1350);
         $premiumHours = (int)self::get('pack_premium_hours', 6);
-        $premiumDesc = self::get('pack_premium_desc', 'Hasta 6 Horas de servicio DJ, Iluminación profesional gran potencia + Efectos especiales + Fuego frío.');
+        $premiumDesc = self::get('pack_premium_desc', 'Cobertura completa (hasta 6h). Montaje de gran formato: sonido multizona/subgraves potentes + show de iluminación avanzada sincronizada. Incluye efecto especial de máquina de humo frío / chispas frías para momentos clave (apertura de baile).');
 
         $extraHourPrice = (float)self::get('price_extra_hours', 120);
 
@@ -494,7 +494,7 @@ class Setting extends Model
                 'total_price' => $price,
                 'description' => $premiumDesc . ($extra > 0 ? " Incluye {$extra} hora(s) adicional(es) de fiesta." : ''),
                 'badge' => '👑 ' . $premiumName . ($extra > 0 ? " +{$extra}h Extra" : ''),
-                'tag' => 'Pack Premium (' . $hours . 'h)',
+                'tag' => $premiumName . ' (' . $hours . 'h)',
             ];
         }
 
@@ -513,7 +513,7 @@ class Setting extends Model
                 'total_price' => $price,
                 'description' => $mediumDesc . ($extra > 0 ? " Incluye {$extra} hora(s) adicional(es) de fiesta." : ''),
                 'badge' => '🌟 ' . $mediumName . ($extra > 0 ? " +{$extra}h Extra" : ''),
-                'tag' => 'Pack Medio (' . $hours . 'h)',
+                'tag' => $mediumName . ' (' . $hours . 'h)',
             ];
         }
 
@@ -532,7 +532,7 @@ class Setting extends Model
             'total_price' => $price,
             'description' => $basicDesc . ($extra > 0 ? " Incluye {$extra} hora(s) adicional(es) de fiesta." : ''),
             'badge' => '✨ ' . $basicName . ($hours < $basicHours ? ' (Base técnica completa)' : ''),
-            'tag' => 'Pack Básico (' . $hours . 'h)',
+            'tag' => $basicName . ' (' . $hours . 'h)',
         ];
     }
 }

@@ -1904,7 +1904,7 @@
                         <button type="button" wire:click="selectPack('basic')" class="p-3 rounded-xl border text-left transition flex flex-col justify-between {{ $selected_pack_type === 'basic' ? 'bg-white text-indigo-900 border-white shadow-lg ring-2 ring-indigo-400' : 'bg-white/10 hover:bg-white/20 border-white/20 text-white' }}">
                             <div>
                                 <span class="text-[10px] uppercase font-bold tracking-wider opacity-80">4h DJ</span>
-                                <h6 class="font-extrabold text-xs mt-0.5">Pack Básico</h6>
+                                <h6 class="font-extrabold text-xs mt-0.5">{{ $quote_services['pack_basic']['name'] ?? 'Pack Esencial' }}</h6>
                             </div>
                             <span class="font-black text-sm mt-2">{{ number_format($quote_services['pack_basic']['price'], 0) }} €</span>
                         </button>
@@ -1912,16 +1912,16 @@
                         <button type="button" wire:click="selectPack('medium')" class="p-3 rounded-xl border text-left transition relative flex flex-col justify-between {{ $selected_pack_type === 'medium' ? 'bg-white text-indigo-900 border-white shadow-lg ring-2 ring-emerald-400' : 'bg-white/10 hover:bg-white/20 border-white/20 text-white' }}">
                             <span class="absolute -top-2 right-2 bg-emerald-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full uppercase">Top</span>
                             <div>
-                                <span class="text-[10px] uppercase font-bold tracking-wider opacity-80">5h + Humo</span>
-                                <h6 class="font-extrabold text-xs mt-0.5">Pack Medio ⭐</h6>
+                                <span class="text-[10px] uppercase font-bold tracking-wider opacity-80">5h + Subgraves</span>
+                                <h6 class="font-extrabold text-xs mt-0.5">{{ $quote_services['pack_medium']['name'] ?? 'Pack Signature' }} ⭐</h6>
                             </div>
                             <span class="font-black text-sm mt-2">{{ number_format($quote_services['pack_medium']['price'], 0) }} €</span>
                         </button>
 
                         <button type="button" wire:click="selectPack('premium')" class="p-3 rounded-xl border text-left transition flex flex-col justify-between {{ $selected_pack_type === 'premium' ? 'bg-white text-indigo-900 border-white shadow-lg ring-2 ring-amber-400' : 'bg-white/10 hover:bg-white/20 border-white/20 text-white' }}">
                             <div>
-                                <span class="text-[10px] uppercase font-bold tracking-wider opacity-80">6h + FX Pro</span>
-                                <h6 class="font-extrabold text-xs mt-0.5">Pack Premium</h6>
+                                <span class="text-[10px] uppercase font-bold tracking-wider opacity-80">Hasta 6h + Show</span>
+                                <h6 class="font-extrabold text-xs mt-0.5">{{ $quote_services['pack_premium']['name'] ?? 'Pack Deluxe Show' }}</h6>
                             </div>
                             <span class="font-black text-sm mt-2">{{ number_format($quote_services['pack_premium']['price'], 0) }} €</span>
                         </button>
