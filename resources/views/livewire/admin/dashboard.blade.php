@@ -35,6 +35,66 @@
         </div>
     </div>
 
+    <!-- ALERTA / RECORDATORIO DE CLIENTES SIN RESPUESTA EN DASHBOARD -->
+    @if(($noResponseCount ?? 0) > 0)
+        <div class="bg-gradient-to-r from-purple-900/90 via-indigo-950 to-slate-900 rounded-3xl p-5 sm:p-6 text-white shadow-xl border border-purple-500/30 relative overflow-hidden">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-2xl bg-purple-500/20 border border-purple-400/40 text-purple-300 flex items-center justify-center text-2xl shrink-0">
+                        ⏳
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <h3 class="font-extrabold text-base sm:text-lg text-white">
+                                Recordatorio de Seguimiento: {{ $noResponseCount }} {{ $noResponseCount === 1 ? 'cliente sin respuesta' : 'clientes sin respuesta' }}
+                            </h3>
+                            @if(($urgentNoResponseCount ?? 0) > 0)
+                                <span class="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-rose-500 text-white animate-pulse">
+                                    {{ $urgentNoResponseCount }} requieren atención
+                                </span>
+                            @endif
+                        </div>
+                        <p class="text-xs text-slate-300 mt-1 max-w-2xl leading-relaxed">
+                            Hay clientes esperando respuesta tras enviarles la propuesta. No dejes que se enfríen: activa la técnica del "NO" o el cierre de expediente por WhatsApp con 1 clic.
+                        </p>
+                    </div>
+                </div>
+
+                <a href="{{ route('admin.events') }}" class="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-purple-600/30 transition whitespace-nowrap self-start md:self-auto">
+                    <span>📋 Ver Todos en Agenda</span>
+                    <span>→</span>
+                </a>
+            </div>
+
+            <!-- Mini Listado de Clientes Pendientes -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-4 pt-4 border-t border-purple-500/20">
+                @foreach($noResponseEvents as $ev)
+                    <div class="bg-slate-900/70 border border-purple-400/20 rounded-2xl p-3 flex flex-col justify-between gap-2.5">
+                        <div>
+                            <div class="flex items-center justify-between gap-2">
+                                <strong class="text-xs font-bold text-white truncate block">{{ $ev->name }}</strong>
+                                <span class="text-[10px] font-bold px-1.5 py-0.2 rounded {{ $ev->no_response_urgency_level === 'critical' ? 'bg-rose-500/30 text-rose-300 border border-rose-500/40' : 'bg-purple-500/30 text-purple-300' }}">
+                                    {{ $ev->no_response_time_label }}
+                                </span>
+                            </div>
+                            <span class="text-[11px] text-slate-400 block mt-0.5 truncate">👤 {{ $ev->client ? $ev->client->name : 'Sin cliente' }} &bull; {{ $ev->event_date->format('d/m/Y') }}</span>
+                        </div>
+                        <div class="flex items-center gap-1.5 pt-1">
+                            <a href="{{ route('admin.events.show', $ev->id) }}" class="flex-1 text-center py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-bold rounded-lg transition">
+                                Ficha
+                            </a>
+                            @if($ev->no_response_whatsapp_url)
+                                <a href="{{ $ev->no_response_whatsapp_url }}" target="_blank" class="py-1.5 px-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold rounded-lg transition inline-flex items-center gap-1" title="Enviar WhatsApp con psicología inversa">
+                                    💬 Reactivar
+                                </a>
+                            @endif
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    @endif
+
     <!-- TARJETAS DE MÉTRICAS / KPIS -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         

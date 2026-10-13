@@ -359,8 +359,40 @@ class EventShow extends Component
             return;
         }
 
-        $this->event->update(['status' => $status]);
-        session()->flash('message', 'Estado del evento actualizado a: ' . ucfirst($status));
+        $updateData = ['status' => $status];
+        if (\Illuminate\Support\Facades\Schema::hasColumn('events', 'no_response_at')) {
+            $updateData['no_response_at'] = ($status === 'no_response') ? now() : null;
+        }
+
+        try {
+            $this->event->update($updateData);
+        } catch (\Illuminate\Database\QueryException $e) {
+            // Auto-heal if MySQL table still has the legacy ENUM column without 'no_response'
+            if (str_contains($e->getMessage(), 'Data truncated') || str_contains($e->getMessage(), '1265')) {
+                try {
+                    \Illuminate\Support\Facades\DB::statement("ALTER TABLE `events` MODIFY COLUMN `status` VARCHAR(50) NOT NULL DEFAULT 'draft'");
+                    if (!\Illuminate\Support\Facades\Schema::hasColumn('events', 'no_response_at')) {
+                        \Illuminate\Support\Facades\DB::statement("ALTER TABLE `events` ADD COLUMN `no_response_at` TIMESTAMP NULL AFTER `status`");
+                    }
+                    if ($status === 'no_response') {
+                        $updateData['no_response_at'] = now();
+                    }
+                    $this->event->update($updateData);
+                } catch (\Throwable $innerEx) {
+                    throw $e;
+                }
+            } else {
+                throw $e;
+            }
+        }
+
+        $this->event->refresh();
+
+        if ($status === 'no_response') {
+            session()->flash('message', '⏳ Estado actualizado a: Sin Respuesta. Se ha activado el recordatorio de seguimiento.');
+        } else {
+            session()->flash('message', 'Estado del evento actualizado a: ' . ($this->event->status_label ?? ucfirst($status)));
+        }
     }
 
     public function changeEventType($type)
@@ -2343,11 +2375,11 @@ class EventShow extends Component
             'event_edit_location' => 'required|string|max:255',
             'event_edit_type' => 'required|string|in:boda,empresa,cumpleanos,comunion,otro',
             'event_edit_brand' => 'required|string|in:nunez_and_son,javnx,mago_leugim',
-            'event_edit_status' => 'required|in:draft,confirmed,completed,cancelled',
+            'event_edit_status' => 'required|in:draft,no_response,confirmed,completed,rejected,cancelled',
             'event_edit_notes' => 'nullable|string',
         ]);
 
-        $this->event->update([
+        $updateData = [
             'name' => $this->event_edit_name,
             'event_date' => $this->event_edit_date,
             'location' => $this->event_edit_location,
@@ -2355,11 +2387,36 @@ class EventShow extends Component
             'brand' => $this->event_edit_brand,
             'status' => $this->event_edit_status,
             'notes' => $this->event_edit_notes,
-        ]);
+        ];
+
+        if (\Illuminate\Support\Facades\Schema::hasColumn('events', 'no_response_at')) {
+            $updateData['no_response_at'] = ($this->event_edit_status === 'no_response') ? now() : null;
+        }
+
+        try {
+            $this->event->update($updateData);
+        } catch (\Illuminate\Database\QueryException $e) {
+            if (str_contains($e->getMessage(), 'Data truncated') || str_contains($e->getMessage(), '1265')) {
+                try {
+                    \Illuminate\Support\Facades\DB::statement("ALTER TABLE `events` MODIFY COLUMN `status` VARCHAR(50) NOT NULL DEFAULT 'draft'");
+                    if (!\Illuminate\Support\Facades\Schema::hasColumn('events', 'no_response_at')) {
+                        \Illuminate\Support\Facades\DB::statement("ALTER TABLE `events` ADD COLUMN `no_response_at` TIMESTAMP NULL AFTER `status`");
+                    }
+                    if ($this->event_edit_status === 'no_response') {
+                        $updateData['no_response_at'] = now();
+                    }
+                    $this->event->update($updateData);
+                } catch (\Throwable $innerEx) {
+                    throw $e;
+                }
+            } else {
+                throw $e;
+            }
+        }
 
         $this->event->refresh();
         $this->showEditEventModal = false;
-        session()->flash('message', '¡Detalles y nombre del evento actualizados correctamente!');
+        session()->flash('message', '¡Detalles y estado del evento actualizados correctamente!');
     }
 
     public function openScheduleModal()

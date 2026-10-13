@@ -30,6 +30,7 @@ class Event extends Model
         'venue_contact_phone',
         'venue_notes',
         'status',
+        'no_response_at',
         'deposit_paid',
         'deposit_paid_amount',
         'deposit_payment_method',
@@ -50,6 +51,7 @@ class Event extends Model
     protected $casts = [
         'event_date' => 'date',
         'setup_date' => 'date',
+        'no_response_at' => 'datetime',
         'dance_duration_hours' => 'decimal:1',
         'deposit_paid' => 'boolean',
         'deposit_paid_amount' => 'decimal:2',
@@ -196,6 +198,59 @@ class Event extends Model
             'cancelled' => '🔴',
             default => '📌',
         };
+    }
+
+    /**
+     * Días transcurridos en estado "Sin Respuesta"
+     */
+    public function getDaysWithoutResponseAttribute(): int
+    {
+        if (($this->attributes['status'] ?? '') !== 'no_response') {
+            return 0;
+        }
+        $date = !empty($this->attributes['no_response_at']) 
+            ? \Carbon\Carbon::parse($this->attributes['no_response_at']) 
+            : ($this->updated_at ?? now());
+        return (int) $date->diffInDays(now());
+    }
+
+    /**
+     * Nivel de urgencia del recordatorio de seguimiento
+     */
+    public function getNoResponseUrgencyLevelAttribute(): string
+    {
+        $days = $this->days_without_response;
+        if ($days >= 4) {
+            return 'critical'; // Rojo / Requiere reactivación urgente
+        }
+        if ($days >= 2) {
+            return 'warning';  // Amarillo / Atención
+        }
+        return 'normal';       // Púrpura / Reciente
+    }
+
+    /**
+     * Etiqueta humana del tiempo en "Sin Respuesta"
+     */
+    public function getNoResponseTimeLabelAttribute(): string
+    {
+        $days = $this->days_without_response;
+        if ($days <= 0) {
+            return 'Puesto hoy';
+        }
+        if ($days === 1) {
+            return '1 día sin respuesta';
+        }
+        return "{$days} días sin respuesta";
+    }
+
+    /**
+     * Enlace directo de WhatsApp con la plantilla táctica de Psicología Inversa (Técnica del NO)
+     */
+    public function getNoResponseWhatsappUrlAttribute(): string
+    {
+        $data = \App\Services\WhatsAppTemplateService::followupReminder($this, 'pregunta_no');
+        return $data['url'] ?? '';
     }
 
     /**

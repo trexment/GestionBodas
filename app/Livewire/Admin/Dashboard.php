@@ -20,14 +20,29 @@ class Dashboard extends Component
     public $assistantsCount = 0;
     public $equipmentCount = 0;
     public $pendingDossiersCount = 0;
+    public $noResponseCount = 0;
+    public $urgentNoResponseCount = 0;
     
     public $upcomingEvents = [];
     public $recentInvoices = [];
+    public $noResponseEvents = [];
 
     public function mount()
     {
         $user = auth()->user();
         $isAdmin = $user->role === 'admin';
+
+        // Eventos Sin Respuesta (seguimiento)
+        $noResponseQuery = Event::with('client')->where('status', 'no_response');
+        if (!$isAdmin) {
+            $noResponseQuery->where(function ($q) use ($user) {
+                $q->where('dj_id', $user->id)->orWhere('assistant_id', $user->id);
+            });
+        }
+        $allNoResponse = $noResponseQuery->orderBy('updated_at', 'asc')->get();
+        $this->noResponseCount = $allNoResponse->count();
+        $this->urgentNoResponseCount = $allNoResponse->filter(fn($ev) => $ev->days_without_response >= 2)->count();
+        $this->noResponseEvents = $allNoResponse->take(4);
 
         if ($isAdmin) {
             // Métricas financieras globales

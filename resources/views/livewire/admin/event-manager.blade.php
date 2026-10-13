@@ -31,6 +31,45 @@
         </button>
     </div>
 
+    <!-- ALERTA GLOBAL DE SEGUIMIENTO (SI HAY EVENTOS SIN RESPUESTA) -->
+    @if(($urgentNoResponseCount ?? 0) > 0)
+        <div class="bg-gradient-to-r from-purple-50 via-rose-50 to-amber-50 dark:from-purple-950/40 dark:via-rose-950/40 dark:to-slate-900 border border-purple-200 dark:border-purple-800 p-4 mb-5 rounded-2xl shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+                <span class="text-2xl p-2 bg-purple-100 dark:bg-purple-900/60 text-purple-700 dark:text-purple-300 rounded-xl shrink-0">⏳</span>
+                <div>
+                    <h4 class="text-xs sm:text-sm font-extrabold text-purple-950 dark:text-purple-200 flex items-center gap-2">
+                        <span>Tienes {{ $urgentNoResponseCount }} {{ $urgentNoResponseCount === 1 ? 'cliente sin respuesta que requiere' : 'clientes sin respuesta que requieren' }} reactivación</span>
+                        <span class="text-[10px] bg-rose-600 text-white font-black px-2 py-0.5 rounded-full uppercase tracking-wider animate-pulse">¡Atención!</span>
+                    </h4>
+                    <p class="text-[11px] text-purple-800 dark:text-purple-300 mt-0.5">Llevan más de 2 días sin contestar tras el presupuesto. Envía un WhatsApp táctico con psicología inversa para saber si cerramos la fecha.</p>
+                </div>
+            </div>
+            <button type="button" wire:click="setStatusFilter('no_response')" class="w-full sm:w-auto bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs px-4 py-2 rounded-xl shadow-xs whitespace-nowrap transition cursor-pointer">
+                Filtrar Sin Respuesta →
+            </button>
+        </div>
+    @endif
+
+    <!-- FILTROS RÁPIDOS POR ESTADO -->
+    <div class="flex items-center gap-1.5 overflow-x-auto pb-2 mb-4">
+        <button type="button" wire:click="setStatusFilter('all')" class="px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer {{ $status_filter === 'all' ? 'bg-indigo-600 text-white shadow-xs' : 'bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 border border-gray-200 dark:border-slate-700' }}">
+            Todos ({{ $statusCounts['all'] ?? 0 }})
+        </button>
+        <button type="button" wire:click="setStatusFilter('no_response')" class="px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer flex items-center gap-1.5 {{ $status_filter === 'no_response' ? 'bg-purple-600 text-white shadow-xs' : 'bg-purple-50 dark:bg-purple-950/40 text-purple-800 dark:text-purple-300 hover:bg-purple-100 border border-purple-200 dark:border-purple-800' }}">
+            <span>⏳ Sin Respuesta</span>
+            <span class="px-1.5 py-0.2 rounded-full text-[10px] {{ ($statusCounts['no_response'] ?? 0) > 0 ? 'bg-purple-200 dark:bg-purple-800 text-purple-900 dark:text-white font-black' : 'opacity-60' }}">{{ $statusCounts['no_response'] ?? 0 }}</span>
+        </button>
+        <button type="button" wire:click="setStatusFilter('confirmed')" class="px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer {{ $status_filter === 'confirmed' ? 'bg-emerald-600 text-white shadow-xs' : 'bg-white dark:bg-slate-800 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-50 border border-gray-200 dark:border-slate-700' }}">
+            🟢 Confirmados ({{ $statusCounts['confirmed'] ?? 0 }})
+        </button>
+        <button type="button" wire:click="setStatusFilter('draft')" class="px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer {{ $status_filter === 'draft' ? 'bg-amber-600 text-white shadow-xs' : 'bg-white dark:bg-slate-800 text-amber-800 dark:text-amber-300 hover:bg-amber-50 border border-gray-200 dark:border-slate-700' }}">
+            📝 Borradores ({{ $statusCounts['draft'] ?? 0 }})
+        </button>
+        <button type="button" wire:click="setStatusFilter('completed')" class="px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer {{ $status_filter === 'completed' ? 'bg-blue-600 text-white shadow-xs' : 'bg-white dark:bg-slate-800 text-blue-800 dark:text-blue-300 hover:bg-blue-50 border border-gray-200 dark:border-slate-700' }}">
+            🔵 Completados ({{ $statusCounts['completed'] ?? 0 }})
+        </button>
+    </div>
+
     <!-- ============================================== -->
     <!-- VISTA MÓVIL: TARJETAS RESPONSIVAS (< 640px)    -->
     <!-- ============================================== -->
@@ -49,9 +88,16 @@
                             </span>
                         </div>
                     </div>
-                    <span class="shrink-0 px-2.5 py-0.5 text-[11px] font-bold rounded-full border {{ $event->status_badge_class }}">
-                        {{ $event->status_icon }} {{ $event->status_label }}
-                    </span>
+                    <div class="text-right shrink-0">
+                        <span class="px-2.5 py-0.5 text-[11px] font-bold rounded-full border {{ $event->status_badge_class }}">
+                            {{ $event->status_icon }} {{ $event->status_label }}
+                        </span>
+                        @if($event->status === 'no_response')
+                            <span class="block text-[10px] mt-1 font-semibold {{ $event->no_response_urgency_level === 'critical' ? 'text-rose-600 font-bold' : ($event->no_response_urgency_level === 'warning' ? 'text-amber-600 font-bold' : 'text-purple-600') }}">
+                                {{ $event->no_response_time_label }}
+                            </span>
+                        @endif
+                    </div>
                 </div>
 
                 <!-- Detalles Rápidos: Fecha, Montaje y Horario Baile 24h -->
@@ -125,6 +171,11 @@
                         <span>⚙️</span>
                         <span>Gestionar Evento</span>
                     </a>
+                    @if($event->status === 'no_response' && $event->no_response_whatsapp_url)
+                        <a href="{{ $event->no_response_whatsapp_url }}" target="_blank" class="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs py-2.5 px-3 rounded-xl shadow-xs transition inline-flex items-center gap-1 shrink-0" title="Enviar recordatorio con técnica del NO">
+                            💬 Recordar
+                        </a>
+                    @endif
                     @if(auth()->user()->role === 'admin')
                         <button type="button" wire:click="deleteEvent({{ $event->id }})" wire:confirm="¿Estás seguro de que deseas eliminar permanentemente el evento '{{ $event->name }}'?" class="p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/50 hover:bg-rose-100 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900/60 transition cursor-pointer" title="Eliminar Evento">
                             🗑️
@@ -220,6 +271,18 @@
                             <span class="px-2.5 py-0.5 inline-flex text-[11px] leading-5 font-bold rounded-full border {{ $event->status_badge_class }}">
                                 {{ $event->status_icon }} {{ $event->status_label }}
                             </span>
+                            @if($event->status === 'no_response')
+                                <div class="mt-1 flex items-center gap-1.5">
+                                    <span class="text-[10px] font-semibold {{ $event->no_response_urgency_level === 'critical' ? 'text-rose-600 font-bold' : ($event->no_response_urgency_level === 'warning' ? 'text-amber-600 font-bold' : 'text-purple-600') }}">
+                                        {{ $event->no_response_time_label }}
+                                    </span>
+                                    @if($event->no_response_whatsapp_url)
+                                        <a href="{{ $event->no_response_whatsapp_url }}" target="_blank" class="inline-flex items-center gap-1 text-[10px] bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 px-1.5 py-0.5 rounded font-bold transition" title="Enviar recordatorio táctico de WhatsApp (Técnica del NO)">
+                                            💬 Recordar
+                                        </a>
+                                    @endif
+                                </div>
+                            @endif
                         </td>
                         <td class="px-4 py-3 whitespace-nowrap text-right text-xs font-medium">
                             <a href="{{ route('admin.events.show', $event->id) }}" class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 font-extrabold bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 border border-indigo-200 dark:border-indigo-800 px-3 py-1.5 rounded-xl transition">Gestionar</a>

@@ -86,7 +86,7 @@ class CalendarManager extends Component
             'new_status' => 'required|in:draft,no_response,confirmed,completed,rejected,cancelled',
         ]);
 
-        $event = Event::create([
+        $eventData = [
             'name' => $this->new_name,
             'event_date' => $this->new_event_date,
             'location' => $this->new_location,
@@ -94,7 +94,32 @@ class CalendarManager extends Component
             'dj_id' => $this->new_dj_id ?: null,
             'assistant_id' => $this->new_assistant_id ?: null,
             'status' => $this->new_status,
-        ]);
+        ];
+
+        if ($this->new_status === 'no_response' && \Illuminate\Support\Facades\Schema::hasColumn('events', 'no_response_at')) {
+            $eventData['no_response_at'] = now();
+        }
+
+        try {
+            $event = Event::create($eventData);
+        } catch (\Illuminate\Database\QueryException $e) {
+            if (str_contains($e->getMessage(), 'Data truncated') || str_contains($e->getMessage(), '1265')) {
+                try {
+                    \Illuminate\Support\Facades\DB::statement("ALTER TABLE `events` MODIFY COLUMN `status` VARCHAR(50) NOT NULL DEFAULT 'draft'");
+                    if (!\Illuminate\Support\Facades\Schema::hasColumn('events', 'no_response_at')) {
+                        \Illuminate\Support\Facades\DB::statement("ALTER TABLE `events` ADD COLUMN `no_response_at` TIMESTAMP NULL AFTER `status`");
+                    }
+                    if ($this->new_status === 'no_response') {
+                        $eventData['no_response_at'] = now();
+                    }
+                    $event = Event::create($eventData);
+                } catch (\Throwable $innerEx) {
+                    throw $e;
+                }
+            } else {
+                throw $e;
+            }
+        }
 
         $this->showCreateModal = false;
         $this->resetCreateForm();

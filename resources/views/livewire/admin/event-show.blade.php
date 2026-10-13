@@ -387,6 +387,89 @@
         </div>
     @endif
 
+    <!-- RECORDATORIO & ALERTA: EVENTO SIN RESPUESTA -->
+    @if($event->status === 'no_response')
+        @php
+            $daysWaiting = $event->days_without_response;
+            $urgency = $event->no_response_urgency_level;
+            $clientPhone = $event->client ? $event->client->phone : ($event->partner_phone ?? '');
+            $followupData = \App\Services\WhatsAppTemplateService::followupReminder($event, 'pregunta_no');
+        @endphp
+        <div class="p-4 sm:p-5 mb-6 rounded-2xl border transition shadow-sm {{ $urgency === 'critical' ? 'bg-gradient-to-r from-rose-50 via-rose-50/70 to-amber-50/40 border-rose-300 ring-1 ring-rose-200' : ($urgency === 'warning' ? 'bg-gradient-to-r from-amber-50 via-amber-50/70 to-purple-50/40 border-amber-300 ring-1 ring-amber-200' : 'bg-gradient-to-r from-purple-50 via-purple-50/70 to-indigo-50/40 border-purple-200') }}">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div class="flex items-start gap-3.5">
+                    <div class="w-11 h-11 rounded-2xl flex items-center justify-center text-xl shrink-0 {{ $urgency === 'critical' ? 'bg-rose-500 text-white animate-pulse shadow-md shadow-rose-500/30' : ($urgency === 'warning' ? 'bg-amber-500 text-white shadow-md shadow-amber-500/30' : 'bg-purple-600 text-white shadow-md shadow-purple-600/30') }}">
+                        ⏳
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <h4 class="font-extrabold text-sm sm:text-base {{ $urgency === 'critical' ? 'text-rose-900' : ($urgency === 'warning' ? 'text-amber-900' : 'text-purple-950') }}">
+                                Recordatorio de Seguimiento: Cliente Sin Respuesta
+                            </h4>
+                            <span class="text-[11px] font-bold px-2.5 py-0.5 rounded-full border {{ $urgency === 'critical' ? 'bg-rose-100 text-rose-800 border-rose-300' : ($urgency === 'warning' ? 'bg-amber-100 text-amber-800 border-amber-300' : 'bg-purple-100 text-purple-800 border-purple-300') }}">
+                                {{ $event->no_response_time_label }}
+                            </span>
+                            @if($urgency === 'critical')
+                                <span class="text-[10px] uppercase font-black bg-rose-600 text-white px-2 py-0.5 rounded-md animate-pulse">
+                                    ¡Reactivar Ahora!
+                                </span>
+                            @endif
+                        </div>
+                        <p class="text-xs {{ $urgency === 'critical' ? 'text-rose-700' : ($urgency === 'warning' ? 'text-amber-800' : 'text-purple-800') }} mt-1 leading-relaxed">
+                            @if($daysWaiting >= 4)
+                                ⚠️ El cliente lleva <strong>{{ $daysWaiting }} días</strong> sin responder tras el presupuesto. Utiliza la <strong>técnica del "NO" o psicología inversa</strong> para saber si liberamos la fecha sin parecer insistente.
+                            @elseif($daysWaiting >= 2)
+                                Han pasado <strong>{{ $daysWaiting }} días</strong> desde que se marcó en espera. Es buen momento para enviar un toque rápido antes de que se enfríe la fecha.
+                            @else
+                                Evento marcado en espera de respuesta. Tienes disponibles las plantillas tácticas de Chris Voss para cuando toque hacer seguimiento.
+                            @endif
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Botones de Acción Rápida -->
+                <div class="flex flex-wrap items-center gap-2 w-full md:w-auto shrink-0">
+                    <!-- Botón Enviar WhatsApp Táctico 1-Clic -->
+                    @if(!empty($clientPhone))
+                        <a href="{{ $followupData['url'] }}" target="_blank" class="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-md shadow-emerald-600/25 transition transform hover:-translate-y-0.5">
+                            <span>💬</span>
+                            <span>Enviar WhatsApp (Técnica NO)</span>
+                        </a>
+                    @endif
+
+                    <!-- Abrir todas las plantillas de seguimiento del Hub -->
+                    <button type="button" @click="openWhatsappHub = true" class="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 bg-white hover:bg-gray-50 text-gray-700 font-bold text-xs px-3.5 py-2.5 rounded-xl border border-gray-300 shadow-xs transition cursor-pointer">
+                        <span>🔥</span>
+                        <span>Más Opciones de Reactivación</span>
+                    </button>
+
+                    <!-- Si responde: Cambiar a Borrador o Confirmar -->
+                    <div class="relative inline-block text-left" x-data="{ openResolveMenu: false }">
+                        <button type="button" @click="openResolveMenu = !openResolveMenu" class="inline-flex items-center gap-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs px-3 py-2.5 rounded-xl border border-indigo-200 transition cursor-pointer">
+                            <span>⚡ ¿Ha respondido?</span>
+                            <span class="text-[9px]">▼</span>
+                        </button>
+                        <div x-show="openResolveMenu" @click.away="openResolveMenu = false" class="absolute right-0 mt-1.5 w-48 bg-white border border-slate-200 rounded-xl shadow-xl z-20 p-1 divide-y divide-slate-100 text-xs" style="display: none;">
+                            <div class="py-0.5">
+                                <button type="button" wire:click="changeStatus('draft')" @click="openResolveMenu = false" class="w-full text-left px-3 py-2 rounded-lg hover:bg-amber-50 text-amber-900 font-semibold flex items-center gap-1.5 cursor-pointer">
+                                    <span>📝</span> Pasar a Borrador
+                                </button>
+                                <button type="button" wire:click="changeStatus('confirmed')" @click="openResolveMenu = false" class="w-full text-left px-3 py-2 rounded-lg hover:bg-emerald-50 text-emerald-900 font-semibold flex items-center gap-1.5 cursor-pointer">
+                                    <span>🟢</span> Confirmar (Cobrar señal)
+                                </button>
+                            </div>
+                            <div class="py-0.5">
+                                <button type="button" wire:click="changeStatus('rejected')" @click="openResolveMenu = false" class="w-full text-left px-3 py-2 rounded-lg hover:bg-rose-50 text-rose-900 font-semibold flex items-center gap-1.5 cursor-pointer">
+                                    <span>❌</span> Descartar (Rechazado)
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
+
     <!-- Banner Cuestionario Musical con WhatsApp -->
     <div class="bg-white p-4 rounded-xl border border-gray-200 mb-6 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
@@ -3938,8 +4021,10 @@
                             <label class="block font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1">Estado del Evento *</label>
                             <select wire:model="event_edit_status" class="w-full border-gray-300 dark:border-slate-700 dark:bg-slate-950 dark:text-white rounded-xl text-sm font-bold p-2.5">
                                 <option value="draft">🟡 Borrador / En preparación</option>
+                                <option value="no_response">⏳ Sin Respuesta (Esperando cliente)</option>
                                 <option value="confirmed">🟢 Confirmado</option>
                                 <option value="completed">🔵 Finalizado / Realizado</option>
+                                <option value="rejected">❌ Rechazado (No acepta)</option>
                                 <option value="cancelled">🔴 Cancelado</option>
                             </select>
                         </div>

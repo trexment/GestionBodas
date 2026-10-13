@@ -40,6 +40,12 @@ class EventManager extends Component
     public $assistants = [];
 
     public $showCreateModal = false;
+    public $status_filter = 'all'; // all, no_response, draft, confirmed, completed
+
+    public function setStatusFilter($status)
+    {
+        $this->status_filter = $status;
+    }
 
     protected $rules = [
         'name' => 'required|string|max:255',
@@ -267,19 +273,47 @@ class EventManager extends Component
     public function render()
     {
         $user = auth()->user();
-        $query = Event::with(['client', 'dj', 'assistant']);
+        $relations = ['client', 'dj', 'assistant'];
+        if (\Illuminate\Support\Facades\Schema::hasTable('event_assistants')) {
+            $relations[] = 'assistants';
+        }
 
-        if ($user->role === 'admin') {
-            $events = $query->orderBy('event_date', 'asc')->get();
-        } else {
-            $events = $query->where(function ($q) use ($user) {
+        $query = Event::with($relations);
+
+        if ($user->role !== 'admin') {
+            $query->where(function ($q) use ($user) {
                 $q->where('dj_id', $user->id)
                   ->orWhere('assistant_id', $user->id);
-            })->orderBy('event_date', 'asc')->get();
+                if (\Illuminate\Support\Facades\Schema::hasTable('event_assistants')) {
+                    $q->orWhereHas('assistants', fn($sq) => $sq->where('users.id', $user->id));
+                }
+            });
+        }
+
+        $allEvents = $query->orderBy('event_date', 'asc')->get();
+
+        $statusCounts = [
+            'all' => $allEvents->count(),
+            'no_response' => $allEvents->where('status', 'no_response')->count(),
+            'draft' => $allEvents->where('status', 'draft')->count(),
+            'confirmed' => $allEvents->where('status', 'confirmed')->count(),
+            'completed' => $allEvents->where('status', 'completed')->count(),
+            'rejected' => $allEvents->where('status', 'rejected')->count(),
+        ];
+
+        $urgentNoResponseCount = $allEvents->where('status', 'no_response')->filter(function($ev) {
+            return $ev->days_without_response >= 2;
+        })->count();
+
+        $filteredEvents = $allEvents;
+        if ($this->status_filter !== 'all') {
+            $filteredEvents = $allEvents->where('status', $this->status_filter);
         }
 
         return view('livewire.admin.event-manager', [
-            'events' => $events,
+            'events' => $filteredEvents,
+            'statusCounts' => $statusCounts,
+            'urgentNoResponseCount' => $urgentNoResponseCount,
         ])->layout('components.layouts.app', ['header' => 'Gestión de Eventos']);
     }
 }
