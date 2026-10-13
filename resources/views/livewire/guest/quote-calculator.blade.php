@@ -61,8 +61,14 @@
                                 @if($key === 'dj')
                                     <span class="text-xs bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-full">{{ $this->dj_pack_info['badge'] }}</span>
                                 @endif
-                                @if(($key === 'smoke_machine' || $key === 'cold_sparks') && !empty($serv['included']))
+                                @if($key === 'smoke_machine' && !empty($serv['included']))
                                     <span class="text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full">✅ Incluido en {{ $this->dj_pack_info['base_name'] ?? 'Pack' }}</span>
+                                @endif
+                                @if($key === 'cold_sparks')
+                                    <span class="text-xs bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-full font-bold">{{ $serv['quantity'] }} {{ $serv['quantity'] == 1 ? 'máquina' : 'máquinas' }}</span>
+                                    @if(!empty($serv['included']))
+                                        <span class="text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full">✅ 2 máq. en {{ $this->dj_pack_info['base_name'] ?? 'Pack' }}</span>
+                                    @endif
                                 @endif
                                 @if(($key === 'cocktail' || $key === 'restaurant') && $this->has_cocktail_restaurant_pack && $this->cocktail_restaurant_pack_info['enabled'])
                                     <span class="text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full">🎁 En Pack Cóctel+Banquete</span>
@@ -137,9 +143,13 @@
                                                 {{ $service['name'] }}
                                             </h3>
                                             @if($service['selected'])
-                                                @if(($key === 'smoke_machine' || $key === 'cold_sparks') && !empty($service['included']))
+                                                @if($key === 'smoke_machine' && !empty($service['included']))
                                                     <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/30 text-emerald-300 border border-emerald-500/40">
                                                         ✅ INCLUIDO EN {{ strtoupper($this->dj_pack_info['base_name'] ?? 'PACK') }} (0 €)
+                                                    </span>
+                                                @elseif($key === 'cold_sparks' && !empty($service['included']))
+                                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/30 text-emerald-300 border border-emerald-500/40">
+                                                        ✅ 2 MÁQUINAS EN {{ strtoupper($this->dj_pack_info['base_name'] ?? 'PACK') }} (0 €)
                                                     </span>
                                                 @elseif(($key === 'cocktail' || $key === 'restaurant') && $this->has_cocktail_restaurant_pack && $this->cocktail_restaurant_pack_info['enabled'])
                                                     <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/30 text-emerald-300 border border-emerald-500/40">
@@ -154,7 +164,7 @@
                                                 @if($key === 'smoke_machine')
                                                     <span class="text-[10px] text-emerald-400/90 font-medium">✨ Incluido gratis desde 5h DJ</span>
                                                 @elseif($key === 'cold_sparks')
-                                                    <span class="text-[10px] text-amber-400/90 font-medium">👑 Incluido gratis en Pack Deluxe Show</span>
+                                                    <span class="text-[10px] text-amber-400/90 font-medium">👑 2 máquinas incluidas en Pack Deluxe Show</span>
                                                 @endif
                                             @endif
                                         </div>
@@ -209,6 +219,43 @@
                                                         @endif
                                                     </div>
                                                 </div>
+                                            </div>
+                                        @endif
+
+                                        <!-- Sub-controls for Cold Sparks (Máquinas de Chispas Frías) -->
+                                        @if($key === 'cold_sparks' && $service['selected'])
+                                            <div class="mt-4 pt-3.5 border-t border-indigo-500/20 space-y-2.5" wire:click.stop>
+                                                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                                                    <div>
+                                                        <span class="text-xs font-semibold text-slate-300">Número de máquinas de chispas:</span>
+                                                        <p class="text-[11px] text-slate-400">Tarifa: 60 € por máquina (lo estándar son 2 máquinas)</p>
+                                                    </div>
+                                                    <div class="inline-flex items-center bg-slate-900/90 rounded-xl p-1 border border-indigo-500/40 shadow-inner">
+                                                        <button type="button" wire:click="setColdSparksQuantity({{ max(1, ($service['quantity'] ?? 2) - 1) }})" class="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-800 hover:bg-indigo-600 text-white font-bold text-base transition">
+                                                            -
+                                                        </button>
+                                                        <span class="px-4 text-xs font-extrabold text-indigo-200 tracking-wide">{{ $service['quantity'] ?? 2 }} {{ ($service['quantity'] ?? 2) == 1 ? 'Máquina' : 'Máquinas' }}</span>
+                                                        <button type="button" wire:click="setColdSparksQuantity({{ min(10, ($service['quantity'] ?? 2) + 1) }})" class="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-800 hover:bg-indigo-600 text-white font-bold text-base transition">
+                                                            +
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                @if(!empty($service['included']))
+                                                    <div class="p-2.5 bg-emerald-950/40 rounded-xl border border-emerald-500/30 flex items-center justify-between text-xs text-emerald-200">
+                                                        <span class="flex items-center gap-1.5 font-medium">
+                                                            <span>👑</span>
+                                                            <span>2 máquinas incluidas en tu pack (0 €)</span>
+                                                        </span>
+                                                        @if(($service['quantity'] ?? 2) > 2)
+                                                            <span class="font-bold text-amber-300">
+                                                                +{{ (($service['quantity'] ?? 2) - 2) * 60 }} € ({{ ($service['quantity'] ?? 2) - 2 }} extra)
+                                                            </span>
+                                                        @else
+                                                            <span class="font-bold text-emerald-400">0 € extra</span>
+                                                        @endif
+                                                    </div>
+                                                @endif
                                             </div>
                                         @endif
                                     </div>

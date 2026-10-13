@@ -236,10 +236,10 @@ class QuoteCalculator extends Component
             ],
             'cold_sparks' => [
                 'selected' => false, 
-                'quantity' => 1, 
+                'quantity' => 2, 
                 'icon' => '✨',
                 'name' => 'Fuego Frío / Chispas Frías', 
-                'description' => 'Efecto especial de chispas frías sin combustión para momentos cumbre (apertura de baile o corte de tarta).',
+                'description' => 'Efecto especial de chispas frías sin combustión (60 € por máquina). Habitual: 2 máquinas para apertura de baile o corte de tarta.',
                 'included' => false,
             ],
             'karaoke' => [
@@ -280,7 +280,7 @@ class QuoteCalculator extends Component
             'restaurant' => (float) Setting::get('price_restaurant', 150),
             'dj' => (float) Setting::get('price_dj', 150),
             'smoke_machine' => (float) Setting::get('price_effects_smoke', 60),
-            'cold_sparks' => (float) Setting::get('price_effects_sparks', 150),
+            'cold_sparks' => (float) Setting::get('price_effects_sparks', 60),
             'karaoke' => (float) Setting::get('price_karaoke', 80),
             'extra_hours' => (float) Setting::get('price_extra_hours', 120),
             'photobooth' => (float) Setting::get('price_photobooth', 350),
@@ -349,6 +349,13 @@ class QuoteCalculator extends Component
         }
     }
 
+    public function setColdSparksQuantity(int $quantity)
+    {
+        $this->services['cold_sparks']['quantity'] = max(1, min(10, $quantity));
+        $this->services['cold_sparks']['selected'] = true;
+        $this->services['cold_sparks']['manually_toggled'] = true;
+    }
+
     public function syncPackEffects()
     {
         if (empty($this->services['dj']['selected'])) {
@@ -378,8 +385,12 @@ class QuoteCalculator extends Component
             $this->services['cold_sparks']['included'] = $includesSparks;
             if ($includesSparks) {
                 $this->services['cold_sparks']['selected'] = true;
+                if (empty($this->services['cold_sparks']['manually_toggled'])) {
+                    $this->services['cold_sparks']['quantity'] = 2;
+                }
             } elseif (empty($this->services['cold_sparks']['manually_toggled'])) {
                 $this->services['cold_sparks']['selected'] = false;
+                $this->services['cold_sparks']['quantity'] = 2;
             }
         }
     }
@@ -404,9 +415,19 @@ class QuoteCalculator extends Component
             if ($service['selected']) {
                 if ($key === 'dj' && $djPack) {
                     $totalEstimated += (float)$djPack['total_price'];
-                } elseif (($key === 'smoke_machine' || $key === 'cold_sparks') && !empty($service['included'])) {
-                    // Included in DJ pack, 0€ additional
-                    continue;
+                } elseif ($key === 'smoke_machine') {
+                    if (empty($service['included'])) {
+                        $totalEstimated += ($catalog['smoke_machine'] ?? 60);
+                    }
+                } elseif ($key === 'cold_sparks') {
+                    $qty = (int)($service['quantity'] ?: 1);
+                    $unitPrice = $catalog['cold_sparks'] ?? 60;
+                    if (!empty($service['included'])) {
+                        $extraQty = max(0, $qty - 2);
+                        $totalEstimated += ($extraQty * $unitPrice);
+                    } else {
+                        $totalEstimated += ($qty * $unitPrice);
+                    }
                 } else {
                     $qty = (int)($service['quantity'] ?: 1);
                     $price = $catalog[$key] ?? 0;
@@ -438,8 +459,22 @@ class QuoteCalculator extends Component
             if ($service['selected']) {
                 if ($key === 'dj' && $djPack) {
                     $requestedServicesList[] = "• " . $service['name'] . " (" . $djPack['requested_hours'] . "h) ➔ " . $djPack['badge'];
-                } elseif (($key === 'smoke_machine' || $key === 'cold_sparks') && !empty($service['included'])) {
-                    $requestedServicesList[] = "• " . $service['name'] . " (✅ Incluido en " . ($djPack['base_name'] ?? 'Pack') . ")";
+                } elseif ($key === 'smoke_machine') {
+                    if (!empty($service['included'])) {
+                        $requestedServicesList[] = "• " . $service['name'] . " (✅ Incluido en " . ($djPack['base_name'] ?? 'Pack') . ")";
+                    } else {
+                        $requestedServicesList[] = "• " . $service['name'] . " (60 €)";
+                    }
+                } elseif ($key === 'cold_sparks') {
+                    $qty = (int)($service['quantity'] ?: 1);
+                    $unitPrice = $catalog['cold_sparks'] ?? 60;
+                    if (!empty($service['included'])) {
+                        $extraQty = max(0, $qty - 2);
+                        $extraText = $extraQty > 0 ? " (2 máq. incluidas en " . ($djPack['base_name'] ?? 'Pack') . " + {$extraQty} extra a {$unitPrice} €/ud)" : " (✅ 2 máq. incluidas en " . ($djPack['base_name'] ?? 'Pack') . ")";
+                        $requestedServicesList[] = "• " . $service['name'] . " ({$qty} " . ($qty == 1 ? 'máquina' : 'máquinas') . "){$extraText}";
+                    } else {
+                        $requestedServicesList[] = "• " . $service['name'] . " ({$qty} " . ($qty == 1 ? 'máquina' : 'máquinas') . " x {$unitPrice} €/ud)";
+                    }
                 } else {
                     $qty = (int)($service['quantity'] ?: 1);
                     $qtyText = $qty > 1 ? " ({$qty} uds)" : "";
@@ -520,14 +555,39 @@ class QuoteCalculator extends Component
                     ]);
                 } elseif ($key === 'cold_sparks') {
                     $isIncluded = !empty($service['included']);
-                    $p = $isIncluded ? 0 : ($catalog['cold_sparks'] ?? 150);
-                    $quote->items()->create([
-                        'service_name' => $isIncluded ? 'Fuego Frío / Chispas Frías (Incluido en ' . ($djPack['base_name'] ?? 'Pack') . ')' : 'Fuego Frío / Chispas Frías (Cold Sparks)',
-                        'description' => $isIncluded ? 'Efecto especial de chispas frías para apertura de baile y momentos clave (incluido en el pack contratado).' : $service['description'],
-                        'quantity' => 1,
-                        'price' => $p,
-                        'total' => $p,
-                    ]);
+                    $qty = (int)($service['quantity'] ?: 1);
+                    $unitPrice = (float)($catalog['cold_sparks'] ?? 60);
+
+                    if ($isIncluded) {
+                        $extraQty = max(0, $qty - 2);
+                        $packBaseName = $djPack['base_name'] ?? 'Pack Deluxe Show';
+
+                        $quote->items()->create([
+                            'service_name' => "Fuego Frío / Chispas Frías (2 máquinas - Incluido en {$packBaseName})",
+                            'description' => 'Efecto especial de 2 máquinas de chispas frías sin combustión para la apertura del baile (incluido en el pack contratado).',
+                            'quantity' => min(2, $qty),
+                            'price' => 0,
+                            'total' => 0,
+                        ]);
+
+                        if ($extraQty > 0) {
+                            $quote->items()->create([
+                                'service_name' => "Máquinas adicionales de Fuego Frío ({$extraQty} " . ($extraQty == 1 ? 'máquina extra' : 'máquinas extra') . ")",
+                                'description' => "Ampliación de espectáculo de chispas frías con {$extraQty} máquina(s) adicional(es) a " . number_format($unitPrice, 0) . " €/ud.",
+                                'quantity' => $extraQty,
+                                'price' => $unitPrice,
+                                'total' => $extraQty * $unitPrice,
+                            ]);
+                        }
+                    } else {
+                        $quote->items()->create([
+                            'service_name' => "Fuego Frío / Chispas Frías ({$qty} " . ($qty == 1 ? 'máquina' : 'máquinas') . " a " . number_format($unitPrice, 0) . " €/ud)",
+                            'description' => 'Efecto especial de chispas frías sin combustión para momentos clave (apertura de baile o corte de tarta).',
+                            'quantity' => $qty,
+                            'price' => $unitPrice,
+                            'total' => $qty * $unitPrice,
+                        ]);
+                    }
                 } else {
                     $qty = (int)($service['quantity'] ?: 1);
                     $price = $catalog[$key] ?? 0;

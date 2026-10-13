@@ -2370,26 +2370,41 @@
                                     </div>
 
                                     <!-- Fuego Frío / Chispas Frías -->
-                                    <div class="flex items-center justify-between p-2.5 rounded-lg border {{ !empty($quote_services['cold_sparks']['included']) ? 'bg-amber-50/50 border-amber-300' : ($quote_services['cold_sparks']['selected'] ? 'bg-indigo-50/50 border-indigo-300' : 'border-gray-100 hover:bg-gray-50') }} gap-2">
+                                    <div class="flex flex-col sm:flex-row sm:items-center justify-between p-2.5 rounded-lg border {{ !empty($quote_services['cold_sparks']['included']) ? 'bg-amber-50/50 border-amber-300' : ($quote_services['cold_sparks']['selected'] ? 'bg-indigo-50/50 border-indigo-300' : 'border-gray-100 hover:bg-gray-50') }} gap-2">
                                         <label class="flex items-center cursor-pointer flex-1 gap-2">
                                             <input type="checkbox" wire:model.live="quote_services.cold_sparks.selected" class="rounded text-indigo-600 focus:ring-indigo-500 h-4 w-4">
                                             <div>
                                                 <div class="flex items-center gap-2">
                                                     <span class="text-xs font-bold text-gray-800">✨ Fuego Frío / Chispas Frías (Cold Sparks)</span>
                                                     @if(!empty($quote_services['cold_sparks']['included']))
-                                                        <span class="text-[9px] font-bold bg-amber-600 text-white px-1.5 py-0.2 rounded uppercase">✅ Incluido en Pack (0 €)</span>
+                                                        <span class="text-[9px] font-bold bg-amber-600 text-white px-1.5 py-0.2 rounded uppercase">✅ 2 Máq. en Pack (0 €)</span>
                                                     @endif
                                                 </div>
                                                 <span class="block text-[10px] text-gray-500">{{ $quote_services['cold_sparks']['desc'] }}</span>
                                             </div>
                                         </label>
-                                        <div class="flex items-center gap-1">
-                                            @if(!empty($quote_services['cold_sparks']['included']))
-                                                <span class="text-xs font-black text-amber-700 bg-amber-100 px-2 py-1 rounded">0,00 €</span>
-                                            @else
-                                                <input type="number" step="0.01" wire:model.live="quote_services.cold_sparks.price" class="w-16 border rounded p-1 text-xs text-right font-bold">
-                                                <span class="text-xs text-gray-600">€</span>
-                                            @endif
+                                        <div class="flex items-center justify-end gap-2 shrink-0">
+                                            <div class="flex items-center gap-1">
+                                                <input type="number" min="1" max="20" step="1" wire:model.live="quote_services.cold_sparks.quantity" class="w-12 border rounded p-1 text-xs text-center font-bold" title="Número de máquinas">
+                                                <span class="text-[11px] text-gray-600 font-medium">máq. @</span>
+                                                <input type="number" step="0.01" wire:model.live="quote_services.cold_sparks.price" class="w-16 border rounded p-1 text-xs text-right font-bold" title="Precio por máquina">
+                                                <span class="text-xs text-gray-600">€/ud</span>
+                                            </div>
+                                            <div class="text-right min-w-[70px]">
+                                                @php
+                                                    $sparksQty = (int)($quote_services['cold_sparks']['quantity'] ?: 1);
+                                                    $sparksUnit = (float)($quote_services['cold_sparks']['price'] ?: 0);
+                                                    $sparksIncluded = !empty($quote_services['cold_sparks']['included']);
+                                                    $sparksTotal = $sparksIncluded ? (max(0, $sparksQty - 2) * $sparksUnit) : ($sparksQty * $sparksUnit);
+                                                @endphp
+                                                @if($sparksIncluded && $sparksQty <= 2)
+                                                    <span class="text-xs font-black text-amber-700 bg-amber-100 px-2 py-0.5 rounded">0,00 €</span>
+                                                @elseif($sparksIncluded && $sparksQty > 2)
+                                                    <span class="text-xs font-black text-amber-800 bg-amber-100 px-1.5 py-0.5 rounded" title="2 en pack (0 €) + {{ $sparksQty - 2 }} extra">+{{ number_format($sparksTotal, 2) }} €</span>
+                                                @else
+                                                    <span class="text-xs font-bold text-gray-700">{{ number_format($sparksTotal, 2) }} €</span>
+                                                @endif
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

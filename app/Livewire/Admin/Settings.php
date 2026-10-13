@@ -299,7 +299,11 @@ class Settings extends Component
         $this->price_extra_hours = Setting::get('price_extra_hours', 120);
         $this->price_photobooth = Setting::get('price_photobooth', 350);
         $this->price_effects_smoke = Setting::get('price_effects_smoke', 60);
-        $this->price_effects_sparks = Setting::get('price_effects_sparks', 150);
+        $storedSparks = Setting::get('price_effects_sparks');
+        if (empty($storedSparks) || (float)$storedSparks == 150) {
+            Setting::set('price_effects_sparks', 60);
+        }
+        $this->price_effects_sparks = (float)Setting::get('price_effects_sparks', 60);
 
         // Pack Cóctel + Banquete
         $this->pack_cocktail_restaurant_enabled = (bool)Setting::get('pack_cocktail_restaurant_enabled', true);

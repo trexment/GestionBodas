@@ -631,9 +631,9 @@
                     </div>
 
                     <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200">
-                        <label class="block text-xs font-bold text-slate-800 mb-1">✨ Fuego Frío / Chispas Frías (€)</label>
+                        <label class="block text-xs font-bold text-slate-800 mb-1">✨ Fuego Frío / Chispas Frías (€ / máquina)</label>
                         <input type="number" step="0.01" wire:model="price_effects_sparks" required class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm font-bold">
-                        <span class="text-[10px] text-gray-500 mt-1 block">Tarifa como extra (Incluido en Pack Deluxe Show / 6h+)</span>
+                        <span class="text-[10px] text-gray-500 mt-1 block">Tarifa por máquina (ej: 2 máquinas = 120 €). En Pack Deluxe Show se incluye espectáculo de 2 máquinas (0 €).</span>
                     </div>
                 </div>
 
