@@ -88,6 +88,7 @@ class CalendarManager extends Component
 
         $eventData = [
             'name' => $this->new_name,
+            'brand' => \App\Models\Setting::getDetectedBrand(),
             'event_date' => $this->new_event_date,
             'location' => $this->new_location,
             'client_id' => $this->new_client_id ?: null,

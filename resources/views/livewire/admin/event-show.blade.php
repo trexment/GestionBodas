@@ -4050,7 +4050,7 @@
                     <div class="p-6 space-y-4 overflow-y-auto flex-1 text-xs">
                         <div>
                             <label class="block font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1">Nombre del Evento *</label>
-                            <input type="text" wire:model="event_edit_name" placeholder="Ej: Enlace Vidalia y Omar / Boda Carlos y Laura" class="w-full border-gray-300 dark:border-slate-700 dark:bg-slate-950 dark:text-white rounded-xl text-sm font-bold focus:ring-indigo-500 focus:border-indigo-500 p-2.5">
+                            <input type="text" wire:model="event_edit_name" placeholder="Ej: Boda Laura y Carlos / Enlace Marta y Javier" class="w-full border-gray-300 dark:border-slate-700 dark:bg-slate-950 dark:text-white rounded-xl text-sm font-bold focus:ring-indigo-500 focus:border-indigo-500 p-2.5">
                             @error('event_edit_name') <span class="text-rose-500 text-[11px] font-semibold">{{ $message }}</span> @enderror
                         </div>
 
@@ -4396,7 +4396,7 @@
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                                 <div>
                                     <label class="block text-[10px] font-bold text-slate-700 dark:text-slate-300 mb-1">Nombre Completo Pareja</label>
-                                    <input type="text" wire:model="partner_edit_name" placeholder="Ej: Vidalia / Omar" class="w-full border-pink-200 dark:border-pink-800 rounded-xl p-2 text-xs font-semibold text-slate-800 dark:text-white bg-white dark:bg-slate-900">
+                                    <input type="text" wire:model="partner_edit_name" placeholder="Ej: Laura / Carlos" class="w-full border-pink-200 dark:border-pink-800 rounded-xl p-2 text-xs font-semibold text-slate-800 dark:text-white bg-white dark:bg-slate-900">
                                 </div>
                                 <div>
                                     <label class="block text-[10px] font-bold text-slate-700 dark:text-slate-300 mb-1">Teléfono Pareja (WhatsApp)</label>

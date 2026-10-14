@@ -331,7 +331,7 @@
                         <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 mb-3">
                             <div class="sm:col-span-2">
                                 <label class="block text-gray-700 dark:text-slate-300 text-xs font-bold mb-1">Nombre del Evento *</label>
-                                <input type="text" wire:model="name" placeholder="Ej: Enlace Vidalia y Omar / Boda Laura y Carlos" class="border dark:border-slate-700 rounded-xl w-full py-2 px-3 text-gray-700 dark:text-slate-200 bg-white dark:bg-slate-800 text-sm focus:ring-indigo-500 focus:border-indigo-500 font-bold">
+                                <input type="text" wire:model="name" placeholder="Ej: Boda Laura y Carlos / Enlace Marta y Javier" class="border dark:border-slate-700 rounded-xl w-full py-2 px-3 text-gray-700 dark:text-slate-200 bg-white dark:bg-slate-800 text-sm focus:ring-indigo-500 focus:border-indigo-500 font-bold">
                                 @error('name') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                             </div>
                             <div>
@@ -443,7 +443,7 @@
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                 <div>
                                     <label class="block text-[11px] font-bold text-gray-700 dark:text-slate-300 mb-0.5">Nombre y Apellidos</label>
-                                    <input type="text" wire:model="partner_name" placeholder="Ej: Vidalia / Omar" class="border border-pink-200 dark:border-pink-800 rounded-xl w-full py-1.5 px-2 text-gray-700 dark:text-slate-200 text-xs bg-white dark:bg-slate-800 font-semibold">
+                                    <input type="text" wire:model="partner_name" placeholder="Ej: Laura / Carlos" class="border border-pink-200 dark:border-pink-800 rounded-xl w-full py-1.5 px-2 text-gray-700 dark:text-slate-200 text-xs bg-white dark:bg-slate-800 font-semibold">
                                 </div>
                                 <div>
                                     <label class="block text-[11px] font-bold text-gray-700 dark:text-slate-300 mb-0.5">Teléfono / WhatsApp</label>

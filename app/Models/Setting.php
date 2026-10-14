@@ -205,18 +205,32 @@ class Setting extends Model
     }
 
     /**
+     * Get the detected brand key based on the current request domain / host.
+     * e.g., app.javnxdj.com or javnxdj.com -> 'javnx'
+     *       magoleugim.es or leugim -> 'mago_leugim'
+     *       otherwise default_brand or 'nunez_and_son'
+     */
+    public static function getDetectedBrand(): string
+    {
+        if (!app()->runningInConsole() && request()) {
+            $host = strtolower(request()->getHost());
+            if (str_contains($host, 'javnx')) {
+                return 'javnx';
+            }
+            if (str_contains($host, 'leugim')) {
+                return 'mago_leugim';
+            }
+        }
+        return self::get('default_brand', 'nunez_and_son');
+    }
+
+    /**
      * Get details for a specific brand profile ('nunez_and_son' | 'javnx' | 'mago_leugim')
      */
     public static function getBrandInfo(?string $brandKey = null): array
     {
         if (empty($brandKey)) {
-            if (!app()->runningInConsole() && request() && str_contains(strtolower(request()->getHost()), 'javnx')) {
-                $brandKey = 'javnx';
-            } elseif (!app()->runningInConsole() && request() && str_contains(strtolower(request()->getHost()), 'leugim')) {
-                $brandKey = 'mago_leugim';
-            } else {
-                $brandKey = self::get('default_brand', 'nunez_and_son');
-            }
+            $brandKey = self::getDetectedBrand();
         }
 
         if ($brandKey === 'mago_leugim') {

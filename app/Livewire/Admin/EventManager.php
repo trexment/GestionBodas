@@ -20,6 +20,7 @@ class EventManager extends Component
     public $dance_start_time;
     public $dance_duration_hours = 4.0;
     public $max_end_time;
+    public $location;
     public $client_id;
     public $partner_name;
     public $partner_phone;
