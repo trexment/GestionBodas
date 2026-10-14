@@ -5,6 +5,8 @@ namespace App\Livewire\Admin;
 use Livewire\Component;
 use App\Models\Event;
 use App\Models\User;
+use App\Models\Quote;
+use App\Models\QuoteItem;
 
 class EventManager extends Component
 {
@@ -13,7 +15,11 @@ class EventManager extends Component
     // Properties for creating a new event
     public $name;
     public $brand = 'nunez_and_son'; // nunez_and_son, javnx, mago_leugim
-    public $event_type = 'boda'; // boda, empresa, cumpleanos, comunion, otro
+    public $event_type = 'boda'; // boda, video, empresa, cumpleanos, comunion, otro
+    public $agreed_price = 250;
+    public $initial_status = 'confirmed';
+    public $new_client_name = '';
+    public $new_client_phone = '';
     public $event_date;
     public $setup_date;
     public $start_time;
@@ -51,7 +57,11 @@ class EventManager extends Component
     protected $rules = [
         'name' => 'required|string|max:255',
         'brand' => 'nullable|string|in:nunez_and_son,javnx,mago_leugim',
-        'event_type' => 'required|string|in:boda,empresa,cumpleanos,comunion,otro',
+        'event_type' => 'required|string|in:boda,video,empresa,cumpleanos,comunion,otro',
+        'agreed_price' => 'nullable|numeric|min:0',
+        'initial_status' => 'nullable|string|in:draft,confirmed',
+        'new_client_name' => 'nullable|string|max:255',
+        'new_client_phone' => 'nullable|string|max:50',
         'event_date' => 'required|date',
         'setup_date' => 'nullable|date',
         'start_time' => 'nullable|string|max:20',
@@ -118,9 +128,11 @@ class EventManager extends Component
         }
         $this->resetValidation();
         $this->editing_event_id = null;
-        $this->reset(['name', 'brand', 'event_type', 'event_date', 'setup_date', 'start_time', 'ceremony_time', 'cocktail_time', 'banquet_time', 'dance_start_time', 'dance_duration_hours', 'max_end_time', 'location', 'client_id', 'partner_name', 'partner_phone', 'partner_email', 'partner_dni', 'dj_id', 'assistant_id', 'assistant_ids', 'notes']);
+        $this->reset(['name', 'brand', 'event_type', 'event_date', 'setup_date', 'start_time', 'ceremony_time', 'cocktail_time', 'banquet_time', 'dance_start_time', 'dance_duration_hours', 'max_end_time', 'location', 'client_id', 'partner_name', 'partner_phone', 'partner_email', 'partner_dni', 'dj_id', 'assistant_id', 'assistant_ids', 'notes', 'new_client_name', 'new_client_phone']);
         $this->brand = \App\Models\Setting::getDetectedBrand();
         $this->event_type = 'boda';
+        $this->agreed_price = 250;
+        $this->initial_status = 'confirmed';
         $this->dance_duration_hours = 4.0;
         $this->dj_id = auth()->id(); // default current logged admin/dj
         $this->assistant_ids = [];
@@ -183,6 +195,32 @@ class EventManager extends Component
                 }
             }
 
+            // Si se introdujo un nuevo contacto directo y no se seleccionó cliente previo
+            if (empty($this->client_id) && !empty(trim((string)$this->new_client_name))) {
+                $cleanName = trim((string)$this->new_client_name);
+                $cleanPhone = trim((string)$this->new_client_phone);
+                $existingClient = null;
+                if (!empty($cleanPhone)) {
+                    $existingClient = User::where('role', 'client')->where('phone', $cleanPhone)->first();
+                }
+                if (!$existingClient) {
+                    $existingClient = User::where('role', 'client')->where('name', $cleanName)->first();
+                }
+
+                if (!$existingClient) {
+                    $slug = \Illuminate\Support\Str::slug($cleanName, '_');
+                    $email = 'contacto_' . ($slug ?: 'colaborador') . '_' . time() . '@colaborador.local';
+                    $existingClient = User::create([
+                        'name' => $cleanName,
+                        'email' => $email,
+                        'phone' => $cleanPhone ?: null,
+                        'role' => 'client',
+                        'password' => \Illuminate\Support\Facades\Hash::make(\Illuminate\Support\Str::random(16)),
+                    ]);
+                }
+                $this->client_id = $existingClient->id;
+            }
+
             $firstAssistantId = !empty($this->assistant_ids) ? (int)$this->assistant_ids[0] : ($this->assistant_id ?: null);
 
             $eventData = [
@@ -196,8 +234,8 @@ class EventManager extends Component
                 'partner_phone' => $this->partner_phone ?: null,
                 'partner_email' => $this->partner_email ?: null,
                 'partner_dni' => $this->partner_dni ?: null,
-                'dj_id' => $this->dj_id ?: auth()->id(),
-                'assistant_id' => $firstAssistantId,
+                'dj_id' => ($this->event_type === 'video') ? auth()->id() : ($this->dj_id ?: auth()->id()),
+                'assistant_id' => ($this->event_type === 'video') ? null : $firstAssistantId,
                 'notes' => $this->notes,
             ];
 
@@ -226,12 +264,36 @@ class EventManager extends Component
                 }
                 $msg = '¡Evento "' . $this->name . '" actualizado exitosamente!';
             } else {
-                $eventData['status'] = 'draft';
+                $eventStatus = ($this->event_type === 'video') ? ($this->initial_status ?: 'confirmed') : 'draft';
+                $eventData['status'] = $eventStatus;
                 $event = Event::create($eventData);
                 if (\Illuminate\Support\Facades\Schema::hasTable('event_assistants')) {
-                    $event->assistants()->sync($this->assistant_ids ?: []);
+                    $event->assistants()->sync(($this->event_type === 'video') ? [] : ($this->assistant_ids ?: []));
                 }
-                $msg = '¡Evento creado exitosamente con personal y equipo asignados!';
+
+                // Generar automáticamente presupuesto de videógrafo si es tipo video y tiene precio acordado
+                if ($this->event_type === 'video' && (float)$this->agreed_price > 0) {
+                    $quote = Quote::create([
+                        'event_id' => $event->id,
+                        'brand' => $event->brand ?: 'nunez_and_son',
+                        'amount' => (float)$this->agreed_price,
+                        'status' => 'accepted',
+                        'tax_type' => 'included',
+                        'tax_rate' => 21.00,
+                    ]);
+
+                    QuoteItem::create([
+                        'quote_id' => $quote->id,
+                        'service_name' => 'Servicio de Videógrafo / Cobertura de Vídeo',
+                        'description' => 'Servicio audiovisual de grabación/vídeo para evento/boda acordado con colaborador.',
+                        'price' => (float)$this->agreed_price,
+                        'quantity' => 1,
+                    ]);
+                }
+
+                $msg = ($this->event_type === 'video')
+                    ? '¡Evento de Videógrafo registrado y fecha bloqueada (' . number_format((float)$this->agreed_price, 2, ',', '.') . ' €) exitosamente!'
+                    : '¡Evento creado exitosamente con personal y equipo asignados!';
             }
 
             $this->closeCreateModal();

@@ -345,8 +345,9 @@
                             </div>
                             <div>
                                 <label class="block text-gray-700 dark:text-slate-300 text-xs font-bold mb-1">Tipo *</label>
-                                <select wire:model="event_type" class="border dark:border-slate-700 rounded-xl w-full py-2 px-2 text-gray-700 dark:text-slate-200 text-xs font-bold focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-slate-800">
+                                <select wire:model.live="event_type" class="border dark:border-slate-700 rounded-xl w-full py-2 px-2 text-gray-700 dark:text-slate-200 text-xs font-bold focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-slate-800">
                                     <option value="boda">💍 Boda</option>
+                                    <option value="video">📹 Vídeo / Videógrafo</option>
                                     <option value="empresa">🏢 Empresa</option>
                                     <option value="cumpleanos">🎂 Cumpleaños</option>
                                     <option value="comunion">🕊️ Comunión</option>
@@ -355,6 +356,56 @@
                                 @error('event_type') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                             </div>
                         </div>
+
+                        <!-- Sección Exclusiva para Servicio de Vídeo / Colaboración -->
+                        @if($event_type === 'video')
+                            <div class="p-3.5 bg-gradient-to-r from-indigo-50 via-purple-50 to-pink-50 dark:from-slate-800 dark:via-indigo-950/40 dark:to-purple-950/40 rounded-2xl border-2 border-indigo-200 dark:border-indigo-800 space-y-3 mb-3 shadow-xs">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-xl">📹</span>
+                                        <div>
+                                            <h4 class="text-xs font-extrabold text-indigo-950 dark:text-indigo-200">Servicio de Videógrafo / Colaboración</h4>
+                                            <p class="text-[10px] text-indigo-700 dark:text-indigo-300">Reserva la fecha con importe directo y sin necesidad de packs de DJ.</p>
+                                        </div>
+                                    </div>
+                                    <span class="text-[10px] bg-indigo-600 text-white font-black px-2 py-0.5 rounded-full uppercase tracking-wider">Vídeo</span>
+                                </div>
+
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                                    <div>
+                                        <label class="block text-indigo-950 dark:text-indigo-300 text-xs font-bold mb-1">💶 Precio Acordado (€) *</label>
+                                        <div class="relative">
+                                            <input type="number" step="1" min="0" wire:model="agreed_price" placeholder="250" class="border border-indigo-300 dark:border-indigo-700 rounded-xl w-full py-1.5 px-3 text-gray-900 dark:text-white text-sm font-black bg-white dark:bg-slate-900 focus:ring-indigo-500 focus:border-indigo-500 pr-8">
+                                            <span class="absolute right-3 top-2 text-xs font-bold text-gray-400">€</span>
+                                        </div>
+                                        <span class="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5 block">Crea propuesta automática por este importe (ej. 250 €).</span>
+                                        @error('agreed_price') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-indigo-950 dark:text-indigo-300 text-xs font-bold mb-1">📌 Estado de la Reserva *</label>
+                                        <select wire:model="initial_status" class="border border-indigo-300 dark:border-indigo-700 rounded-xl w-full py-2 px-3 text-gray-900 dark:text-white text-xs font-bold bg-white dark:bg-slate-900 focus:ring-indigo-500 focus:border-indigo-500">
+                                            <option value="confirmed">🟢 Confirmado (Bloquea la fecha en calendario)</option>
+                                            <option value="draft">🟡 Borrador / Pendiente</option>
+                                        </select>
+                                        <span class="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5 block">Confirmado reserva tu día de inmediato para que nadie más lo ocupe.</span>
+                                    </div>
+                                </div>
+
+                                <div class="pt-2 border-t border-indigo-200/60 dark:border-indigo-900/60">
+                                    <label class="block text-indigo-950 dark:text-indigo-300 text-xs font-bold mb-1">🤝 ¿Quién te contrata? (Fotógrafo / Productora / Colega)</label>
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                        <div>
+                                            <input type="text" wire:model="new_client_name" placeholder="Nombre (Ej: Jon Fotógrafo / Estudio X)" class="border border-indigo-200 dark:border-indigo-800 rounded-xl w-full py-1.5 px-3 text-xs bg-white dark:bg-slate-900 text-gray-900 dark:text-white font-semibold">
+                                        </div>
+                                        <div>
+                                            <input type="text" wire:model="new_client_phone" placeholder="Teléfono / WhatsApp (Ej: 612345678)" class="border border-indigo-200 dark:border-indigo-800 rounded-xl w-full py-1.5 px-3 text-xs bg-white dark:bg-slate-900 text-gray-900 dark:text-white">
+                                        </div>
+                                    </div>
+                                    <span class="text-[10px] text-indigo-700 dark:text-indigo-300 mt-1 block">Rellena esto si es un contacto nuevo, o selecciónalo abajo si ya existe.</span>
+                                </div>
+                            </div>
+                        @endif
                         
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
                             <div>
@@ -462,6 +513,7 @@
                             </div>
                         </div>
 
+                        @if($event_type !== 'video')
                         <!-- Asignación de Personal: DJ y Asistentes -->
                         <div class="mb-3 bg-indigo-50/60 dark:bg-indigo-950/40 p-3 rounded-2xl border border-indigo-100 dark:border-indigo-900/50 space-y-3">
                             <div>
@@ -496,6 +548,15 @@
                                 </div>
                             </div>
                         </div>
+                        @else
+                        <div class="mb-3 bg-indigo-50/50 dark:bg-slate-800/50 p-3 rounded-2xl border border-indigo-100 dark:border-indigo-900/40 flex items-center justify-between text-xs text-indigo-900 dark:text-indigo-200">
+                            <span class="flex items-center gap-1.5 font-bold">
+                                <span>🎥</span>
+                                <span>Servicio de videógrafo a tu cargo ({{ auth()->user()->name }}).</span>
+                            </span>
+                            <span class="text-[10px] bg-indigo-100 dark:bg-indigo-900/60 text-indigo-800 dark:text-indigo-300 font-extrabold px-2 py-0.5 rounded-full">Sin DJ</span>
+                        </div>
+                        @endif
 
                         <div>
                             <label class="block text-gray-700 dark:text-slate-300 text-xs font-bold mb-1">Notas Privadas / Observaciones</label>

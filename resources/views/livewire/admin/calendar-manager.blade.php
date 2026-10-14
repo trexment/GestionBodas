@@ -121,15 +121,20 @@
                                             };
                                         @endphp
                                         <a href="{{ route('admin.events.show', $eventItem->id) }}" class="block p-1.5 rounded border-l-4 text-xs shadow-xs transition {{ $borderClass }}" title="{{ $eventItem->name }} ({{ $eventItem->location }})">
-                                            <div class="font-bold truncate">{{ $eventItem->name }}</div>
+                                            <div class="font-bold truncate flex items-center gap-1">
+                                                <span>{{ $eventItem->event_type_icon }}</span>
+                                                <span class="truncate">{{ $eventItem->name }}</span>
+                                            </div>
                                             <div class="text-[10px] text-gray-600 truncate">📍 {{ $eventItem->location }}</div>
-                                            @if($eventItem->dj)
+                                            @if($eventItem->event_type_clean === 'video')
+                                                <div class="text-[10px] text-purple-700 font-bold truncate mt-0.5">📹 Videógrafo (250 €)</div>
+                                            @elseif($eventItem->dj)
                                                 <div class="text-[10px] text-indigo-700 font-semibold truncate mt-0.5">🎧 {{ $eventItem->dj->name }}</div>
                                             @endif
                                             @php
                                                 $calAssistants = $eventItem->all_assistants;
                                             @endphp
-                                            @if($calAssistants->isNotEmpty())
+                                            @if($calAssistants->isNotEmpty() && $eventItem->event_type_clean !== 'video')
                                                 <div class="text-[10px] text-amber-700 font-semibold truncate">👷‍♂️ {{ $calAssistants->pluck('name')->implode(', ') }}</div>
                                             @endif
                                         </a>
@@ -244,16 +249,47 @@
                                     @error('new_event_date') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                                 </div>
                                 <div>
-                                    <label class="block text-xs font-bold text-gray-700 mb-1">Estado *</label>
-                                    <select wire:model="new_status" required class="block w-full border-gray-300 rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500 bg-white">
-                                        <option value="draft">🟡 Borrador / Pendiente</option>
-                                        <option value="no_response">🟣 Sin Respuesta</option>
-                                        <option value="confirmed">🟢 Confirmado</option>
-                                        <option value="completed">🔵 Completado</option>
-                                        <option value="rejected">⚪ Rechazado</option>
-                                        <option value="cancelled">🔴 Cancelado</option>
+                                    <label class="block text-xs font-bold text-gray-700 mb-1">Tipo de Evento *</label>
+                                    <select wire:model.live="new_event_type" required class="block w-full border-gray-300 rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500 bg-white">
+                                        <option value="boda">💍 Boda</option>
+                                        <option value="video">📹 Vídeo / Videógrafo</option>
+                                        <option value="empresa">🏢 Empresa</option>
+                                        <option value="cumpleanos">🎂 Cumpleaños</option>
+                                        <option value="comunion">🕊️ Comunión</option>
+                                        <option value="otro">🎉 Fiesta / Otro</option>
                                     </select>
                                 </div>
+                            </div>
+
+                            @if($new_event_type === 'video')
+                                <div class="p-3 bg-purple-50 rounded-xl border border-purple-200 space-y-2">
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-xs font-extrabold text-purple-950 flex items-center gap-1.5">
+                                            <span>📹</span> Cobertura de Vídeo
+                                        </span>
+                                        <span class="text-[10px] font-bold bg-purple-200 text-purple-800 px-2 py-0.5 rounded-full">Colaboración</span>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-purple-900 mb-1">💶 Importe Acordado (€)</label>
+                                        <div class="relative">
+                                            <input type="number" step="1" min="0" wire:model="new_agreed_price" placeholder="250" class="block w-full border-purple-300 rounded-lg text-sm font-black focus:ring-indigo-500 focus:border-indigo-500 pr-8 bg-white">
+                                            <span class="absolute right-3 top-2 text-xs font-bold text-gray-400">€</span>
+                                        </div>
+                                    </div>
+                                    <p class="text-[10px] text-purple-700">Genera automáticamente la propuesta de 250 € y bloquea la fecha.</p>
+                                </div>
+                            @endif
+
+                            <div>
+                                <label class="block text-xs font-bold text-gray-700 mb-1">Estado *</label>
+                                <select wire:model="new_status" required class="block w-full border-gray-300 rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500 bg-white">
+                                    <option value="confirmed">🟢 Confirmado (Bloquea la fecha)</option>
+                                    <option value="draft">🟡 Borrador / Pendiente</option>
+                                    <option value="no_response">🟣 Sin Respuesta</option>
+                                    <option value="completed">🔵 Completado</option>
+                                    <option value="rejected">⚪ Rechazado</option>
+                                    <option value="cancelled">🔴 Cancelado</option>
+                                </select>
                             </div>
 
                             <div>
@@ -263,7 +299,7 @@
                             </div>
 
                             <div>
-                                <label class="block text-xs font-bold text-gray-700 mb-1">Cliente Asignado</label>
+                                <label class="block text-xs font-bold text-gray-700 mb-1">Cliente / Contacto que te contrata</label>
                                 <select wire:model="new_client_id" class="block w-full border-gray-300 rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500 bg-white">
                                     <option value="">-- Sin cliente asignado --</option>
                                     @foreach($clients as $c)
@@ -272,6 +308,7 @@
                                 </select>
                             </div>
 
+                            @if($new_event_type !== 'video')
                             <div class="grid grid-cols-2 gap-3 bg-indigo-50/50 p-3 rounded-xl border border-indigo-100">
                                 <div>
                                     <label class="block text-xs font-bold text-indigo-900 mb-1">🎧 DJ (Baile)</label>
@@ -292,6 +329,14 @@
                                     </select>
                                 </div>
                             </div>
+                            @else
+                            <div class="bg-indigo-50/50 p-3 rounded-xl border border-indigo-100 text-xs text-indigo-900 flex items-center justify-between">
+                                <span class="font-bold flex items-center gap-1.5">
+                                    <span>🎥</span> Asignado a tu cargo ({{ auth()->user()->name }})
+                                </span>
+                                <span class="text-[10px] bg-indigo-100 font-bold px-2 py-0.5 rounded-full text-indigo-800">Videógrafo</span>
+                            </div>
+                            @endif
                         </div>
 
                     </div>

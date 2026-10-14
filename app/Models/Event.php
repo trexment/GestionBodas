@@ -294,6 +294,7 @@ class Event extends Model
             return $type;
         }
         $nameLower = mb_strtolower($this->name ?? '');
+        if (str_contains($nameLower, 'video') || str_contains($nameLower, 'vídeo') || str_contains($nameLower, 'grabac')) return 'video';
         if (str_contains($nameLower, 'empresa') || str_contains($nameLower, 'corporativ')) return 'empresa';
         if (str_contains($nameLower, 'cumplea') || str_contains($nameLower, 'cumple') || str_contains($nameLower, 'aniversario')) return 'cumpleanos';
         if (str_contains($nameLower, 'comunion') || str_contains($nameLower, 'comunión')) return 'comunion';
@@ -310,11 +311,20 @@ class Event extends Model
     }
 
     /**
+     * Determina si es un servicio de vídeo / videógrafo
+     */
+    public function getIsVideoAttribute(): bool
+    {
+        return $this->event_type_clean === 'video';
+    }
+
+    /**
      * Etiqueta legible del tipo de evento
      */
     public function getEventTypeLabelAttribute(): string
     {
         return match($this->event_type_clean) {
+            'video' => '📹 Vídeo / Videógrafo',
             'empresa' => 'Evento de Empresa / Corporativo',
             'cumpleanos' => 'Cumpleaños / Aniversario',
             'comunion' => 'Comunión',
@@ -329,6 +339,7 @@ class Event extends Model
     public function getEventTypeIconAttribute(): string
     {
         return match($this->event_type_clean) {
+            'video' => '📹',
             'empresa' => '🏢',
             'cumpleanos' => '🎂',
             'comunion' => '🕊️',
@@ -624,6 +635,17 @@ class Event extends Model
         $type = mb_strtolower(trim((string)$eventType));
 
         return match ($type) {
+            'video' => [
+                'Preparativos / Casas',
+                'Ceremonia',
+                'Sesión de Pareja / Exteriores',
+                'Cóctel',
+                'Entrada al Banquete',
+                'Momentos Especiales / Entregas',
+                'Corte de Tarta',
+                'Baile Nupcial',
+                'Fiesta / Barra Libre',
+            ],
             'boda' => [
                 'Baile / Fiesta',
                 'Baile Nupcial',
@@ -702,7 +724,15 @@ class Event extends Model
     {
         $type = mb_strtolower(trim((string)$eventType));
 
-        if ($type === 'boda') {
+        if ($type === 'video') {
+            return [
+                'ceremonia' => '💍 Ceremonia / Preparativos',
+                'coctel' => '🍸 Cóctel / Exteriores',
+                'banquete' => '🍽️ Banquete / Momentos',
+                'baile' => '💃 Baile / Fiesta',
+                'lista_negra' => '🚫 Prohibiciones / No Grabar',
+            ];
+        } elseif ($type === 'boda') {
             return [
                 'ceremonia' => '💍 Ceremonia',
                 'coctel' => '🍸 Cóctel',

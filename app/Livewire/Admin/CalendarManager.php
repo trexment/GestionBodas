@@ -5,6 +5,8 @@ namespace App\Livewire\Admin;
 use Livewire\Component;
 use App\Models\Event;
 use App\Models\User;
+use App\Models\Quote;
+use App\Models\QuoteItem;
 use Carbon\Carbon;
 
 class CalendarManager extends Component
@@ -20,6 +22,8 @@ class CalendarManager extends Component
     // Modal Crear Evento Rápido
     public $showCreateModal = false;
     public $new_name = '';
+    public $new_event_type = 'boda';
+    public $new_agreed_price = 250;
     public $new_event_date = '';
     public $new_location = '';
     public $new_client_id = '';
@@ -67,6 +71,8 @@ class CalendarManager extends Component
         } else {
             $this->new_event_date = Carbon::createFromDate($this->year, $this->month, 1)->format('Y-m-d');
         }
+        $this->new_event_type = 'boda';
+        $this->new_agreed_price = 250;
         $this->showCreateModal = true;
     }
 
@@ -78,22 +84,25 @@ class CalendarManager extends Component
         }
         $this->validate([
             'new_name' => 'required|string|max:255',
+            'new_event_type' => 'required|string|in:boda,video,empresa,cumpleanos,comunion,otro',
             'new_event_date' => 'required|date',
             'new_location' => 'required|string|max:255',
             'new_client_id' => 'nullable|exists:users,id',
             'new_dj_id' => 'nullable|exists:users,id',
             'new_assistant_id' => 'nullable|exists:users,id',
             'new_status' => 'required|in:draft,no_response,confirmed,completed,rejected,cancelled',
+            'new_agreed_price' => 'nullable|numeric|min:0',
         ]);
 
         $eventData = [
             'name' => $this->new_name,
+            'event_type' => $this->new_event_type ?: 'boda',
             'brand' => \App\Models\Setting::getDetectedBrand(),
             'event_date' => $this->new_event_date,
             'location' => $this->new_location,
             'client_id' => $this->new_client_id ?: null,
-            'dj_id' => $this->new_dj_id ?: null,
-            'assistant_id' => $this->new_assistant_id ?: null,
+            'dj_id' => ($this->new_event_type === 'video') ? auth()->id() : ($this->new_dj_id ?: null),
+            'assistant_id' => ($this->new_event_type === 'video') ? null : ($this->new_assistant_id ?: null),
             'status' => $this->new_status,
         ];
 
@@ -103,6 +112,25 @@ class CalendarManager extends Component
 
         try {
             $event = Event::create($eventData);
+
+            if ($this->new_event_type === 'video' && (float)$this->new_agreed_price > 0) {
+                $quote = Quote::create([
+                    'event_id' => $event->id,
+                    'brand' => $event->brand ?: 'nunez_and_son',
+                    'amount' => (float)$this->new_agreed_price,
+                    'status' => 'accepted',
+                    'tax_type' => 'included',
+                    'tax_rate' => 21.00,
+                ]);
+
+                QuoteItem::create([
+                    'quote_id' => $quote->id,
+                    'service_name' => 'Servicio de Videógrafo / Cobertura de Vídeo',
+                    'description' => 'Servicio audiovisual de grabación/vídeo para evento/boda acordado con colaborador.',
+                    'price' => (float)$this->new_agreed_price,
+                    'quantity' => 1,
+                ]);
+            }
         } catch (\Illuminate\Database\QueryException $e) {
             if (str_contains($e->getMessage(), 'Data truncated') || str_contains($e->getMessage(), '1265')) {
                 try {
@@ -114,6 +142,25 @@ class CalendarManager extends Component
                         $eventData['no_response_at'] = now();
                     }
                     $event = Event::create($eventData);
+
+                    if ($this->new_event_type === 'video' && (float)$this->new_agreed_price > 0) {
+                        $quote = Quote::create([
+                            'event_id' => $event->id,
+                            'brand' => $event->brand ?: 'nunez_and_son',
+                            'amount' => (float)$this->new_agreed_price,
+                            'status' => 'accepted',
+                            'tax_type' => 'included',
+                            'tax_rate' => 21.00,
+                        ]);
+
+                        QuoteItem::create([
+                            'quote_id' => $quote->id,
+                            'service_name' => 'Servicio de Videógrafo / Cobertura de Vídeo',
+                            'description' => 'Servicio audiovisual de grabación/vídeo para evento/boda acordado con colaborador.',
+                            'price' => (float)$this->new_agreed_price,
+                            'quantity' => 1,
+                        ]);
+                    }
                 } catch (\Throwable $innerEx) {
                     throw $e;
                 }
@@ -130,6 +177,8 @@ class CalendarManager extends Component
     public function resetCreateForm()
     {
         $this->new_name = '';
+        $this->new_event_type = 'boda';
+        $this->new_agreed_price = 250;
         $this->new_event_date = '';
         $this->new_location = '';
         $this->new_client_id = '';

@@ -2373,7 +2373,7 @@ class EventShow extends Component
             'event_edit_name' => 'required|string|max:255',
             'event_edit_date' => 'required|date',
             'event_edit_location' => 'required|string|max:255',
-            'event_edit_type' => 'required|string|in:boda,empresa,cumpleanos,comunion,otro',
+            'event_edit_type' => 'required|string|in:boda,video,empresa,cumpleanos,comunion,otro',
             'event_edit_brand' => 'required|string|in:nunez_and_son,javnx,mago_leugim',
             'event_edit_status' => 'required|in:draft,no_response,confirmed,completed,rejected,cancelled',
             'event_edit_notes' => 'nullable|string',

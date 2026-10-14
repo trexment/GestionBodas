@@ -209,6 +209,9 @@
                                 <button type="button" wire:click="changeEventType('boda')" @click="openTypeDropdown = false" class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold flex items-center gap-2 cursor-pointer {{ $event->event_type_clean === 'boda' ? 'bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 font-bold' : 'text-slate-700 dark:text-slate-300' }}">
                                     <span>💍</span> Boda / Enlace
                                 </button>
+                                <button type="button" wire:click="changeEventType('video')" @click="openTypeDropdown = false" class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold flex items-center gap-2 cursor-pointer {{ $event->event_type_clean === 'video' ? 'bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 font-bold' : 'text-slate-700 dark:text-slate-300' }}">
+                                    <span>📹</span> Vídeo / Videógrafo
+                                </button>
                                 <button type="button" wire:click="changeEventType('empresa')" @click="openTypeDropdown = false" class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold flex items-center gap-2 cursor-pointer {{ $event->event_type_clean === 'empresa' ? 'bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 font-bold' : 'text-slate-700 dark:text-slate-300' }}">
                                     <span>🏢</span> Evento de Empresa
                                 </button>
@@ -366,15 +369,32 @@
                     </div>
                 </div>
 
-                <!-- Bloque 3: Personal Técnico (DJ y Asistente) -->
+                <!-- Bloque 3: Personal Técnico / Videógrafo -->
                 <div class="bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-3.5 flex flex-col justify-between gap-2.5">
                     <div>
                         <div class="flex items-center justify-between text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">
-                            <span class="flex items-center gap-1">🎧 Personal Técnico</span>
+                            <span class="flex items-center gap-1">
+                                {{ $event->event_type_clean === 'video' ? '📹 Responsable Vídeo' : '🎧 Personal Técnico' }}
+                            </span>
+                            @if($event->event_type_clean !== 'video')
                             <button type="button" wire:click="openStaffModal" class="text-indigo-600 dark:text-indigo-400 hover:underline font-bold text-xs cursor-pointer" title="Asignar o cambiar DJ y asistentes">
                                 ✏️
                             </button>
+                            @endif
                         </div>
+                        @if($event->event_type_clean === 'video')
+                        <div class="space-y-1.5 text-xs">
+                            <div class="flex items-center justify-between gap-1">
+                                <span class="text-slate-500 dark:text-slate-400">Videógrafo:</span>
+                                <strong class="text-indigo-700 dark:text-indigo-300 truncate">
+                                    {{ $event->dj ? $event->dj->name : auth()->user()->name }}
+                                </strong>
+                            </div>
+                            <div class="text-[11px] text-purple-700 dark:text-purple-300 font-semibold bg-purple-50 dark:bg-purple-950/40 p-1.5 rounded-lg border border-purple-100 dark:border-purple-900/40">
+                                📹 Cobertura audiovisual y grabación
+                            </div>
+                        </div>
+                        @else
                         <div class="space-y-1.5 text-xs">
                             <div class="flex items-center justify-between gap-1">
                                 <span class="text-slate-500 dark:text-slate-400">DJ:</span>
@@ -405,6 +425,7 @@
                                 </div>
                             </div>
                         </div>
+                        @endif
                     </div>
                 </div>
 
@@ -4072,6 +4093,7 @@
                                 <label class="block font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1">Tipo de Evento *</label>
                                 <select wire:model="event_edit_type" class="w-full border-gray-300 dark:border-slate-700 dark:bg-slate-950 dark:text-white rounded-xl text-sm font-bold p-2.5">
                                     <option value="boda">💍 Boda / Enlace</option>
+                                    <option value="video">📹 Vídeo / Videógrafo</option>
                                     <option value="empresa">🏢 Evento de Empresa</option>
                                     <option value="cumpleanos">🎂 Cumpleaños / Aniversario</option>
                                     <option value="comunion">🕊️ Comunión</option>
