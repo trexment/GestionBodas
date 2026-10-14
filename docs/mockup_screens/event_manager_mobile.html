@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Vista Móvil - Agenda</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  body { font-family: 'Plus Jakarta Sans', sans-serif; }
+</style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen p-4 flex justify-center">
+  <div class="w-full max-w-[380px] space-y-4">
+    <!-- Mobile Header -->
+    <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center font-bold text-xs text-white">N&S</div>
+        <div>
+          <h1 class="text-sm font-bold text-white leading-tight">Agenda Móvil DJ</h1>
+          <p class="text-[10px] text-slate-400">Próximos montajes</p>
+        </div>
+      </div>
+      <span class="text-[10px] bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full font-bold">
+        🟢 Online
+      </span>
+    </div>
+
+    <!-- Active Mobile Card 1 -->
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl space-y-3">
+      <div class="flex items-start justify-between">
+        <div>
+          <span class="text-[10px] font-bold text-indigo-400 uppercase tracking-wider">Próximo Evento</span>
+          <h2 class="text-base font-black text-white mt-0.5">Boda Laura & Carlos</h2>
+          <p class="text-xs text-slate-400">💍 Boda / Enlace Integral</p>
+        </div>
+        <span class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold px-2.5 py-1 rounded-full">
+          Confirmado
+        </span>
+      </div>
+
+      <div class="bg-slate-950/70 border border-slate-800/80 rounded-xl p-3 space-y-2 text-xs">
+        <div class="flex items-center gap-2 text-slate-200">
+          <span class="text-amber-400">📅</span>
+          <span class="font-bold">Sábado, 24 de Octubre de 2026</span>
+        </div>
+        <div class="flex items-center gap-2 text-slate-300">
+          <span class="text-rose-400">📍</span>
+          <span>Finca El Pinar (Vitoria-Gasteiz)</span>
+        </div>
+        <div class="flex items-center gap-2 text-slate-300">
+          <span class="text-sky-400">🚚</span>
+          <span>Montaje: <strong class="text-amber-300">15:30h</strong> (Mismo día)</span>
+        </div>
+        <div class="flex items-center gap-2 text-slate-300">
+          <span class="text-indigo-400">🎧</span>
+          <span>Horario DJ: <strong class="text-white">18:00h - 04:00h (10h)</strong></span>
+        </div>
+      </div>
+
+      <div class="bg-indigo-950/30 border border-indigo-500/20 rounded-xl p-2.5 flex items-center justify-between text-xs">
+        <span class="text-indigo-300 font-semibold">Pack Contratado:</span>
+        <span class="text-white font-bold bg-indigo-500/20 px-2 py-0.5 rounded text-[11px]">Pack Exclusivo</span>
+      </div>
+
+      <!-- Action Buttons Mobile -->
+      <div class="grid grid-cols-2 gap-2 pt-1">
+        <a href="#" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs py-2 px-3 rounded-xl flex items-center justify-center gap-1.5 shadow-md shadow-emerald-600/20 transition">
+          <span>💬</span> WhatsApp
+        </a>
+        <a href="#" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs py-2 px-3 rounded-xl flex items-center justify-center gap-1.5 border border-slate-700 transition">
+          <span>📞</span> Llamar
+        </a>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2">
+        <a href="#" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs py-2 px-3 rounded-xl flex items-center justify-center gap-1.5 shadow-md shadow-indigo-600/20 transition">
+          <span>📋</span> Ver Ficha
+        </a>
+        <a href="#" class="bg-purple-600/80 hover:bg-purple-600 text-white font-bold text-xs py-2 px-3 rounded-xl flex items-center justify-center gap-1.5 transition">
+          <span>🎧</span> Modo Cabina
+        </a>
+      </div>
+    </div>
+
+    <!-- Active Mobile Card 2 (Quick summary) -->
+    <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-3.5 space-y-2 opacity-80">
+      <div class="flex items-center justify-between">
+        <h3 class="text-xs font-bold text-white">Boda Marta & Javier</h3>
+        <span class="text-[9px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded">14/11/2026</span>
+      </div>
+      <p class="text-[11px] text-slate-400">📍 Palacio de los Duques &bull; Pack Premium</p>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Agenda de Eventos - Núñez & Son</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  body { font-family: 'Plus Jakarta Sans', sans-serif; }
+</style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen p-6">
+  <div class="max-w-6xl mx-auto space-y-5">
+    <!-- Top Bar with Search & Filters -->
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-xl font-black text-white flex items-center gap-2">
+          📅 Agenda y Gestión de Eventos
+        </h1>
+        <p class="text-xs text-slate-400">Planificación, asignación técnica y seguimiento integral de clientes</p>
+      </div>
+      <button class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-lg shadow-indigo-600/30 flex items-center gap-2 transition">
+        <span>+</span> Nuevo Evento
+      </button>
+    </div>
+
+    <!-- Filter Pills & Search -->
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-wrap items-center justify-between gap-4 shadow-xl">
+      <div class="flex items-center gap-2 flex-wrap">
+        <button class="bg-indigo-600 text-white text-xs font-bold px-3.5 py-1.5 rounded-xl shadow">Todos (33)</button>
+        <button class="bg-slate-800 text-slate-300 hover:bg-slate-700 text-xs font-semibold px-3 py-1.5 rounded-xl transition flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-emerald-400"></span> Confirmados (24)
+        </button>
+        <button class="bg-amber-500/15 text-amber-300 border border-amber-500/30 text-xs font-bold px-3 py-1.5 rounded-xl flex items-center gap-1.5 shadow-sm">
+          <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span> Sin Respuesta (2)
+        </button>
+        <button class="bg-slate-800 text-slate-300 hover:bg-slate-700 text-xs font-semibold px-3 py-1.5 rounded-xl transition">Borradores (4)</button>
+        <button class="bg-slate-800 text-slate-300 hover:bg-slate-700 text-xs font-semibold px-3 py-1.5 rounded-xl transition">Finalizados (3)</button>
+      </div>
+      <div class="relative min-w-[280px]">
+        <input type="text" placeholder="Buscar por pareja, teléfono o finca..." class="w-full bg-slate-950 border border-slate-800 text-xs text-slate-200 rounded-xl px-3.5 py-2 pl-9 focus:outline-none focus:border-indigo-500" readonly value="">
+        <span class="absolute left-3 top-2.5 text-slate-500 text-xs">🔍</span>
+      </div>
+    </div>
+
+    <!-- Events Table -->
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden">
+      <table class="w-full text-left text-xs">
+        <thead class="bg-slate-950/60 border-b border-slate-800 text-slate-400 uppercase text-[10px] tracking-wider font-semibold">
+          <tr>
+            <th class="py-3 px-4">Evento & Tipo</th>
+            <th class="py-3 px-4">Fecha & Montaje</th>
+            <th class="py-3 px-4">Lugar / Finca</th>
+            <th class="py-3 px-4">Contacto Cliente</th>
+            <th class="py-3 px-4">Estado</th>
+            <th class="py-3 px-4 text-right">Acciones</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-800/60 font-medium">
+          <!-- Row 1 -->
+          <tr class="hover:bg-slate-800/40 transition">
+            <td class="py-3.5 px-4">
+              <div class="font-bold text-white text-sm flex items-center gap-2">
+                <span>💍</span> Boda Laura & Carlos
+              </div>
+              <div class="text-[11px] text-indigo-400 font-semibold">Núñez & Son &bull; Pack Exclusivo</div>
+            </td>
+            <td class="py-3.5 px-4">
+              <div class="text-white font-bold">24/10/2026</div>
+              <div class="text-[11px] text-amber-400">Montaje: 15:30h &bull; DJ: 18:00h - 04:00h</div>
+            </td>
+            <td class="py-3.5 px-4">
+              <div class="font-semibold text-slate-200">📍 Finca El Pinar</div>
+              <div class="text-[11px] text-slate-400">Vitoria-Gasteiz</div>
+            </td>
+            <td class="py-3.5 px-4">
+              <div class="text-slate-200 font-bold">Laura Gómez</div>
+              <div class="text-[11px] text-emerald-400 flex items-center gap-1 font-mono">
+                <span>💬</span> +34 600 123 456
+              </div>
+            </td>
+            <td class="py-3.5 px-4">
+              <span class="inline-flex items-center gap-1.5 bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 px-2.5 py-1 rounded-full text-[11px] font-bold">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Confirmado
+              </span>
+            </td>
+            <td class="py-3.5 px-4 text-right">
+              <button class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition">
+                Gestionar
+              </button>
+            </td>
+          </tr>
+
+          <!-- Row 2 -->
+          <tr class="hover:bg-slate-800/40 transition">
+            <td class="py-3.5 px-4">
+              <div class="font-bold text-white text-sm flex items-center gap-2">
+                <span>💍</span> Boda Marta & Javier
+              </div>
+              <div class="text-[11px] text-indigo-400 font-semibold">Núñez & Son &bull; Pack Premium</div>
+            </td>
+            <td class="py-3.5 px-4">
+              <div class="text-white font-bold">14/11/2026</div>
+              <div class="text-[11px] text-amber-400">Montaje: 16:00h &bull; DJ: 19:00h - 04:00h</div>
+            </td>
+            <td class="py-3.5 px-4">
+              <div class="font-semibold text-slate-200">📍 Palacio de los Duques</div>
+              <div class="text-[11px] text-slate-400">Álava</div>
+            </td>
+            <td class="py-3.5 px-4">
+              <div class="text-slate-200 font-bold">Marta Sáez</div>
+              <div class="text-[11px] text-emerald-400 flex items-center gap-1 font-mono">
+                <span>💬</span> +34 611 987 654
+              </div>
+            </td>
+            <td class="py-3.5 px-4">
+              <span class="inline-flex items-center gap-1.5 bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 px-2.5 py-1 rounded-full text-[11px] font-bold">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Confirmado
+              </span>
+            </td>
+            <td class="py-3.5 px-4 text-right">
+              <button class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition">
+                Gestionar
+              </button>
+            </td>
+          </tr>
+
+          <!-- Row 3 - SIN RESPUESTA WITH RECORDAR BUTTON -->
+          <tr class="bg-amber-500/5 hover:bg-amber-500/10 transition border-l-4 border-amber-500">
+            <td class="py-3.5 px-4">
+              <div class="font-bold text-white text-sm flex items-center gap-2">
+                <span>💍</span> Boda Sofía & Alejandro
+              </div>
+              <div class="text-[11px] text-amber-400 font-semibold">Presupuesto #PRE-2026-089 (1.150 €)</div>
+            </td>
+            <td class="py-3.5 px-4">
+              <div class="text-white font-bold">29/05/2027</div>
+              <div class="text-[11px] text-slate-400">Horario por confirmar</div>
+            </td>
+            <td class="py-3.5 px-4">
+              <div class="font-semibold text-slate-200">📍 Castillo de San Marcos</div>
+              <div class="text-[11px] text-slate-400">Navarra</div>
+            </td>
+            <td class="py-3.5 px-4">
+              <div class="text-slate-200 font-bold">Sofía Navarro</div>
+              <div class="text-[11px] text-slate-400 flex items-center gap-1 font-mono">
+                <span>💬</span> +34 622 345 678
+              </div>
+            </td>
+            <td class="py-3.5 px-4">
+              <span class="inline-flex items-center gap-1.5 bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2.5 py-1 rounded-full text-[11px] font-bold">
+                <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span> Sin Respuesta (4d)
+              </span>
+            </td>
+            <td class="py-3.5 px-4 text-right">
+              <div class="flex items-center justify-end gap-1.5">
+                <button class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-2.5 py-1.5 rounded-lg text-xs flex items-center gap-1 shadow-md shadow-emerald-600/30 transition">
+                  <span>💬</span> Recordar
+                </button>
+                <button class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold px-3 py-1.5 rounded-lg text-xs transition">
+                  Gestionar
+                </button>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Row 4 - SIN RESPUESTA -->
+          <tr class="bg-amber-500/5 hover:bg-amber-500/10 transition border-l-4 border-amber-500">
+            <td class="py-3.5 px-4">
+              <div class="font-bold text-white text-sm flex items-center gap-2">
+                <span>💍</span> Boda Elena & David
+              </div>
+              <div class="text-[11px] text-amber-400 font-semibold">Presupuesto #PRE-2026-092 (1.350 €)</div>
+            </td>
+            <td class="py-3.5 px-4">
+              <div class="text-white font-bold">12/06/2027</div>
+              <div class="text-[11px] text-slate-400">Horario por confirmar</div>
+            </td>
+            <td class="py-3.5 px-4">
+              <div class="font-semibold text-slate-200">📍 Hacienda La Quinta</div>
+              <div class="text-[11px] text-slate-400">La Rioja</div>
+            </td>
+            <td class="py-3.5 px-4">
+              <div class="text-slate-200 font-bold">Elena Ruiz</div>
+              <div class="text-[11px] text-slate-400 flex items-center gap-1 font-mono">
+                <span>💬</span> +34 633 456 789
+              </div>
+            </td>
+            <td class="py-3.5 px-4">
+              <span class="inline-flex items-center gap-1.5 bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2.5 py-1 rounded-full text-[11px] font-bold">
+                <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span> Sin Respuesta (6d)
+              </span>
+            </td>
+            <td class="py-3.5 px-4 text-right">
+              <div class="flex items-center justify-end gap-1.5">
+                <button class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-2.5 py-1.5 rounded-lg text-xs flex items-center gap-1 shadow-md shadow-emerald-600/30 transition">
+                  <span>💬</span> Recordar
+                </button>
+                <button class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold px-3 py-1.5 rounded-lg text-xs transition">
+                  Gestionar
+                </button>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Row 5 - BORRADOR -->
+          <tr class="hover:bg-slate-800/40 transition">
+            <td class="py-3.5 px-4">
+              <div class="font-bold text-white text-sm flex items-center gap-2">
+                <span>🏢</span> Fiesta TechHub 2027
+              </div>
+              <div class="text-[11px] text-slate-400">JAVNXDJ &bull; Evento de Empresa</div>
+            </td>
+            <td class="py-3.5 px-4">
+              <div class="text-white font-bold">03/07/2027</div>
+              <div class="text-[11px] text-amber-400">Montaje: 19:00h &bull; Sesión: 21:00h - 03:00h</div>
+            </td>
+            <td class="py-3.5 px-4">
+              <div class="font-semibold text-slate-200">📍 Hotel Zentral</div>
+              <div class="text-[11px] text-slate-400">Pamplona</div>
+            </td>
+            <td class="py-3.5 px-4">
+              <div class="text-slate-200 font-bold">Carlos Armentia</div>
+              <div class="text-[11px] text-slate-400 font-mono">+34 644 111 222</div>
+            </td>
+            <td class="py-3.5 px-4">
+              <span class="inline-flex items-center gap-1 bg-slate-700/50 text-slate-300 border border-slate-600 px-2.5 py-1 rounded-full text-[11px] font-bold">
+                Borrador / Preparación
+              </span>
+            </td>
+            <td class="py-3.5 px-4 text-right">
+              <button class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold px-3 py-1.5 rounded-lg text-xs transition">
+                Gestionar
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</body>
+</html>

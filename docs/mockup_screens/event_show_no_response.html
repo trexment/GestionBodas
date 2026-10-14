@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Ficha Evento - Sin Respuesta</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  body { font-family: 'Plus Jakarta Sans', sans-serif; }
+</style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen p-6">
+  <div class="max-w-5xl mx-auto space-y-4">
+    <!-- Breadcrumb & Top bar -->
+    <div class="flex items-center justify-between text-xs text-slate-400">
+      <div class="flex items-center gap-2">
+        <span class="hover:text-white cursor-pointer">← Volver a Eventos</span>
+        <span>/</span>
+        <span class="text-slate-200 font-semibold">Boda Sofía & Alejandro</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="bg-amber-500/20 text-amber-300 border border-amber-500/40 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span> Estado: Sin Respuesta
+        </span>
+      </div>
+    </div>
+
+    <!-- 4-Block Event Header -->
+    <div class="grid grid-cols-4 gap-3 bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl">
+      <!-- Block 1: Event & Venue -->
+      <div class="border-r border-slate-800/80 pr-3 space-y-1">
+        <div class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Evento & Finca</div>
+        <div class="text-base font-black text-white">Boda Sofía & Alejandro</div>
+        <div class="text-xs text-indigo-400 font-semibold flex items-center gap-1">
+          <span>📍</span> Castillo de San Marcos
+        </div>
+        <div class="text-[11px] text-slate-400">29 de Mayo de 2027</div>
+      </div>
+
+      <!-- Block 2: Couple / Client Info -->
+      <div class="border-r border-slate-800/80 px-3 space-y-1">
+        <div class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Contacto Novios</div>
+        <div class="text-xs font-bold text-slate-200">Sofía Navarro</div>
+        <div class="text-xs text-emerald-400 font-mono flex items-center gap-1">
+          <span>💬</span> +34 622 345 678
+        </div>
+        <div class="text-[11px] text-slate-400 truncate">sofia.navarro@ejemplo.com</div>
+      </div>
+
+      <!-- Block 3: Budget & Payments -->
+      <div class="border-r border-slate-800/80 px-3 space-y-1">
+        <div class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Presupuesto & Cobro</div>
+        <div class="text-base font-black text-white">1.150,00 €</div>
+        <div class="text-[11px] text-amber-300 font-semibold flex items-center gap-1">
+          <span>⚠️</span> Fianza Pendiente: 300,00 €
+        </div>
+        <div class="text-[11px] text-slate-400">Pack Esencial + Extras</div>
+      </div>
+
+      <!-- Block 4: Quick Actions -->
+      <div class="pl-3 flex flex-col justify-center gap-1.5">
+        <button class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs py-1.5 px-3 rounded-lg flex items-center justify-center gap-1.5 shadow transition">
+          <span>📄</span> Ver Dossier PDF
+        </button>
+        <button class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs py-1.5 px-3 rounded-lg border border-slate-700 flex items-center justify-center gap-1.5 transition">
+          <span>📋</span> Contrato Online
+        </button>
+      </div>
+    </div>
+
+    <!-- Smart Follow-up Banner (Highlighted feature) -->
+    <div class="bg-gradient-to-r from-amber-500/20 via-purple-600/20 to-indigo-600/20 border-2 border-amber-500/50 rounded-2xl p-4 shadow-2xl backdrop-blur space-y-3">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-amber-500/30 border border-amber-500/60 flex items-center justify-center text-amber-300 text-xl shadow-lg">
+            ⏳
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h2 class="text-sm font-black text-white">Recordatorio de Seguimiento: Cliente Sin Respuesta</h2>
+              <span class="bg-amber-400/20 text-amber-300 border border-amber-400/40 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                Hace 4 días
+              </span>
+            </div>
+            <p class="text-xs text-slate-300 mt-0.5">
+              Presupuesto enviado hace 4 días sin contestación. Utiliza las plantillas tácticas de Chris Voss para reactivar la negociación sin parecer insistente.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Buttons Row inside Banner -->
+      <div class="flex items-center justify-between pt-2 border-t border-slate-800/60">
+        <div class="flex items-center gap-2">
+          <button class="bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs px-4 py-2 rounded-xl flex items-center gap-2 shadow-lg shadow-emerald-600/30 transition">
+            <span>💬</span> Enviar WhatsApp (Técnica NO)
+          </button>
+          <button class="bg-slate-900/90 hover:bg-slate-800 text-slate-200 font-bold text-xs px-3.5 py-2 rounded-xl border border-slate-700 flex items-center gap-1.5 transition">
+            <span>🔥</span> Más Opciones de Reactivación
+          </button>
+        </div>
+        <div class="flex items-center gap-2">
+          <button class="bg-slate-900/90 hover:bg-slate-800 text-amber-300 font-bold text-xs px-3 py-2 rounded-xl border border-amber-500/30 flex items-center gap-1.5 transition">
+            <span>⚡</span> ¿Ha respondido el cliente? ▼
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

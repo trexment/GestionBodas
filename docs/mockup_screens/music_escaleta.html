@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Escaleta Musical - Boda Laura & Carlos</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  body { font-family: 'Plus Jakarta Sans', sans-serif; }
+</style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen p-6 flex items-center justify-center">
+  <div class="w-full max-w-3xl bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl space-y-5">
+    <!-- Header -->
+    <div class="flex items-center justify-between pb-4 border-b border-slate-800">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-purple-600/20 border border-purple-500/40 flex items-center justify-center text-purple-400 text-xl shadow">
+          🎵
+        </div>
+        <div>
+          <h1 class="text-base font-black text-white">Escaleta de Momentos Especiales</h1>
+          <p class="text-xs text-slate-400">Boda Laura & Carlos &bull; Sincronización Musical con Cabina DJ</p>
+        </div>
+      </div>
+      <button class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs py-2 px-3.5 rounded-xl transition flex items-center gap-1.5 shadow">
+        <span>+</span> Añadir Momento
+      </button>
+    </div>
+
+    <!-- Timeline Moments List -->
+    <div class="space-y-2.5">
+      <!-- Item 1: Entrada Novio -->
+      <div class="bg-slate-950/70 border border-slate-800/80 rounded-2xl p-3.5 flex items-center justify-between hover:border-slate-700 transition">
+        <div class="flex items-center gap-3.5">
+          <span class="text-lg">🤵</span>
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-bold text-white">Entrada del Novio</span>
+              <span class="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded font-semibold">Ceremonia</span>
+            </div>
+            <div class="text-xs text-indigo-400 font-semibold mt-0.5">Ludovico Einaudi &bull; Nuvole Bianche</div>
+            <p class="text-[10px] text-slate-400">Entrada con la madrina. Mantener volumen suave al llegar al altar.</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-mono bg-slate-900 border border-slate-800 text-slate-300 px-2.5 py-1 rounded-lg">CUE 00:00</span>
+          <button class="text-xs text-slate-400 hover:text-white px-2">✏️</button>
+        </div>
+      </div>
+
+      <!-- Item 2: Entrada Novia -->
+      <div class="bg-slate-950/70 border border-slate-800/80 rounded-2xl p-3.5 flex items-center justify-between hover:border-slate-700 transition">
+        <div class="flex items-center gap-3.5">
+          <span class="text-lg">👰</span>
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-bold text-white">Entrada de la Novia</span>
+              <span class="text-[10px] bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded font-semibold">Momento Clave</span>
+            </div>
+            <div class="text-xs text-indigo-400 font-semibold mt-0.5">Johann Pachelbel &bull; Canon in D Major (Piano & Cello)</div>
+            <p class="text-[10px] text-slate-400">Empezar cuando se abra la puerta. Bajar sutilmente al ubicarse.</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-mono bg-slate-900 border border-slate-800 text-slate-300 px-2.5 py-1 rounded-lg">CUE 00:24</span>
+          <button class="text-xs text-slate-400 hover:text-white px-2">✏️</button>
+        </div>
+      </div>
+
+      <!-- Item 3: Entrada Comedor -->
+      <div class="bg-slate-950/70 border border-slate-800/80 rounded-2xl p-3.5 flex items-center justify-between hover:border-slate-700 transition">
+        <div class="flex items-center gap-3.5">
+          <span class="text-lg">⚡</span>
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-bold text-white">Entrada al Banquete</span>
+              <span class="text-[10px] bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded font-semibold">Máxima Energía</span>
+            </div>
+            <div class="text-xs text-indigo-400 font-semibold mt-0.5">AC/DC &bull; Thunderstruck</div>
+            <p class="text-[10px] text-slate-400">Entrada saltando con servilletas. Disparar fuegos fríos al empezar el estribillo.</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-mono bg-slate-900 border border-slate-800 text-amber-300 px-2.5 py-1 rounded-lg font-bold">CUE 00:32</span>
+          <button class="text-xs text-slate-400 hover:text-white px-2">✏️</button>
+        </div>
+      </div>
+
+      <!-- Item 4: Corte de Tarta -->
+      <div class="bg-slate-950/70 border border-slate-800/80 rounded-2xl p-3.5 flex items-center justify-between hover:border-slate-700 transition">
+        <div class="flex items-center gap-3.5">
+          <span class="text-lg">🎂</span>
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-bold text-white">Corte de la Tarta Nupcial</span>
+              <span class="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded font-semibold">Banquete</span>
+            </div>
+            <div class="text-xs text-indigo-400 font-semibold mt-0.5">Queen &bull; Don't Stop Me Now</div>
+            <p class="text-[10px] text-slate-400">Brindis y corte conjunto. Iluminación blanca cálida en mesa presidencial.</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-mono bg-slate-900 border border-slate-800 text-slate-300 px-2.5 py-1 rounded-lg">CUE 00:15</span>
+          <button class="text-xs text-slate-400 hover:text-white px-2">✏️</button>
+        </div>
+      </div>
+
+      <!-- Item 5: Baile Nupcial -->
+      <div class="bg-gradient-to-r from-purple-950/40 via-slate-950/70 to-indigo-950/40 border border-purple-500/40 rounded-2xl p-3.5 flex items-center justify-between shadow-lg">
+        <div class="flex items-center gap-3.5">
+          <span class="text-lg">💃</span>
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-black text-white">Baile Nupcial (Apertura de Baile)</span>
+              <span class="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded font-black">Efectos Activos</span>
+            </div>
+            <div class="text-xs text-purple-300 font-bold mt-0.5">Ed Sheeran &bull; Perfect</div>
+            <p class="text-[10px] text-purple-200">En minuto 02:15 lanzar niebla baja de humo y chispas de fuego frío en los laterales.</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-mono bg-purple-900/40 border border-purple-500/50 text-purple-200 px-2.5 py-1 rounded-lg font-black">CUE 02:15</span>
+          <button class="text-xs text-slate-400 hover:text-white px-2">✏️</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

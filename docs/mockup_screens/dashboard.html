@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Dashboard - Núñez & Son</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  body { font-family: 'Plus Jakarta Sans', sans-serif; }
+</style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen p-6">
+  <div class="max-w-6xl mx-auto space-y-6">
+    <!-- Top Nav -->
+    <header class="flex items-center justify-between pb-4 border-b border-slate-800">
+      <div class="flex items-center gap-4">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-indigo-600 flex items-center justify-center font-black text-white text-lg shadow-lg shadow-indigo-500/20">
+          N&S
+        </div>
+        <div>
+          <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
+            NÚÑEZ & SON <span class="text-xs px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-semibold">TEMPORADA 2026</span>
+          </h1>
+          <p class="text-xs text-slate-400">Sistema de Gestión Centralizada de Eventos Musicales</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <span class="text-xs text-slate-400 bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-lg flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Servidor Online
+        </span>
+        <div class="flex items-center gap-2 bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-lg">
+          <div class="w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center text-xs font-bold">F</div>
+          <span class="text-xs font-medium text-slate-300">Fran (Admin)</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- KPI Cards -->
+    <div class="grid grid-cols-4 gap-4">
+      <div class="bg-slate-900/90 border border-slate-800/80 rounded-2xl p-4 relative overflow-hidden shadow-xl">
+        <div class="absolute -right-4 -bottom-4 w-20 h-20 bg-emerald-500/10 rounded-full blur-xl pointer-events-none"></div>
+        <div class="flex items-center justify-between text-xs text-slate-400 font-medium">
+          <span>Facturación Emitida</span>
+          <span class="text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full font-bold">+18.4%</span>
+        </div>
+        <div class="text-2xl font-black text-white mt-2">42.850,00 €</div>
+        <p class="text-[11px] text-slate-400 mt-1">Total temporada bodas 2026</p>
+      </div>
+
+      <div class="bg-slate-900/90 border border-slate-800/80 rounded-2xl p-4 relative overflow-hidden shadow-xl">
+        <div class="absolute -right-4 -bottom-4 w-20 h-20 bg-amber-500/10 rounded-full blur-xl pointer-events-none"></div>
+        <div class="flex items-center justify-between text-xs text-slate-400 font-medium">
+          <span>Pendiente de Cobro</span>
+          <span class="text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full font-bold">6 bodas</span>
+        </div>
+        <div class="text-2xl font-black text-amber-300 mt-2">8.650,00 €</div>
+        <p class="text-[11px] text-slate-400 mt-1">Liquidaciones fin de evento</p>
+      </div>
+
+      <div class="bg-slate-900/90 border border-slate-800/80 rounded-2xl p-4 relative overflow-hidden shadow-xl">
+        <div class="absolute -right-4 -bottom-4 w-20 h-20 bg-indigo-500/10 rounded-full blur-xl pointer-events-none"></div>
+        <div class="flex items-center justify-between text-xs text-slate-400 font-medium">
+          <span>Eventos Confirmados</span>
+          <span class="text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded-full font-bold">Fechas Cerradas</span>
+        </div>
+        <div class="text-2xl font-black text-indigo-300 mt-2">28</div>
+        <p class="text-[11px] text-slate-400 mt-1">Fianzas recibidas y contratos firmados</p>
+      </div>
+
+      <div class="bg-slate-900/90 border border-slate-800/80 rounded-2xl p-4 relative overflow-hidden shadow-xl">
+        <div class="absolute -right-4 -bottom-4 w-20 h-20 bg-purple-500/10 rounded-full blur-xl pointer-events-none"></div>
+        <div class="flex items-center justify-between text-xs text-slate-400 font-medium">
+          <span>Seguimiento Táctico</span>
+          <span class="text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-full font-bold">Activo</span>
+        </div>
+        <div class="text-2xl font-black text-purple-300 mt-2">2 en espera</div>
+        <p class="text-[11px] text-slate-400 mt-1">Clientes sin contestar > 48h</p>
+      </div>
+    </div>
+
+    <!-- Active Follow-up Banner -->
+    <div class="bg-gradient-to-r from-amber-500/15 via-purple-500/15 to-indigo-500/15 border border-amber-500/30 rounded-2xl p-4 flex items-center justify-between shadow-lg backdrop-blur">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-300 text-lg">
+          ⏳
+        </div>
+        <div>
+          <h2 class="text-sm font-bold text-white flex items-center gap-2">
+            Seguimiento Activo de Clientes "Sin Respuesta"
+            <span class="text-[10px] bg-amber-400/20 text-amber-300 border border-amber-400/30 px-2 py-0.5 rounded font-extrabold uppercase">Prioridad Alta</span>
+          </h2>
+          <p class="text-xs text-slate-300 mt-0.5">
+            Hay 2 parejas con presupuestos enviados que no han contestado. Envía la técnica de reactivación en 1 clic.
+          </p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-4 py-2 rounded-xl flex items-center gap-2 shadow-lg shadow-emerald-600/30 transition">
+          <span>💬</span> Enviar WhatsApp Táctico
+        </button>
+      </div>
+    </div>
+
+    <!-- Main Section: Upcoming Events Table -->
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <h3 class="text-sm font-bold text-white flex items-center gap-2">
+            📅 Próximos Eventos Inmediatos
+          </h3>
+          <p class="text-xs text-slate-400">Bodas y servicios con montaje en los próximos fines de semana</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-3 py-1 rounded-lg font-semibold cursor-pointer">
+            Ver Agenda Completa →
+          </span>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs">
+          <thead>
+            <tr class="text-slate-400 border-b border-slate-800 uppercase font-semibold text-[10px] tracking-wider">
+              <th class="py-2.5 px-3">Evento & Pareja</th>
+              <th class="py-2.5 px-3">Fecha & Horarios</th>
+              <th class="py-2.5 px-3">Lugar / Finca</th>
+              <th class="py-2.5 px-3">Pack Contratado</th>
+              <th class="py-2.5 px-3">Estado</th>
+              <th class="py-2.5 px-3 text-right">Acciones</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-800/60 font-medium">
+            <tr class="hover:bg-slate-800/40 transition">
+              <td class="py-3 px-3">
+                <div class="font-bold text-white text-sm">Boda Laura & Carlos</div>
+                <div class="text-[11px] text-slate-400">Tel: +34 600 123 456 &bull; laura.carlos@ejemplo.com</div>
+              </td>
+              <td class="py-3 px-3">
+                <div class="text-white font-semibold">Sábado, 24 Oct 2026</div>
+                <div class="text-[11px] text-amber-400">Montaje: 15:30h &bull; Sesión: 18:00h - 04:00h</div>
+              </td>
+              <td class="py-3 px-3 text-slate-300">
+                <span class="flex items-center gap-1 font-semibold text-slate-200">📍 Finca El Pinar</span>
+                <span class="text-[10px] text-slate-400">Vitoria-Gasteiz</span>
+              </td>
+              <td class="py-3 px-3">
+                <span class="inline-flex items-center gap-1 bg-purple-500/15 text-purple-300 border border-purple-500/30 px-2 py-0.5 rounded text-[11px] font-bold">
+                  Pack Exclusivo + Fuego Frío
+                </span>
+              </td>
+              <td class="py-3 px-3">
+                <span class="inline-flex items-center gap-1.5 bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 px-2.5 py-1 rounded-full text-[11px] font-bold">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Confirmado
+                </span>
+              </td>
+              <td class="py-3 px-3 text-right">
+                <button class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition">
+                  Gestionar →
+                </button>
+              </td>
+            </tr>
+
+            <tr class="hover:bg-slate-800/40 transition">
+              <td class="py-3 px-3">
+                <div class="font-bold text-white text-sm">Boda Marta & Javier</div>
+                <div class="text-[11px] text-slate-400">Tel: +34 611 987 654 &bull; marta.javier@ejemplo.com</div>
+              </td>
+              <td class="py-3 px-3">
+                <div class="text-white font-semibold">Sábado, 14 Nov 2026</div>
+                <div class="text-[11px] text-amber-400">Montaje: 16:00h &bull; Sesión: 19:00h - 04:00h</div>
+              </td>
+              <td class="py-3 px-3 text-slate-300">
+                <span class="flex items-center gap-1 font-semibold text-slate-200">📍 Palacio de los Duques</span>
+                <span class="text-[10px] text-slate-400">Álava</span>
+              </td>
+              <td class="py-3 px-3">
+                <span class="inline-flex items-center gap-1 bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded text-[11px] font-bold">
+                  Pack Premium + Humo
+                </span>
+              </td>
+              <td class="py-3 px-3">
+                <span class="inline-flex items-center gap-1.5 bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 px-2.5 py-1 rounded-full text-[11px] font-bold">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Confirmado
+                </span>
+              </td>
+              <td class="py-3 px-3 text-right">
+                <button class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition">
+                  Gestionar →
+                </button>
+              </td>
+            </tr>
+
+            <tr class="hover:bg-slate-800/40 transition">
+              <td class="py-3 px-3">
+                <div class="font-bold text-white text-sm">Boda Sofía & Alejandro</div>
+                <div class="text-[11px] text-slate-400">Tel: +34 622 345 678 &bull; Presupuesto enviado hace 4d</div>
+              </td>
+              <td class="py-3 px-3">
+                <div class="text-white font-semibold">Sábado, 29 May 2027</div>
+                <div class="text-[11px] text-slate-400">Horario pendiente confirmación</div>
+              </td>
+              <td class="py-3 px-3 text-slate-300">
+                <span class="flex items-center gap-1 font-semibold text-slate-200">📍 Castillo de San Marcos</span>
+                <span class="text-[10px] text-slate-400">Navarra</span>
+              </td>
+              <td class="py-3 px-3">
+                <span class="inline-flex items-center gap-1 bg-slate-700/50 text-slate-300 border border-slate-600 px-2 py-0.5 rounded text-[11px] font-bold">
+                  Pack Esencial (Ceremonia + Baile)
+                </span>
+              </td>
+              <td class="py-3 px-3">
+                <span class="inline-flex items-center gap-1.5 bg-amber-500/15 text-amber-300 border border-amber-500/30 px-2.5 py-1 rounded-full text-[11px] font-bold">
+                  <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span> Sin Respuesta (4d)
+                </span>
+              </td>
+              <td class="py-3 px-3 text-right flex items-center justify-end gap-1.5">
+                <button class="bg-emerald-600/90 hover:bg-emerald-600 text-white font-bold px-2.5 py-1.5 rounded-lg text-xs flex items-center gap-1 transition">
+                  💬 Recordar
+                </button>
+                <button class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold px-3 py-1.5 rounded-lg text-xs transition">
+                  Gestionar
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

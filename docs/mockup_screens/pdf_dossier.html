@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Dossier Comercial PDF</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  body { font-family: 'Plus Jakarta Sans', sans-serif; }
+</style>
+</head>
+<body class="bg-slate-900 text-slate-800 min-h-screen p-6 flex items-center justify-center">
+  <!-- A4 Page Simulation -->
+  <div class="w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden border border-slate-300 flex flex-col justify-between" style="min-height: 820px;">
+    <!-- PDF Header -->
+    <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-6 relative">
+      <div class="flex items-center justify-between">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="w-7 h-7 rounded-lg bg-amber-500/20 border border-amber-400 text-amber-300 font-black text-xs flex items-center justify-center">N&S</span>
+            <span class="text-xs uppercase tracking-widest text-slate-300 font-bold">Núñez & Son &bull; Eventos Musicales</span>
+          </div>
+          <h1 class="text-xl font-black mt-2 text-white">Propuesta Económica & Dossier de Boda</h1>
+          <p class="text-xs text-indigo-300">Presupuesto Referencia #PRE-2026-084</p>
+        </div>
+        <div class="text-right text-xs">
+          <div class="text-slate-400">Fecha de Emisión:</div>
+          <div class="font-bold text-white">24/10/2026</div>
+        </div>
+      </div>
+
+      <!-- Event Summary Pill inside PDF Header -->
+      <div class="mt-4 bg-white/10 backdrop-blur rounded-xl p-3 grid grid-cols-3 gap-2 text-xs border border-white/15">
+        <div>
+          <span class="text-[10px] uppercase text-slate-400 font-bold block">Pareja:</span>
+          <span class="font-black text-white text-sm">Laura & Carlos</span>
+        </div>
+        <div>
+          <span class="text-[10px] uppercase text-slate-400 font-bold block">Fecha Celebración:</span>
+          <span class="font-bold text-white">24 Octubre 2026</span>
+        </div>
+        <div>
+          <span class="text-[10px] uppercase text-slate-400 font-bold block">Espacio / Finca:</span>
+          <span class="font-bold text-amber-300">Finca El Pinar</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- PDF Body Content -->
+    <div class="p-6 space-y-4 flex-1">
+      <!-- Services Table -->
+      <div>
+        <h2 class="text-xs font-black uppercase text-slate-500 tracking-wider mb-2">Servicios Solicitados para Vuestro Gran Día</h2>
+        <table class="w-full text-left text-xs border border-slate-200 rounded-xl overflow-hidden">
+          <thead class="bg-slate-100 text-slate-600 font-bold text-[10px] uppercase">
+            <tr>
+              <th class="py-2 px-3">Concepto / Equipamiento</th>
+              <th class="py-2 px-3 text-center">Horas</th>
+              <th class="py-2 px-3 text-right">Importe</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr>
+              <td class="py-2.5 px-3">
+                <strong class="text-slate-800 text-xs">Pack Exclusivo DJ & Sonido Integral</strong>
+                <p class="text-[10px] text-slate-500">Sonido ceremonia + cóctel + banquete + 6h barra libre con robótica</p>
+              </td>
+              <td class="py-2.5 px-3 text-center font-mono">6h</td>
+              <td class="py-2.5 px-3 text-right font-bold text-slate-900 font-mono">1.350,00 €</td>
+            </tr>
+            <tr>
+              <td class="py-2.5 px-3">
+                <strong class="text-emerald-700 text-xs">Máquina de Humo Denso para Pista</strong>
+                <p class="text-[10px] text-emerald-600">Incluido en la promoción del Pack Exclusivo</p>
+              </td>
+              <td class="py-2.5 px-3 text-center font-mono">1 ud</td>
+              <td class="py-2.5 px-3 text-right font-bold text-emerald-700 font-mono">0,00 €</td>
+            </tr>
+            <tr>
+              <td class="py-2.5 px-3">
+                <strong class="text-slate-800 text-xs">Efecto Fuego Frío (Sparkular)</strong>
+                <p class="text-[10px] text-slate-500">2 máquinas para entrada al banquete y baile nupcial</p>
+              </td>
+              <td class="py-2.5 px-3 text-center font-mono">2 uds</td>
+              <td class="py-2.5 px-3 text-right font-bold text-slate-900 font-mono">120,00 €</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Financial Totals Box -->
+      <div class="bg-slate-50 border border-slate-200 rounded-xl p-3.5 flex items-center justify-between text-xs">
+        <div>
+          <span class="text-slate-500">Señal de Reserva Formal (20%):</span>
+          <strong class="text-amber-700 font-mono font-black ml-1 text-sm">294,00 €</strong>
+          <span class="text-[10px] text-slate-400 block">* Pago mediante Bizum o Transferencia bancaria</span>
+        </div>
+        <div class="text-right">
+          <div class="text-[10px] uppercase text-slate-400 font-bold">Total Presupuesto</div>
+          <div class="text-xl font-black text-slate-900 font-mono">1.470,00 € <span class="text-[10px] font-normal text-slate-500">+ IVA</span></div>
+        </div>
+      </div>
+
+      <!-- Validity / Caducidad Alert (Highlight of Chapter 8) -->
+      <div class="bg-amber-50 border-2 border-amber-300 rounded-xl p-3 flex items-start gap-2.5 text-xs text-amber-900">
+        <span class="text-lg leading-none">⏳</span>
+        <div>
+          <strong class="font-black text-amber-950">Validez y Caducidad de la Oferta:</strong>
+          <p class="text-[11px] text-amber-800 mt-0.5 leading-snug">
+            Esta propuesta económica y la reserva provisional de fecha tienen una <strong>validez de 15 días naturales (hasta el 08/11/2026)</strong>. Pasado dicho plazo, las condiciones tarifarias y disponibilidad quedan sujetas a revisión.
+          </p>
+        </div>
+      </div>
+
+      <!-- Panoramic Montage Photo Banner (Covering lower section) -->
+      <div class="relative rounded-xl overflow-hidden h-28 border border-slate-200 shadow-inner">
+        <img src="https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1200&q=80" alt="Montaje Boda" class="w-full h-full object-cover">
+        <div class="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-transparent flex items-end p-3">
+          <span class="text-[11px] font-bold text-white tracking-wide drop-shadow">
+            🎧 Montaje Exclusivo de Iluminación Robotizada y Cabina DJ &bull; Núñez & Son
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- PDF Footer -->
+    <div class="bg-slate-900 text-slate-400 text-[10px] px-6 py-3 flex items-center justify-between border-t border-slate-800">
+      <span>Núñez & Son Eventos &bull; contacto@nunezandson.com &bull; +34 600 000 000</span>
+      <span>Página 2 de 2 &bull; Propuesta Oficial</span>
+    </div>
+  </div>
+</body>
+</html>
