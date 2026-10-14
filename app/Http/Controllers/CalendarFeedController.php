@@ -12,6 +12,10 @@ class CalendarFeedController extends Controller
 {
     public function feed($token): Response
     {
+        if (empty($token) || strlen(trim($token)) < 16) {
+            abort(404, 'Token de calendario no válido.');
+        }
+
         $user = User::where('calendar_token', $token)->first();
 
         if (!$user) {

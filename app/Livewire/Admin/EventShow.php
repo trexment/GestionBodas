@@ -214,6 +214,25 @@ class EventShow extends Component
     public $djHistorySyncRequests = true;
     public $djHistoryFilterQuery = '';
 
+    public function boot()
+    {
+        if ($this->event && auth()->check()) {
+            $user = auth()->user();
+            if ($user->role !== 'admin') {
+                $isAssignedAssistant = false;
+                try {
+                    if (\Illuminate\Support\Facades\Schema::hasTable('event_assistants')) {
+                        $isAssignedAssistant = $this->event->assistants()->where('users.id', $user->id)->exists();
+                    }
+                } catch (\Throwable $e) {}
+
+                if ($this->event->dj_id != $user->id && $this->event->assistant_id != $user->id && !$isAssignedAssistant) {
+                    abort(403, 'Acceso denegado: No tienes permisos sobre este evento.');
+                }
+            }
+        }
+    }
+
     public function mount(Event $event)
     {
         $user = auth()->user();
@@ -2606,6 +2625,13 @@ class EventShow extends Component
 
     public function updatedImportFile()
     {
+        $this->validate([
+            'importFile' => 'nullable|file|mimes:pdf,txt,csv|max:10240',
+        ], [
+            'importFile.mimes' => 'El archivo debe ser un documento PDF, TXT o CSV.',
+            'importFile.max' => 'El tamaño máximo permitido es de 10 MB.',
+        ]);
+
         try {
             if ($this->importFile) {
                 $path = $this->importFile->getRealPath() ?: $this->importFile->path();

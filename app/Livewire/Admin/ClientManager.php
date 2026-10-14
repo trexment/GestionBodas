@@ -47,6 +47,13 @@ class ClientManager extends Component
     public $showPasswordModal = false;
     public $generatedPasswordInfo = null;
 
+    public function boot()
+    {
+        if (!auth()->check() || auth()->user()->role !== 'admin') {
+            abort(403, 'Acceso restringido a administradores.');
+        }
+    }
+
     public function mount()
     {
         if (auth()->user()->role !== 'admin') {

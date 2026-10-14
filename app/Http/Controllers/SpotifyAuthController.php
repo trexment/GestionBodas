@@ -65,6 +65,19 @@ class SpotifyAuthController extends Controller
      */
     public function getToken()
     {
+        if (!auth()->check()) {
+            $sessionToken = session('live_event_token');
+            $queryToken = request()->query('token') ?: request()->header('X-Live-Token');
+            $valid = ($sessionToken && \App\Models\Event::where('token', $sessionToken)->exists())
+                  || ($queryToken && \App\Models\Event::where('token', $queryToken)->exists());
+            if (!$valid) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Acceso no autorizado.',
+                ], 403);
+            }
+        }
+
         $token = SpotifyService::getValidUserAccessToken();
         if (!$token) {
             return response()->json([
@@ -286,6 +299,17 @@ class SpotifyAuthController extends Controller
      */
     public function downloadAudio(\App\Models\EventMusicRequest $musicRequest)
     {
+        // Verify authorization: Staff authenticated or client/guest with matching event token
+        if (!auth()->check()) {
+            $sessionToken = session('live_event_token');
+            $queryToken = request()->query('token') ?: request()->header('X-Live-Token');
+            $event = $musicRequest->event;
+            $valid = $event && (($sessionToken && $event->token === $sessionToken) || ($queryToken && $event->token === $queryToken));
+            if (!$valid) {
+                abort(403, 'Acceso denegado: Se requiere autenticación o token de evento válido.');
+            }
+        }
+
         $title = $musicRequest->title ?: 'Cancion';
         $artist = $musicRequest->artist ?: '';
         $cleanFilename = \Illuminate\Support\Str::slug(($artist ? $artist . ' - ' : '') . $title) ?: 'track';
@@ -305,11 +329,16 @@ class SpotifyAuthController extends Controller
 
         $audioFile = trim($musicRequest->audio_file);
 
-        // 2. Local storage file
+        // 2. Local storage file (strictly bounded to storage/app/public)
         if (!str_starts_with($audioFile, 'http://') && !str_starts_with($audioFile, 'https://')) {
+            if (str_contains($audioFile, '..') || str_contains($audioFile, "\0")) {
+                abort(404);
+            }
             $ext = pathinfo($audioFile, PATHINFO_EXTENSION) ?: 'mp3';
-            $fullPath = storage_path('app/public/' . $audioFile);
-            if (file_exists($fullPath)) {
+            $basePath = realpath(storage_path('app/public'));
+            $fullPath = realpath(storage_path('app/public/' . $audioFile));
+
+            if ($basePath && $fullPath && str_starts_with($fullPath, $basePath . DIRECTORY_SEPARATOR) && is_file($fullPath)) {
                 return response()->download($fullPath, "{$cleanFilename}.{$ext}");
             }
         }
@@ -348,6 +377,10 @@ class SpotifyAuthController extends Controller
     public function streamGoogleDriveAudio(string $fileId)
     {
         $fileId = trim($fileId);
+        if (!preg_match('/^[a-zA-Z0-9_-]{10,100}$/', $fileId)) {
+            abort(400, 'Identificador de archivo inválido.');
+        }
+
         $key = Setting::get('google_drive_api_key', config('services.google.drive_api_key', env('GOOGLE_DRIVE_API_KEY')));
 
         $targetUrl = !empty($key)

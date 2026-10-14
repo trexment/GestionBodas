@@ -311,7 +311,7 @@
                         </button>
 
                         <a 
-                            href="{{ route('pdf.music-escaleta', $event->id) }}" 
+                            href="{{ route('pdf.music-escaleta', ['event' => $event->id, 'token' => $event->token]) }}" 
                             target="_blank" 
                             class="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white font-bold text-xs border border-slate-700 transition flex items-center gap-1.5"
                         >
@@ -1025,7 +1025,7 @@
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <a href="{{ route('pdf.music-escaleta', $event->id) }}" target="_blank" class="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 hover:border-cyan-500/60 transition group flex flex-col justify-between">
+                    <a href="{{ route('pdf.music-escaleta', ['event' => $event->id, 'token' => $event->token]) }}" target="_blank" class="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 hover:border-cyan-500/60 transition group flex flex-col justify-between">
                         <div>
                             <span class="text-2xl block mb-2">📑</span>
                             <strong class="text-sm text-white group-hover:text-cyan-400 transition block">Escaleta Musical (PDF)</strong>
@@ -1034,7 +1034,7 @@
                         <span class="text-xs font-bold text-cyan-400 mt-4 block">&darr; Descargar PDF</span>
                     </a>
 
-                    <a href="{{ route('pdf.packing-list', $event->id) }}" target="_blank" class="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 hover:border-amber-500/60 transition group flex flex-col justify-between">
+                    <a href="{{ route('pdf.packing-list', ['event' => $event->id, 'token' => $event->token]) }}" target="_blank" class="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 hover:border-amber-500/60 transition group flex flex-col justify-between">
                         <div>
                             <span class="text-2xl block mb-2">📦</span>
                             <strong class="text-sm text-white group-hover:text-amber-400 transition block">Hoja de Carga y Montaje</strong>
@@ -1044,7 +1044,7 @@
                     </a>
 
                     @if($event->contracts->isNotEmpty())
-                        <a href="{{ route('pdf.contract', $event->contracts->first()->id) }}" target="_blank" class="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 hover:border-emerald-500/60 transition group flex flex-col justify-between">
+                        <a href="{{ route('pdf.contract', ['contract' => $event->contracts->first()->id, 'token' => $event->token]) }}" target="_blank" class="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 hover:border-emerald-500/60 transition group flex flex-col justify-between">
                             <div>
                                 <span class="text-2xl block mb-2">📜</span>
                                 <strong class="text-sm text-white group-hover:text-emerald-400 transition block">Contrato de Servicios</strong>

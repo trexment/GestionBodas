@@ -57,6 +57,14 @@ class LiveRequests extends Component
 
     public function sendRequest()
     {
+        $ip = request()->ip();
+        $throttleKey = 'guest_req_' . $this->event->id . '_' . $ip;
+        if (\Illuminate\Support\Facades\RateLimiter::tooManyAttempts($throttleKey, 8)) {
+            $seconds = \Illuminate\Support\Facades\RateLimiter::availableIn($throttleKey);
+            $this->blacklistWarning = "⚠️ Has enviado varias peticiones seguidas. Espera {$seconds} segundos antes de enviar otra.";
+            return;
+        }
+
         $this->validate([
             'song_title' => 'required|string|max:255',
             'guest_name' => 'nullable|string|max:100',
@@ -69,6 +77,8 @@ class LiveRequests extends Component
             $this->blacklistWarning = '🚫 ¡Ups! Esta canción o artista está en la Lista Negra de música prohibida por los novios/anfitriones. ¡Prueba con otro temazo!';
             return;
         }
+
+        \Illuminate\Support\Facades\RateLimiter::hit($throttleKey, 60);
 
         $maxOrder = $this->event->musicRequests()->max('order') ?: 0;
 
@@ -92,9 +102,16 @@ class LiveRequests extends Component
 
     public function likeSong($requestId)
     {
+        $likedSongs = session('liked_songs_' . $this->event->id, []);
+        if (in_array($requestId, $likedSongs)) {
+            return; // Ya votó por esta canción en esta sesión
+        }
+
         $req = EventMusicRequest::where('event_id', $this->event->id)->find($requestId);
         if ($req) {
             $req->increment('likes');
+            $likedSongs[] = $requestId;
+            session(['liked_songs_' . $this->event->id => $likedSongs]);
         }
     }
 

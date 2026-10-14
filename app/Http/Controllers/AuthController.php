@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
@@ -19,6 +21,15 @@ class AuthController extends Controller
             'password' => 'required|string',
         ]);
 
+        $throttleKey = Str::transliterate(Str::lower($request->input('login')) . '|' . $request->ip());
+
+        if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
+            $seconds = RateLimiter::availableIn($throttleKey);
+            return back()->withErrors([
+                'login' => "Demasiados intentos fallidos de inicio de sesión. Por favor, inténtalo de nuevo en {$seconds} segundos.",
+            ])->onlyInput('login');
+        }
+
         $login_type = filter_var($request->input('login'), FILTER_VALIDATE_EMAIL ) 
             ? 'email' 
             : 'username';
@@ -29,6 +40,7 @@ class AuthController extends Controller
         ];
 
         if (Auth::attempt($credentials, $request->boolean('remember'))) {
+            RateLimiter::clear($throttleKey);
             $request->session()->regenerate();
 
             if (in_array(Auth::user()->role, ['admin', 'dj', 'assistant'])) {
@@ -37,6 +49,8 @@ class AuthController extends Controller
 
             return redirect()->intended('/');
         }
+
+        RateLimiter::hit($throttleKey, 60);
 
         return back()->withErrors([
             'login' => 'Las credenciales proporcionadas no son correctas.',

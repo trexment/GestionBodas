@@ -26,17 +26,31 @@ Route::get('/', function () {
 
 // Direct public storage file stream fallback (when symlink is missing or blocked by host)
 Route::get('/storage/{path}', function ($path) {
-    $fullPath = storage_path('app/public/' . $path);
-    if (file_exists($fullPath)) {
-        return response()->file($fullPath);
+    // Prevent directory traversal and null byte injections
+    if (str_contains($path, '..') || str_contains($path, "\0")) {
+        abort(404);
     }
-    abort(404);
+
+    $basePath = realpath(storage_path('app/public'));
+    $fullPath = realpath(storage_path('app/public/' . $path));
+
+    if (!$basePath || !$fullPath || !str_starts_with($fullPath, $basePath . DIRECTORY_SEPARATOR) || !is_file($fullPath)) {
+        abort(404);
+    }
+
+    // Disallow execution/reading of sensitive or executable file types
+    $ext = strtolower(pathinfo($fullPath, PATHINFO_EXTENSION));
+    if (in_array($ext, ['php', 'phtml', 'phar', 'env', 'htaccess', 'htpasswd', 'sh', 'bat', 'cmd', 'exe'])) {
+        abort(403);
+    }
+
+    return response()->file($fullPath);
 })->where('path', '.*');
 
-// Auth Routes
+// Auth Routes (with Brute Force Rate Limiting)
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
-    Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
 });
 
 // Guest Form Public Route (no middleware)
@@ -45,8 +59,8 @@ Route::get('/guest/form/{token}', EventForm::class)->name('guest.form');
 // Public Online Contract Review & Signature Portal
 Route::get('/contrato/{token}', ContractSign::class)->name('guest.contract');
 
-// Public Guest Live Requests Portal (QR Code)
-Route::get('/peticiones/{token}', LiveRequests::class)->name('guest.requests');
+// Public Guest Live Requests Portal (QR Code) - Rate limited to 40 requests/min
+Route::get('/peticiones/{token}', LiveRequests::class)->middleware('throttle:40,1')->name('guest.requests');
 
 // Public Staff DJ Booth Live Mode (Tablet/Phone with Token)
 Route::get('/live/{token}', DjBoothMode::class)->name('staff.live');
@@ -54,8 +68,8 @@ Route::get('/live/{token}', DjBoothMode::class)->name('staff.live');
 // iCal Calendar Feed Synchronization (RFC 5545)
 Route::get('/calendar/feed/{token}.ics', [CalendarFeedController::class, 'feed'])->name('calendar.feed');
 
-// Public Quote Calculator
-Route::get('/presupuesto', \App\Livewire\Guest\QuoteCalculator::class)->name('guest.quote');
+// Public Quote Calculator - Rate limited to 20 requests/min
+Route::get('/presupuesto', \App\Livewire\Guest\QuoteCalculator::class)->middleware('throttle:20,1')->name('guest.quote');
 
 // Manual Oficial de Uso (Web Interactiva & Descarga PDF)
 Route::get('/manual', function () {
@@ -86,9 +100,7 @@ Route::get('/manual/pdf', function () {
 })->name('manual.pdf');
 
 // Spotify & Apple Music & Full Audio Streaming API Endpoints
-Route::get('/spotify/connect', [SpotifyAuthController::class, 'connect'])->name('spotify.connect');
 Route::get('/spotify/callback', [SpotifyAuthController::class, 'callback'])->name('spotify.callback');
-Route::post('/spotify/disconnect', [SpotifyAuthController::class, 'disconnect'])->name('spotify.disconnect');
 Route::get('/api/spotify/token', [SpotifyAuthController::class, 'getToken'])->name('spotify.token');
 Route::get('/api/apple-music/token', [SpotifyAuthController::class, 'getAppleMusicToken'])->name('apple-music.token');
 Route::get('/api/music/youtube-id', [SpotifyAuthController::class, 'getYoutubeVideoId'])->name('music.youtube-id');
@@ -97,7 +109,7 @@ Route::get('/api/drive-stream/{fileId}', [SpotifyAuthController::class, 'streamG
 Route::get('/music-requests/{musicRequest}/download', [SpotifyAuthController::class, 'downloadAudio'])->name('admin.music.download');
 Route::get('/music/{musicRequest}/download', [SpotifyAuthController::class, 'downloadAudio'])->name('music.download');
 
-// Global PDF Download Aliases
+// Global PDF Download Aliases (Secured with token or auth inside controller)
 Route::get('/events/{event}/music-escaleta/pdf', [PdfController::class, 'downloadMusicEscaleta'])->name('pdf.music-escaleta');
 Route::get('/events/{event}/dj-history/pdf', [PdfController::class, 'downloadDjHistory'])->name('pdf.dj-history');
 Route::get('/events/{event}/packing-list/pdf', [PdfController::class, 'downloadPackingList'])->name('pdf.packing-list');
@@ -110,6 +122,10 @@ Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
     Route::middleware('is_admin')->group(function () {
+        // Spotify Admin Management
+        Route::get('/spotify/connect', [SpotifyAuthController::class, 'connect'])->name('spotify.connect');
+        Route::post('/spotify/disconnect', [SpotifyAuthController::class, 'disconnect'])->name('spotify.disconnect');
+
         // Alias without prefix
         Route::get('/admin/events/{event}/live', DjBoothMode::class)->name('events.live');
 

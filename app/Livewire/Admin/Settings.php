@@ -203,6 +203,13 @@ class Settings extends Component
     public $imapTestStatus = [];
     public $imapFetchStatus = null;
 
+    public function boot()
+    {
+        if (!auth()->check() || auth()->user()->role !== 'admin') {
+            abort(403, 'Solo los administradores pueden acceder a los ajustes del sistema.');
+        }
+    }
+
     public function mount()
     {
         if (auth()->user()->role !== 'admin') {
@@ -790,7 +797,8 @@ class Settings extends Component
             
             $imageParts = explode(';base64,', $this->company_signature_canvas);
             $imageTypeAux = explode('image/', $imageParts[0]);
-            $imageType = $imageTypeAux[1] ?? 'png';
+            $rawType = strtolower($imageTypeAux[1] ?? 'png');
+            $imageType = in_array($rawType, ['png', 'jpg', 'jpeg', 'webp']) ? $rawType : 'png';
             $imageBase64 = base64_decode($imageParts[1] ?? '');
             
             $fileName = 'signatures/company_sig_' . time() . '.' . $imageType;

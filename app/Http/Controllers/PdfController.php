@@ -13,8 +13,52 @@ use Illuminate\Http\Request;
 
 class PdfController extends Controller
 {
+    /**
+     * Verify that the requester is an authorized staff member or possesses a valid event/contract token.
+     */
+    protected function authorizePdfAccess(?Event $event = null, ?string $contractToken = null): void
+    {
+        // 1. Authenticated staff (admin, dj, assistant) or client owner
+        if (auth()->check()) {
+            $user = auth()->user();
+            if ($user->role === 'admin') {
+                return;
+            }
+            if ($event) {
+                $isAssignedAssistant = false;
+                try {
+                    if (\Illuminate\Support\Facades\Schema::hasTable('event_assistants')) {
+                        $isAssignedAssistant = $event->assistants()->where('users.id', $user->id)->exists();
+                    }
+                } catch (\Throwable $e) {}
+
+                if ($event->dj_id == $user->id || $event->assistant_id == $user->id || $isAssignedAssistant || $event->client_id == $user->id) {
+                    return;
+                }
+            }
+        }
+
+        // 2. Secret Token Authentication (Guest signature portal or Live DJ Mode token)
+        $providedToken = request()->query('token') ?: request()->header('X-Live-Token') ?: session('live_event_token');
+        if ($providedToken) {
+            if ($contractToken && $contractToken === $providedToken) {
+                return;
+            }
+            if ($event && $event->token && $event->token === $providedToken) {
+                return;
+            }
+            if ($event && $event->contracts()->where('token', $providedToken)->exists()) {
+                return;
+            }
+        }
+
+        abort(403, 'Acceso denegado: Se requiere autenticación o token de acceso válido.');
+    }
+
     public function downloadInvoice(Invoice $invoice)
     {
+        $this->authorizePdfAccess($invoice->event);
+
         $invoice->load(['event.client', 'quote.items']);
 
         $brandKey = $invoice->event ? ($invoice->event->brand_clean ?? null) : null;
@@ -50,6 +94,8 @@ class PdfController extends Controller
 
     public function downloadQuote(Quote $quote)
     {
+        $this->authorizePdfAccess($quote->event);
+
         $quote->load('event.client');
 
         $data = [
@@ -69,6 +115,8 @@ class PdfController extends Controller
     
     public function downloadContract(Contract $contract)
     {
+        $this->authorizePdfAccess($contract->event, $contract->token);
+
         $contract->load('event.client', 'event.quotes');
         
         $renderedData = ContractTemplateService::renderContract($contract);
@@ -85,6 +133,8 @@ class PdfController extends Controller
 
     public function downloadPackingList(Event $event)
     {
+        $this->authorizePdfAccess($event);
+
         $event->load(['client', 'dj', 'assistant', 'equipment']);
 
         $equipmentGrouped = $event->equipment->groupBy('category');
@@ -103,6 +153,8 @@ class PdfController extends Controller
 
     public function downloadMusicEscaleta(Event $event)
     {
+        $this->authorizePdfAccess($event);
+
         $event->load(['client', 'dj', 'assistant', 'musicRequests']);
 
         $requestsGrouped = $event->musicRequests->groupBy('category');
@@ -121,6 +173,8 @@ class PdfController extends Controller
 
     public function downloadDjHistory(Event $event)
     {
+        $this->authorizePdfAccess($event);
+
         $event->load(['client', 'dj', 'djHistories.matchedRequest']);
 
         $data = [

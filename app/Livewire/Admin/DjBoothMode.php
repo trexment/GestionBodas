@@ -78,6 +78,7 @@ class DjBoothMode extends Component
         if ($token) {
             $this->token = $token;
             $this->event = Event::with(['client', 'dj', 'assistant', 'musicRequests', 'contracts', 'quotes', 'invoices'])->where('token', $token)->firstOrFail();
+            session(['live_event_token' => $token]);
         } else {
             $this->event = $event instanceof Event ? $event : Event::findOrFail($event);
             $this->event->load(['client', 'dj', 'assistant', 'musicRequests', 'contracts', 'quotes', 'invoices']);

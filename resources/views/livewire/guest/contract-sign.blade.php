@@ -73,7 +73,7 @@
             </div>
 
             <div class="mt-8">
-                <a href="{{ route('admin.contract.pdf', $contract->id) }}" target="_blank" class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-3 rounded-2xl text-xs shadow-md transition">
+                <a href="{{ route('pdf.contract', ['contract' => $contract->id, 'token' => $contract->token]) }}" target="_blank" class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-3 rounded-2xl text-xs shadow-md transition">
                     <span>📄</span> Descargar Contrato Oficial Firmado en PDF
                 </a>
             </div>
