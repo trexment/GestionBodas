@@ -336,7 +336,7 @@
                             </div>
                             <div>
                                 <label class="block text-gray-700 dark:text-slate-300 text-xs font-bold mb-1">Marca / Perfil *</label>
-                                <select wire:model="brand" class="border dark:border-slate-700 rounded-xl w-full py-2 px-2 text-gray-700 dark:text-slate-200 text-xs font-bold focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-slate-800">
+                                <select wire:model.live="brand" class="border dark:border-slate-700 rounded-xl w-full py-2 px-2 text-gray-700 dark:text-slate-200 text-xs font-bold focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-slate-800">
                                     <option value="nunez_and_son">👑 Núñez & Son</option>
                                     <option value="javnx">🎧 JAVNX DJ</option>
                                     <option value="mago_leugim">🎩 Mago Leugim</option>
@@ -347,7 +347,9 @@
                                 <label class="block text-gray-700 dark:text-slate-300 text-xs font-bold mb-1">Tipo *</label>
                                 <select wire:model.live="event_type" class="border dark:border-slate-700 rounded-xl w-full py-2 px-2 text-gray-700 dark:text-slate-200 text-xs font-bold focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-slate-800">
                                     <option value="boda">💍 Boda</option>
-                                    <option value="video">📹 Vídeo / Videógrafo</option>
+                                    @if($event_type === 'video' || \App\Models\Setting::isVideoServiceEnabled($brand))
+                                        <option value="video">📹 Vídeo / Videógrafo</option>
+                                    @endif
                                     <option value="empresa">🏢 Empresa</option>
                                     <option value="cumpleanos">🎂 Cumpleaños</option>
                                     <option value="comunion">🕊️ Comunión</option>

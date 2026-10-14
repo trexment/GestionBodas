@@ -225,6 +225,28 @@ class Setting extends Model
     }
 
     /**
+     * Comprueba si el servicio de videógrafo / colaboración está habilitado para una marca o dominio.
+     * Por defecto habilitado para JAVNX DJ (javnxdj.com) y deshabilitado para Núñez and Son (nunezandson.com).
+     */
+    public static function isVideoServiceEnabled(?string $brandKey = null): bool
+    {
+        if (empty($brandKey)) {
+            $brandKey = self::getDetectedBrand();
+        }
+
+        $saved = self::get('video_service_brands');
+        if ($saved !== null) {
+            $decoded = is_array($saved) ? $saved : json_decode($saved, true);
+            if (is_array($decoded)) {
+                return in_array($brandKey, $decoded);
+            }
+        }
+
+        // Por defecto: solo habilitado para 'javnx' (javnxdj.com)
+        return $brandKey === 'javnx';
+    }
+
+    /**
      * Get details for a specific brand profile ('nunez_and_son' | 'javnx' | 'mago_leugim')
      */
     public static function getBrandInfo(?string $brandKey = null): array

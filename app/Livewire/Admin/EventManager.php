@@ -140,6 +140,13 @@ class EventManager extends Component
         $this->showCreateModal = true;
     }
 
+    public function updatedBrand($value)
+    {
+        if ($this->event_type === 'video' && !\App\Models\Setting::isVideoServiceEnabled($value)) {
+            $this->event_type = 'boda';
+        }
+    }
+
     public function openEditModal($eventId)
     {
         if (!in_array(auth()->user()->role, ['admin', 'dj'])) {

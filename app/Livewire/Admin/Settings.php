@@ -49,6 +49,9 @@ class Settings extends Component
     public $brand_leugim_phone_2;
     public $brand_leugim_email;
     public $brand_leugim_website;
+
+    // Marcas donde el servicio de videógrafo está habilitado
+    public $video_service_brands = ['javnx'];
     
     // Precios base y Packs Comerciales
     public $pack_basic_name;
@@ -255,6 +258,14 @@ class Settings extends Component
         $this->brand_leugim_phone_2 = Setting::get('brand_leugim_phone_2', '+34 622 62 47 90 (Fran)');
         $this->brand_leugim_email = Setting::get('brand_leugim_email', 'magoleugim@gmail.com');
         $this->brand_leugim_website = Setting::get('brand_leugim_website', 'magoleugim.es');
+
+        $savedVideoBrands = Setting::get('video_service_brands');
+        if ($savedVideoBrands !== null) {
+            $decoded = is_array($savedVideoBrands) ? $savedVideoBrands : json_decode($savedVideoBrands, true);
+            $this->video_service_brands = is_array($decoded) ? $decoded : ['javnx'];
+        } else {
+            $this->video_service_brands = ['javnx'];
+        }
 
         // Packs
         $storedBasic = Setting::get('pack_basic_name');
@@ -628,6 +639,9 @@ class Settings extends Component
         Setting::set('brand_leugim_phone_2', $this->brand_leugim_phone_2);
         Setting::set('brand_leugim_email', $this->brand_leugim_email);
         Setting::set('brand_leugim_website', $this->brand_leugim_website);
+
+        // Habilitación de videógrafo por marca
+        Setting::set('video_service_brands', json_encode(array_values($this->video_service_brands ?: [])));
 
         // Packs
         Setting::set('pack_basic_name', $this->pack_basic_name);

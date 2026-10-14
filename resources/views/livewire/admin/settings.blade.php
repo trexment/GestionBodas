@@ -457,6 +457,48 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- SERVICIO DE VIDEÓGRAFO / COLABORACIÓN EXTERNA POR MARCA -->
+                    <div class="mt-4 p-4 bg-gradient-to-r from-purple-50 via-indigo-50 to-pink-50 dark:from-slate-800 dark:via-purple-950/30 dark:to-indigo-950/30 rounded-2xl border border-purple-200 dark:border-purple-800/60 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <span class="text-xl">📹</span>
+                                <div>
+                                    <strong class="text-xs font-black text-purple-950 dark:text-purple-200 block">Servicio de Vídeo / Videógrafo por Marca y Dominio</strong>
+                                    <span class="text-[11px] text-purple-800 dark:text-purple-300">Selecciona en qué perfiles/dominios quieres que aparezca disponible el tipo de evento y presupuesto de Vídeo (ej: habilitado para JAVNX DJ y deshabilitado para Núñez and Son).</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                            <!-- JAVNX DJ -->
+                            <label class="flex items-center gap-2.5 p-3 rounded-xl border cursor-pointer transition {{ in_array('javnx', (array)($video_service_brands ?? [])) ? 'bg-indigo-100/70 border-indigo-400 dark:bg-indigo-950/60 dark:border-indigo-700' : 'bg-white/80 border-gray-200 dark:bg-slate-900/60 dark:border-slate-800 opacity-60' }}">
+                                <input type="checkbox" wire:model="video_service_brands" value="javnx" class="rounded text-indigo-600 focus:ring-indigo-500 h-4 w-4">
+                                <div class="text-xs">
+                                    <strong class="block text-indigo-950 dark:text-indigo-200 font-bold">🎧 JAVNX DJ</strong>
+                                    <span class="text-[10px] text-indigo-700 dark:text-indigo-300">javnxdj.com</span>
+                                </div>
+                            </label>
+
+                            <!-- NÚÑEZ AND SON -->
+                            <label class="flex items-center gap-2.5 p-3 rounded-xl border cursor-pointer transition {{ in_array('nunez_and_son', (array)($video_service_brands ?? [])) ? 'bg-amber-100/70 border-amber-400 dark:bg-amber-950/60 dark:border-amber-700' : 'bg-white/80 border-gray-200 dark:bg-slate-900/60 dark:border-slate-800 opacity-60' }}">
+                                <input type="checkbox" wire:model="video_service_brands" value="nunez_and_son" class="rounded text-amber-600 focus:ring-amber-500 h-4 w-4">
+                                <div class="text-xs">
+                                    <strong class="block text-amber-950 dark:text-amber-200 font-bold">👑 Núñez and Son</strong>
+                                    <span class="text-[10px] text-amber-700 dark:text-amber-300">nunezandson.com</span>
+                                </div>
+                            </label>
+
+                            <!-- MAGO LEUGIM -->
+                            <label class="flex items-center gap-2.5 p-3 rounded-xl border cursor-pointer transition {{ in_array('mago_leugim', (array)($video_service_brands ?? [])) ? 'bg-purple-100/70 border-purple-400 dark:bg-purple-950/60 dark:border-purple-700' : 'bg-white/80 border-gray-200 dark:bg-slate-900/60 dark:border-slate-800 opacity-60' }}">
+                                <input type="checkbox" wire:model="video_service_brands" value="mago_leugim" class="rounded text-purple-600 focus:ring-purple-500 h-4 w-4">
+                                <div class="text-xs">
+                                    <strong class="block text-purple-950 dark:text-purple-200 font-bold">🎩 Mago Leugim</strong>
+                                    <span class="text-[10px] text-purple-700 dark:text-purple-300">magoleugim.es</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

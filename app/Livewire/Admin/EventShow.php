@@ -397,6 +397,10 @@ class EventShow extends Component
 
     public function changeEventType($type)
     {
+        if ($type === 'video' && !\App\Models\Setting::isVideoServiceEnabled($this->event->brand_clean)) {
+            session()->flash('error', 'El servicio de vídeo no está habilitado para esta marca comercial.');
+            return;
+        }
         $this->event->update(['event_type' => $type]);
         $this->event->refresh();
         session()->flash('message', "Tipo de evento actualizado a: {$this->event->event_type_label}");
@@ -404,9 +408,13 @@ class EventShow extends Component
 
     public function changeBrand($brand)
     {
-        $this->event->update(['brand' => $brand]);
+        $update = ['brand' => $brand];
+        if ($this->event->event_type_clean === 'video' && !\App\Models\Setting::isVideoServiceEnabled($brand)) {
+            $update['event_type'] = 'boda';
+        }
+        $this->event->update($update);
         $this->event->refresh();
-        $brandLabel = $brand === 'javnx' ? 'JAVNX DJ' : 'Núñez and Son';
+        $brandLabel = $brand === 'javnx' ? 'JAVNX DJ' : ($brand === 'mago_leugim' ? 'Mago Leugim' : 'Núñez and Son');
         session()->flash('message', "Marca comercial del evento cambiada a: {$brandLabel}");
     }
 
@@ -2367,8 +2375,19 @@ class EventShow extends Component
         $this->showEditEventModal = false;
     }
 
+    public function updatedEventEditBrand($value)
+    {
+        if ($this->event_edit_type === 'video' && !\App\Models\Setting::isVideoServiceEnabled($value)) {
+            $this->event_edit_type = 'boda';
+        }
+    }
+
     public function saveEventDetails()
     {
+        if ($this->event_edit_type === 'video' && !\App\Models\Setting::isVideoServiceEnabled($this->event_edit_brand)) {
+            $this->event_edit_type = 'boda';
+        }
+
         $this->validate([
             'event_edit_name' => 'required|string|max:255',
             'event_edit_date' => 'required|date',

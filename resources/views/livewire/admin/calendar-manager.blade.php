@@ -252,7 +252,9 @@
                                     <label class="block text-xs font-bold text-gray-700 mb-1">Tipo de Evento *</label>
                                     <select wire:model.live="new_event_type" required class="block w-full border-gray-300 rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500 bg-white">
                                         <option value="boda">💍 Boda</option>
-                                        <option value="video">📹 Vídeo / Videógrafo</option>
+                                        @if(\App\Models\Setting::isVideoServiceEnabled())
+                                            <option value="video">📹 Vídeo / Videógrafo</option>
+                                        @endif
                                         <option value="empresa">🏢 Empresa</option>
                                         <option value="cumpleanos">🎂 Cumpleaños</option>
                                         <option value="comunion">🕊️ Comunión</option>
