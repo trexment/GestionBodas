@@ -33,14 +33,40 @@ class EvolutionWhatsAppService
 
     public static function getInstanceName(?string $brand = null): string
     {
-        $cleanBrand = $brand ? strtolower(trim($brand)) : Setting::getDetectedBrand();
-        if ($cleanBrand === 'javnx') {
-            return Setting::get('whatsapp_instance_javnx', 'javnx_dj');
+        $clean = $brand ? strtolower(trim($brand)) : Setting::getDetectedBrand();
+
+        if (in_array($clean, ['fran', 'javnx', 'javnx_dj'])) {
+            return Setting::get('whatsapp_instance_fran', Setting::get('whatsapp_instance_javnx', 'whatsapp_principal'));
         }
-        if ($cleanBrand === 'mago_leugim') {
+
+        if (in_array($clean, ['ezequiel', 'ezequiel_nunez'])) {
+            return Setting::get('whatsapp_instance_ezequiel', 'whatsapp_ezequiel');
+        }
+
+        if (in_array($clean, ['mago_leugim', 'leugim'])) {
             return Setting::get('whatsapp_instance_leugim', 'mago_leugim');
         }
-        return Setting::get('whatsapp_instance_nunez', 'nunez_and_son');
+
+        if (in_array($clean, ['miguel', 'nunez', 'nunez_and_son'])) {
+            return Setting::get('whatsapp_instance_miguel', Setting::get('whatsapp_instance_nunez', 'whatsapp_miguel'));
+        }
+
+        // Si se pasa directamente un nombre de instancia específico
+        $allConfigured = [
+            Setting::get('whatsapp_instance_miguel'),
+            Setting::get('whatsapp_instance_fran'),
+            Setting::get('whatsapp_instance_ezequiel'),
+            Setting::get('whatsapp_instance_nunez'),
+            Setting::get('whatsapp_instance_javnx'),
+            'whatsapp_principal',
+            'whatsapp_miguel',
+            'whatsapp_ezequiel',
+        ];
+        if (in_array($clean, array_filter(array_map('strtolower', $allConfigured)))) {
+            return $clean;
+        }
+
+        return Setting::get('whatsapp_instance_miguel', Setting::get('whatsapp_instance_nunez', 'whatsapp_miguel'));
     }
 
     /**
@@ -174,6 +200,48 @@ class EvolutionWhatsAppService
         $instance = self::getInstanceName($brand);
 
         try {
+            // Intentar consultar fetchInstances para obtener el estado y el teléfono del propietario conectado
+            $fetchRes = Http::withHeaders(['apikey' => $apiKey])->timeout(6)->get("{$baseUrl}/instance/fetchInstances");
+            if ($fetchRes->successful()) {
+                $instances = $fetchRes->json();
+                if (is_array($instances)) {
+                    foreach ($instances as $inst) {
+                        if (isset($inst['name']) && strtolower(trim($inst['name'])) === strtolower(trim($instance))) {
+                            $status = $inst['connectionStatus'] ?? ($inst['state'] ?? 'unknown');
+                            $ownerJid = $inst['ownerJid'] ?? null;
+                            $ownerPhone = $ownerJid ? ('+' . explode('@', $ownerJid)[0]) : null;
+
+                            if ($status === 'open') {
+                                return [
+                                    'configured' => true,
+                                    'state' => 'open',
+                                    'instance' => $instance,
+                                    'owner' => $ownerPhone,
+                                    'message' => '🟢 Conectado y listo para chatear' . ($ownerPhone ? " ({$ownerPhone})" : ""),
+                                ];
+                            } elseif ($status === 'connecting') {
+                                return [
+                                    'configured' => true,
+                                    'state' => 'connecting',
+                                    'instance' => $instance,
+                                    'owner' => null,
+                                    'message' => '🟡 Esperando escaneo de código QR (Pulsa «Vincular / Ver QR»)',
+                                ];
+                            } else {
+                                return [
+                                    'configured' => true,
+                                    'state' => $status,
+                                    'instance' => $instance,
+                                    'owner' => null,
+                                    'message' => "🔴 Desconectado (Estado: {$status})",
+                                ];
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Fallback directo a connectionState
             $endpoint = "{$baseUrl}/instance/connectionState/{$instance}";
             $res = Http::withHeaders(['apikey' => $apiKey])->timeout(6)->get($endpoint);
 
@@ -227,14 +295,39 @@ class EvolutionWhatsAppService
         $instance = self::getInstanceName($brand);
 
         try {
-            // 1. Intentar conectar instancia existente
+            // 1. Comprobar si ya está conectada antes de solicitar QR
+            $statusCheck = self::checkInstanceStatus($brand);
+            if (($statusCheck['state'] ?? '') === 'open') {
+                return [
+                    'success' => true,
+                    'already_connected' => true,
+                    'instance' => $instance,
+                    'owner' => $statusCheck['owner'] ?? null,
+                    'message' => "¡La instancia '{$instance}' ya está conectada y activa en WhatsApp" . (!empty($statusCheck['owner']) ? " ({$statusCheck['owner']})" : "") . "! No es necesario escanear QR.",
+                ];
+            }
+
+            // 2. Intentar conectar instancia existente
             $endpoint = "{$baseUrl}/instance/connect/{$instance}";
             $res = Http::withHeaders(['apikey' => $apiKey])->timeout(10)->get($endpoint);
 
             if ($res->successful()) {
                 $data = $res->json();
+
+                if (($data['instance']['state'] ?? ($data['state'] ?? '')) === 'open') {
+                    return [
+                        'success' => true,
+                        'already_connected' => true,
+                        'instance' => $instance,
+                        'message' => "¡La instancia '{$instance}' ya está conectada y activa en WhatsApp! No es necesario escanear QR.",
+                    ];
+                }
+
                 $base64 = $data['base64'] ?? ($data['qrcode']['base64'] ?? null);
                 if ($base64) {
+                    if (!str_starts_with($base64, 'data:image/')) {
+                        $base64 = 'data:image/png;base64,' . $base64;
+                    }
                     self::ensureWebhookConfigured($baseUrl, $apiKey, $instance);
                     return [
                         'success' => true,
@@ -244,7 +337,7 @@ class EvolutionWhatsAppService
                 }
             }
 
-            // 2. Si no existe (404) o no devolvió QR, intentar crear la instancia
+            // 3. Si no existe (404) o no devolvió QR, intentar crear la instancia
             $createRes = Http::withHeaders([
                 'apikey' => $apiKey,
                 'Content-Type' => 'application/json',
@@ -260,6 +353,9 @@ class EvolutionWhatsAppService
                 self::ensureWebhookConfigured($baseUrl, $apiKey, $instance);
 
                 if ($base64) {
+                    if (!str_starts_with($base64, 'data:image/')) {
+                        $base64 = 'data:image/png;base64,' . $base64;
+                    }
                     return [
                         'success' => true,
                         'base64' => $base64,
@@ -273,6 +369,9 @@ class EvolutionWhatsAppService
                     $retryData = $retryRes->json();
                     $retryBase64 = $retryData['base64'] ?? ($retryData['qrcode']['base64'] ?? null);
                     if ($retryBase64) {
+                        if (!str_starts_with($retryBase64, 'data:image/')) {
+                            $retryBase64 = 'data:image/png;base64,' . $retryBase64;
+                        }
                         return [
                             'success' => true,
                             'base64' => $retryBase64,
@@ -290,6 +389,37 @@ class EvolutionWhatsAppService
             return [
                 'success' => false,
                 'message' => 'Error obteniendo QR: ' . $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Desconecta o elimina la sesión activa de WhatsApp para poder volver a escanear un QR nuevo
+     */
+    public static function disconnectInstance(?string $brand = null): array
+    {
+        if (!self::isEnabled()) {
+            return ['success' => false, 'message' => 'Gateway no activo.'];
+        }
+
+        $baseUrl = self::getBaseUrl();
+        $apiKey = self::getApiKey();
+        $instance = self::getInstanceName($brand);
+
+        try {
+            $res = Http::withHeaders(['apikey' => $apiKey])->timeout(8)->delete("{$baseUrl}/instance/logout/{$instance}");
+            if (!$res->successful()) {
+                Http::withHeaders(['apikey' => $apiKey])->timeout(8)->delete("{$baseUrl}/instance/delete/{$instance}");
+            }
+            return [
+                'success' => true,
+                'instance' => $instance,
+                'message' => "Instancia '{$instance}' desconectada correctamente de WhatsApp.",
+            ];
+        } catch (\Throwable $e) {
+            return [
+                'success' => false,
+                'message' => 'Error al desconectar instancia: ' . $e->getMessage(),
             ];
         }
     }

@@ -207,12 +207,18 @@ class Settings extends Component
     public $whatsapp_gateway_enabled = false;
     public $whatsapp_gateway_url = '';
     public $whatsapp_gateway_api_key = '';
-    public $whatsapp_instance_nunez = 'nunez_and_son';
-    public $whatsapp_instance_javnx = 'javnx_dj';
+    public $whatsapp_instance_miguel = 'whatsapp_miguel';
+    public $whatsapp_instance_fran = 'whatsapp_principal';
+    public $whatsapp_instance_ezequiel = 'whatsapp_ezequiel';
+    public $whatsapp_instance_nunez = 'whatsapp_miguel';
+    public $whatsapp_instance_javnx = 'whatsapp_principal';
     public $whatsapp_instance_leugim = 'mago_leugim';
     public $whatsapp_webhook_token = '';
+    public $whatsappStatuses = [];
     public $whatsappStatus = null;
     public $whatsappQrBase64 = null;
+    public $whatsappQrInstance = null;
+    public $whatsappQrPerson = null;
 
     public function boot()
     {
@@ -435,8 +441,11 @@ class Settings extends Component
         $this->whatsapp_gateway_enabled = Setting::get('whatsapp_gateway_enabled', '0') === '1';
         $this->whatsapp_gateway_url = Setting::get('whatsapp_gateway_url', '');
         $this->whatsapp_gateway_api_key = Setting::get('whatsapp_gateway_api_key', '');
-        $this->whatsapp_instance_nunez = Setting::get('whatsapp_instance_nunez', 'nunez_and_son');
-        $this->whatsapp_instance_javnx = Setting::get('whatsapp_instance_javnx', 'javnx_dj');
+        $this->whatsapp_instance_miguel = Setting::get('whatsapp_instance_miguel', Setting::get('whatsapp_instance_nunez', 'whatsapp_miguel'));
+        $this->whatsapp_instance_fran = Setting::get('whatsapp_instance_fran', Setting::get('whatsapp_instance_javnx', 'whatsapp_principal'));
+        $this->whatsapp_instance_ezequiel = Setting::get('whatsapp_instance_ezequiel', 'whatsapp_ezequiel');
+        $this->whatsapp_instance_nunez = $this->whatsapp_instance_miguel;
+        $this->whatsapp_instance_javnx = $this->whatsapp_instance_fran;
         $this->whatsapp_instance_leugim = Setting::get('whatsapp_instance_leugim', 'mago_leugim');
         $this->whatsapp_webhook_token = Setting::get('whatsapp_webhook_token', '');
     }
@@ -833,8 +842,11 @@ class Settings extends Component
         Setting::set('whatsapp_gateway_enabled', $this->whatsapp_gateway_enabled ? '1' : '0');
         Setting::set('whatsapp_gateway_url', trim($this->whatsapp_gateway_url));
         Setting::set('whatsapp_gateway_api_key', trim($this->whatsapp_gateway_api_key));
-        Setting::set('whatsapp_instance_nunez', trim($this->whatsapp_instance_nunez));
-        Setting::set('whatsapp_instance_javnx', trim($this->whatsapp_instance_javnx));
+        Setting::set('whatsapp_instance_miguel', trim($this->whatsapp_instance_miguel));
+        Setting::set('whatsapp_instance_fran', trim($this->whatsapp_instance_fran));
+        Setting::set('whatsapp_instance_ezequiel', trim($this->whatsapp_instance_ezequiel));
+        Setting::set('whatsapp_instance_nunez', trim($this->whatsapp_instance_miguel));
+        Setting::set('whatsapp_instance_javnx', trim($this->whatsapp_instance_fran));
         Setting::set('whatsapp_instance_leugim', trim($this->whatsapp_instance_leugim));
         Setting::set('whatsapp_webhook_token', trim($this->whatsapp_webhook_token));
 
@@ -843,25 +855,109 @@ class Settings extends Component
         $this->dispatch('settings-saved');
     }
 
-    public function testWhatsAppGateway(?string $brand = null)
+    public function saveWhatsAppSettingsQuietly()
     {
         Setting::set('whatsapp_gateway_enabled', $this->whatsapp_gateway_enabled ? '1' : '0');
         Setting::set('whatsapp_gateway_url', trim($this->whatsapp_gateway_url));
         Setting::set('whatsapp_gateway_api_key', trim($this->whatsapp_gateway_api_key));
-        Setting::set('whatsapp_instance_nunez', trim($this->whatsapp_instance_nunez));
-        Setting::set('whatsapp_instance_javnx', trim($this->whatsapp_instance_javnx));
-
-        $this->whatsappStatus = \App\Services\EvolutionWhatsAppService::checkInstanceStatus($brand);
+        Setting::set('whatsapp_instance_miguel', trim($this->whatsapp_instance_miguel));
+        Setting::set('whatsapp_instance_fran', trim($this->whatsapp_instance_fran));
+        Setting::set('whatsapp_instance_ezequiel', trim($this->whatsapp_instance_ezequiel));
+        Setting::set('whatsapp_instance_nunez', trim($this->whatsapp_instance_miguel));
+        Setting::set('whatsapp_instance_javnx', trim($this->whatsapp_instance_fran));
+        Setting::set('whatsapp_instance_leugim', trim($this->whatsapp_instance_leugim));
+        Setting::set('whatsapp_webhook_token', trim($this->whatsapp_webhook_token));
     }
 
-    public function fetchWhatsAppQrCode(?string $brand = null)
+    public function testWhatsAppGateway(?string $key = null)
     {
-        $res = \App\Services\EvolutionWhatsAppService::getQrCode($brand);
-        if ($res['success']) {
+        $this->saveWhatsAppSettingsQuietly();
+
+        if ($key) {
+            $status = \App\Services\EvolutionWhatsAppService::checkInstanceStatus($key);
+            $this->whatsappStatuses[$key] = $status;
+            $this->whatsappStatus = $status;
+        } else {
+            foreach (['miguel', 'fran', 'ezequiel'] as $k) {
+                $this->whatsappStatuses[$k] = \App\Services\EvolutionWhatsAppService::checkInstanceStatus($k);
+            }
+            $this->whatsappStatus = [
+                'configured' => true,
+                'message' => 'Estado de los 3 teléfonos verificado correctamente.',
+            ];
+        }
+    }
+
+    public function fetchWhatsAppQrCode(?string $key = null)
+    {
+        $this->saveWhatsAppSettingsQuietly();
+
+        $personNames = [
+            'miguel' => 'Miguel (Núñez & Son)',
+            'nunez' => 'Miguel (Núñez & Son)',
+            'fran' => 'Fran (JAVNX DJ & Núñez & Son)',
+            'javnx' => 'Fran (JAVNX DJ & Núñez & Son)',
+            'ezequiel' => 'Ezequiel (Núñez & Son)',
+        ];
+
+        $res = \App\Services\EvolutionWhatsAppService::getQrCode($key);
+
+        if (!empty($res['already_connected'])) {
+            $this->whatsappQrBase64 = null;
+            $this->whatsappQrInstance = null;
+            $this->whatsappQrPerson = null;
+            if ($key) {
+                $this->whatsappStatuses[$key] = [
+                    'configured' => true,
+                    'state' => 'open',
+                    'instance' => $res['instance'] ?? $key,
+                    'owner' => $res['owner'] ?? null,
+                    'message' => '🟢 Conectado y listo para chatear' . (!empty($res['owner']) ? " ({$res['owner']})" : ""),
+                ];
+            }
+            session()->flash('whatsapp_success', $res['message'] ?? '¡Este WhatsApp ya está conectado y activo! No es necesario escanear QR.');
+            return;
+        }
+
+        if ($res['success'] && !empty($res['base64'])) {
             $this->whatsappQrBase64 = $res['base64'];
+            $this->whatsappQrInstance = $res['instance'] ?? $key;
+            $this->whatsappQrPerson = $personNames[$key] ?? ($res['instance'] ?? 'WhatsApp');
+            if ($key) {
+                $this->whatsappStatuses[$key] = [
+                    'configured' => true,
+                    'state' => 'connecting',
+                    'instance' => $res['instance'] ?? $key,
+                    'message' => '🟡 Código QR generado. Escanéalo en la pantalla con tu móvil.',
+                ];
+            }
         } else {
             session()->flash('whatsapp_error', $res['message'] ?? 'No se pudo generar QR');
         }
+    }
+
+    public function disconnectWhatsAppInstance(string $key)
+    {
+        $this->saveWhatsAppSettingsQuietly();
+        $res = \App\Services\EvolutionWhatsAppService::disconnectInstance($key);
+
+        $this->whatsappQrBase64 = null;
+        $this->whatsappQrInstance = null;
+        $this->whatsappQrPerson = null;
+
+        if ($res['success']) {
+            $this->testWhatsAppGateway($key);
+            session()->flash('whatsapp_success', $res['message']);
+        } else {
+            session()->flash('whatsapp_error', $res['message']);
+        }
+    }
+
+    public function closeWhatsAppQrModal()
+    {
+        $this->whatsappQrBase64 = null;
+        $this->whatsappQrInstance = null;
+        $this->whatsappQrPerson = null;
     }
 
     public function testImapConnection(string $brandKey)

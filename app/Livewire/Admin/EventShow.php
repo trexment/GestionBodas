@@ -86,7 +86,7 @@ class EventShow extends Component
     // Notas de Evento / Acuerdos WhatsApp
     public $event_notes;
     public $whatsapp_chat_input = '';
-    public $whatsapp_sender_brand = null; // 'nunez_and_son', 'javnx', 'mago_leugim'
+    public $whatsapp_sender_brand = null; // 'miguel', 'fran', 'ezequiel', 'mago_leugim'
     public $selected_pack_type = 'custom'; // basic, medium, premium, wedding_dj, wedding_full, custom
 
     // Configuración de señal específica para este presupuesto
@@ -377,7 +377,7 @@ class EventShow extends Component
             }
         }
 
-        $this->whatsapp_sender_brand = $this->event->brand_clean ?: 'nunez_and_son';
+        $this->whatsapp_sender_brand = ($this->event->brand_clean === 'javnx') ? 'fran' : 'miguel';
     }
 
     public function changeStatus($status)

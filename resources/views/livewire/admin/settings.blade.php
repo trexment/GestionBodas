@@ -2130,37 +2130,64 @@ MAIL_FROM_NAME="{{ $company_name }}"</pre>
                 </div>
             @endif
 
+            @if(session()->has('whatsapp_success'))
+                <div class="p-4 rounded-2xl bg-emerald-50 border-2 border-emerald-300 text-emerald-950 shadow-xs flex items-center justify-between text-xs font-bold">
+                    <div class="flex items-center gap-2">
+                        <span class="text-base">✅</span>
+                        <span>{{ session('whatsapp_success') }}</span>
+                    </div>
+                    <button type="button" onclick="this.parentElement.remove()" class="text-emerald-500 hover:text-emerald-700 font-black text-lg cursor-pointer">&times;</button>
+                </div>
+            @endif
+
             @if(session()->has('whatsapp_error'))
-                <div class="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-900 shadow-xs flex items-center justify-between text-xs font-bold">
-                    <span>⚠️ {{ session('whatsapp_error') }}</span>
-                    <button type="button" onclick="this.parentElement.remove()" class="text-rose-400 hover:text-rose-600 font-black text-lg">&times;</button>
+                <div class="p-4 rounded-2xl bg-rose-50 border-2 border-rose-300 text-rose-950 shadow-xs flex items-center justify-between text-xs font-bold">
+                    <div class="flex items-center gap-2">
+                        <span class="text-base">⚠️</span>
+                        <span>{{ session('whatsapp_error') }}</span>
+                    </div>
+                    <button type="button" onclick="this.parentElement.remove()" class="text-rose-400 hover:text-rose-600 font-black text-lg cursor-pointer">&times;</button>
                 </div>
             @endif
 
             <!-- Modal / Visualizador de Código QR -->
             @if($whatsappQrBase64)
-                <div class="bg-white border-2 border-emerald-400 rounded-2xl p-6 shadow-xl space-y-4">
+                <div class="bg-white border-2 border-emerald-500 rounded-3xl p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200">
                     <div class="flex items-center justify-between border-b border-gray-100 pb-3">
-                        <div class="flex items-center gap-2">
-                            <span class="text-xl">📷</span>
-                            <h4 class="font-black text-sm text-gray-900">Escanear Código QR con WhatsApp</h4>
+                        <div class="flex items-center gap-2.5">
+                            <span class="text-2xl p-2 bg-emerald-50 rounded-xl border border-emerald-200">📷</span>
+                            <div>
+                                <h4 class="font-black text-base text-gray-900">
+                                    Vincular WhatsApp: <span class="text-emerald-700">{{ $whatsappQrPerson ?? 'Nuevo Dispositivo' }}</span>
+                                </h4>
+                                <p class="text-xs text-gray-500 font-mono">Instancia: {{ $whatsappQrInstance }}</p>
+                            </div>
                         </div>
-                        <button type="button" wire:click="$set('whatsappQrBase64', null)" class="text-gray-400 hover:text-gray-600 font-black text-lg">&times;</button>
+                        <button type="button" wire:click="closeWhatsAppQrModal" class="text-gray-400 hover:text-gray-700 font-black text-2xl p-1 leading-none cursor-pointer">&times;</button>
                     </div>
-                    <div class="flex flex-col sm:flex-row items-center gap-6">
-                        <div class="bg-gray-50 p-3 rounded-2xl border border-gray-200 shadow-inner">
-                            <img src="{{ $whatsappQrBase64 }}" alt="QR WhatsApp" class="w-56 h-56 object-contain rounded-lg">
+
+                    <div class="flex flex-col md:flex-row items-center gap-6">
+                        <div class="bg-gray-50 p-4 rounded-2xl border-2 border-emerald-200 shadow-inner shrink-0">
+                            <img src="{{ $whatsappQrBase64 }}" alt="QR WhatsApp" class="w-60 h-60 object-contain rounded-xl bg-white p-2">
                         </div>
-                        <div class="space-y-3 text-xs text-gray-600">
-                            <ol class="list-decimal list-inside space-y-1.5 font-semibold">
-                                <li>Abre <strong>WhatsApp</strong> en el teléfono móvil de la empresa o DJ.</li>
-                                <li>Toca en <strong>Ajustes</strong> (o los 3 puntos) &gt; <strong>Dispositivos vinculados</strong>.</li>
-                                <li>Pulsa en <strong>Vincular un dispositivo</strong>.</li>
-                                <li>Apunta con la cámara hacia este código QR.</li>
+                        <div class="space-y-3.5 text-xs text-gray-700">
+                            <div class="bg-emerald-50/80 border border-emerald-200 text-emerald-950 p-3 rounded-xl font-bold">
+                                📱 Escanea este código únicamente desde el móvil de: <u>{{ $whatsappQrPerson ?? 'la persona correspondiente' }}</u>.
+                            </div>
+                            <ol class="list-decimal list-inside space-y-2 font-medium">
+                                <li>Abre <strong>WhatsApp</strong> en el teléfono móvil de <strong>{{ $whatsappQrPerson ?? 'la persona indicada' }}</strong>.</li>
+                                <li>Ve a <strong>Ajustes</strong> (o toca los 3 puntos arriba a la derecha) &gt; <strong>Dispositivos vinculados</strong>.</li>
+                                <li>Pulsa sobre <strong>Vincular un dispositivo</strong>.</li>
+                                <li>Apunta la cámara del móvil a este código QR en la pantalla.</li>
                             </ol>
-                            <p class="text-[11px] text-gray-500 pt-2">
-                                Una vez vinculado, la sesión permanecerá abierta en el servidor y podrás enviar y recibir mensajes directamente desde la app.
+                            <p class="text-[11px] text-gray-500 pt-1">
+                                ⏳ El código QR se actualiza cada pocos segundos. Una vez leído por el móvil, la sesión quedará guardada en el servidor y podrás cerrar este recuadro.
                             </p>
+                            <div class="pt-2">
+                                <button type="button" wire:click="closeWhatsAppQrModal" class="bg-slate-800 hover:bg-slate-900 text-white font-bold px-4 py-2 rounded-xl text-xs transition cursor-pointer shadow-xs">
+                                    Cerrar Ventana del QR
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -2168,15 +2195,21 @@ MAIL_FROM_NAME="{{ $company_name }}"</pre>
 
             <!-- Parámetros del Servidor Evolution API -->
             <div class="bg-white shadow-sm rounded-2xl border border-gray-200 p-6 space-y-4">
-                <h3 class="text-base font-extrabold text-gray-900 border-b border-gray-100 pb-3 flex items-center gap-2">
-                    <span>⚙️</span> Parámetros del Servidor Evolution API
-                </h3>
+                <div class="flex items-center justify-between border-b border-gray-100 pb-3">
+                    <h3 class="text-base font-extrabold text-gray-900 flex items-center gap-2">
+                        <span>⚙️</span> Parámetros del Servidor Evolution API
+                    </h3>
+                    <button type="button" wire:click="testWhatsAppGateway(null)" wire:loading.attr="disabled" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold px-3 py-1.5 rounded-xl text-xs transition cursor-pointer inline-flex items-center gap-1.5 border border-indigo-200">
+                        <span wire:loading.remove wire:target="testWhatsAppGateway(null)">🔍 Comprobar Todos los Teléfonos</span>
+                        <span wire:loading wire:target="testWhatsAppGateway(null)">Comprobando...</span>
+                    </button>
+                </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs font-bold text-gray-700 mb-1">URL Base del Servidor (Gateway Evolution API) *</label>
-                        <input type="url" wire:model="whatsapp_gateway_url" placeholder="https://evolution.tudominio.com o http://127.0.0.1:8080" class="w-full border-gray-300 rounded-xl shadow-xs text-xs font-mono">
-                        <span class="text-[10px] text-gray-400 mt-1 block">Dirección donde corre el contenedor de Evolution API.</span>
+                        <input type="url" wire:model="whatsapp_gateway_url" placeholder="http://217.160.67.246:8080" class="w-full border-gray-300 rounded-xl shadow-xs text-xs font-mono">
+                        <span class="text-[10px] text-gray-400 mt-1 block">Dirección donde corre el servidor de Evolution API (ej: http://217.160.67.246:8080).</span>
                     </div>
 
                     <div>
@@ -2193,74 +2226,190 @@ MAIL_FROM_NAME="{{ $company_name }}"</pre>
                 </div>
             </div>
 
-            <!-- Explicación de Conexión de 2 Teléfonos Simultáneos -->
-            <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200/80 rounded-2xl p-4.5 shadow-2xs text-xs text-blue-900 flex items-start gap-3">
+            <!-- Explicación de Conexión de 3 Teléfonos Simultáneos -->
+            <div class="bg-gradient-to-r from-blue-50 via-indigo-50 to-emerald-50 border border-blue-200/80 rounded-2xl p-4.5 shadow-2xs text-xs text-blue-900 flex items-start gap-3">
                 <span class="text-2xl p-2 bg-blue-100/70 rounded-xl">👥</span>
                 <div class="space-y-1">
-                    <strong class="font-black text-blue-950 text-sm">¿Cómo vincular los 2 números de WhatsApp (Fran y Hermano)?</strong>
+                    <strong class="font-black text-blue-950 text-sm">Organización de Teléfonos de WhatsApp (Miguel, Fran y Ezequiel)</strong>
                     <p class="text-blue-800 leading-relaxed text-xs">
-                        Evolution API permite tener <strong>múltiples teléfonos conectados simultáneamente</strong> sin que se cierren la sesión entre ellos:
+                        Evolution API mantiene <strong>cada sesión abierta independientemente</strong> para que los tres podáis enviar y recibir mensajes de clientes sin interferir entre vosotros:
                     </p>
                     <ul class="list-disc list-inside space-y-1 text-blue-900/90 font-medium pt-1">
-                        <li><strong>Móvil de Fran:</strong> Pulsa <em>«📱 Vincular / Ver QR»</em> en la tarjeta de <strong>Núñez & Son</strong> y escanéalo con tu WhatsApp.</li>
-                        <li><strong>Móvil de tu Hermano:</strong> Pulsa <em>«📱 Vincular / Ver QR»</em> en la tarjeta de <strong>JAVNX DJ</strong> y que tu hermano lo escanee con su WhatsApp.</li>
-                        <li>Ambos teléfonos quedarán activos en el servidor a la vez. Podréis elegir desde qué móvil enviar cada mensaje en la ficha del evento, y ambos recibiréis las notificaciones del negocio (nuevos leads y contratos firmados).</li>
+                        <li><strong>Miguel (Núñez & Son):</strong> Pulsa <em>«📱 Vincular / Ver QR»</em> en la tarjeta de Miguel y escanéalo con su móvil.</li>
+                        <li><strong>Fran (JAVNX DJ & Núñez & Son):</strong> Instancia principal activa. Permite enviar desde el móvil de Fran tanto para JAVNX DJ como para Núñez & Son.</li>
+                        <li><strong>Ezequiel (Núñez & Son):</strong> Pulsa <em>«📱 Vincular / Ver QR»</em> en la tarjeta de Ezequiel y escanéalo con su móvil.</li>
+                        <li>En la ficha de cualquier evento, podréis <strong>seleccionar con 1 clic desde qué móvil enviar el WhatsApp</strong> al cliente o novios.</li>
                     </ul>
                 </div>
             </div>
 
-            <!-- Nombres de Instancia por Marca y Teléfono -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <!-- INSTANCIA NÚÑEZ & SON (FRAN) -->
-                <div class="bg-white shadow-sm rounded-2xl border-2 border-amber-200 p-6 space-y-4">
-                    <div class="flex items-center gap-2.5 border-b border-amber-100 pb-3">
-                        <span class="text-2xl p-2 bg-amber-50 rounded-xl border border-amber-200">👑</span>
+            <!-- Nombres de Instancia por Persona y Marca (3 Columnas) -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- 1. INSTANCIA MIGUEL · NÚÑEZ & SON -->
+                <div class="bg-white shadow-sm rounded-2xl border-2 border-amber-300 p-5 space-y-4 flex flex-col justify-between">
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between border-b border-amber-100 pb-3">
+                            <div class="flex items-center gap-2.5">
+                                <span class="text-2xl p-2 bg-amber-50 rounded-xl border border-amber-200">👑</span>
+                                <div>
+                                    <h3 class="text-base font-black text-gray-900">Miguel</h3>
+                                    <p class="text-xs text-amber-700 font-bold">Núñez & Son</p>
+                                </div>
+                            </div>
+                            <span class="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200">
+                                Responsable
+                            </span>
+                        </div>
+
+                        <!-- Estado en vivo -->
+                        @php
+                            $miguelStatus = $whatsappStatuses['miguel'] ?? null;
+                        @endphp
+                        @if($miguelStatus)
+                            <div class="p-2.5 rounded-xl border text-xs font-bold flex items-center justify-between {{ ($miguelStatus['state'] ?? '') === 'open' ? 'bg-emerald-50 border-emerald-300 text-emerald-900' : 'bg-amber-50 border-amber-300 text-amber-900' }}">
+                                <span>{{ $miguelStatus['message'] ?? 'Estado verificado' }}</span>
+                                @if(!empty($miguelStatus['owner']))
+                                    <span class="font-mono text-[10px] bg-white/80 px-1.5 py-0.5 rounded">{{ $miguelStatus['owner'] }}</span>
+                                @endif
+                            </div>
+                        @else
+                            <div class="p-2.5 rounded-xl border border-gray-200 bg-gray-50 text-gray-600 text-xs font-medium">
+                                ℹ️ Pulsa «Probar» para verificar si está conectado.
+                            </div>
+                        @endif
+
                         <div>
-                            <h3 class="text-base font-black text-gray-900">Móvil Fran &bull; Núñez & Son</h3>
-                            <p class="text-xs text-amber-700 font-semibold">Instancia principal de WhatsApp para Fran</p>
+                            <label class="block text-xs font-bold text-gray-700 mb-1">Nombre de Instancia en Servidor</label>
+                            <input type="text" wire:model="whatsapp_instance_miguel" placeholder="whatsapp_miguel" class="w-full border-gray-300 rounded-xl shadow-xs text-xs font-mono">
                         </div>
                     </div>
 
-                    <div>
-                        <label class="block text-xs font-bold text-gray-700 mb-1">Nombre de la Instancia en Evolution API</label>
-                        <input type="text" wire:model="whatsapp_instance_nunez" placeholder="nunez_and_son" class="w-full border-gray-300 rounded-xl shadow-xs text-xs font-mono">
-                    </div>
-
-                    <div class="flex flex-wrap items-center gap-2 pt-2">
-                        <button type="button" wire:click="testWhatsAppGateway('nunez')" wire:loading.attr="disabled" class="bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold px-3.5 py-2 rounded-xl text-xs transition cursor-pointer inline-flex items-center gap-1.5 shadow-2xs">
-                            <span wire:loading.remove wire:target="testWhatsAppGateway('nunez')">🔌 Probar Conexión</span>
-                            <span wire:loading wire:target="testWhatsAppGateway('nunez')">Consultando...</span>
-                        </button>
-                        <button type="button" wire:click="fetchWhatsAppQrCode('nunez')" wire:loading.attr="disabled" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3.5 py-2 rounded-xl text-xs transition cursor-pointer inline-flex items-center gap-1.5 shadow-2xs">
-                            <span wire:loading.remove wire:target="fetchWhatsAppQrCode('nunez')">📱 Vincular / Ver QR</span>
-                            <span wire:loading wire:target="fetchWhatsAppQrCode('nunez')">Generando...</span>
+                    <div class="space-y-2 pt-3 border-t border-gray-100">
+                        <div class="flex items-center gap-2">
+                            <button type="button" wire:click="testWhatsAppGateway('miguel')" wire:loading.attr="disabled" class="flex-1 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 font-bold py-2 rounded-xl text-xs transition cursor-pointer text-center shadow-2xs">
+                                <span wire:loading.remove wire:target="testWhatsAppGateway('miguel')">🔌 Probar</span>
+                                <span wire:loading wire:target="testWhatsAppGateway('miguel')">...</span>
+                            </button>
+                            <button type="button" wire:click="fetchWhatsAppQrCode('miguel')" wire:loading.attr="disabled" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded-xl text-xs transition cursor-pointer text-center shadow-2xs">
+                                <span wire:loading.remove wire:target="fetchWhatsAppQrCode('miguel')">📱 Vincular / QR</span>
+                                <span wire:loading wire:target="fetchWhatsAppQrCode('miguel')">Generando...</span>
+                            </button>
+                        </div>
+                        <button type="button" wire:click="disconnectWhatsAppInstance('miguel')" wire:confirm="¿Seguro que deseas desconectar o reiniciar la sesión de WhatsApp de Miguel?" class="w-full text-[11px] text-gray-400 hover:text-rose-600 font-semibold py-1 transition cursor-pointer text-center">
+                            Desconectar / Reiniciar sesión
                         </button>
                     </div>
                 </div>
 
-                <!-- INSTANCIA JAVNX DJ (HERMANO) -->
-                <div class="bg-white shadow-sm rounded-2xl border-2 border-indigo-200 p-6 space-y-4">
-                    <div class="flex items-center gap-2.5 border-b border-indigo-100 pb-3">
-                        <span class="text-2xl p-2 bg-indigo-50 rounded-xl border border-indigo-200">🎧</span>
+                <!-- 2. INSTANCIA FRAN · JAVNX DJ (Y NÚÑEZ & SON) -->
+                <div class="bg-white shadow-sm rounded-2xl border-2 border-indigo-300 p-5 space-y-4 flex flex-col justify-between">
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between border-b border-indigo-100 pb-3">
+                            <div class="flex items-center gap-2.5">
+                                <span class="text-2xl p-2 bg-indigo-50 rounded-xl border border-indigo-200">🎧</span>
+                                <div>
+                                    <h3 class="text-base font-black text-gray-900">Fran</h3>
+                                    <p class="text-xs text-indigo-700 font-bold">JAVNX DJ (y Núñez & Son)</p>
+                                </div>
+                            </div>
+                            <span class="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800 border border-indigo-200">
+                                DJ & Gestión
+                            </span>
+                        </div>
+
+                        <!-- Estado en vivo -->
+                        @php
+                            $franStatus = $whatsappStatuses['fran'] ?? null;
+                        @endphp
+                        @if($franStatus)
+                            <div class="p-2.5 rounded-xl border text-xs font-bold flex items-center justify-between {{ ($franStatus['state'] ?? '') === 'open' ? 'bg-emerald-50 border-emerald-300 text-emerald-900' : 'bg-amber-50 border-amber-300 text-amber-900' }}">
+                                <span>{{ $franStatus['message'] ?? 'Estado verificado' }}</span>
+                                @if(!empty($franStatus['owner']))
+                                    <span class="font-mono text-[10px] bg-white/80 px-1.5 py-0.5 rounded">{{ $franStatus['owner'] }}</span>
+                                @endif
+                            </div>
+                        @else
+                            <div class="p-2.5 rounded-xl border border-emerald-200 bg-emerald-50/60 text-emerald-900 text-xs font-bold flex items-center justify-between">
+                                <span>🟢 Sesión Activa</span>
+                                <span class="font-mono text-[10px] bg-white px-1.5 py-0.5 rounded border border-emerald-200">+34 622 63 47 90</span>
+                            </div>
+                        @endif
+
                         <div>
-                            <h3 class="text-base font-black text-gray-900">Móvil Hermano &bull; JAVNX DJ</h3>
-                            <p class="text-xs text-indigo-700 font-semibold">Instancia de WhatsApp para tu hermano / socio</p>
+                            <label class="block text-xs font-bold text-gray-700 mb-1">Nombre de Instancia en Servidor</label>
+                            <input type="text" wire:model="whatsapp_instance_fran" placeholder="whatsapp_principal" class="w-full border-gray-300 rounded-xl shadow-xs text-xs font-mono">
                         </div>
                     </div>
 
-                    <div>
-                        <label class="block text-xs font-bold text-gray-700 mb-1">Nombre de la Instancia en Evolution API</label>
-                        <input type="text" wire:model="whatsapp_instance_javnx" placeholder="javnx_dj" class="w-full border-gray-300 rounded-xl shadow-xs text-xs font-mono">
+                    <div class="space-y-2 pt-3 border-t border-gray-100">
+                        <div class="flex items-center gap-2">
+                            <button type="button" wire:click="testWhatsAppGateway('fran')" wire:loading.attr="disabled" class="flex-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-900 border border-indigo-300 font-bold py-2 rounded-xl text-xs transition cursor-pointer text-center shadow-2xs">
+                                <span wire:loading.remove wire:target="testWhatsAppGateway('fran')">🔌 Probar</span>
+                                <span wire:loading wire:target="testWhatsAppGateway('fran')">...</span>
+                            </button>
+                            <button type="button" wire:click="fetchWhatsAppQrCode('fran')" wire:loading.attr="disabled" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded-xl text-xs transition cursor-pointer text-center shadow-2xs">
+                                <span wire:loading.remove wire:target="fetchWhatsAppQrCode('fran')">📱 Vincular / QR</span>
+                                <span wire:loading wire:target="fetchWhatsAppQrCode('fran')">Generando...</span>
+                            </button>
+                        </div>
+                        <button type="button" wire:click="disconnectWhatsAppInstance('fran')" wire:confirm="¿Seguro que deseas desconectar o reiniciar la sesión de WhatsApp de Fran (+34 622 63 47 90)?" class="w-full text-[11px] text-gray-400 hover:text-rose-600 font-semibold py-1 transition cursor-pointer text-center">
+                            Desconectar / Reiniciar sesión
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 3. INSTANCIA EZEQUIEL · NÚÑEZ & SON -->
+                <div class="bg-white shadow-sm rounded-2xl border-2 border-sky-300 p-5 space-y-4 flex flex-col justify-between">
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between border-b border-sky-100 pb-3">
+                            <div class="flex items-center gap-2.5">
+                                <span class="text-2xl p-2 bg-sky-50 rounded-xl border border-sky-200">👥</span>
+                                <div>
+                                    <h3 class="text-base font-black text-gray-900">Ezequiel</h3>
+                                    <p class="text-xs text-sky-700 font-bold">Núñez & Son</p>
+                                </div>
+                            </div>
+                            <span class="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-sky-100 text-sky-800 border border-sky-200">
+                                Miembro
+                            </span>
+                        </div>
+
+                        <!-- Estado en vivo -->
+                        @php
+                            $ezequielStatus = $whatsappStatuses['ezequiel'] ?? null;
+                        @endphp
+                        @if($ezequielStatus)
+                            <div class="p-2.5 rounded-xl border text-xs font-bold flex items-center justify-between {{ ($ezequielStatus['state'] ?? '') === 'open' ? 'bg-emerald-50 border-emerald-300 text-emerald-900' : 'bg-amber-50 border-amber-300 text-amber-900' }}">
+                                <span>{{ $ezequielStatus['message'] ?? 'Estado verificado' }}</span>
+                                @if(!empty($ezequielStatus['owner']))
+                                    <span class="font-mono text-[10px] bg-white/80 px-1.5 py-0.5 rounded">{{ $ezequielStatus['owner'] }}</span>
+                                @endif
+                            </div>
+                        @else
+                            <div class="p-2.5 rounded-xl border border-gray-200 bg-gray-50 text-gray-600 text-xs font-medium">
+                                ℹ️ Pulsa «Vincular / QR» para vincular el móvil de Ezequiel.
+                            </div>
+                        @endif
+
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 mb-1">Nombre de Instancia en Servidor</label>
+                            <input type="text" wire:model="whatsapp_instance_ezequiel" placeholder="whatsapp_ezequiel" class="w-full border-gray-300 rounded-xl shadow-xs text-xs font-mono">
+                        </div>
                     </div>
 
-                    <div class="flex flex-wrap items-center gap-2 pt-2">
-                        <button type="button" wire:click="testWhatsAppGateway('javnx')" wire:loading.attr="disabled" class="bg-indigo-100 hover:bg-indigo-200 text-indigo-900 font-bold px-3.5 py-2 rounded-xl text-xs transition cursor-pointer inline-flex items-center gap-1.5 shadow-2xs">
-                            <span wire:loading.remove wire:target="testWhatsAppGateway('javnx')">🔌 Probar Conexión</span>
-                            <span wire:loading wire:target="testWhatsAppGateway('javnx')">Consultando...</span>
-                        </button>
-                        <button type="button" wire:click="fetchWhatsAppQrCode('javnx')" wire:loading.attr="disabled" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3.5 py-2 rounded-xl text-xs transition cursor-pointer inline-flex items-center gap-1.5 shadow-2xs">
-                            <span wire:loading.remove wire:target="fetchWhatsAppQrCode('javnx')">📱 Vincular / Ver QR</span>
-                            <span wire:loading wire:target="fetchWhatsAppQrCode('javnx')">Generando...</span>
+                    <div class="space-y-2 pt-3 border-t border-gray-100">
+                        <div class="flex items-center gap-2">
+                            <button type="button" wire:click="testWhatsAppGateway('ezequiel')" wire:loading.attr="disabled" class="flex-1 bg-sky-50 hover:bg-sky-100 text-sky-900 border border-sky-300 font-bold py-2 rounded-xl text-xs transition cursor-pointer text-center shadow-2xs">
+                                <span wire:loading.remove wire:target="testWhatsAppGateway('ezequiel')">🔌 Probar</span>
+                                <span wire:loading wire:target="testWhatsAppGateway('ezequiel')">...</span>
+                            </button>
+                            <button type="button" wire:click="fetchWhatsAppQrCode('ezequiel')" wire:loading.attr="disabled" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded-xl text-xs transition cursor-pointer text-center shadow-2xs">
+                                <span wire:loading.remove wire:target="fetchWhatsAppQrCode('ezequiel')">📱 Vincular / QR</span>
+                                <span wire:loading wire:target="fetchWhatsAppQrCode('ezequiel')">Generando...</span>
+                            </button>
+                        </div>
+                        <button type="button" wire:click="disconnectWhatsAppInstance('ezequiel')" wire:confirm="¿Seguro que deseas desconectar o reiniciar la sesión de WhatsApp de Ezequiel?" class="w-full text-[11px] text-gray-400 hover:text-rose-600 font-semibold py-1 transition cursor-pointer text-center">
+                            Desconectar / Reiniciar sesión
                         </button>
                     </div>
                 </div>
