@@ -248,45 +248,157 @@ class WhatsAppTemplateService
     }
 
     /**
-     * Reactivación por Objeción de Presupuesto con Técnica del NO.
-     * Pregunta si el motivo de descarte es económico para ofrecer adaptar el montaje o pack.
+     * ETAPA MADRIGAL DÍA 2-3: DUDAS & FLEXIBILIDAD (Post-presupuesto).
+     * No presiona por la fecha, sino que ofrece adaptabilidad y cercanía.
      */
-    public static function seguimientoPresupuestoNo(Event $event): string
+    public static function seguimientoDia3Dudas(Event $event): string
+    {
+        $clientName = $event->client ? $event->client->name : 'pareja';
+        $brand = Setting::getBrandInfo($event ? $event->brand_clean : null);
+        $companyName = $brand['name'] ?? Setting::get('company_name', 'Núñez & Son');
+        $eventName = $event->name ?: 'vuestro evento';
+
+        return "¡Hola {$clientName}! 👋 Os escribe *{$companyName}*.\n\n"
+             . "¿Pudisteis echarle un vistazo con calma al presupuesto que os pasé para *{$eventName}*?\n\n"
+             . "Os escribía porque muchas veces surgen dudas con los horarios, o queréis quitar o añadir algún extra (como la plataforma 360, la hora loca o sonido para el cóctel). Nos adaptamos al 100% a lo que tengáis en mente sin ningún problema.\n\n"
+             . "¿Cómo lo veis? ¿Tenéis alguna duda o queréis que ajustemos algún detalle? 🎧✨";
+    }
+
+    /**
+     * ETAPA MADRIGAL DÍA 5-7: CIERRE POR ESCASEZ (Prioridad 24 horas).
+     * Activa la urgencia real porque otra pareja ha preguntado o se va a abrir la fecha.
+     */
+    public static function seguimientoDia7Escasez(Event $event): string
     {
         $clientName = $event->client ? $event->client->name : 'pareja';
         $brand = Setting::getBrandInfo($event ? $event->brand_clean : null);
         $companyName = $brand['name'] ?? Setting::get('company_name', 'Núñez & Son');
         $eventDate = $event->event_date ? Carbon::parse($event->event_date)->locale('es')->isoFormat('D [de] MMMM [de] YYYY') : 'vuestra fecha';
-        $eventName = $event->name ?: 'vuestro evento';
+        $location = $event->location ?: 'vuestra zona';
 
-        return "¡Hola {$clientName}! 👋 Os escribe *{$companyName}*.\n\n"
-             . "*¿Habéis decidido descartar nuestra propuesta para {$eventName} principalmente por un tema de presupuesto?*\n\n"
-             . "Si es por eso, no os preocupéis: tenemos alternativas más flexibles o podemos adaptar el equipamiento para encajar dentro de lo que teníais pensado invertir, sin renunciar a la calidad del sonido ni de la fiesta.\n\n"
-             . "Si por el contrario ya tenéis otra opción contratada o preferís dejarlo, avisadnos con toda confianza para poder liberar vuestra fecha ({$eventDate}) en nuestra agenda.\n\n"
-             . "¡Quedamos a vuestra disposición! 🎧";
+        return "¡Hola {$clientName}! 👋 Os escribo rápido desde *{$companyName}*.\n\n"
+             . "Nos acaba de entrar otra consulta para vuestra misma fecha (*{$eventDate}* en {$location}).\n\n"
+             . "Como me escribisteis vosotros primero y ya tenéis el presupuesto en mano, por respeto y cortesía os guardo la prioridad durante *24 horas* antes de disponer del día.\n\n"
+             . "¿Seguís interesados en reservar la fecha o la dejamos libre para la otra pareja? Decidme algo en cuanto podáis para tenerlo en cuenta. ¡Un saludo! 🎧";
     }
 
-    public static function followupReminder(Event $event, string $variant = 'pregunta_no'): array
+    /**
+     * Determina la clave de seguimiento recomendada según los días sin respuesta (Método Madrigal)
+     */
+    public static function getRecommendedFollowupKey(Event $event): string
+    {
+        $days = $event->days_without_response;
+        if ($days <= 3) {
+            return 'dia3_dudas';
+        }
+        if ($days <= 8) {
+            return 'dia7_escasez';
+        }
+        if ($days <= 14) {
+            return 'pregunta_no';
+        }
+        return 'psicologia_inversa';
+    }
+
+    /**
+     * Devuelve todas las opciones de seguimiento con su URL y estado recomendado
+     */
+    public static function getFollowupOptions(Event $event): array
+    {
+        $recommendedKey = self::getRecommendedFollowupKey($event);
+        $clientPhone = $event->client ? $event->client->phone : '';
+
+        $options = [
+            'dia3_dudas' => [
+                'key' => 'dia3_dudas',
+                'title' => 'Día 2-3: Dudas & Flexibilidad',
+                'stage' => 'Día 2 a 3',
+                'icon' => '💡',
+                'description' => 'Tacto suave: consulta si tienen dudas y ofrece adaptar horarios o extras.',
+                'text' => self::seguimientoDia3Dudas($event),
+            ],
+            'dia7_escasez' => [
+                'key' => 'dia7_escasez',
+                'title' => 'Día 5-7: Cierre por Escasez (Prioridad 24h)',
+                'stage' => 'Día 5 a 7',
+                'icon' => '⚡',
+                'description' => 'Urgencia Madrigal: avisa de otra consulta y ofrece 24h de prioridad.',
+                'text' => self::seguimientoDia7Escasez($event),
+            ],
+            'pregunta_no' => [
+                'key' => 'pregunta_no',
+                'title' => 'Día 8-14: Técnica del NO (Chris Voss)',
+                'stage' => 'Día 8 a 14',
+                'icon' => '🎯',
+                'description' => 'Pregunta directa orientada al NO: ¿habéis decidido descartar la opción?',
+                'text' => self::seguimientoPreguntaNo($event),
+            ],
+            'psicologia_inversa' => [
+                'key' => 'psicologia_inversa',
+                'title' => 'Día 15+: Cierre de Expediente (Psicología Inversa)',
+                'stage' => 'Día 15+',
+                'icon' => '🚪',
+                'description' => 'Asume que han elegido otra alternativa y cierra el expediente cortésmente.',
+                'text' => self::seguimientoPsicologiaInversa($event),
+            ],
+            'presupuesto' => [
+                'key' => 'presupuesto',
+                'title' => 'Objeción de Presupuesto',
+                'stage' => 'Económica',
+                'icon' => '💶',
+                'description' => 'Consulta si el freno es económico para ofrecer adaptar el equipamiento.',
+                'text' => self::seguimientoPresupuestoNo($event),
+            ],
+        ];
+
+        foreach ($options as $k => &$opt) {
+            $opt['is_recommended'] = ($k === $recommendedKey);
+            $opt['url'] = self::buildUrl($clientPhone, $opt['text']);
+            $opt['web_url'] = self::getWebLink($clientPhone, $opt['text']);
+        }
+
+        return $options;
+    }
+
+    public static function followupReminder(Event $event, ?string $variant = null): array
     {
         $clientPhone = $event->client ? $event->client->phone : '';
+        if (empty($variant)) {
+            $variant = self::getRecommendedFollowupKey($event);
+        }
+
         $text = match($variant) {
+            'dia3_dudas' => self::seguimientoDia3Dudas($event),
+            'dia7_escasez' => self::seguimientoDia7Escasez($event),
             'psicologia_inversa' => self::seguimientoPsicologiaInversa($event),
             'presupuesto' => self::seguimientoPresupuestoNo($event),
             default => self::seguimientoPreguntaNo($event),
         };
 
         $title = match($variant) {
+            'dia3_dudas' => 'Día 2-3: Dudas & Flexibilidad',
+            'dia7_escasez' => 'Día 5-7: Cierre por Escasez (Prioridad 24h)',
             'psicologia_inversa' => 'Psicología Inversa / Cierre de Expediente',
             'presupuesto' => 'Reactivación por Presupuesto (Técnica del NO)',
             default => 'Técnica del NO / ¿Descartáis la fecha?',
         };
 
+        $icon = match($variant) {
+            'dia3_dudas' => '💡',
+            'dia7_escasez' => '⚡',
+            'psicologia_inversa' => '🚪',
+            'presupuesto' => '💶',
+            default => '🎯',
+        };
+
         return [
+            'key' => $variant,
             'title' => $title,
-            'icon' => '🔥',
+            'icon' => $icon,
             'phone' => $clientPhone,
             'text' => $text,
             'url' => self::buildUrl($clientPhone, $text),
+            'web_url' => self::getWebLink($clientPhone, $text),
         ];
     }
 

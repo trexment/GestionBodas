@@ -109,6 +109,9 @@
         <button type="button" wire:click="$set('activeTab', 'email_imap')" class="py-3 px-4 text-xs font-bold uppercase tracking-wider border-b-2 transition-all flex items-center gap-2 {{ $activeTab === 'email_imap' ? 'border-purple-600 text-purple-600' : 'border-transparent text-gray-500 hover:text-gray-700' }}">
             <span>📥</span> Correos Entrantes (IMAP)
         </button>
+        <button type="button" wire:click="$set('activeTab', 'whatsapp_gateway')" class="py-3 px-4 text-xs font-bold uppercase tracking-wider border-b-2 transition-all flex items-center gap-2 {{ $activeTab === 'whatsapp_gateway' ? 'border-emerald-600 text-emerald-600' : 'border-transparent text-gray-500 hover:text-gray-700' }}">
+            <span>💬</span> WhatsApp (Evolution API)
+        </button>
     </div>
 
     <!-- FORM GLOBAL -->
@@ -2056,6 +2059,200 @@ MAIL_FROM_NAME="{{ $company_name }}"</pre>
                 </p>
                 <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 font-mono text-[11px] text-amber-300 select-all overflow-x-auto">
                     */5 * * * * cd /ruta/de/tu/app && php artisan emails:fetch-leads >> /dev/null 2>&1
+                </div>
+            </div>
+
+        </div>
+
+        <!-- PESTAÑA: WHATSAPP GATEWAY (EVOLUTION API) -->
+        <div class="{{ $activeTab === 'whatsapp_gateway' ? 'block' : 'hidden' }} space-y-6">
+            
+            <!-- Banner Explicativo -->
+            <div class="bg-gradient-to-r from-emerald-950 via-teal-900 to-slate-900 text-white rounded-2xl p-6 shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-6 border border-emerald-800">
+                <div class="space-y-2 max-w-2xl">
+                    <div class="flex items-center gap-2">
+                        <span class="px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider bg-emerald-500/30 text-emerald-200 border border-emerald-400/30">
+                            💬 Chat Bidireccional & Automatización
+                        </span>
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/10 text-white border border-white/20">
+                            Evolution API / Baileys
+                        </span>
+                    </div>
+                    <h3 class="text-xl font-black">Integración Directa con WhatsApp</h3>
+                    <p class="text-xs text-emerald-100/90 leading-relaxed">
+                        Conecta un microservicio de <strong>Evolution API</strong> (Docker en tu VPS o servidor) para enviar mensajes de WhatsApp con un solo clic directamente desde la app, ver el historial de chat con el cliente y recibir sus respuestas en tiempo real mediante un webhook.
+                    </p>
+                    <p class="text-[11px] text-emerald-300 font-semibold">
+                        💡 <strong>Modo Híbrido:</strong> Si no tienes el gateway activo o el servidor está apagado, la aplicación continuará funcionando exactamente igual mediante los enlaces <code>wa.me</code> abriendo WhatsApp Web o la app oficial de WhatsApp en tu teléfono u ordenador.
+                    </p>
+                </div>
+                
+                <div class="shrink-0 flex flex-col items-end gap-2 w-full md:w-auto">
+                    <label class="relative inline-flex items-center cursor-pointer bg-emerald-900/60 p-3 rounded-2xl border border-emerald-700/50">
+                        <input type="checkbox" wire:model.live="whatsapp_gateway_enabled" class="sr-only peer">
+                        <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[14px] after:left-[14px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                        <span class="ml-3 text-xs font-black text-white">Activar Gateway API</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Estado de Conexión / Mensajes de Test -->
+            @if($whatsappStatus)
+                <div class="p-4 rounded-2xl border {{ ($whatsappStatus['state'] ?? '') === 'open' ? 'bg-emerald-50 border-emerald-200 text-emerald-900' : 'bg-amber-50 border-amber-200 text-amber-900' }} shadow-xs flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <span class="text-2xl">{{ ($whatsappStatus['state'] ?? '') === 'open' ? '✅' : 'ℹ️' }}</span>
+                        <div>
+                            <div class="text-xs font-black uppercase tracking-wider">
+                                Instancia: <span class="font-mono">{{ $whatsappStatus['instance'] ?? 'Principal' }}</span>
+                            </div>
+                            <div class="text-sm font-bold">{{ $whatsappStatus['message'] ?? 'Estado consultado' }}</div>
+                        </div>
+                    </div>
+                    <button type="button" wire:click="$set('whatsappStatus', null)" class="text-gray-400 hover:text-gray-600 font-black text-lg">&times;</button>
+                </div>
+            @endif
+
+            @if(session()->has('whatsapp_error'))
+                <div class="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-900 shadow-xs flex items-center justify-between text-xs font-bold">
+                    <span>⚠️ {{ session('whatsapp_error') }}</span>
+                    <button type="button" onclick="this.parentElement.remove()" class="text-rose-400 hover:text-rose-600 font-black text-lg">&times;</button>
+                </div>
+            @endif
+
+            <!-- Modal / Visualizador de Código QR -->
+            @if($whatsappQrBase64)
+                <div class="bg-white border-2 border-emerald-400 rounded-2xl p-6 shadow-xl space-y-4">
+                    <div class="flex items-center justify-between border-b border-gray-100 pb-3">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl">📷</span>
+                            <h4 class="font-black text-sm text-gray-900">Escanear Código QR con WhatsApp</h4>
+                        </div>
+                        <button type="button" wire:click="$set('whatsappQrBase64', null)" class="text-gray-400 hover:text-gray-600 font-black text-lg">&times;</button>
+                    </div>
+                    <div class="flex flex-col sm:flex-row items-center gap-6">
+                        <div class="bg-gray-50 p-3 rounded-2xl border border-gray-200 shadow-inner">
+                            <img src="{{ $whatsappQrBase64 }}" alt="QR WhatsApp" class="w-56 h-56 object-contain rounded-lg">
+                        </div>
+                        <div class="space-y-3 text-xs text-gray-600">
+                            <ol class="list-decimal list-inside space-y-1.5 font-semibold">
+                                <li>Abre <strong>WhatsApp</strong> en el teléfono móvil de la empresa o DJ.</li>
+                                <li>Toca en <strong>Ajustes</strong> (o los 3 puntos) &gt; <strong>Dispositivos vinculados</strong>.</li>
+                                <li>Pulsa en <strong>Vincular un dispositivo</strong>.</li>
+                                <li>Apunta con la cámara hacia este código QR.</li>
+                            </ol>
+                            <p class="text-[11px] text-gray-500 pt-2">
+                                Una vez vinculado, la sesión permanecerá abierta en el servidor y podrás enviar y recibir mensajes directamente desde la app.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            @endif
+
+            <!-- Parámetros del Servidor Evolution API -->
+            <div class="bg-white shadow-sm rounded-2xl border border-gray-200 p-6 space-y-4">
+                <h3 class="text-base font-extrabold text-gray-900 border-b border-gray-100 pb-3 flex items-center gap-2">
+                    <span>⚙️</span> Parámetros del Servidor Evolution API
+                </h3>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">URL Base del Servidor (Gateway Evolution API) *</label>
+                        <input type="url" wire:model="whatsapp_gateway_url" placeholder="https://evolution.tudominio.com o http://127.0.0.1:8080" class="w-full border-gray-300 rounded-xl shadow-xs text-xs font-mono">
+                        <span class="text-[10px] text-gray-400 mt-1 block">Dirección donde corre el contenedor de Evolution API.</span>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">API Key Global (AUTHENTICATION_API_KEY) *</label>
+                        <input type="password" wire:model="whatsapp_gateway_api_key" placeholder="••••••••••••••••••••" class="w-full border-gray-300 rounded-xl shadow-xs text-xs font-mono">
+                        <span class="text-[10px] text-gray-400 mt-1 block">Clave de autenticación definida en el archivo .env de Evolution API.</span>
+                    </div>
+                </div>
+
+                <div class="pt-2 border-t border-gray-100">
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Token Secreto de Webhook (Opcional)</label>
+                    <input type="text" wire:model="whatsapp_webhook_token" placeholder="token_secreto_para_validar_peticiones" class="w-full border-gray-300 rounded-xl shadow-xs text-xs font-mono">
+                    <span class="text-[10px] text-gray-400 mt-1 block">Si lo configuras, se verificará en la cabecera <code>x-webhook-token</code> al recibir mensajes.</span>
+                </div>
+            </div>
+
+            <!-- Nombres de Instancia por Marca -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- INSTANCIA NÚÑEZ & SON -->
+                <div class="bg-white shadow-sm rounded-2xl border-2 border-amber-200 p-6 space-y-4">
+                    <div class="flex items-center gap-2.5 border-b border-amber-100 pb-3">
+                        <span class="text-2xl p-2 bg-amber-50 rounded-xl border border-amber-200">👑</span>
+                        <div>
+                            <h3 class="text-base font-black text-gray-900">Instancia WhatsApp: Núñez & Son</h3>
+                            <p class="text-xs text-amber-700 font-semibold">Para eventos gestionados bajo Núñez and Son</p>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Nombre de la Instancia en Evolution API</label>
+                        <input type="text" wire:model="whatsapp_instance_nunez" placeholder="nunez_and_son" class="w-full border-gray-300 rounded-xl shadow-xs text-xs font-mono">
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-2 pt-2">
+                        <button type="button" wire:click="testWhatsAppGateway('nunez')" wire:loading.attr="disabled" class="bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold px-3.5 py-2 rounded-xl text-xs transition cursor-pointer inline-flex items-center gap-1.5 shadow-2xs">
+                            <span wire:loading.remove wire:target="testWhatsAppGateway('nunez')">🔌 Probar Conexión</span>
+                            <span wire:loading wire:target="testWhatsAppGateway('nunez')">Consultando...</span>
+                        </button>
+                        <button type="button" wire:click="fetchWhatsAppQrCode('nunez')" wire:loading.attr="disabled" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3.5 py-2 rounded-xl text-xs transition cursor-pointer inline-flex items-center gap-1.5 shadow-2xs">
+                            <span wire:loading.remove wire:target="fetchWhatsAppQrCode('nunez')">📱 Vincular / Ver QR</span>
+                            <span wire:loading wire:target="fetchWhatsAppQrCode('nunez')">Generando...</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- INSTANCIA JAVNX DJ -->
+                <div class="bg-white shadow-sm rounded-2xl border-2 border-indigo-200 p-6 space-y-4">
+                    <div class="flex items-center gap-2.5 border-b border-indigo-100 pb-3">
+                        <span class="text-2xl p-2 bg-indigo-50 rounded-xl border border-indigo-200">🎧</span>
+                        <div>
+                            <h3 class="text-base font-black text-gray-900">Instancia WhatsApp: JAVNX DJ</h3>
+                            <p class="text-xs text-indigo-700 font-semibold">Para eventos gestionados bajo JAVNX DJ</p>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Nombre de la Instancia en Evolution API</label>
+                        <input type="text" wire:model="whatsapp_instance_javnx" placeholder="javnx_dj" class="w-full border-gray-300 rounded-xl shadow-xs text-xs font-mono">
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-2 pt-2">
+                        <button type="button" wire:click="testWhatsAppGateway('javnx')" wire:loading.attr="disabled" class="bg-indigo-100 hover:bg-indigo-200 text-indigo-900 font-bold px-3.5 py-2 rounded-xl text-xs transition cursor-pointer inline-flex items-center gap-1.5 shadow-2xs">
+                            <span wire:loading.remove wire:target="testWhatsAppGateway('javnx')">🔌 Probar Conexión</span>
+                            <span wire:loading wire:target="testWhatsAppGateway('javnx')">Consultando...</span>
+                        </button>
+                        <button type="button" wire:click="fetchWhatsAppQrCode('javnx')" wire:loading.attr="disabled" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3.5 py-2 rounded-xl text-xs transition cursor-pointer inline-flex items-center gap-1.5 shadow-2xs">
+                            <span wire:loading.remove wire:target="fetchWhatsAppQrCode('javnx')">📱 Vincular / Ver QR</span>
+                            <span wire:loading wire:target="fetchWhatsAppQrCode('javnx')">Generando...</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Configuración del Webhook para Respuestas Automáticas -->
+            <div class="bg-slate-900 text-white rounded-2xl p-6 shadow-md border border-slate-800 space-y-4">
+                <div class="flex items-center gap-2.5">
+                    <span class="text-xl">🪝</span>
+                    <div>
+                        <h4 class="font-extrabold text-sm text-white">URL de Webhook para Respuestas Entrantes</h4>
+                        <p class="text-xs text-slate-400">Configura esta URL en el panel de Evolution API o en la llamada <code>/webhook/set/{instance}</code></p>
+                    </div>
+                </div>
+
+                <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800 font-mono text-xs text-emerald-400 select-all overflow-x-auto flex items-center justify-between">
+                    <span>{{ url('/api/whatsapp/webhook') }}</span>
+                    <span class="text-[10px] text-slate-500 uppercase font-sans font-bold">POST</span>
+                </div>
+
+                <div class="text-[11px] text-slate-400 space-y-1">
+                    <p>✨ <strong>¿Qué hace el webhook automáticamente?</strong></p>
+                    <ul class="list-disc list-inside space-y-0.5 text-slate-300">
+                        <li>Cuando un cliente responde al WhatsApp de seguimiento, el mensaje se guarda en la ficha del evento.</li>
+                        <li>Si el evento estaba en estado <strong>"Sin Respuesta" (no_response)</strong>, se reactiva automáticamente a <strong>"Borrador" (draft)</strong> y se reinicia el contador de días para recordatorios.</li>
+                    </ul>
                 </div>
             </div>
 

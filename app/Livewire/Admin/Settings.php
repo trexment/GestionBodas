@@ -203,6 +203,17 @@ class Settings extends Component
     public $imapTestStatus = [];
     public $imapFetchStatus = null;
 
+    // Integración WhatsApp (Evolution API / Gateway)
+    public $whatsapp_gateway_enabled = false;
+    public $whatsapp_gateway_url = '';
+    public $whatsapp_gateway_api_key = '';
+    public $whatsapp_instance_nunez = 'nunez_and_son';
+    public $whatsapp_instance_javnx = 'javnx_dj';
+    public $whatsapp_instance_leugim = 'mago_leugim';
+    public $whatsapp_webhook_token = '';
+    public $whatsappStatus = null;
+    public $whatsappQrBase64 = null;
+
     public function boot()
     {
         if (!auth()->check() || auth()->user()->role !== 'admin') {
@@ -419,6 +430,15 @@ class Settings extends Component
         $this->imap_leugim_email = Setting::get('imap_leugim_email', Setting::get('brand_leugim_email', 'info@magoleugim.com'));
         $this->imap_leugim_password = Setting::get('imap_leugim_password', '');
         $this->imap_leugim_enabled = Setting::get('imap_leugim_enabled', '0') === '1';
+
+        // WhatsApp Gateway (Evolution API)
+        $this->whatsapp_gateway_enabled = Setting::get('whatsapp_gateway_enabled', '0') === '1';
+        $this->whatsapp_gateway_url = Setting::get('whatsapp_gateway_url', '');
+        $this->whatsapp_gateway_api_key = Setting::get('whatsapp_gateway_api_key', '');
+        $this->whatsapp_instance_nunez = Setting::get('whatsapp_instance_nunez', 'nunez_and_son');
+        $this->whatsapp_instance_javnx = Setting::get('whatsapp_instance_javnx', 'javnx_dj');
+        $this->whatsapp_instance_leugim = Setting::get('whatsapp_instance_leugim', 'mago_leugim');
+        $this->whatsapp_webhook_token = Setting::get('whatsapp_webhook_token', '');
     }
 
     public function loadPreset($presetKey)
@@ -809,9 +829,39 @@ class Settings extends Component
             $this->company_signature_canvas = null;
         }
 
+        // WhatsApp Gateway (Evolution API)
+        Setting::set('whatsapp_gateway_enabled', $this->whatsapp_gateway_enabled ? '1' : '0');
+        Setting::set('whatsapp_gateway_url', trim($this->whatsapp_gateway_url));
+        Setting::set('whatsapp_gateway_api_key', trim($this->whatsapp_gateway_api_key));
+        Setting::set('whatsapp_instance_nunez', trim($this->whatsapp_instance_nunez));
+        Setting::set('whatsapp_instance_javnx', trim($this->whatsapp_instance_javnx));
+        Setting::set('whatsapp_instance_leugim', trim($this->whatsapp_instance_leugim));
+        Setting::set('whatsapp_webhook_token', trim($this->whatsapp_webhook_token));
+
         $this->spotifyUser = SpotifyService::getUserDetails();
         session()->flash('message', '¡Configuración y Dossier guardados correctamente!');
         $this->dispatch('settings-saved');
+    }
+
+    public function testWhatsAppGateway(?string $brand = null)
+    {
+        Setting::set('whatsapp_gateway_enabled', $this->whatsapp_gateway_enabled ? '1' : '0');
+        Setting::set('whatsapp_gateway_url', trim($this->whatsapp_gateway_url));
+        Setting::set('whatsapp_gateway_api_key', trim($this->whatsapp_gateway_api_key));
+        Setting::set('whatsapp_instance_nunez', trim($this->whatsapp_instance_nunez));
+        Setting::set('whatsapp_instance_javnx', trim($this->whatsapp_instance_javnx));
+
+        $this->whatsappStatus = \App\Services\EvolutionWhatsAppService::checkInstanceStatus($brand);
+    }
+
+    public function fetchWhatsAppQrCode(?string $brand = null)
+    {
+        $res = \App\Services\EvolutionWhatsAppService::getQrCode($brand);
+        if ($res['success']) {
+            $this->whatsappQrBase64 = $res['base64'];
+        } else {
+            session()->flash('whatsapp_error', $res['message'] ?? 'No se pudo generar QR');
+        }
     }
 
     public function testImapConnection(string $brandKey)

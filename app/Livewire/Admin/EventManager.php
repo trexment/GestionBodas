@@ -343,8 +343,13 @@ class EventManager extends Component
     public $confirmingFollowupEventId = null;
     public $confirmingFollowupEventName = '';
     public $confirmingFollowupClientName = '';
+    public $confirmingFollowupDays = 0;
+    public $confirmingFollowupSelectedKey = 'dia3_dudas';
+    public $confirmingFollowupOptions = [];
+    public $confirmingFollowupUrl = '';
+    public $confirmingFollowupText = '';
 
-    public function promptFollowup(int $eventId)
+    public function promptFollowup(int $eventId, ?string $templateKey = null)
     {
         $event = Event::with('client')->find($eventId);
         if (!$event) return;
@@ -352,6 +357,20 @@ class EventManager extends Component
         $this->confirmingFollowupEventId = $event->id;
         $this->confirmingFollowupEventName = $event->name;
         $this->confirmingFollowupClientName = $event->client ? $event->client->name : 'Cliente';
+        $this->confirmingFollowupDays = $event->days_without_response;
+
+        $this->confirmingFollowupOptions = \App\Services\WhatsAppTemplateService::getFollowupOptions($event);
+        $key = $templateKey ?: \App\Services\WhatsAppTemplateService::getRecommendedFollowupKey($event);
+        $this->selectFollowupTemplate($key);
+    }
+
+    public function selectFollowupTemplate(string $key)
+    {
+        $this->confirmingFollowupSelectedKey = $key;
+        if (isset($this->confirmingFollowupOptions[$key])) {
+            $this->confirmingFollowupUrl = $this->confirmingFollowupOptions[$key]['url'];
+            $this->confirmingFollowupText = $this->confirmingFollowupOptions[$key]['text'];
+        }
     }
 
     public function confirmFollowupSent()
@@ -360,11 +379,12 @@ class EventManager extends Component
 
         $event = Event::find($this->confirmingFollowupEventId);
         if ($event) {
+            $templateName = $this->confirmingFollowupOptions[$this->confirmingFollowupSelectedKey]['title'] ?? 'Seguimiento Madrigal';
             $event->update([
                 'no_response_at' => now(),
-                'notes' => ($event->notes ? $event->notes . "\n" : "") . "[" . now()->format('d/m/Y H:i') . "] 💬 Seguimiento de WhatsApp enviado por " . auth()->user()->name . ". Contador de días reseteado.",
+                'notes' => ($event->notes ? $event->notes . "\n" : "") . "[" . now()->format('d/m/Y H:i') . "] 💬 WhatsApp enviado por " . auth()->user()->name . " ({$templateName}). Contador reseteado a 0.",
             ]);
-            session()->flash('message', "¡Seguimiento registrado para {$event->name}! El contador de días se ha reseteado.");
+            session()->flash('message', "¡Seguimiento registrado para {$event->name}! ({$templateName}). Contador reseteado.");
         }
 
         $this->confirmingFollowupEventId = null;

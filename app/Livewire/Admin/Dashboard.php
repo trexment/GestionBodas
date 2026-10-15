@@ -27,6 +27,34 @@ class Dashboard extends Component
     public $recentInvoices = [];
     public $noResponseEvents = [];
 
+    public $funnelMetrics = [
+        'total_leads' => 0,
+        'draft_count' => 0,
+        'no_response_count' => 0,
+        'confirmed_count' => 0,
+        'conversion_rate' => 0,
+        'this_month_leads' => 0,
+        'this_month_confirmed' => 0,
+    ];
+
+    public $season2027 = [
+        'confirmed_count' => 0,
+        'pipeline_count' => 0,
+        'target_events' => 25,
+        'occupancy_pct' => 0,
+        'confirmed_revenue' => 0,
+        'pipeline_revenue' => 0,
+    ];
+
+    public $season2028 = [
+        'confirmed_count' => 0,
+        'pipeline_count' => 0,
+        'target_events' => 25,
+        'occupancy_pct' => 0,
+        'confirmed_revenue' => 0,
+        'pipeline_revenue' => 0,
+    ];
+
     public function mount()
     {
         $user = auth()->user();
@@ -59,6 +87,76 @@ class Dashboard extends Component
             // Eventos próximos
             $this->upcomingEventsCount = Event::where('event_date', '>=', Carbon::today()->subDays(30))->count();
             $this->pendingDossiersCount = Event::where('is_dossier_completed', false)->count();
+
+            // Embudo de Ventas & Conversión (Metodología Madrigal)
+            $allEvents = Event::with('quotes')->get();
+            $totalLeads = $allEvents->count();
+            $draftCount = $allEvents->where('status', 'draft')->count();
+            $noRespCount = $allEvents->where('status', 'no_response')->count();
+            $confirmedCount = $allEvents->where('status', 'confirmed')->count();
+            $convRate = $totalLeads > 0 ? round(($confirmedCount / $totalLeads) * 100, 1) : 0;
+
+            $startOfMonth = Carbon::now()->startOfMonth();
+            $thisMonthLeads = Event::where('created_at', '>=', $startOfMonth)->count();
+            $thisMonthConfirmed = Event::where('status', 'confirmed')
+                ->where(function($q) use ($startOfMonth) {
+                    $q->where('updated_at', '>=', $startOfMonth)
+                      ->orWhere('created_at', '>=', $startOfMonth);
+                })->count();
+
+            $this->funnelMetrics = [
+                'total_leads' => $totalLeads,
+                'draft_count' => $draftCount,
+                'no_response_count' => $noRespCount,
+                'confirmed_count' => $confirmedCount,
+                'conversion_rate' => $convRate,
+                'this_month_leads' => $thisMonthLeads,
+                'this_month_confirmed' => $thisMonthConfirmed,
+            ];
+
+            // Temporada 2027
+            $events2027 = $allEvents->filter(fn($ev) => $ev->event_date && Carbon::parse($ev->event_date)->year === 2027);
+            $confirmed2027 = $events2027->where('status', 'confirmed');
+            $pipeline2027 = $events2027->whereIn('status', ['draft', 'no_response']);
+            $revConf2027 = $confirmed2027->sum(function($ev) {
+                $q = $ev->quotes->last();
+                return $q ? (float)$q->amount : 0;
+            });
+            $revPipe2027 = $pipeline2027->sum(function($ev) {
+                $q = $ev->quotes->last();
+                return $q ? (float)$q->amount : 0;
+            });
+            $target2027 = (int) \App\Models\Setting::get('season_target_2027', 25);
+            $this->season2027 = [
+                'confirmed_count' => $confirmed2027->count(),
+                'pipeline_count' => $pipeline2027->count(),
+                'target_events' => $target2027,
+                'occupancy_pct' => min(100, (int) round(($confirmed2027->count() / max(1, $target2027)) * 100)),
+                'confirmed_revenue' => $revConf2027,
+                'pipeline_revenue' => $revPipe2027,
+            ];
+
+            // Temporada 2028
+            $events2028 = $allEvents->filter(fn($ev) => $ev->event_date && Carbon::parse($ev->event_date)->year === 2028);
+            $confirmed2028 = $events2028->where('status', 'confirmed');
+            $pipeline2028 = $events2028->whereIn('status', ['draft', 'no_response']);
+            $revConf2028 = $confirmed2028->sum(function($ev) {
+                $q = $ev->quotes->last();
+                return $q ? (float)$q->amount : 0;
+            });
+            $revPipe2028 = $pipeline2028->sum(function($ev) {
+                $q = $ev->quotes->last();
+                return $q ? (float)$q->amount : 0;
+            });
+            $target2028 = (int) \App\Models\Setting::get('season_target_2028', 25);
+            $this->season2028 = [
+                'confirmed_count' => $confirmed2028->count(),
+                'pipeline_count' => $pipeline2028->count(),
+                'target_events' => $target2028,
+                'occupancy_pct' => min(100, (int) round(($confirmed2028->count() / max(1, $target2028)) * 100)),
+                'confirmed_revenue' => $revConf2028,
+                'pipeline_revenue' => $revPipe2028,
+            ];
 
             $futureEvents = Event::with(['client', 'dj', 'assistant'])
                                  ->where('event_date', '>=', Carbon::today())
@@ -121,8 +219,13 @@ class Dashboard extends Component
     public $confirmingFollowupEventId = null;
     public $confirmingFollowupEventName = '';
     public $confirmingFollowupClientName = '';
+    public $confirmingFollowupDays = 0;
+    public $confirmingFollowupSelectedKey = 'dia3_dudas';
+    public $confirmingFollowupOptions = [];
+    public $confirmingFollowupUrl = '';
+    public $confirmingFollowupText = '';
 
-    public function promptFollowup(int $eventId)
+    public function promptFollowup(int $eventId, ?string $templateKey = null)
     {
         $event = Event::with('client')->find($eventId);
         if (!$event) return;
@@ -130,6 +233,20 @@ class Dashboard extends Component
         $this->confirmingFollowupEventId = $event->id;
         $this->confirmingFollowupEventName = $event->name;
         $this->confirmingFollowupClientName = $event->client ? $event->client->name : 'Cliente';
+        $this->confirmingFollowupDays = $event->days_without_response;
+
+        $this->confirmingFollowupOptions = \App\Services\WhatsAppTemplateService::getFollowupOptions($event);
+        $key = $templateKey ?: \App\Services\WhatsAppTemplateService::getRecommendedFollowupKey($event);
+        $this->selectFollowupTemplate($key);
+    }
+
+    public function selectFollowupTemplate(string $key)
+    {
+        $this->confirmingFollowupSelectedKey = $key;
+        if (isset($this->confirmingFollowupOptions[$key])) {
+            $this->confirmingFollowupUrl = $this->confirmingFollowupOptions[$key]['url'];
+            $this->confirmingFollowupText = $this->confirmingFollowupOptions[$key]['text'];
+        }
     }
 
     public function confirmFollowupSent()
@@ -138,11 +255,12 @@ class Dashboard extends Component
 
         $event = Event::find($this->confirmingFollowupEventId);
         if ($event) {
+            $templateName = $this->confirmingFollowupOptions[$this->confirmingFollowupSelectedKey]['title'] ?? 'Seguimiento Madrigal';
             $event->update([
                 'no_response_at' => now(),
-                'notes' => ($event->notes ? $event->notes . "\n" : "") . "[" . now()->format('d/m/Y H:i') . "] 💬 Seguimiento de WhatsApp enviado por " . auth()->user()->name . ". Contador de días reseteado.",
+                'notes' => ($event->notes ? $event->notes . "\n" : "") . "[" . now()->format('d/m/Y H:i') . "] 💬 WhatsApp enviado por " . auth()->user()->name . " ({$templateName}). Contador reseteado a 0.",
             ]);
-            session()->flash('message', "¡Seguimiento registrado para {$event->name}! El contador de días se ha reseteado.");
+            session()->flash('message', "¡Seguimiento registrado para {$event->name}! ({$templateName}). Contador reseteado.");
         }
 
         $this->confirmingFollowupEventId = null;

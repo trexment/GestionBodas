@@ -117,6 +117,11 @@ class Event extends Model
         return $this->hasMany(Invoice::class);
     }
 
+    public function whatsappMessages()
+    {
+        return $this->hasMany(WhatsAppMessage::class)->orderBy('created_at', 'asc');
+    }
+
     public function dossiers()
     {
         return $this->hasMany(Dossier::class);
@@ -245,12 +250,28 @@ class Event extends Model
     }
 
     /**
-     * Enlace directo de WhatsApp con la plantilla táctica de Psicología Inversa (Técnica del NO)
+     * Enlace directo de WhatsApp con la plantilla recomendada según los días transcurridos (Madrigal Funnel)
      */
     public function getNoResponseWhatsappUrlAttribute(): string
     {
-        $data = \App\Services\WhatsAppTemplateService::followupReminder($this, 'pregunta_no');
+        $data = \App\Services\WhatsAppTemplateService::followupReminder($this);
         return $data['url'] ?? '';
+    }
+
+    /**
+     * Objeto completo con la plantilla recomendada actual
+     */
+    public function getRecommendedFollowupAttribute(): array
+    {
+        return \App\Services\WhatsAppTemplateService::followupReminder($this);
+    }
+
+    /**
+     * Todas las plantillas de seguimiento disponibles para este evento
+     */
+    public function getFollowupOptionsAttribute(): array
+    {
+        return \App\Services\WhatsAppTemplateService::getFollowupOptions($this);
     }
 
     /**

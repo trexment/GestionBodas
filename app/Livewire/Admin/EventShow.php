@@ -257,6 +257,9 @@ class EventShow extends Component
         if (\Illuminate\Support\Facades\Schema::hasTable('event_assistants')) {
             $relations[] = 'assistants';
         }
+        if (\Illuminate\Support\Facades\Schema::hasTable('whatsapp_messages')) {
+            $relations[] = 'whatsappMessages.user';
+        }
 
         $this->event = $event->load($relations);
         $this->assigned_dj_id = $this->event->dj_id;
@@ -415,21 +418,38 @@ class EventShow extends Component
     }
 
     public $showConfirmFollowupModal = false;
+    public $confirmingFollowupSelectedKey = 'dia3_dudas';
+    public $confirmingFollowupOptions = [];
+    public $confirmingFollowupUrl = '';
+    public $confirmingFollowupText = '';
 
-    public function promptFollowupFromShow()
+    public function promptFollowupFromShow(?string $templateKey = null)
     {
+        $this->confirmingFollowupOptions = \App\Services\WhatsAppTemplateService::getFollowupOptions($this->event);
+        $key = $templateKey ?: \App\Services\WhatsAppTemplateService::getRecommendedFollowupKey($this->event);
+        $this->selectFollowupTemplateFromShow($key);
         $this->showConfirmFollowupModal = true;
+    }
+
+    public function selectFollowupTemplateFromShow(string $key)
+    {
+        $this->confirmingFollowupSelectedKey = $key;
+        if (isset($this->confirmingFollowupOptions[$key])) {
+            $this->confirmingFollowupUrl = $this->confirmingFollowupOptions[$key]['url'];
+            $this->confirmingFollowupText = $this->confirmingFollowupOptions[$key]['text'];
+        }
     }
 
     public function confirmFollowupSentFromShow()
     {
+        $templateName = $this->confirmingFollowupOptions[$this->confirmingFollowupSelectedKey]['title'] ?? 'Seguimiento Madrigal';
         $this->event->update([
             'no_response_at' => now(),
-            'notes' => ($this->event->notes ? $this->event->notes . "\n" : "") . "[" . now()->format('d/m/Y H:i') . "] 💬 Seguimiento de WhatsApp enviado por " . auth()->user()->name . ". Contador de días reseteado.",
+            'notes' => ($this->event->notes ? $this->event->notes . "\n" : "") . "[" . now()->format('d/m/Y H:i') . "] 💬 WhatsApp enviado por " . auth()->user()->name . " ({$templateName}). Contador reseteado a 0.",
         ]);
         $this->event->refresh();
         $this->showConfirmFollowupModal = false;
-        session()->flash('message', '¡Seguimiento registrado! El contador de días se ha reseteado a 0.');
+        session()->flash('message', "¡Seguimiento registrado! ({$templateName}). El contador se ha reseteado a 0.");
     }
 
     public function markAsRespondedFromShow(string $newStatus = 'draft')
@@ -1607,6 +1627,58 @@ class EventShow extends Component
         $this->event->refresh();
         
         session()->flash('notes_message', 'Conversación / Acuerdos de WhatsApp añadidos a las notas del evento.');
+    }
+
+    public $whatsapp_chat_message = '';
+
+    public function loadWhatsAppTemplate(string $templateKey)
+    {
+        $options = \App\Services\WhatsAppTemplateService::getFollowupOptions($this->event);
+        if (isset($options[$templateKey])) {
+            $this->whatsapp_chat_message = $options[$templateKey]['text'];
+        } elseif ($templateKey === 'cuestionario') {
+            $this->whatsapp_chat_message = \App\Services\WhatsAppTemplateService::cuestionario($this->event);
+        } elseif ($templateKey === 'contrato') {
+            $this->whatsapp_chat_message = \App\Services\WhatsAppTemplateService::contrato($this->event);
+        } elseif ($templateKey === 'llamada') {
+            $this->whatsapp_chat_message = \App\Services\WhatsAppTemplateService::propuestaLlamada($this->event);
+        } elseif ($templateKey === 'dossier') {
+            $this->whatsapp_chat_message = \App\Services\WhatsAppTemplateService::envioDossierPresupuesto($this->event);
+        }
+    }
+
+    public function sendDirectWhatsAppMessage()
+    {
+        if (empty(trim($this->whatsapp_chat_message))) {
+            session()->flash('whatsapp_error', 'Escribe un mensaje antes de enviar.');
+            return;
+        }
+
+        $phone = $this->event->client ? $this->event->client->phone : $this->event->partner_phone;
+        if (empty($phone)) {
+            session()->flash('whatsapp_error', 'El cliente no tiene teléfono registrado.');
+            return;
+        }
+
+        $result = \App\Services\EvolutionWhatsAppService::sendMessage(
+            $phone,
+            $this->whatsapp_chat_message,
+            $this->event->brand_clean,
+            $this->event->id,
+            auth()->id()
+        );
+
+        $sentMsg = $this->whatsapp_chat_message;
+        $this->whatsapp_chat_message = '';
+        $this->event->load('whatsappMessages');
+
+        if ($result['mode'] === 'api' && $result['success']) {
+            session()->flash('whatsapp_success', '✅ Mensaje enviado directamente al WhatsApp del cliente.');
+        } else {
+            // Modo manual o fallback: despachar evento para abrir WhatsApp Web / App
+            $this->dispatch('open-whatsapp-link', ['url' => $result['url']]);
+            session()->flash('whatsapp_success', '💬 Abriendo WhatsApp con el mensaje preparado...');
+        }
     }
 
     public function updatedQuoteServices($value, $key)

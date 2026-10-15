@@ -662,6 +662,27 @@
                 navigator.serviceWorker.register('/sw.js').catch(() => {});
             });
         }
+
+        // Manejador global para apertura de enlaces despachados por Livewire (WhatsApp y URLs externas)
+        document.addEventListener('livewire:init', () => {
+            Livewire.on('open-whatsapp-link', (event) => {
+                const url = event?.url || (Array.isArray(event) ? event[0]?.url : null);
+                if (url) window.open(url, '_blank');
+            });
+            Livewire.on('open-url', (event) => {
+                const url = event?.url || (Array.isArray(event) ? event[0]?.url : null);
+                if (url) window.open(url, '_blank');
+            });
+        });
+
+        window.addEventListener('open-whatsapp-link', (e) => {
+            const url = e.detail?.url || (Array.isArray(e.detail) ? e.detail[0]?.url : null);
+            if (url) window.open(url, '_blank');
+        });
+        window.addEventListener('open-url', (e) => {
+            const url = e.detail?.url || (Array.isArray(e.detail) ? e.detail[0]?.url : null);
+            if (url) window.open(url, '_blank');
+        });
     </script>
 </body>
 </html>

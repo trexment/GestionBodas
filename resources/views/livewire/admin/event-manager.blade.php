@@ -582,42 +582,98 @@
     </div>
     @endif
 
-    <!-- MODAL DE CONFIRMACIÓN DE SEGUIMIENTO WHATSAPP -->
+    <!-- MODAL DE SEGUIMIENTO MULTIETAPA MADRIGAL WHATSAPP -->
     @if($confirmingFollowupEventId)
         <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-xs animate-in fade-in duration-150">
-            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-md w-full p-6 shadow-2xl relative">
-                <div class="w-12 h-12 rounded-2xl bg-emerald-100 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-2xl mx-auto mb-4">
-                    💬
-                </div>
-                <h3 class="text-lg font-black text-slate-900 dark:text-white text-center">
-                    ¿Has enviado el mensaje de seguimiento?
-                </h3>
-                <p class="text-xs text-slate-600 dark:text-slate-400 text-center mt-2 leading-relaxed">
-                    Hemos abierto WhatsApp para contactar con <strong class="text-slate-900 dark:text-white">{{ $confirmingFollowupClientName }}</strong> (<span class="text-indigo-600 dark:text-indigo-400 font-bold">{{ $confirmingFollowupEventName }}</span>).
-                </p>
-                <div class="bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800/60 rounded-xl p-3 my-4 text-xs text-purple-900 dark:text-purple-300">
-                    ⏱️ <strong>Al confirmar</strong>, el contador de días sin respuesta se pondrá a cero (<em>"Puesto hoy"</em>) y volveremos a recordártelo dentro de 2-4 días si el cliente no responde.
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-xl w-full p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+                
+                <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xl font-bold">
+                            💬
+                        </div>
+                        <div>
+                            <h3 class="text-base font-black text-slate-900 dark:text-white">
+                                Seguimiento Madrigal · WhatsApp
+                            </h3>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">
+                                <strong class="text-slate-800 dark:text-slate-200">{{ $confirmingFollowupClientName }}</strong> &bull; {{ $confirmingFollowupEventName }}
+                            </p>
+                        </div>
+                    </div>
+                    <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300">
+                        {{ $confirmingFollowupDays <= 0 ? 'Puesto hoy' : ($confirmingFollowupDays === 1 ? '1 día sin respuesta' : "{$confirmingFollowupDays} días sin respuesta") }}
+                    </span>
                 </div>
 
-                <div class="space-y-2 pt-1">
-                    <button type="button" wire:click="confirmFollowupSent" class="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-extrabold text-xs rounded-xl shadow-md shadow-emerald-600/30 transition flex items-center justify-center gap-2 cursor-pointer">
-                        <span>✅ Sí, mensaje enviado</span>
-                        <span class="text-[10px] opacity-80">(Resetear contador)</span>
+                <!-- Selector de Plantilla Madrigal -->
+                <div class="mt-4 space-y-1.5">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
+                        Selecciona el guion de seguimiento:
+                    </label>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        @foreach($confirmingFollowupOptions as $optKey => $opt)
+                            <button type="button" 
+                                wire:click="selectFollowupTemplate('{{ $optKey }}')" 
+                                class="p-2.5 rounded-xl border text-left text-xs font-medium transition cursor-pointer relative {{ $confirmingFollowupSelectedKey === $optKey ? 'border-emerald-500 bg-emerald-50/70 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-200 ring-2 ring-emerald-500/30' : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800/40' }}">
+                                <div class="flex items-center justify-between gap-1 mb-1">
+                                    <span class="text-sm">{{ $opt['icon'] }}</span>
+                                    @if($opt['is_recommended'])
+                                        <span class="text-[9px] font-extrabold uppercase px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-600 dark:text-amber-300 border border-amber-500/30">
+                                            Recomendado
+                                        </span>
+                                    @endif
+                                </div>
+                                <div class="font-bold text-[11px] truncate">{{ $opt['stage'] }}</div>
+                                <div class="text-[10px] text-slate-500 dark:text-slate-400 truncate">{{ $opt['title'] }}</div>
+                            </button>
+                        @endforeach
+                    </div>
+                </div>
+
+                <!-- Vista previa del mensaje -->
+                <div class="mt-4 space-y-1.5">
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">Mensaje a enviar:</span>
+                        <span class="text-[10px] text-slate-400">Listo para abrir en WhatsApp</span>
+                    </div>
+                    <div class="bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/60 dark:border-emerald-800/40 rounded-2xl p-3.5 text-xs text-slate-800 dark:text-slate-200 whitespace-pre-wrap font-sans leading-relaxed max-h-44 overflow-y-auto">
+{{ $confirmingFollowupText }}
+                    </div>
+                </div>
+
+                <!-- Botón de apertura de WhatsApp -->
+                <div class="mt-4">
+                    <a href="{{ $confirmingFollowupUrl }}" target="_blank" class="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-extrabold text-xs rounded-xl shadow-md shadow-emerald-600/30 transition flex items-center justify-center gap-2">
+                        <span>💬 Abrir WhatsApp y Enviar Mensaje</span>
+                        <span class="text-xs">↗</span>
+                    </a>
+                </div>
+
+                <!-- Confirmaciones de acción posterior -->
+                <div class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2">
+                    <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block text-center">
+                        Una vez enviado o revisado:
+                    </span>
+                    <button type="button" wire:click="confirmFollowupSent" class="w-full py-2.5 px-3 bg-purple-600 hover:bg-purple-500 text-white font-extrabold text-xs rounded-xl transition flex items-center justify-center gap-2 cursor-pointer shadow-xs">
+                        <span>✅ He enviado el mensaje</span>
+                        <span class="text-[10px] opacity-80">(Poner contador a 0 hoy)</span>
                     </button>
 
                     <div class="grid grid-cols-2 gap-2">
-                        <button type="button" wire:click="markAsResponded('draft')" class="py-2.5 px-3 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 font-bold text-xs rounded-xl border border-indigo-200 dark:border-indigo-800 transition flex items-center justify-center gap-1 cursor-pointer" title="Marcar como atendido y pasar a borrador">
+                        <button type="button" wire:click="markAsResponded('draft')" class="py-2 px-3 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 font-bold text-xs rounded-xl border border-indigo-200 dark:border-indigo-800 transition flex items-center justify-center gap-1 cursor-pointer" title="Marcar como atendido y pasar a borrador">
                             <span>📝 ¡Ha respondido!</span>
                         </button>
-                        <button type="button" wire:click="markAsResponded('confirmed')" class="py-2.5 px-3 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/60 dark:hover:bg-amber-900/60 text-amber-700 dark:text-amber-300 font-bold text-xs rounded-xl border border-amber-200 dark:border-amber-800 transition flex items-center justify-center gap-1 cursor-pointer" title="Marcar como confirmado">
-                            <span>🟢 Confirmado</span>
+                        <button type="button" wire:click="markAsResponded('confirmed')" class="py-2 px-3 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 font-bold text-xs rounded-xl border border-amber-200 dark:border-amber-800 transition flex items-center justify-center gap-1 cursor-pointer" title="Marcar como confirmado">
+                            <span>🟢 Confirmar Evento</span>
                         </button>
                     </div>
 
-                    <button type="button" wire:click="cancelFollowup" class="w-full py-2 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 font-semibold text-xs transition cursor-pointer">
-                        Cancelar (Mantener contador actual)
+                    <button type="button" wire:click="cancelFollowup" class="w-full py-1.5 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 font-medium text-xs transition cursor-pointer">
+                        Cerrar sin cambiar contador
                     </button>
                 </div>
+
             </div>
         </div>
     @endif

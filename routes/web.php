@@ -109,6 +109,8 @@ Route::get('/api/drive-stream/{fileId}', [SpotifyAuthController::class, 'streamG
 Route::get('/music-requests/{musicRequest}/download', [SpotifyAuthController::class, 'downloadAudio'])->name('admin.music.download');
 // External Web Leads API / Webhook Endpoint (Rate limited to 30 requests/min)
 Route::post('/api/leads', [\App\Http\Controllers\LeadWebhookController::class, 'store'])->middleware('throttle:30,1')->name('api.leads.store');
+// Evolution API / WhatsApp Webhook Endpoint (Rate limited to 60 requests/min)
+Route::post('/api/whatsapp/webhook', [\App\Http\Controllers\WhatsAppWebhookController::class, 'handle'])->middleware('throttle:60,1')->name('api.whatsapp.webhook');
 
 // Global PDF Download Aliases (Secured with token or auth inside controller)
 Route::get('/events/{event}/music-escaleta/pdf', [PdfController::class, 'downloadMusicEscaleta'])->name('pdf.music-escaleta');
