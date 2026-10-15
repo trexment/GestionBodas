@@ -96,18 +96,22 @@ class PdfController extends Controller
     {
         $this->authorizePdfAccess($quote->event);
 
-        $quote->load('event.client');
+        $quote->load(['event.client', 'items']);
+
+        $isSinglePage = request()->boolean('single') || request('mode') === 'single';
 
         $data = [
             'quote' => $quote,
             'event' => $quote->event,
-            'client' => $quote->event->client,
+            'client' => $quote->event ? $quote->event->client : null,
+            'isSinglePage' => $isSinglePage,
         ];
 
         $eventName = $quote->event ? $quote->event->name : 'Evento';
         $safeName = preg_replace('/[^\p{L}\p{N}\s\-_]/u', '', $eventName);
         $safeName = trim(preg_replace('/\s+/', ' ', $safeName));
-        $filename = 'Presupuesto ' . ($safeName ?: 'Evento_' . $quote->id) . '.pdf';
+        $prefix = $isSinglePage ? 'Presupuesto_1Pag_' : 'Dossier_Presupuesto_';
+        $filename = $prefix . ($safeName ?: 'Evento_' . $quote->id) . '.pdf';
 
         $pdf = Pdf::loadView('pdf.quote', $data);
         return $pdf->download($filename);

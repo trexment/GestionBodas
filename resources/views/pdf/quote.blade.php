@@ -559,11 +559,70 @@
             margin-top: 2px;
             text-align: center;
         }
+
+        /* TABLA DE DATOS DE LA BODA (PÁGINA PRESUPUESTO) */
+        .couple-meta-card {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-left: 4px solid #0b1329;
+            border-radius: 6px;
+            padding: 8px 12px;
+            margin-bottom: 10px;
+        }
+        .couple-meta-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .couple-meta-table td {
+            padding: 2.5px 4px;
+            font-size: 7.5pt;
+        }
+        .couple-meta-lbl {
+            font-weight: 800;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-size: 6.5pt;
+            width: 85px;
+        }
+        .couple-meta-val {
+            font-weight: 700;
+            color: #0f172a;
+        }
+        
+        /* BANNER DE PAGO BIZUM / IBAN */
+        .payment-methods-box {
+            background-color: #f8fafc;
+            border: 1px solid #cbd5e1;
+            border-left: 4px solid #059669;
+            border-radius: 6px;
+            padding: 6px 12px;
+            margin-bottom: 6px;
+        }
+        .payment-methods-title {
+            font-size: 6.8pt;
+            font-weight: 800;
+            color: #065f46;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 2px;
+        }
+        .payment-methods-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .payment-methods-table td {
+            font-size: 6.8pt;
+            vertical-align: top;
+            padding: 2px 4px;
+            color: #334155;
+        }
     </style>
 </head>
 <body>
 
     @php
+        $isSinglePage = $isSinglePage ?? false;
         $brandKey = $event->brand_clean ?? (\App\Models\Setting::getBrandInfo()['key']);
         $brand = \App\Models\Setting::getBrandInfo($brandKey);
 
@@ -572,6 +631,12 @@
         $companyPhone = $brand['phone'];
         $companyPhone2 = $brand['phone_2'];
         $companyWebsite = $brand['website'];
+        $companyCif = \App\Models\Setting::get('company_cif', '78902362B');
+        $companyIban = \App\Models\Setting::get('company_iban', 'ES39 3035 0241 13 2411043571');
+        $companyAddress = \App\Models\Setting::get('company_address', 'Calle Principal s/n');
+        $companyCity = \App\Models\Setting::get('company_city', 'Logroño');
+        $companyBizum = $brand['phone'] ?: \App\Models\Setting::get('company_bizum', '622634790');
+        $companyEmail = $brand['email'] ?: \App\Models\Setting::get('company_email', 'info@nunezandson.com');
         $logoPath = $brand['logo_path'];
 
         // Configuración dinámica del Dossier
@@ -710,6 +775,7 @@
         @if(!empty($companyWebsite)) &bull; {{ $companyWebsite }} @endif
     </div>
 
+    @if(!($isSinglePage ?? false))
     <!-- ==========================================
          PÁGINA 1: PORTADA
          ========================================== -->
@@ -1086,22 +1152,191 @@
     </div>
 
     <!-- ==========================================
-         PÁGINA 3: PROPUESTA Y DETALLE DE SERVICIOS
+         PÁGINA 3: CATÁLOGO DE PACKS Y PRODUCCIÓN TÉCNICA
+         ========================================== -->
+    <div class="page">
+        <!-- Cabecera Azul Marino -->
+        <div class="page-header-banner">
+            <div class="page-header-sub">PRODUCCIÓN Y OPCIONES DE SERVICIO &bull; {{ mb_strtoupper($companyName) }}</div>
+            <div class="page-header-title">Packs DJ y Coberturas para Vuestro Evento</div>
+        </div>
+
+        <div class="page-content">
+            <p class="intro-lead" style="margin-bottom: 12px;">
+                Diseñamos la experiencia musical y técnica a medida para cada momento de vuestra celebración. A continuación os presentamos nuestras configuraciones más demandadas y servicios de ambientación profesional para que conozcáis todas las opciones disponibles.
+            </p>
+
+            <!-- 1. COMPARATIVA DE PACKS DE FIESTA -->
+            <div style="margin-bottom: 6px; font-size: 7.5pt; font-weight: 800; color: #0f172a; text-transform: uppercase; letter-spacing: 0.5px;">
+                Configuraciones DJ para Barra Libre y Fiesta:
+            </div>
+            <table class="packs-table">
+                <tr>
+                    <!-- PACK BÁSICO / ESENCIAL -->
+                    <td class="pack-col">
+                        <div class="pack-card {{ $hasBasicPack ? 'highlighted' : '' }}">
+                            @if($hasBasicPack)
+                                <div class="pack-badge">VUESTRA ELECCIÓN</div>
+                            @endif
+                            <div class="pack-title">{{ $packBasicName }}</div>
+                            <div class="pack-schedule">{{ $packBasicHours }} Horas de servicio DJ</div>
+                            <div class="pack-price">{{ number_format($packBasicPrice, 0, ',', '.') }}€</div>
+                            <ul class="pack-features">
+                                <li>{{ $packBasicHours }}h de sesión DJ profesional</li>
+                                <li>Sonido estéreo alta definición</li>
+                                <li>Iluminación rítmica LED de pista</li>
+                                <li>Microfonía inalámbrica</li>
+                            </ul>
+                        </div>
+                    </td>
+
+                    <!-- PACK MEDIO / SIGNATURE (RECOMENDADO) -->
+                    <td class="pack-col">
+                        <div class="pack-card {{ $hasMediumPack ? 'highlighted' : '' }}">
+                            @if($hasMediumPack)
+                                <div class="pack-badge">VUESTRA ELECCIÓN</div>
+                            @else
+                                <div class="pack-badge" style="background-color: #3b82f6; color: #ffffff;">⭐ RECOMENDADO</div>
+                            @endif
+                            <div class="pack-title">{{ $packMediumName }}</div>
+                            <div class="pack-schedule">{{ $packMediumHours }} Horas de servicio DJ</div>
+                            <div class="pack-price">{{ number_format($packMediumPrice, 0, ',', '.') }}€</div>
+                            <ul class="pack-features">
+                                <li>{{ $packMediumHours }}h de sesión DJ profesional</li>
+                                <li>Sonido reforzado con subgraves</li>
+                                <li>Cabina DJ retroiluminada</li>
+                                <li>Puente/barras LED sincronizadas</li>
+                            </ul>
+                        </div>
+                    </td>
+
+                    <!-- PACK PREMIUM / DELUXE SHOW -->
+                    <td class="pack-col">
+                        <div class="pack-card {{ $hasPremiumPack ? 'highlighted' : '' }}">
+                            @if($hasPremiumPack)
+                                <div class="pack-badge">VUESTRA ELECCIÓN</div>
+                            @else
+                                <div class="pack-badge" style="background-color: #f59e0b; color: #ffffff;">SHOW COMPLETO</div>
+                            @endif
+                            <div class="pack-title">{{ $packPremiumName }}</div>
+                            <div class="pack-schedule">Hasta {{ $packPremiumHours }} Horas de cobertura</div>
+                            <div class="pack-price">{{ number_format($packPremiumPrice, 0, ',', '.') }}€</div>
+                            <ul class="pack-features">
+                                <li>Hasta {{ $packPremiumHours }}h cobertura completa</li>
+                                <li>Sonido gran formato + subgraves</li>
+                                <li>Show iluminación sincronizada</li>
+                                <li>Efecto humo denso / chispas frías</li>
+                            </ul>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+
+            <!-- 2. COBERTURAS ADICIONALES PARA CADA MOMENTO -->
+            <div style="margin-top: 14px; margin-bottom: 6px; font-size: 7.5pt; font-weight: 800; color: #0f172a; text-transform: uppercase; letter-spacing: 0.5px;">
+                Sonorización y Cobertura Integral del Evento:
+            </div>
+            <table style="width: 100%; border-collapse: separate; border-spacing: 8px 6px;">
+                <tr>
+                    <td style="width: 50%; vertical-align: top; background-color: #f8fafc; border: 1px solid #e2e8f0; border-left: 3px solid #3b82f6; border-radius: 6px; padding: 8px 10px;">
+                        <div style="font-size: 8pt; font-weight: 800; color: #1e3a8a; margin-bottom: 2px;">💍 Ceremonia Civil & Cóctel</div>
+                        <div style="font-size: 6.8pt; color: #475569; line-height: 1.3;">
+                            Equipos independientes a batería o corriente, microfonía inalámbrica para oficiante y lecturas, y música de ambientación elegante y fluida.
+                        </div>
+                    </td>
+                    <td style="width: 50%; vertical-align: top; background-color: #f8fafc; border: 1px solid #e2e8f0; border-left: 3px solid #10b981; border-radius: 6px; padding: 8px 10px;">
+                        <div style="font-size: 8pt; font-weight: 800; color: #065f46; margin-bottom: 2px;">🍽️ Banquete & Momentos Especiales</div>
+                        <div style="font-size: 6.8pt; color: #475569; line-height: 1.3;">
+                            Coordinación precisa de temas para entrada de los novios, corte de tarta, regalos emotivos y sorpresas sin silencios incómodos.
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="width: 50%; vertical-align: top; background-color: #f8fafc; border: 1px solid #e2e8f0; border-left: 3px solid #d97706; border-radius: 6px; padding: 8px 10px;">
+                        <div style="font-size: 8pt; font-weight: 800; color: #92400e; margin-bottom: 2px;">⏰ {{ $dossierExtraHoursTitle }}</div>
+                        <div style="font-size: 6.8pt; color: #475569; line-height: 1.3;">
+                            {{ $dossierExtraHoursDesc }} (Tarifa fijada: <strong>{{ number_format($extraHourPrice, 0, ',', '.') }}€/hora</strong>).
+                        </div>
+                    </td>
+                    <td style="width: 50%; vertical-align: top; background-color: #f8fafc; border: 1px solid #e2e8f0; border-left: 3px solid #8b5cf6; border-radius: 6px; padding: 8px 10px;">
+                        <div style="font-size: 8pt; font-weight: 800; color: #5b21b6; margin-bottom: 2px;">🎵 {{ $dossierMusicCustomTitle }}</div>
+                        <div style="font-size: 6.8pt; color: #475569; line-height: 1.3;">
+                            {{ $dossierMusicCustomDesc }}
+                        </div>
+                    </td>
+                </tr>
+            </table>
+
+            <!-- 3. COMPROMISOS & TRANQUILIDAD -->
+            <div style="background-color: #0b1329; border: 1px solid #1e293b; border-radius: 8px; padding: 10px 14px; color: #ffffff; margin-top: 14px;">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tr>
+                        <td style="vertical-align: middle;">
+                            <div style="font-size: 6.5pt; text-transform: uppercase; letter-spacing: 1.5px; color: #eab308; font-weight: 800;">MÁXIMA TRANQUILIDAD Y SEGURIDAD</div>
+                            <div style="font-size: 9.5pt; font-weight: 800; color: #ffffff; margin-top: 2px;">Contratación 100% Oficial, Segura y Sin Sorpresas</div>
+                            <div style="font-size: 6.8pt; color: #94a3b8; margin-top: 3px; line-height: 1.3;">
+                                Equipos revisados antes de cada actuación, contrato digital legal con cobertura de seguro y un equipo humano implicado al 100% en que vuestra fiesta sea inolvidable.
+                            </div>
+                        </td>
+                        <td style="width: 130px; text-align: right; vertical-align: middle; border-left: 1px solid #1e293b; padding-left: 14px;">
+                            <div style="font-size: 15pt; line-height: 1;">🛡️ ✍️ 🎶</div>
+                            <div style="font-size: 6.5pt; color: #eab308; font-weight: 800; text-transform: uppercase; margin-top: 3px;">Garantía de Fiesta</div>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+    @endif
+
+    <!-- ==========================================
+         PÁGINA 4: PRESUPUESTO PERSONALIZADO OFICIAL (EL PRESUPUESTO DE UNA PÁGINA)
          ========================================== -->
     <div class="page page-last">
         <!-- Cabecera Azul Marino -->
         <div class="page-header-banner">
-            <div class="page-header-sub">PROPUESTA ECONÓMICA & SERVICIOS</div>
-            <div class="page-header-title">Detalle de vuestro Presupuesto #PRE-{{ str_pad($quote->id, 5, '0', STR_PAD_LEFT) }}</div>
+            <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                    <td style="vertical-align: middle;">
+                        <div class="page-header-sub">PRESUPUESTO PERSONALIZADO OFICIAL &bull; {{ mb_strtoupper($companyName) }}</div>
+                        <div class="page-header-title">Propuesta Económica para {{ $event->name }} &bull; #PRE-{{ str_pad($quote->id, 5, '0', STR_PAD_LEFT) }}</div>
+                    </td>
+                    @if($isSinglePage ?? false)
+                        <td style="width: 110px; text-align: right; vertical-align: middle;">
+                            @if($logoPath && file_exists($logoPath))
+                                <img src="{{ $logoPath }}" style="max-height: 42px; max-width: 100px; display: inline-block;" alt="Logo">
+                            @endif
+                        </td>
+                    @endif
+                </tr>
+            </table>
         </div>
 
         <div class="page-content">
-            <!-- 1. BLOQUE PRINCIPAL: DESGLOSE DE SERVICIOS CONTRATADOS / SOLICITADOS -->
+            <!-- 1. DATOS DE LA BODA (METRICA DE CONTACTO Y EVENTO) -->
+            <div class="couple-meta-card">
+                <table class="couple-meta-table">
+                    <tr>
+                        <td class="couple-meta-lbl">PAREJA / EVENTO:</td>
+                        <td class="couple-meta-val" style="font-size: 8.5pt; color: #1e3a8a;">{{ $event->name }}</td>
+                        <td class="couple-meta-lbl">FECHA:</td>
+                        <td class="couple-meta-val" style="color: #0f172a;">{{ $dateFormatted }}</td>
+                    </tr>
+                    <tr>
+                        <td class="couple-meta-lbl">LUGAR / FINCA:</td>
+                        <td class="couple-meta-val">{{ $event->location ?: 'Lugar a convenir' }}</td>
+                        <td class="couple-meta-lbl">HORARIO:</td>
+                        <td class="couple-meta-val">{{ $scheduleStr }}</td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- 2. LO QUE INCLUYE: TABLA DE SERVICIOS CONTRATADOS / SOLICITADOS -->
             <div class="quote-selection-card">
                 <div class="quote-selection-header">
                     <table style="width: 100%; border-collapse: collapse;">
                         <tr>
-                            <td style="color: #ffffff; font-weight: 800;">SERVICIOS SOLICITADOS PARA VUESTRO EVENTO</td>
+                            <td style="color: #ffffff; font-weight: 800;">LO QUE INCLUYE VUESTRO SERVICIO (VUESTRA ELECCIÓN)</td>
                             <td style="text-align: right; color: #eab308; font-size: 7.5pt; font-weight: 700;">Emisión: {{ $issueDateShort }} &bull; Validez: {{ $expiresDateShort }}</td>
                         </tr>
                     </table>
@@ -1110,7 +1345,7 @@
                 <table class="quote-items-table">
                     <thead>
                         <tr>
-                            <th style="width: 60%;">Concepto / Equipamiento</th>
+                            <th style="width: 60%;">Concepto / Equipamiento y Horas</th>
                             <th style="width: 15%; text-align: center;">Horas / Ud</th>
                             <th style="width: 25%; text-align: right;">Importe</th>
                         </tr>
@@ -1169,35 +1404,57 @@
                 </table>
             </div>
 
-            <!-- 2. BANNER DE TOTAL Y SEÑAL DESTACADOS EN GRANDE -->
+            <!-- 3. PRECIO FINAL Y CONDICIONES DE PAGO -->
             <div class="quote-total-banner">
                 <table class="quote-total-table">
                     <tr>
                         <td style="width: 55%;" class="quote-signal-box">
-                            <div style="font-size: 6.5pt; text-transform: uppercase; letter-spacing: 1px; color: #93c5fd; font-weight: 700; margin-bottom: 2px;">CONDICIONES DE PAGO</div>
-                            <div>• Señal de Reserva: <strong>{{ number_format($quote->signal_amount, 2, ',', '.') }} €</strong> <span style="font-size: 6.5pt; opacity: 0.85;">(bloqueo de fecha vía Bizum/Transf.)</span></div>
+                            <div style="font-size: 6.5pt; text-transform: uppercase; letter-spacing: 1px; color: #93c5fd; font-weight: 700; margin-bottom: 2px;">CONDICIONES DE PAGO Y RESERVA</div>
+                            <div>• Señal para Bloquear Fecha: <strong>{{ number_format($quote->signal_amount, 2, ',', '.') }} €</strong> <span style="font-size: 6.5pt; opacity: 0.85;">({{ $quote->signal_label }})</span></div>
                             <div style="margin-top: 2px;">• Restante: <strong>{{ number_format(max(0, $quote->amount - $quote->signal_amount), 2, ',', '.') }} €</strong> <span style="font-size: 6.5pt; opacity: 0.85;">(a liquidar al finalizar el evento)</span></div>
                         </td>
                         <td style="width: 45%; text-align: right;">
-                            <div class="quote-total-label">TOTAL PRESUPUESTO</div>
+                            <div class="quote-total-label">PRECIO FINAL (CON TODO)</div>
                             <div class="quote-total-amount">{{ number_format($quote->amount, 2, ',', '.') }} <span>€</span></div>
-                            <div style="font-size: 6pt; color: #94a3b8; margin-top: 1px;">Precios finales &bull; IVA / Impuestos incluidos</div>
+                            <div style="font-size: 6pt; color: #94a3b8; margin-top: 1px;">IVA incluido &bull; Desplazamiento y montaje incluidos</div>
                         </td>
                     </tr>
                 </table>
             </div>
 
-            <!-- BANNER DE VALIDEZ Y CADUCIDAD DE OFERTA -->
+            <!-- 4. CÓMO RESERVAR LA FECHA (MÉTODOS DE PAGO) -->
+            <div class="payment-methods-box">
+                <div class="payment-methods-title">💳 CÓMO RESERVAR Y BLOQUEAR LA FECHA EN FIRME:</div>
+                <table class="payment-methods-table">
+                    <tr>
+                        <td style="width: 50%;">
+                            @if(!empty($companyBizum))
+                                <div>📱 <strong>Bizum:</strong> {{ $companyBizum }}</div>
+                                <div style="font-size: 6.2pt; color: #64748b;">Concepto: <em>{{ $event->name }}</em></div>
+                            @endif
+                        </td>
+                        <td style="width: 50%;">
+                            @if(!empty($companyIban))
+                                <div>🏦 <strong>Transferencia Bancaria (IBAN):</strong></div>
+                                <div style="font-family: monospace; font-size: 6.5pt; font-weight: bold; color: #0f172a;">{{ $companyIban }}</div>
+                                <div style="font-size: 6.2pt; color: #64748b;">Concepto: <em>{{ $event->name }}</em></div>
+                            @endif
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- 5. PLAZO DE VALIDEZ Y CADUCIDAD DE OFERTA -->
             <div class="quote-validity-banner {{ $isQuoteExpired ? 'expired' : '' }}">
                 <table class="quote-validity-table">
                     <tr>
                         <td style="width: 72%; vertical-align: middle;">
                             <div class="quote-validity-title">
-                                ⏳ PLAZO DE VALIDEZ Y CADUCIDAD DE ESTA OFERTA
+                                ⏳ PLAZO DE VALIDEZ DE ESTA OFERTA
                             </div>
                             <div class="quote-validity-text">
-                                Propuesta emitida el <strong>{{ $issueDateShort }}</strong>. Tarifas y bloqueo de fecha garantizados hasta el <strong>{{ $expiresDateFormatted }}</strong> ({{ $validityDays }} días naturales).
-                                <span style="color: #78350f;">Pasada la fecha límite, la oferta caduca y las tarifas o fechas disponibles quedan sujetas a revisión.</span>
+                                Propuesta emitida el <strong>{{ $issueDateShort }}</strong> y válida hasta el <strong>{{ $expiresDateFormatted }}</strong> ({{ $validityDays }} días naturales).
+                                <span style="color: #78350f;">Pasada esta fecha, la reserva provisional se libera en el calendario para otras parejas y las tarifas quedan sujetas a revisión.</span>
                             </div>
                         </td>
                         <td style="width: 28%; text-align: right; vertical-align: middle;">
@@ -1209,116 +1466,28 @@
                 </table>
             </div>
 
-            <!-- 3. COMPARATIVA DE PACKS DE FIESTA / REFERENCIA RÁPIDA -->
-            <div style="margin-bottom: 4px; font-size: 7pt; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">
-                Catálogo de Packs DJ & Opciones de Fiesta:
-            </div>
-            <table class="packs-table">
-                <tr>
-                    <!-- PACK BÁSICO / ESENCIAL -->
-                    <td class="pack-col">
-                        <div class="pack-card {{ $hasBasicPack ? 'highlighted' : '' }}">
-                            @if($hasBasicPack)
-                                <div class="pack-badge">VUESTRA ELECCIÓN</div>
-                            @endif
-                            <div class="pack-title">{{ $packBasicName }}</div>
-                            <div class="pack-schedule">{{ $packBasicHours }} Horas de servicio DJ</div>
-                            <div class="pack-price">{{ number_format($packBasicPrice, 0, ',', '.') }}€</div>
-                            <ul class="pack-features">
-                                <li>{{ $packBasicHours }}h de sesión DJ profesional</li>
-                                <li>Sonido estéreo alta definición</li>
-                                <li>Iluminación rítmica LED de pista</li>
-                                <li>Microfonía inalámbrica</li>
-                            </ul>
-                        </div>
-                    </td>
-
-                    <!-- PACK MEDIO / SIGNATURE (RECOMENDADO) -->
-                    <td class="pack-col">
-                        <div class="pack-card {{ $hasMediumPack ? 'highlighted' : '' }}">
-                            @if($hasMediumPack)
-                                <div class="pack-badge">VUESTRA ELECCIÓN</div>
-                            @else
-                                <div class="pack-badge" style="background-color: #3b82f6; color: #ffffff;">⭐ RECOMENDADO</div>
-                            @endif
-                            <div class="pack-title">{{ $packMediumName }}</div>
-                            <div class="pack-schedule">{{ $packMediumHours }} Horas de servicio DJ</div>
-                            <div class="pack-price">{{ number_format($packMediumPrice, 0, ',', '.') }}€</div>
-                            <ul class="pack-features">
-                                <li>{{ $packMediumHours }}h de sesión DJ profesional</li>
-                                <li>Sonido reforzado con subgraves</li>
-                                <li>Cabina DJ retroiluminada</li>
-                                <li>Puente/barras LED sincronizadas</li>
-                            </ul>
-                        </div>
-                    </td>
-
-                    <!-- PACK PREMIUM / DELUXE SHOW -->
-                    <td class="pack-col">
-                        <div class="pack-card {{ $hasPremiumPack ? 'highlighted' : '' }}">
-                            @if($hasPremiumPack)
-                                <div class="pack-badge">VUESTRA ELECCIÓN</div>
-                            @else
-                                <div class="pack-badge" style="background-color: #f59e0b; color: #ffffff;">SHOW COMPLETO</div>
-                            @endif
-                            <div class="pack-title">{{ $packPremiumName }}</div>
-                            <div class="pack-schedule">Hasta {{ $packPremiumHours }} Horas de cobertura</div>
-                            <div class="pack-price">{{ number_format($packPremiumPrice, 0, ',', '.') }}€</div>
-                            <ul class="pack-features">
-                                <li>Hasta {{ $packPremiumHours }}h cobertura completa</li>
-                                <li>Sonido gran formato + subgraves</li>
-                                <li>Show iluminación sincronizada</li>
-                                <li>Efecto humo frío / chispas frías</li>
-                            </ul>
-                        </div>
-                    </td>
-                </tr>
-            </table>
-
-            <!-- 4. BLOQUES DE INFORMACIÓN Y CONDICIONES -->
-            <table style="width: 100%; border-collapse: collapse; margin-bottom: 4px;">
-                <tr>
-                    <td style="width: 50%; padding-right: 4px; vertical-align: top;">
-                        <div class="info-card">
-                            <div class="info-card-title">{{ $dossierExtraHoursTitle }}</div>
-                            <div class="info-card-body">
-                                {{ $dossierExtraHoursDesc }} (Tarifa: <strong>{{ number_format($extraHourPrice, 0, ',', '.') }}€/h extra</strong>).
-                            </div>
-                        </div>
-                    </td>
-                    <td style="width: 50%; padding-left: 4px; vertical-align: top;">
-                        <div class="info-card">
-                            <div class="info-card-title">{{ $dossierMusicCustomTitle }}</div>
-                            <div class="info-card-body">
-                                {{ $dossierMusicCustomDesc }}
-                            </div>
-                        </div>
-                    </td>
-                </tr>
-            </table>
-
-            <!-- 5. PASOS PARA CONFIRMAR LA RESERVA -->
-            <div style="margin-top: 8px; margin-bottom: 6px; background-color: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 8px; padding: 7px 10px; text-align: center;">
+            <!-- 6. PASOS PARA FORMALIZAR -->
+            <div style="margin-top: 6px; margin-bottom: 6px; background-color: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 8px; padding: 7px 10px; text-align: center;">
                 <table style="width: 100%; border-collapse: collapse;">
                     <tr>
                         <td style="width: 33.3%; text-align: center; vertical-align: middle; border-right: 1px dashed #cbd5e1; padding: 0 6px;">
-                            <div style="font-weight: 800; color: #1e3a8a; font-size: 7.5pt;">1. Bloqueo de Fecha</div>
-                            <div style="font-size: 6.5pt; color: #64748b; line-height: 1.25; margin-top: 1px;">Abona la señal ({{ number_format($quote->signal_amount, 2, ',', '.') }}€) vía Bizum o Transferencia.</div>
+                            <div style="font-weight: 800; color: #1e3a8a; font-size: 7.5pt;">1. Señal de Reserva</div>
+                            <div style="font-size: 6.5pt; color: #64748b; line-height: 1.25; margin-top: 1px;">Abona {{ number_format($quote->signal_amount, 2, ',', '.') }}€ por Bizum o Transferencia.</div>
                         </td>
                         <td style="width: 33.3%; text-align: center; vertical-align: middle; border-right: 1px dashed #cbd5e1; padding: 0 6px;">
                             <div style="font-weight: 800; color: #1e3a8a; font-size: 7.5pt;">2. Firma Digital</div>
-                            <div style="font-size: 6.5pt; color: #64748b; line-height: 1.25; margin-top: 1px;">Firma tu contrato en 1 clic desde el portal con total validez legal.</div>
+                            <div style="font-size: 6.5pt; color: #64748b; line-height: 1.25; margin-top: 1px;">Firma tu contrato oficial en 1 clic desde tu móvil con plena validez.</div>
                         </td>
                         <td style="width: 33.3%; text-align: center; vertical-align: middle; padding: 0 6px;">
-                            <div style="font-weight: 800; color: #1e3a8a; font-size: 7.5pt;">3. Cuestionario Musical</div>
-                            <div style="font-size: 6.5pt; color: #64748b; line-height: 1.25; margin-top: 1px;">Indica momentos especiales, canciones clave y lista negra.</div>
+                            <div style="font-weight: 800; color: #1e3a8a; font-size: 7.5pt;">3. Portal de Música</div>
+                            <div style="font-size: 6.5pt; color: #64748b; line-height: 1.25; margin-top: 1px;">Indica momentos especiales, canciones clave y canciones prohibidas.</div>
                         </td>
                     </tr>
                 </table>
             </div>
 
             <div class="tax-note">
-                Precios finales, impuestos incluidos &bull; Propuesta emitida el {{ $issueDateShort }} y válida hasta el <strong>{{ $expiresDateShort }}</strong> &bull; Formalización por estricto orden de reserva &bull; Pasada la fecha límite, tarifas y disponibilidad quedan sujetas a revisión
+                {{ $companyName }} &bull; CIF/NIF: {{ $companyCif }} &bull; {{ $companyPhone }} &bull; {{ $companyEmail }} &bull; {{ $companyWebsite }}
             </div>
         </div>
     </div>

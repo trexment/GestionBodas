@@ -93,6 +93,119 @@ class WhatsAppTemplateService
     }
 
     /**
+     * ETAPA 1: APERTURA & PRIMERA TOMA DE CONTACTO (Respuesta inmediata / Lead in).
+     * Conexión rápida, confirmación de disponibilidad en agenda y pregunta rompehielos.
+     */
+    public static function primeraTomaContacto(Event $event, string $variant = 'estandar'): string
+    {
+        $clientName = $event->client ? $event->client->name : 'pareja';
+        $brand = Setting::getBrandInfo($event ? $event->brand_clean : null);
+        $companyName = $brand['name'] ?? Setting::get('company_name', 'Núñez & Son');
+        $eventDate = $event->event_date ? Carbon::parse($event->event_date)->locale('es')->isoFormat('D [de] MMMM [de] YYYY') : 'vuestra fecha';
+        $location = $event->location ?: 'vuestro espacio elegido';
+
+        if ($variant === 'disponibilidad') {
+            return "¡Hola {$clientName}! 👋 Os escribe *{$companyName}*.\n\n"
+                 . "¡Enhorabuena por vuestro compromiso! 💍 Acabo de consultar la agenda para el *{$eventDate}* en *{$location}* y ¡tenemos la fecha disponible!\n\n"
+                 . "Para poder orientaros y ver qué tipo de montaje os encajaría mejor (barra libre, sonido en directo para cóctel/ceremonia, iluminación dinámica...), ¿tenéis un momento para contarme qué tenéis en mente? 🎧";
+        }
+
+        if ($variant === 'filtro_finca') {
+            return "¡Hola {$clientName}! 👋 ¡Qué alegría recibir vuestra consulta para el *{$eventDate}*! Os escribe *{$companyName}*.\n\n"
+                 . "Tenemos la fecha libre en el calendario. 🎉 Antes de enviaros catálogos genéricos que no os digan nada, nos gusta conocer vuestra idea de fiesta para proponeros justo lo que necesitáis.\n\n"
+                 . "¿Tenéis ya cerrado el lugar o finca en {$location}? ¿Buscáis música para todo el día o principalmente para la barra libre? ¡Un abrazo!";
+        }
+
+        // Variante por defecto: estándar cálida y directa
+        return "¡Hola {$clientName}! 👋 ¡Qué ilusión saber de vosotros! Os escribe *{$companyName}*.\n\n"
+             . "Confirmado: ¡tenemos libre vuestra fecha (*{$eventDate}*)! 🎉 Nos encantaría acompañaros en *{$location}* y montar un fiestón a vuestra medida.\n\n"
+             . "Para ponéroslo muy fácil y orientaros sin compromiso, ¿me contáis si tenéis ya en mente algún estilo de música o canciones que no puedan faltar en vuestra boda? ¡Un saludo!";
+    }
+
+    /**
+     * ETAPA 2 & 3: SEGUIMIENTO DE CONVERSACIÓN EN CURSO (Descubrimiento y mantener el interés).
+     * Retomar la conversación de forma natural tras unos días, sin agobiar.
+     */
+    public static function seguimientoConversacion(Event $event, string $variant = 'suave'): string
+    {
+        $clientName = $event->client ? $event->client->name : 'pareja';
+        $brand = Setting::getBrandInfo($event ? $event->brand_clean : null);
+        $companyName = $brand['name'] ?? Setting::get('company_name', 'Núñez & Son');
+        $eventDate = $event->event_date ? Carbon::parse($event->event_date)->locale('es')->isoFormat('D [de] MMMM [de] YYYY') : 'vuestro gran día';
+        $eventName = $event->name ?: 'vuestro evento';
+
+        if ($variant === 'preparativos') {
+            return "¡Hola {$clientName}! 👋 Espero que estéis teniendo muy buena semana. Imagino que estaréis a tope con los preparativos de *{$eventName}*.\n\n"
+                 . "Solo os escribía para ver cómo vais y si habéis podido valorar lo que comentamos de la música para el *{$eventDate}*.\n\n"
+                 . "¡Cualquier duda que os surja, estoy a vuestro lado para ayudaros en lo que necesitéis! 🎧✨";
+        }
+
+        // Variante suave (por defecto)
+        return "¡Hola {$clientName}! 👋 ¿Cómo vais con los preparativos de *{$eventName}*?\n\n"
+             . "Os escribía un momento por aquí por si os surgió cualquier duda con lo que estuvimos hablando o si queréis que miremos algún detalle del montaje o de los horarios.\n\n"
+             . "¡Sin ningún compromiso, cuando tengáis un ratillo me decís! 🎧";
+    }
+
+    /**
+     * PROPUESTA DE LLAMADA O VIDEOLLAMADA RÁPIDA (10-15 min).
+     * Conectar antes de enviar presupuesto para entender gustos y multiplicar cierres (Método Madrigal).
+     */
+    public static function propuestaLlamada(Event $event): string
+    {
+        $clientName = $event->client ? $event->client->name : 'pareja';
+        $brand = Setting::getBrandInfo($event ? $event->brand_clean : null);
+        $companyName = $brand['name'] ?? Setting::get('company_name', 'Núñez & Son');
+
+        return "¡Hola {$clientName}! 👋 Os escribe *{$companyName}*.\n\n"
+             . "Para no volveros locos con mil audios y mensajes de texto por WhatsApp, ¿qué os parece si hacemos una llamada o videollamada rápida de 10-15 minutos esta semana?\n\n"
+             . "Así nos ponemos cara, me contáis vuestro estilo de música, los temas que no pueden faltar (y los que queréis prohibir), y os explico exactamente cómo organizamos el montaje para que tengáis la máxima tranquilidad.\n\n"
+             . "¿Qué día y franja horaria os vendría mejor? (Tardes o noches nos adaptamos sin problema). ¡Un abrazo! 💻📱";
+    }
+
+    /**
+     * ETAPA 4: ENVÍO DEL DOSSIER CON EL PRESUPUESTO PERSONALIZADO.
+     * Presentación de la propuesta con valor, fotos de montajes y presupuesto final mascadito al final.
+     */
+    public static function envioDossierPresupuesto(Event $event, ?\App\Models\Quote $quote = null): string
+    {
+        $clientName = $event->client ? $event->client->name : 'pareja';
+        $brand = Setting::getBrandInfo($event ? $event->brand_clean : null);
+        $companyName = $brand['name'] ?? Setting::get('company_name', 'Núñez & Son');
+        $eventDate = $event->event_date ? Carbon::parse($event->event_date)->locale('es')->isoFormat('D [de] MMMM [de] YYYY') : 'vuestra fecha';
+        $location = $event->location ?: 'el lugar acordado';
+        
+        $activeQuote = $quote ?: $event->quotes()->latest()->first();
+        $totalStr = $activeQuote ? number_format($activeQuote->amount, 2, ',', '.') . ' €' : '';
+        $validityDays = $activeQuote ? $activeQuote->validity_days : 15;
+        $expiresStr = ($activeQuote && $activeQuote->expires_at) ? $activeQuote->expires_at->format('d/m/Y') : '';
+
+        $priceNote = $totalStr ? " (*{$totalStr}*, con IVA y todo incluido)" : "";
+        $validityNote = $expiresStr ? " Para vuestra tranquilidad, os guardamos la fecha bloqueada de forma provisional durante {$validityDays} días (hasta el *{$expiresStr}*) para que lo valoréis con calma." : " Os guardamos la fecha bloqueada unos días para que lo valoréis en casa.";
+
+        return "¡Hola {$clientName}! 👋 Os escribe *{$companyName}*.\n\n"
+             . "Os comparto por aquí vuestro dossier completo y personalizado para *{$event->name}* ({$eventDate} en {$location}):\n\n"
+             . "📑 En el documento podréis ver fotos reales de nuestros montajes de sonido e iluminación profesional, cómo trabajamos paso a paso, y al final tenéis el *presupuesto cerrado con las opciones seleccionadas*{$priceNote}.\n\n"
+             . "{$validityNote}\n\n"
+             . "Echadle un vistazo cuando tengáis un momento y decidme: ¿qué os parece? ¿Tenéis alguna duda? 🎧✨";
+    }
+
+    /**
+     * SEGUIMIENTO TRAS ENVIAR PRESUPUESTO (A los 2-3 días).
+     * Toque ligero y educado antes de pasar a la técnica del NO o psicología inversa.
+     */
+    public static function seguimientoPostPresupuesto(Event $event): string
+    {
+        $clientName = $event->client ? $event->client->name : 'pareja';
+        $brand = Setting::getBrandInfo($event ? $event->brand_clean : null);
+        $companyName = $brand['name'] ?? Setting::get('company_name', 'Núñez & Son');
+
+        return "¡Hola {$clientName}! 👋 Os escribe *{$companyName}*.\n\n"
+             . "¿Pudisteis echarle un vistazo al dossier y presupuesto que os compartí?\n\n"
+             . "Si os queda alguna duda sobre lo que incluye, o si queréis que adaptemos algún servicio o detalle para ajustarlo exactamente a lo que tenéis pensado, decídmelo por aquí con total confianza o nos llamamos 5 minutos.\n\n"
+             . "¡Seguimos en contacto! 🎧";
+    }
+
+    /**
      * Técnica del NO (Chris Voss - Never Split the Difference).
      * Pregunta orientada al "NO" para reactivar clientes sin ser insistente ni desesperado.
      * Decir "NO" aporta seguridad y control al cliente, provocando una respuesta inmediata.

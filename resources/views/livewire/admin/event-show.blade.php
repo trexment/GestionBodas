@@ -78,6 +78,31 @@
     $followupReverseMsg = \App\Services\WhatsAppTemplateService::seguimientoPsicologiaInversa($event);
     $followupReverseWaUrl = \App\Services\WhatsAppTemplateService::getLink($clientPhone, $followupReverseMsg);
 
+    // Nuevos Guiones de Venta Bodas (Embudo Madrigal)
+    // 1. Apertura y Primera Toma de Contacto (Etapa 1)
+    $contactDispoMsg = \App\Services\WhatsAppTemplateService::primeraTomaContacto($event, 'disponibilidad');
+    $contactDispoWaUrl = \App\Services\WhatsAppTemplateService::getLink($clientPhone, $contactDispoMsg);
+
+    $contactFincaMsg = \App\Services\WhatsAppTemplateService::primeraTomaContacto($event, 'filtro_finca');
+    $contactFincaWaUrl = \App\Services\WhatsAppTemplateService::getLink($clientPhone, $contactFincaMsg);
+
+    $contactEstandarMsg = \App\Services\WhatsAppTemplateService::primeraTomaContacto($event, 'estandar');
+    $contactEstandarWaUrl = \App\Services\WhatsAppTemplateService::getLink($clientPhone, $contactEstandarMsg);
+
+    // 2. Conversación en curso y Propuesta de llamada (Etapas 2 y 3)
+    $followupChatMsg = \App\Services\WhatsAppTemplateService::seguimientoConversacion($event, 'suave');
+    $followupChatWaUrl = \App\Services\WhatsAppTemplateService::getLink($clientPhone, $followupChatMsg);
+
+    $propuestaLlamadaMsg = \App\Services\WhatsAppTemplateService::propuestaLlamada($event);
+    $propuestaLlamadaWaUrl = \App\Services\WhatsAppTemplateService::getLink($clientPhone, $propuestaLlamadaMsg);
+
+    // 3. Envío de Dossier con Presupuesto mascadito y Seguimiento (Etapa 4)
+    $envioDossierMsg = \App\Services\WhatsAppTemplateService::envioDossierPresupuesto($event, $latestQuote);
+    $envioDossierWaUrl = \App\Services\WhatsAppTemplateService::getLink($clientPhone, $envioDossierMsg);
+
+    $followupPostQuoteMsg = \App\Services\WhatsAppTemplateService::seguimientoPostPresupuesto($event);
+    $followupPostQuoteWaUrl = \App\Services\WhatsAppTemplateService::getLink($clientPhone, $followupPostQuoteMsg);
+
     $followupBudgetMsg = \App\Services\WhatsAppTemplateService::seguimientoPresupuestoNo($event);
     $followupBudgetWaUrl = \App\Services\WhatsAppTemplateService::getLink($clientPhone, $followupBudgetMsg);
 
@@ -636,27 +661,278 @@
                 </div>
 
                 <div class="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
-                    <!-- SECCIÓN: PRESUPUESTO & RESERVA -->
+                    <!-- ============================================================== -->
+                    <!-- SECCIÓN 1: APERTURA & PRIMERA TOMA DE CONTACTO                 -->
+                    <!-- ============================================================== -->
                     <div class="pb-1">
                         <div class="flex items-center gap-2 mb-1">
-                            <span class="text-xs font-black uppercase tracking-wider text-gray-500 flex items-center gap-1.5">
-                                <span>📋</span> Propuesta Inicial & Reserva
+                            <span class="text-xs font-black uppercase tracking-wider text-emerald-700 flex items-center gap-1.5">
+                                <span>🟢</span> 1. Primera Toma de Contacto (Respuesta Inmediata)
                             </span>
-                            <div class="h-px bg-gray-200 flex-1"></div>
+                            <div class="h-px bg-emerald-200 flex-1"></div>
+                        </div>
+                        <p class="text-[11px] text-gray-500">
+                            Responde en los primeros minutos tras recibir el contacto. Confirma disponibilidad en agenda y rompe el hielo con cercanía antes de enviar tarifas en frío.
+                        </p>
+                    </div>
+
+                    <!-- 1.1 Disponibilidad en Agenda -->
+                    <div x-data="{ showText: false, copied: false }" class="p-4 rounded-xl border border-emerald-200 bg-emerald-50/30 hover:bg-emerald-50/60 transition space-y-2.5">
+                        <div class="flex items-start justify-between gap-4">
+                            <div>
+                                <h4 class="font-bold text-gray-900 text-sm flex items-center gap-2">
+                                    <span>📅 Confirmación de Fecha Libre & Saludo Cálido</span>
+                                    <span class="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">Lead In ⚡</span>
+                                </h4>
+                                <p class="text-xs text-gray-600 mt-1">
+                                    Felicita a la pareja, confirma que la fecha está disponible en el calendario e invita a contar qué tienen en mente sin presionar.
+                                </p>
+                            </div>
+                            <div class="flex items-center gap-1.5 shrink-0">
+                                <button type="button" @click="showText = !showText" class="bg-white hover:bg-emerald-100 text-emerald-800 font-bold text-xs px-2.5 py-2 rounded-xl border border-emerald-300 transition" :title="showText ? 'Ocultar mensaje' : 'Ver mensaje completo'">
+                                    <span x-text="showText ? '👁️ Ocultar' : '👁️ Ver'"></span>
+                                </button>
+                                <a href="{{ $contactDispoWaUrl }}" target="_blank" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition">
+                                    💬 Enviar
+                                </a>
+                            </div>
+                        </div>
+
+                        <div x-show="showText" class="bg-white p-3.5 rounded-xl border border-emerald-200 text-xs text-gray-700 space-y-2" style="display: none;">
+                            <div class="font-mono text-[11px] leading-relaxed whitespace-pre-line bg-gray-50 p-2.5 rounded-lg border border-gray-100 text-gray-800">{{ $contactDispoMsg }}</div>
+                            <div class="flex items-center justify-between pt-1">
+                                <span class="text-[11px] text-gray-500">Envía directo o copia para personalizar.</span>
+                                <button type="button" 
+                                    @click="navigator.clipboard.writeText(@js($contactDispoMsg)); copied = true; setTimeout(() => copied = false, 2500)"
+                                    class="text-xs font-bold px-3 py-1.5 rounded-lg border transition inline-flex items-center gap-1.5 cursor-pointer"
+                                    :class="copied ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-emerald-200'">
+                                    <span x-text="copied ? '✅ ¡Copiado al portapapeles!' : '📋 Copiar Texto'"></span>
+                                </button>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Opción 1: Propuesta y Desglose -->
+                    <!-- 1.2 Filtro Finca & Estilo de Fiesta -->
+                    <div x-data="{ showText: false, copied: false }" class="p-4 rounded-xl border border-teal-200 bg-teal-50/30 hover:bg-teal-50/60 transition space-y-2.5">
+                        <div class="flex items-start justify-between gap-4">
+                            <div>
+                                <h4 class="font-bold text-gray-900 text-sm flex items-center gap-2">
+                                    <span>🏰 Filtro Finca, Espacio & Música</span>
+                                    <span class="text-[10px] bg-teal-100 text-teal-800 font-bold px-2 py-0.5 rounded-full">Descubrimiento</span>
+                                </h4>
+                                <p class="text-xs text-gray-600 mt-1">
+                                    Pregunta si tienen el lugar cerrado y si buscan música para todo el evento o solo barra libre, para afinar la propuesta.
+                                </p>
+                            </div>
+                            <div class="flex items-center gap-1.5 shrink-0">
+                                <button type="button" @click="showText = !showText" class="bg-white hover:bg-teal-100 text-teal-800 font-bold text-xs px-2.5 py-2 rounded-xl border border-teal-300 transition" :title="showText ? 'Ocultar mensaje' : 'Ver mensaje completo'">
+                                    <span x-text="showText ? '👁️ Ocultar' : '👁️ Ver'"></span>
+                                </button>
+                                <a href="{{ $contactFincaWaUrl }}" target="_blank" class="bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition">
+                                    💬 Enviar
+                                </a>
+                            </div>
+                        </div>
+
+                        <div x-show="showText" class="bg-white p-3.5 rounded-xl border border-teal-200 text-xs text-gray-700 space-y-2" style="display: none;">
+                            <div class="font-mono text-[11px] leading-relaxed whitespace-pre-line bg-gray-50 p-2.5 rounded-lg border border-gray-100 text-gray-800">{{ $contactFincaMsg }}</div>
+                            <div class="flex items-center justify-between pt-1">
+                                <span class="text-[11px] text-gray-500">Ideal si la pareja contactó desde bodas.net o instagram.</span>
+                                <button type="button" 
+                                    @click="navigator.clipboard.writeText(@js($contactFincaMsg)); copied = true; setTimeout(() => copied = false, 2500)"
+                                    class="text-xs font-bold px-3 py-1.5 rounded-lg border transition inline-flex items-center gap-1.5 cursor-pointer"
+                                    :class="copied ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-teal-50 text-teal-700 hover:bg-teal-100 border-teal-200'">
+                                    <span x-text="copied ? '✅ ¡Copiado al portapapeles!' : '📋 Copiar Texto'"></span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ============================================================== -->
+                    <!-- SECCIÓN 2: CONVERSACIÓN EN CURSO & VIDEOLLAMADA               -->
+                    <!-- ============================================================== -->
+                    <div class="pt-2 pb-1">
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="text-xs font-black uppercase tracking-wider text-blue-700 flex items-center gap-1.5">
+                                <span>💬</span> 2. Conversación en Curso & Videollamada
+                            </span>
+                            <div class="h-px bg-blue-200 flex-1"></div>
+                        </div>
+                        <p class="text-[11px] text-gray-500">
+                            Mantén el contacto vivo y propón una breve charla de 10 min para poner cara, conocer sus gustos musicales y generar conexión real.
+                        </p>
+                    </div>
+
+                    <!-- 2.1 Seguimiento de conversación en curso -->
+                    <div x-data="{ showText: false, copied: false }" class="p-4 rounded-xl border border-blue-200 bg-blue-50/30 hover:bg-blue-50/60 transition space-y-2.5">
+                        <div class="flex items-start justify-between gap-4">
+                            <div>
+                                <h4 class="font-bold text-gray-900 text-sm flex items-center gap-2">
+                                    <span>💭 Retomar Conversación (Toque Ligero)</span>
+                                    <span class="text-[10px] bg-blue-100 text-blue-800 font-bold px-2 py-0.5 rounded-full">Sin Presión</span>
+                                </h4>
+                                <p class="text-xs text-gray-600 mt-1">
+                                    Pregunta cómo van con los preparativos y si surgió alguna duda con lo que estuvisteis hablando, de forma tranquila y cercana.
+                                </p>
+                            </div>
+                            <div class="flex items-center gap-1.5 shrink-0">
+                                <button type="button" @click="showText = !showText" class="bg-white hover:bg-blue-100 text-blue-800 font-bold text-xs px-2.5 py-2 rounded-xl border border-blue-300 transition" :title="showText ? 'Ocultar mensaje' : 'Ver mensaje completo'">
+                                    <span x-text="showText ? '👁️ Ocultar' : '👁️ Ver'"></span>
+                                </button>
+                                <a href="{{ $followupChatWaUrl }}" target="_blank" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition">
+                                    💬 Enviar
+                                </a>
+                            </div>
+                        </div>
+
+                        <div x-show="showText" class="bg-white p-3.5 rounded-xl border border-blue-200 text-xs text-gray-700 space-y-2" style="display: none;">
+                            <div class="font-mono text-[11px] leading-relaxed whitespace-pre-line bg-gray-50 p-2.5 rounded-lg border border-gray-100 text-gray-800">{{ $followupChatMsg }}</div>
+                            <div class="flex items-center justify-between pt-1">
+                                <span class="text-[11px] text-gray-500">Mantiene el vínculo sin sonar invasivo.</span>
+                                <button type="button" 
+                                    @click="navigator.clipboard.writeText(@js($followupChatMsg)); copied = true; setTimeout(() => copied = false, 2500)"
+                                    class="text-xs font-bold px-3 py-1.5 rounded-lg border transition inline-flex items-center gap-1.5 cursor-pointer"
+                                    :class="copied ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-200'">
+                                    <span x-text="copied ? '✅ ¡Copiado al portapapeles!' : '📋 Copiar Texto'"></span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 2.2 Propuesta de llamada / videollamada 10 min -->
+                    <div x-data="{ showText: false, copied: false }" class="p-4 rounded-xl border border-indigo-200 bg-indigo-50/30 hover:bg-indigo-50/60 transition space-y-2.5">
+                        <div class="flex items-start justify-between gap-4">
+                            <div>
+                                <h4 class="font-bold text-gray-900 text-sm flex items-center gap-2">
+                                    <span>💻 Propuesta de Charla / Videollamada (10-15 min)</span>
+                                    <span class="text-[10px] bg-indigo-100 text-indigo-800 font-extrabold px-2 py-0.5 rounded-full">Multiplica Cierres ⭐</span>
+                                </h4>
+                                <p class="text-xs text-gray-600 mt-1">
+                                    Propone una llamada de 10 min antes de mandar el presupuesto para entender qué música quieren y evitar malentendidos por WhatsApp.
+                                </p>
+                            </div>
+                            <div class="flex items-center gap-1.5 shrink-0">
+                                <button type="button" @click="showText = !showText" class="bg-white hover:bg-indigo-100 text-indigo-800 font-bold text-xs px-2.5 py-2 rounded-xl border border-indigo-300 transition" :title="showText ? 'Ocultar mensaje' : 'Ver mensaje completo'">
+                                    <span x-text="showText ? '👁️ Ocultar' : '👁️ Ver'"></span>
+                                </button>
+                                <a href="{{ $propuestaLlamadaWaUrl }}" target="_blank" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition">
+                                    💬 Enviar
+                                </a>
+                            </div>
+                        </div>
+
+                        <div x-show="showText" class="bg-white p-3.5 rounded-xl border border-indigo-200 text-xs text-gray-700 space-y-2" style="display: none;">
+                            <div class="font-mono text-[11px] leading-relaxed whitespace-pre-line bg-gray-50 p-2.5 rounded-lg border border-gray-100 text-gray-800">{{ $propuestaLlamadaMsg }}</div>
+                            <div class="flex items-center justify-between pt-1">
+                                <span class="text-[11px] text-gray-500">Clave del método Madrigal: conectar antes de enviar precios.</span>
+                                <button type="button" 
+                                    @click="navigator.clipboard.writeText(@js($propuestaLlamadaMsg)); copied = true; setTimeout(() => copied = false, 2500)"
+                                    class="text-xs font-bold px-3 py-1.5 rounded-lg border transition inline-flex items-center gap-1.5 cursor-pointer"
+                                    :class="copied ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border-indigo-200'">
+                                    <span x-text="copied ? '✅ ¡Copiado al portapapeles!' : '📋 Copiar Texto'"></span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ============================================================== -->
+                    <!-- SECCIÓN 3: PRESENTACIÓN, DOSSIER & RESERVA                     -->
+                    <!-- ============================================================== -->
+                    <div class="pt-2 pb-1">
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="text-xs font-black uppercase tracking-wider text-purple-700 flex items-center gap-1.5">
+                                <span>📑</span> 3. Presentación de Propuesta & Dossier
+                            </span>
+                            <div class="h-px bg-purple-200 flex-1"></div>
+                        </div>
+                        <p class="text-[11px] text-gray-500">
+                            Envía el PDF unificado con fotos de montajes y el presupuesto mascadito al final. Ofrece bloqueo provisional de fecha sin compromiso.
+                        </p>
+                    </div>
+
+                    <!-- 3.1 Envío de Dossier + Presupuesto unificado -->
+                    <div x-data="{ showText: false, copied: false }" class="p-4 rounded-xl border border-purple-200 bg-purple-50/30 hover:bg-purple-50/60 transition space-y-2.5">
+                        <div class="flex items-start justify-between gap-4">
+                            <div>
+                                <h4 class="font-bold text-gray-900 text-sm flex items-center gap-2">
+                                    <span>📑 Enviar Dossier con Presupuesto Mascadito (PDF)</span>
+                                    <span class="text-[10px] bg-purple-100 text-purple-800 font-extrabold px-2 py-0.5 rounded-full">Recomendado ⭐</span>
+                                </h4>
+                                <p class="text-xs text-gray-600 mt-1">
+                                    Acompaña el documento PDF del dossier. Resalta las fotos de montajes, el presupuesto cerrado al final y el bloqueo de fecha garantizado.
+                                </p>
+                            </div>
+                            <div class="flex items-center gap-1.5 shrink-0">
+                                <button type="button" @click="showText = !showText" class="bg-white hover:bg-purple-100 text-purple-800 font-bold text-xs px-2.5 py-2 rounded-xl border border-purple-300 transition" :title="showText ? 'Ocultar mensaje' : 'Ver mensaje completo'">
+                                    <span x-text="showText ? '👁️ Ocultar' : '👁️ Ver'"></span>
+                                </button>
+                                <a href="{{ $envioDossierWaUrl }}" target="_blank" class="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition">
+                                    💬 Enviar
+                                </a>
+                            </div>
+                        </div>
+
+                        <div x-show="showText" class="bg-white p-3.5 rounded-xl border border-purple-200 text-xs text-gray-700 space-y-2" style="display: none;">
+                            <div class="font-mono text-[11px] leading-relaxed whitespace-pre-line bg-gray-50 p-2.5 rounded-lg border border-gray-100 text-gray-800">{{ $envioDossierMsg }}</div>
+                            <div class="flex items-center justify-between pt-1">
+                                <span class="text-[11px] text-gray-500">Recuerda adjuntar el archivo PDF en el chat.</span>
+                                <button type="button" 
+                                    @click="navigator.clipboard.writeText(@js($envioDossierMsg)); copied = true; setTimeout(() => copied = false, 2500)"
+                                    class="text-xs font-bold px-3 py-1.5 rounded-lg border transition inline-flex items-center gap-1.5 cursor-pointer"
+                                    :class="copied ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-purple-50 text-purple-700 hover:bg-purple-100 border-purple-200'">
+                                    <span x-text="copied ? '✅ ¡Copiado al portapapeles!' : '📋 Copiar Texto'"></span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3.2 Seguimiento post-presupuesto (A los 2-3 días) -->
+                    <div x-data="{ showText: false, copied: false }" class="p-4 rounded-xl border border-amber-200 bg-amber-50/30 hover:bg-amber-50/60 transition space-y-2.5">
+                        <div class="flex items-start justify-between gap-4">
+                            <div>
+                                <h4 class="font-bold text-gray-900 text-sm flex items-center gap-2">
+                                    <span>⏳ Seguimiento a los 2-3 Días (¿Pudisteis verlo?)</span>
+                                    <span class="text-[10px] bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded-full">Paso Clave</span>
+                                </h4>
+                                <p class="text-xs text-gray-600 mt-1">
+                                    Toque ligero a los pocos días de enviar la propuesta: <em>"¿Pudisteis verlo? Si tenéis alguna duda os llamo 5 minutos..."</em>.
+                                </p>
+                            </div>
+                            <div class="flex items-center gap-1.5 shrink-0">
+                                <button type="button" @click="showText = !showText" class="bg-white hover:bg-amber-100 text-amber-800 font-bold text-xs px-2.5 py-2 rounded-xl border border-amber-300 transition" :title="showText ? 'Ocultar mensaje' : 'Ver mensaje completo'">
+                                    <span x-text="showText ? '👁️ Ocultar' : '👁️ Ver'"></span>
+                                </button>
+                                <a href="{{ $followupPostQuoteWaUrl }}" target="_blank" class="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition">
+                                    💬 Enviar
+                                </a>
+                            </div>
+                        </div>
+
+                        <div x-show="showText" class="bg-white p-3.5 rounded-xl border border-amber-200 text-xs text-gray-700 space-y-2" style="display: none;">
+                            <div class="font-mono text-[11px] leading-relaxed whitespace-pre-line bg-gray-50 p-2.5 rounded-lg border border-gray-100 text-gray-800">{{ $followupPostQuoteMsg }}</div>
+                            <div class="flex items-center justify-between pt-1">
+                                <span class="text-[11px] text-gray-500">Ideal enviar 48-72 horas después de la propuesta.</span>
+                                <button type="button" 
+                                    @click="navigator.clipboard.writeText(@js($followupPostQuoteMsg)); copied = true; setTimeout(() => copied = false, 2500)"
+                                    class="text-xs font-bold px-3 py-1.5 rounded-lg border transition inline-flex items-center gap-1.5 cursor-pointer"
+                                    :class="copied ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-amber-50 text-amber-700 hover:bg-amber-100 border-amber-200'">
+                                    <span x-text="copied ? '✅ ¡Copiado al portapapeles!' : '📋 Copiar Texto'"></span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3.3 Resumen de Presupuesto & Desglose en texto -->
                     <div class="p-4 rounded-xl border border-gray-200 hover:border-emerald-300 bg-gray-50 hover:bg-emerald-50/40 transition">
                         <div class="flex items-start justify-between gap-4">
                             <div>
                                 <h4 class="font-bold text-gray-900 text-sm flex items-center gap-2">
-                                    <span>📋 Enviar Resumen de Presupuesto & Desglose</span>
-                                    <span class="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">Clientes</span>
+                                    <span>📋 Enviar Resumen Rápido por Texto (Desglose)</span>
+                                    <span class="text-[10px] bg-gray-200 text-gray-800 font-bold px-2 py-0.5 rounded-full">Texto Plano</span>
                                 </h4>
                                 <p class="text-xs text-gray-500 mt-1">
                                     @if($latestQuote)
-                                        Envía el desglose de servicios contratados (Total: <strong>{{ number_format($quoteAmount, 2) }} €</strong> | Señal: <strong>{{ number_format($signalAmount, 2) }} €</strong> - {{ $signalLabel }}).
+                                        Envía el desglose de importes en texto directo (Total: <strong>{{ number_format($quoteAmount, 2) }} €</strong> | Señal: <strong>{{ number_format($signalAmount, 2) }} €</strong> - {{ $signalLabel }}).
                                     @else
                                         <span class="text-amber-600">Genera primero una propuesta en la pestaña de Presupuestos.</span>
                                     @endif
@@ -672,13 +948,13 @@
                         </div>
                     </div>
 
-                    <!-- Opción 2: Solicitar Señal de Reserva -->
+                    <!-- 3.4 Solicitar Señal de Reserva -->
                     <div class="p-4 rounded-xl border border-gray-200 hover:border-emerald-300 bg-gray-50 hover:bg-emerald-50/40 transition">
                         <div class="flex items-start justify-between gap-4">
                             <div>
                                 <h4 class="font-bold text-gray-900 text-sm flex items-center gap-2">
                                     <span>💶 Solicitar Señal de Reserva ({{ $signalLabel }})</span>
-                                    <span class="text-[10px] bg-blue-100 text-blue-800 font-bold px-2 py-0.5 rounded-full">Clientes</span>
+                                    <span class="text-[10px] bg-blue-100 text-blue-800 font-bold px-2 py-0.5 rounded-full">Reserva</span>
                                 </h4>
                                 <p class="text-xs text-gray-500 mt-1">
                                     Solicita el abono de la reserva (<strong>{{ number_format($signalAmount, 2) }} €</strong>) con datos bancarios y Bizum.
@@ -3047,8 +3323,11 @@
                                                     💬 WhatsApp
                                                 </a>
 
-                                                <a href="{{ route('admin.quote.pdf', $quote->id) }}" target="_blank" class="bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-300 text-xs font-bold px-2.5 py-1.5 rounded-lg flex items-center gap-1 transition shadow-2xs" title="Descargar o Ver PDF de Propuesta">
-                                                    📑 PDF
+                                                <a href="{{ route('admin.quote.pdf', $quote->id) }}" target="_blank" class="bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-300 text-xs font-bold px-2.5 py-1.5 rounded-lg flex items-center gap-1 transition shadow-2xs" title="Descargar Dossier Completo con Presupuesto al final (4 Páginas)">
+                                                    📑 Dossier + Presupuesto
+                                                </a>
+                                                <a href="{{ route('admin.quote.pdf', $quote->id) }}?single=1" target="_blank" class="bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 text-xs font-bold px-2.5 py-1.5 rounded-lg flex items-center gap-1 transition shadow-2xs" title="Descargar Presupuesto de 1 Página (Mascadito)">
+                                                    📄 1 Pág. Express
                                                 </a>
 
                                                 <button type="button" wire:click="deleteQuote({{ $quote->id }})" wire:confirm="¿Estás seguro de que deseas eliminar la Propuesta #{{ $quote->id }}?" class="bg-white hover:bg-red-50 text-red-600 border border-gray-200 hover:border-red-300 text-xs font-bold px-2 py-1.5 rounded-lg transition" title="Eliminar Propuesta">
