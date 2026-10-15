@@ -3287,6 +3287,11 @@ class EventShow extends Component
         $this->event->load(['djHistories', 'musicRequests']);
     }
 
+    public function getGatewayActiveProperty(): bool
+    {
+        return \App\Services\EvolutionWhatsAppService::isEnabled();
+    }
+
     public function render()
     {
         $allEquipment = Equipment::orderBy('category')->orderBy('name')->get();
@@ -3294,13 +3299,13 @@ class EventShow extends Component
         $allAssistants = User::whereIn('role', ['assistant', 'dj', 'admin'])->orderBy('name')->get();
         $allClients = User::where('role', 'client')->orderBy('name')->get();
 
-        $filteredMusicRequests = $this->event->musicRequests;
-        if ($this->music_active_category !== 'all') {
+        $filteredMusicRequests = $this->event ? $this->event->musicRequests : collect();
+        if ($this->music_active_category !== 'all' && $filteredMusicRequests) {
             $filteredMusicRequests = $filteredMusicRequests->where('category', $this->music_active_category);
         }
 
-        $allDjHistories = $this->event->djHistories;
-        if (!empty($this->djHistoryFilterQuery)) {
+        $allDjHistories = $this->event ? $this->event->djHistories : collect();
+        if (!empty($this->djHistoryFilterQuery) && $allDjHistories) {
             $q = mb_strtolower(trim($this->djHistoryFilterQuery));
             $allDjHistories = $allDjHistories->filter(function ($item) use ($q) {
                 return str_contains(mb_strtolower($item->title ?? ''), $q) ||
@@ -3319,8 +3324,9 @@ class EventShow extends Component
             'allClients' => $allClients,
             'filteredMusicRequests' => $filteredMusicRequests,
             'allDjHistories' => $allDjHistories,
+            'gatewayActive' => $this->gatewayActive,
         ])->layout('components.layouts.app', [
-            'header' => 'Gestionar Evento: ' . $this->event->name
+            'header' => 'Gestionar Evento: ' . ($this->event ? $this->event->name : 'Evento')
         ]);
     }
 }

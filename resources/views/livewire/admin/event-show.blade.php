@@ -1,4 +1,5 @@
 @php
+    $gatewayActive = \App\Services\EvolutionWhatsAppService::isEnabled();
     $clientPhone = $event->client ? preg_replace('/[^0-9]/', '', $event->client->phone) : '';
     if (strlen($clientPhone) === 9 && in_array(substr($clientPhone, 0, 1), ['6', '7'])) {
         $clientPhone = '34' . $clientPhone;

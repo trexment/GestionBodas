@@ -641,6 +641,30 @@ class Event extends Model
     }
 
     /**
+     * Etiqueta formateada para la hora de montaje técnico
+     */
+    public function getSetupTimeLabelAttribute(): ?string
+    {
+        if (!empty($this->start_time)) {
+            return substr(trim((string)$this->start_time), 0, 5) . ' h';
+        }
+        return null;
+    }
+
+    /**
+     * Etiqueta legible del horario de baile
+     */
+    public function getDanceScheduleLabelAttribute(): string
+    {
+        if (!empty($this->dance_start_time)) {
+            $start = substr(trim((string)$this->dance_start_time), 0, 5);
+            $end = !empty($this->dance_end_time) ? substr(trim((string)$this->dance_end_time), 0, 5) : $this->effective_end_time;
+            return "de {$start} h a {$end} h";
+        }
+        return 'Según desarrollo del banquete';
+    }
+
+    /**
      * Devuelve la lista de momentos musicales sugeridos según el tipo de evento
      */
     public function getSuggestedMomentsAttribute(): array
