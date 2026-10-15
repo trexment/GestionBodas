@@ -561,4 +561,81 @@ class WhatsAppTemplateService
              . "{$locText}\n\n"
              . "¡Hasta pronto! 🎧";
     }
+
+    public static function resumenPresupuesto(Event $event, ?\App\Models\Quote $quote = null): string
+    {
+        $clientName = $event->client ? $event->client->name : 'pareja';
+        $latestQuote = $quote ?: $event->quotes()->latest()->first();
+        $quoteAmount = $latestQuote ? (float)$latestQuote->amount : 0;
+
+        if ($latestQuote) {
+            $signalAmount = $latestQuote->signal_amount;
+            $remainingAmount = $latestQuote->remaining_amount;
+            $signalLabel = $latestQuote->signal_label;
+        } else {
+            $depType = Setting::get('deposit_type', 'percentage');
+            if ($depType === 'fixed') {
+                $signalAmount = min((float)Setting::get('deposit_fixed_amount', 200), $quoteAmount);
+                $signalLabel = number_format($signalAmount, 2, ',', '.') . ' €';
+            } else {
+                $pct = (float)Setting::get('deposit_percentage', 40);
+                $signalAmount = round(($quoteAmount * $pct) / 100, 2);
+                $signalLabel = rtrim(rtrim(number_format($pct, 2, ',', '.'), '0'), ',') . '% (' . number_format($signalAmount, 2, ',', '.') . ' €)';
+            }
+            $remainingAmount = max(0, $quoteAmount - $signalAmount);
+        }
+
+        $quoteSummaryLines = [];
+        if ($latestQuote && $latestQuote->items) {
+            foreach ($latestQuote->items as $item) {
+                $quoteSummaryLines[] = "• " . $item->service_name . ($item->quantity > 1 ? " ({$item->quantity}x)" : "") . ": " . number_format($item->price * $item->quantity, 2, ',', '.') . " €";
+            }
+        }
+        $quoteItemsText = implode("\n", $quoteSummaryLines);
+        $quoteValidityNotice = "";
+        if ($latestQuote && $latestQuote->expires_at) {
+            $quoteValidityNotice = "\n\n⏳ *VALIDEZ DE LA OFERTA:*\nPropuesta válida hasta el *" . $latestQuote->expires_at->format('d/m/Y') . "* (" . $latestQuote->validity_days . " días naturales). Pasada esta fecha, tarifas y disponibilidad quedan sujetas a revisión.";
+        }
+
+        $eventDate = $event->event_date ? Carbon::parse($event->event_date)->format('d/m/Y') : '';
+        $loc = $event->location ? " en " . $event->location : "";
+
+        return "¡Hola {$clientName}! 👋\n\nOs compartimos la propuesta detallada para vuestro evento *{$event->name}*" . ($eventDate ? " ({$eventDate}{$loc})" : "") . ":\n\n"
+             . ($quoteItemsText ?: '• Servicios musicales y sonorización profesional.') . "\n\n"
+             . "💰 *TOTAL PRESUPUESTO:* " . number_format($quoteAmount, 2, ',', '.') . " €\n\n"
+             . "📌 *CONDICIONES DE PAGO:*\n"
+             . "• Señal de reserva ({$signalLabel}): " . number_format($signalAmount, 2, ',', '.') . " €\n"
+             . "• Restante el día del evento: " . number_format($remainingAmount, 2, ',', '.') . " €"
+             . $quoteValidityNotice . "\n\n"
+             . "Cualquier duda o ajuste, estamos a vuestra entera disposición. ¡Un saludo!";
+    }
+
+    public static function senalReserva(Event $event, ?\App\Models\Quote $quote = null): string
+    {
+        $clientName = $event->client ? $event->client->name : 'pareja';
+        $latestQuote = $quote ?: $event->quotes()->latest()->first();
+        $quoteAmount = $latestQuote ? (float)$latestQuote->amount : 0;
+
+        if ($latestQuote) {
+            $signalAmount = $latestQuote->signal_amount;
+        } else {
+            $depType = Setting::get('deposit_type', 'percentage');
+            if ($depType === 'fixed') {
+                $signalAmount = min((float)Setting::get('deposit_fixed_amount', 200), $quoteAmount);
+            } else {
+                $pct = (float)Setting::get('deposit_percentage', 40);
+                $signalAmount = round(($quoteAmount * $pct) / 100, 2);
+            }
+        }
+
+        $iban = Setting::get('company_iban', '');
+        $bizum = Setting::get('company_bizum', '');
+        $eventDate = $event->event_date ? Carbon::parse($event->event_date)->format('d/m/Y') : '';
+
+        return "¡Hola {$clientName}! 👋\n\nPara confirmar la fecha de vuestro evento *{$event->name}*" . ($eventDate ? " ({$eventDate})" : "") . ", podéis abonar la *Señal de reserva (" . number_format($signalAmount, 2, ',', '.') . " €)* mediante:\n\n"
+             . ($iban ? "🏦 *Transferencia Bancaria:*\n" . $iban . "\n\n" : "")
+             . ($bizum ? "📱 *Bizum:* " . $bizum . "\n\n" : "")
+             . "Concepto: " . $event->name . "\n\n"
+             . "¡Muchas gracias y quedamos a vuestra disposición!";
+    }
 }

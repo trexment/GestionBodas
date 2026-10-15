@@ -550,10 +550,17 @@
                 <div class="flex flex-wrap items-center gap-2 w-full md:w-auto shrink-0">
                     <!-- Botón Enviar WhatsApp Táctico 1-Clic -->
                     @if(!empty($clientPhone))
-                        <button type="button" onclick="window.open('{{ $followupData['url'] }}', '_blank')" wire:click="promptFollowupFromShow" class="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-xs px-3.5 py-2.5 rounded-xl shadow-xs transition cursor-pointer" title="Enviar WhatsApp y registrar seguimiento">
-                            <span>💬</span>
-                            <span>Enviar WhatsApp (Técnica NO)</span>
-                        </button>
+                        @if($gatewayActive)
+                            <button type="button" wire:click="sendDirectTemplate('tecnica_no')" wire:loading.attr="disabled" class="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-xs px-3.5 py-2.5 rounded-xl shadow-xs transition cursor-pointer" title="Enviar WhatsApp directamente vía API">
+                                <span wire:loading.remove wire:target="sendDirectTemplate('tecnica_no')">🚀 Enviar WhatsApp (Técnica NO)</span>
+                                <span wire:loading wire:target="sendDirectTemplate('tecnica_no')">⏳ Enviando...</span>
+                            </button>
+                        @else
+                            <button type="button" onclick="window.open('{{ $followupData['url'] }}', '_blank')" wire:click="promptFollowupFromShow" class="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-xs px-3.5 py-2.5 rounded-xl shadow-xs transition cursor-pointer" title="Enviar WhatsApp y registrar seguimiento">
+                                <span>💬</span>
+                                <span>Enviar WhatsApp (Técnica NO)</span>
+                            </button>
+                        @endif
                     @endif
 
                     <!-- Abrir todas las plantillas de seguimiento del Hub -->
@@ -733,9 +740,16 @@
                 {{ $event->is_dossier_completed ? '🔓 Reabrir' : '🔒 Bloquear' }}
             </button>
             
-            <a href="{{ $cuestionarioWaUrl }}" target="_blank" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-lg text-xs font-bold shadow-xs whitespace-nowrap inline-flex items-center gap-1.5 transition">
-                💬 Enviar WhatsApp
-            </a>
+            @if($gatewayActive)
+                <button type="button" wire:click="sendDirectTemplate('cuestionario')" wire:loading.attr="disabled" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-lg text-xs font-bold shadow-xs whitespace-nowrap inline-flex items-center gap-1.5 transition cursor-pointer">
+                    <span wire:loading.remove wire:target="sendDirectTemplate('cuestionario')">🚀 Enviar WhatsApp</span>
+                    <span wire:loading wire:target="sendDirectTemplate('cuestionario')">⏳ Enviando...</span>
+                </button>
+            @else
+                <a href="{{ $cuestionarioWaUrl }}" target="_blank" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-lg text-xs font-bold shadow-xs whitespace-nowrap inline-flex items-center gap-1.5 transition">
+                    💬 Enviar WhatsApp
+                </a>
+            @endif
         </div>
     </div>
 
@@ -788,9 +802,16 @@
                                 <button type="button" @click="showText = !showText" class="bg-white hover:bg-emerald-100 text-emerald-800 font-bold text-xs px-2.5 py-2 rounded-xl border border-emerald-300 transition" :title="showText ? 'Ocultar mensaje' : 'Ver mensaje completo'">
                                     <span x-text="showText ? '👁️ Ocultar' : '👁️ Ver'"></span>
                                 </button>
-                                <a href="{{ $contactDispoWaUrl }}" target="_blank" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition">
-                                    💬 Enviar
-                                </a>
+                                @if($gatewayActive)
+                                    <button type="button" wire:click="sendDirectTemplate('disponibilidad')" wire:loading.attr="disabled" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition cursor-pointer">
+                                        <span wire:loading.remove wire:target="sendDirectTemplate('disponibilidad')">🚀 Enviar por API</span>
+                                        <span wire:loading wire:target="sendDirectTemplate('disponibilidad')">⏳</span>
+                                    </button>
+                                @else
+                                    <a href="{{ $contactDispoWaUrl }}" target="_blank" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition">
+                                        💬 Enviar
+                                    </a>
+                                @endif
                             </div>
                         </div>
 
@@ -824,9 +845,16 @@
                                 <button type="button" @click="showText = !showText" class="bg-white hover:bg-teal-100 text-teal-800 font-bold text-xs px-2.5 py-2 rounded-xl border border-teal-300 transition" :title="showText ? 'Ocultar mensaje' : 'Ver mensaje completo'">
                                     <span x-text="showText ? '👁️ Ocultar' : '👁️ Ver'"></span>
                                 </button>
-                                <a href="{{ $contactFincaWaUrl }}" target="_blank" class="bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition">
-                                    💬 Enviar
-                                </a>
+                                @if($gatewayActive)
+                                    <button type="button" wire:click="sendDirectTemplate('filtro_finca')" wire:loading.attr="disabled" class="bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition cursor-pointer">
+                                        <span wire:loading.remove wire:target="sendDirectTemplate('filtro_finca')">🚀 Enviar por API</span>
+                                        <span wire:loading wire:target="sendDirectTemplate('filtro_finca')">⏳</span>
+                                    </button>
+                                @else
+                                    <a href="{{ $contactFincaWaUrl }}" target="_blank" class="bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition">
+                                        💬 Enviar
+                                    </a>
+                                @endif
                             </div>
                         </div>
 
@@ -875,9 +903,16 @@
                                 <button type="button" @click="showText = !showText" class="bg-white hover:bg-blue-100 text-blue-800 font-bold text-xs px-2.5 py-2 rounded-xl border border-blue-300 transition" :title="showText ? 'Ocultar mensaje' : 'Ver mensaje completo'">
                                     <span x-text="showText ? '👁️ Ocultar' : '👁️ Ver'"></span>
                                 </button>
-                                <a href="{{ $followupChatWaUrl }}" target="_blank" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition">
-                                    💬 Enviar
-                                </a>
+                                @if($gatewayActive)
+                                    <button type="button" wire:click="sendDirectTemplate('conversacion_suave')" wire:loading.attr="disabled" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition cursor-pointer">
+                                        <span wire:loading.remove wire:target="sendDirectTemplate('conversacion_suave')">🚀 Enviar por API</span>
+                                        <span wire:loading wire:target="sendDirectTemplate('conversacion_suave')">⏳</span>
+                                    </button>
+                                @else
+                                    <a href="{{ $followupChatWaUrl }}" target="_blank" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition">
+                                        💬 Enviar
+                                    </a>
+                                @endif
                             </div>
                         </div>
 
@@ -911,9 +946,16 @@
                                 <button type="button" @click="showText = !showText" class="bg-white hover:bg-indigo-100 text-indigo-800 font-bold text-xs px-2.5 py-2 rounded-xl border border-indigo-300 transition" :title="showText ? 'Ocultar mensaje' : 'Ver mensaje completo'">
                                     <span x-text="showText ? '👁️ Ocultar' : '👁️ Ver'"></span>
                                 </button>
-                                <a href="{{ $propuestaLlamadaWaUrl }}" target="_blank" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition">
-                                    💬 Enviar
-                                </a>
+                                @if($gatewayActive)
+                                    <button type="button" wire:click="sendDirectTemplate('propuesta_llamada')" wire:loading.attr="disabled" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition cursor-pointer">
+                                        <span wire:loading.remove wire:target="sendDirectTemplate('propuesta_llamada')">🚀 Enviar por API</span>
+                                        <span wire:loading wire:target="sendDirectTemplate('propuesta_llamada')">⏳</span>
+                                    </button>
+                                @else
+                                    <a href="{{ $propuestaLlamadaWaUrl }}" target="_blank" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition">
+                                        💬 Enviar
+                                    </a>
+                                @endif
                             </div>
                         </div>
 
@@ -962,9 +1004,16 @@
                                 <button type="button" @click="showText = !showText" class="bg-white hover:bg-purple-100 text-purple-800 font-bold text-xs px-2.5 py-2 rounded-xl border border-purple-300 transition" :title="showText ? 'Ocultar mensaje' : 'Ver mensaje completo'">
                                     <span x-text="showText ? '👁️ Ocultar' : '👁️ Ver'"></span>
                                 </button>
-                                <a href="{{ $envioDossierWaUrl }}" target="_blank" class="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition">
-                                    💬 Enviar
-                                </a>
+                                @if($gatewayActive)
+                                    <button type="button" wire:click="sendDirectTemplate('envio_dossier')" wire:loading.attr="disabled" class="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition cursor-pointer">
+                                        <span wire:loading.remove wire:target="sendDirectTemplate('envio_dossier')">🚀 Enviar por API</span>
+                                        <span wire:loading wire:target="sendDirectTemplate('envio_dossier')">⏳</span>
+                                    </button>
+                                @else
+                                    <a href="{{ $envioDossierWaUrl }}" target="_blank" class="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition">
+                                        💬 Enviar
+                                    </a>
+                                @endif
                             </div>
                         </div>
 
@@ -998,9 +1047,16 @@
                                 <button type="button" @click="showText = !showText" class="bg-white hover:bg-amber-100 text-amber-800 font-bold text-xs px-2.5 py-2 rounded-xl border border-amber-300 transition" :title="showText ? 'Ocultar mensaje' : 'Ver mensaje completo'">
                                     <span x-text="showText ? '👁️ Ocultar' : '👁️ Ver'"></span>
                                 </button>
-                                <a href="{{ $followupPostQuoteWaUrl }}" target="_blank" class="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition">
-                                    💬 Enviar
-                                </a>
+                                @if($gatewayActive)
+                                    <button type="button" wire:click="sendDirectTemplate('post_presupuesto')" wire:loading.attr="disabled" class="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition cursor-pointer">
+                                        <span wire:loading.remove wire:target="sendDirectTemplate('post_presupuesto')">🚀 Enviar por API</span>
+                                        <span wire:loading wire:target="sendDirectTemplate('post_presupuesto')">⏳</span>
+                                    </button>
+                                @else
+                                    <a href="{{ $followupPostQuoteWaUrl }}" target="_blank" class="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition">
+                                        💬 Enviar
+                                    </a>
+                                @endif
                             </div>
                         </div>
 
@@ -1035,9 +1091,16 @@
                                 </p>
                             </div>
                             @if($latestQuote)
-                                <a href="{{ $quotePropuestaWaUrl }}" target="_blank" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition">
-                                    💬 Enviar
-                                </a>
+                                @if($gatewayActive)
+                                    <button type="button" wire:click="sendDirectTemplate('quote_propuesta')" wire:loading.attr="disabled" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition cursor-pointer">
+                                        <span wire:loading.remove wire:target="sendDirectTemplate('quote_propuesta')">🚀 Enviar por API</span>
+                                        <span wire:loading wire:target="sendDirectTemplate('quote_propuesta')">⏳</span>
+                                    </button>
+                                @else
+                                    <a href="{{ $quotePropuestaWaUrl }}" target="_blank" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition">
+                                        💬 Enviar
+                                    </a>
+                                @endif
                             @else
                                 <button disabled class="bg-gray-300 text-gray-500 font-bold text-xs px-3.5 py-2 rounded-xl cursor-not-allowed">Sin propuesta</button>
                             @endif
@@ -1057,9 +1120,16 @@
                                 </p>
                             </div>
                             @if($latestQuote)
-                                <a href="{{ $signalWaUrl }}" target="_blank" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition">
-                                    💬 Enviar
-                                </a>
+                                @if($gatewayActive)
+                                    <button type="button" wire:click="sendDirectTemplate('signal')" wire:loading.attr="disabled" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition cursor-pointer">
+                                        <span wire:loading.remove wire:target="sendDirectTemplate('signal')">🚀 Enviar por API</span>
+                                        <span wire:loading wire:target="sendDirectTemplate('signal')">⏳</span>
+                                    </button>
+                                @else
+                                    <a href="{{ $signalWaUrl }}" target="_blank" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition">
+                                        💬 Enviar
+                                    </a>
+                                @endif
                             @else
                                 <button disabled class="bg-gray-300 text-gray-500 font-bold text-xs px-3.5 py-2 rounded-xl cursor-not-allowed">Sin propuesta</button>
                             @endif
@@ -1095,9 +1165,16 @@
                                 <button type="button" @click="showText = !showText" class="bg-white hover:bg-rose-100 text-rose-700 font-bold text-xs px-2.5 py-2 rounded-xl border border-rose-300 transition" :title="showText ? 'Ocultar mensaje' : 'Ver mensaje completo'">
                                     <span x-text="showText ? '👁️ Ocultar' : '👁️ Ver'"></span>
                                 </button>
-                                <a href="{{ $followupNoWaUrl }}" target="_blank" class="bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition">
-                                    💬 Enviar
-                                </a>
+                                @if($gatewayActive)
+                                    <button type="button" wire:click="sendDirectTemplate('tecnica_no')" wire:loading.attr="disabled" class="bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition cursor-pointer">
+                                        <span wire:loading.remove wire:target="sendDirectTemplate('tecnica_no')">🚀 Enviar por API</span>
+                                        <span wire:loading wire:target="sendDirectTemplate('tecnica_no')">⏳</span>
+                                    </button>
+                                @else
+                                    <a href="{{ $followupNoWaUrl }}" target="_blank" class="bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition">
+                                        💬 Enviar
+                                    </a>
+                                @endif
                             </div>
                         </div>
 
@@ -1132,9 +1209,16 @@
                                 <button type="button" @click="showText = !showText" class="bg-white hover:bg-amber-100 text-amber-800 font-bold text-xs px-2.5 py-2 rounded-xl border border-amber-300 transition" :title="showText ? 'Ocultar mensaje' : 'Ver mensaje completo'">
                                     <span x-text="showText ? '👁️ Ocultar' : '👁️ Ver'"></span>
                                 </button>
-                                <a href="{{ $followupReverseWaUrl }}" target="_blank" class="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition">
-                                    💬 Enviar
-                                </a>
+                                @if($gatewayActive)
+                                    <button type="button" wire:click="sendDirectTemplate('psicologia_inversa')" wire:loading.attr="disabled" class="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition cursor-pointer">
+                                        <span wire:loading.remove wire:target="sendDirectTemplate('psicologia_inversa')">🚀 Enviar por API</span>
+                                        <span wire:loading wire:target="sendDirectTemplate('psicologia_inversa')">⏳</span>
+                                    </button>
+                                @else
+                                    <a href="{{ $followupReverseWaUrl }}" target="_blank" class="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition">
+                                        💬 Enviar
+                                    </a>
+                                @endif
                             </div>
                         </div>
 
@@ -1169,9 +1253,16 @@
                                 <button type="button" @click="showText = !showText" class="bg-white hover:bg-indigo-100 text-indigo-700 font-bold text-xs px-2.5 py-2 rounded-xl border border-indigo-300 transition" :title="showText ? 'Ocultar mensaje' : 'Ver mensaje completo'">
                                     <span x-text="showText ? '👁️ Ocultar' : '👁️ Ver'"></span>
                                 </button>
-                                <a href="{{ $followupBudgetWaUrl }}" target="_blank" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition">
-                                    💬 Enviar
-                                </a>
+                                @if($gatewayActive)
+                                    <button type="button" wire:click="sendDirectTemplate('followup_budget')" wire:loading.attr="disabled" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition cursor-pointer">
+                                        <span wire:loading.remove wire:target="sendDirectTemplate('followup_budget')">🚀 Enviar por API</span>
+                                        <span wire:loading wire:target="sendDirectTemplate('followup_budget')">⏳</span>
+                                    </button>
+                                @else
+                                    <a href="{{ $followupBudgetWaUrl }}" target="_blank" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition">
+                                        💬 Enviar
+                                    </a>
+                                @endif
                             </div>
                         </div>
 
@@ -1217,9 +1308,16 @@
                                 </p>
                             </div>
                             @if($firstContract)
-                                <a href="{{ $contractWaUrl }}" target="_blank" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition">
-                                    💬 Enviar
-                                </a>
+                                @if($gatewayActive)
+                                    <button type="button" wire:click="sendDirectTemplate('contrato')" wire:loading.attr="disabled" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition cursor-pointer">
+                                        <span wire:loading.remove wire:target="sendDirectTemplate('contrato')">🚀 Enviar por API</span>
+                                        <span wire:loading wire:target="sendDirectTemplate('contrato')">⏳</span>
+                                    </button>
+                                @else
+                                    <a href="{{ $contractWaUrl }}" target="_blank" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition">
+                                        💬 Enviar
+                                    </a>
+                                @endif
                             @else
                                 <button disabled class="bg-gray-300 text-gray-500 font-bold text-xs px-3.5 py-2 rounded-xl cursor-not-allowed">Sin contrato</button>
                             @endif
@@ -1236,9 +1334,16 @@
                                 </h4>
                                 <p class="text-xs text-gray-500 mt-1">Envía a los novios su enlace personalizado para completar momentos clave y canciones.</p>
                             </div>
-                            <a href="{{ $cuestionarioWaUrl }}" target="_blank" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition">
-                                💬 Enviar
-                            </a>
+                            @if($gatewayActive)
+                                <button type="button" wire:click="sendDirectTemplate('cuestionario')" wire:loading.attr="disabled" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition cursor-pointer">
+                                    <span wire:loading.remove wire:target="sendDirectTemplate('cuestionario')">🚀 Enviar por API</span>
+                                    <span wire:loading wire:target="sendDirectTemplate('cuestionario')">⏳</span>
+                                </button>
+                            @else
+                                <a href="{{ $cuestionarioWaUrl }}" target="_blank" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition">
+                                    💬 Enviar
+                                </a>
+                            @endif
                         </div>
                     </div>
 
@@ -1252,9 +1357,16 @@
                                 </h4>
                                 <p class="text-xs text-gray-500 mt-1">Recordatorio del pago del importe pendiente (<strong>{{ number_format($remainingAmount, 2) }} €</strong>) antes o el día del evento.</p>
                             </div>
-                            <a href="{{ $liquidacionWaUrl }}" target="_blank" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition">
-                                💬 Enviar
-                            </a>
+                            @if($gatewayActive)
+                                <button type="button" wire:click="sendDirectTemplate('liquidacion')" wire:loading.attr="disabled" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition cursor-pointer">
+                                    <span wire:loading.remove wire:target="sendDirectTemplate('liquidacion')">🚀 Enviar por API</span>
+                                    <span wire:loading wire:target="sendDirectTemplate('liquidacion')">⏳</span>
+                                </button>
+                            @else
+                                <a href="{{ $liquidacionWaUrl }}" target="_blank" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition">
+                                    💬 Enviar
+                                </a>
+                            @endif
                         </div>
                     </div>
 
@@ -1280,14 +1392,28 @@
                             </div>
                             <div class="flex items-center gap-2">
                                 @if($event->dj)
-                                    <a href="{{ $djWaUrl }}" target="_blank" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-3 py-2 rounded-xl shadow-xs inline-flex items-center gap-1 whitespace-nowrap transition">
-                                        🎧 DJ
-                                    </a>
+                                    @if($gatewayActive)
+                                        <button type="button" wire:click="sendDirectTemplate('hoja_ruta', 'dj')" wire:loading.attr="disabled" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-3 py-2 rounded-xl shadow-xs inline-flex items-center gap-1 whitespace-nowrap transition cursor-pointer">
+                                            <span wire:loading.remove wire:target="sendDirectTemplate('hoja_ruta', 'dj')">🎧 DJ (API)</span>
+                                            <span wire:loading wire:target="sendDirectTemplate('hoja_ruta', 'dj')">⏳</span>
+                                        </button>
+                                    @else
+                                        <a href="{{ $djWaUrl }}" target="_blank" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-3 py-2 rounded-xl shadow-xs inline-flex items-center gap-1 whitespace-nowrap transition">
+                                            🎧 DJ
+                                        </a>
+                                    @endif
                                 @endif
                                 @if($event->assistant)
-                                    <a href="{{ $astWaUrl }}" target="_blank" class="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-3 py-2 rounded-xl shadow-xs inline-flex items-center gap-1 whitespace-nowrap transition">
-                                        👷‍♂️ Asistente
-                                    </a>
+                                    @if($gatewayActive)
+                                        <button type="button" wire:click="sendDirectTemplate('hoja_ruta', 'assistant')" wire:loading.attr="disabled" class="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-3 py-2 rounded-xl shadow-xs inline-flex items-center gap-1 whitespace-nowrap transition cursor-pointer">
+                                            <span wire:loading.remove wire:target="sendDirectTemplate('hoja_ruta', 'assistant')">👷‍♂️ Asistente (API)</span>
+                                            <span wire:loading wire:target="sendDirectTemplate('hoja_ruta', 'assistant')">⏳</span>
+                                        </button>
+                                    @else
+                                        <a href="{{ $astWaUrl }}" target="_blank" class="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-3 py-2 rounded-xl shadow-xs inline-flex items-center gap-1 whitespace-nowrap transition">
+                                            👷‍♂️ Asistente
+                                        </a>
+                                    @endif
                                 @endif
                             </div>
                         </div>
@@ -3560,9 +3686,16 @@
                                                     <span>✉️</span> Email
                                                 </button>
 
-                                                <a href="{{ $qWaUrl }}" target="_blank" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs font-bold px-2.5 py-1.5 rounded-lg flex items-center gap-1 transition shadow-2xs" title="Compartir por WhatsApp">
-                                                    💬 WhatsApp
-                                                </a>
+                                                @if($gatewayActive)
+                                                    <button type="button" wire:click="sendDirectQuoteWhatsApp({{ $quote->id }})" wire:loading.attr="disabled" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs font-bold px-2.5 py-1.5 rounded-lg flex items-center gap-1 transition shadow-2xs cursor-pointer" title="Enviar Propuesta por WhatsApp vía API">
+                                                        <span wire:loading.remove wire:target="sendDirectQuoteWhatsApp({{ $quote->id }})">🚀 WhatsApp</span>
+                                                        <span wire:loading wire:target="sendDirectQuoteWhatsApp({{ $quote->id }})">⏳</span>
+                                                    </button>
+                                                @else
+                                                    <a href="{{ $qWaUrl }}" target="_blank" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs font-bold px-2.5 py-1.5 rounded-lg flex items-center gap-1 transition shadow-2xs" title="Compartir por WhatsApp">
+                                                        💬 WhatsApp
+                                                    </a>
+                                                @endif
 
                                                 <a href="{{ route('admin.quote.pdf', $quote->id) }}" target="_blank" class="bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-300 text-xs font-bold px-2.5 py-1.5 rounded-lg flex items-center gap-1 transition shadow-2xs" title="Descargar Dossier Completo con Presupuesto al final (4 Páginas)">
                                                     📑 Dossier + Presupuesto
@@ -3672,9 +3805,16 @@
                                         👁️ Ver Formulario
                                     </a>
 
-                                    <a href="{{ $contractWaUrl }}" target="_blank" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-1 shadow-2xs" title="Enviar enlace de firma por WhatsApp">
-                                        💬 WhatsApp
-                                    </a>
+                                    @if($gatewayActive)
+                                        <button type="button" wire:click="sendDirectContractWhatsApp({{ $contract->id }})" wire:loading.attr="disabled" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-1 shadow-2xs cursor-pointer" title="Enviar enlace de firma por WhatsApp vía API">
+                                            <span wire:loading.remove wire:target="sendDirectContractWhatsApp({{ $contract->id }})">🚀 WhatsApp</span>
+                                            <span wire:loading wire:target="sendDirectContractWhatsApp({{ $contract->id }})">⏳</span>
+                                        </button>
+                                    @else
+                                        <a href="{{ $contractWaUrl }}" target="_blank" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-1 shadow-2xs" title="Enviar enlace de firma por WhatsApp">
+                                            💬 WhatsApp
+                                        </a>
+                                    @endif
 
                                     <a href="{{ route('admin.contract.pdf', $contract->id) }}" target="_blank" class="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg text-xs font-bold transition flex items-center gap-1" title="Descargar contrato oficial en PDF">
                                         📄 PDF

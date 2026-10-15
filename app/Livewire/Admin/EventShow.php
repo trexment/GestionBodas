@@ -1681,6 +1681,217 @@ class EventShow extends Component
         }
     }
 
+    public function sendDirectTemplate(string $templateKey, ?string $recipientType = 'client')
+    {
+        $phone = $this->event->client ? $this->event->client->phone : $this->event->partner_phone;
+        if ($recipientType === 'dj') {
+            $phone = $this->event->dj ? $this->event->dj->phone : null;
+        } elseif ($recipientType === 'assistant') {
+            $phone = $this->event->assistant ? $this->event->assistant->phone : null;
+        }
+
+        if (empty($phone)) {
+            session()->flash('whatsapp_error', 'No hay teléfono registrado para el destinatario.');
+            return;
+        }
+
+        $options = \App\Services\WhatsAppTemplateService::getFollowupOptions($this->event);
+        $text = null;
+        $title = 'Mensaje';
+
+        if (isset($options[$templateKey])) {
+            $text = $options[$templateKey]['text'];
+            $title = $options[$templateKey]['title'] ?? $templateKey;
+        } else {
+            switch ($templateKey) {
+                case 'disponibilidad':
+                    $text = \App\Services\WhatsAppTemplateService::primeraTomaContacto($this->event, 'disponibilidad');
+                    $title = 'Disponibilidad Fecha';
+                    break;
+                case 'filtro_finca':
+                    $text = \App\Services\WhatsAppTemplateService::primeraTomaContacto($this->event, 'filtro_finca');
+                    $title = 'Filtro Finca';
+                    break;
+                case 'estandar':
+                    $text = \App\Services\WhatsAppTemplateService::primeraTomaContacto($this->event, 'estandar');
+                    $title = 'Contacto Inicial';
+                    break;
+                case 'conversacion_suave':
+                    $text = \App\Services\WhatsAppTemplateService::seguimientoConversacion($this->event, 'suave');
+                    $title = 'Seguimiento Conversación';
+                    break;
+                case 'propuesta_llamada':
+                    $text = \App\Services\WhatsAppTemplateService::propuestaLlamada($this->event);
+                    $title = 'Propuesta de Llamada';
+                    break;
+                case 'envio_dossier':
+                    $text = \App\Services\WhatsAppTemplateService::envioDossierPresupuesto($this->event);
+                    $title = 'Dossier y Presupuesto';
+                    break;
+                case 'post_presupuesto':
+                    $text = \App\Services\WhatsAppTemplateService::seguimientoPostPresupuesto($this->event);
+                    $title = 'Seguimiento Presupuesto';
+                    break;
+                case 'quote_propuesta':
+                case 'resumen_presupuesto':
+                    $text = \App\Services\WhatsAppTemplateService::resumenPresupuesto($this->event);
+                    $title = 'Resumen de Presupuesto';
+                    break;
+                case 'signal':
+                case 'senal':
+                    $text = \App\Services\WhatsAppTemplateService::senalReserva($this->event);
+                    $title = 'Señal de Reserva';
+                    break;
+                case 'tecnica_no':
+                case 'pregunta_no':
+                    $text = \App\Services\WhatsAppTemplateService::seguimientoPreguntaNo($this->event);
+                    $title = 'Técnica del NO';
+                    break;
+                case 'seguimiento_no':
+                case 'presupuesto_no':
+                case 'followup_budget':
+                    $text = \App\Services\WhatsAppTemplateService::seguimientoPresupuestoNo($this->event);
+                    $title = 'Objeción Presupuesto';
+                    break;
+                case 'psicologia_inversa':
+                    $text = \App\Services\WhatsAppTemplateService::seguimientoPsicologiaInversa($this->event);
+                    $title = 'Psicología Inversa';
+                    break;
+                case 'cuestionario':
+                    $text = \App\Services\WhatsAppTemplateService::cuestionario($this->event);
+                    $title = 'Cuestionario Musical';
+                    break;
+                case 'contrato':
+                    $text = \App\Services\WhatsAppTemplateService::contrato($this->event);
+                    $title = 'Firma de Contrato';
+                    break;
+                case 'liquidacion':
+                    $text = \App\Services\WhatsAppTemplateService::liquidacion($this->event);
+                    $title = 'Liquidación Final';
+                    break;
+                case 'hoja_ruta':
+                    $targetUser = $recipientType === 'assistant' ? $this->event->assistant : $this->event->dj;
+                    $text = \App\Services\WhatsAppTemplateService::hojaRutaDj($this->event, $targetUser);
+                    $title = $recipientType === 'assistant' ? 'Hoja de Ruta Asistente' : 'Hoja de Ruta DJ';
+                    break;
+                default:
+                    $text = \App\Services\WhatsAppTemplateService::seguimientoPreguntaNo($this->event);
+                    $title = 'Seguimiento';
+                    break;
+            }
+        }
+
+        if (empty($text)) {
+            session()->flash('whatsapp_error', 'No se pudo generar el texto de la plantilla.');
+            return;
+        }
+
+        $result = \App\Services\EvolutionWhatsAppService::sendMessage(
+            $phone,
+            $text,
+            $this->event->brand_clean,
+            $this->event->id,
+            auth()->id()
+        );
+
+        $this->event->update([
+            'no_response_at' => now(),
+            'notes' => ($this->event->notes ? $this->event->notes . "\n" : "") . "[" . now()->format('d/m/Y H:i') . "] 💬 WhatsApp ({$title}) enviado por " . auth()->user()->name . ". Contador reseteado a 0.",
+        ]);
+        $this->event->refresh();
+        $this->event->load('whatsappMessages');
+
+        if ($result['mode'] === 'api' && $result['success']) {
+            session()->flash('message', "✅ ¡WhatsApp ({$title}) enviado directamente al cliente vía API!");
+        } elseif ($result['mode'] === 'fallback_link') {
+            session()->flash('whatsapp_error', 'El servicio de WhatsApp no está conectado. Usa el enlace manual.');
+        } else {
+            session()->flash('whatsapp_error', 'Error al enviar por WhatsApp: ' . ($result['error'] ?? 'desconocido'));
+        }
+    }
+
+    public function sendDirectQuoteWhatsApp(int $quoteId)
+    {
+        $phone = $this->event->client ? $this->event->client->phone : $this->event->partner_phone;
+        if (empty($phone)) {
+            session()->flash('whatsapp_error', 'No hay teléfono registrado para el cliente.');
+            return;
+        }
+
+        $quote = $this->event->quotes()->find($quoteId);
+        if (!$quote) {
+            session()->flash('whatsapp_error', 'Presupuesto no encontrado.');
+            return;
+        }
+
+        $text = \App\Services\WhatsAppTemplateService::resumenPresupuesto($this->event, $quote);
+        $title = 'Presupuesto #' . $quote->id;
+
+        $result = \App\Services\EvolutionWhatsAppService::sendMessage(
+            $phone,
+            $text,
+            $this->event->brand_clean,
+            $this->event->id,
+            auth()->id()
+        );
+
+        $this->event->update([
+            'no_response_at' => now(),
+            'notes' => ($this->event->notes ? $this->event->notes . "\n" : "") . "[" . now()->format('d/m/Y H:i') . "] 💬 WhatsApp ({$title}) enviado por " . auth()->user()->name . ". Contador reseteado a 0.",
+        ]);
+        $this->event->refresh();
+        $this->event->load('whatsappMessages');
+
+        if ($result['mode'] === 'api' && $result['success']) {
+            session()->flash('message', "✅ ¡Presupuesto enviado directamente al cliente vía WhatsApp API!");
+        } elseif ($result['mode'] === 'fallback_link') {
+            session()->flash('whatsapp_error', 'El servicio de WhatsApp no está conectado. Usa el enlace manual.');
+        } else {
+            session()->flash('whatsapp_error', 'Error al enviar por WhatsApp: ' . ($result['error'] ?? 'desconocido'));
+        }
+    }
+
+    public function sendDirectContractWhatsApp(int $contractId)
+    {
+        $phone = $this->event->client ? $this->event->client->phone : $this->event->partner_phone;
+        if (empty($phone)) {
+            session()->flash('whatsapp_error', 'No hay teléfono registrado para el cliente.');
+            return;
+        }
+
+        $contract = $this->event->contracts()->find($contractId);
+        if (!$contract) {
+            session()->flash('whatsapp_error', 'Contrato no encontrado.');
+            return;
+        }
+
+        $text = \App\Services\WhatsAppTemplateService::contrato($contract);
+        $title = 'Firma de Contrato';
+
+        $result = \App\Services\EvolutionWhatsAppService::sendMessage(
+            $phone,
+            $text,
+            $this->event->brand_clean,
+            $this->event->id,
+            auth()->id()
+        );
+
+        $this->event->update([
+            'no_response_at' => now(),
+            'notes' => ($this->event->notes ? $this->event->notes . "\n" : "") . "[" . now()->format('d/m/Y H:i') . "] 💬 WhatsApp ({$title}) enviado por " . auth()->user()->name . ". Contador reseteado a 0.",
+        ]);
+        $this->event->refresh();
+        $this->event->load('whatsappMessages');
+
+        if ($result['mode'] === 'api' && $result['success']) {
+            session()->flash('message', "✅ ¡Enlace de firma de contrato enviado directamente vía WhatsApp API!");
+        } elseif ($result['mode'] === 'fallback_link') {
+            session()->flash('whatsapp_error', 'El servicio de WhatsApp no está conectado. Usa el enlace manual.');
+        } else {
+            session()->flash('whatsapp_error', 'Error al enviar por WhatsApp: ' . ($result['error'] ?? 'desconocido'));
+        }
+    }
+
     public function getWhatsappMessagesProperty()
     {
         try {
