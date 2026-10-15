@@ -281,12 +281,12 @@ class ImapLeadFetcherService
 
         // 5. Extraer Fecha del Evento
         $eventDate = null;
-        if (preg_match('/(?:Fecha|Día|Dia|Celebración|Celebracion|Enlace)\s*[:\-]?\s*([0-3]?\d[\/\-\.][0-1]?\d[\/\-\.]20\d{2})/i', $bodyClean, $m)) {
+        if (preg_match('/(?:Fecha(?:\s+de)?(?:\s+la)?(?:\s+boda|\s+evento)?|Día|Dia|Celebración|Celebracion|Enlace)\s*[:\-]?\s*([0-3]?\d[\/\-\.][0-1]?\d[\/\-\.]20\d{2})/i', $bodyClean, $m)) {
             try {
                 $dateStr = str_replace(['.', '-'], '/', trim($m[1]));
                 $eventDate = Carbon::createFromFormat('d/m/Y', $dateStr)->format('Y-m-d');
             } catch (\Throwable $e) {}
-        } elseif (preg_match('/(?:Fecha|Día|Dia|Celebración|Celebracion|Enlace)\s*[:\-]?\s*(20\d{2}[\/\-\.][0-1]?\d[\/\-\.][0-3]?\d)/i', $bodyClean, $m)) {
+        } elseif (preg_match('/(?:Fecha(?:\s+de)?(?:\s+la)?(?:\s+boda|\s+evento)?|Día|Dia|Celebración|Celebracion|Enlace)\s*[:\-]?\s*(20\d{2}[\/\-\.][0-1]?\d[\/\-\.][0-3]?\d)/i', $bodyClean, $m)) {
             try {
                 $dateStr = str_replace(['.', '/'], '-', trim($m[1]));
                 $eventDate = Carbon::parse($dateStr)->format('Y-m-d');
