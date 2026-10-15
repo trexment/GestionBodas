@@ -3369,7 +3369,11 @@
                                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <div>
                                         <label class="block text-[11px] font-bold text-gray-700 mb-1">Modalidad de Señal</label>
-                                        <div class="grid grid-cols-2 gap-1.5">
+                                        <div class="grid grid-cols-3 gap-1.5">
+                                            <label class="flex items-center gap-1.5 p-2 rounded-lg border cursor-pointer transition text-xs {{ $quote_deposit_type === 'none' ? 'bg-emerald-50 border-emerald-500 font-bold text-emerald-900 ring-1 ring-emerald-400' : 'bg-gray-50 border-gray-200 text-gray-600' }}">
+                                                <input type="radio" wire:model.live="quote_deposit_type" value="none" class="text-emerald-600 focus:ring-emerald-500">
+                                                <span>🚫 Sin Señal (0€)</span>
+                                            </label>
                                             <label class="flex items-center gap-1.5 p-2 rounded-lg border cursor-pointer transition text-xs {{ $quote_deposit_type === 'percentage' ? 'bg-indigo-50 border-indigo-500 font-bold text-indigo-900' : 'bg-gray-50 border-gray-200 text-gray-600' }}">
                                                 <input type="radio" wire:model.live="quote_deposit_type" value="percentage" class="text-indigo-600 focus:ring-indigo-500">
                                                 <span>Porcentaje (%)</span>
@@ -3382,7 +3386,15 @@
                                     </div>
 
                                     <div>
-                                        @if($quote_deposit_type === 'percentage')
+                                        @if($quote_deposit_type === 'none')
+                                            <div class="p-2.5 rounded-lg bg-emerald-50/80 border border-emerald-200 text-emerald-950 text-xs flex items-center gap-2">
+                                                <span class="text-base">👌</span>
+                                                <div>
+                                                    <strong class="block text-emerald-900 font-bold">Sin señal previa (0,00 €)</strong>
+                                                    <span class="text-[11px] text-emerald-700">El total se abonará íntegramente el día del evento. Habitual en fiestas y eventos sociales.</span>
+                                                </div>
+                                            </div>
+                                        @elseif($quote_deposit_type === 'percentage')
                                             <label class="block text-[11px] font-bold text-gray-700 mb-1">Porcentaje de Señal (%)</label>
                                             <div class="flex items-center gap-1.5">
                                                 <input type="number" step="1" min="0" max="100" wire:model.live="quote_deposit_percentage" class="w-24 border rounded-lg p-2 text-xs font-black text-indigo-700 focus:ring-indigo-500">
@@ -3498,7 +3510,7 @@
                                         {{ $quote_tax_type === 'included' ? 'IVA 21% Incluido' : ($quote_tax_type === 'excluded' ? '+21% IVA' : 'Sin IVA') }}
                                     </span>
                                     <span class="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full font-bold border border-emerald-400/30">
-                                        Señal {{ $quote_deposit_type === 'percentage' ? ($quote_deposit_percentage . '%') : 'Fija' }}
+                                        Señal {{ $quote_deposit_type === 'none' ? '0 € (Sin Señal)' : ($quote_deposit_type === 'percentage' ? ($quote_deposit_percentage . '%') : 'Fija') }}
                                     </span>
                                 </div>
                             </div>
@@ -3532,7 +3544,7 @@
                                     <div class="bg-slate-800/80 p-3 rounded-xl border border-slate-700">
                                         <div class="flex items-center justify-between mb-1">
                                             <span class="text-[10px] uppercase font-black text-emerald-400">
-                                                Señal {{ $quote_deposit_type === 'percentage' ? '(' . $quote_deposit_percentage . '%)' : '(Fija)' }}
+                                                Señal {{ $quote_deposit_type === 'none' ? '(Sin Señal)' : ($quote_deposit_type === 'percentage' ? '(' . $quote_deposit_percentage . '%)' : '(Fija)') }}
                                             </span>
                                             <span class="text-[10px] text-slate-400">A la firma</span>
                                         </div>
@@ -5363,9 +5375,14 @@
                     @if($quoteAmount > 0)
                         <div class="flex flex-wrap items-center gap-1.5 mt-2">
                             <span class="text-[10px] text-slate-400 font-bold">Atajos:</span>
-                            <button type="button" wire:click="$set('deposit_amount_input', {{ $signalAmount }})" class="text-[10px] font-bold bg-slate-100 hover:bg-emerald-100 text-slate-700 hover:text-emerald-800 border border-slate-200 px-2 py-0.5 rounded-lg transition cursor-pointer">
-                                Señal Propuesta ({{ number_format($signalAmount, 2, ',', '.') }} €)
+                            <button type="button" wire:click="$set('deposit_amount_input', 0)" class="text-[10px] font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 px-2 py-0.5 rounded-lg transition cursor-pointer">
+                                Sin Señal (0 €)
                             </button>
+                            @if($signalAmount > 0)
+                                <button type="button" wire:click="$set('deposit_amount_input', {{ $signalAmount }})" class="text-[10px] font-bold bg-slate-100 hover:bg-emerald-100 text-slate-700 hover:text-emerald-800 border border-slate-200 px-2 py-0.5 rounded-lg transition cursor-pointer">
+                                    Señal Propuesta ({{ number_format($signalAmount, 2, ',', '.') }} €)
+                                </button>
+                            @endif
                             @if($quoteAmount != $signalAmount)
                                 <button type="button" wire:click="$set('deposit_amount_input', {{ round($quoteAmount * 0.5, 2) }})" class="text-[10px] font-bold bg-slate-100 hover:bg-emerald-100 text-slate-700 hover:text-emerald-800 border border-slate-200 px-2 py-0.5 rounded-lg transition cursor-pointer">
                                     50% ({{ number_format($quoteAmount * 0.5, 2, ',', '.') }} €)

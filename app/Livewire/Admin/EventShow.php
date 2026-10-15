@@ -352,10 +352,16 @@ class EventShow extends Component
         $this->quote_services['photo_album']['price'] = (float)\App\Models\Setting::get('price_photo_album', 150);
         $this->quote_services['photo_full_pack']['price'] = (float)\App\Models\Setting::get('price_photo_full_pack', 800);
 
-        // Condiciones de Señal
-        $this->quote_deposit_type = \App\Models\Setting::get('deposit_type', 'percentage');
-        $this->quote_deposit_percentage = (float)\App\Models\Setting::get('deposit_percentage', 40);
-        $this->quote_deposit_fixed_amount = (float)\App\Models\Setting::get('deposit_fixed_amount', 200);
+        // Condiciones de Señal (por defecto 'none' sin señal si el evento es una fiesta)
+        if ($this->event && $this->event->event_type_clean === 'fiesta') {
+            $this->quote_deposit_type = 'none';
+            $this->quote_deposit_percentage = 0;
+            $this->quote_deposit_fixed_amount = 0;
+        } else {
+            $this->quote_deposit_type = \App\Models\Setting::get('deposit_type', 'percentage');
+            $this->quote_deposit_percentage = (float)\App\Models\Setting::get('deposit_percentage', 40);
+            $this->quote_deposit_fixed_amount = (float)\App\Models\Setting::get('deposit_fixed_amount', 200);
+        }
 
         // Condiciones de IVA y Métodos de Pago
         $this->quote_tax_type = \App\Models\Setting::get('default_tax_type', 'included');
@@ -528,11 +534,15 @@ class EventShow extends Component
             if ($latestQuote) {
                 $this->deposit_amount_input = (float)$latestQuote->signal_amount;
             } else {
-                $depType = \App\Models\Setting::get('deposit_type', 'percentage');
-                if ($depType === 'fixed') {
-                    $this->deposit_amount_input = (float)\App\Models\Setting::get('deposit_fixed_amount', 200);
+                if ($this->event && $this->event->event_type_clean === 'fiesta') {
+                    $this->deposit_amount_input = 0;
                 } else {
-                    $this->deposit_amount_input = 200;
+                    $depType = \App\Models\Setting::get('deposit_type', 'percentage');
+                    if ($depType === 'fixed') {
+                        $this->deposit_amount_input = (float)\App\Models\Setting::get('deposit_fixed_amount', 200);
+                    } else {
+                        $this->deposit_amount_input = 200;
+                    }
                 }
             }
             $this->deposit_method_input = 'bizum';
@@ -2165,6 +2175,9 @@ class EventShow extends Component
 
     public function getCalculatedSignalProperty()
     {
+        if ($this->quote_deposit_type === 'none') {
+            return 0.0;
+        }
         $total = (float)$this->calculated_total;
         if ($this->quote_deposit_type === 'fixed') {
             return min((float)$this->quote_deposit_fixed_amount, $total);
@@ -2409,7 +2422,7 @@ class EventShow extends Component
             'amount' => $finalTotal,
             'status' => 'pending',
             'deposit_type' => $this->quote_deposit_type,
-            'deposit_percentage' => $this->quote_deposit_type === 'percentage' ? (float)$this->quote_deposit_percentage : null,
+            'deposit_percentage' => $this->quote_deposit_type === 'percentage' ? (float)$this->quote_deposit_percentage : ($this->quote_deposit_type === 'none' ? 0 : null),
             'deposit_amount' => $signal,
             'tax_type' => $this->quote_tax_type,
             'tax_rate' => (float)$this->quote_tax_rate,
@@ -2452,7 +2465,7 @@ class EventShow extends Component
         $quote->update([
             'amount' => $finalTotal,
             'deposit_type' => $this->quote_deposit_type,
-            'deposit_percentage' => $this->quote_deposit_type === 'percentage' ? (float)$this->quote_deposit_percentage : null,
+            'deposit_percentage' => $this->quote_deposit_type === 'percentage' ? (float)$this->quote_deposit_percentage : ($this->quote_deposit_type === 'none' ? 0 : null),
             'deposit_amount' => $signal,
             'tax_type' => $this->quote_tax_type,
             'tax_rate' => (float)$this->quote_tax_rate,
@@ -2477,7 +2490,10 @@ class EventShow extends Component
         
         // Cargar configuración de señal
         $this->quote_deposit_type = $quote->deposit_type ?: 'percentage';
-        if ($this->quote_deposit_type === 'percentage') {
+        if ($this->quote_deposit_type === 'none') {
+            $this->quote_deposit_percentage = 0;
+            $this->quote_deposit_fixed_amount = 0;
+        } elseif ($this->quote_deposit_type === 'percentage') {
             $this->quote_deposit_percentage = (float)($quote->deposit_percentage ?: 40);
         } else {
             $this->quote_deposit_fixed_amount = (float)($quote->deposit_amount ?: 200);

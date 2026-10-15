@@ -573,14 +573,19 @@ class WhatsAppTemplateService
             $remainingAmount = $latestQuote->remaining_amount;
             $signalLabel = $latestQuote->signal_label;
         } else {
-            $depType = Setting::get('deposit_type', 'percentage');
-            if ($depType === 'fixed') {
-                $signalAmount = min((float)Setting::get('deposit_fixed_amount', 200), $quoteAmount);
-                $signalLabel = number_format($signalAmount, 2, ',', '.') . ' €';
+            if ($event->event_type_clean === 'fiesta') {
+                $signalAmount = 0.0;
+                $signalLabel = 'Sin señal (0,00 €)';
             } else {
-                $pct = (float)Setting::get('deposit_percentage', 40);
-                $signalAmount = round(($quoteAmount * $pct) / 100, 2);
-                $signalLabel = rtrim(rtrim(number_format($pct, 2, ',', '.'), '0'), ',') . '% (' . number_format($signalAmount, 2, ',', '.') . ' €)';
+                $depType = Setting::get('deposit_type', 'percentage');
+                if ($depType === 'fixed') {
+                    $signalAmount = min((float)Setting::get('deposit_fixed_amount', 200), $quoteAmount);
+                    $signalLabel = number_format($signalAmount, 2, ',', '.') . ' €';
+                } else {
+                    $pct = (float)Setting::get('deposit_percentage', 40);
+                    $signalAmount = round(($quoteAmount * $pct) / 100, 2);
+                    $signalLabel = rtrim(rtrim(number_format($pct, 2, ',', '.'), '0'), ',') . '% (' . number_format($signalAmount, 2, ',', '.') . ' €)';
+                }
             }
             $remainingAmount = max(0, $quoteAmount - $signalAmount);
         }
@@ -600,12 +605,15 @@ class WhatsAppTemplateService
         $eventDate = $event->event_date ? Carbon::parse($event->event_date)->format('d/m/Y') : '';
         $loc = $event->location ? " en " . $event->location : "";
 
+        $paymentConditionsText = $signalAmount > 0
+            ? "• Señal de reserva ({$signalLabel}): " . number_format($signalAmount, 2, ',', '.') . " €\n• Restante el día del evento: " . number_format($remainingAmount, 2, ',', '.') . " €"
+            : "• Pago íntegro el día del evento: " . number_format($quoteAmount, 2, ',', '.') . " € (Sin señal previa de reserva)";
+
         return "¡Hola {$clientName}! 👋\n\nOs compartimos la propuesta detallada para vuestro evento *{$event->name}*" . ($eventDate ? " ({$eventDate}{$loc})" : "") . ":\n\n"
              . ($quoteItemsText ?: '• Servicios musicales y sonorización profesional.') . "\n\n"
              . "💰 *TOTAL PRESUPUESTO:* " . number_format($quoteAmount, 2, ',', '.') . " €\n\n"
              . "📌 *CONDICIONES DE PAGO:*\n"
-             . "• Señal de reserva ({$signalLabel}): " . number_format($signalAmount, 2, ',', '.') . " €\n"
-             . "• Restante el día del evento: " . number_format($remainingAmount, 2, ',', '.') . " €"
+             . $paymentConditionsText
              . $quoteValidityNotice . "\n\n"
              . "Cualquier duda o ajuste, estamos a vuestra entera disposición. ¡Un saludo!";
     }

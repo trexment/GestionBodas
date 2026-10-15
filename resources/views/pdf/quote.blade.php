@@ -1410,8 +1410,13 @@
                     <tr>
                         <td style="width: 55%;" class="quote-signal-box">
                             <div style="font-size: 6.5pt; text-transform: uppercase; letter-spacing: 1px; color: #93c5fd; font-weight: 700; margin-bottom: 2px;">CONDICIONES DE PAGO Y RESERVA</div>
-                            <div>• Señal para Bloquear Fecha: <strong>{{ number_format($quote->signal_amount, 2, ',', '.') }} €</strong> <span style="font-size: 6.5pt; opacity: 0.85;">({{ $quote->signal_label }})</span></div>
-                            <div style="margin-top: 2px;">• Restante: <strong>{{ number_format(max(0, $quote->amount - $quote->signal_amount), 2, ',', '.') }} €</strong> <span style="font-size: 6.5pt; opacity: 0.85;">(a liquidar al finalizar el evento)</span></div>
+                            @if($quote->signal_amount > 0)
+                                <div>• Señal para Bloquear Fecha: <strong>{{ number_format($quote->signal_amount, 2, ',', '.') }} €</strong> <span style="font-size: 6.5pt; opacity: 0.85;">({{ $quote->signal_label }})</span></div>
+                                <div style="margin-top: 2px;">• Restante: <strong>{{ number_format(max(0, $quote->amount - $quote->signal_amount), 2, ',', '.') }} €</strong> <span style="font-size: 6.5pt; opacity: 0.85;">(a liquidar al finalizar el evento)</span></div>
+                            @else
+                                <div>• Pago Íntegro: <strong>{{ number_format($quote->amount, 2, ',', '.') }} €</strong> <span style="font-size: 6.5pt; opacity: 0.85;">(el día del evento)</span></div>
+                                <div style="margin-top: 2px; color: #bbf7d0;">• <strong>Sin señal previa</strong> de reserva (0,00 €)</div>
+                            @endif
                         </td>
                         <td style="width: 45%; text-align: right;">
                             <div class="quote-total-label">PRECIO FINAL (CON TODO)</div>
@@ -1471,8 +1476,13 @@
                 <table style="width: 100%; border-collapse: collapse;">
                     <tr>
                         <td style="width: 33.3%; text-align: center; vertical-align: middle; border-right: 1px dashed #cbd5e1; padding: 0 6px;">
-                            <div style="font-weight: 800; color: #1e3a8a; font-size: 7.5pt;">1. Señal de Reserva</div>
-                            <div style="font-size: 6.5pt; color: #64748b; line-height: 1.25; margin-top: 1px;">Abona {{ number_format($quote->signal_amount, 2, ',', '.') }}€ por Bizum o Transferencia.</div>
+                            @if($quote->signal_amount > 0)
+                                <div style="font-weight: 800; color: #1e3a8a; font-size: 7.5pt;">1. Señal de Reserva</div>
+                                <div style="font-size: 6.5pt; color: #64748b; line-height: 1.25; margin-top: 1px;">Abona {{ number_format($quote->signal_amount, 2, ',', '.') }}€ por Bizum o Transferencia.</div>
+                            @else
+                                <div style="font-weight: 800; color: #1e3a8a; font-size: 7.5pt;">1. Confirmación</div>
+                                <div style="font-size: 6.5pt; color: #64748b; line-height: 1.25; margin-top: 1px;">Confirmación de fecha sin requerir señal anticipada.</div>
+                            @endif
                         </td>
                         <td style="width: 33.3%; text-align: center; vertical-align: middle; border-right: 1px dashed #cbd5e1; padding: 0 6px;">
                             <div style="font-weight: 800; color: #1e3a8a; font-size: 7.5pt;">2. Firma Digital</div>

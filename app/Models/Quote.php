@@ -47,15 +47,39 @@ class Quote extends Model
      */
     public function getSignalAmountAttribute(): float
     {
-        if ($this->attributes['deposit_amount'] !== null && (float)$this->attributes['deposit_amount'] > 0) {
-            return min((float)$this->attributes['deposit_amount'], (float)$this->amount);
+        // 1. Si está explícitamente configurado como 'none' (sin señal)
+        if ($this->deposit_type === 'none') {
+            return 0.0;
         }
 
-        if ($this->attributes['deposit_percentage'] !== null && (float)$this->attributes['deposit_percentage'] > 0) {
-            return round(((float)$this->amount * (float)$this->attributes['deposit_percentage']) / 100, 2);
+        // 2. Si se definió un importe fijo explícito (incluso si es 0)
+        if ($this->attributes['deposit_amount'] !== null) {
+            $amt = (float)$this->attributes['deposit_amount'];
+            if ($amt <= 0.0 && ($this->deposit_type === 'fixed' || $this->deposit_type === 'none')) {
+                return 0.0;
+            }
+            if ($amt > 0) {
+                return min($amt, (float)$this->amount);
+            }
         }
 
-        // Si no está definido en el registro, consultar Ajustes
+        // 3. Si se definió un porcentaje explícito (incluso si es 0%)
+        if ($this->attributes['deposit_percentage'] !== null) {
+            $pct = (float)$this->attributes['deposit_percentage'];
+            if ($pct <= 0.0 && ($this->deposit_type === 'percentage' || $this->deposit_type === 'none')) {
+                return 0.0;
+            }
+            if ($pct > 0) {
+                return round(((float)$this->amount * $pct) / 100, 2);
+            }
+        }
+
+        // 4. Si el evento es de tipo fiesta y no se indicó señal, por defecto es 0 €
+        if ($this->event && $this->event->event_type_clean === 'fiesta') {
+            return 0.0;
+        }
+
+        // 5. Fallback a Ajustes generales
         $type = Setting::get('deposit_type', 'percentage');
         if ($type === 'fixed') {
             $fixed = (float)Setting::get('deposit_fixed_amount', 200);
@@ -75,10 +99,14 @@ class Quote extends Model
     }
 
     /**
-     * Devuelve la etiqueta descriptiva de la señal (ej: "40% (280,00 €)" o "200,00 € (Fijo)")
+     * Devuelve la etiqueta descriptiva de la señal (ej: "40% (280,00 €)", "200,00 €" o "Sin señal (0,00 €)")
      */
     public function getSignalLabelAttribute(): string
     {
+        if ($this->deposit_type === 'none' || $this->signal_amount <= 0) {
+            return 'Sin señal (0,00 €)';
+        }
+
         $type = $this->deposit_type ?: Setting::get('deposit_type', 'percentage');
         if ($type === 'fixed') {
             return number_format($this->signal_amount, 2, ',', '.') . ' €';

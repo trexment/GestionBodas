@@ -169,18 +169,23 @@ TEXT
         $amount = $quote ? (float)$quote->amount : 0;
 
         if ($quote) {
-            $signalAmount = $quote->signal_amount;
-            $remainingAmount = $quote->remaining_amount;
+            $signalAmount = (float)$quote->signal_amount;
+            $remainingAmount = (float)$quote->remaining_amount;
             $signalLabel = $quote->signal_label;
         } else {
-            $type = Setting::get('deposit_type', 'percentage');
-            if ($type === 'fixed') {
-                $signalAmount = min((float)Setting::get('deposit_fixed_amount', 200), $amount);
-                $signalLabel = number_format($signalAmount, 2, ',', '.') . ' €';
+            if ($event && $event->event_type_clean === 'fiesta') {
+                $signalAmount = 0.0;
+                $signalLabel = 'Sin señal (0,00 €)';
             } else {
-                $pct = (float)Setting::get('deposit_percentage', 40);
-                $signalAmount = round(($amount * $pct) / 100, 2);
-                $signalLabel = rtrim(rtrim(number_format($pct, 2, ',', '.'), '0'), ',') . '% (' . number_format($signalAmount, 2, ',', '.') . ' €)';
+                $type = Setting::get('deposit_type', 'percentage');
+                if ($type === 'fixed') {
+                    $signalAmount = min((float)Setting::get('deposit_fixed_amount', 200), $amount);
+                    $signalLabel = number_format($signalAmount, 2, ',', '.') . ' €';
+                } else {
+                    $pct = (float)Setting::get('deposit_percentage', 40);
+                    $signalAmount = round(($amount * $pct) / 100, 2);
+                    $signalLabel = rtrim(rtrim(number_format($pct, 2, ',', '.'), '0'), ',') . '% (' . number_format($signalAmount, 2, ',', '.') . ' €)';
+                }
             }
             $remainingAmount = max(0, $amount - $signalAmount);
         }
@@ -320,7 +325,7 @@ TEXT
             '{{ cronograma_completo }}' => $event ? $event->schedule_breakdown : '',
             '{{ importe }}' => number_format($amount, 2, ',', '.') . ' €',
             '{{ importe_total }}' => number_format($amount, 2, ',', '.') . ' €',
-            '{{ importe_senal }}' => number_format($signalAmount, 2, ',', '.') . ' €',
+            '{{ importe_senal }}' => $signalAmount > 0 ? (number_format($signalAmount, 2, ',', '.') . ' €') : '0,00 € (Sin señal previa)',
             '{{ importe_restante }}' => number_format($remainingAmount, 2, ',', '.') . ' €',
             '{{ servicios_contratados }}' => $renderedServices,
             '{{ desglose_servicios }}' => $renderedServices,
@@ -338,6 +343,18 @@ TEXT
         $titleTemplate = self::getDefaultTitle();
         $bodyTemplate = self::getDefaultBody();
         $footerTemplate = self::getDefaultFooter();
+
+        // Si no se requiere señal (0 €), adaptamos la cláusula de pago para indicar abono íntegro el día del evento
+        if ($signalAmount <= 0) {
+            $standardPaymentPatterns = [
+                "1. Un importe de {{ importe_senal }} en concepto de señal y reserva en firme de la fecha y bloqueo de equipamiento técnico a la firma del presente contrato.\n2. El importe restante de {{ importe_restante }} a abonar el día de la celebración del evento o con anterioridad al inicio de la actuación.",
+                "1. Un importe de {{ importe_senal }} en concepto de señal y reserva en firme de la fecha y bloqueo de equipamiento técnico a la firma del presente contrato.\r\n2. El importe restante de {{ importe_restante }} a abonar el día de la celebración del evento o con anterioridad al inicio de la actuación.",
+                "1. Un importe de 0,00 € en concepto de señal y reserva en firme de la fecha y bloqueo de equipamiento técnico a la firma del presente contrato.\n2. El importe restante de {{ importe_restante }} a abonar el día de la celebración del evento o con anterioridad al inicio de la actuación.",
+                "1. Un importe de 0,00 € en concepto de señal y reserva en firme de la fecha y bloqueo de equipamiento técnico a la firma del presente contrato.\r\n2. El importe restante de {{ importe_restante }} a abonar el día de la celebración del evento o con anterioridad al inicio de la actuación.",
+            ];
+            $noDepositPaymentText = "1. El abono íntegro del importe pactado ({{ importe }}) se realizará el día de la celebración del evento o con anterioridad al inicio de la actuación, sin requerirse señal previa de reserva.";
+            $bodyTemplate = str_replace($standardPaymentPatterns, $noDepositPaymentText, $bodyTemplate);
+        }
 
         if (!str_contains($bodyTemplate, '{{ especificacion_montaje }}')) {
             $bodyTemplate = str_replace(
