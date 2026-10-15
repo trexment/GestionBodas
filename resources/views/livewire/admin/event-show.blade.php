@@ -1466,15 +1466,15 @@
                                 <span class="text-[11px] font-black text-slate-700 uppercase tracking-wider flex items-center gap-1">
                                     <span>🗨️</span> Conversación Registrada
                                 </span>
-                                @if(isset($event->whatsappMessages) && $event->whatsappMessages->count() > 0)
+                                @if($this->whatsappMessages && $this->whatsappMessages->count() > 0)
                                     <span class="text-[10px] font-bold text-slate-500 bg-white px-2 py-0.5 rounded-md border border-slate-200">
-                                        {{ $event->whatsappMessages->count() }} mensaje(s)
+                                        {{ $this->whatsappMessages->count() }} mensaje(s)
                                     </span>
                                 @endif
                             </div>
 
                             <div class="max-h-56 overflow-y-auto space-y-2.5 p-2 bg-slate-50/50 rounded-lg border border-slate-200/60 text-xs">
-                                @forelse($event->whatsappMessages ?? [] as $msg)
+                                @forelse($this->whatsappMessages as $msg)
                                     @if($msg->direction === 'outbound')
                                         <!-- Mensaje Saliente (Staff / DJ) -->
                                         <div class="flex flex-col items-end">

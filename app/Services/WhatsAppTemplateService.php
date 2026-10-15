@@ -283,6 +283,24 @@ class WhatsAppTemplateService
     }
 
     /**
+     * TÉCNICA DEL NO ENFOCADA A OBJECIÓN DE PRESUPUESTO.
+     */
+    public static function seguimientoPresupuestoNo(Event $event): string
+    {
+        $clientName = $event->client ? $event->client->name : 'pareja';
+        $brand = Setting::getBrandInfo($event ? $event->brand_clean : null);
+        $companyName = $brand['name'] ?? Setting::get('company_name', 'Núñez & Son');
+        $eventDate = $event->event_date ? Carbon::parse($event->event_date)->locale('es')->isoFormat('D [de] MMMM [de] YYYY') : 'vuestra fecha';
+        $eventName = $event->name ?: 'vuestro evento';
+
+        return "¡Hola {$clientName}! 👋 Os escribe *{$companyName}*.\n\n"
+             . "*¿Habéis decidido descartar nuestra propuesta para {$eventName} principalmente por un tema de presupuesto?*\n\n"
+             . "Si es por eso, no os preocupéis: tenemos alternativas más flexibles o podemos adaptar el equipamiento para encajar dentro de lo que teníais pensado invertir, sin renunciar a la calidad del sonido ni de la fiesta.\n\n"
+             . "Si por el contrario ya tenéis otra opción contratada o preferís dejarlo, avisadnos con toda confianza para poder liberar vuestra fecha ({$eventDate}) en nuestra agenda.\n\n"
+             . "¡Quedamos a vuestra disposición! 🎧";
+    }
+
+    /**
      * Determina la clave de seguimiento recomendada según los días sin respuesta (Método Madrigal)
      */
     public static function getRecommendedFollowupKey(Event $event): string
@@ -306,7 +324,7 @@ class WhatsAppTemplateService
     public static function getFollowupOptions(Event $event): array
     {
         $recommendedKey = self::getRecommendedFollowupKey($event);
-        $clientPhone = $event->client ? $event->client->phone : '';
+        $clientPhone = $event->client ? $event->client->phone : ($event->partner_phone ?? '');
 
         $options = [
             'dia3_dudas' => [
@@ -362,7 +380,7 @@ class WhatsAppTemplateService
 
     public static function followupReminder(Event $event, ?string $variant = null): array
     {
-        $clientPhone = $event->client ? $event->client->phone : '';
+        $clientPhone = $event->client ? $event->client->phone : ($event->partner_phone ?? '');
         if (empty($variant)) {
             $variant = self::getRecommendedFollowupKey($event);
         }

@@ -243,7 +243,7 @@ class EventShow extends Component
             }
         } catch (\Throwable $e) {}
 
-        if (!\Illuminate\Support\Facades\Schema::hasColumn('events', 'partner_name')) {
+        if (!\Illuminate\Support\Facades\Schema::hasTable('whatsapp_messages') || !\Illuminate\Support\Facades\Schema::hasColumn('events', 'partner_name')) {
             try {
                 \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
             } catch (\Throwable $e) {}
@@ -1678,6 +1678,20 @@ class EventShow extends Component
             // Modo manual o fallback: despachar evento para abrir WhatsApp Web / App
             $this->dispatch('open-whatsapp-link', ['url' => $result['url']]);
             session()->flash('whatsapp_success', '💬 Abriendo WhatsApp con el mensaje preparado...');
+        }
+    }
+
+    public function getWhatsappMessagesProperty()
+    {
+        try {
+            if (!\Illuminate\Support\Facades\Schema::hasTable('whatsapp_messages')) {
+                return collect();
+            }
+            return $this->event->relationLoaded('whatsappMessages')
+                ? $this->event->whatsappMessages
+                : $this->event->whatsappMessages()->get();
+        } catch (\Throwable $e) {
+            return collect();
         }
     }
 
