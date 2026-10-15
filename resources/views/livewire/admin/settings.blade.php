@@ -86,31 +86,49 @@
         </div>
     @endif
 
-    <!-- TABS -->
-    <div class="flex border-b border-gray-200 bg-white rounded-t-xl px-4 pt-3 gap-2 overflow-x-auto">
-        <button type="button" wire:click="$set('activeTab', 'general')" class="py-3 px-4 text-xs font-bold uppercase tracking-wider border-b-2 transition-all flex items-center gap-2 {{ $activeTab === 'general' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700' }}">
+    <!-- TABS NAVEGACIÓN MODERNA (PILLS SEGMENTADOS) -->
+    <div class="bg-slate-100/90 dark:bg-slate-900/90 p-1.5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs flex items-center gap-1.5 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+        <button type="button" wire:click="$set('activeTab', 'general')" 
+            class="shrink-0 whitespace-nowrap px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-150 flex items-center gap-2 cursor-pointer select-none {{ $activeTab === 'general' ? 'bg-white dark:bg-indigo-600 text-indigo-700 dark:text-white shadow-xs ring-1 ring-black/5 dark:ring-white/10' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-800/60' }}">
             <span>🏢</span> Datos Generales
         </button>
-        <button type="button" wire:click="$set('activeTab', 'pricing')" class="py-3 px-4 text-xs font-bold uppercase tracking-wider border-b-2 transition-all flex items-center gap-2 {{ $activeTab === 'pricing' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700' }}">
+
+        <button type="button" wire:click="$set('activeTab', 'pricing')" 
+            class="shrink-0 whitespace-nowrap px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-150 flex items-center gap-2 cursor-pointer select-none {{ $activeTab === 'pricing' ? 'bg-white dark:bg-indigo-600 text-indigo-700 dark:text-white shadow-xs ring-1 ring-black/5 dark:ring-white/10' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-800/60' }}">
             <span>💶</span> Tarifas y Precios
         </button>
-        <button type="button" wire:click="$set('activeTab', 'contracts')" class="py-3 px-4 text-xs font-bold uppercase tracking-wider border-b-2 transition-all flex items-center gap-2 {{ $activeTab === 'contracts' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700' }}">
+
+        <button type="button" wire:click="$set('activeTab', 'contracts')" 
+            class="shrink-0 whitespace-nowrap px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-150 flex items-center gap-2 cursor-pointer select-none {{ $activeTab === 'contracts' ? 'bg-white dark:bg-indigo-600 text-indigo-700 dark:text-white shadow-xs ring-1 ring-black/5 dark:ring-white/10' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-800/60' }}">
             <span>📜</span> Editor de Contratos
         </button>
-        <button type="button" wire:click="$set('activeTab', 'dossier')" class="py-3 px-4 text-xs font-bold uppercase tracking-wider border-b-2 transition-all flex items-center gap-2 {{ $activeTab === 'dossier' ? 'border-amber-600 text-amber-600' : 'border-transparent text-gray-500 hover:text-gray-700' }}">
+
+        <button type="button" wire:click="$set('activeTab', 'dossier')" 
+            class="shrink-0 whitespace-nowrap px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-150 flex items-center gap-2 cursor-pointer select-none {{ $activeTab === 'dossier' ? 'bg-white dark:bg-amber-600 text-amber-700 dark:text-white shadow-xs ring-1 ring-black/5 dark:ring-white/10' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-800/60' }}">
             <span>📖</span> Dossier y Propuestas
         </button>
-        <button type="button" wire:click="$set('activeTab', 'music_integrations')" class="py-3 px-4 text-xs font-bold uppercase tracking-wider border-b-2 transition-all flex items-center gap-2 {{ $activeTab === 'music_integrations' ? 'border-pink-600 text-pink-600' : 'border-transparent text-gray-500 hover:text-gray-700' }}">
-            <span>🍎🟢</span> Apple Music & Spotify
+
+        <button type="button" wire:click="$set('activeTab', 'music_integrations')" 
+            class="shrink-0 whitespace-nowrap px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-150 flex items-center gap-2 cursor-pointer select-none {{ $activeTab === 'music_integrations' ? 'bg-white dark:bg-pink-600 text-pink-700 dark:text-white shadow-xs ring-1 ring-black/5 dark:ring-white/10' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-800/60' }}">
+            <span>🎵</span> Música (Spotify / Apple)
         </button>
-        <button type="button" wire:click="$set('activeTab', 'email_smtp')" class="py-3 px-4 text-xs font-bold uppercase tracking-wider border-b-2 transition-all flex items-center gap-2 {{ $activeTab === 'email_smtp' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700' }}">
+
+        <button type="button" wire:click="$set('activeTab', 'email_smtp')" 
+            class="shrink-0 whitespace-nowrap px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-150 flex items-center gap-2 cursor-pointer select-none {{ $activeTab === 'email_smtp' ? 'bg-white dark:bg-indigo-600 text-indigo-700 dark:text-white shadow-xs ring-1 ring-black/5 dark:ring-white/10' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-800/60' }}">
             <span>✉️</span> Correo Saliente (SMTP)
         </button>
-        <button type="button" wire:click="$set('activeTab', 'email_imap')" class="py-3 px-4 text-xs font-bold uppercase tracking-wider border-b-2 transition-all flex items-center gap-2 {{ $activeTab === 'email_imap' ? 'border-purple-600 text-purple-600' : 'border-transparent text-gray-500 hover:text-gray-700' }}">
-            <span>📥</span> Correos Entrantes (IMAP)
+
+        <button type="button" wire:click="$set('activeTab', 'email_imap')" 
+            class="shrink-0 whitespace-nowrap px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-150 flex items-center gap-2 cursor-pointer select-none {{ $activeTab === 'email_imap' ? 'bg-white dark:bg-purple-600 text-purple-700 dark:text-white shadow-xs ring-1 ring-black/5 dark:ring-white/10' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-800/60' }}">
+            <span>📥</span> Leads Entrantes (IMAP)
         </button>
-        <button type="button" wire:click="$set('activeTab', 'whatsapp_gateway')" class="py-3 px-4 text-xs font-bold uppercase tracking-wider border-b-2 transition-all flex items-center gap-2 {{ $activeTab === 'whatsapp_gateway' ? 'border-emerald-600 text-emerald-600' : 'border-transparent text-gray-500 hover:text-gray-700' }}">
-            <span>💬</span> WhatsApp (Evolution API)
+
+        <button type="button" wire:click="$set('activeTab', 'whatsapp_gateway')" 
+            class="shrink-0 whitespace-nowrap px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-150 flex items-center gap-2 cursor-pointer select-none {{ $activeTab === 'whatsapp_gateway' ? 'bg-emerald-600 text-white shadow-xs ring-1 ring-emerald-400/40' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-800/60' }}">
+            <span>💬</span> WhatsApp API
+            @if($whatsapp_gateway_enabled)
+                <span class="inline-block h-2 w-2 rounded-full bg-emerald-400 ring-2 ring-emerald-200 dark:ring-emerald-900"></span>
+            @endif
         </button>
     </div>
 
