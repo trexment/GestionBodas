@@ -51,7 +51,7 @@
     @endif
 
     <!-- FILTROS RÁPIDOS POR ESTADO -->
-    <div class="flex items-center gap-1.5 overflow-x-auto pb-2 mb-4">
+    <div class="flex items-center gap-1.5 overflow-x-auto scrollbar-none pb-2 mb-4 w-full">
         <button type="button" wire:click="setStatusFilter('all')" class="px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer {{ $status_filter === 'all' ? 'bg-indigo-600 text-white shadow-xs' : 'bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 border border-gray-200 dark:border-slate-700' }}">
             Todos ({{ $statusCounts['all'] ?? 0 }})
         </button>
@@ -104,7 +104,7 @@
                 <div class="grid grid-cols-2 gap-2 text-xs">
                     <div class="bg-gray-50 dark:bg-slate-800/60 p-2 rounded-xl border border-gray-100 dark:border-slate-800">
                         <span class="text-[10px] text-gray-400 dark:text-gray-400 uppercase font-bold block">📅 Fecha Evento</span>
-                        <span class="font-bold text-gray-800 dark:text-slate-200">{{ $event->event_date->format('d/m/Y') }}</span>
+                        <span class="font-bold text-gray-800 dark:text-slate-200">{{ $event->event_date ? $event->event_date->format('d/m/Y') : 'Por definir' }}</span>
                     </div>
                     <div class="bg-gray-50 dark:bg-slate-800/60 p-2 rounded-xl border border-gray-100 dark:border-slate-800">
                         <span class="text-[10px] text-gray-400 dark:text-gray-400 uppercase font-bold block">📍 Lugar</span>
@@ -124,7 +124,7 @@
                         @if($event->dance_start_time)
                             <div class="text-purple-900 dark:text-purple-300 font-bold flex items-center gap-1.5">
                                 <span>⏰</span>
-                                <span><strong>Baile (24h):</strong> {{ substr($event->dance_start_time, 0, 5) }}h @if($event->dance_duration_hours)({{ (float)$event->dance_duration_hours }}h)@endif</span>
+                                <span><strong>Baile (24h):</strong> {{ substr((string)$event->dance_start_time, 0, 5) }}h @if($event->dance_duration_hours)({{ (float)$event->dance_duration_hours }}h)@endif</span>
                             </div>
                         @endif
                     </div>
@@ -194,115 +194,117 @@
     </div>
 
     <!-- ============================================== -->
-    <!-- VISTA ESCRITORIO / TABLET: TABLA SIN SCROLL    -->
+    <!-- VISTA ESCRITORIO / TABLET: TABLA RESPONSIVA    -->
     <!-- ============================================== -->
-    <div class="hidden sm:block bg-white dark:bg-slate-900 shadow-sm overflow-hidden rounded-2xl border border-gray-200 dark:border-slate-800">
-        <table class="w-full divide-y divide-gray-200 dark:divide-slate-800 table-auto text-left">
-            <thead class="bg-gray-50 dark:bg-slate-950">
-                <tr>
-                    <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Evento y Personal</th>
-                    <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Fecha</th>
-                    <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Lugar</th>
-                    <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Cliente</th>
-                    <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Estado</th>
-                    <th class="px-4 py-3 text-right text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Acciones</th>
-                </tr>
-            </thead>
-            <tbody class="bg-white dark:bg-slate-900 divide-y divide-gray-200 dark:divide-slate-800">
-                @forelse($events as $event)
-                    <tr class="hover:bg-gray-50/70 dark:hover:bg-slate-800/50 transition">
-                        <td class="px-4 py-3">
-                            <div class="flex items-center gap-2">
-                                <span class="text-base shrink-0">{{ $event->event_type_icon }}</span>
-                                <span class="text-sm font-extrabold text-gray-900 dark:text-white truncate">{{ $event->name }}</span>
-                            </div>
-                            <div class="flex flex-wrap items-center gap-1.5 mt-1">
-                                <span class="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold px-2 py-0.5 rounded-md">
-                                    {{ $event->event_type_label }}
-                                </span>
-                                @if($event->dj)
-                                    <span class="text-[11px] text-indigo-700 dark:text-indigo-400 font-semibold inline-flex items-center gap-1">
-                                        🎧 {{ $event->dj->name }}
-                                    </span>
-                                @endif
-                                @php
-                                    $assignedAsts = $event->all_assistants;
-                                @endphp
-                                @if($assignedAsts->isNotEmpty())
-                                    <span class="text-[11px] text-amber-700 dark:text-amber-400 font-semibold inline-flex items-center gap-1">
-                                        👷‍♂️ {{ $assignedAsts->pluck('name')->implode(', ') }}
-                                    </span>
-                                @endif
-                            </div>
-                        </td>
-                        <td class="px-4 py-3 whitespace-nowrap">
-                            <div class="text-xs text-gray-900 dark:text-slate-200 font-bold">{{ $event->event_date->format('d/m/Y') }}</div>
-                            @if($event->setup_date || $event->start_time)
-                                <div class="text-[10px] text-amber-800 dark:text-amber-300 font-bold flex items-center gap-1 mt-0.5">
-                                    <span>🚗</span>
-                                    <span>{{ $event->setup_schedule_label }}</span>
+    <div class="hidden sm:block bg-white dark:bg-slate-900 shadow-sm rounded-2xl border border-gray-200 dark:border-slate-800 overflow-hidden">
+        <div class="overflow-x-auto w-full">
+            <table class="w-full min-w-[850px] divide-y divide-gray-200 dark:divide-slate-800 table-auto text-left">
+                <thead class="bg-gray-50 dark:bg-slate-950">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Evento y Personal</th>
+                        <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Fecha</th>
+                        <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Lugar</th>
+                        <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Cliente</th>
+                        <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Estado</th>
+                        <th class="px-4 py-3 text-right text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white dark:bg-slate-900 divide-y divide-gray-200 dark:divide-slate-800">
+                    @forelse($events as $event)
+                        <tr class="hover:bg-gray-50/70 dark:hover:bg-slate-800/50 transition">
+                            <td class="px-4 py-3">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-base shrink-0">{{ $event->event_type_icon }}</span>
+                                    <span class="text-sm font-extrabold text-gray-900 dark:text-white truncate">{{ $event->name }}</span>
                                 </div>
-                            @endif
-                            @if($event->dance_start_time)
-                                <div class="text-[10px] text-purple-700 dark:text-purple-300 font-bold flex items-center gap-1 mt-0.5">
-                                    <span>⏰</span>
-                                    <span>{{ substr($event->dance_start_time, 0, 5) }}h @if($event->dance_duration_hours)({{ (float)$event->dance_duration_hours }}h)@endif</span>
-                                </div>
-                            @endif
-                        </td>
-                        <td class="px-4 py-3 text-xs text-gray-600 dark:text-slate-400 truncate max-w-[160px]" title="{{ $event->location }}">
-                            📍 {{ $event->location }}
-                        </td>
-                        <td class="px-4 py-3 text-xs text-gray-600 dark:text-slate-400">
-                            <div class="font-bold text-gray-800 dark:text-slate-200 truncate max-w-[140px]">{{ $event->client ? $event->client->name : 'Sin asignar' }}</div>
-                            @if($event->client && $event->client->phone)
-                                @php
-                                    $cPhone = preg_replace('/[^0-9]/', '', $event->client->phone);
-                                    if (strlen($cPhone) === 9 && in_array(substr($cPhone, 0, 1), ['6', '7'])) {
-                                        $cPhone = '34' . $cPhone;
-                                    }
-                                @endphp
-                                <a href="https://wa.me/{{ $cPhone }}" target="_blank" class="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 border border-emerald-200 dark:border-emerald-800 px-1.5 py-0.5 rounded-lg mt-0.5 transition" title="Abrir chat de WhatsApp">
-                                    💬 {{ $event->client->phone }}
-                                </a>
-                            @endif
-                        </td>
-                        <td class="px-4 py-3 whitespace-nowrap">
-                            <span class="px-2.5 py-0.5 inline-flex text-[11px] leading-5 font-bold rounded-full border {{ $event->status_badge_class }}">
-                                {{ $event->status_icon }} {{ $event->status_label }}
-                            </span>
-                            @if($event->status === 'no_response')
-                                <div class="mt-1 flex items-center gap-1.5">
-                                    <span class="text-[10px] font-semibold {{ $event->no_response_urgency_level === 'critical' ? 'text-rose-600 font-bold' : ($event->no_response_urgency_level === 'warning' ? 'text-amber-600 font-bold' : 'text-purple-600') }}">
-                                        {{ $event->no_response_time_label }}
+                                <div class="flex flex-wrap items-center gap-1.5 mt-1">
+                                    <span class="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold px-2 py-0.5 rounded-md">
+                                        {{ $event->event_type_label }}
                                     </span>
-                                    @if($event->no_response_whatsapp_url)
-                                        <button type="button" onclick="window.open('{{ $event->no_response_whatsapp_url }}', '_blank')" wire:click="promptFollowup({{ $event->id }})" class="inline-flex items-center gap-1 text-[10px] bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 px-1.5 py-0.5 rounded font-bold transition cursor-pointer" title="Enviar recordatorio táctico de WhatsApp (Técnica del NO)">
-                                            💬 Recordar
-                                        </button>
+                                    @if($event->dj)
+                                        <span class="text-[11px] text-indigo-700 dark:text-indigo-400 font-semibold inline-flex items-center gap-1">
+                                            🎧 {{ $event->dj->name }}
+                                        </span>
+                                    @endif
+                                    @php
+                                        $assignedAsts = $event->all_assistants;
+                                    @endphp
+                                    @if($assignedAsts->isNotEmpty())
+                                        <span class="text-[11px] text-amber-700 dark:text-amber-400 font-semibold inline-flex items-center gap-1">
+                                            👷‍♂️ {{ $assignedAsts->pluck('name')->implode(', ') }}
+                                        </span>
                                     @endif
                                 </div>
-                            @endif
-                        </td>
-                        <td class="px-4 py-3 whitespace-nowrap text-right text-xs font-medium">
-                            <a href="{{ route('admin.events.show', $event->id) }}" class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 font-extrabold bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 border border-indigo-200 dark:border-indigo-800 px-3 py-1.5 rounded-xl transition">Gestionar</a>
-                            <button type="button" wire:click="openEditModal({{ $event->id }})" class="text-amber-600 hover:text-amber-900 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/60 border border-amber-200 dark:border-amber-800 px-2.5 py-1.5 rounded-xl transition ml-1 cursor-pointer" title="Editar Evento">
-                                ✏️
-                            </button>
-                            @if(auth()->user()->role === 'admin')
-                                <button type="button" wire:click="deleteEvent({{ $event->id }})" wire:confirm="¿Estás seguro de que deseas eliminar permanentemente el evento '{{ $event->name }}' y todos sus presupuestos, contratos y música?" class="text-rose-600 hover:text-rose-900 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/60 px-2 py-1.5 rounded-xl transition ml-1 cursor-pointer" title="Eliminar Evento">
-                                    🗑️
+                            </td>
+                            <td class="px-4 py-3 whitespace-nowrap">
+                                <div class="text-xs text-gray-900 dark:text-slate-200 font-bold">{{ $event->event_date ? $event->event_date->format('d/m/Y') : 'Por definir' }}</div>
+                                @if($event->setup_date || $event->start_time)
+                                    <div class="text-[10px] text-amber-800 dark:text-amber-300 font-bold flex items-center gap-1 mt-0.5">
+                                        <span>🚗</span>
+                                        <span>{{ $event->setup_schedule_label }}</span>
+                                    </div>
+                                @endif
+                                @if($event->dance_start_time)
+                                    <div class="text-[10px] text-purple-700 dark:text-purple-300 font-bold flex items-center gap-1 mt-0.5">
+                                        <span>⏰</span>
+                                        <span>{{ substr((string)$event->dance_start_time, 0, 5) }}h @if($event->dance_duration_hours)({{ (float)$event->dance_duration_hours }}h)@endif</span>
+                                    </div>
+                                @endif
+                            </td>
+                            <td class="px-4 py-3 text-xs text-gray-600 dark:text-slate-400 truncate max-w-[160px]" title="{{ $event->location }}">
+                                📍 {{ $event->location }}
+                            </td>
+                            <td class="px-4 py-3 text-xs text-gray-600 dark:text-slate-400">
+                                <div class="font-bold text-gray-800 dark:text-slate-200 truncate max-w-[140px]">{{ $event->client ? $event->client->name : 'Sin asignar' }}</div>
+                                @if($event->client && $event->client->phone)
+                                    @php
+                                        $cPhone = preg_replace('/[^0-9]/', '', $event->client->phone);
+                                        if (strlen($cPhone) === 9 && in_array(substr($cPhone, 0, 1), ['6', '7'])) {
+                                            $cPhone = '34' . $cPhone;
+                                        }
+                                    @endphp
+                                    <a href="https://wa.me/{{ $cPhone }}" target="_blank" class="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 border border-emerald-200 dark:border-emerald-800 px-1.5 py-0.5 rounded-lg mt-0.5 transition" title="Abrir chat de WhatsApp">
+                                        💬 {{ $event->client->phone }}
+                                    </a>
+                                @endif
+                            </td>
+                            <td class="px-4 py-3 whitespace-nowrap">
+                                <span class="px-2.5 py-0.5 inline-flex text-[11px] leading-5 font-bold rounded-full border {{ $event->status_badge_class }}">
+                                    {{ $event->status_icon }} {{ $event->status_label }}
+                                </span>
+                                @if($event->status === 'no_response')
+                                    <div class="mt-1 flex items-center gap-1.5">
+                                        <span class="text-[10px] font-semibold {{ $event->no_response_urgency_level === 'critical' ? 'text-rose-600 font-bold' : ($event->no_response_urgency_level === 'warning' ? 'text-amber-600 font-bold' : 'text-purple-600') }}">
+                                            {{ $event->no_response_time_label }}
+                                        </span>
+                                        @if($event->no_response_whatsapp_url)
+                                            <button type="button" onclick="window.open('{{ $event->no_response_whatsapp_url }}', '_blank')" wire:click="promptFollowup({{ $event->id }})" class="inline-flex items-center gap-1 text-[10px] bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 px-1.5 py-0.5 rounded font-bold transition cursor-pointer" title="Enviar recordatorio táctico de WhatsApp (Técnica del NO)">
+                                                💬 Recordar
+                                            </button>
+                                        @endif
+                                    </div>
+                                @endif
+                            </td>
+                            <td class="px-4 py-3 whitespace-nowrap text-right text-xs font-medium">
+                                <a href="{{ route('admin.events.show', $event->id) }}" class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 font-extrabold bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 border border-indigo-200 dark:border-indigo-800 px-3 py-1.5 rounded-xl transition">Gestionar</a>
+                                <button type="button" wire:click="openEditModal({{ $event->id }})" class="text-amber-600 hover:text-amber-900 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/60 border border-amber-200 dark:border-amber-800 px-2.5 py-1.5 rounded-xl transition ml-1 cursor-pointer" title="Editar Evento">
+                                    ✏️
                                 </button>
-                            @endif
-                        </td>
-                    </tr>
-                @empty
-                    <tr>
-                        <td colspan="6" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">No hay eventos registrados.</td>
-                    </tr>
-                @endforelse
-            </tbody>
-        </table>
+                                @if(auth()->user()->role === 'admin')
+                                    <button type="button" wire:click="deleteEvent({{ $event->id }})" wire:confirm="¿Estás seguro de que deseas eliminar permanentemente el evento '{{ $event->name }}' y todos sus presupuestos, contratos y música?" class="text-rose-600 hover:text-rose-900 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/60 px-2 py-1.5 rounded-xl transition ml-1 cursor-pointer" title="Eliminar Evento">
+                                        🗑️
+                                    </button>
+                                @endif
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="6" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">No hay eventos registrados.</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
     </div>
 
     <!-- ============================================== -->

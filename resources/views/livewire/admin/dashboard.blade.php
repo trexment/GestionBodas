@@ -77,7 +77,7 @@
                                     {{ $ev->no_response_time_label }}
                                 </span>
                             </div>
-                            <span class="text-[11px] text-slate-400 block mt-0.5 truncate">👤 {{ $ev->client ? $ev->client->name : 'Sin cliente' }} &bull; {{ $ev->event_date->format('d/m/Y') }}</span>
+                            <span class="text-[11px] text-slate-400 block mt-0.5 truncate">👤 {{ $ev->client ? $ev->client->name : 'Sin cliente' }} &bull; {{ $ev->event_date ? $ev->event_date->format('d/m/Y') : 'Por definir' }}</span>
                         </div>
                         <div class="flex items-center gap-1.5 pt-1">
                             <a href="{{ route('admin.events.show', $ev->id) }}" class="flex-1 text-center py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-bold rounded-lg transition">
@@ -355,8 +355,8 @@
                         <div class="flex items-start gap-4">
                             <!-- BADGE DE FECHA -->
                             <div class="flex-shrink-0 w-14 h-14 rounded-2xl bg-indigo-50 border border-indigo-100 text-indigo-700 flex flex-col items-center justify-center shadow-xs">
-                                <span class="text-[10px] uppercase font-bold tracking-wider leading-none text-indigo-500">{{ $ev->event_date->translatedFormat('M') }}</span>
-                                <span class="text-xl font-extrabold leading-tight">{{ $ev->event_date->format('d') }}</span>
+                                <span class="text-[10px] uppercase font-bold tracking-wider leading-none text-indigo-500">{{ $ev->event_date ? $ev->event_date->translatedFormat('M') : '---' }}</span>
+                                <span class="text-xl font-extrabold leading-tight">{{ $ev->event_date ? $ev->event_date->format('d') : '--' }}</span>
                             </div>
 
                             <div>

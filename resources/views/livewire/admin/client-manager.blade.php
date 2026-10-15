@@ -53,8 +53,8 @@
 
     <!-- TABLA DE CLIENTES -->
     <div class="bg-white dark:bg-slate-900 shadow-sm overflow-hidden rounded-3xl border border-slate-200 dark:border-slate-800">
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-800 text-left">
+        <div class="overflow-x-auto w-full">
+            <table class="w-full min-w-[750px] divide-y divide-slate-200 dark:divide-slate-800 text-left">
                 <thead class="bg-slate-50 dark:bg-slate-950 text-slate-500 dark:text-slate-400 text-xs uppercase font-bold tracking-wider">
                     <tr>
                         <th class="px-5 py-3.5">Cliente / Pareja</th>

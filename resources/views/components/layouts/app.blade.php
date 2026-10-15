@@ -600,7 +600,7 @@
             </header>
 
             <!-- MAIN VIEW CONTAINER -->
-            <main class="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
+            <main class="flex-1 min-w-0 p-3 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
                 {{ $slot }}
             </main>
 
