@@ -53,6 +53,8 @@
     <div class="min-h-screen py-8">
         {{ $slot }}
     </div>
+    <!-- DNI / NIE / CIF Validator & Auto-completer -->
+    <script src="/js/dni-validator.js"></script>
     @livewireScripts
 </body>
 </html>

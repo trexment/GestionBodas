@@ -225,8 +225,48 @@
                             </div>
 
                             <div>
-                                <label class="block text-slate-700 dark:text-slate-300 text-xs font-bold uppercase tracking-wider mb-1">DNI / NIF</label>
-                                <input type="text" wire:model="dni" placeholder="12345678Z" class="w-full border-slate-300 dark:border-slate-700 rounded-xl p-2.5 text-xs font-mono font-bold text-slate-800 dark:text-white bg-slate-50 dark:bg-slate-950 uppercase">
+                                <div class="flex items-center justify-between mb-1">
+                                    <label class="block text-slate-700 dark:text-slate-300 text-xs font-bold uppercase tracking-wider">DNI / NIF</label>
+                                    @if(!empty($dni) && isset($dniValidations['dni']))
+                                        @if($dniValidations['dni']['valid'])
+                                            <span class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-300 dark:border-emerald-800 flex items-center gap-1">
+                                                <span>✓</span> {{ $dniValidations['dni']['type'] ?? 'DNI' }} Válido
+                                            </span>
+                                        @endif
+                                    @endif
+                                </div>
+                                <div class="relative">
+                                    <input 
+                                        type="text" 
+                                        wire:model.live.debounce.300ms="dni" 
+                                        data-dni-input 
+                                        placeholder="12345678Z" 
+                                        class="w-full border {{ !empty($dni) && isset($dniValidations['dni']) ? ($dniValidations['dni']['valid'] ? 'border-emerald-500 focus:border-emerald-500 focus:ring-emerald-500' : 'border-amber-400 dark:border-amber-600 focus:border-amber-500 focus:ring-amber-500 bg-amber-50/30') : 'border-slate-300 dark:border-slate-700' }} rounded-xl p-2.5 text-xs font-mono font-bold text-slate-800 dark:text-white bg-slate-50 dark:bg-slate-950 uppercase transition"
+                                    >
+                                    @if(!empty($dni) && isset($dniValidations['dni']) && $dniValidations['dni']['valid'])
+                                        <div class="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500 font-bold text-sm pointer-events-none">
+                                            ✓
+                                        </div>
+                                    @endif
+                                </div>
+                                @if(!empty($dni) && isset($dniValidations['dni']) && !$dniValidations['dni']['valid'])
+                                    <div class="mt-1.5 p-2 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 rounded-xl flex items-center justify-between text-xs gap-2">
+                                        <div class="flex items-center gap-1.5 text-amber-800 dark:text-amber-300 font-semibold leading-tight text-[11px]">
+                                            <span>⚠️</span>
+                                            <span>{{ $dniValidations['dni']['message'] ?? 'Letra de DNI incorrecta.' }}</span>
+                                        </div>
+                                        @if(!empty($dniValidations['dni']['suggested']))
+                                            <button 
+                                                type="button" 
+                                                wire:click="applyDniSuggestion('dni', '{{ $dniValidations['dni']['suggested'] }}')" 
+                                                class="px-2.5 py-1 bg-amber-600 hover:bg-amber-700 active:scale-95 text-white font-bold rounded-lg text-[10px] shadow-xs cursor-pointer transition shrink-0 whitespace-nowrap"
+                                                title="Pulsar para sustituir la letra errónea por la letra oficial calculada"
+                                            >
+                                                Corregir a {{ $dniValidations['dni']['suggested'] }}
+                                            </button>
+                                        @endif
+                                    </div>
+                                @endif
                             </div>
 
                             <div>
@@ -319,8 +359,48 @@
                             </div>
 
                             <div>
-                                <label class="block text-slate-700 dark:text-slate-300 text-xs font-bold uppercase tracking-wider mb-1">DNI / NIF</label>
-                                <input type="text" wire:model="edit_dni" placeholder="12345678Z" class="w-full border-slate-300 dark:border-slate-700 rounded-xl p-2.5 text-xs font-mono font-bold text-slate-800 dark:text-white bg-slate-50 dark:bg-slate-950 uppercase">
+                                <div class="flex items-center justify-between mb-1">
+                                    <label class="block text-slate-700 dark:text-slate-300 text-xs font-bold uppercase tracking-wider">DNI / NIF</label>
+                                    @if(!empty($edit_dni) && isset($dniValidations['edit_dni']))
+                                        @if($dniValidations['edit_dni']['valid'])
+                                            <span class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-300 dark:border-emerald-800 flex items-center gap-1">
+                                                <span>✓</span> {{ $dniValidations['edit_dni']['type'] ?? 'DNI' }} Válido
+                                            </span>
+                                        @endif
+                                    @endif
+                                </div>
+                                <div class="relative">
+                                    <input 
+                                        type="text" 
+                                        wire:model.live.debounce.300ms="edit_dni" 
+                                        data-dni-input 
+                                        placeholder="12345678Z" 
+                                        class="w-full border {{ !empty($edit_dni) && isset($dniValidations['edit_dni']) ? ($dniValidations['edit_dni']['valid'] ? 'border-emerald-500 focus:border-emerald-500 focus:ring-emerald-500' : 'border-amber-400 dark:border-amber-600 focus:border-amber-500 focus:ring-amber-500 bg-amber-50/30') : 'border-slate-300 dark:border-slate-700' }} rounded-xl p-2.5 text-xs font-mono font-bold text-slate-800 dark:text-white bg-slate-50 dark:bg-slate-950 uppercase transition"
+                                    >
+                                    @if(!empty($edit_dni) && isset($dniValidations['edit_dni']) && $dniValidations['edit_dni']['valid'])
+                                        <div class="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500 font-bold text-sm pointer-events-none">
+                                            ✓
+                                        </div>
+                                    @endif
+                                </div>
+                                @if(!empty($edit_dni) && isset($dniValidations['edit_dni']) && !$dniValidations['edit_dni']['valid'])
+                                    <div class="mt-1.5 p-2 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 rounded-xl flex items-center justify-between text-xs gap-2">
+                                        <div class="flex items-center gap-1.5 text-amber-800 dark:text-amber-300 font-semibold leading-tight text-[11px]">
+                                            <span>⚠️</span>
+                                            <span>{{ $dniValidations['edit_dni']['message'] ?? 'Letra de DNI incorrecta.' }}</span>
+                                        </div>
+                                        @if(!empty($dniValidations['edit_dni']['suggested']))
+                                            <button 
+                                                type="button" 
+                                                wire:click="applyDniSuggestion('edit_dni', '{{ $dniValidations['edit_dni']['suggested'] }}')" 
+                                                class="px-2.5 py-1 bg-amber-600 hover:bg-amber-700 active:scale-95 text-white font-bold rounded-lg text-[10px] shadow-xs cursor-pointer transition shrink-0 whitespace-nowrap"
+                                                title="Pulsar para sustituir la letra errónea por la letra oficial calculada"
+                                            >
+                                                Corregir a {{ $dniValidations['edit_dni']['suggested'] }}
+                                            </button>
+                                        @endif
+                                    </div>
+                                @endif
                             </div>
 
                             <div>

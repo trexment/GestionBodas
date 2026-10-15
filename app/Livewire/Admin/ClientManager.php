@@ -5,12 +5,14 @@ namespace App\Livewire\Admin;
 use Livewire\Component;
 use App\Models\User;
 use App\Services\PostalCodeService;
+use App\Livewire\Traits\HandlesDniValidation;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 class ClientManager extends Component
 {
+    use HandlesDniValidation;
     public $search = '';
 
     // Formulario de Creación de Cliente
@@ -86,6 +88,11 @@ class ClientManager extends Component
         }
     }
 
+    public function updatedDni($value)
+    {
+        $this->validateAndCompleteDni('dni', $value);
+    }
+
     public function saveClient()
     {
         $this->validate([
@@ -146,7 +153,18 @@ class ClientManager extends Component
         $this->edit_province = $client->province;
         $this->edit_password = '';
 
+        if (!empty($this->edit_dni)) {
+            $this->validateAndCompleteDni('edit_dni', $this->edit_dni);
+        } else {
+            $this->dniValidations['edit_dni'] = null;
+        }
+
         $this->showEditModal = true;
+    }
+
+    public function updatedEditDni($value)
+    {
+        $this->validateAndCompleteDni('edit_dni', $value);
     }
 
     public function closeEditModal()

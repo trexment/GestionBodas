@@ -8,11 +8,14 @@ use App\Models\Event;
 use App\Services\ContractTemplateService;
 use App\Services\DocumentValidationService;
 use App\Services\PostalCodeService;
+use App\Livewire\Traits\HandlesDniValidation;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
 
 class ContractSign extends Component
 {
+    use HandlesDniValidation;
+
     public $token;
     public $contract;
     public $event;
@@ -39,6 +42,7 @@ class ContractSign extends Component
     public $partner_phone;
     public $partner_email;
     public $partner_dni;
+    public $partnerDniValidation = null;
 
     // Signature options
     public $signature_type = 'canvas'; // 'canvas' or 'certificate'
@@ -138,18 +142,47 @@ class ContractSign extends Component
 
     public function updatedClientDni($value)
     {
-        $this->client_dni = strtoupper(trim($value));
-        $this->validateDni();
+        $this->validateAndCompleteDni('client_dni', $value);
+        $this->dniValidation = $this->dniValidations['client_dni'] ?? null;
+        $this->renderLiveContract();
+    }
+
+    public function updatedPartnerDni($value)
+    {
+        $this->validateAndCompleteDni('partner_dni', $value);
+        $this->partnerDniValidation = $this->dniValidations['partner_dni'] ?? null;
         $this->renderLiveContract();
     }
 
     public function validateDni()
     {
         if (!empty($this->client_dni)) {
-            $this->dniValidation = DocumentValidationService::validate($this->client_dni);
+            $this->validateAndCompleteDni('client_dni', $this->client_dni);
+            $this->dniValidation = $this->dniValidations['client_dni'] ?? null;
         } else {
             $this->dniValidation = null;
+            $this->dniValidations['client_dni'] = null;
         }
+
+        if (!empty($this->partner_dni)) {
+            $this->validateAndCompleteDni('partner_dni', $this->partner_dni);
+            $this->partnerDniValidation = $this->dniValidations['partner_dni'] ?? null;
+        } else {
+            $this->partnerDniValidation = null;
+            $this->dniValidations['partner_dni'] = null;
+        }
+    }
+
+    public function applyDniSuggestion(string $field, string $suggested): void
+    {
+        $this->$field = $suggested;
+        $this->dniValidations[$field] = DocumentValidationService::autoCompleteAndValidate($suggested);
+        if ($field === 'client_dni') {
+            $this->dniValidation = $this->dniValidations[$field];
+        } elseif ($field === 'partner_dni') {
+            $this->partnerDniValidation = $this->dniValidations[$field];
+        }
+        $this->renderLiveContract();
     }
 
     public function renderLiveContract()

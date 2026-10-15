@@ -7,9 +7,11 @@ use App\Models\Event;
 use App\Models\User;
 use App\Models\Quote;
 use App\Models\QuoteItem;
+use App\Livewire\Traits\HandlesDniValidation;
 
 class EventManager extends Component
 {
+    use HandlesDniValidation;
     public $events;
     
     // Properties for creating a new event
@@ -174,12 +176,22 @@ class EventManager extends Component
         $this->partner_phone = $event->partner_phone;
         $this->partner_email = $event->partner_email;
         $this->partner_dni = $event->partner_dni;
+        if (!empty($this->partner_dni)) {
+            $this->validateAndCompleteDni('partner_dni', $this->partner_dni);
+        } else {
+            $this->dniValidations['partner_dni'] = null;
+        }
         $this->dj_id = $event->dj_id;
         $this->assistant_id = $event->assistant_id;
         $this->assistant_ids = $event->all_assistants->pluck('id')->map(fn($id) => (int)$id)->toArray();
         $this->notes = $event->notes;
         $this->loadStaff();
         $this->showCreateModal = true;
+    }
+
+    public function updatedPartnerDni($value)
+    {
+        $this->validateAndCompleteDni('partner_dni', $value);
     }
 
     public function closeCreateModal()

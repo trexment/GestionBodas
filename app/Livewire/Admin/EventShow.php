@@ -11,10 +11,12 @@ use App\Models\Equipment;
 use App\Models\EventMusicRequest;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use App\Livewire\Traits\HandlesDniValidation;
 
 class EventShow extends Component
 {
     use WithFileUploads;
+    use HandlesDniValidation;
 
     public Event $event;
     public $activeTab = 'dossier'; // dossier, music, equipment, quotes, contracts, invoices
@@ -796,7 +798,29 @@ class EventShow extends Component
         $this->partner_edit_email = $this->event->partner_email;
         $this->partner_edit_dni = $this->event->partner_dni;
 
+        if (!empty($this->client_edit_dni)) {
+            $this->validateAndCompleteDni('client_edit_dni', $this->client_edit_dni);
+        } else {
+            $this->dniValidations['client_edit_dni'] = null;
+        }
+
+        if (!empty($this->partner_edit_dni)) {
+            $this->validateAndCompleteDni('partner_edit_dni', $this->partner_edit_dni);
+        } else {
+            $this->dniValidations['partner_edit_dni'] = null;
+        }
+
         $this->showClientModal = true;
+    }
+
+    public function updatedClientEditDni($value)
+    {
+        $this->validateAndCompleteDni('client_edit_dni', $value);
+    }
+
+    public function updatedPartnerEditDni($value)
+    {
+        $this->validateAndCompleteDni('partner_edit_dni', $value);
     }
 
     public function updatedSelectedClientId($value)
@@ -814,6 +838,12 @@ class EventShow extends Component
                 $this->client_edit_city = $c->city;
                 $this->client_edit_province = $c->province;
                 $this->client_edit_password = '';
+
+                if (!empty($this->client_edit_dni)) {
+                    $this->validateAndCompleteDni('client_edit_dni', $this->client_edit_dni);
+                } else {
+                    $this->dniValidations['client_edit_dni'] = null;
+                }
             }
         } else {
             $this->client_edit_name = '';
@@ -826,6 +856,7 @@ class EventShow extends Component
             $this->client_edit_city = '';
             $this->client_edit_province = '';
             $this->client_edit_password = '';
+            $this->dniValidations['client_edit_dni'] = null;
         }
     }
 

@@ -50,6 +50,8 @@
 
     <!-- Offline Audio Cache Engine -->
     <script src="/js/offline-audio-cache.js"></script>
+    <!-- DNI / NIE / CIF Validator & Auto-completer -->
+    <script src="/js/dni-validator.js"></script>
     @livewireScripts
 </body>
 </html>

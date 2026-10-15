@@ -654,6 +654,8 @@
 
     <!-- OFFLINE AUDIO CACHE ENGINE (INDEXEDDB) -->
     <script src="/js/offline-audio-cache.js"></script>
+    <!-- DNI / NIE / CIF VALIDATOR & AUTO-COMPLETER -->
+    <script src="/js/dni-validator.js"></script>
 
     @livewireScripts
     <script>

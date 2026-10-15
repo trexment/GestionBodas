@@ -5,12 +5,14 @@ namespace App\Livewire\Admin;
 use Livewire\Component;
 use App\Models\User;
 use App\Services\PostalCodeService;
+use App\Livewire\Traits\HandlesDniValidation;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 class UserManager extends Component
 {
+    use HandlesDniValidation;
     // Filtros y búsqueda
     public $search = '';
     public $filterRole = 'team'; // 'team' (todos menos client), 'assistant', 'dj', 'admin', 'all'
@@ -137,7 +139,18 @@ class UserManager extends Component
         $this->edit_province = $user->province;
         $this->edit_password = '';
 
+        if (!empty($this->edit_dni)) {
+            $this->validateAndCompleteDni('edit_dni', $this->edit_dni);
+        } else {
+            $this->dniValidations['edit_dni'] = null;
+        }
+
         $this->showEditModal = true;
+    }
+
+    public function updatedEditDni($value)
+    {
+        $this->validateAndCompleteDni('edit_dni', $value);
     }
 
     public function closeEditModal()

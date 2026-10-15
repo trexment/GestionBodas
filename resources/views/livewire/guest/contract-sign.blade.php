@@ -120,6 +120,7 @@
                             <input 
                                 type="text" 
                                 wire:model.live.debounce.250ms="client_dni" 
+                                data-dni-input
                                 class="w-full bg-slate-50 dark:bg-slate-950 border {{ $dniValidation && $dniValidation['valid'] ? 'border-emerald-500 focus:border-emerald-500 focus:ring-emerald-500' : ($dniValidation && !$dniValidation['valid'] && strlen($client_dni) >= 8 ? 'border-amber-500 focus:border-amber-500 focus:ring-amber-500' : 'border-slate-300 dark:border-slate-700') }} rounded-xl text-sm font-bold text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 p-3 uppercase transition shadow-xs" 
                                 placeholder="12345678Z"
                             >
@@ -129,10 +130,22 @@
                                 </div>
                             @endif
                         </div>
-                        @if($dniValidation && !$dniValidation['valid'] && !empty($client_dni) && strlen($client_dni) >= 8)
-                            <span class="text-amber-600 dark:text-amber-400 text-xs mt-1 block font-semibold leading-tight">
-                                ⚠️ {{ $dniValidation['message'] }}
-                            </span>
+                        @if($dniValidation && !$dniValidation['valid'] && !empty($client_dni))
+                            <div class="mt-1.5 p-2.5 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 rounded-xl flex items-center justify-between text-xs gap-2">
+                                <span class="text-amber-800 dark:text-amber-300 font-semibold leading-tight text-xs">
+                                    ⚠️ {{ $dniValidation['message'] ?? 'Letra de DNI no válida.' }}
+                                </span>
+                                @if(!empty($dniValidation['suggested']))
+                                    <button 
+                                        type="button" 
+                                        wire:click="applyDniSuggestion('client_dni', '{{ $dniValidation['suggested'] }}')" 
+                                        class="px-2.5 py-1 bg-amber-600 hover:bg-amber-700 active:scale-95 text-white font-bold rounded-lg text-xs shadow-xs cursor-pointer transition shrink-0 whitespace-nowrap"
+                                        title="Pulsar para corregir automáticamente la letra"
+                                    >
+                                        Corregir a {{ $dniValidation['suggested'] }}
+                                    </button>
+                                @endif
+                            </div>
                         @endif
                         @error('client_dni') <span class="text-rose-600 text-xs mt-1 block font-bold">{{ $message }}</span> @enderror
                     </div>
@@ -252,13 +265,44 @@
                             >
                         </div>
                         <div>
-                            <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">DNI / NIF Pareja (Opcional)</label>
-                            <input 
-                                type="text" 
-                                wire:model.live.debounce.250ms="partner_dni" 
-                                class="w-full bg-white dark:bg-slate-900 border border-pink-200 dark:border-pink-800 rounded-xl text-xs font-mono uppercase text-slate-900 dark:text-white p-2.5 shadow-xs focus:ring-2 focus:ring-pink-500" 
-                                placeholder="12345678Z"
-                            >
+                            <div class="flex items-center justify-between mb-1">
+                                <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300">DNI / NIF Pareja (Opcional)</label>
+                                @if(!empty($partner_dni) && $partnerDniValidation && $partnerDniValidation['valid'])
+                                    <span class="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/80 px-1.5 py-0.2 rounded border border-emerald-300 dark:border-emerald-800 flex items-center gap-0.5">
+                                        <span>✓</span> {{ $partnerDniValidation['type'] ?? 'DNI' }} Válido
+                                    </span>
+                                @endif
+                            </div>
+                            <div class="relative">
+                                <input 
+                                    type="text" 
+                                    wire:model.live.debounce.250ms="partner_dni" 
+                                    data-dni-input
+                                    class="w-full bg-white dark:bg-slate-900 border {{ !empty($partner_dni) && $partnerDniValidation ? ($partnerDniValidation['valid'] ? 'border-emerald-500 focus:border-emerald-500' : 'border-amber-400 dark:border-amber-600 focus:border-amber-500 bg-amber-50/20') : 'border-pink-200 dark:border-pink-800' }} rounded-xl text-xs font-mono uppercase text-slate-900 dark:text-white p-2.5 shadow-xs focus:ring-2 focus:ring-pink-500 transition" 
+                                    placeholder="12345678Z"
+                                >
+                                @if(!empty($partner_dni) && $partnerDniValidation && $partnerDniValidation['valid'])
+                                    <div class="absolute right-2.5 top-1/2 -translate-y-1/2 text-emerald-500 font-bold text-xs pointer-events-none">
+                                        ✓
+                                    </div>
+                                @endif
+                            </div>
+                            @if(!empty($partner_dni) && $partnerDniValidation && !$partnerDniValidation['valid'])
+                                <div class="mt-1 p-2 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 rounded-xl flex items-center justify-between text-xs gap-1.5">
+                                    <span class="text-amber-800 dark:text-amber-300 font-semibold leading-tight text-[11px]">
+                                        ⚠️ {{ $partnerDniValidation['message'] ?? 'Letra incorrecta.' }}
+                                    </span>
+                                    @if(!empty($partnerDniValidation['suggested']))
+                                        <button 
+                                            type="button" 
+                                            wire:click="applyDniSuggestion('partner_dni', '{{ $partnerDniValidation['suggested'] }}')" 
+                                            class="px-2 py-0.5 bg-amber-600 hover:bg-amber-700 active:scale-95 text-white font-bold rounded-lg text-[10px] shadow-xs cursor-pointer transition shrink-0 whitespace-nowrap"
+                                        >
+                                            Corregir a {{ $partnerDniValidation['suggested'] }}
+                                        </button>
+                                    @endif
+                                </div>
+                            @endif
                         </div>
                     </div>
                 </div>
