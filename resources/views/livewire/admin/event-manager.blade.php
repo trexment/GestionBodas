@@ -172,9 +172,9 @@
                         <span>Gestionar Evento</span>
                     </a>
                     @if($event->status === 'no_response' && $event->no_response_whatsapp_url)
-                        <a href="{{ $event->no_response_whatsapp_url }}" target="_blank" class="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs py-2.5 px-3 rounded-xl shadow-xs transition inline-flex items-center gap-1 shrink-0" title="Enviar recordatorio con técnica del NO">
+                        <button type="button" onclick="window.open('{{ $event->no_response_whatsapp_url }}', '_blank')" wire:click="promptFollowup({{ $event->id }})" class="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs py-2.5 px-3 rounded-xl shadow-xs transition inline-flex items-center gap-1 shrink-0 cursor-pointer" title="Enviar recordatorio con técnica del NO">
                             💬 Recordar
-                        </a>
+                        </button>
                     @endif
                     @if(auth()->user()->role === 'admin')
                         <button type="button" wire:click="deleteEvent({{ $event->id }})" wire:confirm="¿Estás seguro de que deseas eliminar permanentemente el evento '{{ $event->name }}'?" class="p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/50 hover:bg-rose-100 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900/60 transition cursor-pointer" title="Eliminar Evento">
@@ -277,9 +277,9 @@
                                         {{ $event->no_response_time_label }}
                                     </span>
                                     @if($event->no_response_whatsapp_url)
-                                        <a href="{{ $event->no_response_whatsapp_url }}" target="_blank" class="inline-flex items-center gap-1 text-[10px] bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 px-1.5 py-0.5 rounded font-bold transition" title="Enviar recordatorio táctico de WhatsApp (Técnica del NO)">
+                                        <button type="button" onclick="window.open('{{ $event->no_response_whatsapp_url }}', '_blank')" wire:click="promptFollowup({{ $event->id }})" class="inline-flex items-center gap-1 text-[10px] bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 px-1.5 py-0.5 rounded font-bold transition cursor-pointer" title="Enviar recordatorio táctico de WhatsApp (Técnica del NO)">
                                             💬 Recordar
-                                        </a>
+                                        </button>
                                     @endif
                                 </div>
                             @endif
@@ -580,5 +580,45 @@
             </div>
         </div>
     </div>
+    @endif
+
+    <!-- MODAL DE CONFIRMACIÓN DE SEGUIMIENTO WHATSAPP -->
+    @if($confirmingFollowupEventId)
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-xs animate-in fade-in duration-150">
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-md w-full p-6 shadow-2xl relative">
+                <div class="w-12 h-12 rounded-2xl bg-emerald-100 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-2xl mx-auto mb-4">
+                    💬
+                </div>
+                <h3 class="text-lg font-black text-slate-900 dark:text-white text-center">
+                    ¿Has enviado el mensaje de seguimiento?
+                </h3>
+                <p class="text-xs text-slate-600 dark:text-slate-400 text-center mt-2 leading-relaxed">
+                    Hemos abierto WhatsApp para contactar con <strong class="text-slate-900 dark:text-white">{{ $confirmingFollowupClientName }}</strong> (<span class="text-indigo-600 dark:text-indigo-400 font-bold">{{ $confirmingFollowupEventName }}</span>).
+                </p>
+                <div class="bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800/60 rounded-xl p-3 my-4 text-xs text-purple-900 dark:text-purple-300">
+                    ⏱️ <strong>Al confirmar</strong>, el contador de días sin respuesta se pondrá a cero (<em>"Puesto hoy"</em>) y volveremos a recordártelo dentro de 2-4 días si el cliente no responde.
+                </div>
+
+                <div class="space-y-2 pt-1">
+                    <button type="button" wire:click="confirmFollowupSent" class="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-extrabold text-xs rounded-xl shadow-md shadow-emerald-600/30 transition flex items-center justify-center gap-2 cursor-pointer">
+                        <span>✅ Sí, mensaje enviado</span>
+                        <span class="text-[10px] opacity-80">(Resetear contador)</span>
+                    </button>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <button type="button" wire:click="markAsResponded('draft')" class="py-2.5 px-3 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 font-bold text-xs rounded-xl border border-indigo-200 dark:border-indigo-800 transition flex items-center justify-center gap-1 cursor-pointer" title="Marcar como atendido y pasar a borrador">
+                            <span>📝 ¡Ha respondido!</span>
+                        </button>
+                        <button type="button" wire:click="markAsResponded('confirmed')" class="py-2.5 px-3 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/60 dark:hover:bg-amber-900/60 text-amber-700 dark:text-amber-300 font-bold text-xs rounded-xl border border-amber-200 dark:border-amber-800 transition flex items-center justify-center gap-1 cursor-pointer" title="Marcar como confirmado">
+                            <span>🟢 Confirmado</span>
+                        </button>
+                    </div>
+
+                    <button type="button" wire:click="cancelFollowup" class="w-full py-2 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 font-semibold text-xs transition cursor-pointer">
+                        Cancelar (Mantener contador actual)
+                    </button>
+                </div>
+            </div>
+        </div>
     @endif
 </div>

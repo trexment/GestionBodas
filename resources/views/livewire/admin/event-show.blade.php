@@ -550,10 +550,10 @@
                 <div class="flex flex-wrap items-center gap-2 w-full md:w-auto shrink-0">
                     <!-- Botón Enviar WhatsApp Táctico 1-Clic -->
                     @if(!empty($clientPhone))
-                        <a href="{{ $followupData['url'] }}" target="_blank" class="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-xs px-3.5 py-2.5 rounded-xl shadow-xs transition">
+                        <button type="button" onclick="window.open('{{ $followupData['url'] }}', '_blank')" wire:click="promptFollowupFromShow" class="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-xs px-3.5 py-2.5 rounded-xl shadow-xs transition cursor-pointer" title="Enviar WhatsApp y registrar seguimiento">
                             <span>💬</span>
                             <span>Enviar WhatsApp (Técnica NO)</span>
-                        </a>
+                        </button>
                     @endif
 
                     <!-- Abrir todas las plantillas de seguimiento del Hub -->
@@ -587,6 +587,46 @@
                 </div>
             </div>
         </div>
+
+        <!-- MODAL DE CONFIRMACIÓN DE SEGUIMIENTO WHATSAPP EN EVENT SHOW -->
+        @if($showConfirmFollowupModal)
+            <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-xs animate-in fade-in duration-150">
+                <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-md w-full p-6 shadow-2xl relative">
+                    <div class="w-12 h-12 rounded-2xl bg-emerald-100 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-2xl mx-auto mb-4">
+                        💬
+                    </div>
+                    <h3 class="text-lg font-black text-slate-900 dark:text-white text-center">
+                        ¿Has enviado el mensaje de seguimiento?
+                    </h3>
+                    <p class="text-xs text-slate-600 dark:text-slate-400 text-center mt-2 leading-relaxed">
+                        Hemos abierto WhatsApp para contactar con <strong class="text-slate-900 dark:text-white">{{ $event->client ? $event->client->name : 'la pareja' }}</strong>.
+                    </p>
+                    <div class="bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800/60 rounded-xl p-3 my-4 text-xs text-purple-900 dark:text-purple-300">
+                        ⏱️ <strong>Al confirmar</strong>, el contador de días sin respuesta se pondrá a cero (<em>"Puesto hoy"</em>) y volveremos a recordártelo dentro de 2-4 días si no contesta.
+                    </div>
+
+                    <div class="space-y-2 pt-1">
+                        <button type="button" wire:click="confirmFollowupSentFromShow" class="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-extrabold text-xs rounded-xl shadow-md shadow-emerald-600/30 transition flex items-center justify-center gap-2 cursor-pointer">
+                            <span>✅ Sí, mensaje enviado</span>
+                            <span class="text-[10px] opacity-80">(Resetear contador)</span>
+                        </button>
+
+                        <div class="grid grid-cols-2 gap-2">
+                            <button type="button" wire:click="markAsRespondedFromShow('draft')" class="py-2.5 px-3 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 font-bold text-xs rounded-xl border border-indigo-200 dark:border-indigo-800 transition flex items-center justify-center gap-1 cursor-pointer" title="Marcar como atendido y pasar a borrador">
+                                <span>📝 ¡Ha respondido!</span>
+                            </button>
+                            <button type="button" wire:click="markAsRespondedFromShow('confirmed')" class="py-2.5 px-3 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/60 dark:hover:bg-amber-900/60 text-amber-700 dark:text-amber-300 font-bold text-xs rounded-xl border border-amber-200 dark:border-amber-800 transition flex items-center justify-center gap-1 cursor-pointer" title="Marcar como confirmado">
+                                <span>🟢 Confirmado</span>
+                            </button>
+                        </div>
+
+                        <button type="button" wire:click="cancelFollowupFromShow" class="w-full py-2 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 font-semibold text-xs transition cursor-pointer">
+                            Cancelar (Mantener contador actual)
+                        </button>
+                    </div>
+                </div>
+            </div>
+        @endif
     @endif
 
     <!-- Banner Cuestionario Musical con WhatsApp -->

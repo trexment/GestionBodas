@@ -118,6 +118,60 @@ class Dashboard extends Component
         }
     }
     
+    public $confirmingFollowupEventId = null;
+    public $confirmingFollowupEventName = '';
+    public $confirmingFollowupClientName = '';
+
+    public function promptFollowup(int $eventId)
+    {
+        $event = Event::with('client')->find($eventId);
+        if (!$event) return;
+
+        $this->confirmingFollowupEventId = $event->id;
+        $this->confirmingFollowupEventName = $event->name;
+        $this->confirmingFollowupClientName = $event->client ? $event->client->name : 'Cliente';
+    }
+
+    public function confirmFollowupSent()
+    {
+        if (!$this->confirmingFollowupEventId) return;
+
+        $event = Event::find($this->confirmingFollowupEventId);
+        if ($event) {
+            $event->update([
+                'no_response_at' => now(),
+                'notes' => ($event->notes ? $event->notes . "\n" : "") . "[" . now()->format('d/m/Y H:i') . "] 💬 Seguimiento de WhatsApp enviado por " . auth()->user()->name . ". Contador de días reseteado.",
+            ]);
+            session()->flash('message', "¡Seguimiento registrado para {$event->name}! El contador de días se ha reseteado.");
+        }
+
+        $this->confirmingFollowupEventId = null;
+        $this->mount();
+    }
+
+    public function markAsResponded(string $newStatus = 'draft')
+    {
+        if (!$this->confirmingFollowupEventId) return;
+
+        $event = Event::find($this->confirmingFollowupEventId);
+        if ($event) {
+            $event->update([
+                'status' => in_array($newStatus, ['draft', 'confirmed']) ? $newStatus : 'draft',
+                'no_response_at' => null,
+                'notes' => ($event->notes ? $event->notes . "\n" : "") . "[" . now()->format('d/m/Y H:i') . "] 🎉 El cliente ha respondido al seguimiento. Estado cambiado a " . ucfirst($newStatus) . " por " . auth()->user()->name . ".",
+            ]);
+            session()->flash('message', "¡Genial! {$event->name} se ha marcado como " . ($newStatus === 'confirmed' ? 'Confirmado' : 'Borrador') . ".");
+        }
+
+        $this->confirmingFollowupEventId = null;
+        $this->mount();
+    }
+
+    public function cancelFollowup()
+    {
+        $this->confirmingFollowupEventId = null;
+    }
+
     public function markInvoiceAsPaid($id)
     {
         $invoice = Invoice::find($id);

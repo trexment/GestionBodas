@@ -414,6 +414,35 @@ class EventShow extends Component
         }
     }
 
+    public $showConfirmFollowupModal = false;
+
+    public function promptFollowupFromShow()
+    {
+        $this->showConfirmFollowupModal = true;
+    }
+
+    public function confirmFollowupSentFromShow()
+    {
+        $this->event->update([
+            'no_response_at' => now(),
+            'notes' => ($this->event->notes ? $this->event->notes . "\n" : "") . "[" . now()->format('d/m/Y H:i') . "] 💬 Seguimiento de WhatsApp enviado por " . auth()->user()->name . ". Contador de días reseteado.",
+        ]);
+        $this->event->refresh();
+        $this->showConfirmFollowupModal = false;
+        session()->flash('message', '¡Seguimiento registrado! El contador de días se ha reseteado a 0.');
+    }
+
+    public function markAsRespondedFromShow(string $newStatus = 'draft')
+    {
+        $this->showConfirmFollowupModal = false;
+        $this->changeStatus($newStatus);
+    }
+
+    public function cancelFollowupFromShow()
+    {
+        $this->showConfirmFollowupModal = false;
+    }
+
     public function changeEventType($type)
     {
         if ($type === 'video' && !\App\Models\Setting::isVideoServiceEnabled($this->event->brand_clean)) {
