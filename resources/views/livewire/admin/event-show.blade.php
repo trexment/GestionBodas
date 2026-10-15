@@ -1586,6 +1586,26 @@
                             </div>
                         </div>
 
+                        <!-- Selector de Remitente de WhatsApp (Móvil Fran vs Móvil Hermano) -->
+                        <div class="p-2.5 bg-gradient-to-r from-slate-50 to-emerald-50/50 rounded-xl border border-emerald-200/80 shadow-2xs flex flex-wrap items-center justify-between gap-2">
+                            <div class="flex items-center gap-1.5 text-xs font-bold text-gray-700">
+                                <span class="text-emerald-600">📲</span>
+                                <span>Remitente WhatsApp:</span>
+                            </div>
+                            <div class="inline-flex rounded-xl p-1 bg-white border border-gray-200 shadow-2xs gap-1">
+                                <button type="button" 
+                                    wire:click="$set('whatsapp_sender_brand', 'nunez_and_son')"
+                                    class="px-2.5 py-1 rounded-lg font-bold text-[11px] transition flex items-center gap-1 cursor-pointer {{ ($whatsapp_sender_brand ?? $event->brand_clean) === 'nunez_and_son' ? 'bg-amber-500 text-white shadow-xs' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50' }}">
+                                    <span>👑</span> Móvil Fran (Núñez & Son)
+                                </button>
+                                <button type="button" 
+                                    wire:click="$set('whatsapp_sender_brand', 'javnx')"
+                                    class="px-2.5 py-1 rounded-lg font-bold text-[11px] transition flex items-center gap-1 cursor-pointer {{ ($whatsapp_sender_brand ?? $event->brand_clean) === 'javnx' ? 'bg-indigo-600 text-white shadow-xs' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50' }}">
+                                    <span>🎧</span> Móvil Hermano (JAVNX DJ)
+                                </button>
+                            </div>
+                        </div>
+
                         <!-- Historial de Chat WhatsApp -->
                         <div class="bg-slate-100/70 p-3.5 rounded-xl border border-slate-200 space-y-2">
                             <div class="flex items-center justify-between">

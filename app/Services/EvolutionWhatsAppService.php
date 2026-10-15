@@ -317,4 +317,40 @@ class EvolutionWhatsAppService
             Log::warning("No se pudo auto-configurar webhook para {$instance}: " . $e->getMessage());
         }
     }
+
+    /**
+     * Envía una notificación interna por WhatsApp a los números de los socios / administradores (Fran y su hermano).
+     */
+    public static function notifyAdmins(string $text, ?string $brand = null): void
+    {
+        if (!self::isEnabled()) {
+            return;
+        }
+
+        $phones = Setting::getAdminNotificationPhones($brand);
+        $baseUrl = self::getBaseUrl();
+        $apiKey = self::getApiKey();
+        $instance = self::getInstanceName($brand);
+
+        foreach ($phones as $phone) {
+            try {
+                $cleanPhone = WhatsAppTemplateService::cleanPhone((string)$phone);
+                if (empty($cleanPhone)) {
+                    continue;
+                }
+
+                $endpoint = "{$baseUrl}/message/sendText/{$instance}";
+                Http::withHeaders([
+                    'apikey' => $apiKey,
+                    'Content-Type' => 'application/json',
+                ])->timeout(6)->post($endpoint, [
+                    'number' => $cleanPhone,
+                    'text' => $text,
+                ]);
+            } catch (\Throwable $e) {
+                Log::warning("Error enviando alerta WhatsApp a socio/admin ({$phone}): " . $e->getMessage());
+            }
+        }
+    }
 }
+

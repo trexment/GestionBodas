@@ -86,6 +86,7 @@ class EventShow extends Component
     // Notas de Evento / Acuerdos WhatsApp
     public $event_notes;
     public $whatsapp_chat_input = '';
+    public $whatsapp_sender_brand = null; // 'nunez_and_son', 'javnx', 'mago_leugim'
     public $selected_pack_type = 'custom'; // basic, medium, premium, wedding_dj, wedding_full, custom
 
     // Configuración de señal específica para este presupuesto
@@ -375,6 +376,8 @@ class EventShow extends Component
                 $this->quote_payment_methods = $decoded;
             }
         }
+
+        $this->whatsapp_sender_brand = $this->event->brand_clean ?: 'nunez_and_son';
     }
 
     public function changeStatus($status)
@@ -1672,10 +1675,11 @@ class EventShow extends Component
             return;
         }
 
+        $senderBrand = $this->whatsapp_sender_brand ?: $this->event->brand_clean;
         $result = \App\Services\EvolutionWhatsAppService::sendMessage(
             $phone,
             $this->whatsapp_chat_message,
-            $this->event->brand_clean,
+            $senderBrand,
             $this->event->id,
             auth()->id()
         );
@@ -1798,10 +1802,11 @@ class EventShow extends Component
             return;
         }
 
+        $senderBrand = $this->whatsapp_sender_brand ?: $this->event->brand_clean;
         $result = \App\Services\EvolutionWhatsAppService::sendMessage(
             $phone,
             $text,
-            $this->event->brand_clean,
+            $senderBrand,
             $this->event->id,
             auth()->id()
         );
@@ -1839,10 +1844,11 @@ class EventShow extends Component
         $text = \App\Services\WhatsAppTemplateService::resumenPresupuesto($this->event, $quote);
         $title = 'Presupuesto #' . $quote->id;
 
+        $senderBrand = $this->whatsapp_sender_brand ?: $this->event->brand_clean;
         $result = \App\Services\EvolutionWhatsAppService::sendMessage(
             $phone,
             $text,
-            $this->event->brand_clean,
+            $senderBrand,
             $this->event->id,
             auth()->id()
         );
@@ -1880,10 +1886,11 @@ class EventShow extends Component
         $text = \App\Services\WhatsAppTemplateService::contrato($contract);
         $title = 'Firma de Contrato';
 
+        $senderBrand = $this->whatsapp_sender_brand ?: $this->event->brand_clean;
         $result = \App\Services\EvolutionWhatsAppService::sendMessage(
             $phone,
             $text,
-            $this->event->brand_clean,
+            $senderBrand,
             $this->event->id,
             auth()->id()
         );

@@ -426,6 +426,26 @@ class ImapLeadFetcherService
             Log::warning("No se pudo enviar notificación de nuevo lead por email (Evento #{$event->id}): " . $e->getMessage());
         }
 
+        // 6. Notificar a los administradores / socios (Fran y su hermano) por WhatsApp
+        try {
+            if (EvolutionWhatsAppService::isEnabled()) {
+                $leadName = $leadData['client_name'] ?? 'Nuevo Contacto';
+                $leadDate = !empty($leadData['event_date']) ? \Carbon\Carbon::parse($leadData['event_date'])->format('d/m/Y') : 'Por definir';
+                $leadSource = $leadData['source'] ?? 'Portal / Web';
+
+                $waLeadAlert = "📥 *¡NUEVO LEAD ENTRANTE!*\n\n"
+                    . "👤 *Contacto:* {$leadName}\n"
+                    . "📅 *Fecha Evento:* {$leadDate}\n"
+                    . "🏷️ *Origen:* {$leadSource}\n"
+                    . "🏢 *Marca:* " . strtoupper($brandKey) . "\n\n"
+                    . "Ya está registrado en la plataforma listo para enviar presupuesto.";
+
+                EvolutionWhatsAppService::notifyAdmins($waLeadAlert, $brandKey);
+            }
+        } catch (\Throwable $e) {
+            Log::warning("No se pudo enviar alerta de lead por WhatsApp (Evento #{$event->id}): " . $e->getMessage());
+        }
+
         return $event;
     }
 

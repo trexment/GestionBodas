@@ -405,6 +405,56 @@ class Setting extends Model
     }
 
     /**
+     * Devuelve los teléfonos de los administradores (Fran y su hermano) para notificaciones y alertas por WhatsApp.
+     */
+    public static function getAdminNotificationPhones(?string $brandKey = null): array
+    {
+        $phones = [];
+
+        // 1. Teléfonos de usuarios registrados con rol admin
+        try {
+            $adminUserPhones = \App\Models\User::where('role', 'admin')
+                ->whereNotNull('phone')
+                ->pluck('phone')
+                ->toArray();
+            $phones = array_merge($phones, $adminUserPhones);
+        } catch (\Throwable $e) {}
+
+        // 2. Teléfonos configurados en los ajustes de marcas
+        $brandInfo = self::getBrandInfo($brandKey);
+        if (!empty($brandInfo['phone'])) {
+            $phones[] = $brandInfo['phone'];
+        }
+        if (!empty($brandInfo['phone_2'])) {
+            $phones[] = $brandInfo['phone_2'];
+        }
+
+        // 3. Teléfonos globales de la empresa
+        $companyPhone1 = self::get('company_phone');
+        $companyPhone2 = self::get('company_phone_2');
+        if (!empty($companyPhone1)) {
+            $phones[] = $companyPhone1;
+        }
+        if (!empty($companyPhone2)) {
+            $phones[] = $companyPhone2;
+        }
+
+        // 4. Fallbacks por defecto para Fran y su hermano/socio
+        $phones[] = '+34 622 62 47 90';
+        $phones[] = '+34 674 37 89 93';
+
+        $validPhones = [];
+        foreach ($phones as $p) {
+            $cleaned = \App\Services\WhatsAppTemplateService::cleanPhone((string)$p);
+            if (!empty($cleaned) && strlen($cleaned) >= 9) {
+                $validPhones[] = $cleaned;
+            }
+        }
+
+        return array_values(array_unique($validPhones));
+    }
+
+    /**
      * Get the public website URL (auto-detects domain or uses custom setting).
      * e.g., app.javnxdj.com -> https://javnxdj.com
      *       app.nunezandson.com -> https://nunezandson.com

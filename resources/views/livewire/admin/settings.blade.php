@@ -2193,15 +2193,31 @@ MAIL_FROM_NAME="{{ $company_name }}"</pre>
                 </div>
             </div>
 
-            <!-- Nombres de Instancia por Marca -->
+            <!-- Explicación de Conexión de 2 Teléfonos Simultáneos -->
+            <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200/80 rounded-2xl p-4.5 shadow-2xs text-xs text-blue-900 flex items-start gap-3">
+                <span class="text-2xl p-2 bg-blue-100/70 rounded-xl">👥</span>
+                <div class="space-y-1">
+                    <strong class="font-black text-blue-950 text-sm">¿Cómo vincular los 2 números de WhatsApp (Fran y Hermano)?</strong>
+                    <p class="text-blue-800 leading-relaxed text-xs">
+                        Evolution API permite tener <strong>múltiples teléfonos conectados simultáneamente</strong> sin que se cierren la sesión entre ellos:
+                    </p>
+                    <ul class="list-disc list-inside space-y-1 text-blue-900/90 font-medium pt-1">
+                        <li><strong>Móvil de Fran:</strong> Pulsa <em>«📱 Vincular / Ver QR»</em> en la tarjeta de <strong>Núñez & Son</strong> y escanéalo con tu WhatsApp.</li>
+                        <li><strong>Móvil de tu Hermano:</strong> Pulsa <em>«📱 Vincular / Ver QR»</em> en la tarjeta de <strong>JAVNX DJ</strong> y que tu hermano lo escanee con su WhatsApp.</li>
+                        <li>Ambos teléfonos quedarán activos en el servidor a la vez. Podréis elegir desde qué móvil enviar cada mensaje en la ficha del evento, y ambos recibiréis las notificaciones del negocio (nuevos leads y contratos firmados).</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Nombres de Instancia por Marca y Teléfono -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <!-- INSTANCIA NÚÑEZ & SON -->
+                <!-- INSTANCIA NÚÑEZ & SON (FRAN) -->
                 <div class="bg-white shadow-sm rounded-2xl border-2 border-amber-200 p-6 space-y-4">
                     <div class="flex items-center gap-2.5 border-b border-amber-100 pb-3">
                         <span class="text-2xl p-2 bg-amber-50 rounded-xl border border-amber-200">👑</span>
                         <div>
-                            <h3 class="text-base font-black text-gray-900">Instancia WhatsApp: Núñez & Son</h3>
-                            <p class="text-xs text-amber-700 font-semibold">Para eventos gestionados bajo Núñez and Son</p>
+                            <h3 class="text-base font-black text-gray-900">Móvil Fran &bull; Núñez & Son</h3>
+                            <p class="text-xs text-amber-700 font-semibold">Instancia principal de WhatsApp para Fran</p>
                         </div>
                     </div>
 
@@ -2222,13 +2238,13 @@ MAIL_FROM_NAME="{{ $company_name }}"</pre>
                     </div>
                 </div>
 
-                <!-- INSTANCIA JAVNX DJ -->
+                <!-- INSTANCIA JAVNX DJ (HERMANO) -->
                 <div class="bg-white shadow-sm rounded-2xl border-2 border-indigo-200 p-6 space-y-4">
                     <div class="flex items-center gap-2.5 border-b border-indigo-100 pb-3">
                         <span class="text-2xl p-2 bg-indigo-50 rounded-xl border border-indigo-200">🎧</span>
                         <div>
-                            <h3 class="text-base font-black text-gray-900">Instancia WhatsApp: JAVNX DJ</h3>
-                            <p class="text-xs text-indigo-700 font-semibold">Para eventos gestionados bajo JAVNX DJ</p>
+                            <h3 class="text-base font-black text-gray-900">Móvil Hermano &bull; JAVNX DJ</h3>
+                            <p class="text-xs text-indigo-700 font-semibold">Instancia de WhatsApp para tu hermano / socio</p>
                         </div>
                     </div>
 

@@ -317,6 +317,27 @@ class ContractSign extends Component
             \Illuminate\Support\Facades\Log::error('Error enviando email de contrato firmado a admin: ' . $e->getMessage());
         }
 
+        // WhatsApp: Notificar inmediatamente a los administradores / socios (Fran y su hermano)
+        try {
+            if (\App\Services\EvolutionWhatsAppService::isEnabled()) {
+                $clientName = $this->contract->client_name_signed ?: ($this->event->client->name ?? 'Cliente');
+                $eventName = $this->event ? $this->event->name : 'Evento';
+                $eventDate = $this->event && $this->event->date ? \Carbon\Carbon::parse($this->event->date)->format('d/m/Y') : 'Fecha pendiente';
+                $totalFormatted = number_format((float)($this->contract->total_amount ?? 0), 2, ',', '.') . ' €';
+
+                $waAlert = "🎉 *¡NUEVO CONTRATO FIRMADO!*\n\n"
+                    . "👤 *Cliente:* {$clientName}\n"
+                    . "📅 *Evento:* {$eventName} ({$eventDate})\n"
+                    . "💰 *Total Contrato:* {$totalFormatted}\n"
+                    . "✍️ *Fecha Firma:* " . now()->format('d/m/Y H:i') . "\n\n"
+                    . "El contrato ya está formalizado con copia enviada al cliente.";
+
+                \App\Services\EvolutionWhatsAppService::notifyAdmins($waAlert, $brandKey);
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Error notificando firma de contrato a admins por WhatsApp: ' . $e->getMessage());
+        }
+
         // Send signed contract copy with attached PDF to the client
         try {
             $clientEmail = trim((string)$this->contract->client_email_signed);
