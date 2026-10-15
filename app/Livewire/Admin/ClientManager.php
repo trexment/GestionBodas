@@ -14,6 +14,7 @@ class ClientManager extends Component
 {
     use HandlesDniValidation;
     public $search = '';
+    public $filterEvents = 'all'; // 'all', 'with_events', 'without_events'
 
     // Formulario de Creación de Cliente
     public $name;
@@ -306,14 +307,77 @@ class ClientManager extends Component
         }
     }
 
+    // ==================== LIMPIEZA DE CONTACTOS SPAM / SIN EVENTOS ====================
+
+    public function cleanSpamContacts()
+    {
+        // 1. Eliminar eventos de spam huérfanos si se hubiesen generado
+        $spamPatterns = ['RobertNar%', 'Bodas.net%', 'Madrigal Marketing%', 'no-reply%', '%UTF-8%', 'Javnx DJ%'];
+        foreach ($spamPatterns as $pattern) {
+            \App\Models\Event::where('name', 'LIKE', $pattern)
+                ->where('status', 'no_response')
+                ->where('notes', 'LIKE', '%LEAD IMPORTADO%')
+                ->delete();
+        }
+
+        // 2. Eliminar contactos de clientes spam / importados por error sin eventos
+        $query = User::where('role', 'client')
+            ->doesntHave('clientEvents')
+            ->where(function($q) {
+                $q->where('email', 'LIKE', '%@microsoft.com')
+                  ->orWhere('email', 'LIKE', '%@bodas.net')
+                  ->orWhere('email', 'LIKE', '%email.bodas.net')
+                  ->orWhere('email', 'LIKE', '%@madrigalmarketing.es')
+                  ->orWhere('email', 'LIKE', '%mail.madrigalmarketing.es')
+                  ->orWhere('email', 'LIKE', '%@ptd.net')
+                  ->orWhere('email', 'LIKE', '%@ganoexcel.us')
+                  ->orWhere('email', 'LIKE', '%@nunezandson.com')
+                  ->orWhere('email', '=', 'muralikhalifa@gmail.com')
+                  ->orWhere('name', 'LIKE', 'RobertNar%')
+                  ->orWhere('name', 'LIKE', 'Bodas.net%')
+                  ->orWhere('name', 'LIKE', 'Madrigal Marketing%')
+                  ->orWhere('name', 'LIKE', 'no-reply%')
+                  ->orWhere('name', 'LIKE', '%UTF-8%')
+                  ->orWhere('name', 'LIKE', 'Javnx DJ%');
+            });
+
+        $count = $query->count();
+        if ($count > 0) {
+            $query->delete();
+            session()->flash('message', "Se han eliminado {$count} contactos spam / importados por error.");
+        } else {
+            session()->flash('message', "No se encontraron contactos spam para limpiar.");
+        }
+    }
+
+    public function cleanAllWithoutEvents()
+    {
+        $deleted = User::where('role', 'client')
+            ->doesntHave('clientEvents')
+            ->delete();
+
+        session()->flash('message', "Se han eliminado {$deleted} contactos sin eventos asignados.");
+    }
+
     public function render()
     {
+        // Estadísticas para las pestañas de filtro
+        $totalCount = User::where('role', 'client')->count();
+        $withEventsCount = User::where('role', 'client')->has('clientEvents')->count();
+        $withoutEventsCount = User::where('role', 'client')->doesntHave('clientEvents')->count();
+
         $query = User::where('role', 'client')
             ->withCount('clientEvents')
             ->with(['clientEvents' => function($q) {
                 $q->latest('event_date')->take(1);
             }])
             ->orderBy('name', 'asc');
+
+        if ($this->filterEvents === 'with_events') {
+            $query->has('clientEvents');
+        } elseif ($this->filterEvents === 'without_events') {
+            $query->doesntHave('clientEvents');
+        }
 
         if (!empty(trim($this->search))) {
             $s = '%' . trim($this->search) . '%';
@@ -332,6 +396,9 @@ class ClientManager extends Component
 
         return view('livewire.admin.client-manager', [
             'clients' => $clients,
+            'totalCount' => $totalCount,
+            'withEventsCount' => $withEventsCount,
+            'withoutEventsCount' => $withoutEventsCount,
         ])->layout('components.layouts.app', ['header' => 'Gestión de Clientes y Novios']);
     }
 }

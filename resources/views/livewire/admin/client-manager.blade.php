@@ -30,10 +30,55 @@
         </button>
     </div>
 
+    <!-- FILTROS POR PESTAÑAS Y HERRAMIENTAS DE LIMPIEZA -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-4 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xs">
+        <div class="flex flex-wrap items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800/60 rounded-2xl">
+            <button 
+                type="button" 
+                wire:click="$set('filterEvents', 'all')" 
+                class="px-3 py-1.5 text-xs font-bold rounded-xl transition cursor-pointer {{ $filterEvents === 'all' ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200' }}"
+            >
+                👥 Todos ({{ $totalCount }})
+            </button>
+            <button 
+                type="button" 
+                wire:click="$set('filterEvents', 'with_events')" 
+                class="px-3 py-1.5 text-xs font-bold rounded-xl transition cursor-pointer flex items-center gap-1 {{ $filterEvents === 'with_events' ? 'bg-white dark:bg-slate-900 text-emerald-700 dark:text-emerald-400 shadow-xs' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200' }}"
+            >
+                <span>🎉</span> Con Eventos ({{ $withEventsCount }})
+            </button>
+            <button 
+                type="button" 
+                wire:click="$set('filterEvents', 'without_events')" 
+                class="px-3 py-1.5 text-xs font-bold rounded-xl transition cursor-pointer flex items-center gap-1 {{ $filterEvents === 'without_events' ? 'bg-white dark:bg-slate-900 text-amber-700 dark:text-amber-400 shadow-xs' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200' }}"
+            >
+                <span>📩</span> Sin Eventos ({{ $withoutEventsCount }})
+            </button>
+        </div>
+
+        <!-- Botones de Acción Rápida -->
+        <div class="flex items-center gap-2">
+            <button 
+                type="button" 
+                wire:click="cleanSpamContacts" 
+                wire:confirm="¿Deseas eliminar automáticamente los contactos detectados como marketing o notificaciones (Bodas.net, Microsoft, Madrigal Marketing, RobertNar, etc.) que no tienen eventos asignados?"
+                class="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-2xl bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:hover:bg-rose-900/50 dark:text-rose-300 border border-rose-200 dark:border-rose-900/60 shadow-2xs transition cursor-pointer"
+                title="Elimina contactos de correo spam y notificaciones automáticas"
+            >
+                <span>🧹</span> Limpiar Spam / Notificaciones
+            </button>
+        </div>
+    </div>
+
     <!-- BARRA DE BÚSQUEDA Y TOTALES -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div class="text-xs font-bold text-slate-600 dark:text-slate-400">
-            Total Clientes registrados: <strong class="text-slate-900 dark:text-white text-sm">{{ $clients->count() }}</strong>
+            Mostrando: <strong class="text-slate-900 dark:text-white text-sm">{{ $clients->count() }}</strong>
+            @if($filterEvents === 'with_events')
+                <span class="text-emerald-600 dark:text-emerald-400 font-semibold">(clientes con eventos activos)</span>
+            @elseif($filterEvents === 'without_events')
+                <span class="text-amber-600 dark:text-amber-400 font-semibold">(contactos sin eventos)</span>
+            @endif
         </div>
 
         <div class="relative w-full sm:w-80">
@@ -54,43 +99,45 @@
     <!-- TABLA DE CLIENTES -->
     <div class="bg-white dark:bg-slate-900 shadow-sm overflow-hidden rounded-3xl border border-slate-200 dark:border-slate-800">
         <div class="overflow-x-auto w-full">
-            <table class="w-full min-w-[750px] divide-y divide-slate-200 dark:divide-slate-800 text-left">
+            <table class="w-full divide-y divide-slate-200 dark:divide-slate-800 text-left">
                 <thead class="bg-slate-50 dark:bg-slate-950 text-slate-500 dark:text-slate-400 text-xs uppercase font-bold tracking-wider">
                     <tr>
-                        <th class="px-5 py-3.5">Cliente / Pareja</th>
-                        <th class="px-5 py-3.5">Contacto</th>
-                        <th class="px-5 py-3.5">DNI & Localidad</th>
-                        <th class="px-5 py-3.5">Eventos Asignados</th>
-                        <th class="px-5 py-3.5 text-right">Acciones</th>
+                        <th class="px-4 py-3.5">Cliente / Pareja</th>
+                        <th class="px-4 py-3.5">Contacto</th>
+                        <th class="px-4 py-3.5">DNI & Localidad</th>
+                        <th class="px-4 py-3.5">Eventos</th>
+                        <th class="px-4 py-3.5 text-right w-28 shrink-0">Acciones</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
                     @forelse($clients as $client)
                         <tr class="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition">
                             <!-- Nombre -->
-                            <td class="px-5 py-4 whitespace-nowrap">
-                                <div class="flex items-center gap-3">
-                                    <div class="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300 border border-emerald-300 flex items-center justify-center font-black text-sm shrink-0 shadow-2xs">
+                            <td class="px-4 py-3.5">
+                                <div class="flex items-center gap-2.5 min-w-0">
+                                    <div class="w-9 h-9 rounded-2xl bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300 border border-emerald-300 flex items-center justify-center font-black text-xs shrink-0 shadow-2xs">
                                         {{ strtoupper(substr($client->name, 0, 1)) }}
                                     </div>
-                                    <div>
-                                        <div class="font-bold text-slate-900 dark:text-white text-sm">
+                                    <div class="min-w-0 flex-1">
+                                        <div class="font-bold text-slate-900 dark:text-white text-xs sm:text-sm truncate max-w-[170px] sm:max-w-[220px] md:max-w-xs" title="{{ $client->name }}">
                                             {{ $client->name }}
                                         </div>
                                         @if($client->username)
-                                            <div class="text-[11px] text-slate-500 font-mono">@<span>{{ $client->username }}</span></div>
+                                            <div class="text-[11px] text-slate-500 font-mono truncate max-w-[150px]">@<span>{{ $client->username }}</span></div>
                                         @endif
                                     </div>
                                 </div>
                             </td>
 
                             <!-- Contacto -->
-                            <td class="px-5 py-4 whitespace-nowrap">
-                                <div>
+                            <td class="px-4 py-3.5">
+                                <div class="min-w-0">
                                     @if(str_ends_with($client->email, '@eventosmusicales.local'))
                                         <span class="text-[11px] text-slate-400 italic">Acceso por enlace</span>
                                     @else
-                                        <span class="text-slate-800 dark:text-slate-200 font-medium">{{ $client->email }}</span>
+                                        <div class="text-slate-800 dark:text-slate-200 font-medium text-xs truncate max-w-[150px] sm:max-w-[190px]" title="{{ $client->email }}">
+                                            {{ $client->email }}
+                                        </div>
                                     @endif
                                 </div>
                                 @if($client->phone)
@@ -100,59 +147,59 @@
                                             $cleanPhone = '34' . $cleanPhone;
                                         }
                                     @endphp
-                                    <div class="flex items-center gap-2 mt-1">
-                                        <span class="text-slate-600 dark:text-slate-400 text-[11px] font-mono">📞 {{ $client->phone }}</span>
-                                        <a href="https://wa.me/{{ $cleanPhone }}" target="_blank" class="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/70 hover:bg-emerald-100 border border-emerald-300 dark:border-emerald-800 px-1.5 py-0.5 rounded transition">
-                                            💬 WhatsApp
+                                    <div class="flex items-center gap-1.5 mt-1">
+                                        <span class="text-slate-600 dark:text-slate-400 text-[11px] font-mono whitespace-nowrap">📞 {{ $client->phone }}</span>
+                                        <a href="https://wa.me/{{ $cleanPhone }}" target="_blank" class="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/70 hover:bg-emerald-100 border border-emerald-300 dark:border-emerald-800 px-1.5 py-0.5 rounded transition whitespace-nowrap">
+                                            💬 WA
                                         </a>
                                     </div>
                                 @endif
                             </td>
 
                             <!-- DNI y Localidad -->
-                            <td class="px-5 py-4 whitespace-nowrap">
+                            <td class="px-4 py-3.5">
                                 <div>
                                     @if($client->dni)
-                                        <span class="font-mono font-bold text-slate-800 dark:text-slate-200">{{ $client->dni }}</span>
+                                        <span class="font-mono font-bold text-slate-800 dark:text-slate-200 text-xs">{{ $client->dni }}</span>
                                     @else
                                         <span class="text-slate-400 text-[11px] font-medium">Sin DNI</span>
                                     @endif
                                 </div>
                                 @if($client->city || $client->province)
-                                    <div class="text-[11px] text-slate-500 mt-0.5">
+                                    <div class="text-[11px] text-slate-500 mt-0.5 truncate max-w-[140px]" title="{{ $client->city }} {{ $client->province ? '('.$client->province.')' : '' }}">
                                         📍 {{ $client->city }} {{ $client->province ? '('.$client->province.')' : '' }}
                                     </div>
                                 @endif
                             </td>
 
                             <!-- Eventos Asociados -->
-                            <td class="px-5 py-4 whitespace-nowrap">
+                            <td class="px-4 py-3.5">
                                 @php
                                     $eventsCount = $client->client_events_count ?? 0;
                                     $latestEvent = $client->clientEvents->first();
                                 @endphp
 
                                 @if($eventsCount > 0 && $latestEvent)
-                                    <a href="{{ route('admin.events.show', $latestEvent->id) }}" class="inline-flex items-center gap-1.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 dark:hover:bg-indigo-900/60 border border-indigo-200 dark:border-indigo-800 text-indigo-800 dark:text-indigo-300 font-bold px-2.5 py-1 rounded-xl transition text-[11px]">
+                                    <a href="{{ route('admin.events.show', $latestEvent->id) }}" class="inline-flex items-center gap-1 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 dark:hover:bg-indigo-900/60 border border-indigo-200 dark:border-indigo-800 text-indigo-800 dark:text-indigo-300 font-bold px-2 py-1 rounded-xl transition text-[11px] max-w-[160px] truncate" title="{{ $latestEvent->name }}">
                                         <span>🎉</span>
-                                        <span>{{ $latestEvent->name }}</span>
+                                        <span class="truncate">{{ $latestEvent->name }}</span>
                                         @if($eventsCount > 1)
-                                            <span class="bg-indigo-200 text-indigo-900 rounded-full px-1.5 py-0.2 text-[9px]">+{{ $eventsCount - 1 }}</span>
+                                            <span class="bg-indigo-200 text-indigo-900 rounded-full px-1.5 py-0.2 text-[9px] shrink-0">+{{ $eventsCount - 1 }}</span>
                                         @endif
                                     </a>
                                 @else
-                                    <span class="text-slate-400 text-[11px]">Sin eventos activos</span>
+                                    <span class="text-slate-400 text-[11px]">Sin eventos</span>
                                 @endif
                             </td>
 
                             <!-- Botones de Acción -->
-                            <td class="px-5 py-4 whitespace-nowrap text-right font-medium">
-                                <div class="flex items-center justify-end gap-1.5">
+                            <td class="px-4 py-3.5 text-right w-28 shrink-0 whitespace-nowrap">
+                                <div class="flex items-center justify-end gap-1">
                                     <!-- Botón Rápido Cambiar Contraseña -->
                                     <button 
                                         type="button" 
                                         wire:click="openPasswordModal({{ $client->id }})" 
-                                        class="p-2 text-indigo-600 hover:text-indigo-900 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 dark:hover:bg-indigo-900/60 rounded-xl transition cursor-pointer" 
+                                        class="p-1.5 text-indigo-600 hover:text-indigo-900 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 dark:hover:bg-indigo-900/60 rounded-xl transition cursor-pointer" 
                                         title="Asignar o Cambiar Contraseña"
                                     >
                                         🔑
@@ -162,7 +209,7 @@
                                     <button 
                                         type="button" 
                                         wire:click="openEditModal({{ $client->id }})" 
-                                        class="p-2 text-amber-700 hover:text-amber-900 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/60 dark:hover:bg-amber-900/60 rounded-xl transition cursor-pointer" 
+                                        class="p-1.5 text-amber-700 hover:text-amber-900 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/60 dark:hover:bg-amber-900/60 rounded-xl transition cursor-pointer" 
                                         title="Editar Ficha del Cliente"
                                     >
                                         ✏️
@@ -173,7 +220,7 @@
                                         type="button" 
                                         wire:click="deleteClient({{ $client->id }})" 
                                         wire:confirm="¿Estás seguro de que deseas eliminar la ficha de {{ $client->name }}?" 
-                                        class="p-2 text-rose-600 hover:text-rose-900 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/60 dark:hover:bg-rose-900/60 rounded-xl transition cursor-pointer" 
+                                        class="p-1.5 text-rose-600 hover:text-rose-900 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/60 dark:hover:bg-rose-900/60 rounded-xl transition cursor-pointer" 
                                         title="Eliminar Cliente"
                                     >
                                         🗑️

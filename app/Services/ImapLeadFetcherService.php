@@ -124,8 +124,9 @@ class ImapLeadFetcherService
             $result['scanned']++;
 
             $header = imap_headerinfo($stream, $emailNumber);
-            $fromName = $header->from[0]->personal ?? ($header->from[0]->mailbox ?? 'Cliente');
-            $fromEmail = ($header->from[0]->mailbox ?? '') . '@' . ($header->from[0]->host ?? '');
+            $rawFromName = $header->from[0]->personal ?? ($header->from[0]->mailbox ?? 'Cliente');
+            $fromName = $this->decodeMimeHeader($rawFromName);
+            $fromEmail = strtolower(($header->from[0]->mailbox ?? '') . '@' . ($header->from[0]->host ?? ''));
             $subject = $this->decodeMimeHeader($header->subject ?? 'Solicitud de información');
             $body = $this->getNativeBody($stream, $emailNumber);
 
@@ -191,12 +192,15 @@ class ImapLeadFetcherService
             $fetchLines = $this->sendSocketCmd($socket, "A04 FETCH {$id} (BODY[TEXT] BODY[HEADER.FIELDS (FROM SUBJECT DATE TO)])");
             $rawContent = implode("\n", $fetchLines);
 
-            $subject = $this->extractHeaderValue($rawContent, 'Subject') ?: 'Solicitud de información';
+            $rawSubject = $this->extractHeaderValue($rawContent, 'Subject') ?: 'Solicitud de información';
+            $subject = $this->decodeMimeHeader($rawSubject);
             $fromRaw = $this->extractHeaderValue($rawContent, 'From') ?: $user;
             $body = $rawContent;
 
             $fromParsed = $this->parseFromHeader($fromRaw);
-            $parsed = $this->parseLeadFromEmail($subject, $body, $fromParsed['name'], $fromParsed['email'], $brandKey);
+            $fromName = $this->decodeMimeHeader($fromParsed['name']);
+            $fromEmail = strtolower($fromParsed['email']);
+            $parsed = $this->parseLeadFromEmail($subject, $body, $fromName, $fromEmail, $brandKey);
 
             if ($parsed['is_lead']) {
                 $event = $this->createLeadEvent($parsed, $brandKey, $initialStatus);
@@ -230,18 +234,68 @@ class ImapLeadFetcherService
         $subjectClean = $this->decodeMimeHeader($subject);
         $bodyClean = strip_tags(html_entity_decode($body, ENT_QUOTES | ENT_HTML5, 'UTF-8'));
         
-        $fullText = $subjectClean . "\n" . $bodyClean;
+        $fromEmailLower = strtolower(trim($fromEmail));
+        $fromNameLower = mb_strtolower(trim($fromName));
+        $fromDomain = substr(strrchr($fromEmailLower, "@"), 1);
 
-        // Palabras clave que indican una solicitud o lead
+        // 1. Blacklist de dominios de sistema, spam o servicios automáticos
+        $blacklistedDomains = [
+            'microsoft.com', 'google.com', 'apple.com', 'ptd.net', 'ganoexcel.us',
+            'madrigalmarketing.es', 'nunezandson.com', 'javnx.es', 'eventosmusicales.local',
+            'email.bodas.net', 'mail.madrigalmarketing.es', 'sendgrid.net', 'mailchimp.com'
+        ];
+
+        // 2. Blacklist de correos específicos de spam o no deseados
+        $blacklistedEmails = [
+            'info@bodas.net', 'business@email.bodas.net', 'atencionalcliente@bodas.net',
+            'noreply@bodas.net', 'muralikhalifa@gmail.com', 'info@madrigalmarketing.es',
+            'hola@mail.madrigalmarketing.es', 'sms2333@ptd.net', 'rmassoud@ganoexcel.us'
+        ];
+
+        // 3. Prefijos de servicios automáticos / no-reply
+        $blacklistedPrefixes = [
+            'no-reply@', 'noreply@', 'mailer-daemon@', 'postmaster@', 'security@',
+            'alertas@', 'alerts@', 'billing@', 'facturacion@', 'newsletter@',
+            'news@', 'bounce@', 'notification@', 'notifications@', 'soporte@', 'support@'
+        ];
+
+        $isFromBodasNet = str_contains($fromEmailLower, 'bodas.net') || str_contains($fromNameLower, 'bodas.net');
+
+        // Descartar inmediatamente si no es de bodas.net y coincide con la lista negra
+        if (!$isFromBodasNet) {
+            if (in_array($fromDomain, $blacklistedDomains) || in_array($fromEmailLower, $blacklistedEmails)) {
+                return ['is_lead' => false];
+            }
+            foreach ($blacklistedPrefixes as $pfx) {
+                if (str_starts_with($fromEmailLower, $pfx)) {
+                    return ['is_lead' => false];
+                }
+            }
+        }
+
+        // Descartar si el nombre del remitente es de sistema o marketing
+        if (str_contains($fromNameLower, 'robertnar')
+            || str_contains($fromNameLower, 'madrigal')
+            || str_contains($fromNameLower, 'microsoft')
+            || str_contains($fromNameLower, 'javnx dj')
+            || str_contains($fromNameLower, 'servicio de atención')
+            || str_contains($fromNameLower, 'atención al cliente')
+            || str_contains($fromNameLower, 'bodas.net business')
+            || str_contains($fromNameLower, 'equipo de bodas.net')) {
+            return ['is_lead' => false];
+        }
+
+        $fullText = $subjectClean . "\n" . $bodyClean;
+        $lowerText = mb_strtolower($fullText);
+
+        // Palabras clave que indican una solicitud de evento real
         $leadKeywords = [
-            'presupuesto', 'solicitud', 'contacto', 'boda', 'disponibilidad',
-            'formulario', 'información', 'informacion', 'evento', 'precio',
-            'bodas.net', 'zankyou', 'prontopro', 'cotización', 'cotizacion',
-            'fecha', 'tarifa', 'dj', 'pack', 'reserva'
+            'presupuesto', 'solicitud', 'boda', 'disponibilidad',
+            'formulario', 'cotización', 'cotizacion',
+            'tarifa', 'pack', 'reserva'
         ];
 
         $isLead = false;
-        $lowerText = mb_strtolower($fullText);
         foreach ($leadKeywords as $kw) {
             if (str_contains($lowerText, $kw)) {
                 $isLead = true;
@@ -249,25 +303,12 @@ class ImapLeadFetcherService
             }
         }
 
-        // 1. Detectar si es de Bodas.net
-        $isBodasNet = str_contains($lowerText, 'bodas.net') || str_contains(mb_strtolower($fromEmail), 'bodas.net');
+        if (!$isLead && !$isFromBodasNet) {
+            return ['is_lead' => false];
+        }
+
+        $isBodasNet = $isFromBodasNet || str_contains($lowerText, 'bodas.net');
         
-        // 2. Extraer Nombre del Cliente
-        $clientName = $fromName ?: 'Cliente Potencial';
-        if ($isBodasNet || str_contains($lowerText, 'nombre:')) {
-            if (preg_match('/(?:Nombre|Novios?|Contacto)\s*[:\-]\s*([^\n\r,]+)/i', $bodyClean, $m)) {
-                $clientName = trim($m[1]);
-            }
-        }
-
-        // 3. Extraer Email del Cliente
-        $clientEmail = $fromEmail;
-        if ($isBodasNet || str_contains($fromEmail, 'bodas.net') || str_contains($fromEmail, 'no-reply') || str_contains($fromEmail, 'noreply')) {
-            if (preg_match('/(?:Email|Correo|E-mail)\s*[:\-]?\s*([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i', $bodyClean, $m)) {
-                $clientEmail = trim($m[1]);
-            }
-        }
-
         // 4. Extraer Teléfono
         $phone = null;
         if (preg_match('/(?:Tel[eé]fono|Tel|M[oó]vil|Whatsapp|WhatsApp|Phone)\s*[:\-]?\s*([+\d\s().-]{9,20})/i', $bodyClean, $m)) {
@@ -279,7 +320,42 @@ class ImapLeadFetcherService
             $phone = preg_replace('/[^\d+]/', '', trim($m[0]));
         }
 
-        // 5. Extraer Fecha del Evento
+        // 5. Extraer Nombre del Cliente
+        $clientName = $fromName ?: 'Cliente Potencial';
+        if ($isBodasNet || str_contains($lowerText, 'nombre:')) {
+            if (preg_match('/(?:Nombre|Novios?|Contacto)\s*[:\-]\s*([^\n\r,]+)/i', $bodyClean, $m)) {
+                $candidateName = trim($m[1]);
+                if (!empty($candidateName) && !str_contains(mb_strtolower($candidateName), 'bodas.net')) {
+                    $clientName = $candidateName;
+                }
+            }
+        }
+
+        // 6. Extraer Email del Cliente
+        $clientEmail = $fromEmail;
+        if ($isBodasNet || str_contains($fromEmailLower, 'no-reply') || str_contains($fromEmailLower, 'noreply') || in_array($fromEmailLower, $blacklistedEmails)) {
+            if (preg_match('/(?:Email|Correo|E-mail)\s*[:\-]?\s*([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i', $bodyClean, $m)) {
+                $candidateEmail = strtolower(trim($m[1]));
+                if (!str_contains($candidateEmail, 'bodas.net') && !in_array($candidateEmail, $blacklistedEmails)) {
+                    $clientEmail = $candidateEmail;
+                } else {
+                    $clientEmail = null;
+                }
+            } else {
+                $clientEmail = null;
+            }
+        }
+
+        // Si es de bodas.net, solo es un lead si pudimos extraer novios y un teléfono o email real
+        if ($isBodasNet) {
+            $hasRealClientName = !empty($clientName) && !str_contains(mb_strtolower($clientName), 'bodas.net');
+            if (!$hasRealClientName || (empty($phone) && empty($clientEmail))) {
+                return ['is_lead' => false];
+            }
+            $isLead = true;
+        }
+
+        // 7. Extraer Fecha del Evento
         $eventDate = null;
         if (preg_match('/(?:Fecha(?:\s+de)?(?:\s+la)?(?:\s+boda|\s+evento)?|Día|Dia|Celebración|Celebracion|Enlace)\s*[:\-]?\s*([0-3]?\d[\/\-\.][0-1]?\d[\/\-\.]20\d{2})/i', $bodyClean, $m)) {
             try {
@@ -310,7 +386,7 @@ class ImapLeadFetcherService
             $eventDate = Carbon::now()->addMonths(3)->format('Y-m-d');
         }
 
-        // 6. Extraer Lugar / Finca / Ciudad
+        // 8. Extraer Lugar / Finca / Ciudad
         $location = 'Por definir';
         if (preg_match('/(?:Lugar|Finca|Restaurante|Espacio|Ubicaci[oó]n|Ciudad|Poblaci[oó]n)\s*[:\-]?\s*([^\n\r,]+)/i', $bodyClean, $m)) {
             $locClean = trim($m[1]);
@@ -319,7 +395,7 @@ class ImapLeadFetcherService
             }
         }
 
-        // 7. Tipo de Evento
+        // 9. Tipo de Evento
         $eventType = 'boda';
         if (str_contains($lowerText, 'empresa') || str_contains($lowerText, 'corporativ')) {
             $eventType = 'empresa';
@@ -353,20 +429,50 @@ class ImapLeadFetcherService
      */
     protected function createLeadEvent(array $leadData, string $brandKey, string $initialStatus = 'no_response'): ?Event
     {
+        if (empty($leadData['is_lead'])) {
+            return null;
+        }
+
+        $clientEmail = !empty($leadData['client_email']) ? strtolower(trim($leadData['client_email'])) : null;
+        
+        // Comprobar si el email está en lista negra
+        $bannedEmailDomains = ['bodas.net', 'microsoft.com', 'madrigalmarketing.es', 'ptd.net', 'ganoexcel.us'];
+        if ($clientEmail) {
+            foreach ($bannedEmailDomains as $bd) {
+                if (str_ends_with($clientEmail, '@' . $bd) || str_contains($clientEmail, '.' . $bd)) {
+                    return null; // NUNCA crear cliente con estas cuentas
+                }
+            }
+        }
+
         // 1. Buscar o crear cliente
         $client = null;
-        if (!empty($leadData['client_email']) && filter_var($leadData['client_email'], FILTER_VALIDATE_EMAIL)) {
-            $client = User::where('email', $leadData['client_email'])->first();
+        if (!empty($clientEmail) && filter_var($clientEmail, FILTER_VALIDATE_EMAIL)) {
+            $client = User::where('email', $clientEmail)->first();
             if (!$client) {
                 $client = User::create([
                     'name' => $leadData['client_name'],
-                    'email' => $leadData['client_email'],
+                    'email' => $clientEmail,
                     'phone' => $leadData['client_phone'],
                     'role' => 'client',
                     'password' => bcrypt(Str::random(16)),
                 ]);
             } else if (empty($client->phone) && !empty($leadData['client_phone'])) {
                 $client->update(['phone' => $leadData['client_phone']]);
+            }
+        } elseif (!empty($leadData['client_phone']) && !empty($leadData['client_name'])) {
+            // Cliente con teléfono pero sin email de novios
+            $cleanPhone = preg_replace('/\D/', '', $leadData['client_phone']);
+            $placeholderEmail = 'lead_' . $cleanPhone . '@eventosmusicales.local';
+            $client = User::where('phone', $leadData['client_phone'])->orWhere('email', $placeholderEmail)->first();
+            if (!$client) {
+                $client = User::create([
+                    'name' => $leadData['client_name'],
+                    'email' => $placeholderEmail,
+                    'phone' => $leadData['client_phone'],
+                    'role' => 'client',
+                    'password' => bcrypt(Str::random(16)),
+                ]);
             }
         }
 
@@ -574,20 +680,34 @@ class ImapLeadFetcherService
 
     protected function decodeMimeHeader(string $str): string
     {
-        $elements = @imap_mime_header_decode($str);
-        if (!$elements || !is_array($elements)) {
-            return $str;
-        }
-        $out = '';
-        foreach ($elements as $el) {
-            $charset = strtolower($el->charset ?? 'utf-8');
-            $text = $el->text ?? '';
-            if ($charset !== 'utf-8' && $charset !== 'default') {
-                $text = @mb_convert_encoding($text, 'utf-8', $charset);
+        if (function_exists('imap_mime_header_decode')) {
+            $elements = @imap_mime_header_decode($str);
+            if ($elements && is_array($elements)) {
+                $out = '';
+                foreach ($elements as $el) {
+                    $charset = strtolower($el->charset ?? 'utf-8');
+                    $text = $el->text ?? '';
+                    if ($charset !== 'utf-8' && $charset !== 'default') {
+                        $text = @mb_convert_encoding($text, 'utf-8', $charset);
+                    }
+                    $out .= $text;
+                }
+                return $out;
             }
-            $out .= $text;
         }
-        return $out;
+
+        if (function_exists('iconv_mime_decode')) {
+            $decoded = @iconv_mime_decode($str, ICONV_MIME_DECODE_CONTINUE_ON_ERROR, 'UTF-8');
+            if ($decoded !== false) {
+                return $decoded;
+            }
+        }
+
+        if (function_exists('mb_decode_mime_header')) {
+            return @mb_decode_mime_header($str) ?: $str;
+        }
+
+        return $str;
     }
 
     protected function extractHeaderValue(string $raw, string $headerName): ?string
