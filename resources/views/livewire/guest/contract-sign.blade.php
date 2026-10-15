@@ -214,7 +214,8 @@
                     </div>
                 </div>
 
-                <!-- DATOS DE LA PAREJA / CÓNYUGE (OPCIONAL) -->
+                <!-- DATOS DE LA PAREJA / CÓNYUGE (OPCIONAL, SOLO PARA BODAS) -->
+                @if($event && $event->event_type_clean === 'boda')
                 <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 bg-pink-50/50 dark:bg-pink-950/20 p-4 rounded-2xl border border-pink-100 dark:border-pink-900/40 space-y-3">
                     <div class="flex items-center justify-between">
                         <span class="text-xs font-bold text-pink-950 dark:text-pink-300 uppercase tracking-wider flex items-center gap-1.5">
@@ -261,6 +262,7 @@
                         </div>
                     </div>
                 </div>
+                @endif
             </div>
 
             <!-- PASO 2: LECTURA DE CLÁUSULAS -->

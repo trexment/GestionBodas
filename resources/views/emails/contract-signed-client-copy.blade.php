@@ -52,7 +52,14 @@
                 </tr>
                 <tr>
                     <td class="label">⏰ Horario Estimado:</td>
-                    <td>De {{ $event ? $event->effective_start_time : 'Inicio' }} a {{ $event ? $event->effective_end_time : 'Fin' }}</td>
+                    <td>
+                        De {{ $event ? $event->effective_start_time : 'Inicio' }} a {{ $event ? $event->effective_end_time : 'Fin' }}
+                        @if($event && !empty($event->setup_time_label) && $event->setup_time_label !== ($event->effective_start_time . ' h'))
+                            <div style="font-size: 11px; color: #64748b; margin-top: 2px;">
+                                (Llegada y montaje técnico a partir de las {{ $event->setup_time_label }})
+                            </div>
+                        @endif
+                    </td>
                 </tr>
                 <tr>
                     <td class="label">💶 Importe Total:</td>

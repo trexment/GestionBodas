@@ -534,24 +534,13 @@ class Event extends Model
     }
 
     /**
-     * Hora de inicio del servicio/trabajo para el evento.
-     * Si el montaje es el mismo día y tiene hora especificada, toma la hora de montaje.
-     * Si el montaje es otro día (o no se especifica hora de montaje), toma la primera fase cronológica (Ceremonia, Cóctel, Banquete o Baile).
+     * Hora de inicio de la actuación musical o fase principal del evento para el cliente.
+     * Prioriza la primera fase contratada (Ceremonia, Cóctel, Banquete o Baile).
+     * Solo si no hay ninguna fase definida, hace fallback a la hora general/montaje (start_time).
      */
     public function getEffectiveStartTimeAttribute(): string
     {
-        // 1. Si hay fecha de montaje y fecha de evento, comprobar si es el mismo día
-        $isSameDaySetup = true;
-        if (!empty($this->setup_date) && !empty($this->event_date)) {
-            $isSameDaySetup = \Carbon\Carbon::parse($this->setup_date)->isSameDay(\Carbon\Carbon::parse($this->event_date));
-        }
-
-        // Si el montaje es el mismo día y se especificó hora de montaje, el trabajo en el recinto arranca con el montaje
-        if ($isSameDaySetup && !empty($this->start_time)) {
-            return substr(trim((string)$this->start_time), 0, 5);
-        }
-
-        // 2. Si el montaje es en otra fecha (víspera) o no hay hora de montaje: tomar la primera fase del evento
+        // 1. Tomar la primera fase musical del evento (Ceremonia, Cóctel, Banquete o Baile)
         if (!empty($this->ceremony_time)) {
             return substr(trim((string)$this->ceremony_time), 0, 5);
         }
@@ -565,12 +554,23 @@ class Event extends Model
             return substr(trim((string)$this->dance_start_time), 0, 5);
         }
 
-        // Fallback si hay start_time general
+        // 2. Si no hay fases musicales desglosadas, fallback a la hora general / montaje
         if (!empty($this->start_time)) {
             return substr(trim((string)$this->start_time), 0, 5);
         }
 
         return 'Por determinar';
+    }
+
+    /**
+     * Hora estimada de llegada y montaje técnico del equipamiento (start_time).
+     */
+    public function getSetupTimeLabelAttribute(): ?string
+    {
+        if (empty($this->start_time)) {
+            return null;
+        }
+        return substr(trim((string)$this->start_time), 0, 5) . ' h';
     }
 
     /**

@@ -221,7 +221,14 @@
             </tr>
             <tr>
                 <td class="summary-label">Horario:</td>
-                <td class="summary-value">{{ $r['hora_inicio'] ?? '' }} - {{ $r['hora_fin'] ?? '' }}</td>
+                <td class="summary-value">
+                    <strong>{{ $r['hora_inicio'] ?? '' }} - {{ $r['hora_fin'] ?? '' }}</strong>
+                    @if(!empty($r['hora_montaje']) && $r['hora_montaje'] !== (($r['hora_inicio'] ?? '') . ' h'))
+                        <div style="font-size: 7.5pt; color: #64748b; margin-top: 1px;">
+                            Montaje técnico: a partir de las {{ $r['hora_montaje'] }}
+                        </div>
+                    @endif
+                </td>
                 <td class="summary-label">Importe Total:</td>
                 <td class="summary-value" style="color: #1d4ed8; font-weight: bold; font-size: 10.5pt;">{{ $r['importe'] ?? '' }}</td>
             </tr>

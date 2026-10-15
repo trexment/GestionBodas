@@ -94,7 +94,7 @@ Y acuerdan someterse a las siguientes:
 CLÁUSULAS:
 
 PRIMERA. OBJETO DEL CONTRATO Y HORARIOS
-LA EMPRESA prestará al CLIENTE los servicios de sonorización, iluminación y actuación musical para el evento "{{ evento }}", de tipo {{ tipo_evento }}, con horario estimado de {{ hora_inicio }} a {{ hora_fin }}. 
+LA EMPRESA prestará al CLIENTE los servicios de sonorización, iluminación y actuación musical para el evento "{{ evento }}", de tipo {{ tipo_evento }}, con horario estimado de actuación de {{ hora_inicio }} a {{ hora_fin }}{{ especificacion_montaje }}. 
 Cumplida la hora de finalización pactada, EL CLIENTE podrá solicitar la ampliación de horas adicionales de servicio/baile, quedando la prórroga supeditada a la disponibilidad del personal y al estricto cumplimiento del horario límite legal establecido por la normativa autonómica y municipal de espectáculos públicos y actividades recreativas.
 
 SEGUNDA. ALCANCE TÉCNICO Y SERVICIOS CONTRATADOS
@@ -209,12 +209,13 @@ TEXT
         $clientCity = $overrides['client_city'] ?? ($contract->client_city_signed ?: ($client?->city ?? ''));
         $clientProvince = $overrides['client_province'] ?? ($contract->client_province_signed ?: ($client?->province ?? ''));
 
-        $partnerName = $overrides['partner_name'] ?? ($event->partner_name ?? '');
-        $partnerPhone = $overrides['partner_phone'] ?? ($event->partner_phone ?? '');
-        $partnerEmail = $overrides['partner_email'] ?? ($event->partner_email ?? '');
-        $partnerDni = $overrides['partner_dni'] ?? ($event->partner_dni ?? '');
+        $isWedding = $event && ($event->event_type_clean === 'boda');
+        $partnerName = ($isWedding && !empty($overrides['partner_name'] ?? $event->partner_name)) ? ($overrides['partner_name'] ?? $event->partner_name) : '';
+        $partnerPhone = ($isWedding && !empty($overrides['partner_phone'] ?? $event->partner_phone)) ? ($overrides['partner_phone'] ?? $event->partner_phone) : '';
+        $partnerEmail = ($isWedding && !empty($overrides['partner_email'] ?? $event->partner_email)) ? ($overrides['partner_email'] ?? $event->partner_email) : '';
+        $partnerDni = ($isWedding && !empty($overrides['partner_dni'] ?? $event->partner_dni)) ? ($overrides['partner_dni'] ?? $event->partner_dni) : '';
 
-        $coupleNames = !empty($partnerName) ? "{$clientName} y {$partnerName}" : $clientName;
+        $coupleNames = (!empty($partnerName)) ? "{$clientName} y {$partnerName}" : $clientName;
 
         // Formatted client city string: e.g. ", 26370 Navarrete (La Rioja)"
         $clientCityInfo = '';
@@ -266,6 +267,14 @@ TEXT
             $formattedPaymentMethods = implode(', ', $paymentMethodTexts) . ' o ' . $last;
         }
 
+        $musicStart = $event ? $event->effective_start_time : 'Por determinar';
+        $musicEnd = $event ? $event->effective_end_time : 'Fin de fiesta / Según desarrollo';
+        $setupTime = $event ? $event->setup_time_label : null;
+        $setupNotice = '';
+        if ($setupTime && $setupTime !== ($musicStart . ' h') && $musicStart !== 'Por determinar') {
+            $setupNotice = " (llegada para montaje técnico a partir de las {$setupTime})";
+        }
+
         $replacements = [
             '{{ empresa }}' => $companyName,
             '{{ cif_empresa }}' => $companyCif,
@@ -301,8 +310,10 @@ TEXT
             '{{ tipo_evento }}' => $event?->type ?? 'Boda / Evento',
             '{{ fecha_evento }}' => $event && $event->event_date ? Carbon::parse($event->event_date)->format('d/m/Y') : 'Por determinar',
             '{{ ubicacion }}' => $event?->location ?? 'Por determinar',
-            '{{ hora_inicio }}' => $event ? $event->effective_start_time : 'Por determinar',
-            '{{ hora_fin }}' => $event ? $event->effective_end_time : 'Fin de fiesta / Según desarrollo',
+            '{{ hora_inicio }}' => $musicStart,
+            '{{ hora_fin }}' => $musicEnd,
+            '{{ hora_montaje }}' => $setupTime ?? '',
+            '{{ especificacion_montaje }}' => $setupNotice,
             '{{ hora_maxima }}' => !empty($event?->max_end_time) ? (substr(trim((string)$event->max_end_time), 0, 5) . ' h') : 'Límite legal / finca',
             '{{ duracion_baile }}' => !empty($event?->dance_duration_hours) ? ((float)$event->dance_duration_hours . ' horas') : '4 horas',
             '{{ horario_baile }}' => $event ? $event->dance_schedule_label : 'Horario no definido',
@@ -327,6 +338,17 @@ TEXT
         $titleTemplate = self::getDefaultTitle();
         $bodyTemplate = self::getDefaultBody();
         $footerTemplate = self::getDefaultFooter();
+
+        if (!str_contains($bodyTemplate, '{{ especificacion_montaje }}')) {
+            $bodyTemplate = str_replace(
+                [
+                    'con horario estimado de {{ hora_inicio }} a {{ hora_fin }}.',
+                    'con horario estimado de {{ hora_inicio }} a {{ hora_fin }}',
+                ],
+                'con horario estimado de actuación de {{ hora_inicio }} a {{ hora_fin }}{{ especificacion_montaje }}.',
+                $bodyTemplate
+            );
+        }
 
         if (!str_contains($bodyTemplate, '{{ formas_pago }}') && !str_contains($bodyTemplate, '{{ metodos_pago }}')) {
             $bodyTemplate = str_replace([

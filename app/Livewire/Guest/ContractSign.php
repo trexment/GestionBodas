@@ -80,10 +80,11 @@ class ContractSign extends Component
         $this->event = $this->contract->event;
         $this->client = $this->event ? $this->event->client : null;
 
-        $this->partner_name = $this->event ? $this->event->partner_name : '';
-        $this->partner_phone = $this->event ? $this->event->partner_phone : '';
-        $this->partner_email = $this->event ? $this->event->partner_email : '';
-        $this->partner_dni = $this->event ? $this->event->partner_dni : '';
+        $isWedding = $this->event && ($this->event->event_type_clean === 'boda');
+        $this->partner_name = ($isWedding && $this->event) ? $this->event->partner_name : '';
+        $this->partner_phone = ($isWedding && $this->event) ? $this->event->partner_phone : '';
+        $this->partner_email = ($isWedding && $this->event) ? $this->event->partner_email : '';
+        $this->partner_dni = ($isWedding && $this->event) ? $this->event->partner_dni : '';
 
         // Check if already signed
         if ($this->contract->status === 'signed') {
@@ -153,6 +154,7 @@ class ContractSign extends Component
 
     public function renderLiveContract()
     {
+        $isWedding = $this->event && ($this->event->event_type_clean === 'boda');
         $overrides = array_filter([
             'client_name' => $this->client_name ?: null,
             'client_dni' => $this->client_dni ?: null,
@@ -162,10 +164,10 @@ class ContractSign extends Component
             'client_postal_code' => $this->client_postal_code ?: null,
             'client_city' => $this->client_city ?: null,
             'client_province' => $this->client_province ?: null,
-            'partner_name' => $this->partner_name ?: null,
-            'partner_phone' => $this->partner_phone ?: null,
-            'partner_email' => $this->partner_email ?: null,
-            'partner_dni' => $this->partner_dni ?: null,
+            'partner_name' => $isWedding ? ($this->partner_name ?: null) : null,
+            'partner_phone' => $isWedding ? ($this->partner_phone ?: null) : null,
+            'partner_email' => $isWedding ? ($this->partner_email ?: null) : null,
+            'partner_dni' => $isWedding ? ($this->partner_dni ?: null) : null,
         ]);
 
         $rendered = ContractTemplateService::renderContract($this->contract, $overrides);
@@ -282,8 +284,8 @@ class ContractSign extends Component
             ]);
         }
 
-        // Update event partner details if provided
-        if ($this->event) {
+        // Update event partner details if provided and event is a wedding
+        if ($this->event && $this->event->event_type_clean === 'boda') {
             $this->event->update([
                 'partner_name' => $this->partner_name ?: $this->event->partner_name,
                 'partner_phone' => $this->partner_phone ?: $this->event->partner_phone,
