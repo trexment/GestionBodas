@@ -2,11 +2,13 @@
 
 namespace App\Services;
 
+use App\Mail\NewLeadImportedAdminMail;
 use App\Models\Event;
 use App\Models\Setting;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
 class ImapLeadFetcherService
@@ -279,12 +281,17 @@ class ImapLeadFetcherService
 
         // 5. Extraer Fecha del Evento
         $eventDate = null;
-        if (preg_match('/(?:Fecha|Día|Dia|Celebración|Celebracion|Enlace)\s*[:\-]?\s*([0-3]?\d[\/\-\.][0-1]?\d[\/\-\.]202[4-9])/i', $bodyClean, $m)) {
+        if (preg_match('/(?:Fecha|Día|Dia|Celebración|Celebracion|Enlace)\s*[:\-]?\s*([0-3]?\d[\/\-\.][0-1]?\d[\/\-\.]20\d{2})/i', $bodyClean, $m)) {
             try {
                 $dateStr = str_replace(['.', '-'], '/', trim($m[1]));
                 $eventDate = Carbon::createFromFormat('d/m/Y', $dateStr)->format('Y-m-d');
             } catch (\Throwable $e) {}
-        } elseif (preg_match('/([0-3]?\d)\s+de\s+(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)\s+(?:de\s+)?(202[4-9])/i', $bodyClean, $m)) {
+        } elseif (preg_match('/(?:Fecha|Día|Dia|Celebración|Celebracion|Enlace)\s*[:\-]?\s*(20\d{2}[\/\-\.][0-1]?\d[\/\-\.][0-3]?\d)/i', $bodyClean, $m)) {
+            try {
+                $dateStr = str_replace(['.', '/'], '-', trim($m[1]));
+                $eventDate = Carbon::parse($dateStr)->format('Y-m-d');
+            } catch (\Throwable $e) {}
+        } elseif (preg_match('/([0-3]?\d)\s+de\s+(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)\s+(?:de\s+)?(20\d{2})/i', $bodyClean, $m)) {
             $months = [
                 'enero' => 1, 'febrero' => 2, 'marzo' => 3, 'abril' => 4,
                 'mayo' => 5, 'junio' => 6, 'julio' => 7, 'agosto' => 8,
@@ -320,6 +327,8 @@ class ImapLeadFetcherService
             $eventType = 'cumpleanos';
         } elseif (str_contains($lowerText, 'comuni')) {
             $eventType = 'comunion';
+        } elseif (str_contains($lowerText, 'video') || str_contains($lowerText, 'videografo') || str_contains($lowerText, 'videógrafo')) {
+            $eventType = 'videografo';
         } elseif (str_contains($lowerText, 'fiesta') || str_contains($lowerText, 'privad')) {
             $eventType = 'otro';
         }
@@ -377,6 +386,7 @@ class ImapLeadFetcherService
             'empresa' => 'Evento Empresa',
             'cumpleanos' => 'Cumpleaños',
             'comunion' => 'Comunión',
+            'videografo' => 'Videógrafo',
             default => 'Boda',
         };
         $eventName = "{$typeLabel} - {$leadData['client_name']}";
@@ -400,6 +410,21 @@ class ImapLeadFetcherService
                 . "----------------------------------------\n"
                 . $leadData['full_body'],
         ]);
+
+        // 5. Notificar a los administradores de la empresa y la marca por correo ("y nos avise")
+        try {
+            $adminEmails = Setting::getAdminNotificationEmails($brandKey);
+            if (!empty($adminEmails)) {
+                $primaryAdmin = array_shift($adminEmails);
+                $mail = Mail::to($primaryAdmin);
+                if (!empty($adminEmails)) {
+                    $mail->bcc($adminEmails);
+                }
+                $mail->send(new NewLeadImportedAdminMail($event, $leadData, $brandKey));
+            }
+        } catch (\Throwable $e) {
+            Log::warning("No se pudo enviar notificación de nuevo lead por email (Evento #{$event->id}): " . $e->getMessage());
+        }
 
         return $event;
     }

@@ -107,7 +107,8 @@ Route::get('/api/music/youtube-id', [SpotifyAuthController::class, 'getYoutubeVi
 Route::get('/api/music/resolve-track', [SpotifyAuthController::class, 'resolveTrack'])->name('music.resolve-track');
 Route::get('/api/drive-stream/{fileId}', [SpotifyAuthController::class, 'streamGoogleDriveAudio'])->name('api.drive.stream');
 Route::get('/music-requests/{musicRequest}/download', [SpotifyAuthController::class, 'downloadAudio'])->name('admin.music.download');
-Route::get('/music/{musicRequest}/download', [SpotifyAuthController::class, 'downloadAudio'])->name('music.download');
+// External Web Leads API / Webhook Endpoint (Rate limited to 30 requests/min)
+Route::post('/api/leads', [\App\Http\Controllers\LeadWebhookController::class, 'store'])->middleware('throttle:30,1')->name('api.leads.store');
 
 // Global PDF Download Aliases (Secured with token or auth inside controller)
 Route::get('/events/{event}/music-escaleta/pdf', [PdfController::class, 'downloadMusicEscaleta'])->name('pdf.music-escaleta');
