@@ -3788,8 +3788,34 @@
                         <div class="bg-white rounded-2xl p-5 border border-gray-200 shadow-xs hover:border-indigo-200 transition">
                             <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                                 <div>
-                                    <div class="flex items-center gap-2">
-                                        <span class="text-sm font-extrabold text-slate-800">Contrato #CTR-{{ str_pad($contract->id, 5, '0', STR_PAD_LEFT) }}</span>
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        @if($editing_contract_id === $contract->id)
+                                            <div class="flex items-center gap-1.5 my-0.5">
+                                                <input 
+                                                    type="text" 
+                                                    wire:model="editing_contract_number" 
+                                                    wire:keydown.enter="saveContractNumber({{ $contract->id }})"
+                                                    wire:keydown.escape="cancelEditContractNumber"
+                                                    class="border border-indigo-500 rounded-lg px-2.5 py-1 text-xs font-mono font-bold text-slate-800 bg-white focus:ring-2 focus:ring-indigo-500 w-64 shadow-xs"
+                                                    placeholder="Ej: CTR-2026-FIESTA-HALLOWEEN"
+                                                    autofocus
+                                                >
+                                                <button type="button" wire:click="saveContractNumber({{ $contract->id }})" class="p-1 px-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition shadow-xs cursor-pointer" title="Guardar cambios">
+                                                    ✓
+                                                </button>
+                                                <button type="button" wire:click="cancelEditContractNumber" class="p-1 px-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-xs font-bold transition cursor-pointer" title="Cancelar">
+                                                    ✕
+                                                </button>
+                                            </div>
+                                        @else
+                                            <span class="text-sm font-extrabold text-slate-800 flex items-center gap-1.5">
+                                                <span>📄 {{ $contract->contract_number }}</span>
+                                                <button type="button" wire:click="startEditContractNumber({{ $contract->id }})" class="text-slate-400 hover:text-indigo-600 text-xs p-1 rounded-md hover:bg-slate-100 transition cursor-pointer" title="Personalizar o renombrar código del contrato">
+                                                    ✏️
+                                                </button>
+                                            </span>
+                                        @endif
+
                                         @if($contract->status == 'signed')
                                             <span class="px-2.5 py-0.5 text-[11px] rounded-full bg-emerald-100 text-emerald-800 font-bold flex items-center gap-1">
                                                 ✓ Firmado Digitalmente

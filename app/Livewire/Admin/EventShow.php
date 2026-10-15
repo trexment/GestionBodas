@@ -93,6 +93,8 @@ class EventShow extends Component
     public $quote_deposit_percentage = 40;
     public $quote_deposit_fixed_amount = 200;
     public $editing_quote_id = null; // ID de la propuesta actualmente en edición
+    public $editing_contract_id = null; // ID del contrato actualmente editando su nombre/código
+    public $editing_contract_number = '';
 
     // Configuración de IVA y Métodos de Pago
     public $quote_tax_type = 'included'; // 'included' (IVA incluido), 'excluded' (Base + 21% IVA), 'none' (Sin IVA / Exento)
@@ -2664,12 +2666,42 @@ class EventShow extends Component
     public function createContract()
     {
         $token = \Illuminate\Support\Str::random(32);
-        $this->event->contracts()->create([
+        $contract = $this->event->contracts()->create([
             'status' => 'pending',
             'token' => $token,
         ]);
         $this->event->load('contracts');
-        session()->flash('contract_message', 'Contrato borrador generado con enlace para firma online.');
+        session()->flash('contract_message', "Contrato '{$contract->contract_number}' generado con enlace para firma online.");
+    }
+
+    public function startEditContractNumber($contractId)
+    {
+        $contract = Contract::find($contractId);
+        if ($contract && $contract->event_id == $this->event->id) {
+            $this->editing_contract_id = $contract->id;
+            $this->editing_contract_number = $contract->contract_number;
+        }
+    }
+
+    public function cancelEditContractNumber()
+    {
+        $this->editing_contract_id = null;
+        $this->editing_contract_number = '';
+    }
+
+    public function saveContractNumber($contractId)
+    {
+        $contract = Contract::find($contractId);
+        if ($contract && $contract->event_id == $this->event->id) {
+            $val = trim((string)$this->editing_contract_number);
+            $contract->update([
+                'contract_number' => !empty($val) ? $val : null,
+            ]);
+            $this->editing_contract_id = null;
+            $this->editing_contract_number = '';
+            $this->event->load('contracts');
+            session()->flash('contract_message', 'Nombre / Código del contrato actualizado correctamente.');
+        }
     }
 
     public function deleteContract($contractId)

@@ -336,7 +336,7 @@ TEXT
             '{{ desglose_staff }}' => $event ? $event->staff_breakdown_text : '1 persona (DJ)',
             '{{ personal_asignado }}' => $event ? $event->staff_names_text : 'DJ',
             '{{ numero_presupuesto }}' => $quote ? 'PRE-' . str_pad($quote->id, 5, '0', STR_PAD_LEFT) : 'PRE-' . str_pad($event->id ?? 1, 5, '0', STR_PAD_LEFT),
-            '{{ numero_contrato }}' => 'CTR-' . str_pad($contract->id, 5, '0', STR_PAD_LEFT),
+            '{{ numero_contrato }}' => $contract->contract_number,
             '{{ fecha_emision }}' => ($contract->created_at ?? now())->format('d/m/Y'),
         ];
 
