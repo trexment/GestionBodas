@@ -188,6 +188,15 @@ class EvolutionWhatsAppService
                 ];
             }
 
+            if ($res->status() === 404) {
+                return [
+                    'configured' => true,
+                    'state' => 'not_created',
+                    'instance' => $instance,
+                    'message' => 'ℹ️ Instancia aún no creada en Evolution API. Pulsa «📱 Vincular / Ver QR» para generarla automáticamente.',
+                ];
+            }
+
             return [
                 'configured' => true,
                 'state' => 'error',
@@ -205,7 +214,7 @@ class EvolutionWhatsAppService
     }
 
     /**
-     * Obtiene el código QR para escanear en caso de estar desconectado
+     * Obtiene el código QR para escanear. Si la instancia no existe en Evolution API, la crea automáticamente.
      */
     public static function getQrCode(?string $brand = null): array
     {
@@ -218,6 +227,7 @@ class EvolutionWhatsAppService
         $instance = self::getInstanceName($brand);
 
         try {
+            // 1. Intentar conectar instancia existente
             $endpoint = "{$baseUrl}/instance/connect/{$instance}";
             $res = Http::withHeaders(['apikey' => $apiKey])->timeout(10)->get($endpoint);
 
@@ -225,6 +235,7 @@ class EvolutionWhatsAppService
                 $data = $res->json();
                 $base64 = $data['base64'] ?? ($data['qrcode']['base64'] ?? null);
                 if ($base64) {
+                    self::ensureWebhookConfigured($baseUrl, $apiKey, $instance);
                     return [
                         'success' => true,
                         'base64' => $base64,
@@ -233,15 +244,77 @@ class EvolutionWhatsAppService
                 }
             }
 
+            // 2. Si no existe (404) o no devolvió QR, intentar crear la instancia
+            $createRes = Http::withHeaders([
+                'apikey' => $apiKey,
+                'Content-Type' => 'application/json',
+            ])->timeout(12)->post("{$baseUrl}/instance/create", [
+                'instanceName' => $instance,
+                'integration' => 'WHATSAPP-BAILEYS',
+                'qrcode' => true,
+            ]);
+
+            if ($createRes->successful()) {
+                $createData = $createRes->json();
+                $base64 = $createData['qrcode']['base64'] ?? ($createData['base64'] ?? null);
+                self::ensureWebhookConfigured($baseUrl, $apiKey, $instance);
+
+                if ($base64) {
+                    return [
+                        'success' => true,
+                        'base64' => $base64,
+                        'instance' => $instance,
+                    ];
+                }
+
+                // Si se creó pero el QR se pide en un segundo paso:
+                $retryRes = Http::withHeaders(['apikey' => $apiKey])->timeout(10)->get($endpoint);
+                if ($retryRes->successful()) {
+                    $retryData = $retryRes->json();
+                    $retryBase64 = $retryData['base64'] ?? ($retryData['qrcode']['base64'] ?? null);
+                    if ($retryBase64) {
+                        return [
+                            'success' => true,
+                            'base64' => $retryBase64,
+                            'instance' => $instance,
+                        ];
+                    }
+                }
+            }
+
             return [
                 'success' => false,
-                'message' => 'No se pudo generar QR (puede que ya esté conectado).',
+                'message' => 'No se pudo generar QR (puede que ya esté conectado o el servidor devolvió un error).',
             ];
         } catch (\Throwable $e) {
             return [
                 'success' => false,
                 'message' => 'Error obteniendo QR: ' . $e->getMessage(),
             ];
+        }
+    }
+
+    /**
+     * Asegura que el webhook hacia nuestra app esté configurado en Evolution API
+     */
+    public static function ensureWebhookConfigured(string $baseUrl, string $apiKey, string $instance): void
+    {
+        try {
+            $webhookUrl = url('/api/whatsapp/webhook');
+            Http::withHeaders([
+                'apikey' => $apiKey,
+                'Content-Type' => 'application/json',
+            ])->timeout(5)->post("{$baseUrl}/webhook/set/{$instance}", [
+                'webhook' => [
+                    'enabled' => true,
+                    'url' => $webhookUrl,
+                    'byEvents' => false,
+                    'base64' => false,
+                    'events' => ['MESSAGES_UPSERT'],
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning("No se pudo auto-configurar webhook para {$instance}: " . $e->getMessage());
         }
     }
 }
