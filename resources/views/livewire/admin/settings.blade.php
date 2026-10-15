@@ -86,48 +86,56 @@
         </div>
     @endif
 
-    <!-- TABS NAVEGACIÓN MODERNA (PILLS SEGMENTADOS) -->
-    <div class="bg-slate-100 dark:bg-slate-900/90 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs flex flex-wrap items-center gap-1.5">
+    <!-- TABS NAVEGACIÓN MODERNA (GRID EN 2 LÍNEAS / RESPONSIVE) -->
+    <div class="bg-slate-100/90 dark:bg-slate-900/90 p-2 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs grid grid-cols-2 sm:grid-cols-4 gap-2">
         <button type="button" wire:click="$set('activeTab', 'general')" 
-            class="shrink-0 whitespace-nowrap px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-150 flex items-center gap-2 cursor-pointer select-none {{ $activeTab === 'general' ? 'bg-white dark:bg-indigo-600 text-indigo-700 dark:text-white shadow-xs ring-1 ring-black/5 dark:ring-white/10' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-800/60' }}">
-            <span>🏢</span> Datos Generales
+            class="w-full px-3 py-2.5 rounded-xl text-xs font-bold transition-all duration-150 flex items-center justify-start gap-2 cursor-pointer select-none truncate {{ $activeTab === 'general' ? 'bg-white dark:bg-indigo-600 text-indigo-700 dark:text-white shadow-xs ring-1 ring-black/5 dark:ring-white/10' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-800/60' }}">
+            <span class="text-base shrink-0">🏢</span>
+            <span class="truncate">Datos Generales</span>
         </button>
 
         <button type="button" wire:click="$set('activeTab', 'pricing')" 
-            class="shrink-0 whitespace-nowrap px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-150 flex items-center gap-2 cursor-pointer select-none {{ $activeTab === 'pricing' ? 'bg-white dark:bg-indigo-600 text-indigo-700 dark:text-white shadow-xs ring-1 ring-black/5 dark:ring-white/10' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-800/60' }}">
-            <span>💶</span> Tarifas y Precios
+            class="w-full px-3 py-2.5 rounded-xl text-xs font-bold transition-all duration-150 flex items-center justify-start gap-2 cursor-pointer select-none truncate {{ $activeTab === 'pricing' ? 'bg-white dark:bg-indigo-600 text-indigo-700 dark:text-white shadow-xs ring-1 ring-black/5 dark:ring-white/10' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-800/60' }}">
+            <span class="text-base shrink-0">💶</span>
+            <span class="truncate">Tarifas y Precios</span>
         </button>
 
         <button type="button" wire:click="$set('activeTab', 'contracts')" 
-            class="shrink-0 whitespace-nowrap px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-150 flex items-center gap-2 cursor-pointer select-none {{ $activeTab === 'contracts' ? 'bg-white dark:bg-indigo-600 text-indigo-700 dark:text-white shadow-xs ring-1 ring-black/5 dark:ring-white/10' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-800/60' }}">
-            <span>📜</span> Editor de Contratos
+            class="w-full px-3 py-2.5 rounded-xl text-xs font-bold transition-all duration-150 flex items-center justify-start gap-2 cursor-pointer select-none truncate {{ $activeTab === 'contracts' ? 'bg-white dark:bg-indigo-600 text-indigo-700 dark:text-white shadow-xs ring-1 ring-black/5 dark:ring-white/10' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-800/60' }}">
+            <span class="text-base shrink-0">📜</span>
+            <span class="truncate">Editor de Contratos</span>
         </button>
 
         <button type="button" wire:click="$set('activeTab', 'dossier')" 
-            class="shrink-0 whitespace-nowrap px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-150 flex items-center gap-2 cursor-pointer select-none {{ $activeTab === 'dossier' ? 'bg-white dark:bg-amber-600 text-amber-700 dark:text-white shadow-xs ring-1 ring-black/5 dark:ring-white/10' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-800/60' }}">
-            <span>📖</span> Dossier y Propuestas
+            class="w-full px-3 py-2.5 rounded-xl text-xs font-bold transition-all duration-150 flex items-center justify-start gap-2 cursor-pointer select-none truncate {{ $activeTab === 'dossier' ? 'bg-white dark:bg-amber-600 text-amber-700 dark:text-white shadow-xs ring-1 ring-black/5 dark:ring-white/10' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-800/60' }}">
+            <span class="text-base shrink-0">📖</span>
+            <span class="truncate">Dossier y Propuestas</span>
         </button>
 
         <button type="button" wire:click="$set('activeTab', 'music_integrations')" 
-            class="shrink-0 whitespace-nowrap px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-150 flex items-center gap-2 cursor-pointer select-none {{ $activeTab === 'music_integrations' ? 'bg-white dark:bg-pink-600 text-pink-700 dark:text-white shadow-xs ring-1 ring-black/5 dark:ring-white/10' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-800/60' }}">
-            <span>🎵</span> Música (Spotify / Apple)
+            class="w-full px-3 py-2.5 rounded-xl text-xs font-bold transition-all duration-150 flex items-center justify-start gap-2 cursor-pointer select-none truncate {{ $activeTab === 'music_integrations' ? 'bg-white dark:bg-pink-600 text-pink-700 dark:text-white shadow-xs ring-1 ring-black/5 dark:ring-white/10' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-800/60' }}">
+            <span class="text-base shrink-0">🎵</span>
+            <span class="truncate">Música (Spotify / Apple)</span>
         </button>
 
         <button type="button" wire:click="$set('activeTab', 'email_smtp')" 
-            class="shrink-0 whitespace-nowrap px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-150 flex items-center gap-2 cursor-pointer select-none {{ $activeTab === 'email_smtp' ? 'bg-white dark:bg-indigo-600 text-indigo-700 dark:text-white shadow-xs ring-1 ring-black/5 dark:ring-white/10' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-800/60' }}">
-            <span>✉️</span> Correo Saliente (SMTP)
+            class="w-full px-3 py-2.5 rounded-xl text-xs font-bold transition-all duration-150 flex items-center justify-start gap-2 cursor-pointer select-none truncate {{ $activeTab === 'email_smtp' ? 'bg-white dark:bg-indigo-600 text-indigo-700 dark:text-white shadow-xs ring-1 ring-black/5 dark:ring-white/10' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-800/60' }}">
+            <span class="text-base shrink-0">✉️</span>
+            <span class="truncate">Correo Saliente (SMTP)</span>
         </button>
 
         <button type="button" wire:click="$set('activeTab', 'email_imap')" 
-            class="shrink-0 whitespace-nowrap px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-150 flex items-center gap-2 cursor-pointer select-none {{ $activeTab === 'email_imap' ? 'bg-white dark:bg-purple-600 text-purple-700 dark:text-white shadow-xs ring-1 ring-black/5 dark:ring-white/10' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-800/60' }}">
-            <span>📥</span> Leads Entrantes (IMAP)
+            class="w-full px-3 py-2.5 rounded-xl text-xs font-bold transition-all duration-150 flex items-center justify-start gap-2 cursor-pointer select-none truncate {{ $activeTab === 'email_imap' ? 'bg-white dark:bg-purple-600 text-purple-700 dark:text-white shadow-xs ring-1 ring-black/5 dark:ring-white/10' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-800/60' }}">
+            <span class="text-base shrink-0">📥</span>
+            <span class="truncate">Leads Entrantes (IMAP)</span>
         </button>
 
         <button type="button" wire:click="$set('activeTab', 'whatsapp_gateway')" 
-            class="shrink-0 whitespace-nowrap px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-150 flex items-center gap-2 cursor-pointer select-none {{ $activeTab === 'whatsapp_gateway' ? 'bg-emerald-600 text-white shadow-xs ring-1 ring-emerald-400/40' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-800/60' }}">
-            <span>💬</span> WhatsApp API
+            class="w-full px-3 py-2.5 rounded-xl text-xs font-bold transition-all duration-150 flex items-center justify-start gap-2 cursor-pointer select-none truncate {{ $activeTab === 'whatsapp_gateway' ? 'bg-emerald-600 text-white shadow-xs ring-1 ring-emerald-400/40' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-800/60' }}">
+            <span class="text-base shrink-0">💬</span>
+            <span class="truncate">WhatsApp API</span>
             @if($whatsapp_gateway_enabled)
-                <span class="inline-block h-2 w-2 rounded-full bg-emerald-400 ring-2 ring-emerald-200 dark:ring-emerald-900"></span>
+                <span class="inline-block h-2 w-2 rounded-full bg-emerald-400 ring-2 ring-emerald-200 dark:ring-emerald-900 shrink-0 ml-auto"></span>
             @endif
         </button>
     </div>

@@ -1480,9 +1480,9 @@
         </div>
     </div>
 
-    <!-- Navegación por pestañas (Scroll Horizontal Táctil en Móvil) -->
-    <div class="mb-6 border-b border-gray-200 dark:border-slate-800 overflow-x-auto scrollbar-none -mx-4 px-4 sm:mx-0 sm:px-0">
-        <ul class="flex flex-nowrap -mb-px text-sm font-medium text-center whitespace-nowrap min-w-full">
+    <!-- Navegación por pestañas (Adaptable en Varias Líneas / Responsive) -->
+    <div class="mb-6 border-b border-gray-200 dark:border-slate-800 -mx-4 px-4 sm:mx-0 sm:px-0">
+        <ul class="flex flex-wrap -mb-px text-sm font-medium text-center min-w-full gap-y-1">
             <li class="mr-2">
                 <button wire:click="$set('activeTab', 'dossier')" class="inline-block p-4 rounded-t-lg border-b-2 font-bold text-xs sm:text-sm {{ $activeTab == 'dossier' ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400 dark:border-indigo-400' : 'border-transparent hover:text-gray-600 dark:hover:text-slate-300 hover:border-gray-300 dark:hover:border-slate-700 text-gray-500 dark:text-slate-400' }}">
                     📋 Dossier y Planificación
