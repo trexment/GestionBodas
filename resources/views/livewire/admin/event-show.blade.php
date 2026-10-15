@@ -1542,16 +1542,16 @@
 
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <!-- Columna 1: Centro de Comunicación WhatsApp & Notas del Evento -->
-                    <div class="bg-gray-50 p-5 rounded-2xl border border-gray-200 shadow-xs space-y-4">
-                        <div class="flex items-center justify-between border-b border-gray-200 pb-3">
+                    <div class="bg-slate-50/80 dark:bg-slate-900/90 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
+                        <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
                             <div class="flex items-center gap-2">
                                 <span class="text-xl">💬</span>
                                 <div>
-                                    <h4 class="font-bold text-gray-900 text-sm">WhatsApp & Acuerdos del Evento</h4>
-                                    <p class="text-[11px] text-gray-500">Historial de mensajes con el cliente, plantillas de seguimiento y notas internas</p>
+                                    <h4 class="font-bold text-slate-900 dark:text-white text-sm">WhatsApp & Acuerdos del Evento</h4>
+                                    <p class="text-[11px] text-slate-500 dark:text-slate-400">Historial de mensajes con el cliente, plantillas de seguimiento y notas internas</p>
                                 </div>
                             </div>
-                            <button type="button" wire:click="saveEventNotes" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-xs transition">
+                            <button type="button" wire:click="saveEventNotes" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-xs transition cursor-pointer">
                                 💾 Guardar Notas
                             </button>
                         </div>
@@ -1562,25 +1562,25 @@
                             $cleanPhone = \App\Services\WhatsAppTemplateService::cleanPhone($clientPhone ?? '');
                             $gatewayActive = \App\Services\EvolutionWhatsAppService::isEnabled();
                         @endphp
-                        <div class="p-3 bg-white rounded-xl border border-gray-200 shadow-2xs flex flex-wrap items-center justify-between gap-2">
+                        <div class="p-3 bg-white dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 shadow-2xs flex flex-wrap items-center justify-between gap-2">
                             <div class="flex items-center gap-2">
-                                <span class="text-xs font-bold text-gray-700">Cliente:</span>
-                                <span class="text-xs font-black text-gray-900">{{ $event->client ? $event->client->name : ($event->partner_name ?? 'Sin nombre') }}</span>
+                                <span class="text-xs font-bold text-slate-700 dark:text-slate-300">Cliente:</span>
+                                <span class="text-xs font-black text-slate-900 dark:text-white">{{ $event->client ? $event->client->name : ($event->partner_name ?? 'Sin nombre') }}</span>
                                 @if($cleanPhone)
-                                    <a href="https://wa.me/{{ $cleanPhone }}" target="_blank" class="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                                    <a href="https://wa.me/{{ $cleanPhone }}" target="_blank" class="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 dark:text-emerald-300 hover:text-emerald-800 dark:hover:text-emerald-200 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800 transition">
                                         <span>📱</span> +{{ $cleanPhone }}
                                     </a>
                                 @else
-                                    <span class="text-[11px] text-amber-600 font-bold bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">Sin teléfono</span>
+                                    <span class="text-[11px] text-amber-600 dark:text-amber-400 font-bold bg-amber-50 dark:bg-amber-950/50 px-2 py-0.5 rounded-md border border-amber-200 dark:border-amber-800">Sin teléfono</span>
                                 @endif
                             </div>
                             <div>
                                 @if($gatewayActive)
-                                    <span class="inline-flex items-center gap-1.5 text-[10px] font-black text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-full border border-emerald-300">
+                                    <span class="inline-flex items-center gap-1.5 text-[10px] font-black text-emerald-800 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/80 px-2.5 py-0.5 rounded-full border border-emerald-300 dark:border-emerald-800">
                                         <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Evolution API Activo
                                     </span>
                                 @else
-                                    <span class="inline-flex items-center gap-1 text-[10px] font-bold text-slate-600 bg-slate-100 px-2.5 py-0.5 rounded-full border border-slate-200" title="Envía mediante enlaces wa.me que abren WhatsApp Web o la App oficial">
+                                    <span class="inline-flex items-center gap-1 text-[10px] font-bold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-900 px-2.5 py-0.5 rounded-full border border-slate-200 dark:border-slate-800" title="Envía mediante enlaces wa.me que abren WhatsApp Web o la App oficial">
                                         🔗 Modo Directo (wa.me)
                                     </span>
                                 @endif
@@ -1588,109 +1588,109 @@
                         </div>
 
                         <!-- Selector de Remitente de WhatsApp (Miguel, Fran, Ezequiel) -->
-                        <div class="p-2.5 bg-gradient-to-r from-slate-50 to-emerald-50/50 rounded-xl border border-emerald-200/80 shadow-2xs flex flex-wrap items-center justify-between gap-2">
-                            <div class="flex items-center gap-1.5 text-xs font-bold text-gray-700">
-                                <span class="text-emerald-600">📲</span>
+                        <div class="p-2.5 bg-slate-100 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 shadow-2xs flex flex-wrap items-center justify-between gap-2">
+                            <div class="flex items-center gap-1.5 text-xs font-bold text-slate-700 dark:text-slate-200">
+                                <span class="text-emerald-600 dark:text-emerald-400">📲</span>
                                 <span>Remitente WhatsApp:</span>
                             </div>
-                            <div class="inline-flex rounded-xl p-1 bg-white border border-gray-200 shadow-2xs gap-1 flex-wrap">
+                            <div class="inline-flex rounded-xl p-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xs gap-1 flex-wrap">
                                 <button type="button" 
                                     wire:click="$set('whatsapp_sender_brand', 'miguel')"
-                                    class="px-2.5 py-1 rounded-lg font-bold text-[11px] transition flex items-center gap-1 cursor-pointer {{ in_array(($whatsapp_sender_brand ?? 'miguel'), ['miguel', 'nunez', 'nunez_and_son']) ? 'bg-amber-500 text-white shadow-xs' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50' }}">
+                                    class="px-2.5 py-1 rounded-lg font-bold text-[11px] transition flex items-center gap-1 cursor-pointer {{ in_array(($whatsapp_sender_brand ?? 'miguel'), ['miguel', 'nunez', 'nunez_and_son']) ? 'bg-amber-500 text-white shadow-xs ring-1 ring-amber-400/40' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800' }}">
                                     <span>👑</span> Miguel (Núñez & Son)
                                 </button>
                                 <button type="button" 
                                     wire:click="$set('whatsapp_sender_brand', 'fran')"
-                                    class="px-2.5 py-1 rounded-lg font-bold text-[11px] transition flex items-center gap-1 cursor-pointer {{ in_array(($whatsapp_sender_brand ?? ''), ['fran', 'javnx', 'javnx_dj']) ? 'bg-indigo-600 text-white shadow-xs' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50' }}">
+                                    class="px-2.5 py-1 rounded-lg font-bold text-[11px] transition flex items-center gap-1 cursor-pointer {{ in_array(($whatsapp_sender_brand ?? ''), ['fran', 'javnx', 'javnx_dj']) ? 'bg-indigo-600 text-white shadow-xs ring-1 ring-indigo-400/40' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800' }}">
                                     <span>🎧</span> Fran (JAVNX DJ / Núñez)
                                 </button>
                                 <button type="button" 
                                     wire:click="$set('whatsapp_sender_brand', 'ezequiel')"
-                                    class="px-2.5 py-1 rounded-lg font-bold text-[11px] transition flex items-center gap-1 cursor-pointer {{ ($whatsapp_sender_brand ?? '') === 'ezequiel' ? 'bg-sky-600 text-white shadow-xs' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50' }}">
+                                    class="px-2.5 py-1 rounded-lg font-bold text-[11px] transition flex items-center gap-1 cursor-pointer {{ ($whatsapp_sender_brand ?? '') === 'ezequiel' ? 'bg-sky-600 text-white shadow-xs ring-1 ring-sky-400/40' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800' }}">
                                     <span>👥</span> Ezequiel (Núñez & Son)
                                 </button>
                             </div>
                         </div>
 
                         <!-- Historial de Chat WhatsApp -->
-                        <div class="bg-slate-100/70 p-3.5 rounded-xl border border-slate-200 space-y-2">
+                        <div class="bg-slate-100 dark:bg-slate-950 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 space-y-2">
                             <div class="flex items-center justify-between">
-                                <span class="text-[11px] font-black text-slate-700 uppercase tracking-wider flex items-center gap-1">
+                                <span class="text-[11px] font-black text-slate-700 dark:text-slate-200 uppercase tracking-wider flex items-center gap-1">
                                     <span>🗨️</span> Conversación Registrada
                                 </span>
                                 @if($this->whatsappMessages && $this->whatsappMessages->count() > 0)
-                                    <span class="text-[10px] font-bold text-slate-500 bg-white px-2 py-0.5 rounded-md border border-slate-200">
+                                    <span class="text-[10px] font-bold text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-900 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-800">
                                         {{ $this->whatsappMessages->count() }} mensaje(s)
                                     </span>
                                 @endif
                             </div>
 
-                            <div class="max-h-56 overflow-y-auto space-y-2.5 p-2 bg-slate-50/50 rounded-lg border border-slate-200/60 text-xs">
+                            <div class="max-h-56 overflow-y-auto space-y-2.5 p-2 bg-slate-50 dark:bg-slate-900/70 rounded-lg border border-slate-200 dark:border-slate-800 text-xs">
                                 @forelse($this->whatsappMessages as $msg)
                                     @if($msg->direction === 'outbound')
                                         <!-- Mensaje Saliente (Staff / DJ) -->
                                         <div class="flex flex-col items-end">
-                                            <div class="max-w-[85%] bg-emerald-100/90 text-emerald-950 p-2.5 rounded-2xl rounded-tr-xs border border-emerald-200/80 shadow-2xs space-y-1">
+                                            <div class="max-w-[85%] bg-emerald-100 dark:bg-emerald-950/80 text-emerald-950 dark:text-emerald-100 p-2.5 rounded-2xl rounded-tr-xs border border-emerald-200 dark:border-emerald-800 shadow-2xs space-y-1">
                                                 <p class="whitespace-pre-line leading-relaxed text-[11px]">{{ $msg->message }}</p>
-                                                <div class="flex items-center justify-end gap-1.5 text-[9px] text-emerald-800/80 font-bold">
+                                                <div class="flex items-center justify-end gap-1.5 text-[9px] text-emerald-800 dark:text-emerald-300 font-bold">
                                                     <span>{{ $msg->user ? $msg->user->name : 'Staff' }}</span>
                                                     <span>&bull;</span>
                                                     <span>{{ $msg->created_at->format('d/m H:i') }}</span>
-                                                    <span class="text-emerald-700 font-black">✓✓</span>
+                                                    <span class="text-emerald-600 dark:text-emerald-400 font-black">✓✓</span>
                                                 </div>
                                             </div>
                                         </div>
                                     @else
                                         <!-- Mensaje Entrante (Cliente) -->
                                         <div class="flex flex-col items-start">
-                                            <div class="max-w-[85%] bg-white text-gray-900 p-2.5 rounded-2xl rounded-tl-xs border border-gray-200 shadow-2xs space-y-1">
-                                                <div class="text-[10px] font-black text-indigo-700">
+                                            <div class="max-w-[85%] bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 p-2.5 rounded-2xl rounded-tl-xs border border-gray-200 dark:border-slate-700 shadow-2xs space-y-1">
+                                                <div class="text-[10px] font-black text-indigo-700 dark:text-indigo-400">
                                                     {{ $msg->sender_name ?: ($event->client ? $event->client->name : 'Cliente') }}
                                                 </div>
                                                 <p class="whitespace-pre-line leading-relaxed text-[11px]">{{ $msg->message }}</p>
-                                                <div class="text-right text-[9px] text-gray-400 font-medium">
+                                                <div class="text-right text-[9px] text-gray-400 dark:text-slate-400 font-medium">
                                                     {{ $msg->created_at->format('d/m H:i') }}
                                                 </div>
                                             </div>
                                         </div>
                                     @endif
                                 @empty
-                                    <div class="py-6 text-center text-gray-400 space-y-1">
+                                    <div class="py-6 text-center text-gray-400 dark:text-slate-500 space-y-1">
                                         <span class="text-2xl block">💬</span>
-                                        <span class="text-xs font-semibold">Sin mensajes registrados aún</span>
-                                        <p class="text-[10px] text-gray-400 max-w-xs mx-auto">Selecciona una plantilla abajo para redactar y enviar un mensaje al WhatsApp del cliente.</p>
+                                        <span class="text-xs font-semibold text-gray-600 dark:text-slate-300">Sin mensajes registrados aún</span>
+                                        <p class="text-[10px] text-gray-400 dark:text-slate-400 max-w-xs mx-auto">Selecciona una plantilla abajo para redactar y enviar un mensaje al WhatsApp del cliente.</p>
                                     </div>
                                 @endforelse
                             </div>
 
                             <!-- Selector Rápido de Plantillas Madrigal -->
                             <div class="space-y-1.5 pt-1">
-                                <span class="text-[10px] font-black uppercase tracking-wider text-gray-600 block">
+                                <span class="text-[10px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 block">
                                     ⚡ Plantillas Rápidas Madrigal & Comerciales:
                                 </span>
                                 <div class="flex flex-wrap gap-1.5">
-                                    <button type="button" wire:click="loadWhatsAppTemplate('seguimiento_dia_3')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-white hover:bg-indigo-50 text-indigo-700 border border-gray-200 hover:border-indigo-300 transition shadow-2xs cursor-pointer flex items-center gap-1">
+                                    <button type="button" wire:click="loadWhatsAppTemplate('seguimiento_dia_3')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-white dark:bg-slate-900 hover:bg-indigo-50 dark:hover:bg-slate-800 text-indigo-700 dark:text-indigo-400 border border-slate-200 dark:border-slate-800 hover:border-indigo-300 transition shadow-2xs cursor-pointer flex items-center gap-1">
                                         <span>💡</span> Dudas (Día 3)
                                     </button>
-                                    <button type="button" wire:click="loadWhatsAppTemplate('seguimiento_dia_7')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-white hover:bg-amber-50 text-amber-700 border border-gray-200 hover:border-amber-300 transition shadow-2xs cursor-pointer flex items-center gap-1">
+                                    <button type="button" wire:click="loadWhatsAppTemplate('seguimiento_dia_7')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-white dark:bg-slate-900 hover:bg-amber-50 dark:hover:bg-slate-800 text-amber-700 dark:text-amber-400 border border-slate-200 dark:border-slate-800 hover:border-amber-300 transition shadow-2xs cursor-pointer flex items-center gap-1">
                                         <span>⚡</span> Escasez 24h (Día 7)
                                     </button>
-                                    <button type="button" wire:click="loadWhatsAppTemplate('tecnica_del_no')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-white hover:bg-rose-50 text-rose-700 border border-gray-200 hover:border-rose-300 transition shadow-2xs cursor-pointer flex items-center gap-1">
+                                    <button type="button" wire:click="loadWhatsAppTemplate('tecnica_del_no')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-white dark:bg-slate-900 hover:bg-rose-50 dark:hover:bg-slate-800 text-rose-700 dark:text-rose-400 border border-slate-200 dark:border-slate-800 hover:border-rose-300 transition shadow-2xs cursor-pointer flex items-center gap-1">
                                         <span>🎯</span> Técnica NO (Día 10)
                                     </button>
-                                    <button type="button" wire:click="loadWhatsAppTemplate('cierre_expediente')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-white hover:bg-purple-50 text-purple-700 border border-gray-200 hover:border-purple-300 transition shadow-2xs cursor-pointer flex items-center gap-1">
+                                    <button type="button" wire:click="loadWhatsAppTemplate('cierre_expediente')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-white dark:bg-slate-900 hover:bg-purple-50 dark:hover:bg-slate-800 text-purple-700 dark:text-purple-400 border border-slate-200 dark:border-slate-800 hover:border-purple-300 transition shadow-2xs cursor-pointer flex items-center gap-1">
                                         <span>🔒</span> Cierre de Expediente
                                     </button>
-                                    <button type="button" wire:click="loadWhatsAppTemplate('objecion_precio')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-white hover:bg-teal-50 text-teal-700 border border-gray-200 hover:border-teal-300 transition shadow-2xs cursor-pointer flex items-center gap-1">
+                                    <button type="button" wire:click="loadWhatsAppTemplate('objecion_precio')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-white dark:bg-slate-900 hover:bg-teal-50 dark:hover:bg-slate-800 text-teal-700 dark:text-teal-400 border border-slate-200 dark:border-slate-800 hover:border-teal-300 transition shadow-2xs cursor-pointer flex items-center gap-1">
                                         <span>💰</span> Objeción Precio
                                     </button>
-                                    <button type="button" wire:click="loadWhatsAppTemplate('cuestionario')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-white hover:bg-blue-50 text-blue-700 border border-gray-200 hover:border-blue-300 transition shadow-2xs cursor-pointer flex items-center gap-1">
+                                    <button type="button" wire:click="loadWhatsAppTemplate('cuestionario')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-white dark:bg-slate-900 hover:bg-blue-50 dark:hover:bg-slate-800 text-blue-700 dark:text-blue-400 border border-slate-200 dark:border-slate-800 hover:border-blue-300 transition shadow-2xs cursor-pointer flex items-center gap-1">
                                         <span>📋</span> Cuestionario
                                     </button>
-                                    <button type="button" wire:click="loadWhatsAppTemplate('contrato')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-white hover:bg-emerald-50 text-emerald-700 border border-gray-200 hover:border-emerald-300 transition shadow-2xs cursor-pointer flex items-center gap-1">
+                                    <button type="button" wire:click="loadWhatsAppTemplate('contrato')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-white dark:bg-slate-900 hover:bg-emerald-50 dark:hover:bg-slate-800 text-emerald-700 dark:text-emerald-400 border border-slate-200 dark:border-slate-800 hover:border-emerald-300 transition shadow-2xs cursor-pointer flex items-center gap-1">
                                         <span>✍️</span> Enlace Contrato
                                     </button>
-                                    <button type="button" wire:click="loadWhatsAppTemplate('llamada')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-white hover:bg-slate-100 text-slate-700 border border-gray-200 hover:border-slate-300 transition shadow-2xs cursor-pointer flex items-center gap-1">
+                                    <button type="button" wire:click="loadWhatsAppTemplate('llamada')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:border-slate-300 transition shadow-2xs cursor-pointer flex items-center gap-1">
                                         <span>📞</span> Proponer Llamada
                                     </button>
                                 </div>
@@ -1698,24 +1698,24 @@
 
                             <!-- Caja de Redacción / Envío Directo -->
                             <div class="space-y-2 pt-1">
-                                <textarea wire:model="whatsapp_chat_message" rows="3" class="w-full text-xs border border-gray-300 rounded-xl p-2.5 focus:ring-emerald-500 focus:border-emerald-500 bg-white" placeholder="Escribe tu mensaje personalizado o pulsa en una plantilla arriba..."></textarea>
+                                <textarea wire:model="whatsapp_chat_message" rows="3" class="w-full text-xs border border-slate-300 dark:border-slate-700 rounded-xl p-2.5 focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500" placeholder="Escribe tu mensaje personalizado o pulsa en una plantilla arriba..."></textarea>
                                 
                                 @if (session()->has('whatsapp_success'))
-                                    <div class="text-[11px] font-bold text-emerald-700 bg-emerald-50 p-2 rounded-lg border border-emerald-200 flex items-center justify-between">
+                                    <div class="text-[11px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/70 p-2 rounded-lg border border-emerald-200 dark:border-emerald-800 flex items-center justify-between">
                                         <span>{{ session('whatsapp_success') }}</span>
                                         <button type="button" onclick="this.parentElement.remove()" class="text-emerald-500 hover:text-emerald-700 font-bold">&times;</button>
                                     </div>
                                 @endif
 
                                 @if (session()->has('whatsapp_error'))
-                                    <div class="text-[11px] font-bold text-rose-700 bg-rose-50 p-2 rounded-lg border border-rose-200 flex items-center justify-between">
+                                    <div class="text-[11px] font-bold text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/70 p-2 rounded-lg border border-rose-200 dark:border-rose-800 flex items-center justify-between">
                                         <span>⚠️ {{ session('whatsapp_error') }}</span>
                                         <button type="button" onclick="this.parentElement.remove()" class="text-rose-500 hover:text-rose-700 font-bold">&times;</button>
                                     </div>
                                 @endif
 
                                 <div class="flex items-center justify-between pt-1">
-                                    <span class="text-[10px] text-gray-500">
+                                    <span class="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
                                         {{ $gatewayActive ? '⚡ Envío instantáneo por API' : '💬 Abrirá WhatsApp Web / App' }}
                                     </span>
                                     <button type="button" wire:click="sendDirectWhatsAppMessage" wire:loading.attr="disabled" class="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-extrabold px-4 py-2 rounded-xl text-xs transition shadow-md cursor-pointer flex items-center gap-1.5">
@@ -1727,13 +1727,13 @@
                         </div>
 
                         <!-- Pegar texto de chat a las notas generales -->
-                        <div class="bg-white p-3.5 rounded-xl border border-emerald-200 shadow-xs space-y-2">
-                            <label class="block text-xs font-bold text-emerald-900">
+                        <div class="bg-white dark:bg-slate-950 p-3.5 rounded-xl border border-emerald-200 dark:border-slate-800 shadow-xs space-y-2">
+                            <label class="block text-xs font-bold text-emerald-900 dark:text-emerald-300">
                                 📥 Pegar fragmento manual a las notas
                             </label>
-                            <textarea wire:model="whatsapp_chat_input" rows="2" class="w-full text-xs border border-gray-300 rounded-lg p-2 focus:ring-emerald-500 focus:border-emerald-500" placeholder="Pega aquí fragmentos de conversación o audios transcritos para archivarlos en las notas del evento..."></textarea>
+                            <textarea wire:model="whatsapp_chat_input" rows="2" class="w-full text-xs border border-slate-300 dark:border-slate-700 rounded-lg p-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500" placeholder="Pega aquí fragmentos de conversación o audios transcritos para archivarlos en las notas del evento..."></textarea>
                             <div class="flex justify-end">
-                                <button type="button" wire:click="applyWhatsappTextToNotes" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1">
+                                <button type="button" wire:click="applyWhatsappTextToNotes" class="bg-emerald-50 dark:bg-emerald-950/80 hover:bg-emerald-100 dark:hover:bg-emerald-900 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer">
                                     <span>➕</span> Añadir a las Notas del Evento
                                 </button>
                             </div>
@@ -1741,43 +1741,43 @@
 
                         <!-- Visualizador / Editor completo de notas -->
                         <div>
-                            <label class="block text-xs font-bold text-gray-700 mb-1">
+                            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                                 📝 Notas y Requisitos Generales del Evento
                             </label>
-                            <textarea wire:model="event_notes" rows="6" class="w-full text-xs font-mono bg-white border border-gray-300 rounded-xl p-3 focus:ring-indigo-500 focus:border-indigo-500 leading-relaxed" placeholder="Notas internas, servicios acordados, peticiones especiales..."></textarea>
+                            <textarea wire:model="event_notes" rows="6" class="w-full text-xs font-mono bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl p-3 focus:ring-indigo-500 focus:border-indigo-500 text-slate-900 dark:text-white leading-relaxed placeholder-slate-400 dark:placeholder-slate-500" placeholder="Notas internas, servicios acordados, peticiones especiales..."></textarea>
                         </div>
                     </div>
 
                     <!-- Columna 2: Dossier Técnico y Horarios de Montaje -->
-                    <div class="bg-gray-50 p-5 rounded-2xl border border-gray-200 shadow-xs space-y-4 flex flex-col justify-between">
+                    <div class="bg-slate-50/80 dark:bg-slate-900/90 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-4 flex flex-col justify-between">
                         <div class="space-y-4">
-                            <div class="flex items-center justify-between border-b border-gray-200 pb-3">
+                            <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
                                 <div class="flex items-center gap-2">
                                     <span class="text-xl">📋</span>
                                     <div>
-                                        <h4 class="font-bold text-gray-900 text-sm">Dossier Técnico y Horarios Staff</h4>
-                                        <p class="text-[11px] text-gray-500">Planificación técnica visible para DJ y personal de cabina</p>
+                                        <h4 class="font-bold text-slate-900 dark:text-white text-sm">Dossier Técnico y Horarios Staff</h4>
+                                        <p class="text-[11px] text-slate-500 dark:text-slate-400">Planificación técnica visible para DJ y personal de cabina</p>
                                     </div>
                                 </div>
-                                <button wire:click="saveDossier" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-xs transition">
+                                <button wire:click="saveDossier" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-xs transition cursor-pointer">
                                     💾 Guardar Dossier
                                 </button>
                             </div>
 
                             <div>
-                                <textarea wire:model="dossier_content" rows="12" class="w-full text-xs font-mono bg-white border border-gray-300 rounded-xl p-3 focus:ring-indigo-500 focus:border-indigo-500 leading-relaxed" placeholder="Escribe aquí los horarios previstos, accesos a finca, ubicación de tomas de corriente, setup de sonido e iluminación, contactos de metres..."></textarea>
+                                <textarea wire:model="dossier_content" rows="12" class="w-full text-xs font-mono bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl p-3 focus:ring-indigo-500 focus:border-indigo-500 text-slate-900 dark:text-white leading-relaxed placeholder-slate-400 dark:placeholder-slate-500" placeholder="Escribe aquí los horarios previstos, accesos a finca, ubicación de tomas de corriente, setup de sonido e iluminación, contactos de metres..."></textarea>
                             </div>
 
-                            <div class="p-3 bg-white rounded-xl border border-gray-200 flex items-center">
-                                <input type="checkbox" wire:model="is_dossier_completed" id="dossier_completed" class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
-                                <label for="dossier_completed" class="ml-2.5 block text-xs font-semibold text-gray-800 cursor-pointer">
+                            <div class="p-3 bg-white dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center">
+                                <input type="checkbox" wire:model="is_dossier_completed" id="dossier_completed" class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-slate-300 dark:border-slate-700 rounded">
+                                <label for="dossier_completed" class="ml-2.5 block text-xs font-semibold text-slate-800 dark:text-slate-200 cursor-pointer">
                                     🔒 Cuestionario cerrado (Los novios ya han completado su dossier y momentos)
                                 </label>
                             </div>
                         </div>
 
                         <div class="pt-2 text-right">
-                            <button wire:click="saveDossier" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl font-bold text-xs shadow-md transition">
+                            <button wire:click="saveDossier" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl font-bold text-xs shadow-md transition cursor-pointer">
                                 Guardar Dossier y Planificación
                             </button>
                         </div>

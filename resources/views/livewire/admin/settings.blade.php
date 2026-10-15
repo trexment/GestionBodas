@@ -87,7 +87,7 @@
     @endif
 
     <!-- TABS NAVEGACIÓN MODERNA (PILLS SEGMENTADOS) -->
-    <div class="bg-slate-100/90 dark:bg-slate-900/90 p-1.5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs flex items-center gap-1.5 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+    <div class="bg-slate-100 dark:bg-slate-900/90 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs flex flex-wrap items-center gap-1.5">
         <button type="button" wire:click="$set('activeTab', 'general')" 
             class="shrink-0 whitespace-nowrap px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-150 flex items-center gap-2 cursor-pointer select-none {{ $activeTab === 'general' ? 'bg-white dark:bg-indigo-600 text-indigo-700 dark:text-white shadow-xs ring-1 ring-black/5 dark:ring-white/10' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-800/60' }}">
             <span>🏢</span> Datos Generales

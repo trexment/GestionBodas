@@ -102,21 +102,33 @@
         }
 
         html.dark .bg-slate-50,
-        html.dark .bg-gray-50 {
+        html.dark .bg-gray-50,
+        html.dark [class*="bg-slate-50/"],
+        html.dark [class*="bg-gray-50/"] {
             background-color: #090d16 !important;
             color: #cbd5e1 !important;
         }
 
         html.dark .bg-slate-100,
-        html.dark .bg-gray-100 {
-            background-color: #1e293b !important; /* slate-800 */
+        html.dark .bg-gray-100,
+        html.dark [class*="bg-slate-100/"],
+        html.dark [class*="bg-gray-100/"] {
+            background-color: #0f172a !important; /* slate-900 */
             color: #e2e8f0 !important;
         }
 
         html.dark .bg-slate-200,
-        html.dark .bg-gray-200 {
-            background-color: #334155 !important; /* slate-700 */
+        html.dark .bg-gray-200,
+        html.dark [class*="bg-slate-200/"],
+        html.dark [class*="bg-gray-200/"] {
+            background-color: #1e293b !important; /* slate-800 */
             color: #f8fafc !important;
+        }
+
+        html.dark [class*="from-slate-50"] {
+            --tw-gradient-from: #0f172a var(--tw-gradient-from-position) !important;
+            --tw-gradient-to: #090d16 var(--tw-gradient-to-position) !important;
+            --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
         }
 
         /* Píldoras y Badges de Filtros */
@@ -172,7 +184,10 @@
         html.dark .border-gray-300,
         html.dark .border-slate-100,
         html.dark .border-slate-200,
-        html.dark .border-slate-300 {
+        html.dark .border-slate-300,
+        html.dark [class*="border-gray-200/"],
+        html.dark [class*="border-slate-200/"],
+        html.dark [class*="border-emerald-200/"] {
             border-color: #1e293b !important;
         }
 
