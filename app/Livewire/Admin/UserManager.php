@@ -105,6 +105,31 @@ class UserManager extends Component
             $finalPassword = Hash::make($this->password);
         }
 
+        // Validar Teléfono duplicado
+        if (!empty($this->phone)) {
+            $digits = preg_replace('/\D/', '', $this->phone);
+            if (strlen($digits) >= 9) {
+                $last9 = substr($digits, -9);
+                $existsPhone = User::where(function($q) use ($last9, $digits) {
+                    $q->where('phone', 'LIKE', "%{$last9}")
+                      ->orWhere('phone', $digits);
+                })->first();
+                if ($existsPhone) {
+                    $this->addError('phone', "El teléfono ya pertenece a '{$existsPhone->name}'.");
+                    return;
+                }
+            }
+        }
+
+        // Validar Nombre duplicado en clientes
+        if ($this->role === 'client' && !empty($this->name)) {
+            $existsName = User::where('role', 'client')->where('name', trim($this->name))->first();
+            if ($existsName) {
+                $this->addError('name', "Ya existe un cliente registrado con el nombre '{$existsName->name}'.");
+                return;
+            }
+        }
+
         User::create([
             'name' => $this->name,
             'username' => $this->username ?: null,
@@ -199,6 +224,22 @@ class UserManager extends Component
             'edit_username.unique' => 'Este nombre de usuario ya está en uso.',
             'edit_password.min' => 'La nueva contraseña debe tener al menos 4 caracteres.',
         ]);
+
+        if (!empty($this->edit_phone)) {
+            $digits = preg_replace('/\D/', '', $this->edit_phone);
+            if (strlen($digits) >= 9) {
+                $last9 = substr($digits, -9);
+                $existsPhone = User::where('id', '!=', $user->id)
+                    ->where(function($q) use ($last9, $digits) {
+                        $q->where('phone', 'LIKE', "%{$last9}")
+                          ->orWhere('phone', $digits);
+                    })->first();
+                if ($existsPhone) {
+                    $this->addError('edit_phone', "El teléfono ya pertenece a '{$existsPhone->name}'.");
+                    return;
+                }
+            }
+        }
 
         $finalEmail = $user->email;
         if (!empty($this->edit_email)) {

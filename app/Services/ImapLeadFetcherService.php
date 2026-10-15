@@ -357,15 +357,18 @@ class ImapLeadFetcherService
 
         // 7. Extraer Fecha del Evento
         $eventDate = null;
+        $explicitDateFound = false;
         if (preg_match('/(?:Fecha(?:\s+de)?(?:\s+la)?(?:\s+boda|\s+evento)?|Día|Dia|Celebración|Celebracion|Enlace)\s*[:\-]?\s*([0-3]?\d[\/\-\.][0-1]?\d[\/\-\.]20\d{2})/i', $bodyClean, $m)) {
             try {
                 $dateStr = str_replace(['.', '-'], '/', trim($m[1]));
                 $eventDate = Carbon::createFromFormat('d/m/Y', $dateStr)->format('Y-m-d');
+                $explicitDateFound = true;
             } catch (\Throwable $e) {}
         } elseif (preg_match('/(?:Fecha(?:\s+de)?(?:\s+la)?(?:\s+boda|\s+evento)?|Día|Dia|Celebración|Celebracion|Enlace)\s*[:\-]?\s*(20\d{2}[\/\-\.][0-1]?\d[\/\-\.][0-3]?\d)/i', $bodyClean, $m)) {
             try {
                 $dateStr = str_replace(['.', '/'], '-', trim($m[1]));
                 $eventDate = Carbon::parse($dateStr)->format('Y-m-d');
+                $explicitDateFound = true;
             } catch (\Throwable $e) {}
         } elseif (preg_match('/([0-3]?\d)\s+de\s+(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)\s+(?:de\s+)?(20\d{2})/i', $bodyClean, $m)) {
             $months = [
@@ -378,10 +381,21 @@ class ImapLeadFetcherService
             $year = (int)$m[3];
             try {
                 $eventDate = Carbon::createFromDate($year, $month, $day)->format('Y-m-d');
+                $explicitDateFound = true;
             } catch (\Throwable $e) {}
         }
 
-        // Si no se encuentra fecha en el texto, se asigna fecha por defecto o nula
+        // RESTRICCIÓN ESTRICTA DE CALIDAD DE LEADS:
+        // Exigir obligatoriamente que el correo traiga al menos:
+        // 1. Un teléfono de contacto válido
+        // O
+        // 2. Una fecha explícita para el evento en el cuerpo
+        // Si no tiene ninguno de los dos, NO es una solicitud de evento y se descarta
+        if (empty($phone) && !$explicitDateFound) {
+            return ['is_lead' => false];
+        }
+
+        // Si no se encuentra fecha explícita pero sí tenía teléfono de contacto, se asigna fecha estimada a 3 meses
         if (empty($eventDate)) {
             $eventDate = Carbon::now()->addMonths(3)->format('Y-m-d');
         }
@@ -445,35 +459,62 @@ class ImapLeadFetcherService
             }
         }
 
-        // 1. Buscar o crear cliente
+        // 1. Buscar o reutilizar cliente existente (Deduplicación inteligente)
         $client = null;
+
+        // A. Buscar por email válido
         if (!empty($clientEmail) && filter_var($clientEmail, FILTER_VALIDATE_EMAIL)) {
             $client = User::where('email', $clientEmail)->first();
-            if (!$client) {
-                $client = User::create([
-                    'name' => $leadData['client_name'],
-                    'email' => $clientEmail,
-                    'phone' => $leadData['client_phone'],
-                    'role' => 'client',
-                    'password' => bcrypt(Str::random(16)),
-                ]);
-            } else if (empty($client->phone) && !empty($leadData['client_phone'])) {
-                $client->update(['phone' => $leadData['client_phone']]);
+        }
+
+        // B. Buscar por teléfono (comparando los últimos 9 dígitos para ignorar +34 o formatos distintos)
+        if (!$client && !empty($leadData['client_phone'])) {
+            $digits = preg_replace('/\D/', '', $leadData['client_phone']);
+            if (strlen($digits) >= 9) {
+                $last9 = substr($digits, -9);
+                $client = User::where('role', 'client')
+                    ->where(function($q) use ($last9, $digits) {
+                        $q->where('phone', 'LIKE', "%{$last9}")
+                          ->orWhere('phone', $digits);
+                    })->first();
             }
-        } elseif (!empty($leadData['client_phone']) && !empty($leadData['client_name'])) {
-            // Cliente con teléfono pero sin email de novios
-            $cleanPhone = preg_replace('/\D/', '', $leadData['client_phone']);
-            $placeholderEmail = 'lead_' . $cleanPhone . '@eventosmusicales.local';
-            $client = User::where('phone', $leadData['client_phone'])->orWhere('email', $placeholderEmail)->first();
-            if (!$client) {
-                $client = User::create([
-                    'name' => $leadData['client_name'],
-                    'email' => $placeholderEmail,
-                    'phone' => $leadData['client_phone'],
-                    'role' => 'client',
-                    'password' => bcrypt(Str::random(16)),
-                ]);
+        }
+
+        // C. Buscar por nombre exacto (evitando nombres genéricos de placeholder)
+        if (!$client && !empty($leadData['client_name'])) {
+            $trimName = trim($leadData['client_name']);
+            if (mb_strlen($trimName) > 2 && !in_array(mb_strtolower($trimName), ['cliente', 'cliente potencial', 'contacto web', 'novios'])) {
+                $client = User::where('role', 'client')
+                    ->where('name', $trimName)
+                    ->first();
             }
+        }
+
+        if ($client) {
+            // Cliente encontrado: actualizamos datos faltantes si la solicitud trae información más completa
+            $updates = [];
+            if (empty($client->phone) && !empty($leadData['client_phone'])) {
+                $updates['phone'] = $leadData['client_phone'];
+            }
+            if (!empty($clientEmail) && str_ends_with($client->email, '@eventosmusicales.local')) {
+                $updates['email'] = $clientEmail;
+            }
+            if (!empty($updates)) {
+                $client->update($updates);
+            }
+        } else {
+            // Solo creamos nuevo cliente si no existía previamente por ningún identificador
+            $finalEmail = (!empty($clientEmail) && filter_var($clientEmail, FILTER_VALIDATE_EMAIL))
+                ? $clientEmail
+                : ('lead_' . (!empty($leadData['client_phone']) ? preg_replace('/\D/', '', $leadData['client_phone']) : time() . '_' . rand(100, 999)) . '@eventosmusicales.local');
+
+            $client = User::create([
+                'name' => $leadData['client_name'],
+                'email' => $finalEmail,
+                'phone' => $leadData['client_phone'],
+                'role' => 'client',
+                'password' => bcrypt(Str::random(16)),
+            ]);
         }
 
         // Evitar duplicar evento si ya existe uno con el mismo cliente, marca y fecha exacta

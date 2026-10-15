@@ -93,21 +93,51 @@ class LeadWebhookController extends Controller
             }
         }
 
-        // 7. Buscar o crear Cliente
+        // 7. Buscar o crear Cliente con Deduplicación Inteligente
         $client = null;
+
+        // A. Buscar por email
         if (!empty($email) && filter_var($email, FILTER_VALIDATE_EMAIL)) {
             $client = User::where('email', $email)->first();
-            if (!$client) {
-                $client = User::create([
-                    'name' => $name,
-                    'email' => $email,
-                    'phone' => $cleanPhone,
-                    'role' => 'client',
-                    'password' => bcrypt(Str::random(16)),
-                ]);
-            } elseif (empty($client->phone) && !empty($cleanPhone)) {
-                $client->update(['phone' => $cleanPhone]);
+        }
+
+        // B. Buscar por teléfono (últimos 9 dígitos)
+        if (!$client && !empty($cleanPhone)) {
+            $last9 = substr($cleanPhone, -9);
+            $client = User::where('role', 'client')
+                ->where(function($q) use ($last9, $cleanPhone) {
+                    $q->where('phone', 'LIKE', "%{$last9}")
+                      ->orWhere('phone', $cleanPhone);
+                })->first();
+        }
+
+        // C. Buscar por nombre exacto
+        if (!$client && !empty($name) && mb_strlen($name) > 2 && !in_array(mb_strtolower($name), ['contacto web', 'cliente', 'novios'])) {
+            $client = User::where('role', 'client')->where('name', $name)->first();
+        }
+
+        if ($client) {
+            $updates = [];
+            if (empty($client->phone) && !empty($cleanPhone)) {
+                $updates['phone'] = $cleanPhone;
             }
+            if (!empty($email) && str_ends_with($client->email, '@eventosmusicales.local')) {
+                $updates['email'] = $email;
+            }
+            if (!empty($updates)) {
+                $client->update($updates);
+            }
+        } else {
+            $finalEmail = (!empty($email) && filter_var($email, FILTER_VALIDATE_EMAIL)) 
+                ? $email 
+                : ('lead_' . time() . '_' . rand(100, 999) . '@eventosmusicales.local');
+            $client = User::create([
+                'name' => $name,
+                'email' => $finalEmail,
+                'phone' => $cleanPhone ?: null,
+                'role' => 'client',
+                'password' => bcrypt(Str::random(16)),
+            ]);
         }
 
         // 8. Crear Evento

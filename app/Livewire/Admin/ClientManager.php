@@ -50,6 +50,15 @@ class ClientManager extends Component
     public $showPasswordModal = false;
     public $generatedPasswordInfo = null;
 
+    public $duplicateWarnings = [
+        'name' => null,
+        'phone' => null,
+        'dni' => null,
+        'edit_name' => null,
+        'edit_phone' => null,
+        'edit_dni' => null,
+    ];
+
     public function boot()
     {
         if (!auth()->check() || auth()->user()->role !== 'admin') {
@@ -69,13 +78,27 @@ class ClientManager extends Component
     public function openCreateModal()
     {
         $this->resetValidation();
-        $this->reset(['name', 'username', 'email', 'phone', 'dni', 'address', 'postal_code', 'city', 'province', 'password']);
+        $this->reset(['name', 'username', 'email', 'phone', 'dni', 'address', 'postal_code', 'city', 'province', 'password', 'duplicateWarnings']);
         $this->showCreateModal = true;
     }
 
     public function closeCreateModal()
     {
         $this->showCreateModal = false;
+        $this->duplicateWarnings = [
+            'name' => null, 'phone' => null, 'dni' => null,
+            'edit_name' => null, 'edit_phone' => null, 'edit_dni' => null,
+        ];
+    }
+
+    public function updatedName($value)
+    {
+        $this->checkDuplicate('name', $value);
+    }
+
+    public function updatedPhone($value)
+    {
+        $this->checkDuplicate('phone', $value);
     }
 
     public function updatedPostalCode($value)
@@ -92,6 +115,70 @@ class ClientManager extends Component
     public function updatedDni($value)
     {
         $this->validateAndCompleteDni('dni', $value);
+        $this->checkDuplicate('dni', $this->dni);
+    }
+
+    public function updatedEditName($value)
+    {
+        $this->checkDuplicate('edit_name', $value, $this->editing_client_id);
+    }
+
+    public function updatedEditPhone($value)
+    {
+        $this->checkDuplicate('edit_phone', $value, $this->editing_client_id);
+    }
+
+    public function updatedEditDni($value)
+    {
+        $this->validateAndCompleteDni('edit_dni', $value);
+        $this->checkDuplicate('edit_dni', $this->edit_dni, $this->editing_client_id);
+    }
+
+    protected function checkDuplicate(string $field, ?string $value, ?int $ignoreId = null): void
+    {
+        $this->duplicateWarnings[$field] = null;
+        if (empty($value)) return;
+
+        if (str_contains($field, 'name')) {
+            $nameClean = trim($value);
+            if (mb_strlen($nameClean) >= 3) {
+                $exists = User::where('role', 'client')
+                    ->where('name', $nameClean)
+                    ->when($ignoreId, fn($q) => $q->where('id', '!=', $ignoreId))
+                    ->first();
+                if ($exists) {
+                    $hasEvents = $exists->clientEvents()->count();
+                    $info = $hasEvents ? "con evento asignado" : "sin eventos";
+                    $this->duplicateWarnings[$field] = "⚠️ Ya existe un cliente con este nombre: '{$exists->name}' ({$info}, ID #{$exists->id}).";
+                }
+            }
+        } elseif (str_contains($field, 'phone')) {
+            $digits = preg_replace('/\D/', '', $value);
+            if (strlen($digits) >= 9) {
+                $last9 = substr($digits, -9);
+                $exists = User::where('role', 'client')
+                    ->where(function($q) use ($last9, $digits) {
+                        $q->where('phone', 'LIKE', "%{$last9}")
+                          ->orWhere('phone', $digits);
+                    })
+                    ->when($ignoreId, fn($q) => $q->where('id', '!=', $ignoreId))
+                    ->first();
+                if ($exists) {
+                    $this->duplicateWarnings[$field] = "⚠️ Este teléfono ya está asignado a: '{$exists->name}' (ID #{$exists->id}).";
+                }
+            }
+        } elseif (str_contains($field, 'dni')) {
+            $dniClean = strtoupper(trim($value));
+            if (mb_strlen($dniClean) >= 8) {
+                $exists = User::where('role', 'client')
+                    ->where('dni', $dniClean)
+                    ->when($ignoreId, fn($q) => $q->where('id', '!=', $ignoreId))
+                    ->first();
+                if ($exists) {
+                    $this->duplicateWarnings[$field] = "⚠️ Este DNI ya está registrado por: '{$exists->name}' (ID #{$exists->id}).";
+                }
+            }
+        }
     }
 
     public function saveClient()
@@ -112,6 +199,43 @@ class ClientManager extends Component
             'username.unique' => 'Este nombre de usuario ya existe.',
             'email.unique' => 'Este email ya está en uso.',
         ]);
+
+        // Restricción: Validar DNI duplicado
+        if (!empty($this->dni)) {
+            $cleanDni = strtoupper(trim($this->dni));
+            $existsDni = User::where('role', 'client')->where('dni', $cleanDni)->first();
+            if ($existsDni) {
+                $this->addError('dni', "El DNI {$cleanDni} ya está registrado a nombre del cliente '{$existsDni->name}'.");
+                return;
+            }
+        }
+
+        // Restricción: Validar Teléfono duplicado
+        if (!empty($this->phone)) {
+            $digits = preg_replace('/\D/', '', $this->phone);
+            if (strlen($digits) >= 9) {
+                $last9 = substr($digits, -9);
+                $existsPhone = User::where('role', 'client')
+                    ->where(function($q) use ($last9, $digits) {
+                        $q->where('phone', 'LIKE', "%{$last9}")
+                          ->orWhere('phone', $digits);
+                    })->first();
+                if ($existsPhone) {
+                    $this->addError('phone', "El teléfono ya pertenece al cliente '{$existsPhone->name}'.");
+                    return;
+                }
+            }
+        }
+
+        // Restricción: Validar Nombre exacto duplicado
+        if (!empty($this->name)) {
+            $cleanName = trim($this->name);
+            $existsName = User::where('role', 'client')->where('name', $cleanName)->first();
+            if ($existsName) {
+                $this->addError('name', "Ya existe un cliente registrado con el nombre '{$existsName->name}'. Si es otra pareja, añade un apellido o distintivo.");
+                return;
+            }
+        }
 
         $finalEmail = $this->email ?: ('cliente_' . time() . '_' . rand(100, 999) . '@eventosmusicales.local');
         $finalPassword = $this->password ? Hash::make($this->password) : Hash::make(Str::random(16));
@@ -212,6 +336,34 @@ class ClientManager extends Component
             'edit_username.unique' => 'Este nombre de usuario ya está registrado.',
             'edit_password.min' => 'La contraseña debe tener al menos 4 caracteres.',
         ]);
+
+        // Restricción: Validar DNI duplicado
+        if (!empty($this->edit_dni)) {
+            $cleanDni = strtoupper(trim($this->edit_dni));
+            $existsDni = User::where('role', 'client')->where('dni', $cleanDni)->where('id', '!=', $client->id)->first();
+            if ($existsDni) {
+                $this->addError('edit_dni', "El DNI {$cleanDni} ya está asignado al cliente '{$existsDni->name}'.");
+                return;
+            }
+        }
+
+        // Restricción: Validar Teléfono duplicado
+        if (!empty($this->edit_phone)) {
+            $digits = preg_replace('/\D/', '', $this->edit_phone);
+            if (strlen($digits) >= 9) {
+                $last9 = substr($digits, -9);
+                $existsPhone = User::where('role', 'client')
+                    ->where('id', '!=', $client->id)
+                    ->where(function($q) use ($last9, $digits) {
+                        $q->where('phone', 'LIKE', "%{$last9}")
+                          ->orWhere('phone', $digits);
+                    })->first();
+                if ($existsPhone) {
+                    $this->addError('edit_phone', "El teléfono ya pertenece al cliente '{$existsPhone->name}'.");
+                    return;
+                }
+            }
+        }
 
         $finalEmail = $client->email;
         if (!empty($this->edit_email)) {
@@ -357,6 +509,90 @@ class ClientManager extends Component
             ->delete();
 
         session()->flash('message', "Se han eliminado {$deleted} contactos sin eventos asignados.");
+    }
+
+    // ==================== FUSIÓN Y RESOLUCIÓN DE DUPLICADOS ====================
+
+    public function mergeDuplicates()
+    {
+        $allClients = User::where('role', 'client')
+            ->withCount('clientEvents')
+            ->orderBy('client_events_count', 'desc')
+            ->orderBy('id', 'asc')
+            ->get();
+
+        $mergedCount = 0;
+        $processedIds = [];
+
+        foreach ($allClients as $primary) {
+            if (in_array($primary->id, $processedIds)) {
+                continue;
+            }
+
+            $phoneDigits = !empty($primary->phone) ? preg_replace('/\D/', '', $primary->phone) : null;
+            $phoneLast9 = ($phoneDigits && strlen($phoneDigits) >= 9) ? substr($phoneDigits, -9) : null;
+            $dniClean = !empty($primary->dni) ? strtoupper(trim($primary->dni)) : null;
+            $nameClean = trim($primary->name);
+
+            $duplicates = User::where('role', 'client')
+                ->where('id', '!=', $primary->id)
+                ->whereNotIn('id', $processedIds)
+                ->where(function($q) use ($phoneLast9, $dniClean, $nameClean) {
+                    $hasCondition = false;
+                    if ($phoneLast9) {
+                        $q->orWhere('phone', 'LIKE', "%{$phoneLast9}");
+                        $hasCondition = true;
+                    }
+                    if ($dniClean) {
+                        $q->orWhere('dni', $dniClean);
+                        $hasCondition = true;
+                    }
+                    if (mb_strlen($nameClean) >= 3 && !in_array(mb_strtolower($nameClean), ['cliente', 'cliente potencial', 'contacto web'])) {
+                        $q->orWhere('name', $nameClean);
+                        $hasCondition = true;
+                    }
+                    if (!$hasCondition) {
+                        $q->whereRaw('0 = 1');
+                    }
+                })
+                ->get();
+
+            foreach ($duplicates as $dup) {
+                // 1. Reasignar eventos al cliente principal
+                \App\Models\Event::where('client_id', $dup->id)->update(['client_id' => $primary->id]);
+
+                // 2. Reasignar posibles contratos al cliente principal
+                if (\Illuminate\Support\Facades\Schema::hasTable('contracts') && \Illuminate\Support\Facades\Schema::hasColumn('contracts', 'client_id')) {
+                    \Illuminate\Support\Facades\DB::table('contracts')->where('client_id', $dup->id)->update(['client_id' => $primary->id]);
+                }
+
+                // 3. Completar datos faltantes en el cliente principal
+                $updates = [];
+                if (empty($primary->phone) && !empty($dup->phone)) $updates['phone'] = $dup->phone;
+                if (empty($primary->dni) && !empty($dup->dni)) $updates['dni'] = $dup->dni;
+                if (empty($primary->address) && !empty($dup->address)) $updates['address'] = $dup->address;
+                if (empty($primary->city) && !empty($dup->city)) $updates['city'] = $dup->city;
+                if (empty($primary->province) && !empty($dup->province)) $updates['province'] = $dup->province;
+                if (empty($primary->postal_code) && !empty($dup->postal_code)) $updates['postal_code'] = $dup->postal_code;
+                if (str_ends_with($primary->email, '@eventosmusicales.local') && !str_ends_with($dup->email, '@eventosmusicales.local')) {
+                    $updates['email'] = $dup->email;
+                }
+
+                if (!empty($updates)) {
+                    $primary->update($updates);
+                }
+
+                $processedIds[] = $dup->id;
+                $dup->delete();
+                $mergedCount++;
+            }
+        }
+
+        if ($mergedCount > 0) {
+            session()->flash('message', "Se han fusionado {$mergedCount} contactos duplicados correctamente.");
+        } else {
+            session()->flash('message', "No se han detectado contactos duplicados en la agenda.");
+        }
     }
 
     public function render()

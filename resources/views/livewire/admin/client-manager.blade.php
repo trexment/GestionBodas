@@ -57,7 +57,17 @@
         </div>
 
         <!-- Botones de Acción Rápida -->
-        <div class="flex items-center gap-2">
+        <div class="flex flex-wrap items-center gap-2">
+            <button 
+                type="button" 
+                wire:click="mergeDuplicates" 
+                wire:confirm="¿Deseas buscar y fusionar automáticamente los contactos duplicados que compartan el mismo teléfono, DNI o nombre exacto? Los eventos se conservarán y reasignarán al contacto principal."
+                class="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-2xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/50 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-900/60 shadow-2xs transition cursor-pointer"
+                title="Fusiona automáticamente contactos duplicados sin perder eventos"
+            >
+                <span>🔗</span> Fusionar Duplicados
+            </button>
+
             <button 
                 type="button" 
                 wire:click="cleanSpamContacts" 
@@ -261,13 +271,19 @@
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div class="sm:col-span-2">
                                 <label class="block text-slate-700 dark:text-slate-300 text-xs font-bold uppercase tracking-wider mb-1">Nombre Completo o Pareja *</label>
-                                <input type="text" wire:model="name" required placeholder="Ej: Laura García y Carlos Ruiz" class="w-full border-slate-300 dark:border-slate-700 rounded-xl p-2.5 text-xs font-semibold text-slate-800 dark:text-white bg-slate-50 dark:bg-slate-950">
+                                <input type="text" wire:model.live.debounce.400ms="name" required placeholder="Ej: Laura García y Carlos Ruiz" class="w-full border-slate-300 dark:border-slate-700 rounded-xl p-2.5 text-xs font-semibold text-slate-800 dark:text-white bg-slate-50 dark:bg-slate-950">
+                                @if(!empty($duplicateWarnings['name']))
+                                    <p class="text-[11px] font-bold text-amber-600 dark:text-amber-400 mt-1 leading-tight">{{ $duplicateWarnings['name'] }}</p>
+                                @endif
                                 @error('name') <span class="text-rose-600 text-xs block font-bold mt-1">{{ $message }}</span> @enderror
                             </div>
 
                             <div>
-                                <label class="block text-slate-700 dark:text-slate-300 text-xs font-bold uppercase tracking-wider mb-1">Teléfono (WhatsApp) *</label>
-                                <input type="text" wire:model="phone" placeholder="612345678" class="w-full border-slate-300 dark:border-slate-700 rounded-xl p-2.5 text-xs text-slate-800 dark:text-white bg-slate-50 dark:bg-slate-950">
+                                <label class="block text-slate-700 dark:text-slate-300 text-xs font-bold uppercase tracking-wider mb-1">Teléfono (WhatsApp)</label>
+                                <input type="text" wire:model.live.debounce.400ms="phone" placeholder="612345678" class="w-full border-slate-300 dark:border-slate-700 rounded-xl p-2.5 text-xs text-slate-800 dark:text-white bg-slate-50 dark:bg-slate-950">
+                                @if(!empty($duplicateWarnings['phone']))
+                                    <p class="text-[11px] font-bold text-amber-600 dark:text-amber-400 mt-1 leading-tight">{{ $duplicateWarnings['phone'] }}</p>
+                                @endif
                                 @error('phone') <span class="text-rose-600 text-xs block font-bold mt-1">{{ $message }}</span> @enderror
                             </div>
 
@@ -296,6 +312,10 @@
                                         </div>
                                     @endif
                                 </div>
+                                @if(!empty($duplicateWarnings['dni']))
+                                    <p class="text-[11px] font-bold text-rose-600 dark:text-rose-400 mt-1 leading-tight">{{ $duplicateWarnings['dni'] }}</p>
+                                @endif
+                                @error('dni') <span class="text-rose-600 text-xs block font-bold mt-1">{{ $message }}</span> @enderror
                                 @if(!empty($dni) && isset($dniValidations['dni']) && !$dniValidations['dni']['valid'])
                                     <div class="mt-1.5 p-2 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 rounded-xl flex items-center justify-between text-xs gap-2">
                                         <div class="flex items-center gap-1.5 text-amber-800 dark:text-amber-300 font-semibold leading-tight text-[11px]">
@@ -395,13 +415,19 @@
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div class="sm:col-span-2">
                                 <label class="block text-slate-700 dark:text-slate-300 text-xs font-bold uppercase tracking-wider mb-1">Nombre Completo o Pareja *</label>
-                                <input type="text" wire:model="edit_name" required class="w-full border-slate-300 dark:border-slate-700 rounded-xl p-2.5 text-xs font-semibold text-slate-800 dark:text-white bg-slate-50 dark:bg-slate-950">
+                                <input type="text" wire:model.live.debounce.400ms="edit_name" required class="w-full border-slate-300 dark:border-slate-700 rounded-xl p-2.5 text-xs font-semibold text-slate-800 dark:text-white bg-slate-50 dark:bg-slate-950">
+                                @if(!empty($duplicateWarnings['edit_name']))
+                                    <p class="text-[11px] font-bold text-amber-600 dark:text-amber-400 mt-1 leading-tight">{{ $duplicateWarnings['edit_name'] }}</p>
+                                @endif
                                 @error('edit_name') <span class="text-rose-600 text-xs block font-bold mt-1">{{ $message }}</span> @enderror
                             </div>
 
                             <div>
                                 <label class="block text-slate-700 dark:text-slate-300 text-xs font-bold uppercase tracking-wider mb-1">Teléfono (WhatsApp)</label>
-                                <input type="text" wire:model="edit_phone" class="w-full border-slate-300 dark:border-slate-700 rounded-xl p-2.5 text-xs text-slate-800 dark:text-white bg-slate-50 dark:bg-slate-950">
+                                <input type="text" wire:model.live.debounce.400ms="edit_phone" class="w-full border-slate-300 dark:border-slate-700 rounded-xl p-2.5 text-xs text-slate-800 dark:text-white bg-slate-50 dark:bg-slate-950">
+                                @if(!empty($duplicateWarnings['edit_phone']))
+                                    <p class="text-[11px] font-bold text-amber-600 dark:text-amber-400 mt-1 leading-tight">{{ $duplicateWarnings['edit_phone'] }}</p>
+                                @endif
                                 @error('edit_phone') <span class="text-rose-600 text-xs block font-bold mt-1">{{ $message }}</span> @enderror
                             </div>
 
@@ -430,6 +456,10 @@
                                         </div>
                                     @endif
                                 </div>
+                                @if(!empty($duplicateWarnings['edit_dni']))
+                                    <p class="text-[11px] font-bold text-rose-600 dark:text-rose-400 mt-1 leading-tight">{{ $duplicateWarnings['edit_dni'] }}</p>
+                                @endif
+                                @error('edit_dni') <span class="text-rose-600 text-xs block font-bold mt-1">{{ $message }}</span> @enderror
                                 @if(!empty($edit_dni) && isset($dniValidations['edit_dni']) && !$dniValidations['edit_dni']['valid'])
                                     <div class="mt-1.5 p-2 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 rounded-xl flex items-center justify-between text-xs gap-2">
                                         <div class="flex items-center gap-1.5 text-amber-800 dark:text-amber-300 font-semibold leading-tight text-[11px]">
