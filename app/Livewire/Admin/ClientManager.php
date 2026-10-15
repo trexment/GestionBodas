@@ -287,11 +287,6 @@ class ClientManager extends Component
         $this->showEditModal = true;
     }
 
-    public function updatedEditDni($value)
-    {
-        $this->validateAndCompleteDni('edit_dni', $value);
-    }
-
     public function closeEditModal()
     {
         $this->showEditModal = false;
