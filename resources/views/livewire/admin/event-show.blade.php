@@ -3327,8 +3327,8 @@
                                             <label class="flex items-start cursor-pointer flex-1 gap-2">
                                                 <input type="checkbox" wire:model.live="quote_services.photobooth.selected" class="mt-0.5 rounded text-indigo-600 focus:ring-indigo-500 h-4 w-4">
                                                 <div>
-                                                    <span class="text-xs font-bold text-gray-900">📸 Fotomatón & Photocall (FotomatonCheese)</span>
-                                                    <span class="block text-[10px] text-gray-500">Cámara réflex Canon 1200, copias ilimitadas, libro de firmas de imprenta, atrezzo, USB y animador.</span>
+                                                    <span class="text-xs font-bold text-gray-900">📸 Fotomatón & Photocall</span>
+                                                    <span class="block text-[10px] text-gray-500">Cámara réflex, copias ilimitadas, libro de firmas de imprenta, atrezzo, USB y animador (+{{ number_format($quote_services['photobooth']['extra_hour'] ?? 50, 0) }}€/hora extra).</span>
                                                 </div>
                                             </label>
 
@@ -3338,6 +3338,9 @@
                                                 </button>
                                                 <button type="button" wire:click="setPhotoboothHours(3)" class="px-2.5 py-1 rounded-lg text-[11px] font-bold border transition {{ !empty($quote_services['photobooth']['selected']) && (int)($quote_services['photobooth']['hours'] ?? 2) === 3 ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-indigo-50' }}">
                                                     3 Horas ({{ number_format($quote_services['photobooth']['price_3h'] ?? 430, 0) }}€)
+                                                </button>
+                                                <button type="button" wire:click="setPhotoboothHours({{ max(4, (int)($quote_services['photobooth']['hours'] ?? 3) + 1) }})" class="px-2 py-1 rounded-lg text-[10px] font-bold border transition {{ !empty($quote_services['photobooth']['selected']) && (int)($quote_services['photobooth']['hours'] ?? 2) >= 4 ? 'bg-amber-600 text-white border-amber-600' : 'bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100' }}" title="Añadir 1 hora extra de Fotomatón">
+                                                    +1h Extra (+{{ number_format($quote_services['photobooth']['extra_hour'] ?? 50, 0) }}€)
                                                 </button>
                                                 <div class="flex items-center gap-1 ml-1">
                                                     <input type="number" min="1" max="10" wire:model.live="quote_services.photobooth.hours" class="w-11 border rounded p-1 text-xs text-center font-bold" title="Horas de Fotomatón">
@@ -3349,14 +3352,20 @@
                                         </div>
                                         @if(!empty($quote_services['photobooth']['selected']))
                                             <div class="mt-2 pt-2 border-t border-indigo-100 space-y-1.5">
+                                                @php
+                                                    $pb3h = (float)($quote_services['photobooth']['price_3h'] ?? 430);
+                                                    $pbDiff = max(0, $pb3h - (float)($quote_services['photobooth']['price'] ?? 380));
+                                                    $pbExtraRate = (float)($quote_services['photobooth']['extra_hour'] ?? 50);
+                                                @endphp
                                                 @if((int)($quote_services['photobooth']['hours'] ?? 2) === 2)
-                                                    @php
-                                                        $pb3h = (float)($quote_services['photobooth']['price_3h'] ?? 430);
-                                                        $pbDiff = max(0, $pb3h - (float)($quote_services['photobooth']['price'] ?? 380));
-                                                    @endphp
                                                     <div class="bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5 text-[10px] font-bold text-amber-900 flex items-center gap-1.5">
                                                         <span>✨</span>
-                                                        <span>En el Dossier PDF se mostrará automáticamente la opción de elegir <strong>3 Horas por {{ number_format($pb3h, 0) }} €</strong> (solo +{{ number_format($pbDiff, 0) }} € más).</span>
+                                                        <span>En el Dossier PDF se mostrará la opción de elegir <strong>3 Horas por {{ number_format($pb3h, 0) }} €</strong> (+{{ number_format($pbDiff, 0) }} €) y la posibilidad de añadir <strong>horas extra (+{{ number_format($pbExtraRate, 0) }} €/h)</strong>.</span>
+                                                    </div>
+                                                @else
+                                                    <div class="bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5 text-[10px] font-bold text-amber-900 flex items-center gap-1.5">
+                                                        <span>✨</span>
+                                                        <span>En el Dossier PDF se indicará que tienen la opción de ampliar con <strong>horas extra adicionales (+{{ number_format($pbExtraRate, 0) }} €/hora extra)</strong> por si el baile es largo.</span>
                                                     </div>
                                                 @endif
                                                 <label class="block text-[10px] font-bold text-gray-600 mb-1">Descripción incluida en PDF (editable):</label>
@@ -3372,7 +3381,7 @@
                                                 <input type="checkbox" wire:model.live="quote_services.video_360.selected" class="mt-0.5 rounded text-purple-600 focus:ring-purple-500 h-4 w-4">
                                                 <div>
                                                     <span class="text-xs font-bold text-gray-900">🎥 Plataforma Vídeo 360º</span>
-                                                    <span class="block text-[10px] text-gray-500">Plataforma 100cm (4-5 pers.), vídeos slow motion/boomerang ilimitados, confeti, atrezzo y animadores.</span>
+                                                    <span class="block text-[10px] text-gray-500">Plataforma 100cm (4-5 pers.), vídeos slow motion/boomerang ilimitados, confeti, atrezzo y animadores (+{{ number_format($quote_services['video_360']['extra_hour'] ?? 60, 0) }}€/hora extra).</span>
                                                 </div>
                                             </label>
 
@@ -3382,6 +3391,9 @@
                                                 </button>
                                                 <button type="button" wire:click="setVideo360Hours(3)" class="px-2.5 py-1 rounded-lg text-[11px] font-bold border transition {{ !empty($quote_services['video_360']['selected']) && (int)($quote_services['video_360']['hours'] ?? 2) === 3 ? 'bg-purple-600 text-white border-purple-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-purple-50' }}">
                                                     3 Horas ({{ number_format($quote_services['video_360']['price_3h'] ?? 490, 0) }}€)
+                                                </button>
+                                                <button type="button" wire:click="setVideo360Hours({{ max(4, (int)($quote_services['video_360']['hours'] ?? 3) + 1) }})" class="px-2 py-1 rounded-lg text-[10px] font-bold border transition {{ !empty($quote_services['video_360']['selected']) && (int)($quote_services['video_360']['hours'] ?? 2) >= 4 ? 'bg-amber-600 text-white border-amber-600' : 'bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100' }}" title="Añadir 1 hora extra de Plataforma 360º">
+                                                    +1h Extra (+{{ number_format($quote_services['video_360']['extra_hour'] ?? 60, 0) }}€)
                                                 </button>
                                                 <div class="flex items-center gap-1 ml-1">
                                                     <input type="number" min="1" max="10" wire:model.live="quote_services.video_360.hours" class="w-11 border rounded p-1 text-xs text-center font-bold" title="Horas de Plataforma 360">
@@ -3393,14 +3405,20 @@
                                         </div>
                                         @if(!empty($quote_services['video_360']['selected']))
                                             <div class="mt-2 pt-2 border-t border-purple-100 space-y-1.5">
+                                                @php
+                                                    $v360_3h = (float)($quote_services['video_360']['price_3h'] ?? 490);
+                                                    $v360Diff = max(0, $v360_3h - (float)($quote_services['video_360']['price'] ?? 430));
+                                                    $v360ExtraRate = (float)($quote_services['video_360']['extra_hour'] ?? 60);
+                                                @endphp
                                                 @if((int)($quote_services['video_360']['hours'] ?? 2) === 2)
-                                                    @php
-                                                        $v360_3h = (float)($quote_services['video_360']['price_3h'] ?? 490);
-                                                        $v360Diff = max(0, $v360_3h - (float)($quote_services['video_360']['price'] ?? 430));
-                                                    @endphp
                                                     <div class="bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5 text-[10px] font-bold text-amber-900 flex items-center gap-1.5">
                                                         <span>✨</span>
-                                                        <span>En el Dossier PDF se mostrará automáticamente la opción de elegir <strong>3 Horas por {{ number_format($v360_3h, 0) }} €</strong> (solo +{{ number_format($v360Diff, 0) }} € más).</span>
+                                                        <span>En el Dossier PDF se mostrará la opción de elegir <strong>3 Horas por {{ number_format($v360_3h, 0) }} €</strong> (+{{ number_format($v360Diff, 0) }} €) y la posibilidad de añadir <strong>horas extra (+{{ number_format($v360ExtraRate, 0) }} €/h)</strong>.</span>
+                                                    </div>
+                                                @else
+                                                    <div class="bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5 text-[10px] font-bold text-amber-900 flex items-center gap-1.5">
+                                                        <span>✨</span>
+                                                        <span>En el Dossier PDF se indicará que tienen la opción de ampliar con <strong>horas extra adicionales (+{{ number_format($v360ExtraRate, 0) }} €/hora extra)</strong>.</span>
                                                     </div>
                                                 @endif
                                                 <label class="block text-[10px] font-bold text-gray-600 mb-1">Descripción incluida en PDF (editable):</label>

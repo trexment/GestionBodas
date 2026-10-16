@@ -359,12 +359,14 @@ class EventShow extends Component
         $pbConfig = \App\Models\Setting::getPhotobooth360Config($this->photobooth_provider);
         $this->quote_services['photobooth']['price_2h'] = $pbConfig['photobooth_2h'];
         $this->quote_services['photobooth']['price_3h'] = $pbConfig['photobooth_3h'];
+        $this->quote_services['photobooth']['extra_hour'] = $pbConfig['photobooth_extra_hour'] ?? 50;
         $this->quote_services['photobooth']['hours'] = 2;
         $this->quote_services['photobooth']['price'] = $pbConfig['photobooth_2h'];
         $this->quote_services['photobooth']['desc'] = $pbConfig['photobooth_desc'];
 
         $this->quote_services['video_360']['price_2h'] = $pbConfig['video_360_2h'];
         $this->quote_services['video_360']['price_3h'] = $pbConfig['video_360_3h'];
+        $this->quote_services['video_360']['extra_hour'] = $pbConfig['video_360_extra_hour'] ?? 60;
         $this->quote_services['video_360']['hours'] = 2;
         $this->quote_services['video_360']['price'] = $pbConfig['video_360_2h'];
         $this->quote_services['video_360']['desc'] = $pbConfig['video_360_desc'];
@@ -2195,23 +2197,44 @@ class EventShow extends Component
         }
 
         if ($key === 'photobooth.hours') {
-            $h = (int)$value;
+            $h = max(1, (int)$value);
             $pbConfig = \App\Models\Setting::getPhotobooth360Config($this->photobooth_provider ?: 'logrono');
-            $this->quote_services['photobooth']['price'] = ($h >= 3) ? $pbConfig['photobooth_3h'] : $pbConfig['photobooth_2h'];
+            $extraRate = (float)($pbConfig['photobooth_extra_hour'] ?? 50);
+            if ($h <= 2) {
+                $this->quote_services['photobooth']['price'] = $pbConfig['photobooth_2h'];
+            } elseif ($h === 3) {
+                $this->quote_services['photobooth']['price'] = $pbConfig['photobooth_3h'];
+            } else {
+                $this->quote_services['photobooth']['price'] = $pbConfig['photobooth_3h'] + (($h - 3) * $extraRate);
+            }
             return;
         }
 
         if ($key === 'video_360.hours') {
-            $h = (int)$value;
+            $h = max(1, (int)$value);
             $pbConfig = \App\Models\Setting::getPhotobooth360Config($this->photobooth_provider ?: 'logrono');
-            $this->quote_services['video_360']['price'] = ($h >= 3) ? $pbConfig['video_360_3h'] : $pbConfig['video_360_2h'];
+            $extraRate = (float)($pbConfig['video_360_extra_hour'] ?? 60);
+            if ($h <= 2) {
+                $this->quote_services['video_360']['price'] = $pbConfig['video_360_2h'];
+            } elseif ($h === 3) {
+                $this->quote_services['video_360']['price'] = $pbConfig['video_360_3h'];
+            } else {
+                $this->quote_services['video_360']['price'] = $pbConfig['video_360_3h'] + (($h - 3) * $extraRate);
+            }
             return;
         }
 
         if ($key === 'pack_duo_360.hours') {
-            $h = (int)$value;
+            $h = max(1, (int)$value);
             $pbConfig = \App\Models\Setting::getPhotobooth360Config($this->photobooth_provider ?: 'logrono');
-            $this->quote_services['pack_duo_360']['price'] = ($h >= 3) ? $pbConfig['pack_duo_3h'] : $pbConfig['pack_duo_2h'];
+            $extraRate = (float)($pbConfig['photobooth_extra_hour'] ?? 50) + (float)($pbConfig['video_360_extra_hour'] ?? 60);
+            if ($h <= 2) {
+                $this->quote_services['pack_duo_360']['price'] = $pbConfig['pack_duo_2h'];
+            } elseif ($h === 3) {
+                $this->quote_services['pack_duo_360']['price'] = $pbConfig['pack_duo_3h'];
+            } else {
+                $this->quote_services['pack_duo_360']['price'] = $pbConfig['pack_duo_3h'] + (($h - 3) * $extraRate);
+            }
             return;
         }
 
@@ -2244,49 +2267,57 @@ class EventShow extends Component
         $this->photobooth_provider = in_array($provider, ['logrono', 'vitoria']) ? $provider : 'logrono';
         $pbConfig = \App\Models\Setting::getPhotobooth360Config($this->photobooth_provider);
 
-        $pbHours = (int)($this->quote_services['photobooth']['hours'] ?? 2);
+        $pbHours = max(1, (int)($this->quote_services['photobooth']['hours'] ?? 2));
+        $pbExtra = (float)($pbConfig['photobooth_extra_hour'] ?? 50);
         $this->quote_services['photobooth']['price_2h'] = $pbConfig['photobooth_2h'];
         $this->quote_services['photobooth']['price_3h'] = $pbConfig['photobooth_3h'];
-        $this->quote_services['photobooth']['price'] = ($pbHours >= 3) ? $pbConfig['photobooth_3h'] : $pbConfig['photobooth_2h'];
+        $this->quote_services['photobooth']['extra_hour'] = $pbExtra;
+        $this->quote_services['photobooth']['price'] = ($pbHours <= 2) ? $pbConfig['photobooth_2h'] : ($pbConfig['photobooth_3h'] + max(0, $pbHours - 3) * $pbExtra);
         $this->quote_services['photobooth']['desc'] = $pbConfig['photobooth_desc'];
 
-        $v360Hours = (int)($this->quote_services['video_360']['hours'] ?? 2);
+        $v360Hours = max(1, (int)($this->quote_services['video_360']['hours'] ?? 2));
+        $v360Extra = (float)($pbConfig['video_360_extra_hour'] ?? 60);
         $this->quote_services['video_360']['price_2h'] = $pbConfig['video_360_2h'];
         $this->quote_services['video_360']['price_3h'] = $pbConfig['video_360_3h'];
-        $this->quote_services['video_360']['price'] = ($v360Hours >= 3) ? $pbConfig['video_360_3h'] : $pbConfig['video_360_2h'];
+        $this->quote_services['video_360']['extra_hour'] = $v360Extra;
+        $this->quote_services['video_360']['price'] = ($v360Hours <= 2) ? $pbConfig['video_360_2h'] : ($pbConfig['video_360_3h'] + max(0, $v360Hours - 3) * $v360Extra);
         $this->quote_services['video_360']['desc'] = $pbConfig['video_360_desc'];
 
-        $duoHours = (int)($this->quote_services['pack_duo_360']['hours'] ?? 3);
+        $duoHours = max(1, (int)($this->quote_services['pack_duo_360']['hours'] ?? 3));
+        $duoExtra = $pbExtra + $v360Extra;
         $this->quote_services['pack_duo_360']['price_2h'] = $pbConfig['pack_duo_2h'];
         $this->quote_services['pack_duo_360']['price_3h'] = $pbConfig['pack_duo_3h'];
-        $this->quote_services['pack_duo_360']['price'] = ($duoHours >= 3) ? $pbConfig['pack_duo_3h'] : $pbConfig['pack_duo_2h'];
+        $this->quote_services['pack_duo_360']['price'] = ($duoHours <= 2) ? $pbConfig['pack_duo_2h'] : ($pbConfig['pack_duo_3h'] + max(0, $duoHours - 3) * $duoExtra);
         $this->quote_services['pack_duo_360']['desc'] = $pbConfig['pack_duo_desc'];
     }
 
     public function setPhotoboothHours(int $hours)
     {
         $pbConfig = \App\Models\Setting::getPhotobooth360Config($this->photobooth_provider ?: 'logrono');
+        $extraRate = (float)($pbConfig['photobooth_extra_hour'] ?? 50);
         $this->quote_services['photobooth']['selected'] = true;
         $this->quote_services['photobooth']['hours'] = $hours;
-        $this->quote_services['photobooth']['price'] = ($hours >= 3) ? $pbConfig['photobooth_3h'] : $pbConfig['photobooth_2h'];
+        $this->quote_services['photobooth']['price'] = ($hours <= 2) ? $pbConfig['photobooth_2h'] : ($pbConfig['photobooth_3h'] + max(0, $hours - 3) * $extraRate);
         $this->quote_services['pack_duo_360']['selected'] = false;
     }
 
     public function setVideo360Hours(int $hours)
     {
         $pbConfig = \App\Models\Setting::getPhotobooth360Config($this->photobooth_provider ?: 'logrono');
+        $extraRate = (float)($pbConfig['video_360_extra_hour'] ?? 60);
         $this->quote_services['video_360']['selected'] = true;
         $this->quote_services['video_360']['hours'] = $hours;
-        $this->quote_services['video_360']['price'] = ($hours >= 3) ? $pbConfig['video_360_3h'] : $pbConfig['video_360_2h'];
+        $this->quote_services['video_360']['price'] = ($hours <= 2) ? $pbConfig['video_360_2h'] : ($pbConfig['video_360_3h'] + max(0, $hours - 3) * $extraRate);
         $this->quote_services['pack_duo_360']['selected'] = false;
     }
 
     public function setPackDuoHours(int $hours)
     {
         $pbConfig = \App\Models\Setting::getPhotobooth360Config($this->photobooth_provider ?: 'logrono');
+        $extraRate = (float)($pbConfig['photobooth_extra_hour'] ?? 50) + (float)($pbConfig['video_360_extra_hour'] ?? 60);
         $this->quote_services['pack_duo_360']['selected'] = true;
         $this->quote_services['pack_duo_360']['hours'] = $hours;
-        $this->quote_services['pack_duo_360']['price'] = ($hours >= 3) ? $pbConfig['pack_duo_3h'] : $pbConfig['pack_duo_2h'];
+        $this->quote_services['pack_duo_360']['price'] = ($hours <= 2) ? $pbConfig['pack_duo_2h'] : ($pbConfig['pack_duo_3h'] + max(0, $hours - 3) * $extraRate);
         $this->quote_services['photobooth']['selected'] = false;
         $this->quote_services['video_360']['selected'] = false;
     }

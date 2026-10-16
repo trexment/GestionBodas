@@ -81,9 +81,11 @@ class Settings extends Component
     public $price_photobooth;
     public $price_photobooth_2h = 380;
     public $price_photobooth_3h = 430;
+    public $price_photobooth_extra_hour = 50;
     public $photobooth_desc;
     public $price_video_360_2h = 430;
     public $price_video_360_3h = 490;
+    public $price_video_360_extra_hour = 60;
     public $video_360_desc;
     public $price_pack_duo_2h = 690;
     public $price_pack_duo_3h = 850;
@@ -94,9 +96,11 @@ class Settings extends Component
     public $photobooth_vitoria_name = 'Vitoria / Álava';
     public $price_photobooth_vitoria_2h = 400;
     public $price_photobooth_vitoria_3h = 450;
+    public $price_photobooth_vitoria_extra_hour = 50;
     public $photobooth_vitoria_desc;
     public $price_video_360_vitoria_2h = 450;
     public $price_video_360_vitoria_3h = 500;
+    public $price_video_360_vitoria_extra_hour = 60;
     public $video_360_vitoria_desc;
     public $price_pack_duo_vitoria_2h = 750;
     public $price_pack_duo_vitoria_3h = 890;
@@ -372,9 +376,11 @@ class Settings extends Component
         $this->photobooth_logrono_name = $pbConfig['provider_name'];
         $this->price_photobooth_2h = $pbConfig['photobooth_2h'];
         $this->price_photobooth_3h = $pbConfig['photobooth_3h'];
+        $this->price_photobooth_extra_hour = $pbConfig['photobooth_extra_hour'];
         $this->photobooth_desc = $pbConfig['photobooth_desc'];
         $this->price_video_360_2h = $pbConfig['video_360_2h'];
         $this->price_video_360_3h = $pbConfig['video_360_3h'];
+        $this->price_video_360_extra_hour = $pbConfig['video_360_extra_hour'];
         $this->video_360_desc = $pbConfig['video_360_desc'];
         $this->price_pack_duo_2h = $pbConfig['pack_duo_2h'];
         $this->price_pack_duo_3h = $pbConfig['pack_duo_3h'];
@@ -387,9 +393,11 @@ class Settings extends Component
         $this->photobooth_vitoria_name = $pbVitoria['provider_name'];
         $this->price_photobooth_vitoria_2h = $pbVitoria['photobooth_2h'];
         $this->price_photobooth_vitoria_3h = $pbVitoria['photobooth_3h'];
+        $this->price_photobooth_vitoria_extra_hour = $pbVitoria['photobooth_extra_hour'];
         $this->photobooth_vitoria_desc = $pbVitoria['photobooth_desc'];
         $this->price_video_360_vitoria_2h = $pbVitoria['video_360_2h'];
         $this->price_video_360_vitoria_3h = $pbVitoria['video_360_3h'];
+        $this->price_video_360_vitoria_extra_hour = $pbVitoria['video_360_extra_hour'];
         $this->video_360_vitoria_desc = $pbVitoria['video_360_desc'];
         $this->price_pack_duo_vitoria_2h = $pbVitoria['pack_duo_2h'];
         $this->price_pack_duo_vitoria_3h = $pbVitoria['pack_duo_3h'];
@@ -638,9 +646,11 @@ class Settings extends Component
             'price_photobooth' => 'required|numeric',
             'price_photobooth_2h' => 'required|numeric|min:0',
             'price_photobooth_3h' => 'required|numeric|min:0',
+            'price_photobooth_extra_hour' => 'required|numeric|min:0',
             'photobooth_desc' => 'nullable|string',
             'price_video_360_2h' => 'required|numeric|min:0',
             'price_video_360_3h' => 'required|numeric|min:0',
+            'price_video_360_extra_hour' => 'required|numeric|min:0',
             'video_360_desc' => 'nullable|string',
             'price_pack_duo_2h' => 'required|numeric|min:0',
             'price_pack_duo_3h' => 'required|numeric|min:0',
@@ -650,9 +660,11 @@ class Settings extends Component
             'photobooth_vitoria_name' => 'nullable|string|max:120',
             'price_photobooth_vitoria_2h' => 'required|numeric|min:0',
             'price_photobooth_vitoria_3h' => 'required|numeric|min:0',
+            'price_photobooth_vitoria_extra_hour' => 'required|numeric|min:0',
             'photobooth_vitoria_desc' => 'nullable|string',
             'price_video_360_vitoria_2h' => 'required|numeric|min:0',
             'price_video_360_vitoria_3h' => 'required|numeric|min:0',
+            'price_video_360_vitoria_extra_hour' => 'required|numeric|min:0',
             'video_360_vitoria_desc' => 'nullable|string',
             'price_pack_duo_vitoria_2h' => 'required|numeric|min:0',
             'price_pack_duo_vitoria_3h' => 'required|numeric|min:0',
@@ -789,9 +801,11 @@ class Settings extends Component
         Setting::set('price_photobooth', $this->price_photobooth_2h);
         Setting::set('price_photobooth_2h', $this->price_photobooth_2h);
         Setting::set('price_photobooth_3h', $this->price_photobooth_3h);
+        Setting::set('price_photobooth_extra_hour', $this->price_photobooth_extra_hour);
         Setting::set('photobooth_desc', $this->photobooth_desc);
         Setting::set('price_video_360_2h', $this->price_video_360_2h);
         Setting::set('price_video_360_3h', $this->price_video_360_3h);
+        Setting::set('price_video_360_extra_hour', $this->price_video_360_extra_hour);
         Setting::set('video_360_desc', $this->video_360_desc);
         Setting::set('price_pack_duo_2h', $this->price_pack_duo_2h);
         Setting::set('price_pack_duo_3h', $this->price_pack_duo_3h);
@@ -801,9 +815,11 @@ class Settings extends Component
         Setting::set('photobooth_vitoria_name', $this->photobooth_vitoria_name ?: 'Vitoria / Álava');
         Setting::set('price_photobooth_vitoria_2h', $this->price_photobooth_vitoria_2h);
         Setting::set('price_photobooth_vitoria_3h', $this->price_photobooth_vitoria_3h);
+        Setting::set('price_photobooth_vitoria_extra_hour', $this->price_photobooth_vitoria_extra_hour);
         Setting::set('photobooth_vitoria_desc', $this->photobooth_vitoria_desc);
         Setting::set('price_video_360_vitoria_2h', $this->price_video_360_vitoria_2h);
         Setting::set('price_video_360_vitoria_3h', $this->price_video_360_vitoria_3h);
+        Setting::set('price_video_360_vitoria_extra_hour', $this->price_video_360_vitoria_extra_hour);
         Setting::set('video_360_vitoria_desc', $this->video_360_vitoria_desc);
         Setting::set('price_pack_duo_vitoria_2h', $this->price_pack_duo_vitoria_2h);
         Setting::set('price_pack_duo_vitoria_3h', $this->price_pack_duo_vitoria_3h);

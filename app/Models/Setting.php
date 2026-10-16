@@ -645,12 +645,14 @@ class Setting extends Model
                 'provider_name' => self::get('photobooth_vitoria_name', 'Vitoria / Álava'),
                 'photobooth_2h' => (float)self::get('price_photobooth_vitoria_2h', 400),
                 'photobooth_3h' => (float)self::get('price_photobooth_vitoria_3h', 450),
+                'photobooth_extra_hour' => (float)self::get('price_photobooth_vitoria_extra_hour', 50),
                 'photobooth_desc' => self::get(
                     'photobooth_vitoria_desc',
                     'Fotomatón profesional con cámara réflex e impresión rápida. Fotos ilimitadas, 2 copias (invitados + libro de firmas), 10x15 o tiras, marco y photocall a elegir, atrezzo divertido, animador/a y USB/galería (espacio 2x2m).'
                 ),
                 'video_360_2h' => (float)self::get('price_video_360_vitoria_2h', 450),
                 'video_360_3h' => (float)self::get('price_video_360_vitoria_3h', 500),
+                'video_360_extra_hour' => (float)self::get('price_video_360_vitoria_extra_hour', 60),
                 'video_360_desc' => self::get(
                     'video_360_vitoria_desc',
                     'Plataforma Vídeo 360º (4-5 pers.) con vídeos ilimitados en slow motion y boomerang, marco y canción personalizados, atrezzo divertido, confeti y animadores durante todo el servicio (espacio 2x2m).'
@@ -675,12 +677,14 @@ class Setting extends Model
             'provider_name' => self::get('photobooth_logrono_name', 'Logroño (FotomatonCheese)'),
             'photobooth_2h' => (float)self::get('price_photobooth_2h', 380),
             'photobooth_3h' => (float)self::get('price_photobooth_3h', 430),
+            'photobooth_extra_hour' => (float)self::get('price_photobooth_extra_hour', 50),
             'photobooth_desc' => self::get(
                 'photobooth_desc',
                 'Cámara réflex Canon 1200, impresión 10s y espejo táctil. Fotos ilimitadas, 2 copias (invitados + libro firmas imprenta), 10x15 o tiras, marco y photocall a elegir, atrezzo, animador FotomatonCheese y USB (espacio 2x2m).'
             ),
             'video_360_2h' => (float)self::get('price_video_360_2h', 430),
             'video_360_3h' => (float)self::get('price_video_360_3h', 490),
+            'video_360_extra_hour' => (float)self::get('price_video_360_extra_hour', 60),
             'video_360_desc' => self::get(
                 'video_360_desc',
                 'Plataforma 100cm (4-5 pers.) con cámara GoPro. Vídeos 360º ilimitados (20s) en slow motion y boomerang, marco y canción personalizados, atrezzo, confeti, 1-2 animadores FotomatonCheese y transporte 50km (espacio 2x2m).'

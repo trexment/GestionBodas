@@ -838,7 +838,7 @@
                                 <span class="text-xs font-black uppercase text-indigo-900">📸 Fotomatón & Photocall ({{ $photobooth_logrono_name }})</span>
                                 <span class="text-[10px] font-bold bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded">Tarifas por Horas</span>
                             </div>
-                            <div class="grid grid-cols-2 gap-3">
+                            <div class="grid grid-cols-3 gap-2">
                                 <div>
                                     <label class="block text-[11px] font-bold text-gray-700 mb-1">Precio 2 Horas (€)</label>
                                     <input type="number" step="0.01" wire:model="price_photobooth_2h" class="w-full border-indigo-300 rounded-lg text-sm font-black text-indigo-700">
@@ -846,6 +846,10 @@
                                 <div>
                                     <label class="block text-[11px] font-bold text-gray-700 mb-1">Precio 3 Horas (€)</label>
                                     <input type="number" step="0.01" wire:model="price_photobooth_3h" class="w-full border-indigo-300 rounded-lg text-sm font-black text-indigo-700">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold text-gray-700 mb-1">+ Hora Extra (€/h)</label>
+                                    <input type="number" step="0.01" wire:model="price_photobooth_extra_hour" class="w-full border-indigo-300 rounded-lg text-sm font-black text-amber-700">
                                 </div>
                             </div>
                             <div>
@@ -860,7 +864,7 @@
                                 <span class="text-xs font-black uppercase text-purple-900">🎥 Plataforma Vídeo 360º ({{ $photobooth_logrono_name }})</span>
                                 <span class="text-[10px] font-bold bg-purple-100 text-purple-800 px-2 py-0.5 rounded">Tarifas por Horas</span>
                             </div>
-                            <div class="grid grid-cols-2 gap-3">
+                            <div class="grid grid-cols-3 gap-2">
                                 <div>
                                     <label class="block text-[11px] font-bold text-gray-700 mb-1">Precio 2 Horas (€)</label>
                                     <input type="number" step="0.01" wire:model="price_video_360_2h" class="w-full border-purple-300 rounded-lg text-sm font-black text-purple-700">
@@ -868,6 +872,10 @@
                                 <div>
                                     <label class="block text-[11px] font-bold text-gray-700 mb-1">Precio 3 Horas (€)</label>
                                     <input type="number" step="0.01" wire:model="price_video_360_3h" class="w-full border-purple-300 rounded-lg text-sm font-black text-purple-700">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold text-gray-700 mb-1">+ Hora Extra (€/h)</label>
+                                    <input type="number" step="0.01" wire:model="price_video_360_extra_hour" class="w-full border-purple-300 rounded-lg text-sm font-black text-amber-700">
                                 </div>
                             </div>
                             <div>
@@ -936,7 +944,7 @@
                                 <span class="text-xs font-black uppercase text-emerald-900">📸 Fotomatón & Photocall ({{ $photobooth_vitoria_name }})</span>
                                 <span class="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded">Tarifas Vitoria</span>
                             </div>
-                            <div class="grid grid-cols-2 gap-3">
+                            <div class="grid grid-cols-3 gap-2">
                                 <div>
                                     <label class="block text-[11px] font-bold text-gray-700 mb-1">Precio 2 Horas (€)</label>
                                     <input type="number" step="0.01" wire:model="price_photobooth_vitoria_2h" class="w-full border-emerald-300 rounded-lg text-sm font-black text-emerald-700">
@@ -944,6 +952,10 @@
                                 <div>
                                     <label class="block text-[11px] font-bold text-gray-700 mb-1">Precio 3 Horas (€)</label>
                                     <input type="number" step="0.01" wire:model="price_photobooth_vitoria_3h" class="w-full border-emerald-300 rounded-lg text-sm font-black text-emerald-700">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold text-gray-700 mb-1">+ Hora Extra (€/h)</label>
+                                    <input type="number" step="0.01" wire:model="price_photobooth_vitoria_extra_hour" class="w-full border-emerald-300 rounded-lg text-sm font-black text-amber-700">
                                 </div>
                             </div>
                             <div>
@@ -958,7 +970,7 @@
                                 <span class="text-xs font-black uppercase text-teal-900">🎥 Plataforma Vídeo 360º ({{ $photobooth_vitoria_name }})</span>
                                 <span class="text-[10px] font-bold bg-teal-100 text-teal-800 px-2 py-0.5 rounded">Tarifas Vitoria</span>
                             </div>
-                            <div class="grid grid-cols-2 gap-3">
+                            <div class="grid grid-cols-3 gap-2">
                                 <div>
                                     <label class="block text-[11px] font-bold text-gray-700 mb-1">Precio 2 Horas (€)</label>
                                     <input type="number" step="0.01" wire:model="price_video_360_vitoria_2h" class="w-full border-teal-300 rounded-lg text-sm font-black text-teal-700">
@@ -966,6 +978,10 @@
                                 <div>
                                     <label class="block text-[11px] font-bold text-gray-700 mb-1">Precio 3 Horas (€)</label>
                                     <input type="number" step="0.01" wire:model="price_video_360_vitoria_3h" class="w-full border-teal-300 rounded-lg text-sm font-black text-teal-700">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold text-gray-700 mb-1">+ Hora Extra (€/h)</label>
+                                    <input type="number" step="0.01" wire:model="price_video_360_vitoria_extra_hour" class="w-full border-teal-300 rounded-lg text-sm font-black text-amber-700">
                                 </div>
                             </div>
                             <div>
