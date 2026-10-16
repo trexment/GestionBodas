@@ -58,29 +58,60 @@
         </div>
     @endif
 
-    <!-- FILTROS RÁPIDOS POR ESTADO -->
-    <div class="flex items-center gap-1.5 overflow-x-auto scrollbar-none pb-2 mb-4 w-full">
-        <button type="button" wire:click="setStatusFilter('all')" class="px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer {{ $status_filter === 'all' ? 'bg-indigo-600 text-white shadow-xs' : 'bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 border border-gray-200 dark:border-slate-700' }}">
-            Todos ({{ $statusCounts['all'] ?? 0 }})
-        </button>
-        <button type="button" wire:click="setStatusFilter('no_response')" class="px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer flex items-center gap-1.5 {{ $status_filter === 'no_response' ? 'bg-purple-600 text-white shadow-xs' : 'bg-purple-50 dark:bg-purple-950/40 text-purple-800 dark:text-purple-300 hover:bg-purple-100 border border-purple-200 dark:border-purple-800' }}">
-            <span>⏳ Sin Respuesta</span>
-            <span class="px-1.5 py-0.2 rounded-full text-[10px] {{ ($statusCounts['no_response'] ?? 0) > 0 ? 'bg-purple-200 dark:bg-purple-800 text-purple-900 dark:text-white font-black' : 'opacity-60' }}">{{ $statusCounts['no_response'] ?? 0 }}</span>
-        </button>
-        <button type="button" wire:click="setStatusFilter('confirmed')" class="px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer {{ $status_filter === 'confirmed' ? 'bg-emerald-600 text-white shadow-xs' : 'bg-white dark:bg-slate-800 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-50 border border-gray-200 dark:border-slate-700' }}">
-            🟢 Confirmados ({{ $statusCounts['confirmed'] ?? 0 }})
-        </button>
-        <button type="button" wire:click="setStatusFilter('draft')" class="px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer {{ $status_filter === 'draft' ? 'bg-amber-600 text-white shadow-xs' : 'bg-white dark:bg-slate-800 text-amber-800 dark:text-amber-300 hover:bg-amber-50 border border-gray-200 dark:border-slate-700' }}">
-            📝 Borradores ({{ $statusCounts['draft'] ?? 0 }})
-        </button>
-        <button type="button" wire:click="setStatusFilter('completed')" class="px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer {{ $status_filter === 'completed' ? 'bg-blue-600 text-white shadow-xs' : 'bg-white dark:bg-slate-800 text-blue-800 dark:text-blue-300 hover:bg-blue-50 border border-gray-200 dark:border-slate-700' }}">
-            🔵 Completados ({{ $statusCounts['completed'] ?? 0 }})
-        </button>
-        @if(($statusCounts['rejected'] ?? 0) > 0 || $status_filter === 'rejected')
-            <button type="button" wire:click="setStatusFilter('rejected')" class="px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer {{ $status_filter === 'rejected' ? 'bg-rose-600 text-white shadow-xs' : 'bg-white dark:bg-slate-800 text-rose-700 dark:text-rose-300 hover:bg-rose-50 border border-rose-200 dark:border-rose-800' }}">
-                🔴 Rechazados ({{ $statusCounts['rejected'] ?? 0 }})
+    <!-- FILTROS RÁPIDOS POR ESTADO + INTERRUPTORES (SWITCHES) PARA OCULTAR/MOSTRAR COMPLETADOS Y CANCELADOS -->
+    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3 mb-4 w-full">
+        <div class="flex items-center gap-1.5 overflow-x-auto scrollbar-none pb-1">
+            <button type="button" wire:click="setStatusFilter('all')" class="px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer {{ $status_filter === 'all' ? 'bg-indigo-600 text-white shadow-xs' : 'bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 border border-gray-200 dark:border-slate-700' }}">
+                {{ (!$show_completed && !$show_cancelled) ? 'Activos' : 'Todos' }} ({{ $statusCounts['all'] ?? 0 }})
             </button>
-        @endif
+            <button type="button" wire:click="setStatusFilter('no_response')" class="px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer flex items-center gap-1.5 {{ $status_filter === 'no_response' ? 'bg-purple-600 text-white shadow-xs' : 'bg-purple-50 dark:bg-purple-950/40 text-purple-800 dark:text-purple-300 hover:bg-purple-100 border border-purple-200 dark:border-purple-800' }}">
+                <span>⏳ Sin Respuesta</span>
+                <span class="px-1.5 py-0.2 rounded-full text-[10px] {{ ($statusCounts['no_response'] ?? 0) > 0 ? 'bg-purple-200 dark:bg-purple-800 text-purple-900 dark:text-white font-black' : 'opacity-60' }}">{{ $statusCounts['no_response'] ?? 0 }}</span>
+            </button>
+            <button type="button" wire:click="setStatusFilter('confirmed')" class="px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer {{ $status_filter === 'confirmed' ? 'bg-emerald-600 text-white shadow-xs' : 'bg-white dark:bg-slate-800 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-50 border border-gray-200 dark:border-slate-700' }}">
+                🟢 Confirmados ({{ $statusCounts['confirmed'] ?? 0 }})
+            </button>
+            <button type="button" wire:click="setStatusFilter('draft')" class="px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer {{ $status_filter === 'draft' ? 'bg-amber-600 text-white shadow-xs' : 'bg-white dark:bg-slate-800 text-amber-800 dark:text-amber-300 hover:bg-amber-50 border border-gray-200 dark:border-slate-700' }}">
+                📝 Borradores ({{ $statusCounts['draft'] ?? 0 }})
+            </button>
+            @if($show_completed || $status_filter === 'completed')
+                <button type="button" wire:click="setStatusFilter('completed')" class="px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer {{ $status_filter === 'completed' ? 'bg-blue-600 text-white shadow-xs' : 'bg-white dark:bg-slate-800 text-blue-800 dark:text-blue-300 hover:bg-blue-50 border border-gray-200 dark:border-slate-700' }}">
+                    🔵 Completados ({{ $statusCounts['completed'] ?? 0 }})
+                </button>
+            @endif
+            @if($show_cancelled || in_array($status_filter, ['cancelled', 'rejected'], true))
+                <button type="button" wire:click="setStatusFilter('cancelled')" class="px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer {{ in_array($status_filter, ['cancelled', 'rejected'], true) ? 'bg-rose-600 text-white shadow-xs' : 'bg-white dark:bg-slate-800 text-rose-700 dark:text-rose-300 hover:bg-rose-50 border border-rose-200 dark:border-rose-800' }}">
+                    🔴 Cancelados ({{ $statusCounts['cancelled'] ?? 0 }})
+                </button>
+            @endif
+        </div>
+
+        <!-- INTERRUPTORES (SWITCHES) PARA MOSTRAR / OCULTAR COMPLETADOS Y CANCELADOS -->
+        <div class="flex flex-wrap items-center gap-3 bg-white/80 dark:bg-slate-900/90 border border-gray-200 dark:border-slate-800 px-3.5 py-2 rounded-2xl shadow-2xs shrink-0">
+            <!-- Switch Completados -->
+            <button type="button"
+                    wire:click="toggleShowCompleted"
+                    class="inline-flex items-center gap-2 text-xs font-bold cursor-pointer select-none transition {{ $show_completed ? 'text-blue-700 dark:text-blue-300' : 'text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200' }}"
+                    title="{{ $show_completed ? 'Ocultar eventos completados' : 'Mostrar eventos completados' }}">
+                <span class="relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors duration-200 {{ $show_completed ? 'bg-blue-600' : 'bg-gray-300 dark:bg-slate-700' }}">
+                    <span class="inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform duration-200 {{ $show_completed ? 'translate-x-4' : 'translate-x-1' }}"></span>
+                </span>
+                <span>🔵 Completados ({{ $statusCounts['completed'] ?? 0 }})</span>
+            </button>
+
+            <span class="h-4 w-px bg-gray-200 dark:bg-slate-800"></span>
+
+            <!-- Switch Cancelados -->
+            <button type="button"
+                    wire:click="toggleShowCancelled"
+                    class="inline-flex items-center gap-2 text-xs font-bold cursor-pointer select-none transition {{ $show_cancelled ? 'text-rose-700 dark:text-rose-300' : 'text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200' }}"
+                    title="{{ $show_cancelled ? 'Ocultar eventos cancelados' : 'Mostrar eventos cancelados' }}">
+                <span class="relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors duration-200 {{ $show_cancelled ? 'bg-rose-600' : 'bg-gray-300 dark:bg-slate-700' }}">
+                    <span class="inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform duration-200 {{ $show_cancelled ? 'translate-x-4' : 'translate-x-1' }}"></span>
+                </span>
+                <span>🔴 Cancelados ({{ $statusCounts['cancelled'] ?? 0 }})</span>
+            </button>
+        </div>
     </div>
 
     <!-- ========================================================== -->

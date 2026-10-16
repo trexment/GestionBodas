@@ -49,11 +49,34 @@ class EventManager extends Component
     public $assistants = [];
 
     public $showCreateModal = false;
-    public $status_filter = 'all'; // all, no_response, draft, confirmed, completed
+    public $status_filter = 'all'; // all, no_response, draft, confirmed, completed, cancelled
+    public bool $show_completed = false;
+    public bool $show_cancelled = false;
 
     public function setStatusFilter($status)
     {
         $this->status_filter = $status;
+        if ($status === 'completed') {
+            $this->show_completed = true;
+        } elseif (in_array($status, ['cancelled', 'rejected'], true)) {
+            $this->show_cancelled = true;
+        }
+    }
+
+    public function toggleShowCompleted()
+    {
+        $this->show_completed = !$this->show_completed;
+        if (!$this->show_completed && $this->status_filter === 'completed') {
+            $this->status_filter = 'all';
+        }
+    }
+
+    public function toggleShowCancelled()
+    {
+        $this->show_cancelled = !$this->show_cancelled;
+        if (!$this->show_cancelled && in_array($this->status_filter, ['cancelled', 'rejected'], true)) {
+            $this->status_filter = 'all';
+        }
     }
 
     protected $rules = [
@@ -480,12 +503,24 @@ class EventManager extends Component
 
         $allEvents = $query->orderBy('event_date', 'asc')->get();
 
+        $visiblePool = $allEvents->filter(function ($ev) {
+            if (!$this->show_completed && $ev->status === 'completed') {
+                return false;
+            }
+            if (!$this->show_cancelled && in_array($ev->status, ['cancelled', 'rejected'], true)) {
+                return false;
+            }
+            return true;
+        });
+
         $statusCounts = [
-            'all' => $allEvents->count(),
+            'all' => $visiblePool->count(),
+            'total_all' => $allEvents->count(),
             'no_response' => $allEvents->where('status', 'no_response')->count(),
             'draft' => $allEvents->where('status', 'draft')->count(),
             'confirmed' => $allEvents->where('status', 'confirmed')->count(),
             'completed' => $allEvents->where('status', 'completed')->count(),
+            'cancelled' => $allEvents->whereIn('status', ['cancelled', 'rejected'])->count(),
             'rejected' => $allEvents->where('status', 'rejected')->count(),
         ];
 
@@ -493,10 +528,15 @@ class EventManager extends Component
             return $ev->days_without_response >= 2;
         })->count();
 
-        $filteredEvents = $allEvents;
-        if ($this->status_filter !== 'all') {
-            $filteredEvents = $allEvents->where('status', $this->status_filter);
+        if ($this->status_filter === 'all') {
+            $filteredEvents = $visiblePool->values();
+        } elseif ($this->status_filter === 'cancelled') {
+            $filteredEvents = $allEvents->whereIn('status', ['cancelled', 'rejected'])->values();
+        } else {
+            $filteredEvents = $allEvents->where('status', $this->status_filter)->values();
         }
+
+        $this->events = $filteredEvents;
 
         return view('livewire.admin.event-manager', [
             'events' => $filteredEvents,
