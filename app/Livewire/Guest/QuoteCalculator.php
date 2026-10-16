@@ -442,16 +442,49 @@ class QuoteCalculator extends Component
             $totalEstimated = max(0, $totalEstimated - $packInfo['discount_amount']);
         }
 
-        // 2. Create or Find Client
-        $client = User::firstOrCreate(
-            ['email' => $this->client_email],
-            [
+        // 2. Create or Find Client (matching by email, last 9 digits of phone, or name to link with existing IMAP leads)
+        $client = null;
+        $cleanEmail = strtolower(trim((string)$this->client_email));
+        if (!empty($cleanEmail)) {
+            $client = User::where('email', $cleanEmail)->first();
+        }
+        if (!$client && !empty($this->client_phone)) {
+            $digits = preg_replace('/\D/', '', (string)$this->client_phone);
+            if (strlen($digits) >= 9) {
+                $last9 = substr($digits, -9);
+                $client = User::where('role', 'client')
+                    ->where(function ($q) use ($last9, $digits) {
+                        $q->where('phone', 'LIKE', "%{$last9}")
+                          ->orWhere('phone', $digits);
+                    })->first();
+            }
+        }
+        if (!$client && !empty($this->client_name)) {
+            $client = User::where('role', 'client')->where('name', trim($this->client_name))->first();
+        }
+
+        if ($client) {
+            $updates = [];
+            if (!empty($cleanEmail) && (empty($client->email) || str_ends_with($client->email, '.local'))) {
+                if (!User::where('email', $cleanEmail)->where('id', '!=', $client->id)->exists()) {
+                    $updates['email'] = $cleanEmail;
+                }
+            }
+            if (!empty($this->client_phone) && empty($client->phone)) {
+                $updates['phone'] = $this->client_phone;
+            }
+            if (!empty($updates)) {
+                $client->update($updates);
+            }
+        } else {
+            $client = User::create([
                 'name' => $this->client_name,
+                'email' => $cleanEmail ?: ('lead_' . time() . '@eventosmusicales.local'),
                 'password' => bcrypt(Str::random(16)),
                 'role' => 'client',
                 'phone' => $this->client_phone,
-            ]
-        );
+            ]);
+        }
 
         // 3. Format notes with requested services
         $requestedServicesList = [];
@@ -496,26 +529,48 @@ class QuoteCalculator extends Component
         $typeConfig = self::getEventTypes()[$this->event_type] ?? self::getEventTypes()['boda'];
         $eventTitle = $typeConfig['prefix'] . $this->client_name;
 
-        $fullNotes = "SOLICITUD DE PRESUPUESTO ONLINE:\n"
+        $fullNotes = "SOLICITUD DE PRESUPUESTO ONLINE (/presupuesto):\n"
                    . "Tipo de Evento: " . $typeConfig['name'] . "\n\n"
                    . "Servicios Solicitados:\n"
                    . implode("\n", $requestedServicesList)
                    . (!empty($this->client_notes) ? "\n\nObservaciones del Cliente:\n" . $this->client_notes : "");
 
-        // 4. Create Event Draft
-        $event = Event::create([
-            'name' => $eventTitle,
-            'event_type' => $this->event_type ?: 'boda',
-            'event_date' => $this->event_date,
-            'location' => $this->event_location,
-            'status' => 'draft',
-            'client_id' => $client->id,
-            'token' => Str::random(32),
-            'notes' => $fullNotes,
-        ]);
+        // 4. Reutilizar evento existente del cliente si ya entró como Lead (para no duplicarlo) o crear uno nuevo
+        $event = Event::where('client_id', $client->id)
+            ->where(function ($q) {
+                if (!empty($this->event_date)) {
+                    $q->whereDate('event_date', $this->event_date)
+                      ->orWhereIn('status', ['no_response', 'draft']);
+                } else {
+                    $q->whereIn('status', ['no_response', 'draft']);
+                }
+            })
+            ->latest()
+            ->first();
+
+        if ($event) {
+            $event->update([
+                'event_date' => $this->event_date ?: $event->event_date,
+                'location' => (!empty($this->event_location) && $this->event_location !== 'Por definir') ? $this->event_location : $event->location,
+                'notes' => ($event->notes ? $event->notes . "\n\n========================================\n" : '') . $fullNotes,
+            ]);
+        } else {
+            $event = Event::create([
+                'name' => $eventTitle,
+                'brand' => Setting::getDetectedBrand(),
+                'event_type' => $this->event_type ?: 'boda',
+                'event_date' => $this->event_date,
+                'location' => $this->event_location,
+                'status' => 'draft',
+                'client_id' => $client->id,
+                'token' => Str::random(32),
+                'notes' => $fullNotes,
+            ]);
+        }
 
         // 5. Create Quote Draft for Admin
         $quote = $event->quotes()->create([
+            'brand' => $event->brand ?: Setting::getDetectedBrand(),
             'amount' => $totalEstimated,
             'status' => 'pending',
         ]);

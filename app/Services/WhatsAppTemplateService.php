@@ -92,9 +92,18 @@ class WhatsAppTemplateService
              . "¡Estamos deseando que llegue el gran día! 🎧✨";
     }
 
+    public static function getQuoteCalculatorUrl(?Event $event = null): string
+    {
+        try {
+            return url('/presupuesto');
+        } catch (\Throwable $e) {
+            return 'https://app.nunezandson.com/presupuesto';
+        }
+    }
+
     /**
      * ETAPA 1: APERTURA & PRIMERA TOMA DE CONTACTO (Respuesta inmediata / Lead in).
-     * Conexión rápida, confirmación de disponibilidad en agenda y pregunta rompehielos.
+     * Conexión rápida, confirmación de disponibilidad en agenda, enlace a /presupuesto y pregunta rompehielos.
      */
     public static function primeraTomaContacto(Event $event, string $variant = 'estandar'): string
     {
@@ -103,23 +112,40 @@ class WhatsAppTemplateService
         $companyName = $brand['name'] ?? Setting::get('company_name', 'Núñez & Son');
         $eventDate = $event->event_date ? Carbon::parse($event->event_date)->locale('es')->isoFormat('D [de] MMMM [de] YYYY') : 'vuestra fecha';
         $location = $event->location ?: 'vuestro espacio elegido';
+        $presupuestoUrl = self::getQuoteCalculatorUrl($event);
+
+        if ($variant === 'presupuesto_online' || $variant === 'primer_contacto_presupuesto') {
+            return "¡Hola {$clientName}! 👋 ¡Qué ilusión recibir vuestra solicitud! Os escribe *{$companyName}*.\n\n"
+                 . "¡Enhorabuena por vuestro enlace! 💍 Acabo de consultar nuestra agenda para el *{$eventDate}* en *{$location}* y os confirmo que *¡tenemos la fecha disponible!* 🎉\n\n"
+                 . "Para poder prepararos el presupuesto a medida necesitamos saber qué servicios necesitáis para vuestro gran día (sonorización de ceremonia, cóctel, banquete, horas de DJ en barra libre, fuego frío, plataforma 360...).\n\n"
+                 . "Para ello podéis seleccionarlos directamente en 1 minuto aquí:\n"
+                 . "👉 {$presupuestoUrl}\n\n"
+                 . "También podéis contármelo por aquí o, si lo preferís, hacemos una llamada rápida de 5 minutos para orientaros sin compromiso. ¡Un saludo! 🎧✨";
+        }
 
         if ($variant === 'disponibilidad') {
             return "¡Hola {$clientName}! 👋 Os escribe *{$companyName}*.\n\n"
                  . "¡Enhorabuena por vuestro compromiso! 💍 Acabo de consultar la agenda para el *{$eventDate}* en *{$location}* y ¡tenemos la fecha disponible!\n\n"
-                 . "Para poder orientaros y ver qué tipo de montaje os encajaría mejor (barra libre, sonido en directo para cóctel/ceremonia, iluminación dinámica...), ¿tenéis un momento para contarme qué tenéis en mente? 🎧";
+                 . "Para poder haceros el presupuesto a medida necesitamos saber los servicios que necesitáis (barra libre, sonido para cóctel/ceremonia, iluminación, efectos...), y para ello podéis indicarlos directamente en:\n"
+                 . "👉 {$presupuestoUrl}\n\n"
+                 . "O si preferís, contadme por aquí qué tenéis en mente. 🎧";
         }
 
         if ($variant === 'filtro_finca') {
             return "¡Hola {$clientName}! 👋 ¡Qué alegría recibir vuestra consulta para el *{$eventDate}*! Os escribe *{$companyName}*.\n\n"
                  . "Tenemos la fecha libre en el calendario. 🎉 Antes de enviaros catálogos genéricos que no os digan nada, nos gusta conocer vuestra idea de fiesta para proponeros justo lo que necesitáis.\n\n"
-                 . "¿Tenéis ya cerrado el lugar o finca en {$location}? ¿Buscáis música para todo el día o principalmente para la barra libre? ¡Un abrazo!";
+                 . "¿Tenéis ya cerrado el lugar o finca en {$location}? ¿Buscáis música para todo el día o principalmente para la barra libre?\n\n"
+                 . "Si queréis ir marcando los servicios que necesitáis para prepararos el presupuesto, lo tenéis disponible en:\n"
+                 . "👉 {$presupuestoUrl}\n\n"
+                 . "¡Un abrazo!";
         }
 
-        // Variante por defecto: estándar cálida y directa
+        // Variante por defecto: estándar cálida y directa con enlace a /presupuesto
         return "¡Hola {$clientName}! 👋 ¡Qué ilusión saber de vosotros! Os escribe *{$companyName}*.\n\n"
              . "Confirmado: ¡tenemos libre vuestra fecha (*{$eventDate}*)! 🎉 Nos encantaría acompañaros en *{$location}* y montar un fiestón a vuestra medida.\n\n"
-             . "Para ponéroslo muy fácil y orientaros sin compromiso, ¿me contáis si tenéis ya en mente algún estilo de música o canciones que no puedan faltar en vuestra boda? ¡Un saludo!";
+             . "Necesitamos saber qué servicios necesitáis para haceros el presupuesto, y para ello podéis seleccionarlos en un momento desde aquí:\n"
+             . "👉 {$presupuestoUrl}\n\n"
+             . "¡Cualquier duda me decís por aquí! ¡Un saludo!";
     }
 
     /**
@@ -305,7 +331,12 @@ class WhatsAppTemplateService
      */
     public static function getRecommendedFollowupKey(Event $event): string
     {
+        $hasQuotes = $event->relationLoaded('quotes') ? $event->quotes->isNotEmpty() : $event->quotes()->exists();
         $days = $event->days_without_response;
+
+        if (!$hasQuotes || $days <= 1) {
+            return 'primer_contacto_presupuesto';
+        }
         if ($days <= 3) {
             return 'dia3_dudas';
         }
@@ -327,6 +358,22 @@ class WhatsAppTemplateService
         $clientPhone = $event->client ? $event->client->phone : ($event->partner_phone ?? '');
 
         $options = [
+            'primer_contacto_presupuesto' => [
+                'key' => 'primer_contacto_presupuesto',
+                'title' => 'Día 0 (1er Contacto): Fecha Libre + Enlace /presupuesto',
+                'stage' => '1er Contacto',
+                'icon' => '👋',
+                'description' => 'Confirma que la fecha está libre y envía el enlace a /presupuesto para que elijan los servicios que necesitan.',
+                'text' => self::primeraTomaContacto($event, 'presupuesto_online'),
+            ],
+            'primer_contacto_madrigal' => [
+                'key' => 'primer_contacto_madrigal',
+                'title' => 'Día 0 (Madrigal): Rompehielos Finca & Fiesta',
+                'stage' => '1er Contacto',
+                'icon' => '🟢',
+                'description' => 'Etapa 1 Madrigal: confirma fecha disponible, pregunta por la finca y estilo de fiesta, e incluye enlace a /presupuesto.',
+                'text' => self::primeraTomaContacto($event, 'filtro_finca'),
+            ],
             'dia3_dudas' => [
                 'key' => 'dia3_dudas',
                 'title' => 'Día 2-3: Dudas & Flexibilidad',
@@ -386,6 +433,8 @@ class WhatsAppTemplateService
         }
 
         $text = match($variant) {
+            'primer_contacto_presupuesto' => self::primeraTomaContacto($event, 'presupuesto_online'),
+            'primer_contacto_madrigal' => self::primeraTomaContacto($event, 'filtro_finca'),
             'dia3_dudas' => self::seguimientoDia3Dudas($event),
             'dia7_escasez' => self::seguimientoDia7Escasez($event),
             'psicologia_inversa' => self::seguimientoPsicologiaInversa($event),
@@ -394,6 +443,8 @@ class WhatsAppTemplateService
         };
 
         $title = match($variant) {
+            'primer_contacto_presupuesto' => 'Día 0 (1er Contacto): Fecha Libre + Enlace /presupuesto',
+            'primer_contacto_madrigal' => 'Día 0 (Madrigal): Rompehielos Finca & Fiesta',
             'dia3_dudas' => 'Día 2-3: Dudas & Flexibilidad',
             'dia7_escasez' => 'Día 5-7: Cierre por Escasez (Prioridad 24h)',
             'psicologia_inversa' => 'Psicología Inversa / Cierre de Expediente',
@@ -402,6 +453,8 @@ class WhatsAppTemplateService
         };
 
         $icon = match($variant) {
+            'primer_contacto_presupuesto' => '👋',
+            'primer_contacto_madrigal' => '🟢',
             'dia3_dudas' => '💡',
             'dia7_escasez' => '⚡',
             'psicologia_inversa' => '🚪',

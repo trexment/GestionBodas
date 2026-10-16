@@ -1669,19 +1669,31 @@
                                     ⚡ Plantillas Rápidas Madrigal & Comerciales:
                                 </span>
                                 <div class="flex flex-wrap gap-1.5">
-                                    <button type="button" wire:click="loadWhatsAppTemplate('seguimiento_dia_3')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-white dark:bg-slate-900 hover:bg-indigo-50 dark:hover:bg-slate-800 text-indigo-700 dark:text-indigo-400 border border-slate-200 dark:border-slate-800 hover:border-indigo-300 transition shadow-2xs cursor-pointer flex items-center gap-1">
+                                    <button type="button" wire:click="loadWhatsAppTemplate('primer_contacto_presupuesto')" class="px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-emerald-600 hover:bg-emerald-700 text-white border border-emerald-500 transition shadow-xs cursor-pointer flex items-center gap-1">
+                                        <span>👋</span> 1er Contacto + /presupuesto
+                                    </button>
+                                    <button type="button" wire:click="loadWhatsAppTemplate('primer_contacto_madrigal')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-white dark:bg-slate-900 hover:bg-emerald-50 dark:hover:bg-slate-800 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/60 hover:border-emerald-300 transition shadow-2xs cursor-pointer flex items-center gap-1">
+                                        <span>🟢</span> 1er Contacto (Madrigal)
+                                    </button>
+                                    <button type="button" wire:click="loadWhatsAppTemplate('llamada')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:border-slate-300 transition shadow-2xs cursor-pointer flex items-center gap-1">
+                                        <span>📞</span> Proponer Llamada
+                                    </button>
+                                    <button type="button" wire:click="loadWhatsAppTemplate('dossier')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-white dark:bg-slate-900 hover:bg-cyan-50 dark:hover:bg-slate-800 text-cyan-700 dark:text-cyan-400 border border-slate-200 dark:border-slate-800 hover:border-cyan-300 transition shadow-2xs cursor-pointer flex items-center gap-1">
+                                        <span>📑</span> Envío Dossier
+                                    </button>
+                                    <button type="button" wire:click="loadWhatsAppTemplate('dia3_dudas')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-white dark:bg-slate-900 hover:bg-indigo-50 dark:hover:bg-slate-800 text-indigo-700 dark:text-indigo-400 border border-slate-200 dark:border-slate-800 hover:border-indigo-300 transition shadow-2xs cursor-pointer flex items-center gap-1">
                                         <span>💡</span> Dudas (Día 3)
                                     </button>
-                                    <button type="button" wire:click="loadWhatsAppTemplate('seguimiento_dia_7')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-white dark:bg-slate-900 hover:bg-amber-50 dark:hover:bg-slate-800 text-amber-700 dark:text-amber-400 border border-slate-200 dark:border-slate-800 hover:border-amber-300 transition shadow-2xs cursor-pointer flex items-center gap-1">
+                                    <button type="button" wire:click="loadWhatsAppTemplate('dia7_escasez')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-white dark:bg-slate-900 hover:bg-amber-50 dark:hover:bg-slate-800 text-amber-700 dark:text-amber-400 border border-slate-200 dark:border-slate-800 hover:border-amber-300 transition shadow-2xs cursor-pointer flex items-center gap-1">
                                         <span>⚡</span> Escasez 24h (Día 7)
                                     </button>
-                                    <button type="button" wire:click="loadWhatsAppTemplate('tecnica_del_no')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-white dark:bg-slate-900 hover:bg-rose-50 dark:hover:bg-slate-800 text-rose-700 dark:text-rose-400 border border-slate-200 dark:border-slate-800 hover:border-rose-300 transition shadow-2xs cursor-pointer flex items-center gap-1">
+                                    <button type="button" wire:click="loadWhatsAppTemplate('pregunta_no')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-white dark:bg-slate-900 hover:bg-rose-50 dark:hover:bg-slate-800 text-rose-700 dark:text-rose-400 border border-slate-200 dark:border-slate-800 hover:border-rose-300 transition shadow-2xs cursor-pointer flex items-center gap-1">
                                         <span>🎯</span> Técnica NO (Día 10)
                                     </button>
-                                    <button type="button" wire:click="loadWhatsAppTemplate('cierre_expediente')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-white dark:bg-slate-900 hover:bg-purple-50 dark:hover:bg-slate-800 text-purple-700 dark:text-purple-400 border border-slate-200 dark:border-slate-800 hover:border-purple-300 transition shadow-2xs cursor-pointer flex items-center gap-1">
+                                    <button type="button" wire:click="loadWhatsAppTemplate('psicologia_inversa')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-white dark:bg-slate-900 hover:bg-purple-50 dark:hover:bg-slate-800 text-purple-700 dark:text-purple-400 border border-slate-200 dark:border-slate-800 hover:border-purple-300 transition shadow-2xs cursor-pointer flex items-center gap-1">
                                         <span>🔒</span> Cierre de Expediente
                                     </button>
-                                    <button type="button" wire:click="loadWhatsAppTemplate('objecion_precio')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-white dark:bg-slate-900 hover:bg-teal-50 dark:hover:bg-slate-800 text-teal-700 dark:text-teal-400 border border-slate-200 dark:border-slate-800 hover:border-teal-300 transition shadow-2xs cursor-pointer flex items-center gap-1">
+                                    <button type="button" wire:click="loadWhatsAppTemplate('presupuesto')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-white dark:bg-slate-900 hover:bg-teal-50 dark:hover:bg-slate-800 text-teal-700 dark:text-teal-400 border border-slate-200 dark:border-slate-800 hover:border-teal-300 transition shadow-2xs cursor-pointer flex items-center gap-1">
                                         <span>💰</span> Objeción Precio
                                     </button>
                                     <button type="button" wire:click="loadWhatsAppTemplate('cuestionario')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-white dark:bg-slate-900 hover:bg-blue-50 dark:hover:bg-slate-800 text-blue-700 dark:text-blue-400 border border-slate-200 dark:border-slate-800 hover:border-blue-300 transition shadow-2xs cursor-pointer flex items-center gap-1">
@@ -1689,9 +1701,6 @@
                                     </button>
                                     <button type="button" wire:click="loadWhatsAppTemplate('contrato')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-white dark:bg-slate-900 hover:bg-emerald-50 dark:hover:bg-slate-800 text-emerald-700 dark:text-emerald-400 border border-slate-200 dark:border-slate-800 hover:border-emerald-300 transition shadow-2xs cursor-pointer flex items-center gap-1">
                                         <span>✍️</span> Enlace Contrato
-                                    </button>
-                                    <button type="button" wire:click="loadWhatsAppTemplate('llamada')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:border-slate-300 transition shadow-2xs cursor-pointer flex items-center gap-1">
-                                        <span>📞</span> Proponer Llamada
                                     </button>
                                 </div>
                             </div>

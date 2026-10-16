@@ -1679,16 +1679,30 @@ class EventShow extends Component
 
     public function loadWhatsAppTemplate(string $templateKey)
     {
+        // Mapear alias posibles del panel rápido
+        $keyMap = [
+            'seguimiento_dia_3' => 'dia3_dudas',
+            'seguimiento_dia_7' => 'dia7_escasez',
+            'tecnica_del_no' => 'pregunta_no',
+            'cierre_expediente' => 'psicologia_inversa',
+            'objecion_precio' => 'presupuesto',
+        ];
+        $resolvedKey = $keyMap[$templateKey] ?? $templateKey;
+
         $options = \App\Services\WhatsAppTemplateService::getFollowupOptions($this->event);
-        if (isset($options[$templateKey])) {
-            $this->whatsapp_chat_message = $options[$templateKey]['text'];
-        } elseif ($templateKey === 'cuestionario') {
+        if (isset($options[$resolvedKey])) {
+            $this->whatsapp_chat_message = $options[$resolvedKey]['text'];
+        } elseif ($resolvedKey === 'primer_contacto_presupuesto') {
+            $this->whatsapp_chat_message = \App\Services\WhatsAppTemplateService::primeraTomaContacto($this->event, 'presupuesto_online');
+        } elseif ($resolvedKey === 'primer_contacto_madrigal') {
+            $this->whatsapp_chat_message = \App\Services\WhatsAppTemplateService::primeraTomaContacto($this->event, 'filtro_finca');
+        } elseif ($resolvedKey === 'cuestionario') {
             $this->whatsapp_chat_message = \App\Services\WhatsAppTemplateService::cuestionario($this->event);
-        } elseif ($templateKey === 'contrato') {
+        } elseif ($resolvedKey === 'contrato') {
             $this->whatsapp_chat_message = \App\Services\WhatsAppTemplateService::contrato($this->event);
-        } elseif ($templateKey === 'llamada') {
+        } elseif ($resolvedKey === 'llamada') {
             $this->whatsapp_chat_message = \App\Services\WhatsAppTemplateService::propuestaLlamada($this->event);
-        } elseif ($templateKey === 'dossier') {
+        } elseif ($resolvedKey === 'dossier') {
             $this->whatsapp_chat_message = \App\Services\WhatsAppTemplateService::envioDossierPresupuesto($this->event);
         }
     }
