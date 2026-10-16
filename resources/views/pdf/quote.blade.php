@@ -1369,22 +1369,40 @@
                                 
                                 $isDiscount = $itemUnitPrice < 0 || $itemTotalPrice < 0;
 
-                                // Detectar si es un servicio de 2 horas (Fotomatón, Plataforma 360º o Pack Dúo) para mostrar la opción de 3 horas
-                                $pbCfg = \App\Models\Setting::getPhotobooth360Config();
+                                // Detectar si es un servicio de 2 horas (Fotomatón, Plataforma 360º o Pack Dúo) para mostrar la opción de 3 horas del proveedor correspondiente (Logroño o Vitoria)
+                                $pbProviders = \App\Models\Setting::getPhotoboothProviders();
+                                $locLower = mb_strtolower((string)($event->location ?? ''));
+                                $isVitoriaLoc = str_contains($locLower, 'vitoria') || str_contains($locLower, 'alava') || str_contains($locLower, 'álava') || str_contains($locLower, 'gasteiz') || str_contains($locLower, 'araba');
+                                $pbCfg = $isVitoriaLoc ? $pbProviders['vitoria'] : $pbProviders['logrono'];
                                 $lowerTitle = mb_strtolower($itemTitle);
                                 $cleanItemDesc = $itemDesc ? trim(explode('| 💡 Opción 3 Horas', $itemDesc)[0]) : '';
                                 $upgrade3hBanner = null;
 
                                 if (str_contains($lowerTitle, '2 hora') || str_contains($lowerTitle, '2h')) {
                                     if (str_contains($lowerTitle, 'pack dúo') || str_contains($lowerTitle, 'pack duo') || (str_contains($lowerTitle, 'fotomat') && str_contains($lowerTitle, '360'))) {
+                                        if (abs($itemUnitPrice - (float)$pbProviders['vitoria']['pack_duo_2h']) < 0.01 && abs($itemUnitPrice - (float)$pbProviders['logrono']['pack_duo_2h']) > 0.01) {
+                                            $pbCfg = $pbProviders['vitoria'];
+                                        } elseif (abs($itemUnitPrice - (float)$pbProviders['logrono']['pack_duo_2h']) < 0.01 && abs($itemUnitPrice - (float)$pbProviders['vitoria']['pack_duo_2h']) > 0.01) {
+                                            $pbCfg = $pbProviders['logrono'];
+                                        }
                                         $p3h = (float)$pbCfg['pack_duo_3h'];
                                         $diff = max(0, $p3h - $itemUnitPrice);
                                         $upgrade3hBanner = '✨ OPCIÓN 3 HORAS DISPONIBLE: Podéis elegir el Pack Dúo de 3 Horas (3h Fotomatón + 3h Plataforma 360º) por ' . number_format($p3h, 0, ',', '.') . ' €' . ($diff > 0 ? ' (solo +' . number_format($diff, 0, ',', '.') . ' € adicionales)' : '');
                                     } elseif (str_contains($lowerTitle, 'fotomatón') || str_contains($lowerTitle, 'fotomaton') || str_contains($lowerTitle, 'photobooth')) {
+                                        if (abs($itemUnitPrice - (float)$pbProviders['vitoria']['photobooth_2h']) < 0.01 && abs($itemUnitPrice - (float)$pbProviders['logrono']['photobooth_2h']) > 0.01) {
+                                            $pbCfg = $pbProviders['vitoria'];
+                                        } elseif (abs($itemUnitPrice - (float)$pbProviders['logrono']['photobooth_2h']) < 0.01 && abs($itemUnitPrice - (float)$pbProviders['vitoria']['photobooth_2h']) > 0.01) {
+                                            $pbCfg = $pbProviders['logrono'];
+                                        }
                                         $p3h = (float)$pbCfg['photobooth_3h'];
                                         $diff = max(0, $p3h - $itemUnitPrice);
                                         $upgrade3hBanner = '✨ OPCIÓN 3 HORAS DISPONIBLE: Podéis elegir 3 Horas completas de Fotomatón ilimitado por ' . number_format($p3h, 0, ',', '.') . ' €' . ($diff > 0 ? ' (solo +' . number_format($diff, 0, ',', '.') . ' € más)' : '');
                                     } elseif (str_contains($lowerTitle, '360') || str_contains($lowerTitle, 'plataforma')) {
+                                        if (abs($itemUnitPrice - (float)$pbProviders['vitoria']['video_360_2h']) < 0.01 && abs($itemUnitPrice - (float)$pbProviders['logrono']['video_360_2h']) > 0.01) {
+                                            $pbCfg = $pbProviders['vitoria'];
+                                        } elseif (abs($itemUnitPrice - (float)$pbProviders['logrono']['video_360_2h']) < 0.01 && abs($itemUnitPrice - (float)$pbProviders['vitoria']['video_360_2h']) > 0.01) {
+                                            $pbCfg = $pbProviders['logrono'];
+                                        }
                                         $p3h = (float)$pbCfg['video_360_3h'];
                                         $diff = max(0, $p3h - $itemUnitPrice);
                                         $upgrade3hBanner = '✨ OPCIÓN 3 HORAS DISPONIBLE: Podéis elegir 3 Horas completas de Plataforma 360º por ' . number_format($p3h, 0, ',', '.') . ' €' . ($diff > 0 ? ' (solo +' . number_format($diff, 0, ',', '.') . ' € más)' : '');

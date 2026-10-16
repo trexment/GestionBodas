@@ -759,10 +759,14 @@ class WhatsAppTemplateService
              . "\nCualquier consulta estamos a vuestra entera disposición. ¡Muchas gracias!";
     }
 
-    public static function infoFotomatonY360(?Event $event = null): string
+    public static function infoFotomatonY360(?Event $event = null, ?string $provider = null): string
     {
         $clientName = $event ? self::resolveCouplesFirstNames($event) : 'pareja';
-        $pb = Setting::getPhotobooth360Config();
+        if (empty($provider) && $event) {
+            $loc = mb_strtolower((string)($event->location ?? ''));
+            $provider = (str_contains($loc, 'vitoria') || str_contains($loc, 'alava') || str_contains($loc, 'álava') || str_contains($loc, 'gasteiz') || str_contains($loc, 'araba')) ? 'vitoria' : 'logrono';
+        }
+        $pb = Setting::getPhotobooth360Config($provider ?: 'logrono');
         $pb2 = number_format($pb['photobooth_2h'], 0, ',', '.');
         $pb3 = number_format($pb['photobooth_3h'], 0, ',', '.');
         $v2 = number_format($pb['video_360_2h'], 0, ',', '.');
@@ -770,6 +774,7 @@ class WhatsAppTemplateService
         $duo2 = number_format($pb['pack_duo_2h'], 0, ',', '.');
         $duo3 = number_format($pb['pack_duo_3h'], 0, ',', '.');
         $dep = number_format($pb['deposit_per_service'], 0, ',', '.');
+        $staffLabel = ($provider === 'vitoria') ? 'nuestro equipo' : 'FotomatonCheese';
 
         return "¡Hola {$clientName}! 👋 Os pasamos toda la información y tarifas de los servicios de *Fotomatón* y *Plataforma 360º*:\n\n"
              . "📸 *FOTOMATÓN!*\n"
@@ -782,7 +787,7 @@ class WhatsAppTemplateService
              . "- Formato de imagen en tamaño 10x15 o tiras (5x15).\n"
              . "- ¡Divertido atrezzo, gafotas, boas, gorros, etc.!\n"
              . "- Photocall / fondo estándar a elegir entre los que tenemos (unos 8 diferentes).\n"
-             . "- ¡Siempre habrá una persona de FotomatonCheese animando y ayudando!\n"
+             . "- ¡Siempre habrá una persona de {$staffLabel} animando y ayudando!\n"
              . "- Necesitaríamos un enchufe cerca y un espacio de 2m x 2m.\n"
              . "- USB con todas las fotos.\n"
              . "- Subimos unas cuantas fotos a redes sociales.\n\n"
@@ -802,7 +807,7 @@ class WhatsAppTemplateService
              . "- Elección de canción que os guste y nos enviéis.\n"
              . "- Atrezzo divertido: gafotas, gorros, boas, etc.\n"
              . "- Una bolsa de confeti (lo usaremos si el lugar de celebración nos da permiso).\n"
-             . "- 1 o 2 Animadores de FotomatonCheese.\n"
+             . "- 1 o 2 Animadores de {$staffLabel}.\n"
              . "- Montaje de 45 min aprox., necesitaríamos un enchufe cerca y un espacio de 2m x 2m.\n"
              . "- Transporte incluido hasta 50 km (consulta km extra).\n\n"
              . "💰 *Precio Plataforma 360º:*\n"

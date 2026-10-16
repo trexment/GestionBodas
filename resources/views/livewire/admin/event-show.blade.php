@@ -3230,16 +3230,31 @@
 
                             <!-- SECCIÓN: FOTOMATÓN, PLATAFORMA 360º, PACK DÚO Y FUENTE DE CHOCOLATE -->
                             <div class="bg-white p-4 rounded-xl border border-indigo-200 space-y-3 shadow-xs">
-                                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-indigo-100 pb-2">
+                                <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-2.5 border-b border-indigo-100 pb-2.5">
                                     <div>
                                         <h6 class="text-xs font-black uppercase text-indigo-950 tracking-wider flex items-center gap-1.5">
                                             <span>📸🎥</span> Fotomatón, Plataforma 360º, Pack Dúo & Fuente de Chocolate
                                         </h6>
-                                        <p class="text-[10px] text-gray-500">Selecciona las horas (2h o 3h) o aplica el Pack Dúo Todo Incluido. Reserva: 100 €/servicio.</p>
+                                        <p class="text-[10px] text-gray-500">Selecciona internamente qué proveedor lo vende (Logroño o Vitoria) y las horas (2h o 3h).</p>
                                     </div>
-                                    <button type="button" wire:click="sendDirectTemplate('fotomaton_360')" class="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-2.5 py-1 rounded-lg transition shrink-0">
-                                        <span>💬</span> Enviar Info/Precios por WhatsApp
-                                    </button>
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        @php
+                                            $pbProviders = \App\Models\Setting::getPhotoboothProviders();
+                                            $activeProv = $photobooth_provider ?: 'logrono';
+                                        @endphp
+                                        <div class="inline-flex items-center bg-indigo-50/80 p-1 rounded-lg border border-indigo-200 gap-1" title="Selector interno de proveedor (no visible para el cliente)">
+                                            <span class="text-[9px] font-black uppercase text-indigo-700 px-1.5">Proveedor:</span>
+                                            <button type="button" wire:click="setPhotoboothProvider('logrono')" class="px-2.5 py-1 rounded-md text-[10px] font-black transition flex items-center gap-1 {{ $activeProv === 'logrono' ? 'bg-indigo-600 text-white shadow-xs' : 'text-indigo-900 hover:bg-indigo-100' }}">
+                                                <span>📍</span> {{ $pbProviders['logrono']['name'] ?? 'Logroño' }}
+                                            </button>
+                                            <button type="button" wire:click="setPhotoboothProvider('vitoria')" class="px-2.5 py-1 rounded-md text-[10px] font-black transition flex items-center gap-1 {{ $activeProv === 'vitoria' ? 'bg-purple-600 text-white shadow-xs' : 'text-purple-900 hover:bg-purple-100' }}">
+                                                <span>📍</span> {{ $pbProviders['vitoria']['name'] ?? 'Vitoria / Álava' }}
+                                            </button>
+                                        </div>
+                                        <button type="button" wire:click="sendDirectTemplate('fotomaton_360')" class="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-2.5 py-1 rounded-lg transition shrink-0">
+                                            <span>💬</span> Enviar Info/Precios por WhatsApp
+                                        </button>
+                                    </div>
                                 </div>
 
                                 @if(!empty($quote_services['photobooth']['selected']) && !empty($quote_services['video_360']['selected']) && empty($quote_services['pack_duo_360']['selected']))

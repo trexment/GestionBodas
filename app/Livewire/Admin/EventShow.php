@@ -90,6 +90,7 @@ class EventShow extends Component
     public $whatsapp_chat_input = '';
     public $whatsapp_sender_brand = null; // 'miguel', 'fran', 'ezequiel', 'mago_leugim'
     public $selected_pack_type = 'custom'; // basic, medium, premium, wedding_dj, wedding_full, custom
+    public $photobooth_provider = 'logrono'; // 'logrono' | 'vitoria'
 
     // Configuración de señal específica para este presupuesto
     public $quote_deposit_type = 'percentage'; // 'percentage' | 'fixed'
@@ -348,7 +349,14 @@ class EventShow extends Component
         $this->quote_services['dj_custom']['price'] = (float)\App\Models\Setting::get('price_dj', 150);
         $this->quote_services['karaoke']['price'] = (float)\App\Models\Setting::get('price_karaoke', 80);
 
-        $pbConfig = \App\Models\Setting::getPhotobooth360Config();
+        $loc = mb_strtolower((string)($this->event->location ?? ''));
+        if (str_contains($loc, 'vitoria') || str_contains($loc, 'álava') || str_contains($loc, 'alava') || str_contains($loc, 'gasteiz') || str_contains($loc, 'bilbao') || str_contains($loc, 'bizkaia') || str_contains($loc, 'gipuzkoa')) {
+            $this->photobooth_provider = 'vitoria';
+        } else {
+            $this->photobooth_provider = 'logrono';
+        }
+
+        $pbConfig = \App\Models\Setting::getPhotobooth360Config($this->photobooth_provider);
         $this->quote_services['photobooth']['price_2h'] = $pbConfig['photobooth_2h'];
         $this->quote_services['photobooth']['price_3h'] = $pbConfig['photobooth_3h'];
         $this->quote_services['photobooth']['hours'] = 2;
@@ -1838,7 +1846,10 @@ class EventShow extends Component
         $text = null;
         $title = 'Mensaje';
 
-        if (isset($options[$templateKey])) {
+        if ($templateKey === 'fotomaton_360') {
+            $text = \App\Services\WhatsAppTemplateService::infoFotomatonY360($this->event, $this->photobooth_provider ?: 'logrono');
+            $title = 'Info Fotomatón & Plataforma 360º';
+        } elseif (isset($options[$templateKey])) {
             $text = $options[$templateKey]['text'];
             $title = $options[$templateKey]['title'] ?? $templateKey;
         } else {
@@ -1909,7 +1920,7 @@ class EventShow extends Component
                     $title = 'Liquidación Final';
                     break;
                 case 'fotomaton_360':
-                    $text = \App\Services\WhatsAppTemplateService::infoFotomatonY360($this->event);
+                    $text = \App\Services\WhatsAppTemplateService::infoFotomatonY360($this->event, $this->photobooth_provider ?: 'logrono');
                     $title = 'Info Fotomatón & Plataforma 360º';
                     break;
                 case 'hoja_ruta':
@@ -2185,21 +2196,21 @@ class EventShow extends Component
 
         if ($key === 'photobooth.hours') {
             $h = (int)$value;
-            $pbConfig = \App\Models\Setting::getPhotobooth360Config();
+            $pbConfig = \App\Models\Setting::getPhotobooth360Config($this->photobooth_provider ?: 'logrono');
             $this->quote_services['photobooth']['price'] = ($h >= 3) ? $pbConfig['photobooth_3h'] : $pbConfig['photobooth_2h'];
             return;
         }
 
         if ($key === 'video_360.hours') {
             $h = (int)$value;
-            $pbConfig = \App\Models\Setting::getPhotobooth360Config();
+            $pbConfig = \App\Models\Setting::getPhotobooth360Config($this->photobooth_provider ?: 'logrono');
             $this->quote_services['video_360']['price'] = ($h >= 3) ? $pbConfig['video_360_3h'] : $pbConfig['video_360_2h'];
             return;
         }
 
         if ($key === 'pack_duo_360.hours') {
             $h = (int)$value;
-            $pbConfig = \App\Models\Setting::getPhotobooth360Config();
+            $pbConfig = \App\Models\Setting::getPhotobooth360Config($this->photobooth_provider ?: 'logrono');
             $this->quote_services['pack_duo_360']['price'] = ($h >= 3) ? $pbConfig['pack_duo_3h'] : $pbConfig['pack_duo_2h'];
             return;
         }
@@ -2228,9 +2239,33 @@ class EventShow extends Component
         }
     }
 
+    public function setPhotoboothProvider(string $provider)
+    {
+        $this->photobooth_provider = in_array($provider, ['logrono', 'vitoria']) ? $provider : 'logrono';
+        $pbConfig = \App\Models\Setting::getPhotobooth360Config($this->photobooth_provider);
+
+        $pbHours = (int)($this->quote_services['photobooth']['hours'] ?? 2);
+        $this->quote_services['photobooth']['price_2h'] = $pbConfig['photobooth_2h'];
+        $this->quote_services['photobooth']['price_3h'] = $pbConfig['photobooth_3h'];
+        $this->quote_services['photobooth']['price'] = ($pbHours >= 3) ? $pbConfig['photobooth_3h'] : $pbConfig['photobooth_2h'];
+        $this->quote_services['photobooth']['desc'] = $pbConfig['photobooth_desc'];
+
+        $v360Hours = (int)($this->quote_services['video_360']['hours'] ?? 2);
+        $this->quote_services['video_360']['price_2h'] = $pbConfig['video_360_2h'];
+        $this->quote_services['video_360']['price_3h'] = $pbConfig['video_360_3h'];
+        $this->quote_services['video_360']['price'] = ($v360Hours >= 3) ? $pbConfig['video_360_3h'] : $pbConfig['video_360_2h'];
+        $this->quote_services['video_360']['desc'] = $pbConfig['video_360_desc'];
+
+        $duoHours = (int)($this->quote_services['pack_duo_360']['hours'] ?? 3);
+        $this->quote_services['pack_duo_360']['price_2h'] = $pbConfig['pack_duo_2h'];
+        $this->quote_services['pack_duo_360']['price_3h'] = $pbConfig['pack_duo_3h'];
+        $this->quote_services['pack_duo_360']['price'] = ($duoHours >= 3) ? $pbConfig['pack_duo_3h'] : $pbConfig['pack_duo_2h'];
+        $this->quote_services['pack_duo_360']['desc'] = $pbConfig['pack_duo_desc'];
+    }
+
     public function setPhotoboothHours(int $hours)
     {
-        $pbConfig = \App\Models\Setting::getPhotobooth360Config();
+        $pbConfig = \App\Models\Setting::getPhotobooth360Config($this->photobooth_provider ?: 'logrono');
         $this->quote_services['photobooth']['selected'] = true;
         $this->quote_services['photobooth']['hours'] = $hours;
         $this->quote_services['photobooth']['price'] = ($hours >= 3) ? $pbConfig['photobooth_3h'] : $pbConfig['photobooth_2h'];
@@ -2239,7 +2274,7 @@ class EventShow extends Component
 
     public function setVideo360Hours(int $hours)
     {
-        $pbConfig = \App\Models\Setting::getPhotobooth360Config();
+        $pbConfig = \App\Models\Setting::getPhotobooth360Config($this->photobooth_provider ?: 'logrono');
         $this->quote_services['video_360']['selected'] = true;
         $this->quote_services['video_360']['hours'] = $hours;
         $this->quote_services['video_360']['price'] = ($hours >= 3) ? $pbConfig['video_360_3h'] : $pbConfig['video_360_2h'];
@@ -2248,7 +2283,7 @@ class EventShow extends Component
 
     public function setPackDuoHours(int $hours)
     {
-        $pbConfig = \App\Models\Setting::getPhotobooth360Config();
+        $pbConfig = \App\Models\Setting::getPhotobooth360Config($this->photobooth_provider ?: 'logrono');
         $this->quote_services['pack_duo_360']['selected'] = true;
         $this->quote_services['pack_duo_360']['hours'] = $hours;
         $this->quote_services['pack_duo_360']['price'] = ($hours >= 3) ? $pbConfig['pack_duo_3h'] : $pbConfig['pack_duo_2h'];

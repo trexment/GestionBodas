@@ -632,11 +632,47 @@ class Setting extends Model
     }
 
     /**
-     * Obtiene las tarifas por horas y plantillas descriptivas de Fotomatón, Plataforma 360º, Pack Dúo y Mesa con Fuente de Chocolate.
+     * Obtiene las tarifas por horas y plantillas descriptivas de Fotomatón, Plataforma 360º, Pack Dúo y Mesa con Fuente de Chocolate
+     * según el proveedor interno seleccionado ('logrono' o 'vitoria').
      */
-    public static function getPhotobooth360Config(): array
+    public static function getPhotobooth360Config(string $provider = 'logrono'): array
     {
+        $provider = strtolower(trim($provider));
+
+        if ($provider === 'vitoria') {
+            return [
+                'provider_key' => 'vitoria',
+                'provider_name' => self::get('photobooth_vitoria_name', 'Vitoria / Álava'),
+                'photobooth_2h' => (float)self::get('price_photobooth_vitoria_2h', 400),
+                'photobooth_3h' => (float)self::get('price_photobooth_vitoria_3h', 450),
+                'photobooth_desc' => self::get(
+                    'photobooth_vitoria_desc',
+                    'Fotomatón profesional con cámara réflex e impresión rápida. Fotos ilimitadas, 2 copias (invitados + libro de firmas), 10x15 o tiras, marco y photocall a elegir, atrezzo divertido, animador/a y USB/galería (espacio 2x2m).'
+                ),
+                'video_360_2h' => (float)self::get('price_video_360_vitoria_2h', 450),
+                'video_360_3h' => (float)self::get('price_video_360_vitoria_3h', 500),
+                'video_360_desc' => self::get(
+                    'video_360_vitoria_desc',
+                    'Plataforma Vídeo 360º (4-5 pers.) con vídeos ilimitados en slow motion y boomerang, marco y canción personalizados, atrezzo divertido, confeti y animadores durante todo el servicio (espacio 2x2m).'
+                ),
+                'pack_duo_2h' => (float)self::get('price_pack_duo_vitoria_2h', 750),
+                'pack_duo_3h' => (float)self::get('price_pack_duo_vitoria_3h', 890),
+                'pack_duo_desc' => self::get(
+                    'pack_duo_vitoria_desc',
+                    'Pack Dúo Todo Incluido: Fotomatón (copias ilimitadas, libro de firmas, photocall, USB) + Plataforma Vídeo 360º (slow motion/boomerang ilimitados, confeti, atrezzo y animadores).'
+                ),
+                'deposit_per_service' => (float)self::get('photobooth_vitoria_deposit_per_service', 100),
+                'chocolate_fountain_price' => (float)self::get('price_chocolate_fountain', 350),
+                'chocolate_fountain_desc' => self::get(
+                    'chocolate_fountain_desc',
+                    'Mesa dulce con fuente de chocolate en cascada, selección de frutas frescas de temporada, gofres, nubes, brochetas, montaje, decoración y reposición.'
+                ),
+            ];
+        }
+
         return [
+            'provider_key' => 'logrono',
+            'provider_name' => self::get('photobooth_logrono_name', 'Logroño (FotomatonCheese)'),
             'photobooth_2h' => (float)self::get('price_photobooth_2h', 380),
             'photobooth_3h' => (float)self::get('price_photobooth_3h', 430),
             'photobooth_desc' => self::get(
@@ -661,6 +697,14 @@ class Setting extends Model
                 'chocolate_fountain_desc',
                 'Mesa dulce con fuente de chocolate en cascada, selección de frutas frescas de temporada, gofres, nubes, brochetas, montaje, decoración y reposición.'
             ),
+        ];
+    }
+
+    public static function getPhotoboothProviders(): array
+    {
+        return [
+            'logrono' => self::getPhotobooth360Config('logrono'),
+            'vitoria' => self::getPhotobooth360Config('vitoria'),
         ];
     }
 }
