@@ -422,7 +422,10 @@ class DjBoothMode extends Component
 
     public function render()
     {
-        $allRequests = $this->event->musicRequests;
+        if ($this->event) {
+            $this->event->load('musicRequests');
+        }
+        $allRequests = $this->event ? $this->event->musicRequests : collect();
         $blacklist = $allRequests->where('category', 'lista_negra');
         $nonBlacklist = $allRequests->where('category', '!=', 'lista_negra');
 

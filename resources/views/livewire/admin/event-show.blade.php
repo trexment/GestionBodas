@@ -1788,7 +1788,7 @@
 
         {{-- MÚSICA Y MOMENTOS --}}
         @if($activeTab == 'music')
-            <div>
+            <div wire:poll.3s="refreshMusicRequests">
                 <!-- Cabecera de Peticiones y Escaleta -->
                 <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 gap-4 border-b pb-4">
                     <div>

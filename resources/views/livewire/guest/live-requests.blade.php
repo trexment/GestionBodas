@@ -1,4 +1,4 @@
-<div class="max-w-xl mx-auto py-6 px-4" wire:poll.5s>
+<div class="max-w-xl mx-auto py-6 px-4" wire:poll.3s>
     
     <!-- CABECERA FIESTA -->
     <div class="text-center mb-6">

@@ -14,7 +14,7 @@
 
 <div 
     class="min-h-screen bg-[#080d16] text-slate-100 p-3 sm:p-5 select-none font-sans pb-32" 
-    wire:poll.10s
+    wire:poll.3s
     x-data="djAudioPlayer()"
     x-init="initPlayer()"
 >

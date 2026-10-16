@@ -3323,12 +3323,23 @@ class EventShow extends Component
         return \App\Services\EvolutionWhatsAppService::isEnabled();
     }
 
+    public function refreshMusicRequests(): void
+    {
+        if ($this->event) {
+            $this->event->load('musicRequests');
+        }
+    }
+
     public function render()
     {
         $allEquipment = Equipment::orderBy('category')->orderBy('name')->get();
         $allDjs = User::whereIn('role', ['dj', 'admin'])->orderBy('name')->get();
         $allAssistants = User::whereIn('role', ['assistant', 'dj', 'admin'])->orderBy('name')->get();
         $allClients = User::where('role', 'client')->orderBy('name')->get();
+
+        if ($this->event && $this->activeTab === 'music') {
+            $this->event->load('musicRequests');
+        }
 
         $filteredMusicRequests = $this->event ? $this->event->musicRequests : collect();
         if ($this->music_active_category !== 'all' && $filteredMusicRequests) {
