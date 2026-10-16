@@ -356,6 +356,69 @@ class QuoteCalculator extends Component
         $this->services['cold_sparks']['manually_toggled'] = true;
     }
 
+    public function setExtraHoursQuantity(int $quantity)
+    {
+        $this->services['extra_hours']['quantity'] = max(1, min(6, $quantity));
+        $this->services['extra_hours']['selected'] = true;
+    }
+
+    /**
+     * Cómputo total de horas de baile (horas del Pack DJ + horas adicionales seleccionadas)
+     */
+    public function getTotalPartyHoursProperty(): int
+    {
+        $baseHours = !empty($this->services['dj']['selected']) ? (int)($this->services['dj']['quantity'] ?? 4) : 0;
+        $extraHours = !empty($this->services['extra_hours']['selected']) ? (int)($this->services['extra_hours']['quantity'] ?? 1) : 0;
+
+        return $baseHours + $extraHours;
+    }
+
+    /**
+     * Si el cliente marca un Pack DJ (ej. 4h) y además marca Horas Adicionales (ej. +1h = 5h totales),
+     * comprueba si existe un Pack superior que ya cubra esas horas totales (ej. Pack Signature 5h o Pack Deluxe Show 6h).
+     */
+    public function getRecommendedDjPackForExtraHoursProperty(): ?array
+    {
+        if (empty($this->services['dj']['selected']) || empty($this->services['extra_hours']['selected'])) {
+            return null;
+        }
+
+        $baseHours = (int)($this->services['dj']['quantity'] ?? 4);
+        $extraHours = (int)($this->services['extra_hours']['quantity'] ?? 1);
+        $totalHours = $baseHours + $extraHours;
+
+        $currentPack = Setting::getDjPackForHours($baseHours);
+        $targetPack = Setting::getDjPackForHours($totalHours);
+
+        if (($targetPack['pack_key'] ?? '') !== ($currentPack['pack_key'] ?? '')) {
+            $targetPack['base_hours'] = $baseHours;
+            $targetPack['added_extra_hours'] = $extraHours;
+            $targetPack['combined_total_hours'] = $totalHours;
+            $targetPack['current_pack_name'] = $currentPack['base_name'] ?? 'Pack actual';
+            return $targetPack;
+        }
+
+        return null;
+    }
+
+    /**
+     * Aplica con 1 clic el Pack recomendado que ya incluye el total de horas de baile
+     */
+    public function applyRecommendedDjPack()
+    {
+        $totalHours = $this->total_party_hours;
+        if ($totalHours < 2) {
+            return;
+        }
+
+        if (isset($this->services['extra_hours'])) {
+            $this->services['extra_hours']['selected'] = false;
+            $this->services['extra_hours']['quantity'] = 1;
+        }
+
+        $this->setDjHours(min(9, $totalHours));
+    }
+
     public function syncPackEffects()
     {
         if (empty($this->services['dj']['selected'])) {
@@ -488,6 +551,9 @@ class QuoteCalculator extends Component
 
         // 3. Format notes with requested services
         $requestedServicesList = [];
+        $recommendedPackForExtra = $this->recommended_dj_pack_for_extra_hours;
+        $totalPartyHours = $this->total_party_hours;
+
         foreach ($this->services as $key => $service) {
             if ($service['selected']) {
                 if ($key === 'dj' && $djPack) {
@@ -508,6 +574,12 @@ class QuoteCalculator extends Component
                     } else {
                         $requestedServicesList[] = "• " . $service['name'] . " ({$qty} " . ($qty == 1 ? 'máquina' : 'máquinas') . " x {$unitPrice} €/ud)";
                     }
+                } elseif ($key === 'extra_hours') {
+                    $qty = (int)($service['quantity'] ?: 1);
+                    $hoursLabel = $qty === 1 ? '1 hora adicional' : "{$qty} horas adicionales";
+                    $totalHoursNote = !empty($this->services['dj']['selected']) ? " ➔ Total baile: {$totalPartyHours}h" : "";
+                    $recNote = $recommendedPackForExtra ? " (💡 Recomendado: {$recommendedPackForExtra['base_name']} que ya cubre {$totalPartyHours}h)" : "";
+                    $requestedServicesList[] = "• " . $service['name'] . " (+{$hoursLabel}{$totalHoursNote}){$recNote}";
                 } else {
                     $qty = (int)($service['quantity'] ?: 1);
                     $qtyText = $qty > 1 ? " ({$qty} uds)" : "";
@@ -643,6 +715,23 @@ class QuoteCalculator extends Component
                             'total' => $qty * $unitPrice,
                         ]);
                     }
+                } elseif ($key === 'extra_hours') {
+                    $qty = (int)($service['quantity'] ?: 1);
+                    $price = $catalog[$key] ?? 120;
+                    $hoursDesc = "Ampliación de {$qty} " . ($qty === 1 ? 'hora adicional' : 'horas adicionales') . " de fiesta/baile";
+                    if (!empty($this->services['dj']['selected'])) {
+                        $hoursDesc .= " (Total acumulado: {$totalPartyHours}h de baile)";
+                    }
+                    if ($recommendedPackForExtra) {
+                        $hoursDesc .= " — 💡 Recomendable valorar {$recommendedPackForExtra['base_name']} ({$totalPartyHours}h)";
+                    }
+                    $quote->items()->create([
+                        'service_name' => $service['name'] . " (+{$qty} " . ($qty === 1 ? 'hora' : 'horas') . ")",
+                        'description' => $hoursDesc,
+                        'quantity' => $qty,
+                        'price' => $price,
+                        'total' => $price * $qty,
+                    ]);
                 } else {
                     $qty = (int)($service['quantity'] ?: 1);
                     $price = $catalog[$key] ?? 0;

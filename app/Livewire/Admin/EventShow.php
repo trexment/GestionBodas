@@ -465,6 +465,47 @@ class EventShow extends Component
         session()->flash('message', "¡Seguimiento registrado! ({$templateName}). El contador se ha reseteado a 0.");
     }
 
+    public function sendDirectFollowupFromShow()
+    {
+        $phone = $this->event->client ? $this->event->client->phone : $this->event->partner_phone;
+        if (empty($phone)) {
+            session()->flash('whatsapp_error', 'El cliente no tiene número de teléfono registrado.');
+            return;
+        }
+
+        $text = $this->confirmingFollowupText;
+        $templateName = $this->confirmingFollowupOptions[$this->confirmingFollowupSelectedKey]['title'] ?? 'Seguimiento Madrigal';
+        if (empty($text)) {
+            return;
+        }
+
+        $senderBrand = $this->whatsapp_sender_brand ?: $this->event->brand_clean;
+        $senderLabel = $this->getSenderBrandLabel();
+
+        $result = \App\Services\EvolutionWhatsAppService::sendMessage(
+            $phone,
+            $text,
+            $senderBrand,
+            $this->event->id,
+            auth()->id()
+        );
+
+        $this->event->update([
+            'no_response_at' => now(),
+            'notes' => ($this->event->notes ? $this->event->notes . "\n" : "") . "[" . now()->format('d/m/Y H:i') . "] 💬 WhatsApp ({$templateName}) enviado desde {$senderLabel} por " . auth()->user()->name . ". Contador reseteado a 0.",
+        ]);
+        $this->event->refresh();
+        $this->event->load('whatsappMessages');
+        $this->showConfirmFollowupModal = false;
+
+        if ($result['mode'] === 'api' && $result['success']) {
+            session()->flash('message', "✅ ¡Seguimiento ({$templateName}) enviado directamente desde el WhatsApp de {$senderLabel}!");
+        } else {
+            $this->dispatch('open-whatsapp-link', ['url' => $result['url']]);
+            session()->flash('message', "💬 Abriendo WhatsApp con el mensaje de seguimiento ({$templateName})...");
+        }
+    }
+
     public function markAsRespondedFromShow(string $newStatus = 'draft')
     {
         $this->showConfirmFollowupModal = false;
@@ -1707,6 +1748,15 @@ class EventShow extends Component
         }
     }
 
+    public function getSenderBrandLabel(): string
+    {
+        return match ($this->whatsapp_sender_brand) {
+            'fran' => '🎧 Fran (JAVNX DJ)',
+            'ezequiel' => '👥 Ezequiel (Núñez & Son)',
+            default => '👑 Miguel (Núñez & Son)',
+        };
+    }
+
     public function sendDirectWhatsAppMessage()
     {
         if (empty(trim($this->whatsapp_chat_message))) {
@@ -1721,6 +1771,7 @@ class EventShow extends Component
         }
 
         $senderBrand = $this->whatsapp_sender_brand ?: $this->event->brand_clean;
+        $senderLabel = $this->getSenderBrandLabel();
         $result = \App\Services\EvolutionWhatsAppService::sendMessage(
             $phone,
             $this->whatsapp_chat_message,
@@ -1734,7 +1785,7 @@ class EventShow extends Component
         $this->event->load('whatsappMessages');
 
         if ($result['mode'] === 'api' && $result['success']) {
-            session()->flash('whatsapp_success', '✅ Mensaje enviado directamente al WhatsApp del cliente.');
+            session()->flash('whatsapp_success', "✅ Mensaje enviado directamente desde el WhatsApp de {$senderLabel}.");
         } else {
             // Modo manual o fallback: despachar evento para abrir WhatsApp Web / App
             $this->dispatch('open-whatsapp-link', ['url' => $result['url']]);
@@ -1848,6 +1899,7 @@ class EventShow extends Component
         }
 
         $senderBrand = $this->whatsapp_sender_brand ?: $this->event->brand_clean;
+        $senderLabel = $this->getSenderBrandLabel();
         $result = \App\Services\EvolutionWhatsAppService::sendMessage(
             $phone,
             $text,
@@ -1858,15 +1910,18 @@ class EventShow extends Component
 
         $this->event->update([
             'no_response_at' => now(),
-            'notes' => ($this->event->notes ? $this->event->notes . "\n" : "") . "[" . now()->format('d/m/Y H:i') . "] 💬 WhatsApp ({$title}) enviado por " . auth()->user()->name . ". Contador reseteado a 0.",
+            'notes' => ($this->event->notes ? $this->event->notes . "\n" : "") . "[" . now()->format('d/m/Y H:i') . "] 💬 WhatsApp ({$title}) enviado desde {$senderLabel} por " . auth()->user()->name . ". Contador reseteado a 0.",
         ]);
         $this->event->refresh();
         $this->event->load('whatsappMessages');
 
         if ($result['mode'] === 'api' && $result['success']) {
-            session()->flash('message', "✅ ¡WhatsApp ({$title}) enviado directamente al cliente vía API!");
+            session()->flash('message', "✅ ¡WhatsApp ({$title}) enviado directamente desde el WhatsApp de {$senderLabel}!");
+        } elseif ($result['mode'] === 'manual' && !empty($result['url'])) {
+            $this->dispatch('open-whatsapp-link', ['url' => $result['url']]);
+            session()->flash('message', "💬 Abriendo WhatsApp con {$title}...");
         } elseif ($result['mode'] === 'fallback_link') {
-            session()->flash('whatsapp_error', 'El servicio de WhatsApp no está conectado. Usa el enlace manual.');
+            session()->flash('whatsapp_error', 'El servicio de WhatsApp (' . $senderLabel . ') no está conectado. Revisa Ajustes o usa el enlace manual.');
         } else {
             session()->flash('whatsapp_error', 'Error al enviar por WhatsApp: ' . ($result['error'] ?? 'desconocido'));
         }
@@ -1890,6 +1945,7 @@ class EventShow extends Component
         $title = 'Presupuesto #' . $quote->id;
 
         $senderBrand = $this->whatsapp_sender_brand ?: $this->event->brand_clean;
+        $senderLabel = $this->getSenderBrandLabel();
         $result = \App\Services\EvolutionWhatsAppService::sendMessage(
             $phone,
             $text,
@@ -1900,15 +1956,20 @@ class EventShow extends Component
 
         $this->event->update([
             'no_response_at' => now(),
-            'notes' => ($this->event->notes ? $this->event->notes . "\n" : "") . "[" . now()->format('d/m/Y H:i') . "] 💬 WhatsApp ({$title}) enviado por " . auth()->user()->name . ". Contador reseteado a 0.",
+            'notes' => ($this->event->notes ? $this->event->notes . "\n" : "") . "[" . now()->format('d/m/Y H:i') . "] 💬 WhatsApp ({$title}) enviado desde {$senderLabel} por " . auth()->user()->name . ". Contador reseteado a 0.",
         ]);
         $this->event->refresh();
         $this->event->load('whatsappMessages');
 
         if ($result['mode'] === 'api' && $result['success']) {
-            session()->flash('message', "✅ ¡Presupuesto enviado directamente al cliente vía WhatsApp API!");
+            $msg = "✅ ¡Presupuesto #{$quote->id} enviado al cliente desde el WhatsApp de {$senderLabel}!";
+            session()->flash('message', $msg);
+            session()->flash('quote_message', $msg);
+        } elseif ($result['mode'] === 'manual' && !empty($result['url'])) {
+            $this->dispatch('open-whatsapp-link', ['url' => $result['url']]);
+            session()->flash('quote_message', "💬 Abriendo WhatsApp con la Propuesta #{$quote->id}...");
         } elseif ($result['mode'] === 'fallback_link') {
-            session()->flash('whatsapp_error', 'El servicio de WhatsApp no está conectado. Usa el enlace manual.');
+            session()->flash('whatsapp_error', 'El servicio de WhatsApp (' . $senderLabel . ') no está conectado. Usa el enlace manual.');
         } else {
             session()->flash('whatsapp_error', 'Error al enviar por WhatsApp: ' . ($result['error'] ?? 'desconocido'));
         }
@@ -1932,6 +1993,7 @@ class EventShow extends Component
         $title = 'Firma de Contrato';
 
         $senderBrand = $this->whatsapp_sender_brand ?: $this->event->brand_clean;
+        $senderLabel = $this->getSenderBrandLabel();
         $result = \App\Services\EvolutionWhatsAppService::sendMessage(
             $phone,
             $text,
@@ -1942,15 +2004,118 @@ class EventShow extends Component
 
         $this->event->update([
             'no_response_at' => now(),
-            'notes' => ($this->event->notes ? $this->event->notes . "\n" : "") . "[" . now()->format('d/m/Y H:i') . "] 💬 WhatsApp ({$title}) enviado por " . auth()->user()->name . ". Contador reseteado a 0.",
+            'notes' => ($this->event->notes ? $this->event->notes . "\n" : "") . "[" . now()->format('d/m/Y H:i') . "] 💬 WhatsApp ({$title}) enviado desde {$senderLabel} por " . auth()->user()->name . ". Contador reseteado a 0.",
         ]);
         $this->event->refresh();
         $this->event->load('whatsappMessages');
 
         if ($result['mode'] === 'api' && $result['success']) {
-            session()->flash('message', "✅ ¡Enlace de firma de contrato enviado directamente vía WhatsApp API!");
+            $msg = "✅ ¡Enlace de firma de contrato ({$contract->contract_number}) enviado desde el WhatsApp de {$senderLabel}!";
+            session()->flash('message', $msg);
+            session()->flash('contract_message', $msg);
+        } elseif ($result['mode'] === 'manual' && !empty($result['url'])) {
+            $this->dispatch('open-whatsapp-link', ['url' => $result['url']]);
+            session()->flash('contract_message', "💬 Abriendo WhatsApp con el contrato {$contract->contract_number}...");
         } elseif ($result['mode'] === 'fallback_link') {
-            session()->flash('whatsapp_error', 'El servicio de WhatsApp no está conectado. Usa el enlace manual.');
+            session()->flash('whatsapp_error', 'El servicio de WhatsApp (' . $senderLabel . ') no está conectado. Usa el enlace manual.');
+        } else {
+            session()->flash('whatsapp_error', 'Error al enviar por WhatsApp: ' . ($result['error'] ?? 'desconocido'));
+        }
+    }
+
+    public function sendDirectInvoiceWhatsApp(int $invoiceId)
+    {
+        $phone = $this->event->client ? $this->event->client->phone : $this->event->partner_phone;
+        if (empty($phone)) {
+            session()->flash('whatsapp_error', 'No hay teléfono registrado para el cliente.');
+            return;
+        }
+
+        $invoice = $this->event->invoices()->find($invoiceId);
+        if (!$invoice) {
+            session()->flash('whatsapp_error', 'Documento no encontrado.');
+            return;
+        }
+
+        $text = \App\Services\WhatsAppTemplateService::facturaRecibo($this->event, $invoice);
+        $docName = ($invoice->type === 'recibo' ? 'Recibo ' : 'Factura ') . $invoice->invoice_number;
+
+        $senderBrand = $this->whatsapp_sender_brand ?: $this->event->brand_clean;
+        $senderLabel = $this->getSenderBrandLabel();
+        $result = \App\Services\EvolutionWhatsAppService::sendMessage(
+            $phone,
+            $text,
+            $senderBrand,
+            $this->event->id,
+            auth()->id()
+        );
+
+        $this->event->update([
+            'no_response_at' => now(),
+            'notes' => ($this->event->notes ? $this->event->notes . "\n" : "") . "[" . now()->format('d/m/Y H:i') . "] 💬 WhatsApp ({$docName}) enviado desde {$senderLabel} por " . auth()->user()->name . ".",
+        ]);
+        $this->event->refresh();
+        $this->event->load('whatsappMessages');
+
+        if ($result['mode'] === 'api' && $result['success']) {
+            $msg = "✅ ¡{$docName} enviado al cliente desde el WhatsApp de {$senderLabel}!";
+            session()->flash('message', $msg);
+            session()->flash('invoice_message', $msg);
+        } elseif ($result['mode'] === 'manual' && !empty($result['url'])) {
+            $this->dispatch('open-whatsapp-link', ['url' => $result['url']]);
+            session()->flash('invoice_message', "💬 Abriendo WhatsApp con {$docName}...");
+        } elseif ($result['mode'] === 'fallback_link') {
+            session()->flash('whatsapp_error', 'El servicio de WhatsApp (' . $senderLabel . ') no está conectado. Usa el enlace manual.');
+        } else {
+            session()->flash('whatsapp_error', 'Error al enviar por WhatsApp: ' . ($result['error'] ?? 'desconocido'));
+        }
+    }
+
+    public function sendDirectMeetingWhatsApp(int $meetingId, string $type = 'confirm')
+    {
+        $phone = $this->event->client ? $this->event->client->phone : $this->event->partner_phone;
+        if (empty($phone)) {
+            session()->flash('whatsapp_error', 'No hay teléfono registrado para el cliente.');
+            return;
+        }
+
+        $meeting = $this->event->meetings()->find($meetingId);
+        if (!$meeting) {
+            session()->flash('whatsapp_error', 'Cita no encontrada.');
+            return;
+        }
+
+        $text = $type === 'reminder'
+            ? \App\Services\WhatsAppTemplateService::meetingReminder($meeting)
+            : \App\Services\WhatsAppTemplateService::meetingConfirmation($meeting);
+        $title = ($type === 'reminder' ? 'Recordatorio Cita: ' : 'Confirmación Cita: ') . $meeting->title;
+
+        $senderBrand = $this->whatsapp_sender_brand ?: $this->event->brand_clean;
+        $senderLabel = $this->getSenderBrandLabel();
+        $result = \App\Services\EvolutionWhatsAppService::sendMessage(
+            $phone,
+            $text,
+            $senderBrand,
+            $this->event->id,
+            auth()->id()
+        );
+
+        $this->event->update([
+            'no_response_at' => now(),
+            'notes' => ($this->event->notes ? $this->event->notes . "\n" : "") . "[" . now()->format('d/m/Y H:i') . "] 💬 WhatsApp ({$title}) enviado desde {$senderLabel} por " . auth()->user()->name . ".",
+        ]);
+        $this->event->refresh();
+        $this->event->load('whatsappMessages');
+
+        if ($result['mode'] === 'api' && $result['success']) {
+            $msg = "✅ ¡{$title} enviado al cliente desde el WhatsApp de {$senderLabel}!";
+            session()->flash('message', $msg);
+            session()->flash('meeting_message', $msg);
+        } elseif ($result['mode'] === 'manual' && !empty($result['url'])) {
+            $this->dispatch('open-whatsapp-link', ['url' => $result['url']]);
+            session()->flash('meeting_message', "💬 Abriendo WhatsApp con {$title}...");
+        } elseif ($result['mode'] === 'fallback_link') {
+            session()->flash('whatsapp_error', 'El servicio de WhatsApp (' . $senderLabel . ') no está conectado. Usa el enlace manual.');
         } else {
             session()->flash('whatsapp_error', 'Error al enviar por WhatsApp: ' . ($result['error'] ?? 'desconocido'));
         }

@@ -73,6 +73,12 @@
                                 @if(($key === 'cocktail' || $key === 'restaurant') && $this->has_cocktail_restaurant_pack && $this->cocktail_restaurant_pack_info['enabled'])
                                     <span class="text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full">🎁 En Pack Cóctel+Banquete</span>
                                 @endif
+                                @if($key === 'extra_hours')
+                                    <span class="text-xs bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full font-bold">+{{ $serv['quantity'] ?? 1 }} {{ ($serv['quantity'] ?? 1) == 1 ? 'hora extra' : 'horas extra' }}</span>
+                                    @if(!empty($services['dj']['selected']))
+                                        <span class="text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-full">Total: {{ $this->total_party_hours }}h de baile</span>
+                                    @endif
+                                @endif
                             </div>
                         @endif
                     @endforeach
@@ -154,6 +160,10 @@
                                                 @elseif(($key === 'cocktail' || $key === 'restaurant') && $this->has_cocktail_restaurant_pack && $this->cocktail_restaurant_pack_info['enabled'])
                                                     <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/30 text-emerald-300 border border-emerald-500/40">
                                                         🎁 EN PACK CON DESCUENTO
+                                                    </span>
+                                                @elseif($key === 'extra_hours')
+                                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/30 text-amber-200 border border-amber-500/40">
+                                                        +{{ $service['quantity'] ?? 1 }} {{ ($service['quantity'] ?? 1) == 1 ? 'HORA EXTRA' : 'HORAS EXTRA' }}
                                                     </span>
                                                 @else
                                                     <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/30 text-indigo-300 border border-indigo-500/40">
@@ -254,6 +264,60 @@
                                                         @else
                                                             <span class="font-bold text-emerald-400">0 € extra</span>
                                                         @endif
+                                                    </div>
+                                                @endif
+                                            </div>
+                                        @endif
+
+                                        <!-- Sub-controls for Extra Hours (Horas Adicionales de Fiesta) -->
+                                        @if($key === 'extra_hours' && $service['selected'])
+                                            <div class="mt-4 pt-3.5 border-t border-indigo-500/20 space-y-2.5" wire:click.stop>
+                                                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                                                    <div>
+                                                        <span class="text-xs font-semibold text-slate-300">¿Cuántas horas adicionales quieres añadir?</span>
+                                                        @if(!empty($services['dj']['selected']))
+                                                            <p class="text-[11px] text-indigo-300 font-semibold mt-0.5">
+                                                                ⏱️ {{ $services['dj']['quantity'] }}h base + {{ $service['quantity'] ?? 1 }}h extra = <strong class="text-white">{{ $this->total_party_hours }} Horas de baile en total</strong>
+                                                            </p>
+                                                        @endif
+                                                    </div>
+                                                    <div class="inline-flex items-center bg-slate-900/90 rounded-xl p-1 border border-indigo-500/40 shadow-inner">
+                                                        <button type="button" wire:click="setExtraHoursQuantity({{ max(1, ($service['quantity'] ?? 1) - 1) }})" class="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-800 hover:bg-indigo-600 text-white font-bold text-base transition">
+                                                            -
+                                                        </button>
+                                                        <span class="px-4 text-xs font-extrabold text-amber-300 tracking-wide">+{{ $service['quantity'] ?? 1 }} {{ ($service['quantity'] ?? 1) == 1 ? 'Hora' : 'Horas' }}</span>
+                                                        <button type="button" wire:click="setExtraHoursQuantity({{ min(6, ($service['quantity'] ?? 1) + 1) }})" class="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-800 hover:bg-indigo-600 text-white font-bold text-base transition">
+                                                            +
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                @php $recPack = $this->recommended_dj_pack_for_extra_hours; @endphp
+                                                @if($recPack)
+                                                    <div class="p-3.5 bg-gradient-to-r from-amber-950/70 via-indigo-950/80 to-purple-950/70 rounded-xl border border-amber-400/50 space-y-2.5 shadow-lg">
+                                                        <div class="flex items-start gap-2.5 text-xs text-amber-100">
+                                                            <span class="text-lg shrink-0 mt-0.5">💡</span>
+                                                            <div class="flex-1 min-w-0 leading-relaxed">
+                                                                <strong class="text-amber-300 font-extrabold block mb-0.5">
+                                                                    Recomendación para {{ $recPack['combined_total_hours'] }} horas de fiesta:
+                                                                </strong>
+                                                                Al sumar <strong>{{ $recPack['base_hours'] }}h + {{ $recPack['added_extra_hours'] }}h extra ({{ $recPack['combined_total_hours'] }}h en total)</strong>, te recomendamos elegir directamente el
+                                                                <strong class="text-white underline decoration-amber-400">{{ $recPack['base_name'] }}</strong>, que <strong>ya cubre ese número de horas</strong> y además incluye un montaje superior
+                                                                @if(!empty($recPack['effects_badge']))
+                                                                    con <strong class="text-emerald-300">{{ $recPack['effects_badge'] }} gratis</strong>.
+                                                                @else
+                                                                    ({{ $recPack['description'] }}).
+                                                                @endif
+                                                            </div>
+                                                        </div>
+                                                        <div class="flex justify-end">
+                                                            <button type="button"
+                                                                    wire:click="applyRecommendedDjPack"
+                                                                    class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-indigo-600 hover:from-amber-400 hover:to-indigo-500 text-white text-xs font-extrabold shadow-md transition transform hover:scale-102 cursor-pointer">
+                                                                <span>✨</span>
+                                                                <span>Cambiar al {{ $recPack['base_name'] }} ({{ $recPack['combined_total_hours'] }} Horas)</span>
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                 @endif
                                             </div>

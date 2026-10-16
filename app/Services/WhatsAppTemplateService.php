@@ -728,4 +728,24 @@ class WhatsAppTemplateService
              . "Concepto: " . $event->name . "\n\n"
              . "¡Muchas gracias y quedamos a vuestra disposición!";
     }
+
+    public static function facturaRecibo(Event $event, \App\Models\Invoice $invoice): string
+    {
+        $clientName = $event->client ? $event->client->name : 'pareja';
+        $brand = Setting::getBrandInfo($event->brand_clean);
+        $companyName = $brand['name'] ?? Setting::get('company_name', 'Núñez & Son');
+        $docTypeLabel = $invoice->type === 'recibo' ? 'Recibo / Justificante de Pago' : 'Factura Oficial';
+        $issueDate = $invoice->issue_date ? Carbon::parse($invoice->issue_date)->format('d/m/Y') : now()->format('d/m/Y');
+        $statusLabel = $invoice->status === 'paid' ? '✅ Cobrado / Pagado' : '⏳ Pendiente de pago';
+
+        return "¡Hola {$clientName}! 👋 Os escribe *{$companyName}*.\n\n"
+             . "Os compartimos los datos de vuestro documento *{$docTypeLabel} ({$invoice->invoice_number})* correspondiente al evento *{$event->name}*:\n\n"
+             . "📄 *Documento:* {$docTypeLabel} Nº {$invoice->invoice_number}\n"
+             . "📅 *Fecha de emisión:* {$issueDate}\n"
+             . "💰 *Importe total:* " . number_format((float)$invoice->total, 2, ',', '.') . " €\n"
+             . "📌 *Estado:* {$statusLabel}\n"
+             . ($invoice->notes ? "📝 *Concepto / Notas:* {$invoice->notes}\n" : "")
+             . "\nCualquier consulta estamos a vuestra disposición. ¡Muchas gracias!";
+    }
 }
+

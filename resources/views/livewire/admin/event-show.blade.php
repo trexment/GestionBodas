@@ -656,10 +656,34 @@
                         </div>
                     </div>
 
-                    <!-- Botón de apertura de WhatsApp -->
-                    <div class="mt-4">
-                        <a href="{{ $confirmingFollowupUrl }}" target="_blank" class="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-extrabold text-xs rounded-xl shadow-md shadow-emerald-600/30 transition flex items-center justify-center gap-2">
-                            <span>💬 Abrir WhatsApp y Enviar Mensaje</span>
+                    <!-- Selector de Número Remitente WhatsApp -->
+                    <div class="mt-3 p-2.5 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-2">
+                        <span class="text-[11px] font-bold text-slate-600 dark:text-slate-300 flex items-center gap-1">
+                            <span>📲</span> Enviar desde el número de:
+                        </span>
+                        <div class="inline-flex rounded-lg bg-white dark:bg-slate-900 p-0.5 border border-slate-200 dark:border-slate-700 shadow-2xs">
+                            <button type="button" wire:click="$set('whatsapp_sender_brand', 'miguel')" class="px-2.5 py-1 rounded-md text-[11px] font-bold transition cursor-pointer {{ $whatsapp_sender_brand === 'miguel' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100' }}">
+                                👑 Miguel
+                            </button>
+                            <button type="button" wire:click="$set('whatsapp_sender_brand', 'fran')" class="px-2.5 py-1 rounded-md text-[11px] font-bold transition cursor-pointer {{ $whatsapp_sender_brand === 'fran' ? 'bg-fuchsia-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100' }}">
+                                🎧 Fran
+                            </button>
+                            <button type="button" wire:click="$set('whatsapp_sender_brand', 'ezequiel')" class="px-2.5 py-1 rounded-md text-[11px] font-bold transition cursor-pointer {{ $whatsapp_sender_brand === 'ezequiel' ? 'bg-teal-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100' }}">
+                                👥 Ezequiel
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Botones de envío de WhatsApp -->
+                    <div class="mt-3 space-y-2">
+                        @if($gatewayActive)
+                            <button type="button" wire:click="sendDirectFollowupFromShow" wire:loading.attr="disabled" class="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-extrabold text-xs rounded-xl shadow-md shadow-emerald-600/30 transition flex items-center justify-center gap-2 cursor-pointer">
+                                <span wire:loading.remove wire:target="sendDirectFollowupFromShow">🚀 Enviar Ahora desde WhatsApp de {{ $this->getSenderBrandLabel() }}</span>
+                                <span wire:loading wire:target="sendDirectFollowupFromShow">⏳ Enviando mensaje...</span>
+                            </button>
+                        @endif
+                        <a href="{{ $confirmingFollowupUrl }}" target="_blank" class="w-full py-2.5 px-4 {{ $gatewayActive ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-200' : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-600/30' }} font-bold text-xs rounded-xl transition flex items-center justify-center gap-2">
+                            <span>💬 Abrir en mi WhatsApp Web / App personal</span>
                             <span class="text-xs">↗</span>
                         </a>
                     </div>
@@ -694,7 +718,7 @@
     @endif
 
     <!-- Banner Cuestionario Musical con WhatsApp -->
-    <div class="bg-white p-4 rounded-xl border border-gray-200 mb-6 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+    <div class="bg-white p-4 rounded-xl border border-gray-200 mb-6 shadow-sm flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
         <div>
             <div class="flex items-center gap-2">
                 <h4 class="font-bold text-gray-800 text-sm flex items-center gap-1.5">
@@ -708,8 +732,8 @@
             </div>
             <p class="text-xs text-gray-500 mt-0.5">Comparte este enlace para que los novios o el cliente rellenen sus canciones y preferencias.</p>
         </div>
-        <div class="flex flex-wrap items-center gap-2 w-full md:w-auto" x-data="{ copiedLink: false }">
-            <input type="text" readonly value="{{ route('guest.form', $event->token) }}" class="flex-1 md:w-64 border-gray-300 rounded-lg text-xs bg-gray-50 px-3 py-2 select-all focus:ring-indigo-500 font-mono" id="guestLink">
+        <div class="flex flex-wrap items-center gap-2 w-full lg:w-auto" x-data="{ copiedLink: false }">
+            <input type="text" readonly value="{{ route('guest.form', $event->token) }}" class="flex-1 md:w-56 border-gray-300 rounded-lg text-xs bg-gray-50 px-3 py-2 select-all focus:ring-indigo-500 font-mono" id="guestLink">
             
             <button type="button" @click="
                 const input = document.getElementById('guestLink');
@@ -740,9 +764,22 @@
             <button type="button" wire:click="toggleDossierStatus" class="px-3 py-2 rounded-lg text-xs font-bold border transition shadow-xs whitespace-nowrap {{ $event->is_dossier_completed ? 'bg-amber-50 hover:bg-amber-100 text-amber-800 border-amber-300' : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-300' }}" title="{{ $event->is_dossier_completed ? 'Permitir al cliente editar sus canciones de nuevo' : 'Bloquear cuestionario para que el cliente no haga más cambios' }}">
                 {{ $event->is_dossier_completed ? '🔓 Reabrir' : '🔒 Bloquear' }}
             </button>
+
+            <!-- Selector compacto de línea WhatsApp -->
+            <div class="inline-flex items-center rounded-lg bg-slate-100 p-0.5 border border-slate-200" title="Elige desde qué número de WhatsApp enviar">
+                <button type="button" wire:click="$set('whatsapp_sender_brand', 'miguel')" class="px-2 py-1 rounded-md text-[11px] font-bold transition cursor-pointer {{ $whatsapp_sender_brand === 'miguel' ? 'bg-indigo-600 text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900' }}" title="Enviar desde WhatsApp de Miguel">
+                    👑 Miguel
+                </button>
+                <button type="button" wire:click="$set('whatsapp_sender_brand', 'fran')" class="px-2 py-1 rounded-md text-[11px] font-bold transition cursor-pointer {{ $whatsapp_sender_brand === 'fran' ? 'bg-fuchsia-600 text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900' }}" title="Enviar desde WhatsApp de Fran">
+                    🎧 Fran
+                </button>
+                <button type="button" wire:click="$set('whatsapp_sender_brand', 'ezequiel')" class="px-2 py-1 rounded-md text-[11px] font-bold transition cursor-pointer {{ $whatsapp_sender_brand === 'ezequiel' ? 'bg-teal-600 text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900' }}" title="Enviar desde WhatsApp de Ezequiel">
+                    👥 Ezequiel
+                </button>
+            </div>
             
             @if($gatewayActive)
-                <button type="button" wire:click="sendDirectTemplate('cuestionario')" wire:loading.attr="disabled" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-lg text-xs font-bold shadow-xs whitespace-nowrap inline-flex items-center gap-1.5 transition cursor-pointer">
+                <button type="button" wire:click="sendDirectTemplate('cuestionario')" wire:loading.attr="disabled" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-lg text-xs font-bold shadow-xs whitespace-nowrap inline-flex items-center gap-1.5 transition cursor-pointer" title="Enviar cuestionario desde el WhatsApp seleccionado">
                     <span wire:loading.remove wire:target="sendDirectTemplate('cuestionario')">🚀 Enviar WhatsApp</span>
                     <span wire:loading wire:target="sendDirectTemplate('cuestionario')">⏳ Enviando...</span>
                 </button>
@@ -769,6 +806,24 @@
                         </div>
                     </div>
                     <button type="button" @click="openWhatsappHub = false" class="text-emerald-200 hover:text-white text-2xl font-bold leading-none">&times;</button>
+                </div>
+
+                <!-- Barra de selección de remitente en el Hub -->
+                <div class="bg-emerald-950/90 text-white px-6 py-2.5 flex flex-wrap items-center justify-between gap-2 border-b border-emerald-800">
+                    <span class="text-xs font-bold text-emerald-200 flex items-center gap-1.5">
+                        <span>📲</span> Enviar mensajes desde el número de WhatsApp de:
+                    </span>
+                    <div class="inline-flex rounded-xl bg-slate-900/90 p-1 border border-emerald-700/50">
+                        <button type="button" wire:click="$set('whatsapp_sender_brand', 'miguel')" class="px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer {{ $whatsapp_sender_brand === 'miguel' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-300 hover:text-white' }}">
+                            👑 Miguel (Núñez & Son)
+                        </button>
+                        <button type="button" wire:click="$set('whatsapp_sender_brand', 'fran')" class="px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer {{ $whatsapp_sender_brand === 'fran' ? 'bg-fuchsia-600 text-white shadow-sm' : 'text-slate-300 hover:text-white' }}">
+                            🎧 Fran (JAVNX DJ)
+                        </button>
+                        <button type="button" wire:click="$set('whatsapp_sender_brand', 'ezequiel')" class="px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer {{ $whatsapp_sender_brand === 'ezequiel' ? 'bg-teal-600 text-white shadow-sm' : 'text-slate-300 hover:text-white' }}">
+                            👥 Ezequiel
+                        </button>
+                    </div>
                 </div>
 
                 <div class="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
@@ -3619,12 +3674,20 @@
 
                         <!-- HISTORIAL DE PROPUESTAS GENERADAS (ORDENADAS POR LA MÁS RECIENTE) -->
                         <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-xs space-y-4">
-                            <div class="border-b pb-2 flex items-center justify-between">
+                            <div class="border-b pb-2.5 flex flex-wrap items-center justify-between gap-2">
                                 <div class="flex items-center gap-2">
                                     <h5 class="font-bold text-gray-900 text-sm">📜 Historial de Propuestas</h5>
                                     <span class="text-xs bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded-full font-bold">{{ $event->quotes->count() }} emitidas</span>
                                 </div>
-                                <span class="text-[11px] text-gray-400 font-medium">Más reciente arriba</span>
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <div class="inline-flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-[10px]">
+                                        <span class="px-1.5 font-bold text-slate-500">📱 Enviar desde:</span>
+                                        <button type="button" wire:click="$set('whatsapp_sender_brand', 'miguel')" class="px-2 py-0.5 rounded-md font-bold transition cursor-pointer {{ $whatsapp_sender_brand === 'miguel' ? 'bg-amber-500 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900' }}">👑 Miguel</button>
+                                        <button type="button" wire:click="$set('whatsapp_sender_brand', 'fran')" class="px-2 py-0.5 rounded-md font-bold transition cursor-pointer {{ $whatsapp_sender_brand === 'fran' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900' }}">🎧 Fran</button>
+                                        <button type="button" wire:click="$set('whatsapp_sender_brand', 'ezequiel')" class="px-2 py-0.5 rounded-md font-bold transition cursor-pointer {{ $whatsapp_sender_brand === 'ezequiel' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900' }}">👥 Ezequiel</button>
+                                    </div>
+                                    <span class="text-[11px] text-gray-400 font-medium">Más reciente arriba</span>
+                                </div>
                             </div>
 
                             <div class="space-y-3">
@@ -3736,16 +3799,13 @@
                                                     <span>✉️</span> Email
                                                 </button>
 
-                                                @if($gatewayActive)
-                                                    <button type="button" wire:click="sendDirectQuoteWhatsApp({{ $quote->id }})" wire:loading.attr="disabled" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs font-bold px-2.5 py-1.5 rounded-lg flex items-center gap-1 transition shadow-2xs cursor-pointer" title="Enviar Propuesta por WhatsApp vía API">
-                                                        <span wire:loading.remove wire:target="sendDirectQuoteWhatsApp({{ $quote->id }})">🚀 WhatsApp</span>
-                                                        <span wire:loading wire:target="sendDirectQuoteWhatsApp({{ $quote->id }})">⏳</span>
-                                                    </button>
-                                                @else
-                                                    <a href="{{ $qWaUrl }}" target="_blank" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs font-bold px-2.5 py-1.5 rounded-lg flex items-center gap-1 transition shadow-2xs" title="Compartir por WhatsApp">
-                                                        💬 WhatsApp
-                                                    </a>
-                                                @endif
+                                                <button type="button" wire:click="sendDirectQuoteWhatsApp({{ $quote->id }})" wire:loading.attr="disabled" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-2.5 py-1.5 rounded-lg flex items-center gap-1 transition shadow-2xs cursor-pointer" title="Enviar Propuesta por WhatsApp desde el número de {{ ucfirst($whatsapp_sender_brand) }}">
+                                                    <span wire:loading.remove wire:target="sendDirectQuoteWhatsApp({{ $quote->id }})">🚀 WA ({{ ucfirst($whatsapp_sender_brand) }})</span>
+                                                    <span wire:loading wire:target="sendDirectQuoteWhatsApp({{ $quote->id }})">⏳</span>
+                                                </button>
+                                                <a href="{{ $qWaUrl }}" target="_blank" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs font-bold px-2 py-1.5 rounded-lg flex items-center gap-1 transition shadow-2xs" title="Abrir en mi WhatsApp Web personal">
+                                                    💬
+                                                </a>
 
                                                 <a href="{{ route('admin.quote.pdf', $quote->id) }}" target="_blank" class="bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-300 text-xs font-bold px-2.5 py-1.5 rounded-lg flex items-center gap-1 transition shadow-2xs" title="Descargar Dossier Completo con Presupuesto al final (4 Páginas)">
                                                     📑 Dossier + Presupuesto
@@ -3803,9 +3863,17 @@
                         <h4 class="text-lg font-bold text-gray-800">Contratos del Evento y Firma Digital</h4>
                         <p class="text-xs text-gray-500 mt-0.5">Envía el enlace interactivo al cliente para que revise las cláusulas y firme digitalmente desde su móvil u ordenador.</p>
                     </div>
-                    <button wire:click="createContract" class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-md transition">
-                        <span>➕</span> Generar Nuevo Contrato
-                    </button>
+                    <div class="flex flex-wrap items-center gap-2.5">
+                        <div class="inline-flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 text-[11px]">
+                            <span class="px-2 font-bold text-slate-500">📱 Enviar desde:</span>
+                            <button type="button" wire:click="$set('whatsapp_sender_brand', 'miguel')" class="px-2.5 py-1 rounded-lg font-bold transition cursor-pointer {{ $whatsapp_sender_brand === 'miguel' ? 'bg-amber-500 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900' }}">👑 Miguel</button>
+                            <button type="button" wire:click="$set('whatsapp_sender_brand', 'fran')" class="px-2.5 py-1 rounded-lg font-bold transition cursor-pointer {{ $whatsapp_sender_brand === 'fran' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900' }}">🎧 Fran</button>
+                            <button type="button" wire:click="$set('whatsapp_sender_brand', 'ezequiel')" class="px-2.5 py-1 rounded-lg font-bold transition cursor-pointer {{ $whatsapp_sender_brand === 'ezequiel' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900' }}">👥 Ezequiel</button>
+                        </div>
+                        <button wire:click="createContract" class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-md transition cursor-pointer">
+                            <span>➕</span> Generar Nuevo Contrato
+                        </button>
+                    </div>
                 </div>
 
                 @if (session()->has('contract_message')) 
@@ -3881,16 +3949,13 @@
                                         👁️ Ver Formulario
                                     </a>
 
-                                    @if($gatewayActive)
-                                        <button type="button" wire:click="sendDirectContractWhatsApp({{ $contract->id }})" wire:loading.attr="disabled" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-1 shadow-2xs cursor-pointer" title="Enviar enlace de firma por WhatsApp vía API">
-                                            <span wire:loading.remove wire:target="sendDirectContractWhatsApp({{ $contract->id }})">🚀 WhatsApp</span>
-                                            <span wire:loading wire:target="sendDirectContractWhatsApp({{ $contract->id }})">⏳</span>
-                                        </button>
-                                    @else
-                                        <a href="{{ $contractWaUrl }}" target="_blank" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-1 shadow-2xs" title="Enviar enlace de firma por WhatsApp">
-                                            💬 WhatsApp
-                                        </a>
-                                    @endif
+                                    <button type="button" wire:click="sendDirectContractWhatsApp({{ $contract->id }})" wire:loading.attr="disabled" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-1 shadow-2xs cursor-pointer" title="Enviar contrato por WhatsApp desde el número de {{ ucfirst($whatsapp_sender_brand) }}">
+                                        <span wire:loading.remove wire:target="sendDirectContractWhatsApp({{ $contract->id }})">🚀 WA ({{ ucfirst($whatsapp_sender_brand) }})</span>
+                                        <span wire:loading wire:target="sendDirectContractWhatsApp({{ $contract->id }})">⏳</span>
+                                    </button>
+                                    <a href="{{ $contractWaUrl }}" target="_blank" class="px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-lg text-xs font-bold transition flex items-center gap-1 shadow-2xs" title="Abrir en mi WhatsApp Web personal">
+                                        💬
+                                    </a>
 
                                     <a href="{{ route('admin.contract.pdf', $contract->id) }}" target="_blank" class="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg text-xs font-bold transition flex items-center gap-1" title="Descargar contrato oficial en PDF">
                                         📄 PDF
@@ -4011,9 +4076,21 @@
 
                 <!-- LISTADO DE DOCUMENTOS EMITIDOS -->
                 <div class="space-y-3">
-                    <h5 class="text-xs font-bold text-slate-700 uppercase tracking-wider">Documentos Emitidos ({{ $event->invoices->count() }})</h5>
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <h5 class="text-xs font-bold text-slate-700 uppercase tracking-wider">Documentos Emitidos ({{ $event->invoices->count() }})</h5>
+                        <div class="inline-flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-[10px]">
+                            <span class="px-1.5 font-bold text-slate-500">📱 Enviar desde:</span>
+                            <button type="button" wire:click="$set('whatsapp_sender_brand', 'miguel')" class="px-2 py-0.5 rounded-md font-bold transition cursor-pointer {{ $whatsapp_sender_brand === 'miguel' ? 'bg-amber-500 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900' }}">👑 Miguel</button>
+                            <button type="button" wire:click="$set('whatsapp_sender_brand', 'fran')" class="px-2 py-0.5 rounded-md font-bold transition cursor-pointer {{ $whatsapp_sender_brand === 'fran' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900' }}">🎧 Fran</button>
+                            <button type="button" wire:click="$set('whatsapp_sender_brand', 'ezequiel')" class="px-2 py-0.5 rounded-md font-bold transition cursor-pointer {{ $whatsapp_sender_brand === 'ezequiel' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900' }}">👥 Ezequiel</button>
+                        </div>
+                    </div>
 
                     @forelse($event->invoices->sortByDesc('id') as $invoice)
+                        @php
+                            $invMsg = \App\Services\WhatsAppTemplateService::facturaRecibo($event, $invoice);
+                            $invWaUrl = $clientPhone ? "https://wa.me/{$clientPhone}?text=" . rawurlencode($invMsg) : "https://api.whatsapp.com/send?text=" . rawurlencode($invMsg);
+                        @endphp
                         <div class="bg-white p-4 rounded-2xl border {{ $invoice->isReceipt() ? 'border-emerald-200 bg-emerald-50/10' : 'border-blue-200 bg-blue-50/10' }} shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition">
                             <div class="space-y-1">
                                 <div class="flex flex-wrap items-center gap-2">
@@ -4059,6 +4136,21 @@
                                 >
                                     <span>{{ $invoice->status === 'paid' ? '✅ COBRADO' : '⏳ PENDIENTE' }}</span>
                                 </button>
+
+                                <!-- Botón Enviar por WhatsApp desde línea seleccionada -->
+                                <button 
+                                    type="button" 
+                                    wire:click="sendDirectInvoiceWhatsApp({{ $invoice->id }})" 
+                                    wire:loading.attr="disabled"
+                                    class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-2.5 py-1.5 rounded-lg flex items-center gap-1 transition shadow-2xs cursor-pointer"
+                                    title="Enviar {{ $invoice->isReceipt() ? 'Recibo' : 'Factura' }} por WhatsApp desde el número de {{ ucfirst($whatsapp_sender_brand) }}"
+                                >
+                                    <span wire:loading.remove wire:target="sendDirectInvoiceWhatsApp({{ $invoice->id }})">🚀 WA ({{ ucfirst($whatsapp_sender_brand) }})</span>
+                                    <span wire:loading wire:target="sendDirectInvoiceWhatsApp({{ $invoice->id }})">⏳</span>
+                                </button>
+                                <a href="{{ $invWaUrl }}" target="_blank" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs font-bold px-2 py-1.5 rounded-lg flex items-center gap-1 transition shadow-2xs" title="Abrir en mi WhatsApp Web personal">
+                                    💬
+                                </a>
 
                                 <!-- Botón Descargar PDF Oficial -->
                                 <a 
@@ -4252,7 +4344,13 @@
                             Planifica reuniones presenciales, videollamadas o visitas técnicas, registra acuerdos y confirma por WhatsApp.
                         </p>
                     </div>
-                    <div class="flex items-center gap-2">
+                    <div class="flex flex-wrap items-center gap-2.5">
+                        <div class="inline-flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700 text-[11px]">
+                            <span class="px-2 font-bold text-slate-500 dark:text-slate-400">📱 Enviar desde:</span>
+                            <button type="button" wire:click="$set('whatsapp_sender_brand', 'miguel')" class="px-2.5 py-1 rounded-lg font-bold transition cursor-pointer {{ $whatsapp_sender_brand === 'miguel' ? 'bg-amber-500 text-white shadow-xs' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900' }}">👑 Miguel</button>
+                            <button type="button" wire:click="$set('whatsapp_sender_brand', 'fran')" class="px-2.5 py-1 rounded-lg font-bold transition cursor-pointer {{ $whatsapp_sender_brand === 'fran' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900' }}">🎧 Fran</button>
+                            <button type="button" wire:click="$set('whatsapp_sender_brand', 'ezequiel')" class="px-2.5 py-1 rounded-lg font-bold transition cursor-pointer {{ $whatsapp_sender_brand === 'ezequiel' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900' }}">👥 Ezequiel</button>
+                        </div>
                         <button 
                             type="button" 
                             wire:click="openCreateMeetingModal" 
@@ -4412,24 +4510,37 @@
 
                                 <!-- Footer con Botones de WhatsApp -->
                                 <div class="pt-3 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2 mt-2">
-                                    <div class="flex items-center gap-1.5">
+                                    <div class="flex flex-wrap items-center gap-1.5">
                                         @if($clientPhone)
+                                            <button 
+                                                type="button"
+                                                wire:click="sendDirectMeetingWhatsApp({{ $meeting->id }}, 'confirm')"
+                                                wire:loading.attr="disabled"
+                                                class="inline-flex items-center gap-1 text-[11px] font-bold text-white bg-emerald-600 hover:bg-emerald-700 px-2.5 py-1.5 rounded-lg transition shadow-2xs cursor-pointer"
+                                                title="Enviar confirmación de cita desde el número de {{ ucfirst($whatsapp_sender_brand) }}"
+                                            >
+                                                <span wire:loading.remove wire:target="sendDirectMeetingWhatsApp({{ $meeting->id }}, 'confirm')">🚀 Confirmar ({{ ucfirst($whatsapp_sender_brand) }})</span>
+                                                <span wire:loading wire:target="sendDirectMeetingWhatsApp({{ $meeting->id }}, 'confirm')">⏳</span>
+                                            </button>
+
+                                            <button 
+                                                type="button"
+                                                wire:click="sendDirectMeetingWhatsApp({{ $meeting->id }}, 'reminder')"
+                                                wire:loading.attr="disabled"
+                                                class="inline-flex items-center gap-1 text-[11px] font-bold text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/50 hover:bg-blue-100 border border-blue-200 dark:border-blue-800 px-2.5 py-1.5 rounded-lg transition cursor-pointer"
+                                                title="Enviar recordatorio previo desde el número de {{ ucfirst($whatsapp_sender_brand) }}"
+                                            >
+                                                <span wire:loading.remove wire:target="sendDirectMeetingWhatsApp({{ $meeting->id }}, 'reminder')">🔔 Recordatorio ({{ ucfirst($whatsapp_sender_brand) }})</span>
+                                                <span wire:loading wire:target="sendDirectMeetingWhatsApp({{ $meeting->id }}, 'reminder')">⏳</span>
+                                            </button>
+
                                             <a 
                                                 href="{{ $confirmUrl }}" 
                                                 target="_blank" 
-                                                class="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 border border-emerald-200 dark:border-emerald-800 px-2.5 py-1.5 rounded-lg transition"
-                                                title="Enviar confirmación de cita al cliente por WhatsApp"
+                                                class="inline-flex items-center text-[11px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 border border-emerald-200 dark:border-emerald-800 px-2 py-1.5 rounded-lg transition"
+                                                title="Abrir en mi WhatsApp Web personal"
                                             >
-                                                <span>💬</span> Confirmar Cita
-                                            </a>
-
-                                            <a 
-                                                href="{{ $reminderUrl }}" 
-                                                target="_blank" 
-                                                class="inline-flex items-center gap-1 text-[11px] font-bold text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/50 hover:bg-blue-100 border border-blue-200 dark:border-blue-800 px-2.5 py-1.5 rounded-lg transition"
-                                                title="Enviar recordatorio previo al cliente por WhatsApp"
-                                            >
-                                                <span>🔔</span> Recordatorio
+                                                💬
                                             </a>
                                         @else
                                             <span class="text-[10px] text-slate-400 italic">Cliente sin teléfono para WhatsApp</span>
