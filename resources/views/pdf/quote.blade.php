@@ -1174,10 +1174,8 @@
                 <tr>
                     <!-- PACK BÁSICO / ESENCIAL -->
                     <td class="pack-col">
-                        <div class="pack-card {{ $hasBasicPack ? 'highlighted' : '' }}">
-                            @if($hasBasicPack)
-                                <div class="pack-badge">VUESTRA ELECCIÓN</div>
-                            @endif
+                        <div class="pack-card">
+                            <div class="pack-badge" style="background-color: #64748b; color: #ffffff;">OPCIÓN 1</div>
                             <div class="pack-title">{{ $packBasicName }}</div>
                             <div class="pack-schedule">{{ $packBasicHours }} Horas de servicio DJ</div>
                             <div class="pack-price">{{ number_format($packBasicPrice, 0, ',', '.') }}€</div>
@@ -1190,14 +1188,10 @@
                         </div>
                     </td>
 
-                    <!-- PACK MEDIO / SIGNATURE (RECOMENDADO) -->
+                    <!-- PACK MEDIO / SIGNATURE -->
                     <td class="pack-col">
-                        <div class="pack-card {{ $hasMediumPack ? 'highlighted' : '' }}">
-                            @if($hasMediumPack)
-                                <div class="pack-badge">VUESTRA ELECCIÓN</div>
-                            @else
-                                <div class="pack-badge" style="background-color: #3b82f6; color: #ffffff;">⭐ RECOMENDADO</div>
-                            @endif
+                        <div class="pack-card">
+                            <div class="pack-badge" style="background-color: #3b82f6; color: #ffffff;">OPCIÓN 2 &bull; RECOMENDADO</div>
                             <div class="pack-title">{{ $packMediumName }}</div>
                             <div class="pack-schedule">{{ $packMediumHours }} Horas de servicio DJ</div>
                             <div class="pack-price">{{ number_format($packMediumPrice, 0, ',', '.') }}€</div>
@@ -1212,12 +1206,8 @@
 
                     <!-- PACK PREMIUM / DELUXE SHOW -->
                     <td class="pack-col">
-                        <div class="pack-card {{ $hasPremiumPack ? 'highlighted' : '' }}">
-                            @if($hasPremiumPack)
-                                <div class="pack-badge">VUESTRA ELECCIÓN</div>
-                            @else
-                                <div class="pack-badge" style="background-color: #f59e0b; color: #ffffff;">SHOW COMPLETO</div>
-                            @endif
+                        <div class="pack-card">
+                            <div class="pack-badge" style="background-color: #f59e0b; color: #ffffff;">OPCIÓN 3 &bull; SHOW COMPLETO</div>
                             <div class="pack-title">{{ $packPremiumName }}</div>
                             <div class="pack-schedule">Hasta {{ $packPremiumHours }} Horas de cobertura</div>
                             <div class="pack-price">{{ number_format($packPremiumPrice, 0, ',', '.') }}€</div>
