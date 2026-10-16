@@ -541,11 +541,105 @@ class ImapLeadFetcherService
     }
 
     /**
+     * Genera las huellas únicas de un lead (por teléfono, nombre y fecha) para evitar duplicados o re-importaciones tras borrar
+     */
+    public static function buildLeadSignatures(?string $clientName, ?string $phone, ?string $eventDate): array
+    {
+        $sigs = [];
+        $datePart = $eventDate ? trim($eventDate) : 'nodate';
+
+        if (!empty($phone)) {
+            $digits = preg_replace('/\D/', '', $phone);
+            if (strlen($digits) >= 9) {
+                $last9 = substr($digits, -9);
+                $sigs[] = "phone:{$last9}|date:{$datePart}";
+                $sigs[] = "phone:{$last9}";
+            }
+        }
+
+        if (!empty($clientName)) {
+            $cleanName = preg_replace('/^(?:Boda|Evento Empresa|Cumpleaños|Comunión|Videógrafo)\s*-\s*/iu', '', trim($clientName));
+            $nameSlug = Str::slug($cleanName);
+            if (!empty($nameSlug) && !in_array($nameSlug, ['cliente', 'cliente-potencial', 'contacto-web', 'novios'])) {
+                $sigs[] = "name:{$nameSlug}|date:{$datePart}";
+                $sigs[] = "name:{$nameSlug}";
+            }
+        }
+
+        return array_values(array_unique($sigs));
+    }
+
+    /**
+     * Comprueba si alguna huella del lead ya fue importada o eliminada manualmente antes
+     */
+    public function isLeadAlreadyProcessedOrDeleted(array $signatures): bool
+    {
+        if (empty($signatures)) {
+            return false;
+        }
+        $raw = Setting::get('imap_processed_signatures', '[]');
+        $stored = json_decode((string)$raw, true);
+        if (!is_array($stored)) {
+            return false;
+        }
+        foreach ($signatures as $sig) {
+            if (in_array($sig, $stored, true)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Registra las huellas de un lead como ya procesadas (o eliminadas) para que IMAP no vuelva a crearlo nunca
+     */
+    public static function recordProcessedLeadSignatures(array $signatures): void
+    {
+        if (empty($signatures)) {
+            return;
+        }
+        $raw = Setting::get('imap_processed_signatures', '[]');
+        $stored = json_decode((string)$raw, true);
+        if (!is_array($stored)) {
+            $stored = [];
+        }
+        $merged = array_values(array_unique(array_merge($stored, $signatures)));
+        if (count($merged) > 1000) {
+            $merged = array_slice($merged, -1000);
+        }
+        Setting::set('imap_processed_signatures', json_encode($merged));
+    }
+
+    /**
+     * Marca un evento que va a ser eliminado para que el sincronizador de correo nunca lo vuelva a recrear
+     */
+    public static function markEventAsDeleted(Event $event): void
+    {
+        $event->loadMissing('client');
+        $clientName = $event->client ? $event->client->name : $event->name;
+        $phone = $event->client ? $event->client->phone : null;
+        $dateStr = $event->event_date ? $event->event_date->format('Y-m-d') : null;
+
+        $sigs = self::buildLeadSignatures($clientName, $phone, $dateStr);
+        self::recordProcessedLeadSignatures($sigs);
+    }
+
+    /**
      * Crea el evento y el cliente en la base de datos
      */
     protected function createLeadEvent(array $leadData, string $brandKey, string $initialStatus = 'no_response'): ?Event
     {
         if (empty($leadData['is_lead'])) {
+            return null;
+        }
+
+        // 0. Verificar registro permanente de leads ya importados o eliminados manualmente
+        $signatures = self::buildLeadSignatures(
+            $leadData['client_name'] ?? null,
+            $leadData['client_phone'] ?? null,
+            $leadData['event_date'] ?? null
+        );
+        if ($this->isLeadAlreadyProcessedOrDeleted($signatures)) {
             return null;
         }
 
@@ -626,21 +720,25 @@ class ImapLeadFetcherService
             }
         }
 
-        // Evitar duplicar evento si ya existe uno con el mismo cliente, marca y fecha exacta (o creado recientemente)
+        // Evitar duplicar evento si ya existe uno con el mismo cliente (en cualquier marca) y fecha exacta o creado recientemente
         if ($client) {
-            $existingQuery = Event::where('client_id', $client->id)->where('brand', $brandKey);
+            $existingQuery = Event::where('client_id', $client->id);
             if (!empty($leadData['event_date'])) {
                 $existing = (clone $existingQuery)->whereDate('event_date', $leadData['event_date'])->first();
                 if ($existing) {
+                    self::recordProcessedLeadSignatures($signatures);
                     return null;
                 }
             }
-            // También evitar duplicar si ya se creó un evento para este mismo cliente en los últimos 7 días con el mismo asunto
-            $recentSameClient = (clone $existingQuery)->where('created_at', '>=', now()->subDays(7))->first();
-            if ($recentSameClient && $recentSameClient->event_date && $recentSameClient->event_date->format('Y-m-d') === $leadData['event_date']) {
+            $recentSameClient = (clone $existingQuery)->where('created_at', '>=', now()->subDays(14))->first();
+            if ($recentSameClient) {
+                self::recordProcessedLeadSignatures($signatures);
                 return null;
             }
         }
+
+        // Registrar las huellas inmediatamente antes de crear el evento para evitar condiciones de carrera o duplicados entre buzones
+        self::recordProcessedLeadSignatures($signatures);
 
         // 2. Nombre del Evento
         $typeLabel = match($leadData['event_type']) {

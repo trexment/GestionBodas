@@ -359,8 +359,13 @@ class EventManager extends Component
             return;
         }
 
-        $event = Event::findOrFail($eventId);
+        $event = Event::with('client')->findOrFail($eventId);
         $name = $event->name;
+
+        // Registrar huella del evento eliminado para que el sincronizador IMAP jamás vuelva a importarlo
+        try {
+            \App\Services\ImapLeadFetcherService::markEventAsDeleted($event);
+        } catch (\Throwable $e) {}
 
         // Cascade delete relations
         foreach ($event->quotes as $quote) {
@@ -376,7 +381,7 @@ class EventManager extends Component
         $event->delete();
 
         $this->loadEvents();
-        session()->flash('message', "🗑️ El evento '{$name}' ha sido eliminado permanentemente.");
+        session()->flash('message', "🗑️ El evento '{$name}' ha sido eliminado permanentemente (y bloqueado para no reimportarse por email).");
     }
 
     public $confirmingFollowupEventId = null;
