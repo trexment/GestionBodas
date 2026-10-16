@@ -205,6 +205,8 @@
                                                     <span class="text-[10px] text-amber-400/90 font-medium">👑 2 máquinas incluidas en Pack Deluxe Show</span>
                                                 @elseif($key === 'pack_duo_360')
                                                     <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">🔥 PACK AHORRO</span>
+                                                @elseif(($key === 'photobooth' || $key === 'video_360') && !empty($services['pack_duo_360']['selected']))
+                                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">✅ INCLUIDO EN PACK DÚO</span>
                                                 @endif
                                             @endif
                                         </div>
@@ -357,6 +359,12 @@
                                         @if($key === 'pack_duo_360')
                                             @php $duoH = (int)($service['hours'] ?? 2); @endphp
                                             <div class="mt-3.5 pt-3 border-t border-slate-700/60 space-y-2" wire:click.stop>
+                                                @if($service['selected'])
+                                                    <div class="px-3 py-1.5 rounded-xl bg-emerald-950/60 border border-emerald-500/30 text-[11px] text-emerald-300 font-semibold flex items-center gap-1.5">
+                                                        <span>✨</span>
+                                                        <span>Incluye Fotomatón & Photocall + Plataforma Vídeo 360º ({{ $duoH }}h) con descuento de Pack Dúo</span>
+                                                    </div>
+                                                @endif
                                                 <div class="flex flex-wrap items-center justify-between gap-2">
                                                     <span class="text-[11px] font-semibold text-slate-300">Elige la duración del Pack Dúo:</span>
                                                     <div class="flex flex-wrap items-center gap-1.5">

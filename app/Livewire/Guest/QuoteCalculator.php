@@ -405,24 +405,44 @@ class QuoteCalculator extends Component
             $this->services[$key]['manually_toggled'] = true;
         }
 
-        if ($key === 'pack_duo_360' && !empty($this->services['pack_duo_360']['selected'])) {
-            if (isset($this->services['photobooth'])) {
-                $this->services['photobooth']['selected'] = false;
-            }
-            if (isset($this->services['video_360'])) {
-                $this->services['video_360']['selected'] = false;
+        if ($key === 'pack_duo_360') {
+            $this->services['pack_duo_360']['auto_activated'] = false;
+            if (!empty($this->services['pack_duo_360']['selected'])) {
+                if (isset($this->services['photobooth'])) {
+                    $this->services['photobooth']['selected'] = false;
+                }
+                if (isset($this->services['video_360'])) {
+                    $this->services['video_360']['selected'] = false;
+                }
             }
         }
 
-        if (($key === 'photobooth' || $key === 'video_360') && !empty($this->services[$key]['selected'])) {
-            if (isset($this->services['pack_duo_360'])) {
+        if ($key === 'photobooth' || $key === 'video_360') {
+            if (!empty($this->services['photobooth']['selected']) && !empty($this->services['video_360']['selected'])) {
+                $this->autoActivatePackDuo();
+            } elseif (!empty($this->services[$key]['selected']) && isset($this->services['pack_duo_360'])) {
                 $this->services['pack_duo_360']['selected'] = false;
+                $this->services['pack_duo_360']['auto_activated'] = false;
             }
         }
 
         if ($key === 'dj') {
             $this->syncPackEffects();
         }
+    }
+
+    protected function autoActivatePackDuo(): void
+    {
+        if (!isset($this->services['pack_duo_360'])) {
+            return;
+        }
+        $pbHours = (int)($this->services['photobooth']['hours'] ?? 2);
+        $v360Hours = (int)($this->services['video_360']['hours'] ?? 2);
+        $this->services['pack_duo_360']['hours'] = max(2, min(6, max($pbHours, $v360Hours)));
+        $this->services['pack_duo_360']['selected'] = true;
+        $this->services['pack_duo_360']['auto_activated'] = true;
+        $this->services['photobooth']['selected'] = false;
+        $this->services['video_360']['selected'] = false;
     }
 
     public function updatedServices($value, $key)
@@ -467,8 +487,13 @@ class QuoteCalculator extends Component
         }
         $this->services['photobooth']['hours'] = max(2, min(6, $hours));
         $this->services['photobooth']['selected'] = true;
+        if (!empty($this->services['video_360']['selected'])) {
+            $this->autoActivatePackDuo();
+            return;
+        }
         if (isset($this->services['pack_duo_360'])) {
             $this->services['pack_duo_360']['selected'] = false;
+            $this->services['pack_duo_360']['auto_activated'] = false;
         }
     }
 
@@ -479,16 +504,19 @@ class QuoteCalculator extends Component
         }
         $this->services['video_360']['hours'] = max(2, min(6, $hours));
         $this->services['video_360']['selected'] = true;
+        if (!empty($this->services['photobooth']['selected'])) {
+            $this->autoActivatePackDuo();
+            return;
+        }
         if (isset($this->services['pack_duo_360'])) {
             $this->services['pack_duo_360']['selected'] = false;
+            $this->services['pack_duo_360']['auto_activated'] = false;
         }
     }
 
     public function applyPackDuoFromSeparate()
     {
-        $pbHours = (int)($this->services['photobooth']['hours'] ?? 2);
-        $v360Hours = (int)($this->services['video_360']['hours'] ?? 2);
-        $this->setPackDuoHours(max($pbHours, $v360Hours));
+        $this->autoActivatePackDuo();
     }
 
     public function setChocolateFountainOption(int $fountains, int $hours)

@@ -2216,8 +2216,21 @@ class EventShow extends Component
         }
 
         if ($key === 'photobooth.selected' || $key === 'video_360.selected') {
-            if ($value && !empty($this->quote_services['pack_duo_360']['selected'])) {
-                $this->quote_services['pack_duo_360']['selected'] = false;
+            if ($value) {
+                $pbConfig = \App\Models\Setting::getPhotobooth360Config($this->photobooth_provider ?: 'logrono');
+                if (
+                    !empty($this->quote_services['photobooth']['selected']) &&
+                    !empty($this->quote_services['video_360']['selected']) &&
+                    !empty($pbConfig['pack_duo_enabled'])
+                ) {
+                    $pbH = max(2, (int)($this->quote_services['photobooth']['hours'] ?? 2));
+                    $v360H = max(2, (int)($this->quote_services['video_360']['hours'] ?? 2));
+                    $this->setPackDuoHours(max($pbH, $v360H));
+                    return;
+                }
+                if (!empty($this->quote_services['pack_duo_360']['selected'])) {
+                    $this->quote_services['pack_duo_360']['selected'] = false;
+                }
             }
             return;
         }
@@ -2487,6 +2500,11 @@ class EventShow extends Component
         $this->quote_services['photobooth']['selected'] = true;
         $this->quote_services['photobooth']['hours'] = $hours;
         $this->quote_services['photobooth']['price'] = ($hours <= 2) ? $pbConfig['photobooth_2h'] : ($pbConfig['photobooth_3h'] + max(0, $hours - 3) * $extraRate);
+        if (!empty($this->quote_services['video_360']['selected']) && !empty($pbConfig['pack_duo_enabled'])) {
+            $v360H = max(2, (int)($this->quote_services['video_360']['hours'] ?? 2));
+            $this->setPackDuoHours(max($hours, $v360H));
+            return;
+        }
         $this->quote_services['pack_duo_360']['selected'] = false;
     }
 
@@ -2497,6 +2515,11 @@ class EventShow extends Component
         $this->quote_services['video_360']['selected'] = true;
         $this->quote_services['video_360']['hours'] = $hours;
         $this->quote_services['video_360']['price'] = ($hours <= 2) ? $pbConfig['video_360_2h'] : ($pbConfig['video_360_3h'] + max(0, $hours - 3) * $extraRate);
+        if (!empty($this->quote_services['photobooth']['selected']) && !empty($pbConfig['pack_duo_enabled'])) {
+            $pbH = max(2, (int)($this->quote_services['photobooth']['hours'] ?? 2));
+            $this->setPackDuoHours(max($pbH, $hours));
+            return;
+        }
         $this->quote_services['pack_duo_360']['selected'] = false;
     }
 
