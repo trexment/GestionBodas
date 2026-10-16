@@ -94,13 +94,13 @@ class Settings extends Component
 
     // Proveedor 2: Vitoria / Álava (FotomatonCheese)
     public $photobooth_vitoria_name = 'Vitoria (FotomatonCheese)';
-    public $price_photobooth_vitoria_2h = 380;
-    public $price_photobooth_vitoria_3h = 430;
-    public $price_photobooth_vitoria_extra_hour = 50;
+    public $price_photobooth_vitoria_2h = 350;
+    public $price_photobooth_vitoria_3h = 420;
+    public $price_photobooth_vitoria_extra_hour = 70;
     public $photobooth_vitoria_desc;
-    public $price_video_360_vitoria_2h = 430;
+    public $price_video_360_vitoria_2h = 390;
     public $price_video_360_vitoria_3h = 490;
-    public $price_video_360_vitoria_extra_hour = 60;
+    public $price_video_360_vitoria_extra_hour = 100;
     public $video_360_vitoria_desc;
     public $price_pack_duo_vitoria_2h = 690;
     public $price_pack_duo_vitoria_3h = 850;
