@@ -2638,13 +2638,24 @@ class EventShow extends Component
             $total += ($p * $qty);
         }
 
+        $pbConfig = \App\Models\Setting::getPhotobooth360Config();
+
         if (!empty($this->quote_services['pack_duo_360']['selected'])) {
             $qty = (int)($this->quote_services['pack_duo_360']['quantity'] ?: 1);
             $hours = (int)($this->quote_services['pack_duo_360']['hours'] ?: 3);
             $p = (float)($this->quote_services['pack_duo_360']['price'] ?: 0);
+            $desc = trim((string)($this->quote_services['pack_duo_360']['desc'] ?? ''));
+            if ($hours === 2) {
+                $p3h = (float)$pbConfig['pack_duo_3h'];
+                $diff = max(0, $p3h - $p);
+                $upgradeNote = '💡 Opción 3 Horas disponible: Pack Dúo de 3h Fotomatón + 3h Plataforma 360º por ' . number_format($p3h, 0, ',', '.') . ' €' . ($diff > 0 ? ' (solo +' . number_format($diff, 0, ',', '.') . ' € más)' : '') . '.';
+                if (!str_contains($desc, 'Opción 3 Horas')) {
+                    $desc = rtrim($desc, '. ') . '. | ' . $upgradeNote;
+                }
+            }
             $items[] = [
                 'service_name' => 'Pack Dúo Todo Incluido: Fotomatón + Plataforma 360º (' . $hours . ' Horas)',
-                'description' => $this->quote_services['pack_duo_360']['desc'],
+                'description' => $desc,
                 'price' => $p,
                 'quantity' => $qty
             ];
@@ -2654,9 +2665,18 @@ class EventShow extends Component
                 $qty = (int)($this->quote_services['photobooth']['quantity'] ?: 1);
                 $hours = (int)($this->quote_services['photobooth']['hours'] ?: 2);
                 $p = (float)($this->quote_services['photobooth']['price'] ?: 0);
+                $desc = trim((string)($this->quote_services['photobooth']['desc'] ?? ''));
+                if ($hours === 2) {
+                    $p3h = (float)$pbConfig['photobooth_3h'];
+                    $diff = max(0, $p3h - $p);
+                    $upgradeNote = '💡 Opción 3 Horas disponible: Amplía a 3 horas de Fotomatón ilimitado por ' . number_format($p3h, 0, ',', '.') . ' €' . ($diff > 0 ? ' (solo +' . number_format($diff, 0, ',', '.') . ' € más)' : '') . '.';
+                    if (!str_contains($desc, 'Opción 3 Horas')) {
+                        $desc = rtrim($desc, '. ') . '. | ' . $upgradeNote;
+                    }
+                }
                 $items[] = [
                     'service_name' => 'Fotomatón & Photocall (' . $hours . ' Horas)',
-                    'description' => $this->quote_services['photobooth']['desc'],
+                    'description' => $desc,
                     'price' => $p,
                     'quantity' => $qty
                 ];
@@ -2667,9 +2687,18 @@ class EventShow extends Component
                 $qty = (int)($this->quote_services['video_360']['quantity'] ?: 1);
                 $hours = (int)($this->quote_services['video_360']['hours'] ?: 2);
                 $p = (float)($this->quote_services['video_360']['price'] ?: 0);
+                $desc = trim((string)($this->quote_services['video_360']['desc'] ?? ''));
+                if ($hours === 2) {
+                    $p3h = (float)$pbConfig['video_360_3h'];
+                    $diff = max(0, $p3h - $p);
+                    $upgradeNote = '💡 Opción 3 Horas disponible: Amplía a 3 horas de Plataforma 360º ilimitada por ' . number_format($p3h, 0, ',', '.') . ' €' . ($diff > 0 ? ' (solo +' . number_format($diff, 0, ',', '.') . ' € más)' : '') . '.';
+                    if (!str_contains($desc, 'Opción 3 Horas')) {
+                        $desc = rtrim($desc, '. ') . '. | ' . $upgradeNote;
+                    }
+                }
                 $items[] = [
                     'service_name' => 'Plataforma Vídeo 360º (' . $hours . ' Horas)',
-                    'description' => $this->quote_services['video_360']['desc'],
+                    'description' => $desc,
                     'price' => $p,
                     'quantity' => $qty
                 ];
@@ -2940,7 +2969,8 @@ class EventShow extends Component
                 $this->quote_services['pack_duo_360']['hours'] = $hours;
                 $this->quote_services['pack_duo_360']['price'] = (float)$item->price > 0 ? (float)$item->price : ($hours === 2 ? $pbConfig['pack_duo_2h'] : $pbConfig['pack_duo_3h']);
                 if (!empty($item->description) && !str_contains(mb_strtolower($item->description), 'consultar')) {
-                    $this->quote_services['pack_duo_360']['desc'] = $item->description;
+                    $cleanDesc = trim(explode('| 💡 Opción 3 Horas', $item->description)[0]);
+                    $this->quote_services['pack_duo_360']['desc'] = $cleanDesc;
                 }
             } elseif (str_contains($name, 'fotomatón') || str_contains($name, 'fotomaton') || str_contains($name, 'photobooth')) {
                 $this->quote_services['photobooth']['selected'] = true;
@@ -2949,7 +2979,8 @@ class EventShow extends Component
                 $this->quote_services['photobooth']['hours'] = $hours;
                 $this->quote_services['photobooth']['price'] = (float)$item->price > 0 ? (float)$item->price : ($hours === 3 ? $pbConfig['photobooth_3h'] : $pbConfig['photobooth_2h']);
                 if (!empty($item->description) && !str_contains(mb_strtolower($item->description), 'consultar')) {
-                    $this->quote_services['photobooth']['desc'] = $item->description;
+                    $cleanDesc = trim(explode('| 💡 Opción 3 Horas', $item->description)[0]);
+                    $this->quote_services['photobooth']['desc'] = $cleanDesc;
                 }
             } elseif (str_contains($name, '360') || str_contains($name, 'plataforma')) {
                 $this->quote_services['video_360']['selected'] = true;
@@ -2958,7 +2989,8 @@ class EventShow extends Component
                 $this->quote_services['video_360']['hours'] = $hours;
                 $this->quote_services['video_360']['price'] = (float)$item->price > 0 ? (float)$item->price : ($hours === 3 ? $pbConfig['video_360_3h'] : $pbConfig['video_360_2h']);
                 if (!empty($item->description) && !str_contains(mb_strtolower($item->description), 'consultar')) {
-                    $this->quote_services['video_360']['desc'] = $item->description;
+                    $cleanDesc = trim(explode('| 💡 Opción 3 Horas', $item->description)[0]);
+                    $this->quote_services['video_360']['desc'] = $cleanDesc;
                 }
             } elseif (str_contains($name, 'chocolate') || str_contains($name, 'fuente de chocolate')) {
                 $isConsult = str_contains($name, 'consultar') || ((float)$item->price == 0);

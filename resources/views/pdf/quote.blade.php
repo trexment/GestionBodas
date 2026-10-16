@@ -1368,14 +1368,41 @@
                                 }
                                 
                                 $isDiscount = $itemUnitPrice < 0 || $itemTotalPrice < 0;
+
+                                // Detectar si es un servicio de 2 horas (Fotomatón, Plataforma 360º o Pack Dúo) para mostrar la opción de 3 horas
+                                $pbCfg = \App\Models\Setting::getPhotobooth360Config();
+                                $lowerTitle = mb_strtolower($itemTitle);
+                                $cleanItemDesc = $itemDesc ? trim(explode('| 💡 Opción 3 Horas', $itemDesc)[0]) : '';
+                                $upgrade3hBanner = null;
+
+                                if (str_contains($lowerTitle, '2 hora') || str_contains($lowerTitle, '2h')) {
+                                    if (str_contains($lowerTitle, 'pack dúo') || str_contains($lowerTitle, 'pack duo') || (str_contains($lowerTitle, 'fotomat') && str_contains($lowerTitle, '360'))) {
+                                        $p3h = (float)$pbCfg['pack_duo_3h'];
+                                        $diff = max(0, $p3h - $itemUnitPrice);
+                                        $upgrade3hBanner = '✨ OPCIÓN 3 HORAS DISPONIBLE: Podéis elegir el Pack Dúo de 3 Horas (3h Fotomatón + 3h Plataforma 360º) por ' . number_format($p3h, 0, ',', '.') . ' €' . ($diff > 0 ? ' (solo +' . number_format($diff, 0, ',', '.') . ' € adicionales)' : '');
+                                    } elseif (str_contains($lowerTitle, 'fotomatón') || str_contains($lowerTitle, 'fotomaton') || str_contains($lowerTitle, 'photobooth')) {
+                                        $p3h = (float)$pbCfg['photobooth_3h'];
+                                        $diff = max(0, $p3h - $itemUnitPrice);
+                                        $upgrade3hBanner = '✨ OPCIÓN 3 HORAS DISPONIBLE: Podéis elegir 3 Horas completas de Fotomatón ilimitado por ' . number_format($p3h, 0, ',', '.') . ' €' . ($diff > 0 ? ' (solo +' . number_format($diff, 0, ',', '.') . ' € más)' : '');
+                                    } elseif (str_contains($lowerTitle, '360') || str_contains($lowerTitle, 'plataforma')) {
+                                        $p3h = (float)$pbCfg['video_360_3h'];
+                                        $diff = max(0, $p3h - $itemUnitPrice);
+                                        $upgrade3hBanner = '✨ OPCIÓN 3 HORAS DISPONIBLE: Podéis elegir 3 Horas completas de Plataforma 360º por ' . number_format($p3h, 0, ',', '.') . ' €' . ($diff > 0 ? ' (solo +' . number_format($diff, 0, ',', '.') . ' € más)' : '');
+                                    }
+                                }
                             @endphp
                             <tr>
                                 <td>
                                     <div class="quote-item-title {{ $isDiscount ? 'quote-item-discount' : '' }}">
                                         @if($isDiscount) [DESCUENTO] @else &bull; @endif {{ $itemTitle }}
                                     </div>
-                                    @if(!empty($itemDesc))
-                                        <div class="quote-item-desc">{{ $itemDesc }}</div>
+                                    @if(!empty($cleanItemDesc))
+                                        <div class="quote-item-desc">{{ $cleanItemDesc }}</div>
+                                    @endif
+                                    @if($upgrade3hBanner)
+                                        <div style="margin-top: 3px; background-color: #fffbeb; border: 1px solid #fcd34d; border-left: 3px solid #d97706; border-radius: 4px; padding: 2.5px 7px; font-size: 6.5pt; color: #92400e; font-weight: 700;">
+                                            {{ $upgrade3hBanner }}
+                                        </div>
                                     @endif
                                 </td>
                                 <td style="text-align: center; color: #64748b; font-weight: 600;">

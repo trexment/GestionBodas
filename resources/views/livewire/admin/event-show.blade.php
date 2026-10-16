@@ -3289,7 +3289,17 @@
                                             </div>
                                         </div>
                                         @if(!empty($quote_services['pack_duo_360']['selected']))
-                                            <div class="mt-2 pt-2 border-t border-indigo-200/60">
+                                            <div class="mt-2 pt-2 border-t border-indigo-200/60 space-y-1.5">
+                                                @if((int)($quote_services['pack_duo_360']['hours'] ?? 3) === 2)
+                                                    @php
+                                                        $duo3h = (float)($quote_services['pack_duo_360']['price_3h'] ?? 850);
+                                                        $duoDiff = max(0, $duo3h - (float)($quote_services['pack_duo_360']['price'] ?? 690));
+                                                    @endphp
+                                                    <div class="bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5 text-[10px] font-bold text-amber-900 flex items-center gap-1.5">
+                                                        <span>✨</span>
+                                                        <span>En el Dossier PDF se mostrará automáticamente la opción de elegir <strong>3 Horas por {{ number_format($duo3h, 0) }} €</strong> (solo +{{ number_format($duoDiff, 0) }} € más).</span>
+                                                    </div>
+                                                @endif
                                                 <label class="block text-[10px] font-bold text-indigo-900 mb-1">Descripción en el presupuesto (editable):</label>
                                                 <textarea rows="2" wire:model.live="quote_services.pack_duo_360.desc" class="w-full text-[11px] border-indigo-200 rounded-lg p-1.5 bg-white text-gray-700 focus:ring-indigo-500"></textarea>
                                             </div>
@@ -3323,7 +3333,17 @@
                                             </div>
                                         </div>
                                         @if(!empty($quote_services['photobooth']['selected']))
-                                            <div class="mt-2 pt-2 border-t border-indigo-100">
+                                            <div class="mt-2 pt-2 border-t border-indigo-100 space-y-1.5">
+                                                @if((int)($quote_services['photobooth']['hours'] ?? 2) === 2)
+                                                    @php
+                                                        $pb3h = (float)($quote_services['photobooth']['price_3h'] ?? 430);
+                                                        $pbDiff = max(0, $pb3h - (float)($quote_services['photobooth']['price'] ?? 380));
+                                                    @endphp
+                                                    <div class="bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5 text-[10px] font-bold text-amber-900 flex items-center gap-1.5">
+                                                        <span>✨</span>
+                                                        <span>En el Dossier PDF se mostrará automáticamente la opción de elegir <strong>3 Horas por {{ number_format($pb3h, 0) }} €</strong> (solo +{{ number_format($pbDiff, 0) }} € más).</span>
+                                                    </div>
+                                                @endif
                                                 <label class="block text-[10px] font-bold text-gray-600 mb-1">Descripción incluida en PDF (editable):</label>
                                                 <textarea rows="2" wire:model.live="quote_services.photobooth.desc" class="w-full text-[11px] border-gray-200 rounded-lg p-1.5 bg-white text-gray-700 focus:ring-indigo-500"></textarea>
                                             </div>
@@ -3357,7 +3377,17 @@
                                             </div>
                                         </div>
                                         @if(!empty($quote_services['video_360']['selected']))
-                                            <div class="mt-2 pt-2 border-t border-purple-100">
+                                            <div class="mt-2 pt-2 border-t border-purple-100 space-y-1.5">
+                                                @if((int)($quote_services['video_360']['hours'] ?? 2) === 2)
+                                                    @php
+                                                        $v360_3h = (float)($quote_services['video_360']['price_3h'] ?? 490);
+                                                        $v360Diff = max(0, $v360_3h - (float)($quote_services['video_360']['price'] ?? 430));
+                                                    @endphp
+                                                    <div class="bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5 text-[10px] font-bold text-amber-900 flex items-center gap-1.5">
+                                                        <span>✨</span>
+                                                        <span>En el Dossier PDF se mostrará automáticamente la opción de elegir <strong>3 Horas por {{ number_format($v360_3h, 0) }} €</strong> (solo +{{ number_format($v360Diff, 0) }} € más).</span>
+                                                    </div>
+                                                @endif
                                                 <label class="block text-[10px] font-bold text-gray-600 mb-1">Descripción incluida en PDF (editable):</label>
                                                 <textarea rows="2" wire:model.live="quote_services.video_360.desc" class="w-full text-[11px] border-gray-200 rounded-lg p-1.5 bg-white text-gray-700 focus:ring-purple-500"></textarea>
                                             </div>
