@@ -87,8 +87,35 @@ class EventManager extends Component
 
     public function mount()
     {
+        if (auth()->check() && in_array(auth()->user()->role, ['admin', 'dj'])) {
+            $syncRes = (new \App\Services\ImapLeadFetcherService())->autoSyncIfDue(120);
+            if ($syncRes && ($syncRes['total_leads_created'] ?? 0) > 0) {
+                session()->flash('message', "📩 ¡{$syncRes['total_leads_created']} nueva(s) solicitud(es) de evento importada(s) automáticamente desde el correo!");
+            }
+        }
         $this->loadEvents();
         $this->loadStaff();
+    }
+
+    public function syncEmailLeads()
+    {
+        try {
+            \Illuminate\Support\Facades\Cache::forget('imap_auto_sync_last_run');
+            $res = (new \App\Services\ImapLeadFetcherService())->fetchAllActiveMailboxes();
+            $created = $res['total_leads_created'] ?? 0;
+            $scanned = $res['total_scanned'] ?? 0;
+
+            $this->loadEvents();
+            $this->loadStaff();
+
+            if ($created > 0) {
+                session()->flash('message', "✅ ¡Sincronización completada! Se han importado {$created} nuevo(s) evento(s) de {$scanned} correos recientes revisados.");
+            } else {
+                session()->flash('message', "📬 Buzones al día ({$scanned} correos recientes verificados, 0 solicitudes nuevas pendientes).");
+            }
+        } catch (\Throwable $e) {
+            session()->flash('error', 'Error al sincronizar buzones IMAP: ' . $e->getMessage());
+        }
     }
 
     public function loadStaff()

@@ -25,10 +25,18 @@
             <h2 class="text-xl sm:text-2xl font-black text-gray-800 dark:text-white tracking-tight">Próximos Eventos</h2>
             <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Planificación, asignación de DJ / Asistente y seguimiento integral.</p>
         </div>
-        <button wire:click="openCreateModal" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-bold py-2.5 px-5 rounded-xl shadow-md shadow-indigo-600/20 text-xs sm:text-sm transition flex items-center justify-center gap-2 cursor-pointer">
-            <span>➕</span>
-            <span>Nuevo Evento</span>
-        </button>
+        <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+            <button type="button" wire:click="syncEmailLeads" wire:loading.attr="disabled" class="flex-1 sm:flex-none bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 disabled:opacity-60 text-white font-bold py-2.5 px-4 rounded-xl shadow-md shadow-emerald-600/20 text-xs sm:text-sm transition flex items-center justify-center gap-2 cursor-pointer">
+                <span wire:loading.remove wire:target="syncEmailLeads">📩</span>
+                <span wire:loading wire:target="syncEmailLeads" class="animate-spin">🔄</span>
+                <span wire:loading.remove wire:target="syncEmailLeads">Sincronizar Leads</span>
+                <span wire:loading wire:target="syncEmailLeads">Sincronizando...</span>
+            </button>
+            <button wire:click="openCreateModal" class="flex-1 sm:flex-none bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-bold py-2.5 px-5 rounded-xl shadow-md shadow-indigo-600/20 text-xs sm:text-sm transition flex items-center justify-center gap-2 cursor-pointer">
+                <span>➕</span>
+                <span>Nuevo Evento</span>
+            </button>
+        </div>
     </div>
 
     <!-- ALERTA GLOBAL DE SEGUIMIENTO (SI HAY EVENTOS SIN RESPUESTA) -->

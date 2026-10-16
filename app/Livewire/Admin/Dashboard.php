@@ -60,6 +60,10 @@ class Dashboard extends Component
         $user = auth()->user();
         $isAdmin = $user->role === 'admin';
 
+        if ($isAdmin) {
+            (new \App\Services\ImapLeadFetcherService())->autoSyncIfDue(120);
+        }
+
         // Eventos Sin Respuesta (seguimiento)
         $noResponseQuery = Event::with('client')->where('status', 'no_response');
         if (!$isAdmin) {

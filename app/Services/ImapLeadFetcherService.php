@@ -48,6 +48,25 @@ class ImapLeadFetcherService
     }
 
     /**
+     * Sincroniza en segundo plano si ha pasado el tiempo de enfriamiento (por defecto 120s)
+     */
+    public function autoSyncIfDue(int $cooldownSeconds = 120): ?array
+    {
+        try {
+            $cacheKey = 'imap_auto_sync_last_run';
+            $lastRun = \Illuminate\Support\Facades\Cache::get($cacheKey);
+            if ($lastRun && (time() - (int)$lastRun) < $cooldownSeconds) {
+                return null;
+            }
+            \Illuminate\Support\Facades\Cache::put($cacheKey, time(), $cooldownSeconds);
+            return $this->fetchAllActiveMailboxes();
+        } catch (\Throwable $e) {
+            Log::warning('AutoSync IMAP omitido: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
      * Escanea y procesa todos los buzones activos o uno en particular
      */
     public function fetchAllActiveMailboxes(?string $specificBrand = null): array
@@ -111,10 +130,20 @@ class ImapLeadFetcherService
      */
     protected function fetchNativeImap($stream, string $brandKey, array $config, array $result): array
     {
-        $emails = imap_search($stream, 'UNSEEN');
+        $sinceDate = date('d-M-Y', strtotime('-7 days'));
+        $unseenEmails = imap_search($stream, 'UNSEEN') ?: [];
+        $recentEmails = imap_search($stream, 'SINCE "' . $sinceDate . '"') ?: [];
 
-        if (!$emails || !is_array($emails)) {
+        $emails = array_values(array_unique(array_merge($recentEmails, $unseenEmails)));
+        sort($emails, SORT_NUMERIC);
+
+        if (empty($emails)) {
             return $result;
+        }
+
+        // Limitar a los últimos 30 correos recientes para máxima velocidad
+        if (count($emails) > 30) {
+            $emails = array_slice($emails, -30);
         }
 
         $markAsRead = Setting::get('imap_mark_as_read', '1') === '1';
@@ -144,10 +173,9 @@ class ImapLeadFetcherService
                         'date' => $event->event_date ? $event->event_date->format('d/m/Y') : null,
                     ];
                 }
-            }
-
-            if ($markAsRead) {
-                imap_setflag_full($stream, (string)$emailNumber, "\\Seen");
+                if ($markAsRead) {
+                    imap_setflag_full($stream, (string)$emailNumber, "\\Seen");
+                }
             }
         }
 
@@ -167,11 +195,13 @@ class ImapLeadFetcherService
         // 2. Select INBOX
         $this->sendSocketCmd($socket, "A02 SELECT INBOX");
 
-        // 3. Search UNSEEN
-        $searchResp = $this->sendSocketCmd($socket, "A03 SEARCH UNSEEN");
+        // 3. Search UNSEEN y recientes (últimos 7 días) para no perder leads abiertos en el móvil
+        $sinceDate = date('d-M-Y', strtotime('-7 days'));
+        $searchResp = $this->sendSocketCmd($socket, "A03 SEARCH SINCE {$sinceDate}");
+        $unseenResp = $this->sendSocketCmd($socket, "A03B SEARCH UNSEEN");
         
         $msgIds = [];
-        foreach ($searchResp as $line) {
+        foreach (array_merge($searchResp, $unseenResp) as $line) {
             if (str_starts_with($line, '* SEARCH')) {
                 $parts = explode(' ', trim(substr($line, 8)));
                 foreach ($parts as $p) {
@@ -182,6 +212,12 @@ class ImapLeadFetcherService
             }
         }
 
+        $msgIds = array_values(array_unique($msgIds));
+        sort($msgIds, SORT_NUMERIC);
+        if (count($msgIds) > 30) {
+            $msgIds = array_slice($msgIds, -30);
+        }
+
         $markAsRead = Setting::get('imap_mark_as_read', '1') === '1';
         $initialStatus = Setting::get('imap_default_status', 'no_response');
 
@@ -189,7 +225,7 @@ class ImapLeadFetcherService
             $result['scanned']++;
 
             // Fetch RFC822 full text
-            $fetchLines = $this->sendSocketCmd($socket, "A04 FETCH {$id} (BODY[TEXT] BODY[HEADER.FIELDS (FROM SUBJECT DATE TO)])");
+            $fetchLines = $this->sendSocketCmd($socket, "A04 FETCH {$id} (BODY.PEEK[TEXT] BODY.PEEK[HEADER.FIELDS (FROM SUBJECT DATE TO)])");
             $rawContent = implode("\n", $fetchLines);
 
             $rawSubject = $this->extractHeaderValue($rawContent, 'Subject') ?: 'Solicitud de información';
@@ -214,10 +250,9 @@ class ImapLeadFetcherService
                         'date' => $event->event_date ? $event->event_date->format('d/m/Y') : null,
                     ];
                 }
-            }
-
-            if ($markAsRead) {
-                $this->sendSocketCmd($socket, "A05 STORE {$id} +FLAGS (\\Seen)");
+                if ($markAsRead) {
+                    $this->sendSocketCmd($socket, "A05 STORE {$id} +FLAGS (\\Seen)");
+                }
             }
         }
 
@@ -227,12 +262,45 @@ class ImapLeadFetcherService
     }
 
     /**
+     * Limpia y decodifica el cuerpo del correo (soporta Quoted-Printable, Multipart MIME y bloques HTML)
+     */
+    public function cleanEmailBody(string $rawBody): string
+    {
+        $text = $rawBody;
+
+        // 1. Si hay secuencias Quoted-Printable (ej. =C3=A9, =C3=81, cortes de línea =\r\n), decodificarlas
+        if (preg_match('/=[0-9A-Fa-f]{2}|=\r?\n/', $text)) {
+            $text = quoted_printable_decode($text);
+        }
+
+        // 2. Eliminar cabeceras MIME residuales de partes multipart
+        $text = preg_replace('/^--[^\r\n]+$/m', '', $text);
+        $text = preg_replace('/^Content-(?:Type|Transfer-Encoding|Disposition):[^\r\n]*$/mi', '', $text);
+
+        // 3. Eliminar bloques <style>, <head> y <script> completos antes de quitar etiquetas
+        $text = preg_replace('/<(style|head|script)\b[^>]*>.*?<\/\1>/is', '', $text);
+
+        // 4. Convertir cierres de bloque HTML en saltos de línea para que no se peguen los campos (ej. </div><div>)
+        $text = preg_replace('/<(?:br\s*\/?|\/p|\/div|\/tr|\/li|\/h[1-6]|\/td)>/i', "\n", $text);
+
+        // 5. Quitar resto de etiquetas HTML y decodificar entidades
+        $text = strip_tags($text);
+        $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+        // 6. Normalizar espacios y saltos de línea
+        $lines = array_map(fn($l) => trim(preg_replace('/[^\S\r\n]+/', ' ', $l)), explode("\n", str_replace("\r\n", "\n", $text)));
+        $lines = array_filter($lines, fn($l) => $l !== '');
+
+        return implode("\n", $lines);
+    }
+
+    /**
      * Analizador inteligente de correos para detectar y extraer leads de bodas/eventos
      */
     public function parseLeadFromEmail(string $subject, string $body, string $fromName, string $fromEmail, string $brandKey): array
     {
         $subjectClean = $this->decodeMimeHeader($subject);
-        $bodyClean = strip_tags(html_entity_decode($body, ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+        $bodyClean = $this->cleanEmailBody($body);
         
         $fromEmailLower = strtolower(trim($fromEmail));
         $fromNameLower = mb_strtolower(trim($fromName));
@@ -241,15 +309,15 @@ class ImapLeadFetcherService
         // 1. Blacklist de dominios de sistema, spam o servicios automáticos
         $blacklistedDomains = [
             'microsoft.com', 'google.com', 'apple.com', 'ptd.net', 'ganoexcel.us',
-            'madrigalmarketing.es', 'nunezandson.com', 'javnx.es', 'eventosmusicales.local',
-            'email.bodas.net', 'mail.madrigalmarketing.es', 'sendgrid.net', 'mailchimp.com'
+            'nunezandson.com', 'javnx.es', 'javnxdj.com', 'eventosmusicales.local',
+            'email.bodas.net', 'sendgrid.net', 'mailchimp.com'
         ];
 
         // 2. Blacklist de correos específicos de spam o no deseados
         $blacklistedEmails = [
             'info@bodas.net', 'business@email.bodas.net', 'atencionalcliente@bodas.net',
-            'noreply@bodas.net', 'muralikhalifa@gmail.com', 'info@madrigalmarketing.es',
-            'hola@mail.madrigalmarketing.es', 'sms2333@ptd.net', 'rmassoud@ganoexcel.us'
+            'noreply@bodas.net', 'muralikhalifa@gmail.com',
+            'sms2333@ptd.net', 'rmassoud@ganoexcel.us'
         ];
 
         // 3. Prefijos de servicios automáticos / no-reply
@@ -259,10 +327,13 @@ class ImapLeadFetcherService
             'news@', 'bounce@', 'notification@', 'notifications@', 'soporte@', 'support@'
         ];
 
+        // Portales proveedores de leads (el remitente es la agencia/portal, pero los datos del cliente vienen dentro del cuerpo)
         $isFromBodasNet = str_contains($fromEmailLower, 'bodas.net') || str_contains($fromNameLower, 'bodas.net');
+        $isFromMadrigal = str_contains($fromEmailLower, 'madrigalmarketing.es') || str_contains($fromNameLower, 'madrigal');
+        $isFromLeadPortal = $isFromBodasNet || $isFromMadrigal;
 
-        // Descartar inmediatamente si no es de bodas.net y coincide con la lista negra
-        if (!$isFromBodasNet) {
+        // Descartar inmediatamente si no viene de un portal de leads y coincide con la lista negra
+        if (!$isFromLeadPortal) {
             if (in_array($fromDomain, $blacklistedDomains) || in_array($fromEmailLower, $blacklistedEmails)) {
                 return ['is_lead' => false];
             }
@@ -273,9 +344,8 @@ class ImapLeadFetcherService
             }
         }
 
-        // Descartar si el nombre del remitente es de sistema o marketing
+        // Descartar si el nombre del remitente es de sistema o spam conocido
         if (str_contains($fromNameLower, 'robertnar')
-            || str_contains($fromNameLower, 'madrigal')
             || str_contains($fromNameLower, 'microsoft')
             || str_contains($fromNameLower, 'javnx dj')
             || str_contains($fromNameLower, 'servicio de atención')
@@ -292,7 +362,7 @@ class ImapLeadFetcherService
         $leadKeywords = [
             'presupuesto', 'solicitud', 'boda', 'disponibilidad',
             'formulario', 'cotización', 'cotizacion',
-            'tarifa', 'pack', 'reserva'
+            'tarifa', 'pack', 'reserva', 'información', 'informacion'
         ];
 
         $isLead = false;
@@ -303,40 +373,50 @@ class ImapLeadFetcherService
             }
         }
 
-        if (!$isLead && !$isFromBodasNet) {
+        if (!$isLead && !$isFromLeadPortal) {
             return ['is_lead' => false];
         }
 
         $isBodasNet = $isFromBodasNet || str_contains($lowerText, 'bodas.net');
+        $isMadrigal = $isFromMadrigal || str_contains($lowerText, 'madrigalmarketing.es') || str_contains($lowerText, 'madrigal marketing');
+        $isPortalEmail = $isBodasNet || $isMadrigal;
         
         // 4. Extraer Teléfono
         $phone = null;
-        if (preg_match('/(?:Tel[eé]fono|Tel|M[oó]vil|Whatsapp|WhatsApp|Phone)\s*[:\-]?\s*([+\d\s().-]{9,20})/i', $bodyClean, $m)) {
+        if (preg_match('/(?:Tel[eé]fono|Tel|M[oó]vil|Whatsapp|WhatsApp|Phone)\s*[:\-]?\s*([+\d\s().-]{9,20})/iu', $bodyClean, $m)) {
             $rawPhone = preg_replace('/[^\d+]/', '', trim($m[1]));
             if (strlen(preg_replace('/[^\d]/', '', $rawPhone)) >= 9) {
                 $phone = $rawPhone;
             }
-        } elseif (preg_match('/\b(?:\+34\s*)?[67]\d{2}[\s.-]?\d{3}[\s.-]?\d{3}\b/', $bodyClean, $m)) {
+        } elseif (preg_match('/(?:\+34\s*)?[67]\d{2}[\s.-]?\d{3}[\s.-]?\d{3}\b/', $bodyClean, $m)) {
             $phone = preg_replace('/[^\d+]/', '', trim($m[0]));
         }
 
         // 5. Extraer Nombre del Cliente
-        $clientName = $fromName ?: 'Cliente Potencial';
-        if ($isBodasNet || str_contains($lowerText, 'nombre:')) {
-            if (preg_match('/(?:Nombre|Novios?|Contacto)\s*[:\-]\s*([^\n\r,]+)/i', $bodyClean, $m)) {
+        $clientName = $isPortalEmail ? null : ($fromName ?: 'Cliente Potencial');
+        if ($isPortalEmail || str_contains($lowerText, 'nombre:')) {
+            if (preg_match('/(?:Nombre(?:\s+completo)?|Novios?|Contacto)\s*[:\-]\s*([^\n\r,]+)/iu', $bodyClean, $m)) {
                 $candidateName = trim($m[1]);
-                if (!empty($candidateName) && !str_contains(mb_strtolower($candidateName), 'bodas.net')) {
-                    $clientName = $candidateName;
+                // Limpiar si por algún motivo quedó pegada la etiqueta siguiente
+                $candidateName = preg_replace('/\s*(?:Fecha|Lugar|Tel[eé]fono|Email|Correo|Campa[ñn]a)\s*[:\-].*$/iu', '', $candidateName);
+                $candidateLower = mb_strtolower($candidateName);
+                if (!empty($candidateName) && !str_contains($candidateLower, 'bodas.net') && !str_contains($candidateLower, 'madrigal')) {
+                    $clientName = trim($candidateName);
                 }
             }
         }
 
-        // 6. Extraer Email del Cliente
-        $clientEmail = $fromEmail;
-        if ($isBodasNet || str_contains($fromEmailLower, 'no-reply') || str_contains($fromEmailLower, 'noreply') || in_array($fromEmailLower, $blacklistedEmails)) {
+        // 6. Extraer Email del Cliente (nunca usar el email del portal como email del cliente)
+        $portalOrSystemEmails = array_merge($blacklistedEmails, [
+            'info@madrigalmarketing.es', 'hola@mail.madrigalmarketing.es', 'info@nunezandson.com', 'info@javnxdj.com'
+        ]);
+        $clientEmail = $isPortalEmail ? null : $fromEmail;
+        if ($isPortalEmail || str_contains($fromEmailLower, 'no-reply') || str_contains($fromEmailLower, 'noreply') || in_array($fromEmailLower, $portalOrSystemEmails)) {
             if (preg_match('/(?:Email|Correo|E-mail)\s*[:\-]?\s*([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i', $bodyClean, $m)) {
                 $candidateEmail = strtolower(trim($m[1]));
-                if (!str_contains($candidateEmail, 'bodas.net') && !in_array($candidateEmail, $blacklistedEmails)) {
+                if (!str_contains($candidateEmail, 'bodas.net')
+                    && !str_contains($candidateEmail, 'madrigalmarketing.es')
+                    && !in_array($candidateEmail, $portalOrSystemEmails)) {
                     $clientEmail = $candidateEmail;
                 } else {
                     $clientEmail = null;
@@ -346,31 +426,22 @@ class ImapLeadFetcherService
             }
         }
 
-        // Si es de bodas.net, solo es un lead si pudimos extraer novios y un teléfono o email real
-        if ($isBodasNet) {
-            $hasRealClientName = !empty($clientName) && !str_contains(mb_strtolower($clientName), 'bodas.net');
-            if (!$hasRealClientName || (empty($phone) && empty($clientEmail))) {
-                return ['is_lead' => false];
-            }
-            $isLead = true;
-        }
-
         // 7. Extraer Fecha del Evento
         $eventDate = null;
         $explicitDateFound = false;
-        if (preg_match('/(?:Fecha(?:\s+de)?(?:\s+la)?(?:\s+boda|\s+evento)?|Día|Dia|Celebración|Celebracion|Enlace)\s*[:\-]?\s*([0-3]?\d[\/\-\.][0-1]?\d[\/\-\.]20\d{2})/i', $bodyClean, $m)) {
+        if (preg_match('/(?:Fecha(?:\s+de)?(?:\s+la)?(?:\s+boda|\s+evento)?|Día|Dia|Celebración|Celebracion|Enlace)\s*[:\-]?\s*([0-3]?\d[\/\-\.][0-1]?\d[\/\-\.]20\d{2})/iu', $bodyClean, $m)) {
             try {
                 $dateStr = str_replace(['.', '-'], '/', trim($m[1]));
                 $eventDate = Carbon::createFromFormat('d/m/Y', $dateStr)->format('Y-m-d');
                 $explicitDateFound = true;
             } catch (\Throwable $e) {}
-        } elseif (preg_match('/(?:Fecha(?:\s+de)?(?:\s+la)?(?:\s+boda|\s+evento)?|Día|Dia|Celebración|Celebracion|Enlace)\s*[:\-]?\s*(20\d{2}[\/\-\.][0-1]?\d[\/\-\.][0-3]?\d)/i', $bodyClean, $m)) {
+        } elseif (preg_match('/(?:Fecha(?:\s+de)?(?:\s+la)?(?:\s+boda|\s+evento)?|Día|Dia|Celebración|Celebracion|Enlace)\s*[:\-]?\s*(20\d{2}[\/\-\.][0-1]?\d[\/\-\.][0-3]?\d)/iu', $bodyClean, $m)) {
             try {
                 $dateStr = str_replace(['.', '/'], '-', trim($m[1]));
                 $eventDate = Carbon::parse($dateStr)->format('Y-m-d');
                 $explicitDateFound = true;
             } catch (\Throwable $e) {}
-        } elseif (preg_match('/([0-3]?\d)\s+de\s+(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)\s+(?:de\s+)?(20\d{2})/i', $bodyClean, $m)) {
+        } elseif (preg_match('/([0-3]?\d)\s+de\s+(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)\s+(?:de\s+)?(20\d{2})/iu', $bodyClean, $m)) {
             $months = [
                 'enero' => 1, 'febrero' => 2, 'marzo' => 3, 'abril' => 4,
                 'mayo' => 5, 'junio' => 6, 'julio' => 7, 'agosto' => 8,
@@ -383,6 +454,21 @@ class ImapLeadFetcherService
                 $eventDate = Carbon::createFromDate($year, $month, $day)->format('Y-m-d');
                 $explicitDateFound = true;
             } catch (\Throwable $e) {}
+        }
+
+        // Si viene de un portal (Bodas.net o Madrigal Marketing), exigir que hayamos extraído el nombre real del cliente y teléfono/fecha/email
+        if ($isPortalEmail) {
+            $hasRealClientName = !empty($clientName)
+                && !str_contains(mb_strtolower($clientName), 'bodas.net')
+                && !str_contains(mb_strtolower($clientName), 'madrigal');
+            if (!$hasRealClientName || (empty($phone) && empty($clientEmail) && !$explicitDateFound)) {
+                return ['is_lead' => false];
+            }
+            $isLead = true;
+        }
+
+        if (empty($clientName)) {
+            $clientName = 'Cliente Potencial';
         }
 
         // RESTRICCIÓN ESTRICTA DE CALIDAD DE LEADS:
@@ -402,11 +488,25 @@ class ImapLeadFetcherService
 
         // 8. Extraer Lugar / Finca / Ciudad
         $location = 'Por definir';
-        if (preg_match('/(?:Lugar|Finca|Restaurante|Espacio|Ubicaci[oó]n|Ciudad|Poblaci[oó]n)\s*[:\-]?\s*([^\n\r,]+)/i', $bodyClean, $m)) {
+        if (preg_match('/(?:Lugar|Finca|Restaurante|Espacio|Ubicaci[oó]n|Ciudad|Poblaci[oó]n)\s*[:\-]?\s*([^\n\r,]+)/iu', $bodyClean, $m)) {
             $locClean = trim($m[1]);
-            if (strlen($locClean) > 2) {
-                $location = $locClean;
+            $locClean = preg_replace('/\s*(?:Tel[eé]fono|Fecha|Campa[ñn]a|Email)\s*[:\-].*$/iu', '', $locClean);
+            if (mb_strlen($locClean) > 1) {
+                $location = trim($locClean);
             }
+        }
+
+        // 8b. Extraer Campaña / Creativo (ej. Madrigal Marketing)
+        $campaign = null;
+        if (preg_match('/(?:Campa[ñn]a(?:\s*\/\s*Creativo)?|Creativo|Anuncio)\s*[:\-]\s*([^\n\r]+)/iu', $bodyClean, $m)) {
+            $campaign = trim($m[1]);
+        }
+
+        $sourceLabel = 'Formulario / Email';
+        if ($isMadrigal) {
+            $sourceLabel = 'Madrigal Marketing' . ($campaign ? " ({$campaign})" : '');
+        } elseif ($isBodasNet) {
+            $sourceLabel = 'Bodas.net';
         }
 
         // 9. Tipo de Evento
@@ -432,6 +532,8 @@ class ImapLeadFetcherService
             'event_date' => $eventDate,
             'location' => $location,
             'event_type' => $eventType,
+            'source' => $sourceLabel,
+            'campaign' => $campaign,
             'body_snippet' => mb_substr($bodyClean, 0, 1000),
             'full_body' => $bodyClean,
             'brand' => $brandKey,
@@ -449,12 +551,13 @@ class ImapLeadFetcherService
 
         $clientEmail = !empty($leadData['client_email']) ? strtolower(trim($leadData['client_email'])) : null;
         
-        // Comprobar si el email está en lista negra
+        // Comprobar si el email está en lista negra para nunca asignarlo como email personal de cliente
         $bannedEmailDomains = ['bodas.net', 'microsoft.com', 'madrigalmarketing.es', 'ptd.net', 'ganoexcel.us'];
         if ($clientEmail) {
             foreach ($bannedEmailDomains as $bd) {
                 if (str_ends_with($clientEmail, '@' . $bd) || str_contains($clientEmail, '.' . $bd)) {
-                    return null; // NUNCA crear cliente con estas cuentas
+                    $clientEmail = null;
+                    break;
                 }
             }
         }
@@ -508,22 +611,33 @@ class ImapLeadFetcherService
                 ? $clientEmail
                 : ('lead_' . (!empty($leadData['client_phone']) ? preg_replace('/\D/', '', $leadData['client_phone']) : time() . '_' . rand(100, 999)) . '@eventosmusicales.local');
 
-            $client = User::create([
-                'name' => $leadData['client_name'],
-                'email' => $finalEmail,
-                'phone' => $leadData['client_phone'],
-                'role' => 'client',
-                'password' => bcrypt(Str::random(16)),
-            ]);
+            // Verificar que el email autogenerado tampoco exista ya
+            $existingByFinalEmail = User::where('email', $finalEmail)->first();
+            if ($existingByFinalEmail) {
+                $client = $existingByFinalEmail;
+            } else {
+                $client = User::create([
+                    'name' => $leadData['client_name'],
+                    'email' => $finalEmail,
+                    'phone' => $leadData['client_phone'],
+                    'role' => 'client',
+                    'password' => bcrypt(Str::random(16)),
+                ]);
+            }
         }
 
-        // Evitar duplicar evento si ya existe uno con el mismo cliente, marca y fecha exacta
-        if ($client && $leadData['event_date']) {
-            $existing = Event::where('client_id', $client->id)
-                ->where('brand', $brandKey)
-                ->whereDate('event_date', $leadData['event_date'])
-                ->first();
-            if ($existing) {
+        // Evitar duplicar evento si ya existe uno con el mismo cliente, marca y fecha exacta (o creado recientemente)
+        if ($client) {
+            $existingQuery = Event::where('client_id', $client->id)->where('brand', $brandKey);
+            if (!empty($leadData['event_date'])) {
+                $existing = (clone $existingQuery)->whereDate('event_date', $leadData['event_date'])->first();
+                if ($existing) {
+                    return null;
+                }
+            }
+            // También evitar duplicar si ya se creó un evento para este mismo cliente en los últimos 7 días con el mismo asunto
+            $recentSameClient = (clone $existingQuery)->where('created_at', '>=', now()->subDays(7))->first();
+            if ($recentSameClient && $recentSameClient->event_date && $recentSameClient->event_date->format('Y-m-d') === $leadData['event_date']) {
                 return null;
             }
         }
@@ -541,6 +655,8 @@ class ImapLeadFetcherService
         // 3. Asignar DJ por defecto
         $defaultDj = User::whereIn('role', ['admin', 'dj'])->orderBy('id')->first();
 
+        $leadSource = $leadData['source'] ?? 'Portal / Web';
+
         // 4. Crear Evento
         $event = Event::create([
             'name' => $eventName,
@@ -552,6 +668,7 @@ class ImapLeadFetcherService
             'dj_id' => $defaultDj ? $defaultDj->id : null,
             'status' => in_array($initialStatus, ['draft', 'no_response', 'confirmed']) ? $initialStatus : 'no_response',
             'notes' => "📩 LEAD IMPORTADO VÍA EMAIL (" . strtoupper($brandKey) . ")\n"
+                . "Origen: " . $leadSource . "\n"
                 . "Asunto: " . $leadData['subject'] . "\n"
                 . "Fecha recepción: " . now()->format('d/m/Y H:i') . "\n"
                 . "----------------------------------------\n"
@@ -578,11 +695,14 @@ class ImapLeadFetcherService
             if (EvolutionWhatsAppService::isEnabled()) {
                 $leadName = $leadData['client_name'] ?? 'Nuevo Contacto';
                 $leadDate = !empty($leadData['event_date']) ? \Carbon\Carbon::parse($leadData['event_date'])->format('d/m/Y') : 'Por definir';
-                $leadSource = $leadData['source'] ?? 'Portal / Web';
+                $leadPhone = $leadData['client_phone'] ?? 'No indicado';
+                $leadLocation = $leadData['location'] ?? 'Por definir';
 
                 $waLeadAlert = "📥 *¡NUEVO LEAD ENTRANTE!*\n\n"
                     . "👤 *Contacto:* {$leadName}\n"
+                    . "📞 *Teléfono:* {$leadPhone}\n"
                     . "📅 *Fecha Evento:* {$leadDate}\n"
+                    . "📍 *Lugar:* {$leadLocation}\n"
                     . "🏷️ *Origen:* {$leadSource}\n"
                     . "🏢 *Marca:* " . strtoupper($brandKey) . "\n\n"
                     . "Ya está registrado en la plataforma listo para enviar presupuesto.";
@@ -709,14 +829,15 @@ class ImapLeadFetcherService
 
     protected function getNativeBody($stream, int $msgNumber): string
     {
-        $body = imap_fetchbody($stream, $msgNumber, "1.1");
+        $peeks = defined('FT_PEEK') ? FT_PEEK : 0;
+        $body = @imap_fetchbody($stream, $msgNumber, "1.1", $peeks);
         if (empty($body)) {
-            $body = imap_fetchbody($stream, $msgNumber, "1");
+            $body = @imap_fetchbody($stream, $msgNumber, "1", $peeks);
         }
         if (empty($body)) {
-            $body = imap_body($stream, $msgNumber);
+            $body = @imap_body($stream, $msgNumber, $peeks);
         }
-        return $this->decodeMimeHeader($body);
+        return (string)$body;
     }
 
     protected function decodeMimeHeader(string $str): string
