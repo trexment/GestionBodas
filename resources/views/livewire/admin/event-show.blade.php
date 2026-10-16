@@ -3925,10 +3925,11 @@
                                         $versionNumber = $totalQuotesCount - $index;
                                         $taxLabel = $quote->tax_label;
                                         $quoteExpiresNotice = $quote->expires_at ? "\n\n⏳ *Validez:* Oferta vigente hasta el " . $quote->expires_at->format('d/m/Y') . " (" . $quote->validity_days . " días naturales)." : "";
-                                        $quoteMsg = "¡Hola " . ($event->client ? $event->client->name : 'pareja') . "! 👋\n\nTe adjuntamos el presupuesto detallado para *" . $event->name . "* por un importe total de *" . number_format($quote->amount, 2, ',', '.') . " €* (" . $taxLabel . " - Señal de reserva: *" . number_format($qSignal, 2, ',', '.') . " €* - " . $qLabel . ")." . $quoteExpiresNotice . "\n\nPodéis consultarlo con calma y avisarnos para cualquier duda o cambio. ¡Un saludo!";
+                                        $quoteOnlineUrl = $quote->public_url;
+                                        $quoteMsg = "¡Hola " . ($event->client ? $event->client->name : 'pareja') . "! 👋\n\nTe compartimos la propuesta detallada para *" . $event->name . "* por un importe total de *" . number_format($quote->amount, 2, ',', '.') . " €* (" . $taxLabel . " - Señal de reserva: *" . number_format($qSignal, 2, ',', '.') . " €* - " . $qLabel . ")." . $quoteExpiresNotice . "\n\n👉 *Ver propuesta online, descargar Dossier en PDF y Aceptar o Rechazar:*\n" . $quoteOnlineUrl . "\n\nPodéis consultarlo con calma y avisarnos para cualquier duda o cambio. ¡Un saludo!";
                                         $qWaUrl = $clientPhone ? "https://wa.me/{$clientPhone}?text=" . rawurlencode($quoteMsg) : "https://api.whatsapp.com/send?text=" . rawurlencode($quoteMsg);
                                     @endphp
-                                    <div class="p-4 border rounded-xl transition shadow-xs space-y-3 {{ $isEditingThis ? 'border-amber-400 bg-amber-50/40 ring-2 ring-amber-300' : ($isLatest ? 'border-emerald-300 bg-emerald-50/20' : 'border-gray-200 bg-gray-50/60 opacity-90') }}">
+                                    <div class="p-4 border rounded-xl transition shadow-xs space-y-3 {{ $isEditingThis ? 'border-amber-400 bg-amber-50/40 ring-2 ring-amber-300' : ($quote->status === 'accepted' ? 'border-emerald-400 bg-emerald-50/30 ring-1 ring-emerald-300' : ($quote->status === 'rejected' ? 'border-rose-300 bg-rose-50/20' : ($isLatest ? 'border-emerald-300 bg-emerald-50/20' : 'border-gray-200 bg-gray-50/60 opacity-90'))) }}">
                                         
                                         <!-- Cabecera de la Propuesta -->
                                         <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-2.5">
@@ -3939,6 +3940,16 @@
                                                     @if($isEditingThis)
                                                         <span class="bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-black px-2 py-0.5 rounded-full uppercase">
                                                             ✏️ Editando
+                                                        </span>
+                                                    @endif
+
+                                                    @if($quote->status === 'accepted')
+                                                        <span class="bg-emerald-600 text-white text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase flex items-center gap-1 shadow-2xs">
+                                                            ✅ Aceptado por Cliente {{ $quote->responded_at ? '(' . $quote->responded_at->format('d/m H:i') . ')' : '' }}
+                                                        </span>
+                                                    @elseif($quote->status === 'rejected')
+                                                        <span class="bg-rose-600 text-white text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase flex items-center gap-1 shadow-2xs">
+                                                            ❌ Rechazado por Cliente {{ $quote->responded_at ? '(' . $quote->responded_at->format('d/m H:i') . ')' : '' }}
                                                         </span>
                                                     @endif
 
@@ -3973,6 +3984,18 @@
                                                 <p class="text-[11px] text-gray-500 mt-1">
                                                     <strong>Propuesta #{{ $quote->id }}</strong> &bull; Emitida: {{ $quote->created_at->format('d/m/Y H:i') }} &bull; Validez: {{ $quote->expires_at ? $quote->expires_at->format('d/m/Y') : '' }} ({{ $quote->validity_days }} días) &bull; Señal: {{ $qLabel }}
                                                 </p>
+
+                                                @if($quote->status === 'rejected' && $quote->rejection_reason)
+                                                    <div class="mt-2 p-2.5 rounded-lg bg-rose-100/80 border border-rose-300 text-xs text-rose-900">
+                                                        <strong>📝 Motivo del rechazo indicado por el cliente:</strong> {{ $quote->rejection_reason }}
+                                                    </div>
+                                                @endif
+
+                                                @if($quote->status === 'accepted' && $quote->client_notes)
+                                                    <div class="mt-2 p-2.5 rounded-lg bg-emerald-100/80 border border-emerald-300 text-xs text-emerald-900">
+                                                        <strong>💬 Comentario del cliente al aceptar:</strong> {{ $quote->client_notes }}
+                                                    </div>
+                                                @endif
 
                                                 @php
                                                     $linkedDocs = $event->invoices->where('quote_id', $quote->id);
@@ -4024,6 +4047,10 @@
                                                 </button>
                                                 <a href="{{ $qWaUrl }}" target="_blank" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs font-bold px-2 py-1.5 rounded-lg flex items-center gap-1 transition shadow-2xs" title="Abrir en mi WhatsApp Web personal">
                                                     💬
+                                                </a>
+
+                                                <a href="{{ $quoteOnlineUrl }}" target="_blank" class="bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-300 text-xs font-bold px-2.5 py-1.5 rounded-lg flex items-center gap-1 transition shadow-2xs" title="Abrir enlace público donde el cliente descarga el PDF y acepta o rechaza el presupuesto">
+                                                    🌐 Enlace Cliente
                                                 </a>
 
                                                 <a href="{{ route('admin.quote.pdf', $quote->id) }}" target="_blank" class="bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-300 text-xs font-bold px-2.5 py-1.5 rounded-lg flex items-center gap-1 transition shadow-2xs" title="Descargar Dossier Completo con Presupuesto al final (4 Páginas)">

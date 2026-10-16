@@ -207,10 +207,13 @@ class WhatsAppTemplateService
 
         $priceNote = $totalStr ? " (*{$totalStr}*, con IVA y todo incluido)" : "";
         $validityNote = $expiresStr ? " Para vuestra tranquilidad, os guardamos la fecha bloqueada de forma provisional durante {$validityDays} días (hasta el *{$expiresStr}*) para que lo valoréis con calma." : " Os guardamos la fecha bloqueada unos días para que lo valoréis en casa.";
+        $onlineUrl = $activeQuote ? $activeQuote->public_url : ($event->token ? route('guest.quote.view', $event->token) : '');
+        $onlineLinkBlock = $onlineUrl ? "\n\n👉 *Podéis ver la propuesta online, descargar el Dossier en PDF y Aceptar o Rechazar el presupuesto desde aquí:*\n{$onlineUrl}" : "";
 
         return "¡Hola {$clientName}! 👋 Os escribe *{$companyName}*.\n\n"
              . "Os comparto por aquí vuestro dossier completo y personalizado para *{$event->name}* ({$eventDate} en {$location}):\n\n"
-             . "📑 En el documento podréis ver fotos reales de nuestros montajes de sonido e iluminación profesional, cómo trabajamos paso a paso, y al final tenéis el *presupuesto cerrado con las opciones seleccionadas*{$priceNote}.\n\n"
+             . "📑 En el documento podréis ver fotos reales de nuestros montajes de sonido e iluminación profesional, cómo trabajamos paso a paso, y al final tenéis el *presupuesto cerrado con las opciones seleccionadas*{$priceNote}."
+             . $onlineLinkBlock . "\n\n"
              . "{$validityNote}\n\n"
              . "Echadle un vistazo cuando tengáis un momento y decidme: ¿qué os parece? ¿Tenéis alguna duda? 🎧✨";
     }
@@ -702,12 +705,16 @@ class WhatsAppTemplateService
             ? "• Señal de reserva ({$signalLabel}): " . number_format($signalAmount, 2, ',', '.') . " €\n• Restante el día del evento: " . number_format($remainingAmount, 2, ',', '.') . " €"
             : "• Pago íntegro el día del evento: " . number_format($quoteAmount, 2, ',', '.') . " € (Sin señal previa de reserva)";
 
+        $onlineUrl = $latestQuote ? $latestQuote->public_url : ($event->token ? route('guest.quote.view', $event->token) : '');
+        $onlineLinkText = $onlineUrl ? "\n\n👉 *Ver propuesta online, descargar Dossier en PDF y Aceptar / Rechazar:*\n{$onlineUrl}" : "";
+
         return "¡Hola {$clientName}! 👋\n\nOs compartimos la propuesta detallada para vuestro evento *{$event->name}*" . ($eventDate ? " ({$eventDate}{$loc})" : "") . ":\n\n"
              . ($quoteItemsText ?: '• Servicios musicales y sonorización profesional.') . "\n\n"
              . "💰 *TOTAL PRESUPUESTO:* " . number_format($quoteAmount, 2, ',', '.') . " €\n\n"
              . "📌 *CONDICIONES DE PAGO:*\n"
              . $paymentConditionsText
-             . $quoteValidityNotice . "\n\n"
+             . $quoteValidityNotice
+             . $onlineLinkText . "\n\n"
              . "Cualquier duda o ajuste, estamos a vuestra entera disposición. ¡Un saludo!";
     }
 

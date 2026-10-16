@@ -59,6 +59,9 @@ Route::get('/guest/form/{token}', EventForm::class)->name('guest.form');
 // Public Online Contract Review & Signature Portal
 Route::get('/contrato/{token}', ContractSign::class)->name('guest.contract');
 
+// Public Online Quote Review, Dossier PDF Download & Accept/Reject Portal
+Route::get('/propuesta/{token}', \App\Livewire\Guest\QuoteResponse::class)->name('guest.quote.view');
+
 // Public Guest Live Requests Portal (QR Code) - Rate limited to 40 requests/min
 Route::get('/peticiones/{token}', LiveRequests::class)->middleware('throttle:40,1')->name('guest.requests');
 

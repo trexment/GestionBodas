@@ -14,6 +14,9 @@ class Quote extends Model
         'brand',
         'amount',
         'status',
+        'rejection_reason',
+        'client_notes',
+        'responded_at',
         'pdf_path',
         'deposit_type',
         'deposit_percentage',
@@ -30,7 +33,49 @@ class Quote extends Model
         'tax_rate' => 'decimal:2',
         'subtotal_amount' => 'decimal:2',
         'tax_amount' => 'decimal:2',
+        'responded_at' => 'datetime',
     ];
+
+    protected static bool $schemaChecked = false;
+
+    protected static function booted(): void
+    {
+        static::EnsureQuoteResponseColumns();
+    }
+
+    public static function EnsureQuoteResponseColumns(): void
+    {
+        if (static::$schemaChecked) {
+            return;
+        }
+        static::$schemaChecked = true;
+
+        try {
+            if (\Illuminate\Support\Facades\Schema::hasTable('quotes')) {
+                if (!\Illuminate\Support\Facades\Schema::hasColumn('quotes', 'rejection_reason')) {
+                    \Illuminate\Support\Facades\Schema::table('quotes', function (\Illuminate\Database\Schema\Blueprint $table) {
+                        $table->text('rejection_reason')->nullable()->after('status');
+                        $table->text('client_notes')->nullable()->after('rejection_reason');
+                        $table->timestamp('responded_at')->nullable()->after('client_notes');
+                    });
+                }
+                \Illuminate\Support\Facades\DB::statement("ALTER TABLE `quotes` MODIFY COLUMN `status` VARCHAR(50) NOT NULL DEFAULT 'pending'");
+            }
+        } catch (\Throwable $e) {
+            // Silencioso si el motor es SQLite o ya está aplicado
+        }
+    }
+
+    public function getPublicUrlAttribute(): string
+    {
+        if (!$this->event || empty($this->event->token)) {
+            return url('/presupuesto');
+        }
+        return route('guest.quote.view', [
+            'token' => $this->event->token,
+            'quote' => $this->id,
+        ]);
+    }
 
     public function event()
     {
