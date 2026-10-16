@@ -28,6 +28,9 @@
             darkMode: 'class',
             theme: {
                 extend: {
+                    spacing: {
+                        18: '4.5rem'
+                    },
                     colors: {
                         dark: {
                             50: '#f8fafc',
@@ -139,36 +142,59 @@
             color: #f8fafc !important;
         }
 
-        html.dark [class*="from-slate-50"] {
-            --tw-gradient-from: #0f172a var(--tw-gradient-from-position) !important;
-            --tw-gradient-to: #090d16 var(--tw-gradient-to-position) !important;
+        html.dark [class*="from-slate-50"],
+        html.dark [class*="from-indigo-50"],
+        html.dark [class*="from-emerald-50"] {
+            --tw-gradient-from: rgba(30, 41, 59, 0.65) var(--tw-gradient-from-position) !important;
+            --tw-gradient-to: rgba(15, 23, 42, 0.85) var(--tw-gradient-to-position) !important;
             --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
         }
 
-        /* Píldoras y Badges de Filtros */
-        html.dark .bg-amber-50 {
-            background-color: rgba(245, 158, 11, 0.15) !important;
+        /* Píldoras, Fondos suaves y Badges */
+        html.dark .bg-indigo-50,
+        html.dark [class*="bg-indigo-50/"] {
+            background-color: rgba(99, 102, 241, 0.14) !important;
+            color: #c7d2fe !important;
+        }
+        html.dark .bg-amber-50,
+        html.dark [class*="bg-amber-50/"] {
+            background-color: rgba(245, 158, 11, 0.14) !important;
             color: #fbbf24 !important;
         }
-        html.dark .bg-blue-50 {
-            background-color: rgba(59, 130, 246, 0.15) !important;
+        html.dark .bg-blue-50,
+        html.dark [class*="bg-blue-50/"] {
+            background-color: rgba(59, 130, 246, 0.14) !important;
             color: #93c5fd !important;
         }
-        html.dark .bg-purple-50 {
-            background-color: rgba(168, 85, 247, 0.15) !important;
+        html.dark .bg-purple-50,
+        html.dark [class*="bg-purple-50/"] {
+            background-color: rgba(168, 85, 247, 0.14) !important;
             color: #d8b4fe !important;
         }
         html.dark .bg-emerald-50,
-        html.dark .bg-green-50 {
-            background-color: rgba(16, 185, 129, 0.15) !important;
+        html.dark .bg-green-50,
+        html.dark [class*="bg-emerald-50/"],
+        html.dark [class*="bg-teal-50/"] {
+            background-color: rgba(16, 185, 129, 0.14) !important;
             color: #6ee7b7 !important;
         }
+        html.dark .bg-pink-50,
+        html.dark [class*="bg-pink-50/"],
         html.dark .bg-rose-50,
         html.dark .bg-red-50 {
-            background-color: rgba(244, 63, 94, 0.15) !important;
+            background-color: rgba(244, 63, 94, 0.14) !important;
             color: #fda4af !important;
         }
+        html.dark .bg-orange-50,
+        html.dark [class*="bg-orange-50/"] {
+            background-color: rgba(249, 115, 22, 0.14) !important;
+            color: #fdba74 !important;
+        }
 
+        html.dark .bg-indigo-100 {
+            background-color: rgba(99, 102, 241, 0.22) !important;
+            color: #e0e7ff !important;
+        }
         html.dark .bg-amber-100 {
             background-color: rgba(245, 158, 11, 0.22) !important;
             color: #fde68a !important;
@@ -186,10 +212,15 @@
             background-color: rgba(16, 185, 129, 0.22) !important;
             color: #a7f3d0 !important;
         }
+        html.dark .bg-pink-100,
         html.dark .bg-rose-100,
         html.dark .bg-red-100 {
             background-color: rgba(244, 63, 94, 0.22) !important;
             color: #fecdd3 !important;
+        }
+        html.dark .bg-orange-100 {
+            background-color: rgba(249, 115, 22, 0.22) !important;
+            color: #fed7aa !important;
         }
 
         /* Bordes y Divisores de Cartelas */
@@ -199,8 +230,18 @@
         html.dark .border-slate-100,
         html.dark .border-slate-200,
         html.dark .border-slate-300,
+        html.dark .border-indigo-100,
+        html.dark .border-indigo-200,
+        html.dark .border-purple-100,
+        html.dark .border-amber-100,
+        html.dark .border-amber-200,
+        html.dark .border-pink-100,
+        html.dark .border-pink-200,
+        html.dark .border-orange-100,
+        html.dark .border-orange-200,
         html.dark [class*="border-gray-200/"],
         html.dark [class*="border-slate-200/"],
+        html.dark [class*="border-indigo-200/"],
         html.dark [class*="border-emerald-200/"] {
             border-color: #1e293b !important;
         }
@@ -235,24 +276,43 @@
         }
 
         html.dark .text-indigo-700,
-        html.dark .text-indigo-800 {
-            color: #818cf8 !important;
+        html.dark .text-indigo-800,
+        html.dark .text-indigo-900,
+        html.dark .text-indigo-950 {
+            color: #a5b4fc !important;
         }
         html.dark .text-amber-700,
-        html.dark .text-amber-800 {
+        html.dark .text-amber-800,
+        html.dark .text-amber-900,
+        html.dark .text-amber-950 {
             color: #fcd34d !important;
         }
         html.dark .text-blue-700,
-        html.dark .text-blue-800 {
+        html.dark .text-blue-800,
+        html.dark .text-blue-900 {
             color: #93c5fd !important;
         }
         html.dark .text-emerald-700,
-        html.dark .text-emerald-800 {
+        html.dark .text-emerald-800,
+        html.dark .text-emerald-900,
+        html.dark .text-emerald-950 {
             color: #6ee7b7 !important;
         }
         html.dark .text-purple-700,
-        html.dark .text-purple-800 {
+        html.dark .text-purple-800,
+        html.dark .text-purple-900,
+        html.dark .text-purple-950 {
             color: #d8b4fe !important;
+        }
+        html.dark .text-pink-700,
+        html.dark .text-pink-800,
+        html.dark .text-pink-900 {
+            color: #f9a8d4 !important;
+        }
+        html.dark .text-orange-700,
+        html.dark .text-orange-800,
+        html.dark .text-orange-900 {
+            color: #fdba74 !important;
         }
 
         /* Tablas y Encabezados de Cartelas */

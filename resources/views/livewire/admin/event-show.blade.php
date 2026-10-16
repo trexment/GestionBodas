@@ -3299,32 +3299,35 @@
 
                                 <div class="space-y-2.5">
                                     <!-- Pack Dúo Todo Incluido (Fotomatón + Plataforma 360) -->
-                                    <div class="p-3 rounded-xl border-2 transition {{ !empty($quote_services['pack_duo_360']['selected']) ? 'border-indigo-600 bg-indigo-50/60 shadow-xs' : 'border-indigo-100 bg-gradient-to-r from-indigo-50/30 to-purple-50/30 hover:border-indigo-200' }}">
-                                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                                            <label class="flex items-start cursor-pointer flex-1 gap-2">
-                                                <input type="checkbox" wire:model.live="quote_services.pack_duo_360.selected" class="mt-0.5 rounded text-indigo-600 focus:ring-indigo-500 h-4 w-4">
-                                                <div>
-                                                    <div class="flex items-center gap-1.5 flex-wrap">
-                                                        <span class="text-xs font-black text-indigo-950">🔹 Pack Dúo Todo Incluido (Fotomatón + Plataforma 360º)</span>
-                                                        <span class="text-[9px] font-extrabold uppercase bg-indigo-600 text-white px-2 py-0.5 rounded-full">Ahorro Pack</span>
+                                    <div class="p-3 rounded-xl border-2 transition {{ !empty($quote_services['pack_duo_360']['selected']) ? 'border-indigo-500 bg-indigo-50/40 shadow-xs' : 'border-gray-200 hover:bg-gray-50' }}">
+                                        <div class="flex flex-col gap-2">
+                                            <div class="flex items-start justify-between gap-3">
+                                                <label class="flex items-start cursor-pointer flex-1 min-w-0 gap-2">
+                                                    <input type="checkbox" wire:model.live="quote_services.pack_duo_360.selected" class="mt-0.5 rounded text-indigo-600 focus:ring-indigo-500 h-4 w-4 shrink-0">
+                                                    <div class="min-w-0">
+                                                        <div class="flex items-center gap-1.5 flex-wrap">
+                                                            <span class="text-xs font-black text-gray-900">🔹 Pack Dúo Todo Incluido (Fotomatón + Plataforma 360º)</span>
+                                                            <span class="text-[9px] font-extrabold uppercase bg-indigo-600 text-white px-2 py-0.5 rounded-full">Ahorro Pack</span>
+                                                        </div>
+                                                        <span class="block text-[10px] text-gray-500 mt-0.5">Incluye ambos servicios completos con animadores, álbum de firmas, fotos y vídeos 360 ilimitados.</span>
                                                     </div>
-                                                    <span class="block text-[10px] text-indigo-800 mt-0.5">Incluye ambos servicios completos con animadores, álbum de firmas, fotos y vídeos 360 ilimitados.</span>
-                                                </div>
-                                            </label>
+                                                </label>
 
-                                            <div class="flex flex-wrap items-center gap-1.5 shrink-0">
-                                                <button type="button" wire:click="setPackDuoHours(2)" class="px-2.5 py-1 rounded-lg text-[11px] font-extrabold border transition {{ !empty($quote_services['pack_duo_360']['selected']) && (int)($quote_services['pack_duo_360']['hours'] ?? 3) === 2 ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs' : 'bg-white text-indigo-800 border-indigo-200 hover:bg-indigo-100' }}">
-                                                    2 Horas ({{ number_format($quote_services['pack_duo_360']['price_2h'] ?? 690, 0) }}€)
-                                                </button>
-                                                <button type="button" wire:click="setPackDuoHours(3)" class="px-2.5 py-1 rounded-lg text-[11px] font-extrabold border transition {{ !empty($quote_services['pack_duo_360']['selected']) && (int)($quote_services['pack_duo_360']['hours'] ?? 3) === 3 ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs' : 'bg-white text-indigo-800 border-indigo-200 hover:bg-indigo-100' }}">
-                                                    3 Horas ({{ number_format($quote_services['pack_duo_360']['price_3h'] ?? 850, 0) }}€)
-                                                </button>
-                                                <div class="flex items-center gap-1 ml-1">
+                                                <div class="flex items-center gap-1 shrink-0">
                                                     <input type="number" min="1" max="10" wire:model.live="quote_services.pack_duo_360.hours" class="w-11 border rounded p-1 text-xs text-center font-bold" title="Horas de servicio">
                                                     <span class="text-[10px] text-gray-500 font-bold">h</span>
-                                                    <input type="number" step="0.01" wire:model.live="quote_services.pack_duo_360.price" class="w-18 border rounded p-1 text-xs text-right font-black text-indigo-700">
-                                                    <span class="text-xs font-bold text-indigo-900">€</span>
+                                                    <input type="number" step="0.01" wire:model.live="quote_services.pack_duo_360.price" class="w-16 border rounded p-1 text-xs text-right font-black text-indigo-700">
+                                                    <span class="text-xs font-bold text-gray-600">€</span>
                                                 </div>
+                                            </div>
+
+                                            <div class="flex flex-wrap items-center gap-1.5 pl-6">
+                                                <button type="button" wire:click="setPackDuoHours(2)" class="px-2.5 py-1 rounded-lg text-[10px] font-extrabold border transition {{ !empty($quote_services['pack_duo_360']['selected']) && (int)($quote_services['pack_duo_360']['hours'] ?? 3) === 2 ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs' : 'bg-white text-gray-700 border-gray-300 hover:bg-indigo-50' }}">
+                                                    2 Horas ({{ number_format($quote_services['pack_duo_360']['price_2h'] ?? 690, 0) }}€)
+                                                </button>
+                                                <button type="button" wire:click="setPackDuoHours(3)" class="px-2.5 py-1 rounded-lg text-[10px] font-extrabold border transition {{ !empty($quote_services['pack_duo_360']['selected']) && (int)($quote_services['pack_duo_360']['hours'] ?? 3) === 3 ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs' : 'bg-white text-gray-700 border-gray-300 hover:bg-indigo-50' }}">
+                                                    3 Horas ({{ number_format($quote_services['pack_duo_360']['price_3h'] ?? 850, 0) }}€)
+                                                </button>
                                             </div>
                                         </div>
                                         @if(!empty($quote_services['pack_duo_360']['selected']))
@@ -3347,31 +3350,34 @@
 
                                     <!-- Fotomatón & Photocall por horas -->
                                     <div class="p-3 rounded-xl border transition {{ !empty($quote_services['photobooth']['selected']) ? 'border-indigo-400 bg-indigo-50/40' : 'border-gray-200 hover:bg-gray-50' }}">
-                                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                                            <label class="flex items-start cursor-pointer flex-1 gap-2">
-                                                <input type="checkbox" wire:model.live="quote_services.photobooth.selected" class="mt-0.5 rounded text-indigo-600 focus:ring-indigo-500 h-4 w-4">
-                                                <div>
-                                                    <span class="text-xs font-bold text-gray-900">📸 Fotomatón & Photocall</span>
-                                                    <span class="block text-[10px] text-gray-500">Cámara réflex, copias ilimitadas, libro de firmas de imprenta, atrezzo, USB y animador (+{{ number_format($quote_services['photobooth']['extra_hour'] ?? 50, 0) }}€/hora extra).</span>
-                                                </div>
-                                            </label>
+                                        <div class="flex flex-col gap-2">
+                                            <div class="flex items-start justify-between gap-3">
+                                                <label class="flex items-start cursor-pointer flex-1 min-w-0 gap-2">
+                                                    <input type="checkbox" wire:model.live="quote_services.photobooth.selected" class="mt-0.5 rounded text-indigo-600 focus:ring-indigo-500 h-4 w-4 shrink-0">
+                                                    <div class="min-w-0">
+                                                        <span class="text-xs font-bold text-gray-900">📸 Fotomatón & Photocall</span>
+                                                        <span class="block text-[10px] text-gray-500">Cámara réflex, copias ilimitadas, libro de firmas de imprenta, atrezzo, USB y animador (+{{ number_format($quote_services['photobooth']['extra_hour'] ?? 50, 0) }}€/hora extra).</span>
+                                                    </div>
+                                                </label>
 
-                                            <div class="flex flex-wrap items-center gap-1.5 shrink-0">
-                                                <button type="button" wire:click="setPhotoboothHours(2)" class="px-2.5 py-1 rounded-lg text-[11px] font-bold border transition {{ !empty($quote_services['photobooth']['selected']) && (int)($quote_services['photobooth']['hours'] ?? 2) === 2 ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-indigo-50' }}">
-                                                    2 Horas ({{ number_format($quote_services['photobooth']['price_2h'] ?? 380, 0) }}€)
-                                                </button>
-                                                <button type="button" wire:click="setPhotoboothHours(3)" class="px-2.5 py-1 rounded-lg text-[11px] font-bold border transition {{ !empty($quote_services['photobooth']['selected']) && (int)($quote_services['photobooth']['hours'] ?? 2) === 3 ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-indigo-50' }}">
-                                                    3 Horas ({{ number_format($quote_services['photobooth']['price_3h'] ?? 430, 0) }}€)
-                                                </button>
-                                                <button type="button" wire:click="setPhotoboothHours({{ max(4, (int)($quote_services['photobooth']['hours'] ?? 3) + 1) }})" class="px-2 py-1 rounded-lg text-[10px] font-bold border transition {{ !empty($quote_services['photobooth']['selected']) && (int)($quote_services['photobooth']['hours'] ?? 2) >= 4 ? 'bg-amber-600 text-white border-amber-600' : 'bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100' }}" title="Añadir 1 hora extra de Fotomatón">
-                                                    +1h Extra (+{{ number_format($quote_services['photobooth']['extra_hour'] ?? 50, 0) }}€)
-                                                </button>
-                                                <div class="flex items-center gap-1 ml-1">
+                                                <div class="flex items-center gap-1 shrink-0">
                                                     <input type="number" min="1" max="10" wire:model.live="quote_services.photobooth.hours" class="w-11 border rounded p-1 text-xs text-center font-bold" title="Horas de Fotomatón">
                                                     <span class="text-[10px] text-gray-500 font-bold">h</span>
                                                     <input type="number" step="0.01" wire:model.live="quote_services.photobooth.price" class="w-16 border rounded p-1 text-xs text-right font-bold text-indigo-700">
                                                     <span class="text-xs text-gray-600">€</span>
                                                 </div>
+                                            </div>
+
+                                            <div class="flex flex-wrap items-center gap-1.5 pl-6">
+                                                <button type="button" wire:click="setPhotoboothHours(2)" class="px-2.5 py-1 rounded-lg text-[10px] font-bold border transition {{ !empty($quote_services['photobooth']['selected']) && (int)($quote_services['photobooth']['hours'] ?? 2) === 2 ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-indigo-50' }}">
+                                                    2 Horas ({{ number_format($quote_services['photobooth']['price_2h'] ?? 380, 0) }}€)
+                                                </button>
+                                                <button type="button" wire:click="setPhotoboothHours(3)" class="px-2.5 py-1 rounded-lg text-[10px] font-bold border transition {{ !empty($quote_services['photobooth']['selected']) && (int)($quote_services['photobooth']['hours'] ?? 2) === 3 ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-indigo-50' }}">
+                                                    3 Horas ({{ number_format($quote_services['photobooth']['price_3h'] ?? 430, 0) }}€)
+                                                </button>
+                                                <button type="button" wire:click="setPhotoboothHours({{ max(4, (int)($quote_services['photobooth']['hours'] ?? 3) + 1) }})" class="px-2 py-1 rounded-lg text-[10px] font-bold border transition {{ !empty($quote_services['photobooth']['selected']) && (int)($quote_services['photobooth']['hours'] ?? 2) >= 4 ? 'bg-amber-600 text-white border-amber-600' : 'bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100' }}" title="Añadir 1 hora extra de Fotomatón">
+                                                    +1h Extra (+{{ number_format($quote_services['photobooth']['extra_hour'] ?? 50, 0) }}€)
+                                                </button>
                                             </div>
                                         </div>
                                         @if(!empty($quote_services['photobooth']['selected']))
@@ -3400,31 +3406,34 @@
 
                                     <!-- Plataforma Vídeo 360º por horas -->
                                     <div class="p-3 rounded-xl border transition {{ !empty($quote_services['video_360']['selected']) ? 'border-purple-400 bg-purple-50/40' : 'border-gray-200 hover:bg-gray-50' }}">
-                                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                                            <label class="flex items-start cursor-pointer flex-1 gap-2">
-                                                <input type="checkbox" wire:model.live="quote_services.video_360.selected" class="mt-0.5 rounded text-purple-600 focus:ring-purple-500 h-4 w-4">
-                                                <div>
-                                                    <span class="text-xs font-bold text-gray-900">🎥 Plataforma Vídeo 360º</span>
-                                                    <span class="block text-[10px] text-gray-500">Plataforma 100cm (4-5 pers.), vídeos slow motion/boomerang ilimitados, confeti, atrezzo y animadores (+{{ number_format($quote_services['video_360']['extra_hour'] ?? 60, 0) }}€/hora extra).</span>
-                                                </div>
-                                            </label>
+                                        <div class="flex flex-col gap-2">
+                                            <div class="flex items-start justify-between gap-3">
+                                                <label class="flex items-start cursor-pointer flex-1 min-w-0 gap-2">
+                                                    <input type="checkbox" wire:model.live="quote_services.video_360.selected" class="mt-0.5 rounded text-purple-600 focus:ring-purple-500 h-4 w-4 shrink-0">
+                                                    <div class="min-w-0">
+                                                        <span class="text-xs font-bold text-gray-900">🎥 Plataforma Vídeo 360º</span>
+                                                        <span class="block text-[10px] text-gray-500">Plataforma 100cm (4-5 pers.), vídeos slow motion/boomerang ilimitados, confeti, atrezzo y animadores (+{{ number_format($quote_services['video_360']['extra_hour'] ?? 60, 0) }}€/hora extra).</span>
+                                                    </div>
+                                                </label>
 
-                                            <div class="flex flex-wrap items-center gap-1.5 shrink-0">
-                                                <button type="button" wire:click="setVideo360Hours(2)" class="px-2.5 py-1 rounded-lg text-[11px] font-bold border transition {{ !empty($quote_services['video_360']['selected']) && (int)($quote_services['video_360']['hours'] ?? 2) === 2 ? 'bg-purple-600 text-white border-purple-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-purple-50' }}">
-                                                    2 Horas ({{ number_format($quote_services['video_360']['price_2h'] ?? 430, 0) }}€)
-                                                </button>
-                                                <button type="button" wire:click="setVideo360Hours(3)" class="px-2.5 py-1 rounded-lg text-[11px] font-bold border transition {{ !empty($quote_services['video_360']['selected']) && (int)($quote_services['video_360']['hours'] ?? 2) === 3 ? 'bg-purple-600 text-white border-purple-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-purple-50' }}">
-                                                    3 Horas ({{ number_format($quote_services['video_360']['price_3h'] ?? 490, 0) }}€)
-                                                </button>
-                                                <button type="button" wire:click="setVideo360Hours({{ max(4, (int)($quote_services['video_360']['hours'] ?? 3) + 1) }})" class="px-2 py-1 rounded-lg text-[10px] font-bold border transition {{ !empty($quote_services['video_360']['selected']) && (int)($quote_services['video_360']['hours'] ?? 2) >= 4 ? 'bg-amber-600 text-white border-amber-600' : 'bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100' }}" title="Añadir 1 hora extra de Plataforma 360º">
-                                                    +1h Extra (+{{ number_format($quote_services['video_360']['extra_hour'] ?? 60, 0) }}€)
-                                                </button>
-                                                <div class="flex items-center gap-1 ml-1">
+                                                <div class="flex items-center gap-1 shrink-0">
                                                     <input type="number" min="1" max="10" wire:model.live="quote_services.video_360.hours" class="w-11 border rounded p-1 text-xs text-center font-bold" title="Horas de Plataforma 360">
                                                     <span class="text-[10px] text-gray-500 font-bold">h</span>
                                                     <input type="number" step="0.01" wire:model.live="quote_services.video_360.price" class="w-16 border rounded p-1 text-xs text-right font-bold text-purple-700">
                                                     <span class="text-xs text-gray-600">€</span>
                                                 </div>
+                                            </div>
+
+                                            <div class="flex flex-wrap items-center gap-1.5 pl-6">
+                                                <button type="button" wire:click="setVideo360Hours(2)" class="px-2.5 py-1 rounded-lg text-[10px] font-bold border transition {{ !empty($quote_services['video_360']['selected']) && (int)($quote_services['video_360']['hours'] ?? 2) === 2 ? 'bg-purple-600 text-white border-purple-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-purple-50' }}">
+                                                    2 Horas ({{ number_format($quote_services['video_360']['price_2h'] ?? 430, 0) }}€)
+                                                </button>
+                                                <button type="button" wire:click="setVideo360Hours(3)" class="px-2.5 py-1 rounded-lg text-[10px] font-bold border transition {{ !empty($quote_services['video_360']['selected']) && (int)($quote_services['video_360']['hours'] ?? 2) === 3 ? 'bg-purple-600 text-white border-purple-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-purple-50' }}">
+                                                    3 Horas ({{ number_format($quote_services['video_360']['price_3h'] ?? 490, 0) }}€)
+                                                </button>
+                                                <button type="button" wire:click="setVideo360Hours({{ max(4, (int)($quote_services['video_360']['hours'] ?? 3) + 1) }})" class="px-2 py-1 rounded-lg text-[10px] font-bold border transition {{ !empty($quote_services['video_360']['selected']) && (int)($quote_services['video_360']['hours'] ?? 2) >= 4 ? 'bg-amber-600 text-white border-amber-600' : 'bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100' }}" title="Añadir 1 hora extra de Plataforma 360º">
+                                                    +1h Extra (+{{ number_format($quote_services['video_360']['extra_hour'] ?? 60, 0) }}€)
+                                                </button>
                                             </div>
                                         </div>
                                         @if(!empty($quote_services['video_360']['selected']))
@@ -3454,16 +3463,16 @@
                                     <!-- Mesa Dulce con Fuente de Chocolate (1 o 2 fuentes · 2h o 3h) -->
                                     <div class="p-3 rounded-xl border transition {{ !empty($quote_services['chocolate_fountain']['selected']) ? 'border-amber-400 bg-amber-50/40' : 'border-gray-200 hover:bg-gray-50' }}">
                                         <div class="flex flex-col gap-2">
-                                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                                                <label class="flex items-start cursor-pointer flex-1 gap-2">
-                                                    <input type="checkbox" wire:model.live="quote_services.chocolate_fountain.selected" class="mt-0.5 rounded text-amber-600 focus:ring-amber-500 h-4 w-4">
-                                                    <div>
+                                            <div class="flex items-start justify-between gap-3">
+                                                <label class="flex items-start cursor-pointer flex-1 min-w-0 gap-2">
+                                                    <input type="checkbox" wire:model.live="quote_services.chocolate_fountain.selected" class="mt-0.5 rounded text-amber-600 focus:ring-amber-500 h-4 w-4 shrink-0">
+                                                    <div class="min-w-0">
                                                         <span class="text-xs font-bold text-gray-900">🍫 Mesa Dulce con Fuente de Chocolate</span>
                                                         <span class="block text-[10px] text-gray-500">Chocolate blanco/negro/con leche, fruta variada, donuts, gofres cortados, profiteroles, galletas, chocolatinas, chuches y arco de globos (+rincón gofres opcional a {{ number_format($quote_services['chocolate_fountain']['waffle_extra_unit'] ?? 2.90, 2, ',', '.') }}€/ud).</span>
                                                     </div>
                                                 </label>
 
-                                                <div class="flex flex-wrap items-center gap-1.5 shrink-0">
+                                                <div class="flex items-center gap-1.5 shrink-0">
                                                     <label class="flex items-center gap-1 cursor-pointer text-[10px] font-bold text-amber-800 bg-amber-50 hover:bg-amber-100 px-2 py-1 rounded-lg border border-amber-200">
                                                         <input type="checkbox" wire:model.live="quote_services.chocolate_fountain.consult" class="rounded text-amber-600 focus:ring-amber-500 h-3.5 w-3.5">
                                                         <span>⏳ A consultar</span>
@@ -3509,16 +3518,16 @@
 
                                     <!-- Mesa de Solo Chuches -->
                                     <div class="p-3 rounded-xl border transition {{ !empty($quote_services['candy_bar']['selected']) ? 'border-pink-400 bg-pink-50/40' : 'border-gray-200 hover:bg-gray-50' }}">
-                                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                                            <label class="flex items-start cursor-pointer flex-1 gap-2">
-                                                <input type="checkbox" wire:model.live="quote_services.candy_bar.selected" class="mt-0.5 rounded text-pink-600 focus:ring-pink-500 h-4 w-4">
-                                                <div>
+                                        <div class="flex items-start justify-between gap-3">
+                                            <label class="flex items-start cursor-pointer flex-1 min-w-0 gap-2">
+                                                <input type="checkbox" wire:model.live="quote_services.candy_bar.selected" class="mt-0.5 rounded text-pink-600 focus:ring-pink-500 h-4 w-4 shrink-0">
+                                                <div class="min-w-0">
                                                     <span class="text-xs font-bold text-gray-900">🍬 Mesa de Solo Chuches (Candy Bar)</span>
                                                     <span class="block text-[10px] text-gray-500">Gran variado de chuches (favoritas del anfitrión), decoración a elegir y globos decorativos. Montaje 2h antes y recogida a la noche o al día siguiente.</span>
                                                 </div>
                                             </label>
 
-                                            <div class="flex flex-wrap items-center gap-2 shrink-0">
+                                            <div class="flex items-center gap-1.5 shrink-0">
                                                 <label class="flex items-center gap-1 cursor-pointer text-[10px] font-bold text-pink-800 bg-pink-50 hover:bg-pink-100 px-2 py-1 rounded-lg border border-pink-200">
                                                     <input type="checkbox" wire:model.live="quote_services.candy_bar.consult" class="rounded text-pink-600 focus:ring-pink-500 h-3.5 w-3.5">
                                                     <span>⏳ A consultar</span>
@@ -3543,32 +3552,39 @@
 
                                     <!-- Carrito de Gofres hechos al momento -->
                                     <div class="p-3 rounded-xl border transition {{ !empty($quote_services['waffle_cart']['selected']) ? 'border-orange-400 bg-orange-50/40' : 'border-gray-200 hover:bg-gray-50' }}">
-                                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                                            <label class="flex items-start cursor-pointer flex-1 gap-2">
-                                                <input type="checkbox" wire:model.live="quote_services.waffle_cart.selected" class="mt-0.5 rounded text-orange-600 focus:ring-orange-500 h-4 w-4">
-                                                <div>
-                                                    <span class="text-xs font-bold text-gray-900">🧇 Carrito de Gofres hechos al momento</span>
-                                                    <span class="block text-[10px] text-gray-500">Gofres recién hechos + 4 siropes (Kinder, Lotus, Nutella, pistacho...) + 4 toppings secos (Lotus, Oreo, Lacasitos, nubes) + globos y banderín con nombre.</span>
-                                                </div>
-                                            </label>
+                                        <div class="flex flex-col gap-2">
+                                            <div class="flex items-start justify-between gap-3">
+                                                <label class="flex items-start cursor-pointer flex-1 min-w-0 gap-2">
+                                                    <input type="checkbox" wire:model.live="quote_services.waffle_cart.selected" class="mt-0.5 rounded text-orange-600 focus:ring-orange-500 h-4 w-4 shrink-0">
+                                                    <div class="min-w-0">
+                                                        <span class="text-xs font-bold text-gray-900">🧇 Carrito de Gofres hechos al momento</span>
+                                                        <span class="block text-[10px] text-gray-500">Gofres recién hechos + 4 siropes (Kinder, Lotus, Nutella, pistacho...) + 4 toppings secos (Lotus, Oreo, Lacasitos, nubes) + globos y banderín con nombre.</span>
+                                                    </div>
+                                                </label>
 
-                                            <div class="flex flex-wrap items-center gap-1.5 shrink-0">
+                                                <div class="flex items-center gap-1.5 shrink-0">
+                                                    <label class="flex items-center gap-1 cursor-pointer text-[10px] font-bold text-orange-800 bg-orange-50 hover:bg-orange-100 px-2 py-1 rounded-lg border border-orange-200">
+                                                        <input type="checkbox" wire:model.live="quote_services.waffle_cart.consult" class="rounded text-orange-600 focus:ring-orange-500 h-3.5 w-3.5">
+                                                        <span>⏳ A consultar</span>
+                                                    </label>
+                                                    @if(empty($quote_services['waffle_cart']['consult']))
+                                                        <div class="flex items-center gap-1">
+                                                            <input type="number" step="0.01" wire:model.live="quote_services.waffle_cart.price" class="w-16 border rounded p-1 text-xs text-right font-bold text-orange-800">
+                                                            <span class="text-xs text-gray-600">€</span>
+                                                        </div>
+                                                    @else
+                                                        <span class="text-[11px] font-bold text-orange-700 bg-orange-100 px-2 py-1 rounded">Precio a consultar</span>
+                                                    @endif
+                                                </div>
+                                            </div>
+
+                                            <div class="flex flex-wrap items-center gap-1.5 pl-6">
                                                 <button type="button" wire:click="setWaffleCartHours(2)" class="px-2.5 py-1 rounded-lg text-[10px] font-bold border transition {{ !empty($quote_services['waffle_cart']['selected']) && empty($quote_services['waffle_cart']['consult']) && (int)($quote_services['waffle_cart']['hours'] ?? 2) === 2 ? 'bg-orange-600 text-white border-orange-600 shadow-xs' : 'bg-white text-gray-700 border-gray-300 hover:bg-orange-50' }}">
                                                     2h · ~60 gofres ({{ number_format($quote_services['waffle_cart']['price_2h'] ?? 420, 0) }}€)
                                                 </button>
                                                 <button type="button" wire:click="setWaffleCartHours(3)" class="px-2.5 py-1 rounded-lg text-[10px] font-bold border transition {{ !empty($quote_services['waffle_cart']['selected']) && empty($quote_services['waffle_cart']['consult']) && (int)($quote_services['waffle_cart']['hours'] ?? 2) === 3 ? 'bg-orange-600 text-white border-orange-600 shadow-xs' : 'bg-white text-gray-700 border-gray-300 hover:bg-orange-50' }}">
                                                     3h · ~100 gofres ({{ number_format($quote_services['waffle_cart']['price_3h'] ?? 550, 0) }}€)
                                                 </button>
-                                                <label class="flex items-center gap-1 cursor-pointer text-[10px] font-bold text-orange-800 bg-orange-50 hover:bg-orange-100 px-2 py-1 rounded-lg border border-orange-200">
-                                                    <input type="checkbox" wire:model.live="quote_services.waffle_cart.consult" class="rounded text-orange-600 focus:ring-orange-500 h-3.5 w-3.5">
-                                                    <span>⏳ A consultar</span>
-                                                </label>
-                                                @if(empty($quote_services['waffle_cart']['consult']))
-                                                    <div class="flex items-center gap-1">
-                                                        <input type="number" step="0.01" wire:model.live="quote_services.waffle_cart.price" class="w-16 border rounded p-1 text-xs text-right font-bold text-orange-800">
-                                                        <span class="text-xs text-gray-600">€</span>
-                                                    </div>
-                                                @endif
                                             </div>
                                         </div>
                                         @if(!empty($quote_services['waffle_cart']['selected']))
