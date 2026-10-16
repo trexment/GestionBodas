@@ -63,17 +63,18 @@ Al iniciar sesión, el Dashboard ofrece una visión panorámica e inmediata del 
 
 ---
 
-## 4. Agenda y Gestión de Eventos
+## 4. Agenda, Sincronización IMAP de Leads y Validación de DNI
 
-El módulo **Eventos** (`/admin/events`) centraliza todas las fechas y bodas de la temporada.
+El módulo **Eventos** (`/admin/events`) centraliza todas las fechas y bodas de la temporada e incorpora el botón **"📩 Sincronizar Leads"** junto a **"➕ Nuevo Evento"**.
 
 ![Gestión de Eventos](images/event_manager.png)
-*Figura 4.1: Listado de eventos con filtros por estado y botón directo "💬 Recordar".*
+*Figura 4.1: Listado de eventos con filtros por estado, sincronización IMAP y acciones rápidas.*
 
-### Características:
-- **Filtros por Estado**: Acceso rápido a eventos en estado `Sin respuesta`, `Borrador`, `Confirmado` o `Finalizado`.
-- **Botón Directo "💬 Recordar"**: Envía la plantilla táctica de WhatsApp al cliente con un solo clic desde la propia tabla.
-- **Vista Móvil Táctil**: Diseñada para revisar los montajes y horarios 24h directamente desde el teléfono del DJ.
+### Características Principales:
+- **Captura Automática de Leads por Email (IMAP)**: Escanea los buzones configurados (tanto de forma automática al entrar al Dashboard/Eventos como mediante el botón manual) e importa las solicitudes de **Bodas.net**, **Madrigal Marketing** y formularios web, enviando un **aviso inmediato por WhatsApp y Email** a los socios/administradores.
+- **Memoria Permanente Anti-Duplicados**: Registra la huella única de cada solicitud (`imap_processed_signatures`). Si eliminas manualmente un evento, queda bloqueado para que **jamás vuelva a re-importarse** aunque el correo continúe en la bandeja de entrada.
+- **Autocompletado de Letra DNI / NIE**: En todos los formularios (Clientes, Evento, Pareja, Contrato y Portal de Invitados), basta con introducir los 8 dígitos del DNI (ej. `12345678`) para que el sistema calcule y complete automáticamente la letra oficial (`12345678Z`) mostrando el indicador `✅ DNI válido`.
+- **Fusión y Limpieza de Clientes**: En el apartado **Clientes / Novios** dispones de herramientas en 1 clic para fusionar contactos duplicados y eliminar registros basura sin eventos asociados.
 
 ![Vista Móvil de Eventos](images/event_manager_mobile.png)
 *Figura 4.2: Tarjeta táctil en smartphone con horarios de montaje y acceso a WhatsApp.*
@@ -82,36 +83,45 @@ El módulo **Eventos** (`/admin/events`) centraliza todas las fechas y bodas de 
 
 ## 5. Ficha del Evento y Ciclo de Vida
 
-Al pulsar en **Gestionar**, accedemos a la ficha integral del evento. Si el evento se marca en estado **"Sin respuesta"**, se activa un banner inteligente de alerta:
+Al pulsar en **Gestionar**, accedemos a la ficha integral del evento con barra de pestañas adaptable en varias líneas y soporte completo para Modo Claro y Modo Oscuro:
 
 ![Ficha con Banner Sin Respuesta](images/event_show_no_response.png)
 *Figura 5.1: Banner inteligente en la ficha del evento con contador de días, urgencia y acciones rápidas.*
 
 ### Estados del Evento:
 - **📝 Borrador**: Petición inicial o presupuesto en preparación.
-- **⏳ Sin Respuesta**: Presupuesto enviado hace días sin contestación del cliente.
+- **⏳ Sin Respuesta**: Lead entrante o presupuesto enviado pendiente de contestación.
 - **🟢 Confirmado**: Señal/fianza cobrada o contrato firmado. Fecha bloqueada en exclusiva.
-- **❌ Rechazado**: Cliente declinó formalmente. Fecha liberada.
+- **❌ Rechazado**: Cliente declinó o se descarta el expediente. Fecha liberada.
 
 ---
 
-## 6. Seguimiento Táctico de Clientes "Sin Respuesta" (WhatsApp)
+## 6. WhatsApp Directo (Evolution API), Método Madrigal y Posicionamiento
 
-Para reactivar a novios que se lo están pensando sin resultar pesados ni insistentes, la plataforma incorpora un **Hub de WhatsApp con metodología de negociación y psicología inversa**:
+La ficha del evento integra envío directo por **Evolution API** (con selector de remitente en vivo) y el guion completo de **Plantillas Rápidas Madrigal & Comerciales**:
 
 ![Hub de WhatsApp](images/whatsapp_followup_hub.png)
 *Figura 6.1: Hub de reactivación táctica con previsualización del mensaje personalizado.*
 
 ![Opciones de Plantillas](images/whatsapp_options.png)
-*Figura 6.2: Menú con diferentes opciones tácticas según el tiempo transcurrido.*
+*Figura 6.2: Menú con diferentes opciones tácticas según la fase comercial.*
 
-### Estrategias Incluidas:
-1. **La Técnica del "NO" (Chris Voss)**:  
-   *«Hola [Novios], ¿habéis descartado ya contar con nosotros para la música de vuestra boda el [Fecha]?»*  
-   *Por qué funciona:* Decir que "NO" es fácil y seguro. El cliente suele responder de inmediato: *"¡No, para nada! Es que hemos estado liados..."*, reactivando la conversación.
-2. **Cierre de Expediente por Silencio**:  
-   *«Hola [Novios], para no ser pesados y al no tener respuesta, entendemos que habéis elegido otra opción y procedemos a liberar vuestra fecha en agenda. Si aún os interesa, avisadnos hoy.»*  
-   *Por qué funciona:* Genera escasez inmediata y activa la decisión sin parecer insistente.
+### Guion Completo de Plantillas Rápidas (Con Datos Ficticios de Ejemplo):
+1. **👋 1er Contacto + `/presupuesto`**:  
+   *«¡Hola Carlos y Laura! 👋 Acabo de consultar nuestra agenda para el 15 de junio de 2027 en Finca El Olivar y ¡tenemos la fecha disponible! 🎉 Para poder prepararos el presupuesto a medida necesitamos saber qué servicios necesitáis (ceremonia, cóctel, banquete, DJ barra libre, fuego frío...). Para ello podéis seleccionarlos directamente en 1 minuto aquí: 👉 https://app.nunezandson.com/presupuesto»*
+2. **🟢 1er Contacto (Madrigal)**:  
+   Guion rompehielos de descubrimiento (pregunta por la finca y estilo de fiesta antes de dar precios en frío, incluyendo también el enlace a `/presupuesto`).
+3. **💡 Dudas (Día 3) y ⚡ Escasez 24h (Día 7)**:  
+   Seguimiento cercano tras enviar el dossier y aviso de nueva consulta en la misma fecha otorgando 24 horas de prioridad.
+4. **🎯 La Técnica del "NO" (Día 10 - Chris Voss)**:  
+   *«Hola Carlos y Laura, ¿habéis decidido descartar la opción de contar con nosotros para vuestra boda el 15 de junio de 2027?»*  
+   Activa una respuesta inmediata sin parecer insistente.
+5. **🔒 Cierre de Expediente por Silencio (Día 15+)**:  
+   Asume amablemente que han elegido otra alternativa y libera la fecha en agenda.
+6. **👑 "No es nuestro cliente" (Posicionamiento ante Objeción de Precio)**:  
+   Cuando responden que *"se les va de presupuesto"* y no interesa rebajar tarifas:  
+   *«¡Hola Carlos y Laura! 👋 No hay ningún problema, os agradecemos mucho vuestra sinceridad. Con total transparencia y cariño, entendemos que más que tratarse de que se os vaya de presupuesto, simplemente es que no somos el perfil de servicio que estáis buscando (ni vosotros el perfil de cliente para nosotros en esta ocasión). Nosotros nunca recortamos en calidad técnica, montaje ni dedicación para competir por precio... Por nuestra parte liberamos desde este momento vuestra fecha en nuestra agenda.»*  
+   *(Junto al botón alternativo **💰 Objeción Precio (Adaptar)** para cuando sí se desee ofrecer un ajuste de equipamiento).*
 
 ---
 
@@ -144,10 +154,6 @@ El dossier descargable en PDF presenta una imagen de marca impecable e incluye *
 
 > **Protección Tarifaria:** Si un cliente tarda meses en responder y la oferta ha caducado, la empresa tiene el respaldo contractual para actualizar los precios a la temporada vigente.
 
-> **⚙️ Personalización del Dossier (Ajustes &rarr; Dossier y Propuestas):**
-> - **Plazo de Validez:** Define los días naturales de vigencia en *"⏳ Caducidad y Validez de las Propuestas"* (por defecto 15 días).
-> - **Foto Panorámica de Fiesta & Montaje:** Sube una imagen horizontal amplia en *"📸 Foto Panorámica de Fiesta & Montaje"* para cubrir el pie de la página 2 con una fotografía real de cabina, pista llena o efectos especiales, manteniendo el pie de página corporativo anclado al borde inferior.
-
 ---
 
 ## 9. Contratos y Firma Digital Online con Auditoría
@@ -171,14 +177,14 @@ Planifica la música exacta para cada instante inolvidable de la boda:
 
 ---
 
-## 11. Modo Cabina DJ en Directo y Peticiones QR para Invitados
+## 11. Modo Cabina DJ en Directo y Peticiones QR en Tiempo Real (3s)
 
 Durante la fiesta, el DJ utiliza una pantalla táctil optimizada para cabina (`/live/{token}`):
 
 ![Modo Cabina DJ en Directo](images/dj_booth_live.png)
-*Figura 11.1: Interfaz en directo para el DJ con escaleta en vivo y cola de peticiones.*
+*Figura 11.1: Interfaz en directo para el DJ con escaleta en vivo y cola de peticiones sincronizada cada 3 segundos.*
 
-- **Código QR para Invitados**: Los invitados escanean el QR en las mesas y envían peticiones desde su móvil a `/peticiones/{token}` sin aglomerarse en la cabina.
+- **Código QR para Invitados en Tiempo Real (3s)**: Los invitados escanean el QR en las mesas y envían peticiones desde su móvil a `/peticiones/{token}`. En cuanto pulsan enviar, la canción aparece automáticamente en la pantalla del DJ en menos de **3 segundos** sin recargar la página.
 
 ---
 
@@ -191,21 +197,23 @@ Evita olvidos y averías con el módulo de inventario técnico (`/admin/inventor
 
 ---
 
-## 13. Calculadora Pública de Presupuestos (Web / Embed)
+## 13. Calculadora Pública de Presupuestos (`/presupuesto`) y Vinculación Inteligente
 
-Captador web de clientes en `https://app.nunezandson.com/presupuesto`:
+Captador y configurador web de servicios en `https://app.nunezandson.com/presupuesto` y `https://app.javnxdj.com/presupuesto`:
 
 ![Calculadora Pública](images/public_calculator.png)
-*Figura 13.1: Cotizador interactivo online para generar nuevos leads desde la web.*
+*Figura 13.1: Cotizador interactivo online para seleccionar servicios y generar el presupuesto.*
+
+- **Vinculación Inteligente con Leads Existentes**: Cuando un lead que había entrado por correo recibe el WhatsApp de **1er Contacto + `/presupuesto`** y completa sus servicios en la calculadora, el sistema reconoce automáticamente su ficha por su teléfono o nombre y añade el presupuesto desglosado directamente a su evento existente sin crear eventos duplicados.
 
 ---
 
 ## 14. Resumen de Buenas Prácticas y Consejos
 
-1. **Mantén los estados al día**: Marca en *Sin Respuesta* a cualquier cliente que supere las 48-72h sin contestar tras el envío del dossier.
-2. **Utiliza la técnica del NO**: El mensaje pre-redactado de WhatsApp tiene una tasa de respuesta superior al 80%.
-3. **Revisa las máquinas de fuego frío**: Comprueba si el cliente requiere 2 máquinas (para laterales) o 4 (para pasillo completo) y ajusta la cantidad (60 €/ud).
-4. **Descarga el Packing List**: Antes de cada salida de furgoneta, imprime o visualiza el packing list para no olvidar cables de señal ni líquidos de humo.
+1. **Responde en el Minuto 1 con "👋 1er Contacto + `/presupuesto`"**: En cuanto recibas el WhatsApp de alerta de nuevo lead, envíales la plantilla de primer contacto para que marquen sus servicios en `/presupuesto`.
+2. **Usa las plantillas Madrigal según el día**: Día 3 (Dudas), Día 7 (Escasez 24h), Día 10 (Técnica del NO) y Cierre de Expediente.
+3. **Posiciónate ante objeciones de precio**: Utiliza **"👑 No es nuestro cliente (Precio)"** para descartar con elegancia cuando busquen regatear, o **"💰 Objeción Precio (Adaptar)"** si deseas ajustar equipamiento.
+4. **Aprovecha el autocompletado de DNI**: Escribe solo los 8 números del DNI en cualquier formulario para que la aplicación calcule la letra automáticamente.
 
 ---
-*Documento oficial de la plataforma • Desarrollado para Núñez & Son y JAVNXDJ &bull; 2026*
+*Documento oficial de la plataforma • Desarrollado para Núñez & Son y JAVNXDJ &bull; 2026 (Datos de ejemplo ficticios)*
