@@ -77,6 +77,7 @@ class Settings extends Component
     public $price_karaoke;
     public $price_extra_hours;
     public $photobooth_settings_tab = 'logrono'; // 'logrono' | 'vitoria'
+    public $default_photobooth_provider = 'logrono';
     public $photobooth_logrono_name = 'Logroño';
     public $price_photobooth;
     public $price_photobooth_2h = 430;
@@ -107,8 +108,18 @@ class Settings extends Component
     public $pack_duo_vitoria_desc;
     public $photobooth_vitoria_deposit_per_service = 100;
 
-    public $price_chocolate_fountain = 350;
+    public $price_chocolate_fountain = 420;
+    public $price_chocolate_fountain_1_2h = 420;
+    public $price_chocolate_fountain_1_3h = 520;
+    public $price_chocolate_fountain_2_2h = 490;
+    public $price_chocolate_fountain_2_3h = 590;
+    public $price_chocolate_fountain_waffle_extra = 2.90;
     public $chocolate_fountain_desc;
+    public $price_candy_bar = 420;
+    public $candy_bar_desc;
+    public $price_waffle_cart_2h = 420;
+    public $price_waffle_cart_3h = 550;
+    public $waffle_cart_desc;
     public $price_effects_smoke;
     public $price_effects_sparks;
     public $pack_cocktail_restaurant_enabled = true;
@@ -372,6 +383,9 @@ class Settings extends Component
         $this->price_extra_hours = Setting::get('price_extra_hours', 120);
         $this->price_photobooth = Setting::get('price_photobooth', 380);
 
+        $this->default_photobooth_provider = Setting::get('default_photobooth_provider', 'logrono');
+        $this->photobooth_settings_tab = $this->default_photobooth_provider;
+
         $pbConfig = Setting::getPhotobooth360Config('logrono');
         $this->photobooth_logrono_name = $pbConfig['provider_name'];
         $this->price_photobooth_2h = $pbConfig['photobooth_2h'];
@@ -387,7 +401,17 @@ class Settings extends Component
         $this->pack_duo_desc = $pbConfig['pack_duo_desc'];
         $this->photobooth_deposit_per_service = $pbConfig['deposit_per_service'];
         $this->price_chocolate_fountain = $pbConfig['chocolate_fountain_price'];
+        $this->price_chocolate_fountain_1_2h = $pbConfig['chocolate_fountain_1_2h'];
+        $this->price_chocolate_fountain_1_3h = $pbConfig['chocolate_fountain_1_3h'];
+        $this->price_chocolate_fountain_2_2h = $pbConfig['chocolate_fountain_2_2h'];
+        $this->price_chocolate_fountain_2_3h = $pbConfig['chocolate_fountain_2_3h'];
+        $this->price_chocolate_fountain_waffle_extra = $pbConfig['chocolate_fountain_waffle_extra'];
         $this->chocolate_fountain_desc = $pbConfig['chocolate_fountain_desc'];
+        $this->price_candy_bar = $pbConfig['candy_bar_price'];
+        $this->candy_bar_desc = $pbConfig['candy_bar_desc'];
+        $this->price_waffle_cart_2h = $pbConfig['waffle_cart_2h'];
+        $this->price_waffle_cart_3h = $pbConfig['waffle_cart_3h'];
+        $this->waffle_cart_desc = $pbConfig['waffle_cart_desc'];
 
         $pbVitoria = Setting::getPhotobooth360Config('vitoria');
         $this->photobooth_vitoria_name = $pbVitoria['provider_name'];
@@ -826,8 +850,19 @@ class Settings extends Component
         Setting::set('pack_duo_vitoria_desc', $this->pack_duo_vitoria_desc);
         Setting::set('photobooth_vitoria_deposit_per_service', $this->photobooth_vitoria_deposit_per_service);
 
-        Setting::set('price_chocolate_fountain', $this->price_chocolate_fountain);
+        Setting::set('default_photobooth_provider', in_array($this->default_photobooth_provider, ['logrono', 'vitoria']) ? $this->default_photobooth_provider : 'logrono');
+        Setting::set('price_chocolate_fountain', $this->price_chocolate_fountain_1_2h);
+        Setting::set('price_chocolate_fountain_1_2h', $this->price_chocolate_fountain_1_2h);
+        Setting::set('price_chocolate_fountain_1_3h', $this->price_chocolate_fountain_1_3h);
+        Setting::set('price_chocolate_fountain_2_2h', $this->price_chocolate_fountain_2_2h);
+        Setting::set('price_chocolate_fountain_2_3h', $this->price_chocolate_fountain_2_3h);
+        Setting::set('price_chocolate_fountain_waffle_extra', $this->price_chocolate_fountain_waffle_extra);
         Setting::set('chocolate_fountain_desc', $this->chocolate_fountain_desc);
+        Setting::set('price_candy_bar', $this->price_candy_bar);
+        Setting::set('candy_bar_desc', $this->candy_bar_desc);
+        Setting::set('price_waffle_cart_2h', $this->price_waffle_cart_2h);
+        Setting::set('price_waffle_cart_3h', $this->price_waffle_cart_3h);
+        Setting::set('waffle_cart_desc', $this->waffle_cart_desc);
         Setting::set('price_effects_smoke', $this->price_effects_smoke);
         Setting::set('price_effects_sparks', $this->price_effects_sparks);
 

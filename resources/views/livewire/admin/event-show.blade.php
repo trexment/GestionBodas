@@ -3029,7 +3029,26 @@
 
                 <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
                     <!-- CONFIGURADOR DE LÍNEAS DE PRESUPUESTO -->
-                    <div class="lg:col-span-7 bg-gray-50 p-5 rounded-2xl border border-gray-200 shadow-xs space-y-6">
+                    <div class="lg:col-span-7 bg-gray-50 p-5 rounded-2xl border border-gray-200 shadow-xs space-y-5">
+                        <!-- BARRA PARA GUARDAR PRECIOS PERMANENTEMENTE -->
+                        <div class="bg-white border border-indigo-200 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 shadow-2xs">
+                            <div class="flex items-start gap-2">
+                                <span class="text-base leading-none mt-0.5">💡</span>
+                                <div>
+                                    <span class="text-xs font-extrabold text-indigo-950 block">¿Has modificado algún precio y quieres dejarlo fijo para siempre?</span>
+                                    <span class="text-[11px] text-gray-500">Guarda los precios actuales de esta calculadora como tus tarifas predeterminadas o edítalos en Configuración.</span>
+                                </div>
+                            </div>
+                            <div class="flex flex-wrap items-center gap-1.5 shrink-0">
+                                <button type="button" wire:click="saveCurrentPricesAsDefault" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-black bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition cursor-pointer">
+                                    <span>💾</span> Guardar precios como predeterminados
+                                </button>
+                                <a href="{{ route('admin.settings') }}" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-bold bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300 transition">
+                                    <span>⚙️</span> Tarifas Base
+                                </a>
+                            </div>
+                        </div>
+
                         @if($editing_quote_id)
                             <div class="bg-amber-50 border-l-4 border-amber-500 p-3.5 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
                                 <div class="flex items-center gap-2.5">
@@ -3230,16 +3249,16 @@
                                 </div>
                             </div>
 
-                            <!-- SECCIÓN: FOTOMATÓN, PLATAFORMA 360º, PACK DÚO Y FUENTE DE CHOCOLATE -->
+                            <!-- SECCIÓN: FOTOMATÓN, PLATAFORMA 360º, PACK DÚO Y MESAS DULCES / GOFRES -->
                             <div class="bg-white p-4 rounded-xl border border-indigo-200 space-y-3 shadow-xs">
                                 <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-2.5 border-b border-indigo-100 pb-2.5">
                                     <div>
                                         <h6 class="text-xs font-black uppercase text-indigo-950 tracking-wider flex items-center gap-1.5">
-                                            <span>📸🎥</span> Fotomatón, Plataforma 360º, Pack Dúo & Fuente de Chocolate
+                                            <span>📸🎥🍫</span> Fotomatón, Plataforma 360º, Fuentes de Chocolate, Chuches & Gofres
                                         </h6>
-                                        <p class="text-[10px] text-gray-500">Selecciona internamente qué proveedor lo vende (Logroño o Vitoria) y las horas (2h o 3h).</p>
+                                        <p class="text-[10px] text-gray-500">Selecciona internamente qué proveedor lo vende (Logroño o Vitoria) y las opciones de horas.</p>
                                     </div>
-                                    <div class="flex flex-wrap items-center gap-2">
+                                    <div class="flex flex-wrap items-center gap-1.5">
                                         @php
                                             $pbProviders = \App\Models\Setting::getPhotoboothProviders();
                                             $activeProv = $photobooth_provider ?: 'logrono';
@@ -3254,7 +3273,10 @@
                                             </button>
                                         </div>
                                         <button type="button" wire:click="sendDirectTemplate('fotomaton_360')" class="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-2.5 py-1 rounded-lg transition shrink-0">
-                                            <span>💬</span> Enviar Info/Precios por WhatsApp
+                                            <span>📸</span> Info Fotomatón/360 WA
+                                        </button>
+                                        <button type="button" wire:click="sendDirectTemplate('mesa_dulce_gofres')" class="inline-flex items-center gap-1 text-[11px] font-bold text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-300 px-2.5 py-1 rounded-lg transition shrink-0">
+                                            <span>🍫</span> Info Mesa Dulce/Gofres WA
                                         </button>
                                     </div>
                                 </div>
@@ -3429,36 +3451,130 @@
                                         @endif
                                     </div>
 
-                                    <!-- Mesa con Fuente de Chocolate -->
+                                    <!-- Mesa Dulce con Fuente de Chocolate (1 o 2 fuentes · 2h o 3h) -->
                                     <div class="p-3 rounded-xl border transition {{ !empty($quote_services['chocolate_fountain']['selected']) ? 'border-amber-400 bg-amber-50/40' : 'border-gray-200 hover:bg-gray-50' }}">
-                                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                                            <label class="flex items-start cursor-pointer flex-1 gap-2">
-                                                <input type="checkbox" wire:model.live="quote_services.chocolate_fountain.selected" class="mt-0.5 rounded text-amber-600 focus:ring-amber-500 h-4 w-4">
-                                                <div>
-                                                    <span class="text-xs font-bold text-gray-900">🍫 Mesa con Fuente de Chocolate</span>
-                                                    <span class="block text-[10px] text-gray-500">Fuente de chocolate en cascada con frutas frescas, gofres, nubes y decoración de mesa dulce.</span>
-                                                </div>
-                                            </label>
-
-                                            <div class="flex flex-wrap items-center gap-2 shrink-0">
-                                                <label class="flex items-center gap-1 cursor-pointer text-[11px] font-bold text-amber-800 bg-amber-50 hover:bg-amber-100 px-2 py-1 rounded-lg border border-amber-200">
-                                                    <input type="checkbox" wire:model.live="quote_services.chocolate_fountain.consult" class="rounded text-amber-600 focus:ring-amber-500 h-3.5 w-3.5">
-                                                    <span>⏳ A consultar</span>
-                                                </label>
-                                                @if(empty($quote_services['chocolate_fountain']['consult']))
-                                                    <div class="flex items-center gap-1">
-                                                        <input type="number" step="0.01" wire:model.live="quote_services.chocolate_fountain.price" class="w-16 border rounded p-1 text-xs text-right font-bold text-amber-800">
-                                                        <span class="text-xs text-gray-600">€</span>
+                                        <div class="flex flex-col gap-2">
+                                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                                <label class="flex items-start cursor-pointer flex-1 gap-2">
+                                                    <input type="checkbox" wire:model.live="quote_services.chocolate_fountain.selected" class="mt-0.5 rounded text-amber-600 focus:ring-amber-500 h-4 w-4">
+                                                    <div>
+                                                        <span class="text-xs font-bold text-gray-900">🍫 Mesa Dulce con Fuente de Chocolate</span>
+                                                        <span class="block text-[10px] text-gray-500">Chocolate blanco/negro/con leche, fruta variada, donuts, gofres cortados, profiteroles, galletas, chocolatinas, chuches y arco de globos (+rincón gofres opcional a {{ number_format($quote_services['chocolate_fountain']['waffle_extra_unit'] ?? 2.90, 2, ',', '.') }}€/ud).</span>
                                                     </div>
-                                                @else
-                                                    <span class="text-[11px] font-bold text-amber-700 bg-amber-100 px-2 py-1 rounded">Precio a consultar</span>
-                                                @endif
+                                                </label>
+
+                                                <div class="flex flex-wrap items-center gap-1.5 shrink-0">
+                                                    <label class="flex items-center gap-1 cursor-pointer text-[10px] font-bold text-amber-800 bg-amber-50 hover:bg-amber-100 px-2 py-1 rounded-lg border border-amber-200">
+                                                        <input type="checkbox" wire:model.live="quote_services.chocolate_fountain.consult" class="rounded text-amber-600 focus:ring-amber-500 h-3.5 w-3.5">
+                                                        <span>⏳ A consultar</span>
+                                                    </label>
+                                                    @if(empty($quote_services['chocolate_fountain']['consult']))
+                                                        <div class="flex items-center gap-1">
+                                                            <input type="number" step="0.01" wire:model.live="quote_services.chocolate_fountain.price" class="w-16 border rounded p-1 text-xs text-right font-bold text-amber-900">
+                                                            <span class="text-xs text-gray-600">€</span>
+                                                        </div>
+                                                    @else
+                                                        <span class="text-[11px] font-bold text-amber-700 bg-amber-100 px-2 py-1 rounded">Precio a consultar</span>
+                                                    @endif
+                                                </div>
+                                            </div>
+
+                                            @php
+                                                $cfFountains = (int)($quote_services['chocolate_fountain']['fountains'] ?? 1);
+                                                $cfHours = (int)($quote_services['chocolate_fountain']['hours'] ?? 2);
+                                                $cfSel = !empty($quote_services['chocolate_fountain']['selected']) && empty($quote_services['chocolate_fountain']['consult']);
+                                            @endphp
+                                            <div class="flex flex-wrap items-center gap-1.5 pl-6">
+                                                <button type="button" wire:click="setChocolateFountainOption(1, 2)" class="px-2.5 py-1 rounded-lg text-[10px] font-bold border transition {{ $cfSel && $cfFountains === 1 && $cfHours === 2 ? 'bg-amber-600 text-white border-amber-600 shadow-xs' : 'bg-white text-gray-700 border-gray-300 hover:bg-amber-50' }}">
+                                                    1 Fuente · 2h ({{ number_format($quote_services['chocolate_fountain']['price_1_2h'] ?? 420, 0) }}€)
+                                                </button>
+                                                <button type="button" wire:click="setChocolateFountainOption(1, 3)" class="px-2.5 py-1 rounded-lg text-[10px] font-bold border transition {{ $cfSel && $cfFountains === 1 && $cfHours === 3 ? 'bg-amber-600 text-white border-amber-600 shadow-xs' : 'bg-white text-gray-700 border-gray-300 hover:bg-amber-50' }}">
+                                                    1 Fuente · 3h ({{ number_format($quote_services['chocolate_fountain']['price_1_3h'] ?? 520, 0) }}€)
+                                                </button>
+                                                <button type="button" wire:click="setChocolateFountainOption(2, 2)" class="px-2.5 py-1 rounded-lg text-[10px] font-bold border transition {{ $cfSel && $cfFountains === 2 && $cfHours === 2 ? 'bg-amber-700 text-white border-amber-700 shadow-xs' : 'bg-white text-gray-700 border-gray-300 hover:bg-amber-50' }}">
+                                                    2 Fuentes · 2h ({{ number_format($quote_services['chocolate_fountain']['price_2_2h'] ?? 490, 0) }}€)
+                                                </button>
+                                                <button type="button" wire:click="setChocolateFountainOption(2, 3)" class="px-2.5 py-1 rounded-lg text-[10px] font-bold border transition {{ $cfSel && $cfFountains === 2 && $cfHours === 3 ? 'bg-amber-700 text-white border-amber-700 shadow-xs' : 'bg-white text-gray-700 border-gray-300 hover:bg-amber-50' }}">
+                                                    2 Fuentes · 3h ({{ number_format($quote_services['chocolate_fountain']['price_2_3h'] ?? 590, 0) }}€)
+                                                </button>
                                             </div>
                                         </div>
                                         @if(!empty($quote_services['chocolate_fountain']['selected']))
                                             <div class="mt-2 pt-2 border-t border-amber-100">
                                                 <label class="block text-[10px] font-bold text-gray-600 mb-1">Descripción incluida en PDF (editable):</label>
                                                 <textarea rows="2" wire:model.live="quote_services.chocolate_fountain.desc" class="w-full text-[11px] border-gray-200 rounded-lg p-1.5 bg-white text-gray-700 focus:ring-amber-500"></textarea>
+                                            </div>
+                                        @endif
+                                    </div>
+
+                                    <!-- Mesa de Solo Chuches -->
+                                    <div class="p-3 rounded-xl border transition {{ !empty($quote_services['candy_bar']['selected']) ? 'border-pink-400 bg-pink-50/40' : 'border-gray-200 hover:bg-gray-50' }}">
+                                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                            <label class="flex items-start cursor-pointer flex-1 gap-2">
+                                                <input type="checkbox" wire:model.live="quote_services.candy_bar.selected" class="mt-0.5 rounded text-pink-600 focus:ring-pink-500 h-4 w-4">
+                                                <div>
+                                                    <span class="text-xs font-bold text-gray-900">🍬 Mesa de Solo Chuches (Candy Bar)</span>
+                                                    <span class="block text-[10px] text-gray-500">Gran variado de chuches (favoritas del anfitrión), decoración a elegir y globos decorativos. Montaje 2h antes y recogida a la noche o al día siguiente.</span>
+                                                </div>
+                                            </label>
+
+                                            <div class="flex flex-wrap items-center gap-2 shrink-0">
+                                                <label class="flex items-center gap-1 cursor-pointer text-[10px] font-bold text-pink-800 bg-pink-50 hover:bg-pink-100 px-2 py-1 rounded-lg border border-pink-200">
+                                                    <input type="checkbox" wire:model.live="quote_services.candy_bar.consult" class="rounded text-pink-600 focus:ring-pink-500 h-3.5 w-3.5">
+                                                    <span>⏳ A consultar</span>
+                                                </label>
+                                                @if(empty($quote_services['candy_bar']['consult']))
+                                                    <div class="flex items-center gap-1">
+                                                        <input type="number" step="0.01" wire:model.live="quote_services.candy_bar.price" class="w-16 border rounded p-1 text-xs text-right font-bold text-pink-800">
+                                                        <span class="text-xs text-gray-600">€</span>
+                                                    </div>
+                                                @else
+                                                    <span class="text-[11px] font-bold text-pink-700 bg-pink-100 px-2 py-1 rounded">Precio a consultar</span>
+                                                @endif
+                                            </div>
+                                        </div>
+                                        @if(!empty($quote_services['candy_bar']['selected']))
+                                            <div class="mt-2 pt-2 border-t border-pink-100">
+                                                <label class="block text-[10px] font-bold text-gray-600 mb-1">Descripción incluida en PDF (editable):</label>
+                                                <textarea rows="2" wire:model.live="quote_services.candy_bar.desc" class="w-full text-[11px] border-gray-200 rounded-lg p-1.5 bg-white text-gray-700 focus:ring-pink-500"></textarea>
+                                            </div>
+                                        @endif
+                                    </div>
+
+                                    <!-- Carrito de Gofres hechos al momento -->
+                                    <div class="p-3 rounded-xl border transition {{ !empty($quote_services['waffle_cart']['selected']) ? 'border-orange-400 bg-orange-50/40' : 'border-gray-200 hover:bg-gray-50' }}">
+                                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                            <label class="flex items-start cursor-pointer flex-1 gap-2">
+                                                <input type="checkbox" wire:model.live="quote_services.waffle_cart.selected" class="mt-0.5 rounded text-orange-600 focus:ring-orange-500 h-4 w-4">
+                                                <div>
+                                                    <span class="text-xs font-bold text-gray-900">🧇 Carrito de Gofres hechos al momento</span>
+                                                    <span class="block text-[10px] text-gray-500">Gofres recién hechos + 4 siropes (Kinder, Lotus, Nutella, pistacho...) + 4 toppings secos (Lotus, Oreo, Lacasitos, nubes) + globos y banderín con nombre.</span>
+                                                </div>
+                                            </label>
+
+                                            <div class="flex flex-wrap items-center gap-1.5 shrink-0">
+                                                <button type="button" wire:click="setWaffleCartHours(2)" class="px-2.5 py-1 rounded-lg text-[10px] font-bold border transition {{ !empty($quote_services['waffle_cart']['selected']) && empty($quote_services['waffle_cart']['consult']) && (int)($quote_services['waffle_cart']['hours'] ?? 2) === 2 ? 'bg-orange-600 text-white border-orange-600 shadow-xs' : 'bg-white text-gray-700 border-gray-300 hover:bg-orange-50' }}">
+                                                    2h · ~60 gofres ({{ number_format($quote_services['waffle_cart']['price_2h'] ?? 420, 0) }}€)
+                                                </button>
+                                                <button type="button" wire:click="setWaffleCartHours(3)" class="px-2.5 py-1 rounded-lg text-[10px] font-bold border transition {{ !empty($quote_services['waffle_cart']['selected']) && empty($quote_services['waffle_cart']['consult']) && (int)($quote_services['waffle_cart']['hours'] ?? 2) === 3 ? 'bg-orange-600 text-white border-orange-600 shadow-xs' : 'bg-white text-gray-700 border-gray-300 hover:bg-orange-50' }}">
+                                                    3h · ~100 gofres ({{ number_format($quote_services['waffle_cart']['price_3h'] ?? 550, 0) }}€)
+                                                </button>
+                                                <label class="flex items-center gap-1 cursor-pointer text-[10px] font-bold text-orange-800 bg-orange-50 hover:bg-orange-100 px-2 py-1 rounded-lg border border-orange-200">
+                                                    <input type="checkbox" wire:model.live="quote_services.waffle_cart.consult" class="rounded text-orange-600 focus:ring-orange-500 h-3.5 w-3.5">
+                                                    <span>⏳ A consultar</span>
+                                                </label>
+                                                @if(empty($quote_services['waffle_cart']['consult']))
+                                                    <div class="flex items-center gap-1">
+                                                        <input type="number" step="0.01" wire:model.live="quote_services.waffle_cart.price" class="w-16 border rounded p-1 text-xs text-right font-bold text-orange-800">
+                                                        <span class="text-xs text-gray-600">€</span>
+                                                    </div>
+                                                @endif
+                                            </div>
+                                        </div>
+                                        @if(!empty($quote_services['waffle_cart']['selected']))
+                                            <div class="mt-2 pt-2 border-t border-orange-100">
+                                                <label class="block text-[10px] font-bold text-gray-600 mb-1">Descripción incluida en PDF (editable):</label>
+                                                <textarea rows="2" wire:model.live="quote_services.waffle_cart.desc" class="w-full text-[11px] border-gray-200 rounded-lg p-1.5 bg-white text-gray-700 focus:ring-orange-500"></textarea>
                                             </div>
                                         @endif
                                     </div>

@@ -801,22 +801,31 @@
                 </div>
             </div>
 
-            <!-- SECCIÓN 3B: FOTOMATÓN, PLATAFORMA 360º, PACK DÚO Y FUENTE DE CHOCOLATE (2 PROVEEDORES: LOGROÑO Y VITORIA) -->
+            <!-- SECCIÓN 3B: FOTOMATÓN, PLATAFORMA 360º, PACK DÚO Y MESAS DULCES / GOFRES -->
             <div class="bg-white shadow-sm rounded-xl border border-indigo-200 p-6 space-y-5">
-                <div class="border-b border-indigo-100 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div class="border-b border-indigo-100 pb-3 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
                     <div>
                         <h3 class="text-base font-bold text-indigo-950 flex items-center gap-2">
-                            <span>📸🎥</span> Fotomatón, Plataforma 360º, Pack Dúo & Fuente de Chocolate (Por Proveedor y Horas)
+                            <span>📸🎥🍫</span> Fotomatón, Plataforma 360º, Fuentes de Chocolate, Chuches & Gofres
                         </h3>
-                        <p class="text-xs text-gray-500">Configura por separado las tarifas (2h / 3h) y textos de tu proveedor de <strong>Logroño</strong> y de tu proveedor de <strong>Vitoria</strong>. Al crear un presupuesto podrás alternar entre ambos con un clic.</p>
+                        <p class="text-xs text-gray-500">Configura permanentemente las tarifas (2h / 3h) de <strong>Logroño</strong>, <strong>Vitoria (FotomatonCheese)</strong> y de las <strong>Mesas Dulces / Gofres</strong>.</p>
                     </div>
-                    <div class="inline-flex bg-slate-100 p-1 rounded-xl border border-slate-200 self-start sm:self-auto">
-                        <button type="button" wire:click="$set('photobooth_settings_tab', 'logrono')" class="px-3 py-1.5 rounded-lg text-xs font-black transition cursor-pointer {{ $photobooth_settings_tab === 'logrono' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900' }}">
-                            📍 {{ $photobooth_logrono_name ?: 'Logroño' }}
-                        </button>
-                        <button type="button" wire:click="$set('photobooth_settings_tab', 'vitoria')" class="px-3 py-1.5 rounded-lg text-xs font-black transition cursor-pointer {{ $photobooth_settings_tab === 'vitoria' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900' }}">
-                            📍 {{ $photobooth_vitoria_name ?: 'Vitoria / Álava' }}
-                        </button>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <div class="inline-flex items-center gap-1.5 bg-amber-50 border border-amber-200 px-2.5 py-1.5 rounded-xl text-xs">
+                            <span class="font-bold text-amber-900">Proveedor por defecto:</span>
+                            <select wire:model="default_photobooth_provider" class="text-xs font-black bg-white border-amber-300 rounded-lg py-0.5 px-2 text-amber-950">
+                                <option value="logrono">📍 {{ $photobooth_logrono_name ?: 'Logroño' }}</option>
+                                <option value="vitoria">📍 {{ $photobooth_vitoria_name ?: 'Vitoria (FotomatonCheese)' }}</option>
+                            </select>
+                        </div>
+                        <div class="inline-flex bg-slate-100 p-1 rounded-xl border border-slate-200 self-start sm:self-auto">
+                            <button type="button" wire:click="$set('photobooth_settings_tab', 'logrono')" class="px-3 py-1.5 rounded-lg text-xs font-black transition cursor-pointer {{ $photobooth_settings_tab === 'logrono' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900' }}">
+                                📍 {{ $photobooth_logrono_name ?: 'Logroño' }}
+                            </button>
+                            <button type="button" wire:click="$set('photobooth_settings_tab', 'vitoria')" class="px-3 py-1.5 rounded-lg text-xs font-black transition cursor-pointer {{ $photobooth_settings_tab === 'vitoria' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900' }}">
+                                📍 {{ $photobooth_vitoria_name ?: 'Vitoria / Álava' }}
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -831,7 +840,7 @@
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
                         <!-- 1. FOTOMATÓN LOGROÑO -->
                         <div class="p-4 bg-indigo-50/40 rounded-xl border border-indigo-200 space-y-3">
                             <div class="flex items-center justify-between border-b border-indigo-100 pb-2">
@@ -909,22 +918,6 @@
                                 <textarea rows="3" wire:model="pack_duo_desc" class="w-full border-indigo-300 rounded-lg text-xs"></textarea>
                             </div>
                         </div>
-
-                        <!-- 4. MESA CON FUENTE DE CHOCOLATE -->
-                        <div class="p-4 bg-amber-50/40 rounded-xl border border-amber-200 space-y-3">
-                            <div class="flex items-center justify-between border-b border-amber-100 pb-2">
-                                <span class="text-xs font-black uppercase text-amber-900">🍫 Mesa con Fuente de Chocolate</span>
-                                <span class="text-[10px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded">Mesa Dulce</span>
-                            </div>
-                            <div>
-                                <label class="block text-[11px] font-bold text-gray-700 mb-1">Precio Base Orientativo (€) (en el presupuesto también permite marcar "A consultar")</label>
-                                <input type="number" step="0.01" wire:model="price_chocolate_fountain" class="w-full border-amber-300 rounded-lg text-sm font-black text-amber-800">
-                            </div>
-                            <div>
-                                <label class="block text-[11px] font-bold text-gray-700 mb-1">Plantilla Descriptiva (Qué incluye en PDF)</label>
-                                <textarea rows="3" wire:model="chocolate_fountain_desc" class="w-full border-gray-300 rounded-lg text-xs"></textarea>
-                            </div>
-                        </div>
                     </div>
                 @else
                     <div class="bg-emerald-50/60 border border-emerald-200 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -937,7 +930,7 @@
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
                         <!-- 1. FOTOMATÓN VITORIA -->
                         <div class="p-4 bg-emerald-50/40 rounded-xl border border-emerald-200 space-y-3">
                             <div class="flex items-center justify-between border-b border-emerald-100 pb-2">
@@ -1015,24 +1008,85 @@
                                 <textarea rows="3" wire:model="pack_duo_vitoria_desc" class="w-full border-emerald-300 rounded-lg text-xs"></textarea>
                             </div>
                         </div>
+                    </div>
+                @endif
 
+                <!-- TARIFAS GLOBALES DE MESAS DULCES, FUENTES DE CHOCOLATE, CHUCHES Y CARRITO DE GOFRES -->
+                <div class="pt-3 border-t border-indigo-100">
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
                         <!-- 4. MESA CON FUENTE DE CHOCOLATE -->
                         <div class="p-4 bg-amber-50/40 rounded-xl border border-amber-200 space-y-3">
                             <div class="flex items-center justify-between border-b border-amber-100 pb-2">
                                 <span class="text-xs font-black uppercase text-amber-900">🍫 Mesa con Fuente de Chocolate</span>
-                                <span class="text-[10px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded">Mesa Dulce</span>
+                                <span class="text-[10px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded">1 o 2 Fuentes · 2h/3h</span>
                             </div>
-                            <div>
-                                <label class="block text-[11px] font-bold text-gray-700 mb-1">Precio Base Orientativo (€)</label>
-                                <input type="number" step="0.01" wire:model="price_chocolate_fountain" class="w-full border-amber-300 rounded-lg text-sm font-black text-amber-800">
+                            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                <div>
+                                    <label class="block text-[10px] font-bold text-gray-700 mb-1">1 Fuente · 2h (€)</label>
+                                    <input type="number" step="0.01" wire:model="price_chocolate_fountain_1_2h" class="w-full border-amber-300 rounded-lg text-sm font-black text-amber-800">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-gray-700 mb-1">1 Fuente · 3h (€)</label>
+                                    <input type="number" step="0.01" wire:model="price_chocolate_fountain_1_3h" class="w-full border-amber-300 rounded-lg text-sm font-black text-amber-800">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-gray-700 mb-1">2 Fuentes · 2h (€)</label>
+                                    <input type="number" step="0.01" wire:model="price_chocolate_fountain_2_2h" class="w-full border-amber-300 rounded-lg text-sm font-black text-amber-900">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-gray-700 mb-1">2 Fuentes · 3h (€)</label>
+                                    <input type="number" step="0.01" wire:model="price_chocolate_fountain_2_3h" class="w-full border-amber-300 rounded-lg text-sm font-black text-amber-900">
+                                </div>
+                                <div class="col-span-2 sm:col-span-1">
+                                    <label class="block text-[10px] font-bold text-gray-700 mb-1">Rincón Gofre (€/ud)</label>
+                                    <input type="number" step="0.01" wire:model="price_chocolate_fountain_waffle_extra" class="w-full border-amber-300 rounded-lg text-sm font-bold text-gray-800">
+                                </div>
                             </div>
                             <div>
                                 <label class="block text-[11px] font-bold text-gray-700 mb-1">Plantilla Descriptiva (Qué incluye en PDF)</label>
                                 <textarea rows="3" wire:model="chocolate_fountain_desc" class="w-full border-gray-300 rounded-lg text-xs"></textarea>
                             </div>
                         </div>
+
+                        <!-- 5. MESA DE SOLO CHUCHES -->
+                        <div class="p-4 bg-pink-50/40 rounded-xl border border-pink-200 space-y-3">
+                            <div class="flex items-center justify-between border-b border-pink-100 pb-2">
+                                <span class="text-xs font-black uppercase text-pink-900">🍬 Mesa de Solo Chuches</span>
+                                <span class="text-[10px] font-bold bg-pink-100 text-pink-800 px-2 py-0.5 rounded">Candy Bar</span>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-gray-700 mb-1">Precio Servicio Completo (€)</label>
+                                <input type="number" step="0.01" wire:model="price_candy_bar" class="w-full border-pink-300 rounded-lg text-sm font-black text-pink-800">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-gray-700 mb-1">Plantilla Descriptiva (Qué incluye en PDF)</label>
+                                <textarea rows="3" wire:model="candy_bar_desc" class="w-full border-gray-300 rounded-lg text-xs"></textarea>
+                            </div>
+                        </div>
+
+                        <!-- 6. CARRITO DE GOFRES -->
+                        <div class="p-4 bg-orange-50/40 rounded-xl border border-orange-200 space-y-3">
+                            <div class="flex items-center justify-between border-b border-orange-100 pb-2">
+                                <span class="text-xs font-black uppercase text-orange-900">🧇 Carrito de Gofres</span>
+                                <span class="text-[10px] font-bold bg-orange-100 text-orange-800 px-2 py-0.5 rounded">Hechos al momento</span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="block text-[11px] font-bold text-gray-700 mb-1">2h (~60 gofres) (€)</label>
+                                    <input type="number" step="0.01" wire:model="price_waffle_cart_2h" class="w-full border-orange-300 rounded-lg text-sm font-black text-orange-800">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold text-gray-700 mb-1">3h (~100 gofres) (€)</label>
+                                    <input type="number" step="0.01" wire:model="price_waffle_cart_3h" class="w-full border-orange-300 rounded-lg text-sm font-black text-orange-800">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-gray-700 mb-1">Plantilla Descriptiva (Qué incluye en PDF)</label>
+                                <textarea rows="3" wire:model="waffle_cart_desc" class="w-full border-gray-300 rounded-lg text-xs"></textarea>
+                            </div>
+                        </div>
                     </div>
-                @endif
+                </div>
             </div>
 
             <!-- SECCIÓN 4: CONDICIONES DE PAGO Y SEÑAL DE RESERVA -->

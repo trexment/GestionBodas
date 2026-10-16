@@ -138,10 +138,12 @@ class EventShow extends Component
         'photo_album' => ['selected' => false, 'quantity' => 1, 'price' => 150, 'desc' => 'Maquetación álbum digital profesional (sin imprimir).'],
         'photo_full_pack' => ['selected' => false, 'quantity' => 1, 'price' => 800, 'desc' => 'Fotografía Completa: Ceremonia, Restaurante, Fiesta, Álbum digital maquetado, fotos en alta calidad sin marcas de agua.'],
         'karaoke' => ['selected' => false, 'quantity' => 1, 'price' => 80, 'desc' => 'Karaoke interactivo para invitados.'],
-        'photobooth' => ['selected' => false, 'hours' => 2, 'quantity' => 1, 'price_2h' => 380, 'price_3h' => 430, 'price' => 380, 'desc' => 'Cámara réflex profesional Canon 1200, impresora de alta calidad (imprime en 10s) y ordenador táctil con efecto espejo. Incluye fotos ilimitadas, 2 copias de cada foto (invitados + libro de firmas personalizado de imprenta con foto), formato 10x15 o tiras (5x15), marco personalizado (nombre, fecha y temática), atrezzo divertido, photocall a elegir (8 fondos), animador de FotomatonCheese, USB con todas las fotos y subida a redes sociales. (Requiere enchufe cerca y espacio de 2m x 2m).'],
-        'video_360' => ['selected' => false, 'hours' => 2, 'quantity' => 1, 'price_2h' => 430, 'price_3h' => 490, 'price' => 430, 'desc' => 'Plataforma de 100cm (capacidad 4-5 personas por vídeo) con cámara GoPro. Incluye vídeos 360 ilimitados grabados con slow motion y boomerang (~20 seg), marco personalizado, canción a elegir, atrezzo divertido, bolsa de confeti, 1 o 2 animadores de FotomatonCheese y transporte incluido hasta 50 km. (Montaje 45 min aprox., requiere enchufe cerca y espacio de 2m x 2m).'],
+        'photobooth' => ['selected' => false, 'hours' => 2, 'quantity' => 1, 'price_2h' => 350, 'price_3h' => 420, 'price' => 350, 'desc' => 'Cámara réflex profesional Canon 1200, impresora de alta calidad (imprime en 10s) y ordenador táctil con efecto espejo. Incluye fotos ilimitadas, 2 copias de cada foto (invitados + libro de firmas personalizado de imprenta con foto), formato 10x15 o tiras (5x15), marco personalizado (nombre, fecha y temática), atrezzo divertido, photocall a elegir (8 fondos), animador de FotomatonCheese, USB con todas las fotos y subida a redes sociales. (Requiere enchufe cerca y espacio de 2m x 2m).'],
+        'video_360' => ['selected' => false, 'hours' => 2, 'quantity' => 1, 'price_2h' => 390, 'price_3h' => 490, 'price' => 390, 'desc' => 'Plataforma de 100cm (capacidad 4-5 personas por vídeo) con cámara GoPro. Incluye vídeos 360 ilimitados grabados con slow motion y boomerang (~20 seg), marco personalizado, canción a elegir, atrezzo divertido, bolsa de confeti, 1 o 2 animadores de FotomatonCheese y transporte incluido hasta 50 km. (Montaje 45 min aprox., requiere enchufe cerca y espacio de 2m x 2m).'],
         'pack_duo_360' => ['selected' => false, 'hours' => 3, 'quantity' => 1, 'price_2h' => 690, 'price_3h' => 850, 'price' => 850, 'desc' => 'Pack Dúo Todo Incluido (Fotomatón fotos impresas ilimitadas + Plataforma 360º vídeos slow motion/boomerang ilimitados): 2 copias por foto, libro de firmas personalizado de imprenta, USB, marcos y música personalizados, atrezzo completo, photocall, confeti, animadores FotomatonCheese y transporte incluido hasta 50 km.'],
-        'chocolate_fountain' => ['selected' => false, 'quantity' => 1, 'price' => 350, 'consult' => false, 'desc' => 'Mesa dulce con fuente de chocolate en cascada, selección de frutas frescas de temporada, gofres, nubes, brochetas, montaje, decoración y reposición.'],
+        'chocolate_fountain' => ['selected' => false, 'fountains' => 1, 'hours' => 2, 'quantity' => 1, 'price_1_2h' => 420, 'price_1_3h' => 520, 'price_2_2h' => 490, 'price_2_3h' => 590, 'waffle_extra' => 2.90, 'price' => 420, 'consult' => false, 'desc' => 'Mesa dulce con fuente de chocolate a elegir (blanco, negro o con leche): donut de azúcar y gofres cortados, profiteroles de nata, fruta de temporada variada (🍓🍊🍍🫐) cortada a tamaño de bocado, galletas Chips Ahoy, palmeritas, filipinos blanco y negro, chocolatinas individuales cerradas (barritas Kinder, mini KitKat, Huesitos), chucherías variadas, flores de lenguas verdes y rosa envueltas individuales, arco de globos, decoración a elegir, palillos, servilletas y bolsa de basura. Montaje 1-2h antes y reposición a mitad del servicio. (Opción rincón de gofres con 3 biberones de siropes + nata spray: 2,90 €/ud).'],
+        'candy_bar' => ['selected' => false, 'quantity' => 1, 'price' => 420, 'consult' => false, 'desc' => 'Mesa de Solo Chuches: Incluye decoración a elegir, gran variado de chuches (eligiendo las favoritas de los anfitriones) y globos decorativos. Se monta un par de horas antes y se recoge a la noche o al día siguiente.'],
+        'waffle_cart' => ['selected' => false, 'hours' => 2, 'quantity' => 1, 'price_2h' => 420, 'price_3h' => 550, 'price' => 420, 'consult' => false, 'desc' => 'Carrito de Gofres hechos al momento: Incluye 4 siropes a elegir (Kinder, Lotus, Nutella, chocolate blanco, chocolate con leche, pistacho...), 4 ingredientes secos (galleta Lotus molida, Oreo, mini Lacasitos, mini nubes...), decoración del carrito con globos y banderín con nombre, servilletas, bandejas y cubiertos. (2h ~60 gofres / 3h ~100 gofres).'],
         'smoke_machine' => ['selected' => false, 'quantity' => 1, 'price' => 60, 'included' => false, 'desc' => 'Efecto de máquina de humo para ambientar la pista y realzar la iluminación.'],
         'cold_sparks' => ['selected' => false, 'quantity' => 2, 'price' => 60, 'included' => false, 'desc' => 'Efecto especial de fuego frío / chispas frías para momentos clave (apertura de baile / corte de tarta).'],
     ];
@@ -350,10 +352,10 @@ class EventShow extends Component
         $this->quote_services['karaoke']['price'] = (float)\App\Models\Setting::get('price_karaoke', 80);
 
         $loc = mb_strtolower((string)($this->event->location ?? ''));
-        if (str_contains($loc, 'vitoria') || str_contains($loc, 'álava') || str_contains($loc, 'alava') || str_contains($loc, 'gasteiz') || str_contains($loc, 'bilbao') || str_contains($loc, 'bizkaia') || str_contains($loc, 'gipuzkoa')) {
+        if (str_contains($loc, 'vitoria') || str_contains($loc, 'álava') || str_contains($loc, 'alava') || str_contains($loc, 'gasteiz') || str_contains($loc, 'bilbao') || str_contains($loc, 'bizkaia') || str_contains($loc, 'gipuzkoa') || str_contains($loc, 'araba')) {
             $this->photobooth_provider = 'vitoria';
         } else {
-            $this->photobooth_provider = 'logrono';
+            $this->photobooth_provider = \App\Models\Setting::get('default_photobooth_provider', 'logrono');
         }
 
         $pbConfig = \App\Models\Setting::getPhotobooth360Config($this->photobooth_provider);
@@ -378,8 +380,24 @@ class EventShow extends Component
         $this->quote_services['pack_duo_360']['price'] = $pbConfig['pack_duo_3h'];
         $this->quote_services['pack_duo_360']['desc'] = $pbConfig['pack_duo_desc'];
 
-        $this->quote_services['chocolate_fountain']['price'] = $pbConfig['chocolate_fountain_price'];
+        $this->quote_services['chocolate_fountain']['fountains'] = 1;
+        $this->quote_services['chocolate_fountain']['hours'] = 2;
+        $this->quote_services['chocolate_fountain']['price_1_2h'] = $pbConfig['chocolate_fountain_1_2h'] ?? 420;
+        $this->quote_services['chocolate_fountain']['price_1_3h'] = $pbConfig['chocolate_fountain_1_3h'] ?? 520;
+        $this->quote_services['chocolate_fountain']['price_2_2h'] = $pbConfig['chocolate_fountain_2_2h'] ?? 490;
+        $this->quote_services['chocolate_fountain']['price_2_3h'] = $pbConfig['chocolate_fountain_2_3h'] ?? 590;
+        $this->quote_services['chocolate_fountain']['waffle_extra'] = $pbConfig['chocolate_fountain_waffle_extra'] ?? 2.90;
+        $this->quote_services['chocolate_fountain']['price'] = $pbConfig['chocolate_fountain_1_2h'] ?? $pbConfig['chocolate_fountain_price'] ?? 420;
         $this->quote_services['chocolate_fountain']['desc'] = $pbConfig['chocolate_fountain_desc'];
+
+        $this->quote_services['candy_bar']['price'] = $pbConfig['candy_bar_price'] ?? 420;
+        $this->quote_services['candy_bar']['desc'] = $pbConfig['candy_bar_desc'] ?? 'Mesa de Solo Chuches: Incluye decoración a elegir, gran variado de chuches (eligiendo las favoritas de los anfitriones) y globos decorativos. Se monta un par de horas antes y se recoge a la noche o al día siguiente.';
+
+        $this->quote_services['waffle_cart']['hours'] = 2;
+        $this->quote_services['waffle_cart']['price_2h'] = $pbConfig['waffle_cart_2h'] ?? 420;
+        $this->quote_services['waffle_cart']['price_3h'] = $pbConfig['waffle_cart_3h'] ?? 550;
+        $this->quote_services['waffle_cart']['price'] = $pbConfig['waffle_cart_2h'] ?? 420;
+        $this->quote_services['waffle_cart']['desc'] = $pbConfig['waffle_cart_desc'] ?? 'Carrito de Gofres hechos al momento: Incluye 4 siropes a elegir (Kinder, Lotus, Nutella, chocolate blanco, chocolate con leche, pistacho...), 4 ingredientes secos (galleta Lotus molida, Oreo, mini Lacasitos, mini nubes...), decoración del carrito con globos y banderín con nombre, servilletas, bandejas y cubiertos. (2h ~60 gofres / 3h ~100 gofres).';
 
         $this->quote_services['smoke_machine']['price'] = (float)\App\Models\Setting::get('price_effects_smoke', 60);
         $this->quote_services['cold_sparks']['price'] = (float)\App\Models\Setting::get('price_effects_sparks', 60);
@@ -1852,6 +1870,9 @@ class EventShow extends Component
         if ($templateKey === 'fotomaton_360') {
             $text = \App\Services\WhatsAppTemplateService::infoFotomatonY360($this->event, $this->photobooth_provider ?: 'logrono');
             $title = 'Info Fotomatón & Plataforma 360º';
+        } elseif ($templateKey === 'mesa_dulce_gofres') {
+            $text = \App\Services\WhatsAppTemplateService::infoMesaDulceYGofres($this->event, $this->photobooth_provider ?: 'vitoria');
+            $title = 'Info Mesas Dulces, Chocolate & Gofres';
         } elseif (isset($options[$templateKey])) {
             $text = $options[$templateKey]['text'];
             $title = $options[$templateKey]['title'] ?? $templateKey;
@@ -1925,6 +1946,10 @@ class EventShow extends Component
                 case 'fotomaton_360':
                     $text = \App\Services\WhatsAppTemplateService::infoFotomatonY360($this->event, $this->photobooth_provider ?: 'logrono');
                     $title = 'Info Fotomatón & Plataforma 360º';
+                    break;
+                case 'mesa_dulce_gofres':
+                    $text = \App\Services\WhatsAppTemplateService::infoMesaDulceYGofres($this->event, $this->photobooth_provider ?: 'vitoria');
+                    $title = 'Info Mesas Dulces, Chocolate & Gofres';
                     break;
                 case 'hoja_ruta':
                     $targetUser = $recipientType === 'assistant' ? $this->event->assistant : $this->event->dj;
@@ -2239,6 +2264,13 @@ class EventShow extends Component
             return;
         }
 
+        if ($key === 'waffle_cart.hours') {
+            $h = max(2, (int)$value);
+            $pbConfig = \App\Models\Setting::getPhotobooth360Config($this->photobooth_provider ?: 'vitoria');
+            $this->quote_services['waffle_cart']['price'] = ($h <= 2) ? ($pbConfig['waffle_cart_2h'] ?? 420) : ($pbConfig['waffle_cart_3h'] ?? 550);
+            return;
+        }
+
         if (str_starts_with($key, 'pack_')) {
             $parts = explode('.', $key);
             $packName = $parts[0] ?? '';
@@ -2294,6 +2326,25 @@ class EventShow extends Component
         $this->quote_services['pack_duo_360']['price_3h'] = $pbConfig['pack_duo_3h'];
         $this->quote_services['pack_duo_360']['price'] = ($duoHours <= 2) ? $pbConfig['pack_duo_2h'] : ($pbConfig['pack_duo_3h'] + max(0, $duoHours - 3) * $duoExtra);
         $this->quote_services['pack_duo_360']['desc'] = $pbConfig['pack_duo_desc'];
+
+        $chocFountains = max(1, (int)($this->quote_services['chocolate_fountain']['fountains'] ?? 1));
+        $chocHours = max(2, (int)($this->quote_services['chocolate_fountain']['hours'] ?? 2));
+        $this->quote_services['chocolate_fountain']['price_1_2h'] = $pbConfig['chocolate_fountain_1_2h'] ?? 420;
+        $this->quote_services['chocolate_fountain']['price_1_3h'] = $pbConfig['chocolate_fountain_1_3h'] ?? 520;
+        $this->quote_services['chocolate_fountain']['price_2_2h'] = $pbConfig['chocolate_fountain_2_2h'] ?? 490;
+        $this->quote_services['chocolate_fountain']['price_2_3h'] = $pbConfig['chocolate_fountain_2_3h'] ?? 590;
+        $chocKey = 'chocolate_fountain_' . ($chocFountains >= 2 ? '2' : '1') . '_' . ($chocHours >= 3 ? '3h' : '2h');
+        $this->quote_services['chocolate_fountain']['price'] = $pbConfig[$chocKey] ?? 420;
+        $this->quote_services['chocolate_fountain']['desc'] = $pbConfig['chocolate_fountain_desc'];
+
+        $this->quote_services['candy_bar']['price'] = $pbConfig['candy_bar_price'] ?? 420;
+        $this->quote_services['candy_bar']['desc'] = $pbConfig['candy_bar_desc'];
+
+        $waffleHours = max(2, (int)($this->quote_services['waffle_cart']['hours'] ?? 2));
+        $this->quote_services['waffle_cart']['price_2h'] = $pbConfig['waffle_cart_2h'] ?? 420;
+        $this->quote_services['waffle_cart']['price_3h'] = $pbConfig['waffle_cart_3h'] ?? 550;
+        $this->quote_services['waffle_cart']['price'] = ($waffleHours >= 3) ? ($pbConfig['waffle_cart_3h'] ?? 550) : ($pbConfig['waffle_cart_2h'] ?? 420);
+        $this->quote_services['waffle_cart']['desc'] = $pbConfig['waffle_cart_desc'];
     }
 
     public function setPhotoboothHours(int $hours)
@@ -2325,6 +2376,167 @@ class EventShow extends Component
         $this->quote_services['pack_duo_360']['price'] = ($hours <= 2) ? $pbConfig['pack_duo_2h'] : ($pbConfig['pack_duo_3h'] + max(0, $hours - 3) * $extraRate);
         $this->quote_services['photobooth']['selected'] = false;
         $this->quote_services['video_360']['selected'] = false;
+    }
+
+    public function setChocolateFountainOption(int $fountains, int $hours)
+    {
+        $pbConfig = \App\Models\Setting::getPhotobooth360Config($this->photobooth_provider ?: 'vitoria');
+        $f = ($fountains >= 2) ? 2 : 1;
+        $h = ($hours >= 3) ? 3 : 2;
+        $this->quote_services['chocolate_fountain']['selected'] = true;
+        $this->quote_services['chocolate_fountain']['consult'] = false;
+        $this->quote_services['chocolate_fountain']['fountains'] = $f;
+        $this->quote_services['chocolate_fountain']['hours'] = $h;
+        $priceKey = "chocolate_fountain_{$f}_{$h}h";
+        $defaultPrice = ($f === 2) ? ($h === 3 ? 590 : 490) : ($h === 3 ? 520 : 420);
+        $this->quote_services['chocolate_fountain']['price'] = (float)($pbConfig[$priceKey] ?? $defaultPrice);
+    }
+
+    public function setWaffleCartHours(int $hours)
+    {
+        $pbConfig = \App\Models\Setting::getPhotobooth360Config($this->photobooth_provider ?: 'vitoria');
+        $h = ($hours >= 3) ? 3 : 2;
+        $this->quote_services['waffle_cart']['selected'] = true;
+        $this->quote_services['waffle_cart']['consult'] = false;
+        $this->quote_services['waffle_cart']['hours'] = $h;
+        $this->quote_services['waffle_cart']['price'] = ($h === 3) ? (float)($pbConfig['waffle_cart_3h'] ?? 550) : (float)($pbConfig['waffle_cart_2h'] ?? 420);
+    }
+
+    public function saveCurrentPricesAsDefault()
+    {
+        // Packs Comerciales
+        \App\Models\Setting::set('pack_basic_price', (float)($this->quote_services['pack_basic']['price'] ?? 600));
+        \App\Models\Setting::set('pack_medium_price', (float)($this->quote_services['pack_medium']['price'] ?? 950));
+        \App\Models\Setting::set('pack_premium_price', (float)($this->quote_services['pack_premium']['price'] ?? 1350));
+
+        // Servicios Musicales
+        \App\Models\Setting::set('price_ceremony', (float)($this->quote_services['ceremony']['price'] ?? 180));
+        \App\Models\Setting::set('price_cocktail', (float)($this->quote_services['cocktail']['price'] ?? 150));
+        \App\Models\Setting::set('price_restaurant', (float)($this->quote_services['restaurant']['price'] ?? 150));
+        \App\Models\Setting::set('price_dj', (float)($this->quote_services['dj_custom']['price'] ?? 150));
+        \App\Models\Setting::set('price_extra_hours', (float)($this->quote_services['extra_hours']['price'] ?? 120));
+        \App\Models\Setting::set('price_karaoke', (float)($this->quote_services['karaoke']['price'] ?? 80));
+
+        // Proveedor activo por defecto y tarifas de Fotomatón / 360 / Pack Dúo
+        $prov = $this->photobooth_provider ?: 'logrono';
+        \App\Models\Setting::set('default_photobooth_provider', $prov);
+
+        $pbHours = (int)($this->quote_services['photobooth']['hours'] ?? 2);
+        $pbPrice = (float)($this->quote_services['photobooth']['price'] ?? 350);
+        $v360Hours = (int)($this->quote_services['video_360']['hours'] ?? 2);
+        $v360Price = (float)($this->quote_services['video_360']['price'] ?? 390);
+        $duoHours = (int)($this->quote_services['pack_duo_360']['hours'] ?? 3);
+        $duoPrice = (float)($this->quote_services['pack_duo_360']['price'] ?? 850);
+
+        if ($prov === 'vitoria') {
+            if ($pbHours <= 2) {
+                \App\Models\Setting::set('price_photobooth_vitoria_2h', $pbPrice);
+                $this->quote_services['photobooth']['price_2h'] = $pbPrice;
+            } elseif ($pbHours === 3) {
+                \App\Models\Setting::set('price_photobooth_vitoria_3h', $pbPrice);
+                $this->quote_services['photobooth']['price_3h'] = $pbPrice;
+            }
+            if (!empty($this->quote_services['photobooth']['desc'])) {
+                \App\Models\Setting::set('photobooth_vitoria_desc', $this->quote_services['photobooth']['desc']);
+            }
+
+            if ($v360Hours <= 2) {
+                \App\Models\Setting::set('price_video_360_vitoria_2h', $v360Price);
+                $this->quote_services['video_360']['price_2h'] = $v360Price;
+            } elseif ($v360Hours === 3) {
+                \App\Models\Setting::set('price_video_360_vitoria_3h', $v360Price);
+                $this->quote_services['video_360']['price_3h'] = $v360Price;
+            }
+            if (!empty($this->quote_services['video_360']['desc'])) {
+                \App\Models\Setting::set('video_360_vitoria_desc', $this->quote_services['video_360']['desc']);
+            }
+
+            if ($duoHours <= 2) {
+                \App\Models\Setting::set('price_pack_duo_vitoria_2h', $duoPrice);
+                $this->quote_services['pack_duo_360']['price_2h'] = $duoPrice;
+            } elseif ($duoHours === 3) {
+                \App\Models\Setting::set('price_pack_duo_vitoria_3h', $duoPrice);
+                $this->quote_services['pack_duo_360']['price_3h'] = $duoPrice;
+            }
+            if (!empty($this->quote_services['pack_duo_360']['desc'])) {
+                \App\Models\Setting::set('pack_duo_vitoria_desc', $this->quote_services['pack_duo_360']['desc']);
+            }
+        } else {
+            if ($pbHours <= 2) {
+                \App\Models\Setting::set('price_photobooth_2h', $pbPrice);
+                $this->quote_services['photobooth']['price_2h'] = $pbPrice;
+            } elseif ($pbHours === 3) {
+                \App\Models\Setting::set('price_photobooth_3h', $pbPrice);
+                $this->quote_services['photobooth']['price_3h'] = $pbPrice;
+            }
+            if (!empty($this->quote_services['photobooth']['desc'])) {
+                \App\Models\Setting::set('photobooth_desc', $this->quote_services['photobooth']['desc']);
+            }
+
+            if ($v360Hours <= 2) {
+                \App\Models\Setting::set('price_video_360_2h', $v360Price);
+                $this->quote_services['video_360']['price_2h'] = $v360Price;
+            } elseif ($v360Hours === 3) {
+                \App\Models\Setting::set('price_video_360_3h', $v360Price);
+                $this->quote_services['video_360']['price_3h'] = $v360Price;
+            }
+            if (!empty($this->quote_services['video_360']['desc'])) {
+                \App\Models\Setting::set('video_360_desc', $this->quote_services['video_360']['desc']);
+            }
+
+            if ($duoHours <= 2) {
+                \App\Models\Setting::set('price_pack_duo_2h', $duoPrice);
+                $this->quote_services['pack_duo_360']['price_2h'] = $duoPrice;
+            } elseif ($duoHours === 3) {
+                \App\Models\Setting::set('price_pack_duo_3h', $duoPrice);
+                $this->quote_services['pack_duo_360']['price_3h'] = $duoPrice;
+            }
+            if (!empty($this->quote_services['pack_duo_360']['desc'])) {
+                \App\Models\Setting::set('pack_duo_desc', $this->quote_services['pack_duo_360']['desc']);
+            }
+        }
+
+        // Mesa Dulce con Fuente de Chocolate
+        $chocF = (int)($this->quote_services['chocolate_fountain']['fountains'] ?? 1) >= 2 ? 2 : 1;
+        $chocH = (int)($this->quote_services['chocolate_fountain']['hours'] ?? 2) >= 3 ? 3 : 2;
+        $chocPrice = (float)($this->quote_services['chocolate_fountain']['price'] ?? 420);
+        \App\Models\Setting::set('price_chocolate_fountain', $chocPrice);
+        \App\Models\Setting::set("price_chocolate_fountain_{$chocF}_{$chocH}h", $chocPrice);
+        $this->quote_services['chocolate_fountain']["price_{$chocF}_{$chocH}h"] = $chocPrice;
+        if (!empty($this->quote_services['chocolate_fountain']['desc'])) {
+            \App\Models\Setting::set('chocolate_fountain_desc', $this->quote_services['chocolate_fountain']['desc']);
+        }
+
+        // Mesa de Solo Chuches
+        \App\Models\Setting::set('price_candy_bar', (float)($this->quote_services['candy_bar']['price'] ?? 420));
+        if (!empty($this->quote_services['candy_bar']['desc'])) {
+            \App\Models\Setting::set('candy_bar_desc', $this->quote_services['candy_bar']['desc']);
+        }
+
+        // Carrito de Gofres
+        $waffleH = (int)($this->quote_services['waffle_cart']['hours'] ?? 2) >= 3 ? 3 : 2;
+        $wafflePrice = (float)($this->quote_services['waffle_cart']['price'] ?? 420);
+        if ($waffleH === 3) {
+            \App\Models\Setting::set('price_waffle_cart_3h', $wafflePrice);
+            $this->quote_services['waffle_cart']['price_3h'] = $wafflePrice;
+        } else {
+            \App\Models\Setting::set('price_waffle_cart_2h', $wafflePrice);
+            $this->quote_services['waffle_cart']['price_2h'] = $wafflePrice;
+        }
+        if (!empty($this->quote_services['waffle_cart']['desc'])) {
+            \App\Models\Setting::set('waffle_cart_desc', $this->quote_services['waffle_cart']['desc']);
+        }
+
+        // Efectos y Fotografía
+        \App\Models\Setting::set('price_effects_smoke', (float)($this->quote_services['smoke_machine']['price'] ?? 60));
+        \App\Models\Setting::set('price_effects_sparks', (float)($this->quote_services['cold_sparks']['price'] ?? 60));
+        \App\Models\Setting::set('price_photo_ceremony', (float)($this->quote_services['photo_ceremony']['price'] ?? 250));
+        \App\Models\Setting::set('price_photo_restaurant', (float)($this->quote_services['photo_restaurant']['price'] ?? 250));
+        \App\Models\Setting::set('price_photo_party', (float)($this->quote_services['photo_party']['price'] ?? 300));
+        \App\Models\Setting::set('price_photo_album', (float)($this->quote_services['photo_album']['price'] ?? 150));
+        \App\Models\Setting::set('price_photo_full_pack', (float)($this->quote_services['photo_full_pack']['price'] ?? 800));
+
+        session()->flash('quote_message', '💾 ¡Todos los precios y textos actuales se han guardado como predeterminados para todos los futuros presupuestos!');
     }
 
     public function syncPackEffectsAdmin()
@@ -2500,6 +2712,12 @@ class EventShow extends Component
         }
         if (!empty($this->quote_services['chocolate_fountain']['selected']) && empty($this->quote_services['chocolate_fountain']['consult'])) {
             $total += (float)$this->quote_services['chocolate_fountain']['price'] * (int)($this->quote_services['chocolate_fountain']['quantity'] ?: 1);
+        }
+        if (!empty($this->quote_services['candy_bar']['selected']) && empty($this->quote_services['candy_bar']['consult'])) {
+            $total += (float)$this->quote_services['candy_bar']['price'] * (int)($this->quote_services['candy_bar']['quantity'] ?: 1);
+        }
+        if (!empty($this->quote_services['waffle_cart']['selected']) && empty($this->quote_services['waffle_cart']['consult'])) {
+            $total += (float)$this->quote_services['waffle_cart']['price'] * (int)($this->quote_services['waffle_cart']['quantity'] ?: 1);
         }
 
         // Efectos Especiales (0€ si están incluidos en el Pack contratado)
@@ -2701,7 +2919,7 @@ class EventShow extends Component
             }
         }
         
-        // 4. Karaoke, Fotomatón, Plataforma 360º, Pack Dúo y Mesa con Fuente de Chocolate
+        // 4. Karaoke, Fotomatón, Plataforma 360º, Pack Dúo, Mesa con Fuente de Chocolate, Mesa de Chuches y Carrito de Gofres
         if (!empty($this->quote_services['karaoke']['selected'])) {
             $qty = (int)($this->quote_services['karaoke']['quantity'] ?: 1);
             $p = (float)($this->quote_services['karaoke']['price'] ?: 0);
@@ -2750,11 +2968,42 @@ class EventShow extends Component
 
         if (!empty($this->quote_services['chocolate_fountain']['selected'])) {
             $qty = (int)($this->quote_services['chocolate_fountain']['quantity'] ?: 1);
+            $fountains = (int)($this->quote_services['chocolate_fountain']['fountains'] ?? 1) >= 2 ? 2 : 1;
+            $hours = (int)($this->quote_services['chocolate_fountain']['hours'] ?? 2) >= 3 ? 3 : 2;
             $isConsult = !empty($this->quote_services['chocolate_fountain']['consult']);
             $p = $isConsult ? 0 : (float)($this->quote_services['chocolate_fountain']['price'] ?: 0);
+            $fountainLabel = $fountains === 2 ? '2 Fuentes de Chocolate' : '1 Fuente de Chocolate';
             $items[] = [
-                'service_name' => 'Mesa con Fuente de Chocolate' . ($isConsult ? ' (A consultar)' : ''),
+                'service_name' => "Mesa Dulce con {$fountainLabel} ({$hours} Horas)" . ($isConsult ? ' (A consultar)' : ''),
                 'description' => $this->quote_services['chocolate_fountain']['desc'] . ($isConsult ? ' (Tarifa y disponibilidad a consultar según comensales).' : ''),
+                'price' => $p,
+                'quantity' => $qty
+            ];
+            $total += ($p * $qty);
+        }
+
+        if (!empty($this->quote_services['candy_bar']['selected'])) {
+            $qty = (int)($this->quote_services['candy_bar']['quantity'] ?: 1);
+            $isConsult = !empty($this->quote_services['candy_bar']['consult']);
+            $p = $isConsult ? 0 : (float)($this->quote_services['candy_bar']['price'] ?: 0);
+            $items[] = [
+                'service_name' => 'Mesa de Solo Chuches' . ($isConsult ? ' (A consultar)' : ''),
+                'description' => $this->quote_services['candy_bar']['desc'] . ($isConsult ? ' (Tarifa y disponibilidad a consultar).' : ''),
+                'price' => $p,
+                'quantity' => $qty
+            ];
+            $total += ($p * $qty);
+        }
+
+        if (!empty($this->quote_services['waffle_cart']['selected'])) {
+            $qty = (int)($this->quote_services['waffle_cart']['quantity'] ?: 1);
+            $hours = (int)($this->quote_services['waffle_cart']['hours'] ?? 2) >= 3 ? 3 : 2;
+            $wafflesApprox = $hours === 3 ? 'unos 100 gofres' : 'unos 60 gofres';
+            $isConsult = !empty($this->quote_services['waffle_cart']['consult']);
+            $p = $isConsult ? 0 : (float)($this->quote_services['waffle_cart']['price'] ?: 0);
+            $items[] = [
+                'service_name' => "Carrito de Gofres hechos al momento ({$hours} Horas · {$wafflesApprox})" . ($isConsult ? ' (A consultar)' : ''),
+                'description' => $this->quote_services['waffle_cart']['desc'] . ($isConsult ? ' (Tarifa y disponibilidad a consultar).' : ''),
                 'price' => $p,
                 'quantity' => $qty
             ];
@@ -2948,7 +3197,7 @@ class EventShow extends Component
         $this->selectPack('clear');
         $this->selected_pack_type = 'custom';
         $loadedCustomExtras = [];
-        $pbConfig = \App\Models\Setting::getPhotobooth360Config();
+        $pbConfig = \App\Models\Setting::getPhotobooth360Config($this->photobooth_provider ?: 'vitoria');
 
         // Mapear cada línea
         foreach ($quote->items as $item) {
@@ -3035,13 +3284,34 @@ class EventShow extends Component
                     $this->quote_services['video_360']['desc'] = $cleanDesc;
                 }
             } elseif (str_contains($name, 'chocolate') || str_contains($name, 'fuente de chocolate')) {
-                $isConsult = str_contains($name, 'consultar') || ((float)$item->price == 0);
                 $this->quote_services['chocolate_fountain']['selected'] = true;
                 $this->quote_services['chocolate_fountain']['quantity'] = (int)($item->quantity ?: 1);
-                $this->quote_services['chocolate_fountain']['consult'] = false; // Al adaptarlo en admin le proponemos el precio directo salvo que marque consultar
-                $this->quote_services['chocolate_fountain']['price'] = (float)$item->price > 0 ? (float)$item->price : $pbConfig['chocolate_fountain_price'];
+                $this->quote_services['chocolate_fountain']['consult'] = false;
+                $fountains = str_contains($name, '2 fuente') || ((float)$item->price == 490 || (float)$item->price == 590) ? 2 : 1;
+                $hours = str_contains($name, '3 hora') || str_contains($name, '3h') || ((float)$item->price == 520 || (float)$item->price == 590) ? 3 : 2;
+                $this->quote_services['chocolate_fountain']['fountains'] = $fountains;
+                $this->quote_services['chocolate_fountain']['hours'] = $hours;
+                $this->quote_services['chocolate_fountain']['price'] = (float)$item->price > 0 ? (float)$item->price : ($pbConfig["chocolate_fountain_{$fountains}_{$hours}h"] ?? 420);
                 if (!empty($item->description) && !str_contains(mb_strtolower($item->description), 'consultar')) {
                     $this->quote_services['chocolate_fountain']['desc'] = $item->description;
+                }
+            } elseif (str_contains($name, 'solo chuches') || str_contains($name, 'mesa de chuches') || str_contains($name, 'candy bar')) {
+                $this->quote_services['candy_bar']['selected'] = true;
+                $this->quote_services['candy_bar']['quantity'] = (int)($item->quantity ?: 1);
+                $this->quote_services['candy_bar']['consult'] = false;
+                $this->quote_services['candy_bar']['price'] = (float)$item->price > 0 ? (float)$item->price : ($pbConfig['candy_bar_price'] ?? 420);
+                if (!empty($item->description) && !str_contains(mb_strtolower($item->description), 'consultar')) {
+                    $this->quote_services['candy_bar']['desc'] = $item->description;
+                }
+            } elseif (str_contains($name, 'carrito de gofres') || str_contains($name, 'gofres')) {
+                $this->quote_services['waffle_cart']['selected'] = true;
+                $this->quote_services['waffle_cart']['quantity'] = (int)($item->quantity ?: 1);
+                $this->quote_services['waffle_cart']['consult'] = false;
+                $hours = str_contains($name, '3 hora') || str_contains($name, '3h') || str_contains($name, '100 gofres') || ((float)$item->price >= 500) ? 3 : 2;
+                $this->quote_services['waffle_cart']['hours'] = $hours;
+                $this->quote_services['waffle_cart']['price'] = (float)$item->price > 0 ? (float)$item->price : ($hours === 3 ? ($pbConfig['waffle_cart_3h'] ?? 550) : ($pbConfig['waffle_cart_2h'] ?? 420));
+                if (!empty($item->description) && !str_contains(mb_strtolower($item->description), 'consultar')) {
+                    $this->quote_services['waffle_cart']['desc'] = $item->description;
                 }
             } elseif (str_contains($name, 'máquina de humo') || str_contains($name, 'maquina de humo') || str_contains($name, 'humo')) {
                 $this->quote_services['smoke_machine']['selected'] = true;

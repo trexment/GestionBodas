@@ -661,10 +661,53 @@ class Setting extends Model
             self::set('photobooth_providers_v3_migrated', '1');
         }
 
+        // Auto-migración única para tarifas de Mesa Dulce con Fuente de Chocolate (1 y 2 fuentes, 2h/3h), Mesa de Solo Chuches y Carrito de Gofres (FotomatonCheese - Águeda 697198216)
+        if (self::get('photobooth_sweet_v4_migrated') !== '1') {
+            self::set('price_chocolate_fountain', 420);
+            self::set('price_chocolate_fountain_1_2h', 420);
+            self::set('price_chocolate_fountain_1_3h', 520);
+            self::set('price_chocolate_fountain_2_2h', 490);
+            self::set('price_chocolate_fountain_2_3h', 590);
+            self::set('price_chocolate_fountain_waffle_extra', 2.90);
+            self::set(
+                'chocolate_fountain_desc',
+                'Mesa dulce con fuente de chocolate a elegir (blanco, negro o con leche): donut de azúcar y gofres cortados, profiteroles de nata, fruta de temporada variada (🍓🍊🍍🫐) cortada a tamaño de bocado, galletas Chips Ahoy, palmeritas, filipinos blanco y negro, chocolatinas individuales cerradas (barritas Kinder, mini KitKat, Huesitos), chucherías variadas, flores de lenguas verdes y rosa envueltas individuales, arco de globos, decoración a elegir, palillos, servilletas y bolsa de basura. Montaje 1-2h antes y reposición a mitad del servicio. (Opción rincón de gofres con 3 biberones de siropes + nata spray: 2,90 €/ud).'
+            );
+
+            self::set('price_candy_bar', 420);
+            self::set(
+                'candy_bar_desc',
+                'Mesa de Solo Chuches: Incluye decoración a elegir, gran variado de chuches (eligiendo las favoritas de los anfitriones) y globos decorativos. Se monta un par de horas antes y se recoge a la noche o al día siguiente.'
+            );
+
+            self::set('price_waffle_cart_2h', 420);
+            self::set('price_waffle_cart_3h', 550);
+            self::set(
+                'waffle_cart_desc',
+                'Carrito de Gofres hechos al momento: Incluye 4 siropes a elegir (Kinder, Lotus, Nutella, chocolate blanco, chocolate con leche, pistacho...), 4 ingredientes secos (galleta Lotus molida, Oreo, mini Lacasitos, mini nubes...), decoración del carrito con globos y banderín con nombre, servilletas, bandejas y cubiertos. (2h ~60 gofres / 3h ~100 gofres).'
+            );
+
+            self::set('photobooth_vitoria_contact', 'FotomatonCheese · Águeda 697198216');
+            self::set('photobooth_sweet_v4_migrated', '1');
+        }
+
+        $choc1_2h = (float)self::get('price_chocolate_fountain_1_2h', 420);
+        $choc1_3h = (float)self::get('price_chocolate_fountain_1_3h', 520);
+        $choc2_2h = (float)self::get('price_chocolate_fountain_2_2h', 490);
+        $choc2_3h = (float)self::get('price_chocolate_fountain_2_3h', 590);
+        $chocWaffleExtra = (float)self::get('price_chocolate_fountain_waffle_extra', 2.90);
+        $chocDefaultDesc = 'Mesa dulce con fuente de chocolate a elegir (blanco, negro o con leche): donut de azúcar y gofres cortados, profiteroles de nata, fruta de temporada variada (🍓🍊🍍🫐) cortada a tamaño de bocado, galletas Chips Ahoy, palmeritas, filipinos blanco y negro, chocolatinas individuales cerradas (barritas Kinder, mini KitKat, Huesitos), chucherías variadas, flores de lenguas verdes y rosa envueltas individuales, arco de globos, decoración a elegir, palillos, servilletas y bolsa de basura. Montaje 1-2h antes y reposición a mitad del servicio. (Opción rincón de gofres con 3 biberones de siropes + nata spray: 2,90 €/ud).';
+        $candyPrice = (float)self::get('price_candy_bar', 420);
+        $candyDesc = self::get('candy_bar_desc', 'Mesa de Solo Chuches: Incluye decoración a elegir, gran variado de chuches (eligiendo las favoritas de los anfitriones) y globos decorativos. Se monta un par de horas antes y se recoge a la noche o al día siguiente.');
+        $waffle2h = (float)self::get('price_waffle_cart_2h', 420);
+        $waffle3h = (float)self::get('price_waffle_cart_3h', 550);
+        $waffleDesc = self::get('waffle_cart_desc', 'Carrito de Gofres hechos al momento: Incluye 4 siropes a elegir (Kinder, Lotus, Nutella, chocolate blanco, chocolate con leche, pistacho...), 4 ingredientes secos (galleta Lotus molida, Oreo, mini Lacasitos, mini nubes...), decoración del carrito con globos y banderín con nombre, servilletas, bandejas y cubiertos. (2h ~60 gofres / 3h ~100 gofres).');
+
         if ($provider === 'vitoria') {
             return [
                 'provider_key' => 'vitoria',
                 'provider_name' => self::get('photobooth_vitoria_name', 'Vitoria (FotomatonCheese)'),
+                'contact_info' => self::get('photobooth_vitoria_contact', 'FotomatonCheese · Águeda 697198216'),
                 'default_hours' => 2,
                 'photobooth_2h' => (float)self::get('price_photobooth_vitoria_2h', 350),
                 'photobooth_3h' => (float)self::get('price_photobooth_vitoria_3h', 420),
@@ -687,17 +730,25 @@ class Setting extends Model
                     'Pack Dúo Todo Incluido: Fotomatón (Canon 1200, copias ilimitadas, libro firmas imprenta, photocall, USB) + Plataforma Vídeo 360º (100cm, GoPro slow motion/boomerang, confeti, atrezzo y animadores). Reserva: 100€/servicio.'
                 ),
                 'deposit_per_service' => (float)self::get('photobooth_vitoria_deposit_per_service', 100),
-                'chocolate_fountain_price' => (float)self::get('price_chocolate_fountain', 350),
-                'chocolate_fountain_desc' => self::get(
-                    'chocolate_fountain_desc',
-                    'Mesa dulce con fuente de chocolate en cascada, selección de frutas frescas de temporada, gofres, nubes, brochetas, montaje, decoración y reposición.'
-                ),
+                'chocolate_fountain_price' => (float)self::get('price_chocolate_fountain', $choc1_2h),
+                'chocolate_fountain_1_2h' => $choc1_2h,
+                'chocolate_fountain_1_3h' => $choc1_3h,
+                'chocolate_fountain_2_2h' => $choc2_2h,
+                'chocolate_fountain_2_3h' => $choc2_3h,
+                'chocolate_fountain_waffle_extra' => $chocWaffleExtra,
+                'chocolate_fountain_desc' => self::get('chocolate_fountain_desc', $chocDefaultDesc),
+                'candy_bar_price' => $candyPrice,
+                'candy_bar_desc' => $candyDesc,
+                'waffle_cart_2h' => $waffle2h,
+                'waffle_cart_3h' => $waffle3h,
+                'waffle_cart_desc' => $waffleDesc,
             ];
         }
 
         return [
             'provider_key' => 'logrono',
             'provider_name' => self::get('photobooth_logrono_name', 'Logroño'),
+            'contact_info' => self::get('photobooth_vitoria_contact', 'FotomatonCheese · Águeda 697198216'),
             'default_hours' => 3,
             'photobooth_2h' => (float)self::get('price_photobooth_2h', 430),
             'photobooth_3h' => (float)self::get('price_photobooth_3h', 480),
@@ -720,11 +771,18 @@ class Setting extends Model
                 'Pack Dúo Todo Incluido: Fotomatón (copias ilimitadas, libro de firmas, photocall, USB) + Plataforma Vídeo 360º (slow motion/boomerang, confeti, atrezzo y animadores).'
             ),
             'deposit_per_service' => (float)self::get('photobooth_deposit_per_service', 100),
-            'chocolate_fountain_price' => (float)self::get('price_chocolate_fountain', 350),
-            'chocolate_fountain_desc' => self::get(
-                'chocolate_fountain_desc',
-                'Mesa dulce con fuente de chocolate en cascada, selección de frutas frescas de temporada, gofres, nubes, brochetas, montaje, decoración y reposición.'
-            ),
+            'chocolate_fountain_price' => (float)self::get('price_chocolate_fountain', $choc1_2h),
+            'chocolate_fountain_1_2h' => $choc1_2h,
+            'chocolate_fountain_1_3h' => $choc1_3h,
+            'chocolate_fountain_2_2h' => $choc2_2h,
+            'chocolate_fountain_2_3h' => $choc2_3h,
+            'chocolate_fountain_waffle_extra' => $chocWaffleExtra,
+            'chocolate_fountain_desc' => self::get('chocolate_fountain_desc', $chocDefaultDesc),
+            'candy_bar_price' => $candyPrice,
+            'candy_bar_desc' => $candyDesc,
+            'waffle_cart_2h' => $waffle2h,
+            'waffle_cart_3h' => $waffle3h,
+            'waffle_cart_desc' => $waffleDesc,
         ];
     }
 

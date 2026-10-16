@@ -451,6 +451,14 @@ class WhatsAppTemplateService
                 'description' => 'Envía todo el detalle de lo que incluye el Fotomatón (2h/3h), la Plataforma 360º (2h/3h) y el Pack Dúo Todo Incluido.',
                 'text' => self::infoFotomatonY360($event),
             ],
+            'mesa_dulce_gofres' => [
+                'key' => 'mesa_dulce_gofres',
+                'title' => 'Info & Precios: Mesa Dulce Chocolate, Chuches y Carrito de Gofres',
+                'stage' => 'Catálogo Extras',
+                'icon' => '🍫',
+                'description' => 'Envía la información completa y tarifas de Mesa Dulce con Fuente de Chocolate (1 o 2 fuentes), Mesa de Solo Chuches y Carrito de Gofres hechos al momento.',
+                'text' => self::infoMesaDulceYGofres($event),
+            ],
         ];
 
         foreach ($options as $k => &$opt) {
@@ -478,6 +486,7 @@ class WhatsAppTemplateService
             'presupuesto' => self::seguimientoPresupuestoNo($event),
             'no_es_nuestro_cliente' => self::descartePosicionamientoPrecio($event),
             'fotomaton_360' => self::infoFotomatonY360($event),
+            'mesa_dulce_gofres' => self::infoMesaDulceYGofres($event),
             default => self::seguimientoPreguntaNo($event),
         };
 
@@ -490,6 +499,7 @@ class WhatsAppTemplateService
             'presupuesto' => 'Reactivación por Presupuesto (Técnica del NO)',
             'no_es_nuestro_cliente' => 'Descarte por Posicionamiento ("No eres nuestro perfil de cliente")',
             'fotomaton_360' => 'Info & Precios: Fotomatón, Plataforma 360º y Pack Dúo',
+            'mesa_dulce_gofres' => 'Info & Precios: Mesa Dulce Chocolate, Chuches y Carrito de Gofres',
             default => 'Técnica del NO / ¿Descartáis la fecha?',
         };
 
@@ -502,6 +512,7 @@ class WhatsAppTemplateService
             'presupuesto' => '💶',
             'no_es_nuestro_cliente' => '👑',
             'fotomaton_360' => '📸',
+            'mesa_dulce_gofres' => '🍫',
             default => '🎯',
         };
 
@@ -836,6 +847,64 @@ class WhatsAppTemplateService
              . "────────────────────\n\n"
              . "🔹 *Tenemos un PACK DÚO de 3 horas de 🎥 Plataforma 360 + 3 horas de 📸 Fotomatón fotos impresas por: {$duo3} €* (opción de *2 horas por {$duo2} €*) 🔹 ¡¡CON TODO INCLUIDO!!\n\n"
              . "📆 Para reservar el día serían *{$dep} € por servicio contratado*, mediante cuenta bancaria y el resto del pago se realizaría la semana de antes.";
+    }
+
+    public static function infoMesaDulceYGofres(?Event $event = null, ?string $provider = null): string
+    {
+        $clientName = self::resolveCouplesFirstNames($event);
+        $pb = Setting::getPhotobooth360Config($provider ?: 'vitoria');
+
+        $f1_2h = number_format($pb['chocolate_fountain_1_2h'] ?? 420, 0, ',', '.');
+        $f1_3h = number_format($pb['chocolate_fountain_1_3h'] ?? 520, 0, ',', '.');
+        $f2_2h = number_format($pb['chocolate_fountain_2_2h'] ?? 490, 0, ',', '.');
+        $f2_3h = number_format($pb['chocolate_fountain_2_3h'] ?? 590, 0, ',', '.');
+        $waffleExtra = number_format($pb['chocolate_fountain_waffle_extra'] ?? 2.90, 2, ',', '.');
+        $candyPrice = number_format($pb['candy_bar_price'] ?? 420, 0, ',', '.');
+        $waffle2h = number_format($pb['waffle_cart_2h'] ?? 420, 0, ',', '.');
+        $waffle3h = number_format($pb['waffle_cart_3h'] ?? 550, 0, ',', '.');
+        $dep = number_format($pb['deposit_per_service'] ?? 100, 0, ',', '.');
+
+        return "¡Hola {$clientName}! 👋 Os pasamos toda la información y tarifas de nuestras *Mesas Dulces, Fuente de Chocolate y Carrito de Gofres*:\n\n"
+             . "🍫 *MESA DULCE CON FUENTE DE CHOCOLATE*\n"
+             . "- Eligen el chocolate que más les gusta: blanco, negro o con leche.\n"
+             . "- Donut de azúcar, gofres cortados y profiteroles de nata.\n"
+             . "- Fruta 🍓🍊🍍🫐 de temporada variada, cortada a tamaño de bocado.\n"
+             . "- Galletas Chips Ahoy, palmeritas, filipinos blanco y negro.\n"
+             . "- Chocolatinas individuales cerradas: barritas Kinder, mini KitKat, Huesitos.\n"
+             . "- Chucherías variadas.\n"
+             . "- Flores de lenguas verdes y rosa, envueltas individuales.\n"
+             . "- Arco de globos y decoración que os guste.\n"
+             . "- Palillos para la fuente, servilletas y bolsa de basura.\n\n"
+             . "⏱️ Se monta la mesa 1 o 2 horas antes del servicio y a la mitad del tiempo contratado se vuelve a rellenar.\n\n"
+             . "💰 *Precio del servicio:*\n"
+             . "• *1 Fuente de chocolate:*\n"
+             . "   - 2h: *{$f1_2h} €*\n"
+             . "   - 3h: *{$f1_3h} €*\n"
+             . "• *2 Fuentes de chocolate:*\n"
+             . "   - 2h: *{$f2_2h} €*\n"
+             . "   - 3h: *{$f2_3h} €*\n"
+             . "*(Si quieren añadir un rincón con gofres, incluiría 3 biberones de siropes —ej. dulce de leche, Nutella, chocolate blanco— + nata spray: Precio {$waffleExtra} € por unidad)*.\n\n"
+             . "────────────────────\n\n"
+             . "🍬 *MESA DE SOLO CHUCHES*\n"
+             . "Incluye:\n"
+             . "- Decoración a elegir.\n"
+             . "- Gran variado de chuches (eligiendo las favoritas de los anfitriones).\n"
+             . "- Globos decorativos.\n"
+             . "- Se montaría un par de horas antes y se recogería a la noche o al día siguiente (en caso de sobrar material de cristal...).\n"
+             . "💰 *PRECIO:* *{$candyPrice} €*\n\n"
+             . "────────────────────\n\n"
+             . "🧇 *CARRITO DE GOFRES*\n"
+             . "- Gofres hechos al momento.\n"
+             . "- 4 siropes a elegir (ej.: Kinder, Lotus, Nutella, choco blanco, choco leche, pistacho…).\n"
+             . "- 4 ingredientes secos (galleta Lotus molida, Oreo, mini Lacasitos, mini nubes…).\n"
+             . "- Decoración del carrito con globos y banderín con nombre.\n"
+             . "- Servilletas, bandejas y cubiertos.\n\n"
+             . "💰 *PRECIO:*\n"
+             . "• 2 horas (unos 60 gofres): *{$waffle2h} €*\n"
+             . "• 3 horas (unos 100 gofres): *{$waffle3h} €*\n\n"
+             . "────────────────────\n\n"
+             . "📆 Para reservar el día habría que hacer un pago adelantado de *{$dep} € por servicio*, mediante cuenta bancaria o Bizum.\n\n"
+             . "Cualquier duda estaremos encantados de contestarles. ¡Un saludo!";
     }
 }
 
