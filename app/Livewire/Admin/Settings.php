@@ -76,8 +76,14 @@ class Settings extends Component
     public $price_dj;
     public $price_karaoke;
     public $price_extra_hours;
-    public $photobooth_settings_tab = 'logrono'; // 'logrono' | 'vitoria'
+    public $photobooth_settings_tab = 'logrono';
     public $default_photobooth_provider = 'logrono';
+    public array $photobooth_providers = [];
+    public bool $show_add_provider_form = false;
+    public string $new_provider_name = '';
+    public string $new_provider_zone = '';
+    public string $new_provider_contact = '';
+
     public $photobooth_logrono_name = 'Logroño';
     public $price_photobooth;
     public $price_photobooth_2h = 430;
@@ -383,11 +389,15 @@ class Settings extends Component
         $this->price_extra_hours = Setting::get('price_extra_hours', 120);
         $this->price_photobooth = Setting::get('price_photobooth', 380);
 
+        $this->photobooth_providers = Setting::getPhotoboothProviders();
         $this->default_photobooth_provider = Setting::get('default_photobooth_provider', 'logrono');
+        if (!isset($this->photobooth_providers[$this->default_photobooth_provider])) {
+            $this->default_photobooth_provider = array_key_first($this->photobooth_providers) ?: 'logrono';
+        }
         $this->photobooth_settings_tab = $this->default_photobooth_provider;
 
-        $pbConfig = Setting::getPhotobooth360Config('logrono');
-        $this->photobooth_logrono_name = $pbConfig['provider_name'];
+        $pbConfig = $this->photobooth_providers['logrono'] ?? Setting::getPhotobooth360Config('logrono');
+        $this->photobooth_logrono_name = $pbConfig['name'] ?? $pbConfig['provider_name'] ?? 'Logroño';
         $this->price_photobooth_2h = $pbConfig['photobooth_2h'];
         $this->price_photobooth_3h = $pbConfig['photobooth_3h'];
         $this->price_photobooth_extra_hour = $pbConfig['photobooth_extra_hour'];
@@ -400,21 +410,9 @@ class Settings extends Component
         $this->price_pack_duo_3h = $pbConfig['pack_duo_3h'];
         $this->pack_duo_desc = $pbConfig['pack_duo_desc'];
         $this->photobooth_deposit_per_service = $pbConfig['deposit_per_service'];
-        $this->price_chocolate_fountain = $pbConfig['chocolate_fountain_price'];
-        $this->price_chocolate_fountain_1_2h = $pbConfig['chocolate_fountain_1_2h'];
-        $this->price_chocolate_fountain_1_3h = $pbConfig['chocolate_fountain_1_3h'];
-        $this->price_chocolate_fountain_2_2h = $pbConfig['chocolate_fountain_2_2h'];
-        $this->price_chocolate_fountain_2_3h = $pbConfig['chocolate_fountain_2_3h'];
-        $this->price_chocolate_fountain_waffle_extra = $pbConfig['chocolate_fountain_waffle_extra'];
-        $this->chocolate_fountain_desc = $pbConfig['chocolate_fountain_desc'];
-        $this->price_candy_bar = $pbConfig['candy_bar_price'];
-        $this->candy_bar_desc = $pbConfig['candy_bar_desc'];
-        $this->price_waffle_cart_2h = $pbConfig['waffle_cart_2h'];
-        $this->price_waffle_cart_3h = $pbConfig['waffle_cart_3h'];
-        $this->waffle_cart_desc = $pbConfig['waffle_cart_desc'];
 
-        $pbVitoria = Setting::getPhotobooth360Config('vitoria');
-        $this->photobooth_vitoria_name = $pbVitoria['provider_name'];
+        $pbVitoria = $this->photobooth_providers['vitoria'] ?? Setting::getPhotobooth360Config('vitoria');
+        $this->photobooth_vitoria_name = $pbVitoria['name'] ?? $pbVitoria['provider_name'] ?? 'Vitoria (FotomatonCheese)';
         $this->price_photobooth_vitoria_2h = $pbVitoria['photobooth_2h'];
         $this->price_photobooth_vitoria_3h = $pbVitoria['photobooth_3h'];
         $this->price_photobooth_vitoria_extra_hour = $pbVitoria['photobooth_extra_hour'];
@@ -427,6 +425,19 @@ class Settings extends Component
         $this->price_pack_duo_vitoria_3h = $pbVitoria['pack_duo_3h'];
         $this->pack_duo_vitoria_desc = $pbVitoria['pack_duo_desc'];
         $this->photobooth_vitoria_deposit_per_service = $pbVitoria['deposit_per_service'];
+
+        $this->price_chocolate_fountain = $pbVitoria['chocolate_fountain_price'] ?? 420;
+        $this->price_chocolate_fountain_1_2h = $pbVitoria['chocolate_fountain_1_2h'] ?? 420;
+        $this->price_chocolate_fountain_1_3h = $pbVitoria['chocolate_fountain_1_3h'] ?? 520;
+        $this->price_chocolate_fountain_2_2h = $pbVitoria['chocolate_fountain_2_2h'] ?? 490;
+        $this->price_chocolate_fountain_2_3h = $pbVitoria['chocolate_fountain_2_3h'] ?? 590;
+        $this->price_chocolate_fountain_waffle_extra = $pbVitoria['chocolate_fountain_waffle_extra'] ?? 2.90;
+        $this->chocolate_fountain_desc = $pbVitoria['chocolate_fountain_desc'] ?? '';
+        $this->price_candy_bar = $pbVitoria['candy_bar_price'] ?? 420;
+        $this->candy_bar_desc = $pbVitoria['candy_bar_desc'] ?? '';
+        $this->price_waffle_cart_2h = $pbVitoria['waffle_cart_2h'] ?? 420;
+        $this->price_waffle_cart_3h = $pbVitoria['waffle_cart_3h'] ?? 550;
+        $this->waffle_cart_desc = $pbVitoria['waffle_cart_desc'] ?? '';
 
         $this->price_effects_smoke = Setting::get('price_effects_smoke', 60);
         $storedSparks = Setting::get('price_effects_sparks');
@@ -628,6 +639,97 @@ class Settings extends Component
         $this->tidalConnectionStatus = MusicSearchService::testTidalConnection();
     }
 
+    public function toggleProviderService(string $providerKey, string $serviceFlag): void
+    {
+        if (!isset($this->photobooth_providers[$providerKey])) {
+            return;
+        }
+        $allowedFlags = [
+            'photobooth_enabled',
+            'video_360_enabled',
+            'pack_duo_enabled',
+            'chocolate_fountain_enabled',
+            'candy_bar_enabled',
+            'waffle_cart_enabled',
+        ];
+        if (!in_array($serviceFlag, $allowedFlags, true)) {
+            return;
+        }
+        $current = !empty($this->photobooth_providers[$providerKey][$serviceFlag]);
+        $this->photobooth_providers[$providerKey][$serviceFlag] = !$current;
+        Setting::savePhotoboothProviders($this->photobooth_providers);
+    }
+
+    public function addPhotoboothProvider(): void
+    {
+        $name = trim($this->new_provider_name);
+        if ($name === '') {
+            session()->flash('error', 'Indica un nombre para el nuevo proveedor externo.');
+            return;
+        }
+
+        $slugBase = \Illuminate\Support\Str::slug($name, '_');
+        if ($slugBase === '') {
+            $slugBase = 'proveedor';
+        }
+        $slug = $slugBase;
+        $counter = 2;
+        while (isset($this->photobooth_providers[$slug])) {
+            $slug = $slugBase . '_' . $counter;
+            $counter++;
+        }
+
+        $template = $this->photobooth_providers['vitoria'] ?? reset($this->photobooth_providers) ?: [];
+        $newProvider = array_merge($template, [
+            'provider_key' => $slug,
+            'name' => $name,
+            'provider_name' => $name,
+            'zone' => trim($this->new_provider_zone) ?: $name,
+            'contact_info' => trim($this->new_provider_contact),
+            'photobooth_enabled' => true,
+            'video_360_enabled' => true,
+            'pack_duo_enabled' => true,
+            'chocolate_fountain_enabled' => false,
+            'candy_bar_enabled' => false,
+            'waffle_cart_enabled' => false,
+        ]);
+
+        $this->photobooth_providers[$slug] = $newProvider;
+        Setting::savePhotoboothProviders($this->photobooth_providers);
+
+        $this->photobooth_settings_tab = $slug;
+        $this->new_provider_name = '';
+        $this->new_provider_zone = '';
+        $this->new_provider_contact = '';
+        $this->show_add_provider_form = false;
+
+        session()->flash('message', 'Nuevo proveedor "' . $name . '" añadido correctamente. Ahora puedes configurar sus servicios y tarifas.');
+    }
+
+    public function deletePhotoboothProvider(string $providerKey): void
+    {
+        if (in_array($providerKey, ['logrono', 'vitoria'], true)) {
+            session()->flash('error', 'Los proveedores base (Logroño y Vitoria) no se pueden eliminar, pero puedes desactivar sus servicios o cambiar su nombre.');
+            return;
+        }
+        if (!isset($this->photobooth_providers[$providerKey])) {
+            return;
+        }
+        $removedName = $this->photobooth_providers[$providerKey]['name'] ?? $providerKey;
+        unset($this->photobooth_providers[$providerKey]);
+        Setting::savePhotoboothProviders($this->photobooth_providers);
+
+        if ($this->default_photobooth_provider === $providerKey) {
+            $this->default_photobooth_provider = array_key_first($this->photobooth_providers) ?: 'logrono';
+            Setting::set('default_photobooth_provider', $this->default_photobooth_provider);
+        }
+        if ($this->photobooth_settings_tab === $providerKey) {
+            $this->photobooth_settings_tab = $this->default_photobooth_provider;
+        }
+
+        session()->flash('message', 'Proveedor "' . $removedName . '" eliminado.');
+    }
+
     public function save()
     {
         $this->validate([
@@ -666,37 +768,6 @@ class Settings extends Component
             'price_dj' => 'required|numeric',
             'price_karaoke' => 'required|numeric',
             'price_extra_hours' => 'required|numeric',
-            'photobooth_logrono_name' => 'nullable|string|max:120',
-            'price_photobooth' => 'required|numeric',
-            'price_photobooth_2h' => 'required|numeric|min:0',
-            'price_photobooth_3h' => 'required|numeric|min:0',
-            'price_photobooth_extra_hour' => 'required|numeric|min:0',
-            'photobooth_desc' => 'nullable|string',
-            'price_video_360_2h' => 'required|numeric|min:0',
-            'price_video_360_3h' => 'required|numeric|min:0',
-            'price_video_360_extra_hour' => 'required|numeric|min:0',
-            'video_360_desc' => 'nullable|string',
-            'price_pack_duo_2h' => 'required|numeric|min:0',
-            'price_pack_duo_3h' => 'required|numeric|min:0',
-            'pack_duo_desc' => 'nullable|string',
-            'photobooth_deposit_per_service' => 'required|numeric|min:0',
-
-            'photobooth_vitoria_name' => 'nullable|string|max:120',
-            'price_photobooth_vitoria_2h' => 'required|numeric|min:0',
-            'price_photobooth_vitoria_3h' => 'required|numeric|min:0',
-            'price_photobooth_vitoria_extra_hour' => 'required|numeric|min:0',
-            'photobooth_vitoria_desc' => 'nullable|string',
-            'price_video_360_vitoria_2h' => 'required|numeric|min:0',
-            'price_video_360_vitoria_3h' => 'required|numeric|min:0',
-            'price_video_360_vitoria_extra_hour' => 'required|numeric|min:0',
-            'video_360_vitoria_desc' => 'nullable|string',
-            'price_pack_duo_vitoria_2h' => 'required|numeric|min:0',
-            'price_pack_duo_vitoria_3h' => 'required|numeric|min:0',
-            'pack_duo_vitoria_desc' => 'nullable|string',
-            'photobooth_vitoria_deposit_per_service' => 'required|numeric|min:0',
-
-            'price_chocolate_fountain' => 'required|numeric|min:0',
-            'chocolate_fountain_desc' => 'nullable|string',
             'price_effects_smoke' => 'required|numeric',
             'price_effects_sparks' => 'required|numeric',
 
@@ -821,48 +892,14 @@ class Settings extends Component
         Setting::set('price_dj', $this->price_dj);
         Setting::set('price_karaoke', $this->price_karaoke);
         Setting::set('price_extra_hours', $this->price_extra_hours);
-        Setting::set('photobooth_logrono_name', $this->photobooth_logrono_name ?: 'Logroño (FotomatonCheese)');
-        Setting::set('price_photobooth', $this->price_photobooth_2h);
-        Setting::set('price_photobooth_2h', $this->price_photobooth_2h);
-        Setting::set('price_photobooth_3h', $this->price_photobooth_3h);
-        Setting::set('price_photobooth_extra_hour', $this->price_photobooth_extra_hour);
-        Setting::set('photobooth_desc', $this->photobooth_desc);
-        Setting::set('price_video_360_2h', $this->price_video_360_2h);
-        Setting::set('price_video_360_3h', $this->price_video_360_3h);
-        Setting::set('price_video_360_extra_hour', $this->price_video_360_extra_hour);
-        Setting::set('video_360_desc', $this->video_360_desc);
-        Setting::set('price_pack_duo_2h', $this->price_pack_duo_2h);
-        Setting::set('price_pack_duo_3h', $this->price_pack_duo_3h);
-        Setting::set('pack_duo_desc', $this->pack_duo_desc);
-        Setting::set('photobooth_deposit_per_service', $this->photobooth_deposit_per_service);
 
-        Setting::set('photobooth_vitoria_name', $this->photobooth_vitoria_name ?: 'Vitoria / Álava');
-        Setting::set('price_photobooth_vitoria_2h', $this->price_photobooth_vitoria_2h);
-        Setting::set('price_photobooth_vitoria_3h', $this->price_photobooth_vitoria_3h);
-        Setting::set('price_photobooth_vitoria_extra_hour', $this->price_photobooth_vitoria_extra_hour);
-        Setting::set('photobooth_vitoria_desc', $this->photobooth_vitoria_desc);
-        Setting::set('price_video_360_vitoria_2h', $this->price_video_360_vitoria_2h);
-        Setting::set('price_video_360_vitoria_3h', $this->price_video_360_vitoria_3h);
-        Setting::set('price_video_360_vitoria_extra_hour', $this->price_video_360_vitoria_extra_hour);
-        Setting::set('video_360_vitoria_desc', $this->video_360_vitoria_desc);
-        Setting::set('price_pack_duo_vitoria_2h', $this->price_pack_duo_vitoria_2h);
-        Setting::set('price_pack_duo_vitoria_3h', $this->price_pack_duo_vitoria_3h);
-        Setting::set('pack_duo_vitoria_desc', $this->pack_duo_vitoria_desc);
-        Setting::set('photobooth_vitoria_deposit_per_service', $this->photobooth_vitoria_deposit_per_service);
+        // Guardar catálogo de proveedores externos independientes
+        Setting::savePhotoboothProviders($this->photobooth_providers);
+        $validDefaultProv = isset($this->photobooth_providers[$this->default_photobooth_provider])
+            ? $this->default_photobooth_provider
+            : (array_key_first($this->photobooth_providers) ?: 'logrono');
+        Setting::set('default_photobooth_provider', $validDefaultProv);
 
-        Setting::set('default_photobooth_provider', in_array($this->default_photobooth_provider, ['logrono', 'vitoria']) ? $this->default_photobooth_provider : 'logrono');
-        Setting::set('price_chocolate_fountain', $this->price_chocolate_fountain_1_2h);
-        Setting::set('price_chocolate_fountain_1_2h', $this->price_chocolate_fountain_1_2h);
-        Setting::set('price_chocolate_fountain_1_3h', $this->price_chocolate_fountain_1_3h);
-        Setting::set('price_chocolate_fountain_2_2h', $this->price_chocolate_fountain_2_2h);
-        Setting::set('price_chocolate_fountain_2_3h', $this->price_chocolate_fountain_2_3h);
-        Setting::set('price_chocolate_fountain_waffle_extra', $this->price_chocolate_fountain_waffle_extra);
-        Setting::set('chocolate_fountain_desc', $this->chocolate_fountain_desc);
-        Setting::set('price_candy_bar', $this->price_candy_bar);
-        Setting::set('candy_bar_desc', $this->candy_bar_desc);
-        Setting::set('price_waffle_cart_2h', $this->price_waffle_cart_2h);
-        Setting::set('price_waffle_cart_3h', $this->price_waffle_cart_3h);
-        Setting::set('waffle_cart_desc', $this->waffle_cart_desc);
         Setting::set('price_effects_smoke', $this->price_effects_smoke);
         Setting::set('price_effects_sparks', $this->price_effects_sparks);
 

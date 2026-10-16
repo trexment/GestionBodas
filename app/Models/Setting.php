@@ -632,14 +632,12 @@ class Setting extends Model
     }
 
     /**
-     * Obtiene las tarifas por horas y plantillas descriptivas de Fotomatón, Plataforma 360º, Pack Dúo y Mesa con Fuente de Chocolate
-     * según el proveedor interno seleccionado ('logrono' o 'vitoria').
+     * Obtiene el catálogo completo de proveedores externos (Fotomatón, 360º, Pack Dúo, Fuente de Chocolate, Chuches, Gofres).
+     * Permite tener múltiples proveedores independientes y activar/desactivar qué servicios ofrece cada uno.
      */
-    public static function getPhotobooth360Config(string $provider = 'logrono'): array
+    public static function getPhotoboothProviders(): array
     {
-        $provider = strtolower(trim($provider));
-
-        // Auto-migración única a tarifas actualizadas de Vitoria (FotomatonCheese: 350/420 y 390/490) y Logroño (480 3h + IVA)
+        // Migraciones base de tarifas iniciales
         if (self::get('photobooth_providers_v3_migrated') !== '1') {
             self::set('photobooth_logrono_name', 'Logroño');
             self::set('price_photobooth_2h', 430);
@@ -661,7 +659,6 @@ class Setting extends Model
             self::set('photobooth_providers_v3_migrated', '1');
         }
 
-        // Auto-migración única para tarifas de Mesa Dulce con Fuente de Chocolate (1 y 2 fuentes, 2h/3h), Mesa de Solo Chuches y Carrito de Gofres (FotomatonCheese - Águeda 697198216)
         if (self::get('photobooth_sweet_v4_migrated') !== '1') {
             self::set('price_chocolate_fountain', 420);
             self::set('price_chocolate_fountain_1_2h', 420);
@@ -673,20 +670,17 @@ class Setting extends Model
                 'chocolate_fountain_desc',
                 'Mesa dulce con fuente de chocolate a elegir (blanco, negro o con leche): donut de azúcar y gofres cortados, profiteroles de nata, fruta de temporada variada (🍓🍊🍍🫐) cortada a tamaño de bocado, galletas Chips Ahoy, palmeritas, filipinos blanco y negro, chocolatinas individuales cerradas (barritas Kinder, mini KitKat, Huesitos), chucherías variadas, flores de lenguas verdes y rosa envueltas individuales, arco de globos, decoración a elegir, palillos, servilletas y bolsa de basura. Montaje 1-2h antes y reposición a mitad del servicio. (Opción rincón de gofres con 3 biberones de siropes + nata spray: 2,90 €/ud).'
             );
-
             self::set('price_candy_bar', 420);
             self::set(
                 'candy_bar_desc',
                 'Mesa de Solo Chuches: Incluye decoración a elegir, gran variado de chuches (eligiendo las favoritas de los anfitriones) y globos decorativos. Se monta un par de horas antes y se recoge a la noche o al día siguiente.'
             );
-
             self::set('price_waffle_cart_2h', 420);
             self::set('price_waffle_cart_3h', 550);
             self::set(
                 'waffle_cart_desc',
                 'Carrito de Gofres hechos al momento: Incluye 4 siropes a elegir (Kinder, Lotus, Nutella, chocolate blanco, chocolate con leche, pistacho...), 4 ingredientes secos (galleta Lotus molida, Oreo, mini Lacasitos, mini nubes...), decoración del carrito con globos y banderín con nombre, servilletas, bandejas y cubiertos. (2h ~60 gofres / 3h ~100 gofres).'
             );
-
             self::set('photobooth_vitoria_contact', 'FotomatonCheese · Águeda 697198216');
             self::set('photobooth_sweet_v4_migrated', '1');
         }
@@ -696,19 +690,80 @@ class Setting extends Model
         $choc2_2h = (float)self::get('price_chocolate_fountain_2_2h', 490);
         $choc2_3h = (float)self::get('price_chocolate_fountain_2_3h', 590);
         $chocWaffleExtra = (float)self::get('price_chocolate_fountain_waffle_extra', 2.90);
-        $chocDefaultDesc = 'Mesa dulce con fuente de chocolate a elegir (blanco, negro o con leche): donut de azúcar y gofres cortados, profiteroles de nata, fruta de temporada variada (🍓🍊🍍🫐) cortada a tamaño de bocado, galletas Chips Ahoy, palmeritas, filipinos blanco y negro, chocolatinas individuales cerradas (barritas Kinder, mini KitKat, Huesitos), chucherías variadas, flores de lenguas verdes y rosa envueltas individuales, arco de globos, decoración a elegir, palillos, servilletas y bolsa de basura. Montaje 1-2h antes y reposición a mitad del servicio. (Opción rincón de gofres con 3 biberones de siropes + nata spray: 2,90 €/ud).';
+        $chocDefaultDesc = self::get('chocolate_fountain_desc', 'Mesa dulce con fuente de chocolate a elegir (blanco, negro o con leche): donut de azúcar y gofres cortados, profiteroles de nata, fruta de temporada variada (🍓🍊🍍🫐) cortada a tamaño de bocado, galletas Chips Ahoy, palmeritas, filipinos blanco y negro, chocolatinas individuales cerradas (barritas Kinder, mini KitKat, Huesitos), chucherías variadas, flores de lenguas verdes y rosa envueltas individuales, arco de globos, decoración a elegir, palillos, servilletas y bolsa de basura. Montaje 1-2h antes y reposición a mitad del servicio. (Opción rincón de gofres con 3 biberones de siropes + nata spray: 2,90 €/ud).');
         $candyPrice = (float)self::get('price_candy_bar', 420);
         $candyDesc = self::get('candy_bar_desc', 'Mesa de Solo Chuches: Incluye decoración a elegir, gran variado de chuches (eligiendo las favoritas de los anfitriones) y globos decorativos. Se monta un par de horas antes y se recoge a la noche o al día siguiente.');
         $waffle2h = (float)self::get('price_waffle_cart_2h', 420);
         $waffle3h = (float)self::get('price_waffle_cart_3h', 550);
         $waffleDesc = self::get('waffle_cart_desc', 'Carrito de Gofres hechos al momento: Incluye 4 siropes a elegir (Kinder, Lotus, Nutella, chocolate blanco, chocolate con leche, pistacho...), 4 ingredientes secos (galleta Lotus molida, Oreo, mini Lacasitos, mini nubes...), decoración del carrito con globos y banderín con nombre, servilletas, bandejas y cubiertos. (2h ~60 gofres / 3h ~100 gofres).');
 
-        if ($provider === 'vitoria') {
-            return [
+        $logronoName = self::get('photobooth_logrono_name', 'Logroño');
+        $vitoriaName = self::get('photobooth_vitoria_name', 'Vitoria (FotomatonCheese)');
+        // Si por el morph de pestañas se quedaron ambos con el mismo nombre, restaurar nombres diferenciados
+        if (mb_strtolower(trim((string)$logronoName)) === mb_strtolower(trim((string)$vitoriaName))) {
+            $logronoName = 'Logroño';
+            $vitoriaName = 'Vitoria (FotomatonCheese)';
+            self::set('photobooth_logrono_name', $logronoName);
+            self::set('photobooth_vitoria_name', $vitoriaName);
+        }
+
+        $defaults = [
+            'logrono' => [
+                'provider_key' => 'logrono',
+                'name' => $logronoName,
+                'provider_name' => $logronoName,
+                'zone' => 'La Rioja / Logroño',
+                'contact_info' => self::get('photobooth_logrono_contact', ''),
+                'default_hours' => 3,
+                'deposit_per_service' => (float)self::get('photobooth_deposit_per_service', 100),
+                'photobooth_enabled' => true,
+                'photobooth_2h' => (float)self::get('price_photobooth_2h', 430),
+                'photobooth_3h' => (float)self::get('price_photobooth_3h', 480),
+                'photobooth_extra_hour' => (float)self::get('price_photobooth_extra_hour', 60),
+                'photobooth_desc' => self::get(
+                    'photobooth_desc',
+                    'Servicio de Fotomatón profesional (3 horas, tarifa más IVA): fotos e impresiones ilimitadas, 2 copias (invitados + libro de firmas), marco personalizado, atrezzo divertido, photocall, USB y animador durante el evento.'
+                ),
+                'video_360_enabled' => true,
+                'video_360_2h' => (float)self::get('price_video_360_2h', 430),
+                'video_360_3h' => (float)self::get('price_video_360_3h', 490),
+                'video_360_extra_hour' => (float)self::get('price_video_360_extra_hour', 60),
+                'video_360_desc' => self::get(
+                    'video_360_desc',
+                    'Plataforma 100cm (4-5 pers.) con vídeos 360º ilimitados en slow motion y boomerang, marco y canción personalizados, atrezzo, confeti y animadores (espacio 2x2m).'
+                ),
+                'pack_duo_enabled' => true,
+                'pack_duo_2h' => (float)self::get('price_pack_duo_2h', 690),
+                'pack_duo_3h' => (float)self::get('price_pack_duo_3h', 850),
+                'pack_duo_desc' => self::get(
+                    'pack_duo_desc',
+                    'Pack Dúo Todo Incluido: Fotomatón (copias ilimitadas, libro de firmas, photocall, USB) + Plataforma Vídeo 360º (slow motion/boomerang, confeti, atrezzo y animadores).'
+                ),
+                'chocolate_fountain_enabled' => false,
+                'chocolate_fountain_price' => $choc1_2h,
+                'chocolate_fountain_1_2h' => $choc1_2h,
+                'chocolate_fountain_1_3h' => $choc1_3h,
+                'chocolate_fountain_2_2h' => $choc2_2h,
+                'chocolate_fountain_2_3h' => $choc2_3h,
+                'chocolate_fountain_waffle_extra' => $chocWaffleExtra,
+                'chocolate_fountain_desc' => $chocDefaultDesc,
+                'candy_bar_enabled' => false,
+                'candy_bar_price' => $candyPrice,
+                'candy_bar_desc' => $candyDesc,
+                'waffle_cart_enabled' => false,
+                'waffle_cart_2h' => $waffle2h,
+                'waffle_cart_3h' => $waffle3h,
+                'waffle_cart_desc' => $waffleDesc,
+            ],
+            'vitoria' => [
                 'provider_key' => 'vitoria',
-                'provider_name' => self::get('photobooth_vitoria_name', 'Vitoria (FotomatonCheese)'),
+                'name' => $vitoriaName,
+                'provider_name' => $vitoriaName,
+                'zone' => 'Vitoria / Álava / País Vasco',
                 'contact_info' => self::get('photobooth_vitoria_contact', 'FotomatonCheese · Águeda 697198216'),
                 'default_hours' => 2,
+                'deposit_per_service' => (float)self::get('photobooth_vitoria_deposit_per_service', 100),
+                'photobooth_enabled' => true,
                 'photobooth_2h' => (float)self::get('price_photobooth_vitoria_2h', 350),
                 'photobooth_3h' => (float)self::get('price_photobooth_vitoria_3h', 420),
                 'photobooth_extra_hour' => (float)self::get('price_photobooth_vitoria_extra_hour', 70),
@@ -716,6 +771,7 @@ class Setting extends Model
                     'photobooth_vitoria_desc',
                     'Cámara réflex Canon 1200, impresión 10s y espejo táctil. Fotos ilimitadas, 2 copias (invitados + libro firmas imprenta), 10x15 o tiras, marco y photocall a elegir, atrezzo, animador FotomatonCheese y USB (espacio 2x2m).'
                 ),
+                'video_360_enabled' => true,
                 'video_360_2h' => (float)self::get('price_video_360_vitoria_2h', 390),
                 'video_360_3h' => (float)self::get('price_video_360_vitoria_3h', 490),
                 'video_360_extra_hour' => (float)self::get('price_video_360_vitoria_extra_hour', 100),
@@ -723,75 +779,166 @@ class Setting extends Model
                     'video_360_vitoria_desc',
                     'Plataforma 100cm (4-5 pers.) con cámara GoPro. Vídeos 360º ilimitados (20s) en slow motion y boomerang, marco y canción personalizados, atrezzo, confeti, 1-2 animadores FotomatonCheese y transporte 50km (espacio 2x2m).'
                 ),
+                'pack_duo_enabled' => true,
                 'pack_duo_2h' => (float)self::get('price_pack_duo_vitoria_2h', 690),
                 'pack_duo_3h' => (float)self::get('price_pack_duo_vitoria_3h', 850),
                 'pack_duo_desc' => self::get(
                     'pack_duo_vitoria_desc',
                     'Pack Dúo Todo Incluido: Fotomatón (Canon 1200, copias ilimitadas, libro firmas imprenta, photocall, USB) + Plataforma Vídeo 360º (100cm, GoPro slow motion/boomerang, confeti, atrezzo y animadores). Reserva: 100€/servicio.'
                 ),
-                'deposit_per_service' => (float)self::get('photobooth_vitoria_deposit_per_service', 100),
-                'chocolate_fountain_price' => (float)self::get('price_chocolate_fountain', $choc1_2h),
+                'chocolate_fountain_enabled' => true,
+                'chocolate_fountain_price' => $choc1_2h,
                 'chocolate_fountain_1_2h' => $choc1_2h,
                 'chocolate_fountain_1_3h' => $choc1_3h,
                 'chocolate_fountain_2_2h' => $choc2_2h,
                 'chocolate_fountain_2_3h' => $choc2_3h,
                 'chocolate_fountain_waffle_extra' => $chocWaffleExtra,
-                'chocolate_fountain_desc' => self::get('chocolate_fountain_desc', $chocDefaultDesc),
+                'chocolate_fountain_desc' => $chocDefaultDesc,
+                'candy_bar_enabled' => true,
                 'candy_bar_price' => $candyPrice,
                 'candy_bar_desc' => $candyDesc,
+                'waffle_cart_enabled' => true,
                 'waffle_cart_2h' => $waffle2h,
                 'waffle_cart_3h' => $waffle3h,
                 'waffle_cart_desc' => $waffleDesc,
-            ];
+            ],
+        ];
+
+        $rawCatalog = self::get('photobooth_providers_catalog');
+        $storedCatalog = [];
+        if (!empty($rawCatalog)) {
+            $decoded = is_array($rawCatalog) ? $rawCatalog : json_decode((string)$rawCatalog, true);
+            if (is_array($decoded)) {
+                $storedCatalog = $decoded;
+            }
         }
 
-        return [
-            'provider_key' => 'logrono',
-            'provider_name' => self::get('photobooth_logrono_name', 'Logroño'),
-            'contact_info' => self::get('photobooth_vitoria_contact', 'FotomatonCheese · Águeda 697198216'),
-            'default_hours' => 3,
-            'photobooth_2h' => (float)self::get('price_photobooth_2h', 430),
-            'photobooth_3h' => (float)self::get('price_photobooth_3h', 480),
-            'photobooth_extra_hour' => (float)self::get('price_photobooth_extra_hour', 60),
-            'photobooth_desc' => self::get(
-                'photobooth_desc',
-                'Servicio de Fotomatón profesional (3 horas, tarifa más IVA): fotos e impresiones ilimitadas, 2 copias (invitados + libro de firmas), marco personalizado, atrezzo divertido, photocall, USB y animador durante el evento.'
-            ),
-            'video_360_2h' => (float)self::get('price_video_360_2h', 430),
-            'video_360_3h' => (float)self::get('price_video_360_3h', 490),
-            'video_360_extra_hour' => (float)self::get('price_video_360_extra_hour', 60),
-            'video_360_desc' => self::get(
-                'video_360_desc',
-                'Plataforma 100cm (4-5 pers.) con vídeos 360º ilimitados en slow motion y boomerang, marco y canción personalizados, atrezzo, confeti y animadores (espacio 2x2m).'
-            ),
-            'pack_duo_2h' => (float)self::get('price_pack_duo_2h', 690),
-            'pack_duo_3h' => (float)self::get('price_pack_duo_3h', 850),
-            'pack_duo_desc' => self::get(
-                'pack_duo_desc',
-                'Pack Dúo Todo Incluido: Fotomatón (copias ilimitadas, libro de firmas, photocall, USB) + Plataforma Vídeo 360º (slow motion/boomerang, confeti, atrezzo y animadores).'
-            ),
-            'deposit_per_service' => (float)self::get('photobooth_deposit_per_service', 100),
-            'chocolate_fountain_price' => (float)self::get('price_chocolate_fountain', $choc1_2h),
-            'chocolate_fountain_1_2h' => $choc1_2h,
-            'chocolate_fountain_1_3h' => $choc1_3h,
-            'chocolate_fountain_2_2h' => $choc2_2h,
-            'chocolate_fountain_2_3h' => $choc2_3h,
-            'chocolate_fountain_waffle_extra' => $chocWaffleExtra,
-            'chocolate_fountain_desc' => self::get('chocolate_fountain_desc', $chocDefaultDesc),
-            'candy_bar_price' => $candyPrice,
-            'candy_bar_desc' => $candyDesc,
-            'waffle_cart_2h' => $waffle2h,
-            'waffle_cart_3h' => $waffle3h,
-            'waffle_cart_desc' => $waffleDesc,
-        ];
+        $result = [];
+        // Primero asegurar logrono y vitoria (o los que estén en $storedCatalog)
+        $allKeys = array_unique(array_merge(array_keys($defaults), array_keys($storedCatalog)));
+        foreach ($allKeys as $key) {
+            // Si el usuario eliminó un proveedor personalizado, no está en $storedCatalog
+            if (!isset($defaults[$key]) && !isset($storedCatalog[$key])) {
+                continue;
+            }
+            $base = $defaults[$key] ?? $defaults['vitoria'];
+            $custom = $storedCatalog[$key] ?? [];
+            $merged = array_merge($base, $custom);
+            $merged['provider_key'] = $key;
+            $merged['name'] = !empty($merged['name']) ? $merged['name'] : (!empty($merged['provider_name']) ? $merged['provider_name'] : ucfirst($key));
+            $merged['provider_name'] = $merged['name'];
+            $merged['photobooth_enabled'] = (bool)($merged['photobooth_enabled'] ?? true);
+            $merged['video_360_enabled'] = (bool)($merged['video_360_enabled'] ?? true);
+            $merged['pack_duo_enabled'] = (bool)($merged['pack_duo_enabled'] ?? true);
+            $merged['chocolate_fountain_enabled'] = (bool)($merged['chocolate_fountain_enabled'] ?? ($key !== 'logrono'));
+            $merged['candy_bar_enabled'] = (bool)($merged['candy_bar_enabled'] ?? ($key !== 'logrono'));
+            $merged['waffle_cart_enabled'] = (bool)($merged['waffle_cart_enabled'] ?? ($key !== 'logrono'));
+            $result[$key] = $merged;
+        }
+
+        // Si en el catálogo guardado logrono y vitoria tenían exactamente el mismo nombre accidental, corregir una única vez
+        if (isset($result['logrono'], $result['vitoria']) && self::get('photobooth_names_dedup_v1') !== '1') {
+            if (mb_strtolower(trim($result['logrono']['name'])) === mb_strtolower(trim($result['vitoria']['name']))) {
+                $result['logrono']['name'] = 'Logroño';
+                $result['logrono']['provider_name'] = 'Logroño';
+                $result['vitoria']['name'] = 'Vitoria (FotomatonCheese)';
+                $result['vitoria']['provider_name'] = 'Vitoria (FotomatonCheese)';
+                self::savePhotoboothProviders($result);
+            }
+            self::set('photobooth_names_dedup_v1', '1');
+        }
+
+        return $result;
     }
 
-    public static function getPhotoboothProviders(): array
+    /**
+     * Guarda el catálogo completo de proveedores externos y sincroniza las claves individuales para compatibilidad.
+     */
+    public static function savePhotoboothProviders(array $providers): void
     {
-        return [
-            'logrono' => self::getPhotobooth360Config('logrono'),
-            'vitoria' => self::getPhotobooth360Config('vitoria'),
-        ];
+        $clean = [];
+        foreach ($providers as $key => $prov) {
+            if (!is_array($prov)) {
+                continue;
+            }
+            $name = trim((string)($prov['name'] ?? $prov['provider_name'] ?? ucfirst($key)));
+            if ($name === '') {
+                $name = ucfirst($key);
+            }
+            $prov['provider_key'] = $key;
+            $prov['name'] = $name;
+            $prov['provider_name'] = $name;
+            $prov['photobooth_enabled'] = !empty($prov['photobooth_enabled']);
+            $prov['video_360_enabled'] = !empty($prov['video_360_enabled']);
+            $prov['pack_duo_enabled'] = !empty($prov['pack_duo_enabled']);
+            $prov['chocolate_fountain_enabled'] = !empty($prov['chocolate_fountain_enabled']);
+            $prov['candy_bar_enabled'] = !empty($prov['candy_bar_enabled']);
+            $prov['waffle_cart_enabled'] = !empty($prov['waffle_cart_enabled']);
+            $prov['chocolate_fountain_price'] = (float)($prov['chocolate_fountain_1_2h'] ?? $prov['chocolate_fountain_price'] ?? 420);
+            $clean[$key] = $prov;
+        }
+
+        self::set('photobooth_providers_catalog', json_encode($clean, JSON_UNESCAPED_UNICODE));
+
+        if (isset($clean['logrono'])) {
+            $l = $clean['logrono'];
+            self::set('photobooth_logrono_name', $l['name']);
+            self::set('price_photobooth', $l['photobooth_2h']);
+            self::set('price_photobooth_2h', $l['photobooth_2h']);
+            self::set('price_photobooth_3h', $l['photobooth_3h']);
+            self::set('price_photobooth_extra_hour', $l['photobooth_extra_hour']);
+            self::set('photobooth_desc', $l['photobooth_desc']);
+            self::set('price_video_360_2h', $l['video_360_2h']);
+            self::set('price_video_360_3h', $l['video_360_3h']);
+            self::set('price_video_360_extra_hour', $l['video_360_extra_hour']);
+            self::set('video_360_desc', $l['video_360_desc']);
+            self::set('price_pack_duo_2h', $l['pack_duo_2h']);
+            self::set('price_pack_duo_3h', $l['pack_duo_3h']);
+            self::set('pack_duo_desc', $l['pack_duo_desc']);
+            self::set('photobooth_deposit_per_service', $l['deposit_per_service']);
+        }
+
+        if (isset($clean['vitoria'])) {
+            $v = $clean['vitoria'];
+            self::set('photobooth_vitoria_name', $v['name']);
+            self::set('price_photobooth_vitoria_2h', $v['photobooth_2h']);
+            self::set('price_photobooth_vitoria_3h', $v['photobooth_3h']);
+            self::set('price_photobooth_vitoria_extra_hour', $v['photobooth_extra_hour']);
+            self::set('photobooth_vitoria_desc', $v['photobooth_desc']);
+            self::set('price_video_360_vitoria_2h', $v['video_360_2h']);
+            self::set('price_video_360_vitoria_3h', $v['video_360_3h']);
+            self::set('price_video_360_vitoria_extra_hour', $v['video_360_extra_hour']);
+            self::set('video_360_vitoria_desc', $v['video_360_desc']);
+            self::set('price_pack_duo_vitoria_2h', $v['pack_duo_2h']);
+            self::set('price_pack_duo_vitoria_3h', $v['pack_duo_3h']);
+            self::set('pack_duo_vitoria_desc', $v['pack_duo_desc']);
+            self::set('photobooth_vitoria_deposit_per_service', $v['deposit_per_service']);
+            self::set('price_chocolate_fountain', $v['chocolate_fountain_1_2h']);
+            self::set('price_chocolate_fountain_1_2h', $v['chocolate_fountain_1_2h']);
+            self::set('price_chocolate_fountain_1_3h', $v['chocolate_fountain_1_3h']);
+            self::set('price_chocolate_fountain_2_2h', $v['chocolate_fountain_2_2h']);
+            self::set('price_chocolate_fountain_2_3h', $v['chocolate_fountain_2_3h']);
+            self::set('price_chocolate_fountain_waffle_extra', $v['chocolate_fountain_waffle_extra']);
+            self::set('chocolate_fountain_desc', $v['chocolate_fountain_desc']);
+            self::set('price_candy_bar', $v['candy_bar_price']);
+            self::set('candy_bar_desc', $v['candy_bar_desc']);
+            self::set('price_waffle_cart_2h', $v['waffle_cart_2h']);
+            self::set('price_waffle_cart_3h', $v['waffle_cart_3h']);
+            self::set('waffle_cart_desc', $v['waffle_cart_desc']);
+        }
+    }
+
+    /**
+     * Obtiene las tarifas por horas y plantillas descriptivas de un proveedor específico.
+     */
+    public static function getPhotobooth360Config(string $provider = 'logrono'): array
+    {
+        $provider = strtolower(trim($provider));
+        $providers = self::getPhotoboothProviders();
+        if (isset($providers[$provider])) {
+            return $providers[$provider];
+        }
+        return $providers['logrono'] ?? reset($providers);
     }
 }
 

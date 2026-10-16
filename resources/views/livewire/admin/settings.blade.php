@@ -801,292 +801,350 @@
                 </div>
             </div>
 
-            <!-- SECCIÓN 3B: FOTOMATÓN, PLATAFORMA 360º, PACK DÚO Y MESAS DULCES / GOFRES -->
+            <!-- SECCIÓN 3B: PROVEEDORES EXTERNOS (FOTOMATÓN, PLATAFORMA 360º, PACK DÚO, FUENTES DE CHOCOLATE, CHUCHES Y GOFRES) -->
+            @php
+                $activeProvKey = isset($photobooth_providers[$photobooth_settings_tab])
+                    ? $photobooth_settings_tab
+                    : (array_key_first($photobooth_providers) ?: 'logrono');
+                $activeProv = $photobooth_providers[$activeProvKey] ?? [];
+            @endphp
             <div class="bg-white shadow-sm rounded-xl border border-indigo-200 p-6 space-y-5">
-                <div class="border-b border-indigo-100 pb-3 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+                <div class="border-b border-indigo-100 pb-4 flex flex-col xl:flex-row xl:items-center justify-between gap-3">
                     <div>
                         <h3 class="text-base font-bold text-indigo-950 flex items-center gap-2">
-                            <span>📸🎥🍫</span> Fotomatón, Plataforma 360º, Fuentes de Chocolate, Chuches & Gofres
+                            <span>📸🎥🍫</span> Empresas Externas: Fotomatón, 360º, Fuentes de Chocolate, Chuches & Gofres
                         </h3>
-                        <p class="text-xs text-gray-500">Configura permanentemente las tarifas (2h / 3h) de <strong>Logroño</strong>, <strong>Vitoria (FotomatonCheese)</strong> y de las <strong>Mesas Dulces / Gofres</strong>.</p>
+                        <p class="text-xs text-gray-500">Cada proveedor tiene su propio nombre, tarifas y servicios activos/desactivados de forma 100% independiente.</p>
                     </div>
                     <div class="flex flex-wrap items-center gap-2">
                         <div class="inline-flex items-center gap-1.5 bg-amber-50 border border-amber-200 px-2.5 py-1.5 rounded-xl text-xs">
                             <span class="font-bold text-amber-900">Proveedor por defecto:</span>
                             <select wire:model="default_photobooth_provider" class="text-xs font-black bg-white border-amber-300 rounded-lg py-0.5 px-2 text-amber-950">
-                                <option value="logrono">📍 {{ $photobooth_logrono_name ?: 'Logroño' }}</option>
-                                <option value="vitoria">📍 {{ $photobooth_vitoria_name ?: 'Vitoria (FotomatonCheese)' }}</option>
+                                @foreach($photobooth_providers as $pKey => $pItem)
+                                    <option value="{{ $pKey }}">📍 {{ $pItem['name'] ?? ucfirst($pKey) }}</option>
+                                @endforeach
                             </select>
                         </div>
-                        <div class="inline-flex bg-slate-100 p-1 rounded-xl border border-slate-200 self-start sm:self-auto">
-                            <button type="button" wire:click="$set('photobooth_settings_tab', 'logrono')" class="px-3 py-1.5 rounded-lg text-xs font-black transition cursor-pointer {{ $photobooth_settings_tab === 'logrono' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900' }}">
-                                📍 {{ $photobooth_logrono_name ?: 'Logroño' }}
-                            </button>
-                            <button type="button" wire:click="$set('photobooth_settings_tab', 'vitoria')" class="px-3 py-1.5 rounded-lg text-xs font-black transition cursor-pointer {{ $photobooth_settings_tab === 'vitoria' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900' }}">
-                                📍 {{ $photobooth_vitoria_name ?: 'Vitoria / Álava' }}
-                            </button>
-                        </div>
+
+                        <button type="button" wire:click="$toggle('show_add_provider_form')" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black bg-indigo-600 text-white hover:bg-indigo-700 transition cursor-pointer shadow-xs">
+                            <span>➕</span> {{ $show_add_provider_form ? 'Cerrar formulario' : 'Añadir Proveedor' }}
+                        </button>
                     </div>
                 </div>
 
-                @if($photobooth_settings_tab === 'logrono')
-                    <div class="bg-indigo-50/40 border border-indigo-200 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                        <div class="text-xs text-indigo-950">
-                            <span class="font-black">📍 Proveedor 1 (Zona La Rioja / Logroño):</span> Estas tarifas se cargan al elegir el proveedor de Logroño en el presupuesto.
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <label class="text-[11px] font-bold text-indigo-900 whitespace-nowrap">Nombre interno:</label>
-                            <input type="text" wire:model="photobooth_logrono_name" class="border-indigo-300 rounded-lg text-xs font-bold px-2.5 py-1 w-56 bg-white">
-                        </div>
-                    </div>
+                <!-- Pestañas de selección de proveedor -->
+                <div class="flex flex-wrap items-center gap-2 bg-slate-100 p-1.5 rounded-xl border border-slate-200">
+                    @foreach($photobooth_providers as $pKey => $pItem)
+                        @php
+                            $isCurrentTab = ($activeProvKey === $pKey);
+                            $enabledCount = collect([
+                                !empty($pItem['photobooth_enabled']),
+                                !empty($pItem['video_360_enabled']),
+                                !empty($pItem['pack_duo_enabled']),
+                                !empty($pItem['chocolate_fountain_enabled']),
+                                !empty($pItem['candy_bar_enabled']),
+                                !empty($pItem['waffle_cart_enabled']),
+                            ])->filter()->count();
+                        @endphp
+                        <button
+                            type="button"
+                            wire:key="pb-tab-btn-{{ $pKey }}"
+                            wire:click="$set('photobooth_settings_tab', '{{ $pKey }}')"
+                            class="px-3 py-1.5 rounded-lg text-xs font-black transition cursor-pointer flex items-center gap-1.5 {{ $isCurrentTab ? 'bg-indigo-600 text-white shadow-xs' : 'bg-white/70 text-slate-700 hover:bg-white hover:text-slate-950' }}"
+                        >
+                            <span>📍 {{ $pItem['name'] ?: ucfirst($pKey) }}</span>
+                            <span class="text-[10px] px-1.5 py-0.2 rounded-full {{ $isCurrentTab ? 'bg-indigo-800 text-indigo-100' : 'bg-slate-200 text-slate-700' }}">
+                                {{ $enabledCount }} serv.
+                            </span>
+                        </button>
+                    @endforeach
+                </div>
 
-                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                        <!-- 1. FOTOMATÓN LOGROÑO -->
-                        <div class="p-4 bg-indigo-50/40 rounded-xl border border-indigo-200 space-y-3">
-                            <div class="flex items-center justify-between border-b border-indigo-100 pb-2">
-                                <span class="text-xs font-black uppercase text-indigo-900">📸 Fotomatón & Photocall ({{ $photobooth_logrono_name }})</span>
-                                <span class="text-[10px] font-bold bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded">Tarifas por Horas</span>
-                            </div>
-                            <div class="grid grid-cols-3 gap-2">
-                                <div>
-                                    <label class="block text-[11px] font-bold text-gray-700 mb-1">Precio 2 Horas (€)</label>
-                                    <input type="number" step="0.01" wire:model="price_photobooth_2h" class="w-full border-indigo-300 rounded-lg text-sm font-black text-indigo-700">
-                                </div>
-                                <div>
-                                    <label class="block text-[11px] font-bold text-gray-700 mb-1">Precio 3 Horas (€)</label>
-                                    <input type="number" step="0.01" wire:model="price_photobooth_3h" class="w-full border-indigo-300 rounded-lg text-sm font-black text-indigo-700">
-                                </div>
-                                <div>
-                                    <label class="block text-[11px] font-bold text-gray-700 mb-1">+ Hora Extra (€/h)</label>
-                                    <input type="number" step="0.01" wire:model="price_photobooth_extra_hour" class="w-full border-indigo-300 rounded-lg text-sm font-black text-amber-700">
-                                </div>
+                <!-- Formulario desplegable para crear un nuevo proveedor externo -->
+                @if($show_add_provider_form)
+                    <div class="p-4 bg-indigo-50/70 border-2 border-dashed border-indigo-300 rounded-xl space-y-3">
+                        <div class="flex items-center justify-between">
+                            <h4 class="text-xs font-black uppercase tracking-wider text-indigo-950">➕ Crear Nuevo Proveedor Externo</h4>
+                            <button type="button" wire:click="$set('show_add_provider_form', false)" class="text-xs font-bold text-gray-500 hover:text-gray-800">✕ Cancelar</button>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div>
+                                <label class="block text-[11px] font-bold text-indigo-950 mb-1">Nombre del Proveedor *</label>
+                                <input type="text" wire:model="new_provider_name" placeholder="Ej: Bilbao Fotomatón / Navarra 360" class="w-full border-indigo-300 rounded-lg text-xs font-bold px-3 py-2 bg-white">
                             </div>
                             <div>
-                                <label class="block text-[11px] font-bold text-gray-700 mb-1">Plantilla Descriptiva (Qué incluye en PDF)</label>
-                                <textarea rows="3" wire:model="photobooth_desc" class="w-full border-gray-300 rounded-lg text-xs"></textarea>
-                            </div>
-                        </div>
-
-                        <!-- 2. PLATAFORMA 360º LOGROÑO -->
-                        <div class="p-4 bg-purple-50/40 rounded-xl border border-purple-200 space-y-3">
-                            <div class="flex items-center justify-between border-b border-purple-100 pb-2">
-                                <span class="text-xs font-black uppercase text-purple-900">🎥 Plataforma Vídeo 360º ({{ $photobooth_logrono_name }})</span>
-                                <span class="text-[10px] font-bold bg-purple-100 text-purple-800 px-2 py-0.5 rounded">Tarifas por Horas</span>
-                            </div>
-                            <div class="grid grid-cols-3 gap-2">
-                                <div>
-                                    <label class="block text-[11px] font-bold text-gray-700 mb-1">Precio 2 Horas (€)</label>
-                                    <input type="number" step="0.01" wire:model="price_video_360_2h" class="w-full border-purple-300 rounded-lg text-sm font-black text-purple-700">
-                                </div>
-                                <div>
-                                    <label class="block text-[11px] font-bold text-gray-700 mb-1">Precio 3 Horas (€)</label>
-                                    <input type="number" step="0.01" wire:model="price_video_360_3h" class="w-full border-purple-300 rounded-lg text-sm font-black text-purple-700">
-                                </div>
-                                <div>
-                                    <label class="block text-[11px] font-bold text-gray-700 mb-1">+ Hora Extra (€/h)</label>
-                                    <input type="number" step="0.01" wire:model="price_video_360_extra_hour" class="w-full border-purple-300 rounded-lg text-sm font-black text-amber-700">
-                                </div>
+                                <label class="block text-[11px] font-bold text-indigo-950 mb-1">Zona / Ciudad</label>
+                                <input type="text" wire:model="new_provider_zone" placeholder="Ej: Bilbao / Bizkaia / Navarra" class="w-full border-indigo-300 rounded-lg text-xs px-3 py-2 bg-white">
                             </div>
                             <div>
-                                <label class="block text-[11px] font-bold text-gray-700 mb-1">Plantilla Descriptiva (Qué incluye en PDF)</label>
-                                <textarea rows="3" wire:model="video_360_desc" class="w-full border-gray-300 rounded-lg text-xs"></textarea>
+                                <label class="block text-[11px] font-bold text-indigo-950 mb-1">Contacto / Teléfono (uso interno)</label>
+                                <input type="text" wire:model="new_provider_contact" placeholder="Ej: Laura 600 123 456" class="w-full border-indigo-300 rounded-lg text-xs px-3 py-2 bg-white">
                             </div>
                         </div>
-
-                        <!-- 3. PACK DÚO TODO INCLUIDO LOGROÑO -->
-                        <div class="p-4 bg-gradient-to-br from-indigo-50/70 to-purple-50/70 rounded-xl border-2 border-indigo-300 space-y-3">
-                            <div class="flex items-center justify-between border-b border-indigo-200 pb-2">
-                                <span class="text-xs font-black uppercase text-indigo-950">🔹 Pack Dúo ({{ $photobooth_logrono_name }})</span>
-                                <span class="text-[10px] font-bold bg-indigo-600 text-white px-2 py-0.5 rounded-full">Todo Incluido</span>
-                            </div>
-                            <div class="grid grid-cols-3 gap-2">
-                                <div>
-                                    <label class="block text-[11px] font-bold text-indigo-950 mb-1">Pack Dúo 2h (€)</label>
-                                    <input type="number" step="0.01" wire:model="price_pack_duo_2h" class="w-full border-indigo-300 rounded-lg text-sm font-black text-indigo-700">
-                                </div>
-                                <div>
-                                    <label class="block text-[11px] font-bold text-indigo-950 mb-1">Pack Dúo 3h (€)</label>
-                                    <input type="number" step="0.01" wire:model="price_pack_duo_3h" class="w-full border-indigo-300 rounded-lg text-sm font-black text-indigo-700">
-                                </div>
-                                <div>
-                                    <label class="block text-[11px] font-bold text-indigo-950 mb-1">Reserva / Servicio (€)</label>
-                                    <input type="number" step="0.01" wire:model="photobooth_deposit_per_service" class="w-full border-indigo-300 rounded-lg text-sm font-bold text-gray-800">
-                                </div>
-                            </div>
-                            <div>
-                                <label class="block text-[11px] font-bold text-indigo-950 mb-1">Plantilla Descriptiva Pack Dúo</label>
-                                <textarea rows="3" wire:model="pack_duo_desc" class="w-full border-indigo-300 rounded-lg text-xs"></textarea>
-                            </div>
-                        </div>
-                    </div>
-                @else
-                    <div class="bg-emerald-50/60 border border-emerald-200 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                        <div class="text-xs text-emerald-950">
-                            <span class="font-black">📍 Proveedor 2 (Zona Vitoria / Álava / País Vasco):</span> Estas tarifas se cargan automáticamente o en 1 clic al elegir el proveedor de Vitoria.
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <label class="text-[11px] font-bold text-emerald-900 whitespace-nowrap">Nombre interno:</label>
-                            <input type="text" wire:model="photobooth_vitoria_name" class="border-emerald-300 rounded-lg text-xs font-bold px-2.5 py-1 w-56 bg-white">
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                        <!-- 1. FOTOMATÓN VITORIA -->
-                        <div class="p-4 bg-emerald-50/40 rounded-xl border border-emerald-200 space-y-3">
-                            <div class="flex items-center justify-between border-b border-emerald-100 pb-2">
-                                <span class="text-xs font-black uppercase text-emerald-900">📸 Fotomatón & Photocall ({{ $photobooth_vitoria_name }})</span>
-                                <span class="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded">Tarifas Vitoria</span>
-                            </div>
-                            <div class="grid grid-cols-3 gap-2">
-                                <div>
-                                    <label class="block text-[11px] font-bold text-gray-700 mb-1">Precio 2 Horas (€)</label>
-                                    <input type="number" step="0.01" wire:model="price_photobooth_vitoria_2h" class="w-full border-emerald-300 rounded-lg text-sm font-black text-emerald-700">
-                                </div>
-                                <div>
-                                    <label class="block text-[11px] font-bold text-gray-700 mb-1">Precio 3 Horas (€)</label>
-                                    <input type="number" step="0.01" wire:model="price_photobooth_vitoria_3h" class="w-full border-emerald-300 rounded-lg text-sm font-black text-emerald-700">
-                                </div>
-                                <div>
-                                    <label class="block text-[11px] font-bold text-gray-700 mb-1">+ Hora Extra (€/h)</label>
-                                    <input type="number" step="0.01" wire:model="price_photobooth_vitoria_extra_hour" class="w-full border-emerald-300 rounded-lg text-sm font-black text-amber-700">
-                                </div>
-                            </div>
-                            <div>
-                                <label class="block text-[11px] font-bold text-gray-700 mb-1">Plantilla Descriptiva (Qué incluye en PDF)</label>
-                                <textarea rows="3" wire:model="photobooth_vitoria_desc" class="w-full border-gray-300 rounded-lg text-xs"></textarea>
-                            </div>
-                        </div>
-
-                        <!-- 2. PLATAFORMA 360º VITORIA -->
-                        <div class="p-4 bg-teal-50/40 rounded-xl border border-teal-200 space-y-3">
-                            <div class="flex items-center justify-between border-b border-teal-100 pb-2">
-                                <span class="text-xs font-black uppercase text-teal-900">🎥 Plataforma Vídeo 360º ({{ $photobooth_vitoria_name }})</span>
-                                <span class="text-[10px] font-bold bg-teal-100 text-teal-800 px-2 py-0.5 rounded">Tarifas Vitoria</span>
-                            </div>
-                            <div class="grid grid-cols-3 gap-2">
-                                <div>
-                                    <label class="block text-[11px] font-bold text-gray-700 mb-1">Precio 2 Horas (€)</label>
-                                    <input type="number" step="0.01" wire:model="price_video_360_vitoria_2h" class="w-full border-teal-300 rounded-lg text-sm font-black text-teal-700">
-                                </div>
-                                <div>
-                                    <label class="block text-[11px] font-bold text-gray-700 mb-1">Precio 3 Horas (€)</label>
-                                    <input type="number" step="0.01" wire:model="price_video_360_vitoria_3h" class="w-full border-teal-300 rounded-lg text-sm font-black text-teal-700">
-                                </div>
-                                <div>
-                                    <label class="block text-[11px] font-bold text-gray-700 mb-1">+ Hora Extra (€/h)</label>
-                                    <input type="number" step="0.01" wire:model="price_video_360_vitoria_extra_hour" class="w-full border-teal-300 rounded-lg text-sm font-black text-amber-700">
-                                </div>
-                            </div>
-                            <div>
-                                <label class="block text-[11px] font-bold text-gray-700 mb-1">Plantilla Descriptiva (Qué incluye en PDF)</label>
-                                <textarea rows="3" wire:model="video_360_vitoria_desc" class="w-full border-gray-300 rounded-lg text-xs"></textarea>
-                            </div>
-                        </div>
-
-                        <!-- 3. PACK DÚO TODO INCLUIDO VITORIA -->
-                        <div class="p-4 bg-gradient-to-br from-emerald-50/70 to-teal-50/70 rounded-xl border-2 border-emerald-300 space-y-3">
-                            <div class="flex items-center justify-between border-b border-emerald-200 pb-2">
-                                <span class="text-xs font-black uppercase text-emerald-950">🔹 Pack Dúo ({{ $photobooth_vitoria_name }})</span>
-                                <span class="text-[10px] font-bold bg-emerald-600 text-white px-2 py-0.5 rounded-full">Todo Incluido</span>
-                            </div>
-                            <div class="grid grid-cols-3 gap-2">
-                                <div>
-                                    <label class="block text-[11px] font-bold text-emerald-950 mb-1">Pack Dúo 2h (€)</label>
-                                    <input type="number" step="0.01" wire:model="price_pack_duo_vitoria_2h" class="w-full border-emerald-300 rounded-lg text-sm font-black text-emerald-700">
-                                </div>
-                                <div>
-                                    <label class="block text-[11px] font-bold text-emerald-950 mb-1">Pack Dúo 3h (€)</label>
-                                    <input type="number" step="0.01" wire:model="price_pack_duo_vitoria_3h" class="w-full border-emerald-300 rounded-lg text-sm font-black text-emerald-700">
-                                </div>
-                                <div>
-                                    <label class="block text-[11px] font-bold text-emerald-950 mb-1">Reserva / Servicio (€)</label>
-                                    <input type="number" step="0.01" wire:model="photobooth_vitoria_deposit_per_service" class="w-full border-emerald-300 rounded-lg text-sm font-bold text-gray-800">
-                                </div>
-                            </div>
-                            <div>
-                                <label class="block text-[11px] font-bold text-emerald-950 mb-1">Plantilla Descriptiva Pack Dúo</label>
-                                <textarea rows="3" wire:model="pack_duo_vitoria_desc" class="w-full border-emerald-300 rounded-lg text-xs"></textarea>
-                            </div>
+                        <div class="flex justify-end">
+                            <button type="button" wire:click="addPhotoboothProvider" class="px-4 py-2 rounded-lg text-xs font-black bg-emerald-600 text-white hover:bg-emerald-700 transition cursor-pointer shadow-xs">
+                                ✅ Guardar y Configurar Proveedor
+                            </button>
                         </div>
                     </div>
                 @endif
 
-                <!-- TARIFAS GLOBALES DE MESAS DULCES, FUENTES DE CHOCOLATE, CHUCHES Y CARRITO DE GOFRES -->
-                <div class="pt-3 border-t border-indigo-100">
-                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                        <!-- 4. MESA CON FUENTE DE CHOCOLATE -->
-                        <div class="p-4 bg-amber-50/40 rounded-xl border border-amber-200 space-y-3">
-                            <div class="flex items-center justify-between border-b border-amber-100 pb-2">
-                                <span class="text-xs font-black uppercase text-amber-900">🍫 Mesa con Fuente de Chocolate</span>
-                                <span class="text-[10px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded">1 o 2 Fuentes · 2h/3h</span>
+                <!-- PANEL DEL PROVEEDOR ACTIVO (con wire:key único para evitar que Livewire mezcle inputs entre pestañas) -->
+                @if(!empty($activeProv))
+                    <div wire:key="pb-provider-panel-{{ $activeProvKey }}" class="space-y-4">
+                        <!-- Datos identificativos del proveedor -->
+                        <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                <div>
+                                    <label class="block text-[11px] font-bold text-slate-700 mb-1">Nombre del Proveedor (independiente)</label>
+                                    <input
+                                        type="text"
+                                        wire:key="input-prov-name-{{ $activeProvKey }}"
+                                        wire:model.live="photobooth_providers.{{ $activeProvKey }}.name"
+                                        class="w-full border-indigo-300 rounded-lg text-xs font-black px-3 py-1.5 bg-white text-indigo-950"
+                                    >
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold text-slate-700 mb-1">Zona / Ciudad de Cobertura</label>
+                                    <input
+                                        type="text"
+                                        wire:key="input-prov-zone-{{ $activeProvKey }}"
+                                        wire:model="photobooth_providers.{{ $activeProvKey }}.zone"
+                                        placeholder="Ej: La Rioja / Álava / Navarra"
+                                        class="w-full border-slate-300 rounded-lg text-xs font-semibold px-3 py-1.5 bg-white"
+                                    >
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold text-slate-700 mb-1">Contacto / Teléfono Interno</label>
+                                    <div class="flex items-center gap-2">
+                                        <input
+                                            type="text"
+                                            wire:key="input-prov-contact-{{ $activeProvKey }}"
+                                            wire:model="photobooth_providers.{{ $activeProvKey }}.contact_info"
+                                            placeholder="Ej: Águeda 697198216"
+                                            class="w-full border-slate-300 rounded-lg text-xs px-3 py-1.5 bg-white"
+                                        >
+                                        @if(!in_array($activeProvKey, ['logrono', 'vitoria']))
+                                            <button
+                                                type="button"
+                                                wire:click="deletePhotoboothProvider('{{ $activeProvKey }}')"
+                                                wire:confirm="¿Seguro que quieres eliminar este proveedor externo?"
+                                                class="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 whitespace-nowrap cursor-pointer"
+                                                title="Eliminar proveedor"
+                                            >
+                                                🗑️ Borrar
+                                            </button>
+                                        @endif
+                                    </div>
+                                </div>
                             </div>
-                            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                                <div>
-                                    <label class="block text-[10px] font-bold text-gray-700 mb-1">1 Fuente · 2h (€)</label>
-                                    <input type="number" step="0.01" wire:model="price_chocolate_fountain_1_2h" class="w-full border-amber-300 rounded-lg text-sm font-black text-amber-800">
+
+                            <!-- INTERRUPTORES DE SERVICIOS QUE OFRECE ESTE PROVEEDOR -->
+                            <div class="pt-3 border-t border-slate-200">
+                                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+                                    <span class="text-[11px] font-black uppercase tracking-wider text-slate-700">
+                                        🎚️ Servicios activos para «{{ $activeProv['name'] ?? ucfirst($activeProvKey) }}» (haz clic para activar o desactivar en el presupuesto):
+                                    </span>
+                                    <span class="text-[11px] text-slate-500">Los servicios desactivados no saldrán al elegir este proveedor.</span>
                                 </div>
-                                <div>
-                                    <label class="block text-[10px] font-bold text-gray-700 mb-1">1 Fuente · 3h (€)</label>
-                                    <input type="number" step="0.01" wire:model="price_chocolate_fountain_1_3h" class="w-full border-amber-300 rounded-lg text-sm font-black text-amber-800">
+                                @php
+                                    $serviceToggles = [
+                                        'photobooth_enabled' => ['icon' => '📸', 'label' => 'Fotomatón'],
+                                        'video_360_enabled' => ['icon' => '🎥', 'label' => 'Plataforma 360º'],
+                                        'pack_duo_enabled' => ['icon' => '🔹', 'label' => 'Pack Dúo (Foto + 360º)'],
+                                        'chocolate_fountain_enabled' => ['icon' => '🍫', 'label' => 'Fuente de Chocolate'],
+                                        'candy_bar_enabled' => ['icon' => '🍬', 'label' => 'Mesa de Chuches'],
+                                        'waffle_cart_enabled' => ['icon' => '🧇', 'label' => 'Carrito de Gofres'],
+                                    ];
+                                @endphp
+                                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+                                    @foreach($serviceToggles as $flagKey => $meta)
+                                        @php $isOn = !empty($activeProv[$flagKey]); @endphp
+                                        <button
+                                            type="button"
+                                            wire:key="toggle-{{ $activeProvKey }}-{{ $flagKey }}"
+                                            wire:click="toggleProviderService('{{ $activeProvKey }}', '{{ $flagKey }}')"
+                                            class="px-2.5 py-2 rounded-xl border text-left transition cursor-pointer flex items-center justify-between gap-1.5 {{ $isOn ? 'bg-emerald-50 border-emerald-300 text-emerald-950 shadow-2xs' : 'bg-slate-100 border-slate-200 text-slate-400 hover:text-slate-600' }}"
+                                        >
+                                            <span class="text-xs font-bold truncate">{{ $meta['icon'] }} {{ $meta['label'] }}</span>
+                                            <span class="text-[10px] font-black px-1.5 py-0.5 rounded {{ $isOn ? 'bg-emerald-600 text-white' : 'bg-slate-300 text-slate-600' }}">
+                                                {{ $isOn ? 'ON' : 'OFF' }}
+                                            </span>
+                                        </button>
+                                    @endforeach
                                 </div>
-                                <div>
-                                    <label class="block text-[10px] font-bold text-gray-700 mb-1">2 Fuentes · 2h (€)</label>
-                                    <input type="number" step="0.01" wire:model="price_chocolate_fountain_2_2h" class="w-full border-amber-300 rounded-lg text-sm font-black text-amber-900">
-                                </div>
-                                <div>
-                                    <label class="block text-[10px] font-bold text-gray-700 mb-1">2 Fuentes · 3h (€)</label>
-                                    <input type="number" step="0.01" wire:model="price_chocolate_fountain_2_3h" class="w-full border-amber-300 rounded-lg text-sm font-black text-amber-900">
-                                </div>
-                                <div class="col-span-2 sm:col-span-1">
-                                    <label class="block text-[10px] font-bold text-gray-700 mb-1">Rincón Gofre (€/ud)</label>
-                                    <input type="number" step="0.01" wire:model="price_chocolate_fountain_waffle_extra" class="w-full border-amber-300 rounded-lg text-sm font-bold text-gray-800">
-                                </div>
-                            </div>
-                            <div>
-                                <label class="block text-[11px] font-bold text-gray-700 mb-1">Plantilla Descriptiva (Qué incluye en PDF)</label>
-                                <textarea rows="3" wire:model="chocolate_fountain_desc" class="w-full border-gray-300 rounded-lg text-xs"></textarea>
                             </div>
                         </div>
 
-                        <!-- 5. MESA DE SOLO CHUCHES -->
-                        <div class="p-4 bg-pink-50/40 rounded-xl border border-pink-200 space-y-3">
-                            <div class="flex items-center justify-between border-b border-pink-100 pb-2">
-                                <span class="text-xs font-black uppercase text-pink-900">🍬 Mesa de Solo Chuches</span>
-                                <span class="text-[10px] font-bold bg-pink-100 text-pink-800 px-2 py-0.5 rounded">Candy Bar</span>
+                        <!-- TARJETAS DE TARIFAS Y DESCRIPCIONES DEL PROVEEDOR ACTIVO -->
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                            <!-- 1. FOTOMATÓN -->
+                            <div class="p-4 rounded-xl border space-y-3 transition {{ !empty($activeProv['photobooth_enabled']) ? 'bg-indigo-50/40 border-indigo-200' : 'bg-slate-50 border-slate-200 opacity-60' }}">
+                                <div class="flex items-center justify-between border-b border-indigo-100 pb-2">
+                                    <span class="text-xs font-black uppercase text-indigo-900">📸 Fotomatón ({{ $activeProv['name'] }})</span>
+                                    <button type="button" wire:click="toggleProviderService('{{ $activeProvKey }}', 'photobooth_enabled')" class="text-[10px] font-black px-2 py-0.5 rounded cursor-pointer {{ !empty($activeProv['photobooth_enabled']) ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600' }}">
+                                        {{ !empty($activeProv['photobooth_enabled']) ? '✓ Activo' : '✕ Desactivado' }}
+                                    </button>
+                                </div>
+                                <div class="grid grid-cols-3 gap-2">
+                                    <div>
+                                        <label class="block text-[11px] font-bold text-gray-700 mb-1">Precio 2 Horas (€)</label>
+                                        <input type="number" step="0.01" wire:model="photobooth_providers.{{ $activeProvKey }}.photobooth_2h" class="w-full border-indigo-300 rounded-lg text-sm font-black text-indigo-700">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[11px] font-bold text-gray-700 mb-1">Precio 3 Horas (€)</label>
+                                        <input type="number" step="0.01" wire:model="photobooth_providers.{{ $activeProvKey }}.photobooth_3h" class="w-full border-indigo-300 rounded-lg text-sm font-black text-indigo-700">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[11px] font-bold text-gray-700 mb-1">+ Hora Extra (€/h)</label>
+                                        <input type="number" step="0.01" wire:model="photobooth_providers.{{ $activeProvKey }}.photobooth_extra_hour" class="w-full border-indigo-300 rounded-lg text-sm font-black text-amber-700">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold text-gray-700 mb-1">Plantilla Descriptiva (Qué incluye en PDF)</label>
+                                    <textarea rows="3" wire:model="photobooth_providers.{{ $activeProvKey }}.photobooth_desc" class="w-full border-gray-300 rounded-lg text-xs"></textarea>
+                                </div>
                             </div>
-                            <div>
-                                <label class="block text-[11px] font-bold text-gray-700 mb-1">Precio Servicio Completo (€)</label>
-                                <input type="number" step="0.01" wire:model="price_candy_bar" class="w-full border-pink-300 rounded-lg text-sm font-black text-pink-800">
+
+                            <!-- 2. PLATAFORMA 360º -->
+                            <div class="p-4 rounded-xl border space-y-3 transition {{ !empty($activeProv['video_360_enabled']) ? 'bg-purple-50/40 border-purple-200' : 'bg-slate-50 border-slate-200 opacity-60' }}">
+                                <div class="flex items-center justify-between border-b border-purple-100 pb-2">
+                                    <span class="text-xs font-black uppercase text-purple-900">🎥 Plataforma 360º ({{ $activeProv['name'] }})</span>
+                                    <button type="button" wire:click="toggleProviderService('{{ $activeProvKey }}', 'video_360_enabled')" class="text-[10px] font-black px-2 py-0.5 rounded cursor-pointer {{ !empty($activeProv['video_360_enabled']) ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600' }}">
+                                        {{ !empty($activeProv['video_360_enabled']) ? '✓ Activo' : '✕ Desactivado' }}
+                                    </button>
+                                </div>
+                                <div class="grid grid-cols-3 gap-2">
+                                    <div>
+                                        <label class="block text-[11px] font-bold text-gray-700 mb-1">Precio 2 Horas (€)</label>
+                                        <input type="number" step="0.01" wire:model="photobooth_providers.{{ $activeProvKey }}.video_360_2h" class="w-full border-purple-300 rounded-lg text-sm font-black text-purple-700">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[11px] font-bold text-gray-700 mb-1">Precio 3 Horas (€)</label>
+                                        <input type="number" step="0.01" wire:model="photobooth_providers.{{ $activeProvKey }}.video_360_3h" class="w-full border-purple-300 rounded-lg text-sm font-black text-purple-700">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[11px] font-bold text-gray-700 mb-1">+ Hora Extra (€/h)</label>
+                                        <input type="number" step="0.01" wire:model="photobooth_providers.{{ $activeProvKey }}.video_360_extra_hour" class="w-full border-purple-300 rounded-lg text-sm font-black text-amber-700">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold text-gray-700 mb-1">Plantilla Descriptiva (Qué incluye en PDF)</label>
+                                    <textarea rows="3" wire:model="photobooth_providers.{{ $activeProvKey }}.video_360_desc" class="w-full border-gray-300 rounded-lg text-xs"></textarea>
+                                </div>
                             </div>
-                            <div>
-                                <label class="block text-[11px] font-bold text-gray-700 mb-1">Plantilla Descriptiva (Qué incluye en PDF)</label>
-                                <textarea rows="3" wire:model="candy_bar_desc" class="w-full border-gray-300 rounded-lg text-xs"></textarea>
+
+                            <!-- 3. PACK DÚO TODO INCLUIDO -->
+                            <div class="p-4 rounded-xl border-2 space-y-3 transition {{ !empty($activeProv['pack_duo_enabled']) ? 'bg-gradient-to-br from-indigo-50/70 to-purple-50/70 border-indigo-300' : 'bg-slate-50 border-slate-200 opacity-60' }}">
+                                <div class="flex items-center justify-between border-b border-indigo-200 pb-2">
+                                    <span class="text-xs font-black uppercase text-indigo-950">🔹 Pack Dúo ({{ $activeProv['name'] }})</span>
+                                    <button type="button" wire:click="toggleProviderService('{{ $activeProvKey }}', 'pack_duo_enabled')" class="text-[10px] font-black px-2 py-0.5 rounded cursor-pointer {{ !empty($activeProv['pack_duo_enabled']) ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600' }}">
+                                        {{ !empty($activeProv['pack_duo_enabled']) ? '✓ Activo' : '✕ Desactivado' }}
+                                    </button>
+                                </div>
+                                <div class="grid grid-cols-3 gap-2">
+                                    <div>
+                                        <label class="block text-[11px] font-bold text-indigo-950 mb-1">Pack Dúo 2h (€)</label>
+                                        <input type="number" step="0.01" wire:model="photobooth_providers.{{ $activeProvKey }}.pack_duo_2h" class="w-full border-indigo-300 rounded-lg text-sm font-black text-indigo-700">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[11px] font-bold text-indigo-950 mb-1">Pack Dúo 3h (€)</label>
+                                        <input type="number" step="0.01" wire:model="photobooth_providers.{{ $activeProvKey }}.pack_duo_3h" class="w-full border-indigo-300 rounded-lg text-sm font-black text-indigo-700">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[11px] font-bold text-indigo-950 mb-1">Reserva / Serv. (€)</label>
+                                        <input type="number" step="0.01" wire:model="photobooth_providers.{{ $activeProvKey }}.deposit_per_service" class="w-full border-indigo-300 rounded-lg text-sm font-bold text-gray-800">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold text-indigo-950 mb-1">Plantilla Descriptiva Pack Dúo</label>
+                                    <textarea rows="3" wire:model="photobooth_providers.{{ $activeProvKey }}.pack_duo_desc" class="w-full border-indigo-300 rounded-lg text-xs"></textarea>
+                                </div>
                             </div>
                         </div>
 
-                        <!-- 6. CARRITO DE GOFRES -->
-                        <div class="p-4 bg-orange-50/40 rounded-xl border border-orange-200 space-y-3">
-                            <div class="flex items-center justify-between border-b border-orange-100 pb-2">
-                                <span class="text-xs font-black uppercase text-orange-900">🧇 Carrito de Gofres</span>
-                                <span class="text-[10px] font-bold bg-orange-100 text-orange-800 px-2 py-0.5 rounded">Hechos al momento</span>
-                            </div>
-                            <div class="grid grid-cols-2 gap-2">
-                                <div>
-                                    <label class="block text-[11px] font-bold text-gray-700 mb-1">2h (~60 gofres) (€)</label>
-                                    <input type="number" step="0.01" wire:model="price_waffle_cart_2h" class="w-full border-orange-300 rounded-lg text-sm font-black text-orange-800">
+                        <!-- FILA 2: SERVICIOS DULCES / EXTRAS DE ESTE PROVEEDOR -->
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 pt-2">
+                            <!-- 4. MESA CON FUENTE DE CHOCOLATE -->
+                            <div class="p-4 rounded-xl border space-y-3 transition {{ !empty($activeProv['chocolate_fountain_enabled']) ? 'bg-amber-50/40 border-amber-200' : 'bg-slate-50 border-slate-200 opacity-60' }}">
+                                <div class="flex items-center justify-between border-b border-amber-100 pb-2">
+                                    <span class="text-xs font-black uppercase text-amber-900">🍫 Fuente de Chocolate ({{ $activeProv['name'] }})</span>
+                                    <button type="button" wire:click="toggleProviderService('{{ $activeProvKey }}', 'chocolate_fountain_enabled')" class="text-[10px] font-black px-2 py-0.5 rounded cursor-pointer {{ !empty($activeProv['chocolate_fountain_enabled']) ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600' }}">
+                                        {{ !empty($activeProv['chocolate_fountain_enabled']) ? '✓ Activo' : '✕ No lo ofrece' }}
+                                    </button>
+                                </div>
+                                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-gray-700 mb-1">1 Fuente · 2h (€)</label>
+                                        <input type="number" step="0.01" wire:model="photobooth_providers.{{ $activeProvKey }}.chocolate_fountain_1_2h" class="w-full border-amber-300 rounded-lg text-sm font-black text-amber-800">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-gray-700 mb-1">1 Fuente · 3h (€)</label>
+                                        <input type="number" step="0.01" wire:model="photobooth_providers.{{ $activeProvKey }}.chocolate_fountain_1_3h" class="w-full border-amber-300 rounded-lg text-sm font-black text-amber-800">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-gray-700 mb-1">2 Fuentes · 2h (€)</label>
+                                        <input type="number" step="0.01" wire:model="photobooth_providers.{{ $activeProvKey }}.chocolate_fountain_2_2h" class="w-full border-amber-300 rounded-lg text-sm font-black text-amber-900">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-gray-700 mb-1">2 Fuentes · 3h (€)</label>
+                                        <input type="number" step="0.01" wire:model="photobooth_providers.{{ $activeProvKey }}.chocolate_fountain_2_3h" class="w-full border-amber-300 rounded-lg text-sm font-black text-amber-900">
+                                    </div>
+                                    <div class="col-span-2 sm:col-span-1">
+                                        <label class="block text-[10px] font-bold text-gray-700 mb-1">Rincón Gofre (€/ud)</label>
+                                        <input type="number" step="0.01" wire:model="photobooth_providers.{{ $activeProvKey }}.chocolate_fountain_waffle_extra" class="w-full border-amber-300 rounded-lg text-sm font-bold text-gray-800">
+                                    </div>
                                 </div>
                                 <div>
-                                    <label class="block text-[11px] font-bold text-gray-700 mb-1">3h (~100 gofres) (€)</label>
-                                    <input type="number" step="0.01" wire:model="price_waffle_cart_3h" class="w-full border-orange-300 rounded-lg text-sm font-black text-orange-800">
+                                    <label class="block text-[11px] font-bold text-gray-700 mb-1">Plantilla Descriptiva (Qué incluye en PDF)</label>
+                                    <textarea rows="3" wire:model="photobooth_providers.{{ $activeProvKey }}.chocolate_fountain_desc" class="w-full border-gray-300 rounded-lg text-xs"></textarea>
                                 </div>
                             </div>
-                            <div>
-                                <label class="block text-[11px] font-bold text-gray-700 mb-1">Plantilla Descriptiva (Qué incluye en PDF)</label>
-                                <textarea rows="3" wire:model="waffle_cart_desc" class="w-full border-gray-300 rounded-lg text-xs"></textarea>
+
+                            <!-- 5. MESA DE SOLO CHUCHES -->
+                            <div class="p-4 rounded-xl border space-y-3 transition {{ !empty($activeProv['candy_bar_enabled']) ? 'bg-pink-50/40 border-pink-200' : 'bg-slate-50 border-slate-200 opacity-60' }}">
+                                <div class="flex items-center justify-between border-b border-pink-100 pb-2">
+                                    <span class="text-xs font-black uppercase text-pink-900">🍬 Mesa de Chuches ({{ $activeProv['name'] }})</span>
+                                    <button type="button" wire:click="toggleProviderService('{{ $activeProvKey }}', 'candy_bar_enabled')" class="text-[10px] font-black px-2 py-0.5 rounded cursor-pointer {{ !empty($activeProv['candy_bar_enabled']) ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600' }}">
+                                        {{ !empty($activeProv['candy_bar_enabled']) ? '✓ Activo' : '✕ No lo ofrece' }}
+                                    </button>
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold text-gray-700 mb-1">Precio Servicio Completo (€)</label>
+                                    <input type="number" step="0.01" wire:model="photobooth_providers.{{ $activeProvKey }}.candy_bar_price" class="w-full border-pink-300 rounded-lg text-sm font-black text-pink-800">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold text-gray-700 mb-1">Plantilla Descriptiva (Qué incluye en PDF)</label>
+                                    <textarea rows="3" wire:model="photobooth_providers.{{ $activeProvKey }}.candy_bar_desc" class="w-full border-gray-300 rounded-lg text-xs"></textarea>
+                                </div>
+                            </div>
+
+                            <!-- 6. CARRITO DE GOFRES -->
+                            <div class="p-4 rounded-xl border space-y-3 transition {{ !empty($activeProv['waffle_cart_enabled']) ? 'bg-orange-50/40 border-orange-200' : 'bg-slate-50 border-slate-200 opacity-60' }}">
+                                <div class="flex items-center justify-between border-b border-orange-100 pb-2">
+                                    <span class="text-xs font-black uppercase text-orange-900">🧇 Carrito de Gofres ({{ $activeProv['name'] }})</span>
+                                    <button type="button" wire:click="toggleProviderService('{{ $activeProvKey }}', 'waffle_cart_enabled')" class="text-[10px] font-black px-2 py-0.5 rounded cursor-pointer {{ !empty($activeProv['waffle_cart_enabled']) ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600' }}">
+                                        {{ !empty($activeProv['waffle_cart_enabled']) ? '✓ Activo' : '✕ No lo ofrece' }}
+                                    </button>
+                                </div>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label class="block text-[11px] font-bold text-gray-700 mb-1">2h (~60 gofres) (€)</label>
+                                        <input type="number" step="0.01" wire:model="photobooth_providers.{{ $activeProvKey }}.waffle_cart_2h" class="w-full border-orange-300 rounded-lg text-sm font-black text-orange-800">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[11px] font-bold text-gray-700 mb-1">3h (~100 gofres) (€)</label>
+                                        <input type="number" step="0.01" wire:model="photobooth_providers.{{ $activeProvKey }}.waffle_cart_3h" class="w-full border-orange-300 rounded-lg text-sm font-black text-orange-800">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold text-gray-700 mb-1">Plantilla Descriptiva (Qué incluye en PDF)</label>
+                                    <textarea rows="3" wire:model="photobooth_providers.{{ $activeProvKey }}.waffle_cart_desc" class="w-full border-gray-300 rounded-lg text-xs"></textarea>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
+                @endif
             </div>
 
             <!-- SECCIÓN 4: CONDICIONES DE PAGO Y SEÑAL DE RESERVA -->

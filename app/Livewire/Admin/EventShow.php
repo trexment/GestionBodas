@@ -2297,8 +2297,29 @@ class EventShow extends Component
 
     public function setPhotoboothProvider(string $provider)
     {
-        $this->photobooth_provider = in_array($provider, ['logrono', 'vitoria']) ? $provider : 'logrono';
+        $providers = \App\Models\Setting::getPhotoboothProviders();
+        $this->photobooth_provider = isset($providers[$provider]) ? $provider : (array_key_first($providers) ?: 'logrono');
         $pbConfig = \App\Models\Setting::getPhotobooth360Config($this->photobooth_provider);
+
+        // Si algún servicio no lo ofrece este proveedor, desmarcarlo para que no sume al cambiar de proveedor
+        if (empty($pbConfig['photobooth_enabled'])) {
+            $this->quote_services['photobooth']['selected'] = false;
+        }
+        if (empty($pbConfig['video_360_enabled'])) {
+            $this->quote_services['video_360']['selected'] = false;
+        }
+        if (empty($pbConfig['pack_duo_enabled'])) {
+            $this->quote_services['pack_duo_360']['selected'] = false;
+        }
+        if (empty($pbConfig['chocolate_fountain_enabled'])) {
+            $this->quote_services['chocolate_fountain']['selected'] = false;
+        }
+        if (empty($pbConfig['candy_bar_enabled'])) {
+            $this->quote_services['candy_bar']['selected'] = false;
+        }
+        if (empty($pbConfig['waffle_cart_enabled'])) {
+            $this->quote_services['waffle_cart']['selected'] = false;
+        }
 
         $pbHours = max(1, (int)($this->quote_services['photobooth']['hours'] ?? 2));
         if ($this->photobooth_provider === 'logrono' && $pbHours < 3) {
@@ -2345,6 +2366,34 @@ class EventShow extends Component
         $this->quote_services['waffle_cart']['price_3h'] = $pbConfig['waffle_cart_3h'] ?? 550;
         $this->quote_services['waffle_cart']['price'] = ($waffleHours >= 3) ? ($pbConfig['waffle_cart_3h'] ?? 550) : ($pbConfig['waffle_cart_2h'] ?? 420);
         $this->quote_services['waffle_cart']['desc'] = $pbConfig['waffle_cart_desc'];
+    }
+
+    public function toggleProviderServiceFromQuote(string $serviceFlag): void
+    {
+        $providers = \App\Models\Setting::getPhotoboothProviders();
+        $provKey = isset($providers[$this->photobooth_provider]) ? $this->photobooth_provider : (array_key_first($providers) ?: 'logrono');
+        if (!isset($providers[$provKey])) {
+            return;
+        }
+        $allowedFlags = [
+            'photobooth_enabled' => 'photobooth',
+            'video_360_enabled' => 'video_360',
+            'pack_duo_enabled' => 'pack_duo_360',
+            'chocolate_fountain_enabled' => 'chocolate_fountain',
+            'candy_bar_enabled' => 'candy_bar',
+            'waffle_cart_enabled' => 'waffle_cart',
+        ];
+        if (!isset($allowedFlags[$serviceFlag])) {
+            return;
+        }
+        $newState = empty($providers[$provKey][$serviceFlag]);
+        $providers[$provKey][$serviceFlag] = $newState;
+        \App\Models\Setting::savePhotoboothProviders($providers);
+
+        if (!$newState) {
+            $serviceKey = $allowedFlags[$serviceFlag];
+            $this->quote_services[$serviceKey]['selected'] = false;
+        }
     }
 
     public function setPhotoboothHours(int $hours)
@@ -2417,8 +2466,9 @@ class EventShow extends Component
         \App\Models\Setting::set('price_extra_hours', (float)($this->quote_services['extra_hours']['price'] ?? 120));
         \App\Models\Setting::set('price_karaoke', (float)($this->quote_services['karaoke']['price'] ?? 80));
 
-        // Proveedor activo por defecto y tarifas de Fotomatón / 360 / Pack Dúo
-        $prov = $this->photobooth_provider ?: 'logrono';
+        // Proveedor activo por defecto y tarifas en el catálogo de proveedores
+        $providers = \App\Models\Setting::getPhotoboothProviders();
+        $prov = isset($providers[$this->photobooth_provider]) ? $this->photobooth_provider : (array_key_first($providers) ?: 'logrono');
         \App\Models\Setting::set('default_photobooth_provider', $prov);
 
         $pbHours = (int)($this->quote_services['photobooth']['hours'] ?? 2);
@@ -2428,103 +2478,68 @@ class EventShow extends Component
         $duoHours = (int)($this->quote_services['pack_duo_360']['hours'] ?? 3);
         $duoPrice = (float)($this->quote_services['pack_duo_360']['price'] ?? 850);
 
-        if ($prov === 'vitoria') {
+        if (isset($providers[$prov])) {
             if ($pbHours <= 2) {
-                \App\Models\Setting::set('price_photobooth_vitoria_2h', $pbPrice);
+                $providers[$prov]['photobooth_2h'] = $pbPrice;
                 $this->quote_services['photobooth']['price_2h'] = $pbPrice;
             } elseif ($pbHours === 3) {
-                \App\Models\Setting::set('price_photobooth_vitoria_3h', $pbPrice);
+                $providers[$prov]['photobooth_3h'] = $pbPrice;
                 $this->quote_services['photobooth']['price_3h'] = $pbPrice;
             }
             if (!empty($this->quote_services['photobooth']['desc'])) {
-                \App\Models\Setting::set('photobooth_vitoria_desc', $this->quote_services['photobooth']['desc']);
+                $providers[$prov]['photobooth_desc'] = $this->quote_services['photobooth']['desc'];
             }
 
             if ($v360Hours <= 2) {
-                \App\Models\Setting::set('price_video_360_vitoria_2h', $v360Price);
+                $providers[$prov]['video_360_2h'] = $v360Price;
                 $this->quote_services['video_360']['price_2h'] = $v360Price;
             } elseif ($v360Hours === 3) {
-                \App\Models\Setting::set('price_video_360_vitoria_3h', $v360Price);
+                $providers[$prov]['video_360_3h'] = $v360Price;
                 $this->quote_services['video_360']['price_3h'] = $v360Price;
             }
             if (!empty($this->quote_services['video_360']['desc'])) {
-                \App\Models\Setting::set('video_360_vitoria_desc', $this->quote_services['video_360']['desc']);
+                $providers[$prov]['video_360_desc'] = $this->quote_services['video_360']['desc'];
             }
 
             if ($duoHours <= 2) {
-                \App\Models\Setting::set('price_pack_duo_vitoria_2h', $duoPrice);
+                $providers[$prov]['pack_duo_2h'] = $duoPrice;
                 $this->quote_services['pack_duo_360']['price_2h'] = $duoPrice;
             } elseif ($duoHours === 3) {
-                \App\Models\Setting::set('price_pack_duo_vitoria_3h', $duoPrice);
+                $providers[$prov]['pack_duo_3h'] = $duoPrice;
                 $this->quote_services['pack_duo_360']['price_3h'] = $duoPrice;
             }
             if (!empty($this->quote_services['pack_duo_360']['desc'])) {
-                \App\Models\Setting::set('pack_duo_vitoria_desc', $this->quote_services['pack_duo_360']['desc']);
-            }
-        } else {
-            if ($pbHours <= 2) {
-                \App\Models\Setting::set('price_photobooth_2h', $pbPrice);
-                $this->quote_services['photobooth']['price_2h'] = $pbPrice;
-            } elseif ($pbHours === 3) {
-                \App\Models\Setting::set('price_photobooth_3h', $pbPrice);
-                $this->quote_services['photobooth']['price_3h'] = $pbPrice;
-            }
-            if (!empty($this->quote_services['photobooth']['desc'])) {
-                \App\Models\Setting::set('photobooth_desc', $this->quote_services['photobooth']['desc']);
+                $providers[$prov]['pack_duo_desc'] = $this->quote_services['pack_duo_360']['desc'];
             }
 
-            if ($v360Hours <= 2) {
-                \App\Models\Setting::set('price_video_360_2h', $v360Price);
-                $this->quote_services['video_360']['price_2h'] = $v360Price;
-            } elseif ($v360Hours === 3) {
-                \App\Models\Setting::set('price_video_360_3h', $v360Price);
-                $this->quote_services['video_360']['price_3h'] = $v360Price;
-            }
-            if (!empty($this->quote_services['video_360']['desc'])) {
-                \App\Models\Setting::set('video_360_desc', $this->quote_services['video_360']['desc']);
+            $chocF = (int)($this->quote_services['chocolate_fountain']['fountains'] ?? 1) >= 2 ? 2 : 1;
+            $chocH = (int)($this->quote_services['chocolate_fountain']['hours'] ?? 2) >= 3 ? 3 : 2;
+            $chocPrice = (float)($this->quote_services['chocolate_fountain']['price'] ?? 420);
+            $providers[$prov]["chocolate_fountain_{$chocF}_{$chocH}h"] = $chocPrice;
+            $this->quote_services['chocolate_fountain']["price_{$chocF}_{$chocH}h"] = $chocPrice;
+            if (!empty($this->quote_services['chocolate_fountain']['desc'])) {
+                $providers[$prov]['chocolate_fountain_desc'] = $this->quote_services['chocolate_fountain']['desc'];
             }
 
-            if ($duoHours <= 2) {
-                \App\Models\Setting::set('price_pack_duo_2h', $duoPrice);
-                $this->quote_services['pack_duo_360']['price_2h'] = $duoPrice;
-            } elseif ($duoHours === 3) {
-                \App\Models\Setting::set('price_pack_duo_3h', $duoPrice);
-                $this->quote_services['pack_duo_360']['price_3h'] = $duoPrice;
+            $providers[$prov]['candy_bar_price'] = (float)($this->quote_services['candy_bar']['price'] ?? 420);
+            if (!empty($this->quote_services['candy_bar']['desc'])) {
+                $providers[$prov]['candy_bar_desc'] = $this->quote_services['candy_bar']['desc'];
             }
-            if (!empty($this->quote_services['pack_duo_360']['desc'])) {
-                \App\Models\Setting::set('pack_duo_desc', $this->quote_services['pack_duo_360']['desc']);
+
+            $waffleH = (int)($this->quote_services['waffle_cart']['hours'] ?? 2) >= 3 ? 3 : 2;
+            $wafflePrice = (float)($this->quote_services['waffle_cart']['price'] ?? 420);
+            if ($waffleH === 3) {
+                $providers[$prov]['waffle_cart_3h'] = $wafflePrice;
+                $this->quote_services['waffle_cart']['price_3h'] = $wafflePrice;
+            } else {
+                $providers[$prov]['waffle_cart_2h'] = $wafflePrice;
+                $this->quote_services['waffle_cart']['price_2h'] = $wafflePrice;
             }
-        }
+            if (!empty($this->quote_services['waffle_cart']['desc'])) {
+                $providers[$prov]['waffle_cart_desc'] = $this->quote_services['waffle_cart']['desc'];
+            }
 
-        // Mesa Dulce con Fuente de Chocolate
-        $chocF = (int)($this->quote_services['chocolate_fountain']['fountains'] ?? 1) >= 2 ? 2 : 1;
-        $chocH = (int)($this->quote_services['chocolate_fountain']['hours'] ?? 2) >= 3 ? 3 : 2;
-        $chocPrice = (float)($this->quote_services['chocolate_fountain']['price'] ?? 420);
-        \App\Models\Setting::set('price_chocolate_fountain', $chocPrice);
-        \App\Models\Setting::set("price_chocolate_fountain_{$chocF}_{$chocH}h", $chocPrice);
-        $this->quote_services['chocolate_fountain']["price_{$chocF}_{$chocH}h"] = $chocPrice;
-        if (!empty($this->quote_services['chocolate_fountain']['desc'])) {
-            \App\Models\Setting::set('chocolate_fountain_desc', $this->quote_services['chocolate_fountain']['desc']);
-        }
-
-        // Mesa de Solo Chuches
-        \App\Models\Setting::set('price_candy_bar', (float)($this->quote_services['candy_bar']['price'] ?? 420));
-        if (!empty($this->quote_services['candy_bar']['desc'])) {
-            \App\Models\Setting::set('candy_bar_desc', $this->quote_services['candy_bar']['desc']);
-        }
-
-        // Carrito de Gofres
-        $waffleH = (int)($this->quote_services['waffle_cart']['hours'] ?? 2) >= 3 ? 3 : 2;
-        $wafflePrice = (float)($this->quote_services['waffle_cart']['price'] ?? 420);
-        if ($waffleH === 3) {
-            \App\Models\Setting::set('price_waffle_cart_3h', $wafflePrice);
-            $this->quote_services['waffle_cart']['price_3h'] = $wafflePrice;
-        } else {
-            \App\Models\Setting::set('price_waffle_cart_2h', $wafflePrice);
-            $this->quote_services['waffle_cart']['price_2h'] = $wafflePrice;
-        }
-        if (!empty($this->quote_services['waffle_cart']['desc'])) {
-            \App\Models\Setting::set('waffle_cart_desc', $this->quote_services['waffle_cart']['desc']);
+            \App\Models\Setting::savePhotoboothProviders($providers);
         }
 
         // Efectos y Fotografía
@@ -2536,7 +2551,7 @@ class EventShow extends Component
         \App\Models\Setting::set('price_photo_album', (float)($this->quote_services['photo_album']['price'] ?? 150));
         \App\Models\Setting::set('price_photo_full_pack', (float)($this->quote_services['photo_full_pack']['price'] ?? 800));
 
-        session()->flash('quote_message', '💾 ¡Todos los precios y textos actuales se han guardado como predeterminados para todos los futuros presupuestos!');
+        session()->flash('quote_message', '💾 ¡Todos los precios y textos actuales se han guardado como predeterminados para este proveedor y futuros presupuestos!');
     }
 
     public function syncPackEffectsAdmin()
