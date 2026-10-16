@@ -73,7 +73,21 @@
             display: none;
         }
 
-        /* Custom scrollbar for sidebar */
+        /* Custom scrollbar for sidebar and global elements */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background-color: rgba(148, 163, 184, 0.25);
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background-color: rgba(148, 163, 184, 0.45);
+        }
         .sidebar-scroll::-webkit-scrollbar {
             width: 4px;
         }
