@@ -163,8 +163,11 @@ class AppNotificationService
         $removedPersonal = false;
 
         foreach ($decoded as $item) {
-            // Si es una notificación de WhatsApp y no tiene event_id asociado, era un contacto personal -> descartar
-            if (($item['type'] ?? '') === 'whatsapp_inbound' && empty($item['event_id'])) {
+            // Si es una notificación de WhatsApp sin event_id o con el formato antiguo previo al filtro de privacidad -> descartar
+            if (
+                ($item['type'] ?? '') === 'whatsapp_inbound' &&
+                (empty($item['event_id']) || str_starts_with($item['title'] ?? '', '💬 WhatsApp de '))
+            ) {
                 $removedPersonal = true;
                 continue;
             }

@@ -251,16 +251,17 @@ class WhatsAppWebhookController extends Controller
         // Teléfonos de usuarios internos del equipo (admin, dj, assistant)
         try {
             if (!empty($national) && strlen($national) >= 7) {
-                $isStaffPhone = User::whereIn('role', ['admin', 'dj', 'assistant'])
+                $staffPhones = User::whereIn('role', ['admin', 'dj', 'assistant'])
                     ->whereNotNull('phone')
                     ->where('phone', '!=', '')
-                    ->where(function ($q) use ($cleanPhone, $national) {
-                        $q->where('phone', 'LIKE', "%{$national}%")
-                          ->orWhere('phone', 'LIKE', "%{$cleanPhone}%");
-                    })
-                    ->exists();
-                if ($isStaffPhone) {
-                    return true;
+                    ->pluck('phone');
+
+                foreach ($staffPhones as $staffPhone) {
+                    $cleanStaff = WhatsAppTemplateService::cleanPhone((string)$staffPhone);
+                    $staffNational = strlen($cleanStaff) > 9 ? substr($cleanStaff, -9) : $cleanStaff;
+                    if (!empty($cleanStaff) && ($cleanStaff === $cleanPhone || ($staffNational && $staffNational === $national))) {
+                        return true;
+                    }
                 }
             }
         } catch (\Throwable $e) {}
@@ -278,14 +279,16 @@ class WhatsAppWebhookController extends Controller
             return null;
         }
 
-        return Event::where('status', '!=', 'cancelled')
+        // Búsqueda directa en SQL + respaldo normalizado sin espacios/guiones
+        $directMatch = Event::where('status', '!=', 'cancelled')
             ->where(function ($query) use ($cleanPhone, $national) {
                 $query->whereHas('client', function ($q) use ($cleanPhone, $national) {
                     $q->whereNotNull('phone')
                       ->where('phone', '!=', '')
                       ->where(function ($sq) use ($cleanPhone, $national) {
                           $sq->where('phone', 'LIKE', "%{$national}%")
-                             ->orWhere('phone', 'LIKE', "%{$cleanPhone}%");
+                             ->orWhere('phone', 'LIKE', "%{$cleanPhone}%")
+                             ->orWhereRaw("REPLACE(REPLACE(REPLACE(phone, ' ', ''), '-', ''), '+', '') LIKE ?", ["%{$national}%"]);
                       });
                 })
                 ->orWhere(function ($q) use ($cleanPhone, $national) {
@@ -293,12 +296,15 @@ class WhatsAppWebhookController extends Controller
                       ->where('partner_phone', '!=', '')
                       ->where(function ($sq) use ($cleanPhone, $national) {
                           $sq->where('partner_phone', 'LIKE', "%{$national}%")
-                             ->orWhere('partner_phone', 'LIKE', "%{$cleanPhone}%");
+                             ->orWhere('partner_phone', 'LIKE', "%{$cleanPhone}%")
+                             ->orWhereRaw("REPLACE(REPLACE(REPLACE(partner_phone, ' ', ''), '-', ''), '+', '') LIKE ?", ["%{$national}%"]);
                       });
                 });
             })
             ->orderBy('event_date', 'desc')
             ->first();
+
+        return $directMatch;
     }
 
     /**
