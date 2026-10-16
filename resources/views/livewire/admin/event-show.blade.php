@@ -3225,21 +3225,177 @@
                                         </div>
                                     </div>
 
-                                    <!-- Fotomatón & Photocall -->
-                                    <div class="flex items-center justify-between p-2 rounded-lg border border-indigo-100 bg-indigo-50/30 hover:bg-indigo-50/60 gap-2">
-                                        <label class="flex items-center cursor-pointer flex-1 gap-2">
-                                            <input type="checkbox" wire:model.live="quote_services.photobooth.selected" class="rounded text-indigo-600 focus:ring-indigo-500 h-4 w-4">
-                                            <div>
-                                                <span class="text-xs font-bold text-indigo-950">📸 Fotomatón & Photocall</span>
-                                                <span class="block text-[10px] text-indigo-700">{{ $quote_services['photobooth']['desc'] }}</span>
-                                            </div>
-                                        </label>
-                                        <div class="flex items-center gap-1">
-                                            <input type="number" wire:model.live="quote_services.photobooth.quantity" min="1" class="w-10 border rounded p-1 text-xs text-center font-bold">
-                                            <span class="text-xs text-gray-400">x</span>
-                                            <input type="number" step="0.01" wire:model.live="quote_services.photobooth.price" class="w-16 border rounded p-1 text-xs text-right font-bold text-indigo-700">
-                                            <span class="text-xs text-gray-600">€</span>
+                                </div>
+                            </div>
+
+                            <!-- SECCIÓN: FOTOMATÓN, PLATAFORMA 360º, PACK DÚO Y FUENTE DE CHOCOLATE -->
+                            <div class="bg-white p-4 rounded-xl border border-indigo-200 space-y-3 shadow-xs">
+                                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-indigo-100 pb-2">
+                                    <div>
+                                        <h6 class="text-xs font-black uppercase text-indigo-950 tracking-wider flex items-center gap-1.5">
+                                            <span>📸🎥</span> Fotomatón, Plataforma 360º, Pack Dúo & Fuente de Chocolate
+                                        </h6>
+                                        <p class="text-[10px] text-gray-500">Selecciona las horas (2h o 3h) o aplica el Pack Dúo Todo Incluido. Reserva: 100 €/servicio.</p>
+                                    </div>
+                                    <button type="button" wire:click="sendDirectTemplate('fotomaton_360')" class="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-2.5 py-1 rounded-lg transition shrink-0">
+                                        <span>💬</span> Enviar Info/Precios por WhatsApp
+                                    </button>
+                                </div>
+
+                                @if(!empty($quote_services['photobooth']['selected']) && !empty($quote_services['video_360']['selected']) && empty($quote_services['pack_duo_360']['selected']))
+                                    @php
+                                        $suggestedDuoHours = ((int)($quote_services['photobooth']['hours'] ?? 2) >= 3 || (int)($quote_services['video_360']['hours'] ?? 2) >= 3) ? 3 : 2;
+                                        $duoPriceSuggested = $suggestedDuoHours === 3 ? ($quote_services['pack_duo_360']['price_3h'] ?? 850) : ($quote_services['pack_duo_360']['price_2h'] ?? 690);
+                                        $separateSum = (float)($quote_services['photobooth']['price'] ?? 0) + (float)($quote_services['video_360']['price'] ?? 0);
+                                    @endphp
+                                    <div class="p-2.5 rounded-lg bg-amber-50 border border-amber-300 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                        <div class="text-xs text-amber-900">
+                                            <span class="font-black">💡 Recomendación Pack Dúo:</span> Tienes Fotomatón + Plataforma 360º por separado ({{ number_format($separateSum, 0) }} €). Con el <strong>Pack Dúo de {{ $suggestedDuoHours }}h ({{ number_format($duoPriceSuggested, 0) }} €)</strong> el cliente ahorra <strong>{{ number_format(max(0, $separateSum - $duoPriceSuggested), 0) }} €</strong>.
                                         </div>
+                                        <button type="button" wire:click="setPackDuoHours({{ $suggestedDuoHours }})" class="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs font-black shrink-0 transition shadow-xs">
+                                            ✨ Aplicar Pack Dúo {{ $suggestedDuoHours }}h ({{ number_format($duoPriceSuggested, 0) }} €)
+                                        </button>
+                                    </div>
+                                @endif
+
+                                <div class="space-y-2.5">
+                                    <!-- Pack Dúo Todo Incluido (Fotomatón + Plataforma 360) -->
+                                    <div class="p-3 rounded-xl border-2 transition {{ !empty($quote_services['pack_duo_360']['selected']) ? 'border-indigo-600 bg-indigo-50/60 shadow-xs' : 'border-indigo-100 bg-gradient-to-r from-indigo-50/30 to-purple-50/30 hover:border-indigo-200' }}">
+                                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                            <label class="flex items-start cursor-pointer flex-1 gap-2">
+                                                <input type="checkbox" wire:model.live="quote_services.pack_duo_360.selected" class="mt-0.5 rounded text-indigo-600 focus:ring-indigo-500 h-4 w-4">
+                                                <div>
+                                                    <div class="flex items-center gap-1.5 flex-wrap">
+                                                        <span class="text-xs font-black text-indigo-950">🔹 Pack Dúo Todo Incluido (Fotomatón + Plataforma 360º)</span>
+                                                        <span class="text-[9px] font-extrabold uppercase bg-indigo-600 text-white px-2 py-0.5 rounded-full">Ahorro Pack</span>
+                                                    </div>
+                                                    <span class="block text-[10px] text-indigo-800 mt-0.5">Incluye ambos servicios completos con animadores, álbum de firmas, fotos y vídeos 360 ilimitados.</span>
+                                                </div>
+                                            </label>
+
+                                            <div class="flex flex-wrap items-center gap-1.5 shrink-0">
+                                                <button type="button" wire:click="setPackDuoHours(2)" class="px-2.5 py-1 rounded-lg text-[11px] font-extrabold border transition {{ !empty($quote_services['pack_duo_360']['selected']) && (int)($quote_services['pack_duo_360']['hours'] ?? 3) === 2 ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs' : 'bg-white text-indigo-800 border-indigo-200 hover:bg-indigo-100' }}">
+                                                    2 Horas ({{ number_format($quote_services['pack_duo_360']['price_2h'] ?? 690, 0) }}€)
+                                                </button>
+                                                <button type="button" wire:click="setPackDuoHours(3)" class="px-2.5 py-1 rounded-lg text-[11px] font-extrabold border transition {{ !empty($quote_services['pack_duo_360']['selected']) && (int)($quote_services['pack_duo_360']['hours'] ?? 3) === 3 ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs' : 'bg-white text-indigo-800 border-indigo-200 hover:bg-indigo-100' }}">
+                                                    3 Horas ({{ number_format($quote_services['pack_duo_360']['price_3h'] ?? 850, 0) }}€)
+                                                </button>
+                                                <div class="flex items-center gap-1 ml-1">
+                                                    <input type="number" min="1" max="10" wire:model.live="quote_services.pack_duo_360.hours" class="w-11 border rounded p-1 text-xs text-center font-bold" title="Horas de servicio">
+                                                    <span class="text-[10px] text-gray-500 font-bold">h</span>
+                                                    <input type="number" step="0.01" wire:model.live="quote_services.pack_duo_360.price" class="w-18 border rounded p-1 text-xs text-right font-black text-indigo-700">
+                                                    <span class="text-xs font-bold text-indigo-900">€</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        @if(!empty($quote_services['pack_duo_360']['selected']))
+                                            <div class="mt-2 pt-2 border-t border-indigo-200/60">
+                                                <label class="block text-[10px] font-bold text-indigo-900 mb-1">Descripción en el presupuesto (editable):</label>
+                                                <textarea rows="2" wire:model.live="quote_services.pack_duo_360.desc" class="w-full text-[11px] border-indigo-200 rounded-lg p-1.5 bg-white text-gray-700 focus:ring-indigo-500"></textarea>
+                                            </div>
+                                        @endif
+                                    </div>
+
+                                    <!-- Fotomatón & Photocall por horas -->
+                                    <div class="p-3 rounded-xl border transition {{ !empty($quote_services['photobooth']['selected']) ? 'border-indigo-400 bg-indigo-50/40' : 'border-gray-200 hover:bg-gray-50' }}">
+                                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                            <label class="flex items-start cursor-pointer flex-1 gap-2">
+                                                <input type="checkbox" wire:model.live="quote_services.photobooth.selected" class="mt-0.5 rounded text-indigo-600 focus:ring-indigo-500 h-4 w-4">
+                                                <div>
+                                                    <span class="text-xs font-bold text-gray-900">📸 Fotomatón & Photocall (FotomatonCheese)</span>
+                                                    <span class="block text-[10px] text-gray-500">Cámara réflex Canon 1200, copias ilimitadas, libro de firmas de imprenta, atrezzo, USB y animador.</span>
+                                                </div>
+                                            </label>
+
+                                            <div class="flex flex-wrap items-center gap-1.5 shrink-0">
+                                                <button type="button" wire:click="setPhotoboothHours(2)" class="px-2.5 py-1 rounded-lg text-[11px] font-bold border transition {{ !empty($quote_services['photobooth']['selected']) && (int)($quote_services['photobooth']['hours'] ?? 2) === 2 ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-indigo-50' }}">
+                                                    2 Horas ({{ number_format($quote_services['photobooth']['price_2h'] ?? 380, 0) }}€)
+                                                </button>
+                                                <button type="button" wire:click="setPhotoboothHours(3)" class="px-2.5 py-1 rounded-lg text-[11px] font-bold border transition {{ !empty($quote_services['photobooth']['selected']) && (int)($quote_services['photobooth']['hours'] ?? 2) === 3 ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-indigo-50' }}">
+                                                    3 Horas ({{ number_format($quote_services['photobooth']['price_3h'] ?? 430, 0) }}€)
+                                                </button>
+                                                <div class="flex items-center gap-1 ml-1">
+                                                    <input type="number" min="1" max="10" wire:model.live="quote_services.photobooth.hours" class="w-11 border rounded p-1 text-xs text-center font-bold" title="Horas de Fotomatón">
+                                                    <span class="text-[10px] text-gray-500 font-bold">h</span>
+                                                    <input type="number" step="0.01" wire:model.live="quote_services.photobooth.price" class="w-16 border rounded p-1 text-xs text-right font-bold text-indigo-700">
+                                                    <span class="text-xs text-gray-600">€</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        @if(!empty($quote_services['photobooth']['selected']))
+                                            <div class="mt-2 pt-2 border-t border-indigo-100">
+                                                <label class="block text-[10px] font-bold text-gray-600 mb-1">Descripción incluida en PDF (editable):</label>
+                                                <textarea rows="2" wire:model.live="quote_services.photobooth.desc" class="w-full text-[11px] border-gray-200 rounded-lg p-1.5 bg-white text-gray-700 focus:ring-indigo-500"></textarea>
+                                            </div>
+                                        @endif
+                                    </div>
+
+                                    <!-- Plataforma Vídeo 360º por horas -->
+                                    <div class="p-3 rounded-xl border transition {{ !empty($quote_services['video_360']['selected']) ? 'border-purple-400 bg-purple-50/40' : 'border-gray-200 hover:bg-gray-50' }}">
+                                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                            <label class="flex items-start cursor-pointer flex-1 gap-2">
+                                                <input type="checkbox" wire:model.live="quote_services.video_360.selected" class="mt-0.5 rounded text-purple-600 focus:ring-purple-500 h-4 w-4">
+                                                <div>
+                                                    <span class="text-xs font-bold text-gray-900">🎥 Plataforma Vídeo 360º</span>
+                                                    <span class="block text-[10px] text-gray-500">Plataforma 100cm (4-5 pers.), vídeos slow motion/boomerang ilimitados, confeti, atrezzo y animadores.</span>
+                                                </div>
+                                            </label>
+
+                                            <div class="flex flex-wrap items-center gap-1.5 shrink-0">
+                                                <button type="button" wire:click="setVideo360Hours(2)" class="px-2.5 py-1 rounded-lg text-[11px] font-bold border transition {{ !empty($quote_services['video_360']['selected']) && (int)($quote_services['video_360']['hours'] ?? 2) === 2 ? 'bg-purple-600 text-white border-purple-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-purple-50' }}">
+                                                    2 Horas ({{ number_format($quote_services['video_360']['price_2h'] ?? 430, 0) }}€)
+                                                </button>
+                                                <button type="button" wire:click="setVideo360Hours(3)" class="px-2.5 py-1 rounded-lg text-[11px] font-bold border transition {{ !empty($quote_services['video_360']['selected']) && (int)($quote_services['video_360']['hours'] ?? 2) === 3 ? 'bg-purple-600 text-white border-purple-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-purple-50' }}">
+                                                    3 Horas ({{ number_format($quote_services['video_360']['price_3h'] ?? 490, 0) }}€)
+                                                </button>
+                                                <div class="flex items-center gap-1 ml-1">
+                                                    <input type="number" min="1" max="10" wire:model.live="quote_services.video_360.hours" class="w-11 border rounded p-1 text-xs text-center font-bold" title="Horas de Plataforma 360">
+                                                    <span class="text-[10px] text-gray-500 font-bold">h</span>
+                                                    <input type="number" step="0.01" wire:model.live="quote_services.video_360.price" class="w-16 border rounded p-1 text-xs text-right font-bold text-purple-700">
+                                                    <span class="text-xs text-gray-600">€</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        @if(!empty($quote_services['video_360']['selected']))
+                                            <div class="mt-2 pt-2 border-t border-purple-100">
+                                                <label class="block text-[10px] font-bold text-gray-600 mb-1">Descripción incluida en PDF (editable):</label>
+                                                <textarea rows="2" wire:model.live="quote_services.video_360.desc" class="w-full text-[11px] border-gray-200 rounded-lg p-1.5 bg-white text-gray-700 focus:ring-purple-500"></textarea>
+                                            </div>
+                                        @endif
+                                    </div>
+
+                                    <!-- Mesa con Fuente de Chocolate -->
+                                    <div class="p-3 rounded-xl border transition {{ !empty($quote_services['chocolate_fountain']['selected']) ? 'border-amber-400 bg-amber-50/40' : 'border-gray-200 hover:bg-gray-50' }}">
+                                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                            <label class="flex items-start cursor-pointer flex-1 gap-2">
+                                                <input type="checkbox" wire:model.live="quote_services.chocolate_fountain.selected" class="mt-0.5 rounded text-amber-600 focus:ring-amber-500 h-4 w-4">
+                                                <div>
+                                                    <span class="text-xs font-bold text-gray-900">🍫 Mesa con Fuente de Chocolate</span>
+                                                    <span class="block text-[10px] text-gray-500">Fuente de chocolate en cascada con frutas frescas, gofres, nubes y decoración de mesa dulce.</span>
+                                                </div>
+                                            </label>
+
+                                            <div class="flex flex-wrap items-center gap-2 shrink-0">
+                                                <label class="flex items-center gap-1 cursor-pointer text-[11px] font-bold text-amber-800 bg-amber-50 hover:bg-amber-100 px-2 py-1 rounded-lg border border-amber-200">
+                                                    <input type="checkbox" wire:model.live="quote_services.chocolate_fountain.consult" class="rounded text-amber-600 focus:ring-amber-500 h-3.5 w-3.5">
+                                                    <span>⏳ A consultar</span>
+                                                </label>
+                                                @if(empty($quote_services['chocolate_fountain']['consult']))
+                                                    <div class="flex items-center gap-1">
+                                                        <input type="number" step="0.01" wire:model.live="quote_services.chocolate_fountain.price" class="w-16 border rounded p-1 text-xs text-right font-bold text-amber-800">
+                                                        <span class="text-xs text-gray-600">€</span>
+                                                    </div>
+                                                @else
+                                                    <span class="text-[11px] font-bold text-amber-700 bg-amber-100 px-2 py-1 rounded">Precio a consultar</span>
+                                                @endif
+                                            </div>
+                                        </div>
+                                        @if(!empty($quote_services['chocolate_fountain']['selected']))
+                                            <div class="mt-2 pt-2 border-t border-amber-100">
+                                                <label class="block text-[10px] font-bold text-gray-600 mb-1">Descripción incluida en PDF (editable):</label>
+                                                <textarea rows="2" wire:model.live="quote_services.chocolate_fountain.desc" class="w-full text-[11px] border-gray-200 rounded-lg p-1.5 bg-white text-gray-700 focus:ring-amber-500"></textarea>
+                                            </div>
+                                        @endif
                                     </div>
                                 </div>
                             </div>

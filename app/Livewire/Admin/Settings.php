@@ -77,6 +77,18 @@ class Settings extends Component
     public $price_karaoke;
     public $price_extra_hours;
     public $price_photobooth;
+    public $price_photobooth_2h = 380;
+    public $price_photobooth_3h = 430;
+    public $photobooth_desc;
+    public $price_video_360_2h = 430;
+    public $price_video_360_3h = 490;
+    public $video_360_desc;
+    public $price_pack_duo_2h = 690;
+    public $price_pack_duo_3h = 850;
+    public $pack_duo_desc;
+    public $photobooth_deposit_per_service = 100;
+    public $price_chocolate_fountain = 350;
+    public $chocolate_fountain_desc;
     public $price_effects_smoke;
     public $price_effects_sparks;
     public $pack_cocktail_restaurant_enabled = true;
@@ -338,7 +350,22 @@ class Settings extends Component
         $this->price_dj = Setting::get('price_dj', 150);
         $this->price_karaoke = Setting::get('price_karaoke', 80);
         $this->price_extra_hours = Setting::get('price_extra_hours', 120);
-        $this->price_photobooth = Setting::get('price_photobooth', 350);
+        $this->price_photobooth = Setting::get('price_photobooth', 380);
+
+        $pbConfig = Setting::getPhotobooth360Config();
+        $this->price_photobooth_2h = $pbConfig['photobooth_2h'];
+        $this->price_photobooth_3h = $pbConfig['photobooth_3h'];
+        $this->photobooth_desc = $pbConfig['photobooth_desc'];
+        $this->price_video_360_2h = $pbConfig['video_360_2h'];
+        $this->price_video_360_3h = $pbConfig['video_360_3h'];
+        $this->video_360_desc = $pbConfig['video_360_desc'];
+        $this->price_pack_duo_2h = $pbConfig['pack_duo_2h'];
+        $this->price_pack_duo_3h = $pbConfig['pack_duo_3h'];
+        $this->pack_duo_desc = $pbConfig['pack_duo_desc'];
+        $this->photobooth_deposit_per_service = $pbConfig['deposit_per_service'];
+        $this->price_chocolate_fountain = $pbConfig['chocolate_fountain_price'];
+        $this->chocolate_fountain_desc = $pbConfig['chocolate_fountain_desc'];
+
         $this->price_effects_smoke = Setting::get('price_effects_smoke', 60);
         $storedSparks = Setting::get('price_effects_sparks');
         if (empty($storedSparks) || (float)$storedSparks == 150) {
@@ -578,6 +605,18 @@ class Settings extends Component
             'price_karaoke' => 'required|numeric',
             'price_extra_hours' => 'required|numeric',
             'price_photobooth' => 'required|numeric',
+            'price_photobooth_2h' => 'required|numeric|min:0',
+            'price_photobooth_3h' => 'required|numeric|min:0',
+            'photobooth_desc' => 'nullable|string',
+            'price_video_360_2h' => 'required|numeric|min:0',
+            'price_video_360_3h' => 'required|numeric|min:0',
+            'video_360_desc' => 'nullable|string',
+            'price_pack_duo_2h' => 'required|numeric|min:0',
+            'price_pack_duo_3h' => 'required|numeric|min:0',
+            'pack_duo_desc' => 'nullable|string',
+            'photobooth_deposit_per_service' => 'required|numeric|min:0',
+            'price_chocolate_fountain' => 'required|numeric|min:0',
+            'chocolate_fountain_desc' => 'nullable|string',
             'price_effects_smoke' => 'required|numeric',
             'price_effects_sparks' => 'required|numeric',
 
@@ -702,7 +741,19 @@ class Settings extends Component
         Setting::set('price_dj', $this->price_dj);
         Setting::set('price_karaoke', $this->price_karaoke);
         Setting::set('price_extra_hours', $this->price_extra_hours);
-        Setting::set('price_photobooth', $this->price_photobooth);
+        Setting::set('price_photobooth', $this->price_photobooth_2h);
+        Setting::set('price_photobooth_2h', $this->price_photobooth_2h);
+        Setting::set('price_photobooth_3h', $this->price_photobooth_3h);
+        Setting::set('photobooth_desc', $this->photobooth_desc);
+        Setting::set('price_video_360_2h', $this->price_video_360_2h);
+        Setting::set('price_video_360_3h', $this->price_video_360_3h);
+        Setting::set('video_360_desc', $this->video_360_desc);
+        Setting::set('price_pack_duo_2h', $this->price_pack_duo_2h);
+        Setting::set('price_pack_duo_3h', $this->price_pack_duo_3h);
+        Setting::set('pack_duo_desc', $this->pack_duo_desc);
+        Setting::set('photobooth_deposit_per_service', $this->photobooth_deposit_per_service);
+        Setting::set('price_chocolate_fountain', $this->price_chocolate_fountain);
+        Setting::set('chocolate_fountain_desc', $this->chocolate_fountain_desc);
         Setting::set('price_effects_smoke', $this->price_effects_smoke);
         Setting::set('price_effects_sparks', $this->price_effects_sparks);
 

@@ -86,9 +86,25 @@ class WhatsAppWebhookController extends Controller
             $brand = 'mago_leugim';
         }
 
-        // 2. Asociar con Evento y Cliente en la base de datos
+        // 2. PRIVACIDAD: Ignorar mensajes entre teléfonos internos del equipo (socios, DJs, admins)
+        if ($this->isInternalNotificationMessage($cleanPhone, $text, $brand)) {
+            return response()->json(['success' => true, 'ignored' => 'internal_team_or_alert_phone']);
+        }
+
+        // 3. Asociar únicamente con Eventos reales de clientes/novios en la base de datos
         $event = $this->findMatchingEvent($cleanPhone);
-        $user = $this->findMatchingUser($cleanPhone);
+
+        // REGLA DE PRIVACIDAD ESTRICTA:
+        // Como los números de WhatsApp conectados son personales/profesionales, si el teléfono
+        // NO pertenece a ningún cliente/pareja con evento registrado, NO se guarda en la BD ni se notifica.
+        if (!$event) {
+            return response()->json([
+                'success' => true,
+                'ignored' => 'personal_contact_not_in_events',
+            ]);
+        }
+
+        $user = $event->client ?: $this->findMatchingUser($cleanPhone);
 
         // Evitar duplicados si el webhook se dispara múltiples veces con el mismo externalId
         if ($externalId) {
@@ -99,10 +115,10 @@ class WhatsAppWebhookController extends Controller
         }
 
         $direction = $fromMe ? 'outbound' : 'inbound';
-        $effectiveBrand = $event ? $event->brand_clean : $brand;
+        $effectiveBrand = $event->brand_clean ?: $brand;
 
         $record = WhatsAppMessage::create([
-            'event_id' => $event ? $event->id : null,
+            'event_id' => $event->id,
             'user_id' => $user ? $user->id : null,
             'phone' => $cleanPhone,
             'sender_name' => $senderName,
@@ -114,9 +130,9 @@ class WhatsAppWebhookController extends Controller
             'payload' => $payload,
         ]);
 
-        // 3. AUTOMATIZACIÓN INTELIGENTE: Si el cliente responde y estaba en seguimiento ("no_response")
+        // 4. AUTOMATIZACIÓN INTELIGENTE: Si los novios/clientes responden y estaban en seguimiento ("no_response")
         $reactivated = false;
-        if (!$fromMe && $event && $event->status === 'no_response') {
+        if (!$fromMe && $event->status === 'no_response') {
             $event->update([
                 'status' => 'draft', // Vuelve automáticamente a Borrador activo
                 'no_response_at' => null, // Resetea el reloj de sin respuesta
@@ -124,40 +140,40 @@ class WhatsAppWebhookController extends Controller
                     . "[" . now()->format('d/m/Y H:i') . "] 💬 [WhatsApp Entrante de {$senderName}]: \"" . mb_substr($text, 0, 150) . "\" -> Reactivado a Borrador automáticamente.",
             ]);
             $reactivated = true;
-        } elseif (!$fromMe && $event) {
-            // Registrar en notas internas para que conste en el historial
+        } elseif (!$fromMe) {
+            // Registrar en notas internas para que conste en el historial del evento
             $event->update([
                 'notes' => ($event->notes ? $event->notes . "\n" : "") 
                     . "[" . now()->format('d/m/Y H:i') . "] 💬 [WhatsApp de {$senderName}]: \"" . mb_substr($text, 0, 150) . "\"",
             ]);
         }
 
-        // 4. NOTIFICACIONES MULTICANAL CUANDO RESPONDE UN CLIENTE POR WHATSAPP
-        if (!$fromMe && !$this->isInternalNotificationMessage($cleanPhone, $text, $effectiveBrand)) {
-            $displayName = ($user && $user->name) ? $user->name : $senderName;
-            $eventTitle = $event ? $event->name : 'Contacto sin evento asignado';
-            $eventUrl = $event ? url("/admin/events/{$event->id}") : url('/admin/events');
+        // 5. NOTIFICACIONES MULTICANAL SOLO CUANDO RESPONDEN LOS NOVIOS / CLIENTES DE UN EVENTO ACTIVO
+        if (!$fromMe) {
+            $displayName = ($event->client && $event->client->name) ? $event->client->name : (($user && $user->name) ? $user->name : $senderName);
+            $eventTitle = $event->name;
+            $eventUrl = url("/admin/events/{$event->id}");
             $snippet = mb_substr(trim($text), 0, 140);
 
-            // 4a. Notificación en la App (Campana + Push Navegador/PWA + Toast)
+            // 5a. Notificación en la App (Campana + Push Navegador/PWA + Toast)
             try {
                 AppNotificationService::push(
                     'whatsapp_inbound',
-                    "💬 WhatsApp de {$displayName}",
-                    ($event ? "[{$event->name}] " : '') . "\"{$snippet}\"",
+                    "💬 Respuesta de {$displayName}",
+                    "[{$eventTitle}] \"{$snippet}\"",
                     $eventUrl,
-                    $event ? $event->id : null,
+                    $event->id,
                     $effectiveBrand
                 );
             } catch (\Throwable $e) {
                 Log::warning("No se pudo registrar notificación en App por WhatsApp entrante: " . $e->getMessage());
             }
 
-            // 4b. Alerta de WhatsApp a los administradores / socios
+            // 5b. Alerta de WhatsApp a los administradores / socios
             try {
                 if (EvolutionWhatsAppService::isEnabled()) {
-                    $waAlert = "💬 *¡NUEVO WHATSAPP RECIBIDO!*\n\n"
-                        . "👤 *Cliente:* {$displayName} (+{$cleanPhone})\n"
+                    $waAlert = "💬 *¡RESPUESTA DE CLIENTE RECIBIDA!*\n\n"
+                        . "👤 *Novios/Cliente:* {$displayName} (+{$cleanPhone})\n"
                         . "🎉 *Evento:* {$eventTitle}\n"
                         . ($reactivated ? "✅ *Estado:* Reactivado automáticamente a BORRADOR\n" : "")
                         . "✉️ *Mensaje:* \"{$snippet}\"\n\n"
@@ -168,13 +184,13 @@ class WhatsAppWebhookController extends Controller
                 Log::warning("No se pudo enviar alerta WhatsApp a socios por respuesta de cliente: " . $e->getMessage());
             }
 
-            // 4c. Alerta por Email a los administradores
+            // 5c. Alerta por Email a los administradores
             try {
                 $adminEmails = Setting::getAdminNotificationEmails($effectiveBrand);
                 if (!empty($adminEmails)) {
                     $primaryAdmin = array_shift($adminEmails);
-                    $subject = "💬 Nuevo WhatsApp de {$displayName}" . ($event ? " — {$event->name}" : "");
-                    $emailBody = "Has recibido una nueva respuesta por WhatsApp:\n\n"
+                    $subject = "💬 Respuesta WhatsApp de {$displayName} — {$eventTitle}";
+                    $emailBody = "Un cliente con evento activo ha respondido por WhatsApp:\n\n"
                         . "Cliente: {$displayName} (+{$cleanPhone})\n"
                         . "Evento: {$eventTitle}\n"
                         . ($reactivated ? "Estado: Reactivado automáticamente de 'Sin Respuesta' a 'Borrador'\n" : "")
@@ -199,54 +215,90 @@ class WhatsAppWebhookController extends Controller
         return response()->json([
             'success' => true,
             'message_id' => $record->id,
-            'event_id' => $event ? $event->id : null,
+            'event_id' => $event->id,
             'client_phone' => $cleanPhone,
             'direction' => $direction,
         ]);
     }
 
     /**
-     * Evita bucles si el mensaje recibido proviene de uno de los teléfonos de notificación de administradores
-     * o si es un eco de una alerta interna del sistema.
+     * Evita bucles y filtra cualquier mensaje que provenga de los teléfonos propios del equipo
+     * (socios, administradores, DJs, asistentes) o ecos de alertas internas.
      */
     protected function isInternalNotificationMessage(string $cleanPhone, string $text, string $brand): bool
     {
         if (
             str_starts_with($text, '💬 *¡NUEVO WHATSAPP RECIBIDO!*') ||
+            str_starts_with($text, '💬 *¡RESPUESTA DE CLIENTE RECIBIDA!*') ||
             str_starts_with($text, '📥 *¡NUEVO LEAD ENTRANTE!*') ||
             str_starts_with($text, '💶 *¡NUEVA SOLICITUD DE PRESUPUESTO!*')
         ) {
             return true;
         }
 
+        $national = strlen($cleanPhone) > 9 ? substr($cleanPhone, -9) : $cleanPhone;
+
+        // Teléfonos de administradores / marcas configurados
         $adminPhones = Setting::getAdminNotificationPhones($brand);
         foreach ($adminPhones as $adminPhone) {
             $cleanAdmin = WhatsAppTemplateService::cleanPhone((string)$adminPhone);
-            if (!empty($cleanAdmin) && $cleanAdmin === $cleanPhone) {
+            $adminNational = strlen($cleanAdmin) > 9 ? substr($cleanAdmin, -9) : $cleanAdmin;
+            if (!empty($cleanAdmin) && ($cleanAdmin === $cleanPhone || ($adminNational && $adminNational === $national))) {
                 return true;
             }
         }
+
+        // Teléfonos de usuarios internos del equipo (admin, dj, assistant)
+        try {
+            if (!empty($national) && strlen($national) >= 7) {
+                $isStaffPhone = User::whereIn('role', ['admin', 'dj', 'assistant'])
+                    ->whereNotNull('phone')
+                    ->where('phone', '!=', '')
+                    ->where(function ($q) use ($cleanPhone, $national) {
+                        $q->where('phone', 'LIKE', "%{$national}%")
+                          ->orWhere('phone', 'LIKE', "%{$cleanPhone}%");
+                    })
+                    ->exists();
+                if ($isStaffPhone) {
+                    return true;
+                }
+            }
+        } catch (\Throwable $e) {}
 
         return false;
     }
 
     /**
-     * Busca un evento activo que coincida con el número de teléfono
+     * Busca un evento activo cuyos novios/clientes coincidan con el número de teléfono
      */
     protected function findMatchingEvent(string $cleanPhone): ?Event
     {
-        // Variantes de teléfono para búsqueda flexible (con prefijo 34 o sin él)
-        $national = substr($cleanPhone, 2); // ej: 622634790
+        $national = strlen($cleanPhone) > 9 ? substr($cleanPhone, -9) : $cleanPhone;
+        if (empty($national) || strlen($national) < 7) {
+            return null;
+        }
 
-        return Event::whereHas('client', function ($q) use ($cleanPhone, $national) {
-            $q->where('phone', 'LIKE', "%{$national}%")
-              ->orWhere('phone', 'LIKE', "%{$cleanPhone}%");
-        })
-        ->orWhere('partner_phone', 'LIKE', "%{$national}%")
-        ->orWhere('partner_phone', 'LIKE', "%{$cleanPhone}%")
-        ->orWhere('venue_contact_phone', 'LIKE', "%{$national}%")
-        ->orderBy('event_date', 'desc')
-        ->first();
+        return Event::where('status', '!=', 'cancelled')
+            ->where(function ($query) use ($cleanPhone, $national) {
+                $query->whereHas('client', function ($q) use ($cleanPhone, $national) {
+                    $q->whereNotNull('phone')
+                      ->where('phone', '!=', '')
+                      ->where(function ($sq) use ($cleanPhone, $national) {
+                          $sq->where('phone', 'LIKE', "%{$national}%")
+                             ->orWhere('phone', 'LIKE', "%{$cleanPhone}%");
+                      });
+                })
+                ->orWhere(function ($q) use ($cleanPhone, $national) {
+                    $q->whereNotNull('partner_phone')
+                      ->where('partner_phone', '!=', '')
+                      ->where(function ($sq) use ($cleanPhone, $national) {
+                          $sq->where('partner_phone', 'LIKE', "%{$national}%")
+                             ->orWhere('partner_phone', 'LIKE', "%{$cleanPhone}%");
+                      });
+                });
+            })
+            ->orderBy('event_date', 'desc')
+            ->first();
     }
 
     /**
@@ -254,9 +306,18 @@ class WhatsAppWebhookController extends Controller
      */
     protected function findMatchingUser(string $cleanPhone): ?User
     {
-        $national = substr($cleanPhone, 2);
-        return User::where('phone', 'LIKE', "%{$national}%")
-            ->orWhere('phone', 'LIKE', "%{$cleanPhone}%")
+        $national = strlen($cleanPhone) > 9 ? substr($cleanPhone, -9) : $cleanPhone;
+        if (empty($national) || strlen($national) < 7) {
+            return null;
+        }
+
+        return User::where('role', 'client')
+            ->whereNotNull('phone')
+            ->where('phone', '!=', '')
+            ->where(function ($q) use ($cleanPhone, $national) {
+                $q->where('phone', 'LIKE', "%{$national}%")
+                  ->orWhere('phone', 'LIKE', "%{$cleanPhone}%");
+            })
             ->first();
     }
 }

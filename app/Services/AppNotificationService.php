@@ -133,12 +133,48 @@ class AppNotificationService
     }
 
     /**
-     * Devuelve el array bruto de notificaciones almacenadas
+     * Vacía todas las notificaciones almacenadas
+     */
+    public static function clearAll(): void
+    {
+        Setting::set(self::SETTING_KEY, '[]');
+    }
+
+    /**
+     * Devuelve el array bruto de notificaciones almacenadas, purgando cualquier
+     * aviso de WhatsApp personal que no pertenezca a un evento registrado.
      */
     protected static function getRawList(): array
     {
+        // Purgar mensajes de WhatsApp personales huérfanos (sin evento asociado) si existieran en BD
+        try {
+            if (\Illuminate\Support\Facades\Schema::hasTable('whatsapp_messages')) {
+                \App\Models\WhatsAppMessage::whereNull('event_id')->delete();
+            }
+        } catch (\Throwable $e) {}
+
         $raw = Setting::get(self::SETTING_KEY, '[]');
         $decoded = is_string($raw) ? json_decode($raw, true) : null;
-        return is_array($decoded) ? $decoded : [];
+        if (!is_array($decoded)) {
+            return [];
+        }
+
+        $filtered = [];
+        $removedPersonal = false;
+
+        foreach ($decoded as $item) {
+            // Si es una notificación de WhatsApp y no tiene event_id asociado, era un contacto personal -> descartar
+            if (($item['type'] ?? '') === 'whatsapp_inbound' && empty($item['event_id'])) {
+                $removedPersonal = true;
+                continue;
+            }
+            $filtered[] = $item;
+        }
+
+        if ($removedPersonal) {
+            Setting::set(self::SETTING_KEY, json_encode($filtered, JSON_UNESCAPED_UNICODE));
+        }
+
+        return $filtered;
     }
 }

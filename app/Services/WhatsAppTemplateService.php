@@ -440,6 +440,14 @@ class WhatsAppTemplateService
                 'description' => 'Cuando dicen que "se va de presupuesto": responde con elegancia y estatus que no competís por precio y liberáis su fecha.',
                 'text' => self::descartePosicionamientoPrecio($event),
             ],
+            'fotomaton_360' => [
+                'key' => 'fotomaton_360',
+                'title' => 'Info & Precios: Fotomatón, Plataforma 360º y Pack Dúo',
+                'stage' => 'Catálogo Extras',
+                'icon' => '📸',
+                'description' => 'Envía todo el detalle de lo que incluye el Fotomatón (2h/3h), la Plataforma 360º (2h/3h) y el Pack Dúo Todo Incluido.',
+                'text' => self::infoFotomatonY360($event),
+            ],
         ];
 
         foreach ($options as $k => &$opt) {
@@ -466,6 +474,7 @@ class WhatsAppTemplateService
             'psicologia_inversa' => self::seguimientoPsicologiaInversa($event),
             'presupuesto' => self::seguimientoPresupuestoNo($event),
             'no_es_nuestro_cliente' => self::descartePosicionamientoPrecio($event),
+            'fotomaton_360' => self::infoFotomatonY360($event),
             default => self::seguimientoPreguntaNo($event),
         };
 
@@ -477,6 +486,7 @@ class WhatsAppTemplateService
             'psicologia_inversa' => 'Psicología Inversa / Cierre de Expediente',
             'presupuesto' => 'Reactivación por Presupuesto (Técnica del NO)',
             'no_es_nuestro_cliente' => 'Descarte por Posicionamiento ("No eres nuestro perfil de cliente")',
+            'fotomaton_360' => 'Info & Precios: Fotomatón, Plataforma 360º y Pack Dúo',
             default => 'Técnica del NO / ¿Descartáis la fecha?',
         };
 
@@ -488,6 +498,7 @@ class WhatsAppTemplateService
             'psicologia_inversa' => '🚪',
             'presupuesto' => '💶',
             'no_es_nuestro_cliente' => '👑',
+            'fotomaton_360' => '📸',
             default => '🎯',
         };
 
@@ -745,7 +756,61 @@ class WhatsAppTemplateService
              . "💰 *Importe total:* " . number_format((float)$invoice->total, 2, ',', '.') . " €\n"
              . "📌 *Estado:* {$statusLabel}\n"
              . ($invoice->notes ? "📝 *Concepto / Notas:* {$invoice->notes}\n" : "")
-             . "\nCualquier consulta estamos a vuestra disposición. ¡Muchas gracias!";
+             . "\nCualquier consulta estamos a vuestra entera disposición. ¡Muchas gracias!";
+    }
+
+    public static function infoFotomatonY360(?Event $event = null): string
+    {
+        $clientName = $event ? self::resolveCouplesFirstNames($event) : 'pareja';
+        $pb = Setting::getPhotobooth360Config();
+        $pb2 = number_format($pb['photobooth_2h'], 0, ',', '.');
+        $pb3 = number_format($pb['photobooth_3h'], 0, ',', '.');
+        $v2 = number_format($pb['video_360_2h'], 0, ',', '.');
+        $v3 = number_format($pb['video_360_3h'], 0, ',', '.');
+        $duo2 = number_format($pb['pack_duo_2h'], 0, ',', '.');
+        $duo3 = number_format($pb['pack_duo_3h'], 0, ',', '.');
+        $dep = number_format($pb['deposit_per_service'], 0, ',', '.');
+
+        return "¡Hola {$clientName}! 👋 Os pasamos toda la información y tarifas de los servicios de *Fotomatón* y *Plataforma 360º*:\n\n"
+             . "📸 *FOTOMATÓN!*\n"
+             . "Nuestras máquinas llevan cámara réflex profesional Canon 1200, con impresora de alta calidad que imprime en 10 segundos, y ordenador táctil con efecto espejo, donde te ves continuamente.\n\n"
+             . "Este servicio incluye:\n"
+             . "- 2-3 horas de fotos ilimitadas.\n"
+             . "- 2 copias de cada foto: una para invitados y otra para libro de firmas.\n"
+             . "- Marco personalizado con nombre, fecha y temática que os guste.\n"
+             . "- ¡Libro de firmas personalizado con foto, hecho por una imprenta!\n"
+             . "- Formato de imagen en tamaño 10x15 o tiras (5x15).\n"
+             . "- ¡Divertido atrezzo, gafotas, boas, gorros, etc.!\n"
+             . "- Photocall / fondo estándar a elegir entre los que tenemos (unos 8 diferentes).\n"
+             . "- ¡Siempre habrá una persona de FotomatonCheese animando y ayudando!\n"
+             . "- Necesitaríamos un enchufe cerca y un espacio de 2m x 2m.\n"
+             . "- USB con todas las fotos.\n"
+             . "- Subimos unas cuantas fotos a redes sociales.\n\n"
+             . "💰 *Precio Fotomatón:*\n"
+             . "• 2 horas: *{$pb2} €*\n"
+             . "• 3 horas: *{$pb3} €*\n\n"
+             . "────────────────────\n\n"
+             . "🎥 *PLATAFORMA 360!*\n"
+             . "Se trata de una plataforma de 100cm, en la que se suben los invitados haciendo un círculo mirando hacia fuera, y nuestra cámara da vueltas alrededor de ellos grabando sus mejores caras, bailes, poses... ¡¡La diversión está asegurada!!\n\n"
+             . "Este servicio incluye:\n"
+             . "- 2 o 3 horas de vídeos ilimitados.\n"
+             . "- Plataforma de 100 cm, en la cual entran 4 o 5 personas por vídeo.\n"
+             . "- Cámara GoPro (buena calidad).\n"
+             . "- Vídeos 360 grabados con slow motion y boomerang.\n"
+             . "- Duración de cada vídeo: 20 seg aprox.\n"
+             . "- Personalización de marco, con nombre de anfitriones, empresa o lo que os guste.\n"
+             . "- Elección de canción que os guste y nos enviéis.\n"
+             . "- Atrezzo divertido: gafotas, gorros, boas, etc.\n"
+             . "- Una bolsa de confeti (lo usaremos si el lugar de celebración nos da permiso).\n"
+             . "- 1 o 2 Animadores de FotomatonCheese.\n"
+             . "- Montaje de 45 min aprox., necesitaríamos un enchufe cerca y un espacio de 2m x 2m.\n"
+             . "- Transporte incluido hasta 50 km (consulta km extra).\n\n"
+             . "💰 *Precio Plataforma 360º:*\n"
+             . "• 2 horas por *{$v2} €*\n"
+             . "• 3 horas por *{$v3} €*\n\n"
+             . "────────────────────\n\n"
+             . "🔹 *Tenemos un PACK DÚO de 3 horas de 🎥 Plataforma 360 + 3 horas de 📸 Fotomatón fotos impresas por: {$duo3} €* (opción de *2 horas por {$duo2} €*) 🔹 ¡¡CON TODO INCLUIDO!!\n\n"
+             . "📆 Para reservar el día serían *{$dep} € por servicio contratado*, mediante cuenta bancaria y el resto del pago se realizaría la semana de antes.";
     }
 }
 

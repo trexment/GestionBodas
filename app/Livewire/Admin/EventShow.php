@@ -137,7 +137,10 @@ class EventShow extends Component
         'photo_album' => ['selected' => false, 'quantity' => 1, 'price' => 150, 'desc' => 'Maquetación álbum digital profesional (sin imprimir).'],
         'photo_full_pack' => ['selected' => false, 'quantity' => 1, 'price' => 800, 'desc' => 'Fotografía Completa: Ceremonia, Restaurante, Fiesta, Álbum digital maquetado, fotos en alta calidad sin marcas de agua.'],
         'karaoke' => ['selected' => false, 'quantity' => 1, 'price' => 80, 'desc' => 'Karaoke interactivo para invitados.'],
-        'photobooth' => ['selected' => false, 'quantity' => 1, 'price' => 350, 'desc' => 'Fotomatón con impresión instantánea, atrezzo y libro de firmas.'],
+        'photobooth' => ['selected' => false, 'hours' => 2, 'quantity' => 1, 'price_2h' => 380, 'price_3h' => 430, 'price' => 380, 'desc' => 'Cámara réflex profesional Canon 1200, impresora de alta calidad (imprime en 10s) y ordenador táctil con efecto espejo. Incluye fotos ilimitadas, 2 copias de cada foto (invitados + libro de firmas personalizado de imprenta con foto), formato 10x15 o tiras (5x15), marco personalizado (nombre, fecha y temática), atrezzo divertido, photocall a elegir (8 fondos), animador de FotomatonCheese, USB con todas las fotos y subida a redes sociales. (Requiere enchufe cerca y espacio de 2m x 2m).'],
+        'video_360' => ['selected' => false, 'hours' => 2, 'quantity' => 1, 'price_2h' => 430, 'price_3h' => 490, 'price' => 430, 'desc' => 'Plataforma de 100cm (capacidad 4-5 personas por vídeo) con cámara GoPro. Incluye vídeos 360 ilimitados grabados con slow motion y boomerang (~20 seg), marco personalizado, canción a elegir, atrezzo divertido, bolsa de confeti, 1 o 2 animadores de FotomatonCheese y transporte incluido hasta 50 km. (Montaje 45 min aprox., requiere enchufe cerca y espacio de 2m x 2m).'],
+        'pack_duo_360' => ['selected' => false, 'hours' => 3, 'quantity' => 1, 'price_2h' => 690, 'price_3h' => 850, 'price' => 850, 'desc' => 'Pack Dúo Todo Incluido (Fotomatón fotos impresas ilimitadas + Plataforma 360º vídeos slow motion/boomerang ilimitados): 2 copias por foto, libro de firmas personalizado de imprenta, USB, marcos y música personalizados, atrezzo completo, photocall, confeti, animadores FotomatonCheese y transporte incluido hasta 50 km.'],
+        'chocolate_fountain' => ['selected' => false, 'quantity' => 1, 'price' => 350, 'consult' => false, 'desc' => 'Mesa dulce con fuente de chocolate en cascada, selección de frutas frescas de temporada, gofres, nubes, brochetas, montaje, decoración y reposición.'],
         'smoke_machine' => ['selected' => false, 'quantity' => 1, 'price' => 60, 'included' => false, 'desc' => 'Efecto de máquina de humo para ambientar la pista y realzar la iluminación.'],
         'cold_sparks' => ['selected' => false, 'quantity' => 2, 'price' => 60, 'included' => false, 'desc' => 'Efecto especial de fuego frío / chispas frías para momentos clave (apertura de baile / corte de tarta).'],
     ];
@@ -344,7 +347,29 @@ class EventShow extends Component
         $this->quote_services['restaurant']['price'] = (float)\App\Models\Setting::get('price_restaurant', 150);
         $this->quote_services['dj_custom']['price'] = (float)\App\Models\Setting::get('price_dj', 150);
         $this->quote_services['karaoke']['price'] = (float)\App\Models\Setting::get('price_karaoke', 80);
-        $this->quote_services['photobooth']['price'] = (float)\App\Models\Setting::get('price_photobooth', 350);
+
+        $pbConfig = \App\Models\Setting::getPhotobooth360Config();
+        $this->quote_services['photobooth']['price_2h'] = $pbConfig['photobooth_2h'];
+        $this->quote_services['photobooth']['price_3h'] = $pbConfig['photobooth_3h'];
+        $this->quote_services['photobooth']['hours'] = 2;
+        $this->quote_services['photobooth']['price'] = $pbConfig['photobooth_2h'];
+        $this->quote_services['photobooth']['desc'] = $pbConfig['photobooth_desc'];
+
+        $this->quote_services['video_360']['price_2h'] = $pbConfig['video_360_2h'];
+        $this->quote_services['video_360']['price_3h'] = $pbConfig['video_360_3h'];
+        $this->quote_services['video_360']['hours'] = 2;
+        $this->quote_services['video_360']['price'] = $pbConfig['video_360_2h'];
+        $this->quote_services['video_360']['desc'] = $pbConfig['video_360_desc'];
+
+        $this->quote_services['pack_duo_360']['price_2h'] = $pbConfig['pack_duo_2h'];
+        $this->quote_services['pack_duo_360']['price_3h'] = $pbConfig['pack_duo_3h'];
+        $this->quote_services['pack_duo_360']['hours'] = 3;
+        $this->quote_services['pack_duo_360']['price'] = $pbConfig['pack_duo_3h'];
+        $this->quote_services['pack_duo_360']['desc'] = $pbConfig['pack_duo_desc'];
+
+        $this->quote_services['chocolate_fountain']['price'] = $pbConfig['chocolate_fountain_price'];
+        $this->quote_services['chocolate_fountain']['desc'] = $pbConfig['chocolate_fountain_desc'];
+
         $this->quote_services['smoke_machine']['price'] = (float)\App\Models\Setting::get('price_effects_smoke', 60);
         $this->quote_services['cold_sparks']['price'] = (float)\App\Models\Setting::get('price_effects_sparks', 60);
         $this->quote_services['cold_sparks']['quantity'] = (int)($this->quote_services['cold_sparks']['quantity'] ?? 2) ?: 2;
@@ -1745,6 +1770,8 @@ class EventShow extends Component
             $this->whatsapp_chat_message = \App\Services\WhatsAppTemplateService::propuestaLlamada($this->event);
         } elseif ($resolvedKey === 'dossier') {
             $this->whatsapp_chat_message = \App\Services\WhatsAppTemplateService::envioDossierPresupuesto($this->event);
+        } elseif ($resolvedKey === 'fotomaton_360') {
+            $this->whatsapp_chat_message = \App\Services\WhatsAppTemplateService::infoFotomatonY360($this->event);
         }
     }
 
@@ -1880,6 +1907,10 @@ class EventShow extends Component
                 case 'liquidacion':
                     $text = \App\Services\WhatsAppTemplateService::liquidacion($this->event);
                     $title = 'Liquidación Final';
+                    break;
+                case 'fotomaton_360':
+                    $text = \App\Services\WhatsAppTemplateService::infoFotomatonY360($this->event);
+                    $title = 'Info Fotomatón & Plataforma 360º';
                     break;
                 case 'hoja_ruta':
                     $targetUser = $recipientType === 'assistant' ? $this->event->assistant : $this->event->dj;
@@ -2137,6 +2168,42 @@ class EventShow extends Component
 
     public function updatedQuoteServices($value, $key)
     {
+        if (str_starts_with($key, 'pack_duo_360.selected')) {
+            if ($value) {
+                $this->quote_services['photobooth']['selected'] = false;
+                $this->quote_services['video_360']['selected'] = false;
+            }
+            return;
+        }
+
+        if ($key === 'photobooth.selected' || $key === 'video_360.selected') {
+            if ($value && !empty($this->quote_services['pack_duo_360']['selected'])) {
+                $this->quote_services['pack_duo_360']['selected'] = false;
+            }
+            return;
+        }
+
+        if ($key === 'photobooth.hours') {
+            $h = (int)$value;
+            $pbConfig = \App\Models\Setting::getPhotobooth360Config();
+            $this->quote_services['photobooth']['price'] = ($h >= 3) ? $pbConfig['photobooth_3h'] : $pbConfig['photobooth_2h'];
+            return;
+        }
+
+        if ($key === 'video_360.hours') {
+            $h = (int)$value;
+            $pbConfig = \App\Models\Setting::getPhotobooth360Config();
+            $this->quote_services['video_360']['price'] = ($h >= 3) ? $pbConfig['video_360_3h'] : $pbConfig['video_360_2h'];
+            return;
+        }
+
+        if ($key === 'pack_duo_360.hours') {
+            $h = (int)$value;
+            $pbConfig = \App\Models\Setting::getPhotobooth360Config();
+            $this->quote_services['pack_duo_360']['price'] = ($h >= 3) ? $pbConfig['pack_duo_3h'] : $pbConfig['pack_duo_2h'];
+            return;
+        }
+
         if (str_starts_with($key, 'pack_')) {
             $parts = explode('.', $key);
             $packName = $parts[0] ?? '';
@@ -2159,6 +2226,34 @@ class EventShow extends Component
             }
             $this->syncPackEffectsAdmin();
         }
+    }
+
+    public function setPhotoboothHours(int $hours)
+    {
+        $pbConfig = \App\Models\Setting::getPhotobooth360Config();
+        $this->quote_services['photobooth']['selected'] = true;
+        $this->quote_services['photobooth']['hours'] = $hours;
+        $this->quote_services['photobooth']['price'] = ($hours >= 3) ? $pbConfig['photobooth_3h'] : $pbConfig['photobooth_2h'];
+        $this->quote_services['pack_duo_360']['selected'] = false;
+    }
+
+    public function setVideo360Hours(int $hours)
+    {
+        $pbConfig = \App\Models\Setting::getPhotobooth360Config();
+        $this->quote_services['video_360']['selected'] = true;
+        $this->quote_services['video_360']['hours'] = $hours;
+        $this->quote_services['video_360']['price'] = ($hours >= 3) ? $pbConfig['video_360_3h'] : $pbConfig['video_360_2h'];
+        $this->quote_services['pack_duo_360']['selected'] = false;
+    }
+
+    public function setPackDuoHours(int $hours)
+    {
+        $pbConfig = \App\Models\Setting::getPhotobooth360Config();
+        $this->quote_services['pack_duo_360']['selected'] = true;
+        $this->quote_services['pack_duo_360']['hours'] = $hours;
+        $this->quote_services['pack_duo_360']['price'] = ($hours >= 3) ? $pbConfig['pack_duo_3h'] : $pbConfig['pack_duo_2h'];
+        $this->quote_services['photobooth']['selected'] = false;
+        $this->quote_services['video_360']['selected'] = false;
     }
 
     public function syncPackEffectsAdmin()
@@ -2318,12 +2413,22 @@ class EventShow extends Component
             }
         }
 
-        // Karaoke, Fotomatón & Extras personalizados
+        // Karaoke, Fotomatón, Plataforma 360º, Pack Dúo y Fuente de Chocolate
         if (!empty($this->quote_services['karaoke']['selected'])) {
             $total += (float)$this->quote_services['karaoke']['price'] * (int)($this->quote_services['karaoke']['quantity'] ?: 1);
         }
-        if (!empty($this->quote_services['photobooth']['selected'])) {
-            $total += (float)$this->quote_services['photobooth']['price'] * (int)($this->quote_services['photobooth']['quantity'] ?: 1);
+        if (!empty($this->quote_services['pack_duo_360']['selected'])) {
+            $total += (float)$this->quote_services['pack_duo_360']['price'] * (int)($this->quote_services['pack_duo_360']['quantity'] ?: 1);
+        } else {
+            if (!empty($this->quote_services['photobooth']['selected'])) {
+                $total += (float)$this->quote_services['photobooth']['price'] * (int)($this->quote_services['photobooth']['quantity'] ?: 1);
+            }
+            if (!empty($this->quote_services['video_360']['selected'])) {
+                $total += (float)$this->quote_services['video_360']['price'] * (int)($this->quote_services['video_360']['quantity'] ?: 1);
+            }
+        }
+        if (!empty($this->quote_services['chocolate_fountain']['selected']) && empty($this->quote_services['chocolate_fountain']['consult'])) {
+            $total += (float)$this->quote_services['chocolate_fountain']['price'] * (int)($this->quote_services['chocolate_fountain']['quantity'] ?: 1);
         }
 
         // Efectos Especiales (0€ si están incluidos en el Pack contratado)
@@ -2525,7 +2630,7 @@ class EventShow extends Component
             }
         }
         
-        // 4. Karaoke, Fotomatón & Extra personalizado
+        // 4. Karaoke, Fotomatón, Plataforma 360º, Pack Dúo y Mesa con Fuente de Chocolate
         if (!empty($this->quote_services['karaoke']['selected'])) {
             $qty = (int)($this->quote_services['karaoke']['quantity'] ?: 1);
             $p = (float)($this->quote_services['karaoke']['price'] ?: 0);
@@ -2533,10 +2638,55 @@ class EventShow extends Component
             $total += ($p * $qty);
         }
 
-        if (!empty($this->quote_services['photobooth']['selected'])) {
-            $qty = (int)($this->quote_services['photobooth']['quantity'] ?: 1);
-            $p = (float)($this->quote_services['photobooth']['price'] ?: 0);
-            $items[] = ['service_name' => 'Fotomatón & Photocall', 'description' => $this->quote_services['photobooth']['desc'], 'price' => $p, 'quantity' => $qty];
+        if (!empty($this->quote_services['pack_duo_360']['selected'])) {
+            $qty = (int)($this->quote_services['pack_duo_360']['quantity'] ?: 1);
+            $hours = (int)($this->quote_services['pack_duo_360']['hours'] ?: 3);
+            $p = (float)($this->quote_services['pack_duo_360']['price'] ?: 0);
+            $items[] = [
+                'service_name' => 'Pack Dúo Todo Incluido: Fotomatón + Plataforma 360º (' . $hours . ' Horas)',
+                'description' => $this->quote_services['pack_duo_360']['desc'],
+                'price' => $p,
+                'quantity' => $qty
+            ];
+            $total += ($p * $qty);
+        } else {
+            if (!empty($this->quote_services['photobooth']['selected'])) {
+                $qty = (int)($this->quote_services['photobooth']['quantity'] ?: 1);
+                $hours = (int)($this->quote_services['photobooth']['hours'] ?: 2);
+                $p = (float)($this->quote_services['photobooth']['price'] ?: 0);
+                $items[] = [
+                    'service_name' => 'Fotomatón & Photocall (' . $hours . ' Horas)',
+                    'description' => $this->quote_services['photobooth']['desc'],
+                    'price' => $p,
+                    'quantity' => $qty
+                ];
+                $total += ($p * $qty);
+            }
+
+            if (!empty($this->quote_services['video_360']['selected'])) {
+                $qty = (int)($this->quote_services['video_360']['quantity'] ?: 1);
+                $hours = (int)($this->quote_services['video_360']['hours'] ?: 2);
+                $p = (float)($this->quote_services['video_360']['price'] ?: 0);
+                $items[] = [
+                    'service_name' => 'Plataforma Vídeo 360º (' . $hours . ' Horas)',
+                    'description' => $this->quote_services['video_360']['desc'],
+                    'price' => $p,
+                    'quantity' => $qty
+                ];
+                $total += ($p * $qty);
+            }
+        }
+
+        if (!empty($this->quote_services['chocolate_fountain']['selected'])) {
+            $qty = (int)($this->quote_services['chocolate_fountain']['quantity'] ?: 1);
+            $isConsult = !empty($this->quote_services['chocolate_fountain']['consult']);
+            $p = $isConsult ? 0 : (float)($this->quote_services['chocolate_fountain']['price'] ?: 0);
+            $items[] = [
+                'service_name' => 'Mesa con Fuente de Chocolate' . ($isConsult ? ' (A consultar)' : ''),
+                'description' => $this->quote_services['chocolate_fountain']['desc'] . ($isConsult ? ' (Tarifa y disponibilidad a consultar según comensales).' : ''),
+                'price' => $p,
+                'quantity' => $qty
+            ];
             $total += ($p * $qty);
         }
 
@@ -2727,6 +2877,7 @@ class EventShow extends Component
         $this->selectPack('clear');
         $this->selected_pack_type = 'custom';
         $loadedCustomExtras = [];
+        $pbConfig = \App\Models\Setting::getPhotobooth360Config();
 
         // Mapear cada línea
         foreach ($quote->items as $item) {
@@ -2782,10 +2933,42 @@ class EventShow extends Component
                 $this->quote_services['karaoke']['selected'] = true;
                 $this->quote_services['karaoke']['quantity'] = (int)($item->quantity ?: 1);
                 $this->quote_services['karaoke']['price'] = (float)$item->price;
+            } elseif (str_contains($name, 'pack dúo') || str_contains($name, 'pack duo') || (str_contains($name, 'fotomat') && str_contains($name, '360'))) {
+                $this->quote_services['pack_duo_360']['selected'] = true;
+                $this->quote_services['pack_duo_360']['quantity'] = (int)($item->quantity ?: 1);
+                $hours = str_contains($name, '2 hora') || str_contains($name, '2h') || ((float)$item->price > 0 && (float)$item->price <= $pbConfig['pack_duo_2h']) ? 2 : 3;
+                $this->quote_services['pack_duo_360']['hours'] = $hours;
+                $this->quote_services['pack_duo_360']['price'] = (float)$item->price > 0 ? (float)$item->price : ($hours === 2 ? $pbConfig['pack_duo_2h'] : $pbConfig['pack_duo_3h']);
+                if (!empty($item->description) && !str_contains(mb_strtolower($item->description), 'consultar')) {
+                    $this->quote_services['pack_duo_360']['desc'] = $item->description;
+                }
             } elseif (str_contains($name, 'fotomatón') || str_contains($name, 'fotomaton') || str_contains($name, 'photobooth')) {
                 $this->quote_services['photobooth']['selected'] = true;
                 $this->quote_services['photobooth']['quantity'] = (int)($item->quantity ?: 1);
-                $this->quote_services['photobooth']['price'] = (float)$item->price;
+                $hours = (str_contains($name, '3 hora') || str_contains($name, '3h') || ((float)$item->price >= $pbConfig['photobooth_3h'])) ? 3 : 2;
+                $this->quote_services['photobooth']['hours'] = $hours;
+                $this->quote_services['photobooth']['price'] = (float)$item->price > 0 ? (float)$item->price : ($hours === 3 ? $pbConfig['photobooth_3h'] : $pbConfig['photobooth_2h']);
+                if (!empty($item->description) && !str_contains(mb_strtolower($item->description), 'consultar')) {
+                    $this->quote_services['photobooth']['desc'] = $item->description;
+                }
+            } elseif (str_contains($name, '360') || str_contains($name, 'plataforma')) {
+                $this->quote_services['video_360']['selected'] = true;
+                $this->quote_services['video_360']['quantity'] = (int)($item->quantity ?: 1);
+                $hours = (str_contains($name, '3 hora') || str_contains($name, '3h') || ((float)$item->price >= $pbConfig['video_360_3h'])) ? 3 : 2;
+                $this->quote_services['video_360']['hours'] = $hours;
+                $this->quote_services['video_360']['price'] = (float)$item->price > 0 ? (float)$item->price : ($hours === 3 ? $pbConfig['video_360_3h'] : $pbConfig['video_360_2h']);
+                if (!empty($item->description) && !str_contains(mb_strtolower($item->description), 'consultar')) {
+                    $this->quote_services['video_360']['desc'] = $item->description;
+                }
+            } elseif (str_contains($name, 'chocolate') || str_contains($name, 'fuente de chocolate')) {
+                $isConsult = str_contains($name, 'consultar') || ((float)$item->price == 0);
+                $this->quote_services['chocolate_fountain']['selected'] = true;
+                $this->quote_services['chocolate_fountain']['quantity'] = (int)($item->quantity ?: 1);
+                $this->quote_services['chocolate_fountain']['consult'] = false; // Al adaptarlo en admin le proponemos el precio directo salvo que marque consultar
+                $this->quote_services['chocolate_fountain']['price'] = (float)$item->price > 0 ? (float)$item->price : $pbConfig['chocolate_fountain_price'];
+                if (!empty($item->description) && !str_contains(mb_strtolower($item->description), 'consultar')) {
+                    $this->quote_services['chocolate_fountain']['desc'] = $item->description;
+                }
             } elseif (str_contains($name, 'máquina de humo') || str_contains($name, 'maquina de humo') || str_contains($name, 'humo')) {
                 $this->quote_services['smoke_machine']['selected'] = true;
                 $this->quote_services['smoke_machine']['quantity'] = (int)($item->quantity ?: 1);

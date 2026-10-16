@@ -172,7 +172,9 @@ Route::middleware('auth')->group(function () {
 
             Route::post('/notifications/read', function (\Illuminate\Http\Request $request) {
                 $userId = (int) auth()->id();
-                if ($request->boolean('all')) {
+                if ($request->boolean('clear_all')) {
+                    \App\Services\AppNotificationService::clearAll();
+                } elseif ($request->boolean('all')) {
                     \App\Services\AppNotificationService::markAllRead($userId);
                 } elseif ($request->filled('id')) {
                     \App\Services\AppNotificationService::markRead((string) $request->input('id'), $userId);

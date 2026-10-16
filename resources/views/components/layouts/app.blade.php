@@ -455,6 +455,24 @@
                 }
             });
         },
+        clearAllNotifications() {
+            fetch('/admin/notifications/read', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content || ''
+                },
+                body: JSON.stringify({ clear_all: true })
+            })
+            .then(r => r.ok ? r.json() : null)
+            .then(data => {
+                if (data) {
+                    this.unreadCount = 0;
+                    this.notifications = [];
+                }
+            });
+        },
         openNotification(notif) {
             fetch('/admin/notifications/read', {
                 method: 'POST',
@@ -754,21 +772,32 @@
                                 style="display: none;"
                                 class="absolute right-0 mt-2 w-80 sm:w-96 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-2xl z-50 overflow-hidden"
                             >
-                                <div class="px-4 py-3 bg-slate-50 dark:bg-slate-800/90 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                                <div class="px-4 py-3 bg-slate-50 dark:bg-slate-800/90 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between gap-2">
                                     <div>
                                         <h4 class="text-xs font-extrabold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
-                                            <span>🔔</span> Avisos de WhatsApp y Email
+                                            <span>🔔</span> Avisos de Novios y Leads
                                         </h4>
-                                        <p class="text-[11px] text-slate-500 dark:text-slate-400">Tiempo real (respuestas y leads entrantes)</p>
+                                        <p class="text-[10px] text-slate-500 dark:text-slate-400">Solo clientes con evento activo y solicitudes web/email</p>
                                     </div>
-                                    <button 
-                                        x-show="unreadCount > 0"
-                                        type="button"
-                                        @click="markAllNotificationsRead()"
-                                        class="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
-                                    >
-                                        Marcar leídas
-                                    </button>
+                                    <div class="flex items-center gap-2 shrink-0">
+                                        <button 
+                                            x-show="unreadCount > 0"
+                                            type="button"
+                                            @click="markAllNotificationsRead()"
+                                            class="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
+                                        >
+                                            Leídas
+                                        </button>
+                                        <button 
+                                            x-show="notifications.length > 0"
+                                            type="button"
+                                            @click="clearAllNotifications()"
+                                            class="text-[11px] font-bold text-rose-500 hover:text-rose-400 hover:underline cursor-pointer"
+                                            title="Vaciar lista de avisos"
+                                        >
+                                            Vaciar
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <!-- BOTÓN ACTIVAR NOTIFICACIONES NATIVAS EN MÓVIL / NAVEGADOR -->

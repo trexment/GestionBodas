@@ -801,6 +801,109 @@
                 </div>
             </div>
 
+            <!-- SECCIÓN 3B: FOTOMATÓN, PLATAFORMA 360º, PACK DÚO Y FUENTE DE CHOCOLATE (TARIFAS POR HORAS Y PLANTILLAS) -->
+            <div class="bg-white shadow-sm rounded-xl border border-indigo-200 p-6 space-y-5">
+                <div class="border-b border-indigo-100 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                        <h3 class="text-base font-bold text-indigo-950 flex items-center gap-2">
+                            <span>📸🎥</span> Fotomatón, Plataforma 360º, Pack Dúo & Fuente de Chocolate (Por Horas + Plantillas)
+                        </h3>
+                        <p class="text-xs text-gray-500">Configura los precios por 2 y 3 horas y los textos descriptivos que se insertan automáticamente en el presupuesto del admin y en la plantilla de WhatsApp.</p>
+                    </div>
+                    <span class="text-xs font-bold text-indigo-800 bg-indigo-100 px-3 py-1 rounded-full self-start sm:self-auto">
+                        FotomatonCheese & Extras
+                    </span>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <!-- 1. FOTOMATÓN -->
+                    <div class="p-4 bg-indigo-50/40 rounded-xl border border-indigo-200 space-y-3">
+                        <div class="flex items-center justify-between border-b border-indigo-100 pb-2">
+                            <span class="text-xs font-black uppercase text-indigo-900">📸 Fotomatón & Photocall</span>
+                            <span class="text-[10px] font-bold bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded">Tarifas por Horas</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-[11px] font-bold text-gray-700 mb-1">Precio 2 Horas (€)</label>
+                                <input type="number" step="0.01" wire:model="price_photobooth_2h" class="w-full border-indigo-300 rounded-lg text-sm font-black text-indigo-700">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-gray-700 mb-1">Precio 3 Horas (€)</label>
+                                <input type="number" step="0.01" wire:model="price_photobooth_3h" class="w-full border-indigo-300 rounded-lg text-sm font-black text-indigo-700">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-700 mb-1">Plantilla Descriptiva (Qué incluye en PDF)</label>
+                            <textarea rows="3" wire:model="photobooth_desc" class="w-full border-gray-300 rounded-lg text-xs"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- 2. PLATAFORMA 360º -->
+                    <div class="p-4 bg-purple-50/40 rounded-xl border border-purple-200 space-y-3">
+                        <div class="flex items-center justify-between border-b border-purple-100 pb-2">
+                            <span class="text-xs font-black uppercase text-purple-900">🎥 Plataforma Vídeo 360º</span>
+                            <span class="text-[10px] font-bold bg-purple-100 text-purple-800 px-2 py-0.5 rounded">Tarifas por Horas</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-[11px] font-bold text-gray-700 mb-1">Precio 2 Horas (€)</label>
+                                <input type="number" step="0.01" wire:model="price_video_360_2h" class="w-full border-purple-300 rounded-lg text-sm font-black text-purple-700">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-gray-700 mb-1">Precio 3 Horas (€)</label>
+                                <input type="number" step="0.01" wire:model="price_video_360_3h" class="w-full border-purple-300 rounded-lg text-sm font-black text-purple-700">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-700 mb-1">Plantilla Descriptiva (Qué incluye en PDF)</label>
+                            <textarea rows="3" wire:model="video_360_desc" class="w-full border-gray-300 rounded-lg text-xs"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- 3. PACK DÚO TODO INCLUIDO -->
+                    <div class="p-4 bg-gradient-to-br from-indigo-50/70 to-purple-50/70 rounded-xl border-2 border-indigo-300 space-y-3">
+                        <div class="flex items-center justify-between border-b border-indigo-200 pb-2">
+                            <span class="text-xs font-black uppercase text-indigo-950">🔹 Pack Dúo (Fotomatón + Plataforma 360º)</span>
+                            <span class="text-[10px] font-bold bg-indigo-600 text-white px-2 py-0.5 rounded-full">Todo Incluido</span>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2">
+                            <div>
+                                <label class="block text-[11px] font-bold text-indigo-950 mb-1">Pack Dúo 2h (€)</label>
+                                <input type="number" step="0.01" wire:model="price_pack_duo_2h" class="w-full border-indigo-300 rounded-lg text-sm font-black text-indigo-700">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-indigo-950 mb-1">Pack Dúo 3h (€)</label>
+                                <input type="number" step="0.01" wire:model="price_pack_duo_3h" class="w-full border-indigo-300 rounded-lg text-sm font-black text-indigo-700">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-indigo-950 mb-1">Reserva / Servicio (€)</label>
+                                <input type="number" step="0.01" wire:model="photobooth_deposit_per_service" class="w-full border-indigo-300 rounded-lg text-sm font-bold text-gray-800">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-indigo-950 mb-1">Plantilla Descriptiva Pack Dúo</label>
+                            <textarea rows="3" wire:model="pack_duo_desc" class="w-full border-indigo-300 rounded-lg text-xs"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- 4. MESA CON FUENTE DE CHOCOLATE -->
+                    <div class="p-4 bg-amber-50/40 rounded-xl border border-amber-200 space-y-3">
+                        <div class="flex items-center justify-between border-b border-amber-100 pb-2">
+                            <span class="text-xs font-black uppercase text-amber-900">🍫 Mesa con Fuente de Chocolate</span>
+                            <span class="text-[10px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded">Mesa Dulce</span>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-700 mb-1">Precio Base Orientativo (€) (en el presupuesto también permite marcar "A consultar")</label>
+                            <input type="number" step="0.01" wire:model="price_chocolate_fountain" class="w-full border-amber-300 rounded-lg text-sm font-black text-amber-800">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-700 mb-1">Plantilla Descriptiva (Qué incluye en PDF)</label>
+                            <textarea rows="3" wire:model="chocolate_fountain_desc" class="w-full border-gray-300 rounded-lg text-xs"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- SECCIÓN 4: CONDICIONES DE PAGO Y SEÑAL DE RESERVA -->
             <div class="bg-white shadow-sm rounded-xl border border-gray-200 p-6 space-y-5">
                 <div class="border-b border-gray-100 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
