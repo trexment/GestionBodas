@@ -759,9 +759,22 @@ class WhatsAppTemplateService
              . "\nCualquier consulta estamos a vuestra entera disposición. ¡Muchas gracias!";
     }
 
+    public static function resolveCouplesFirstNames(?Event $event): string
+    {
+        if (!$event) {
+            return 'pareja';
+        }
+        $c1 = $event->client && !empty($event->client->name) ? trim($event->client->name) : '';
+        $c2 = !empty($event->partner_name) ? trim($event->partner_name) : '';
+        if ($c1 && $c2 && stripos($c1, $c2) === false) {
+            return "{$c1} y {$c2}";
+        }
+        return $c1 ?: ($c2 ?: 'pareja');
+    }
+
     public static function infoFotomatonY360(?Event $event = null, ?string $provider = null): string
     {
-        $clientName = $event ? self::resolveCouplesFirstNames($event) : 'pareja';
+        $clientName = self::resolveCouplesFirstNames($event);
         if (empty($provider) && $event) {
             $loc = mb_strtolower((string)($event->location ?? ''));
             $provider = (str_contains($loc, 'vitoria') || str_contains($loc, 'alava') || str_contains($loc, 'álava') || str_contains($loc, 'gasteiz') || str_contains($loc, 'araba')) ? 'vitoria' : 'logrono';
