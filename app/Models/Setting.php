@@ -641,19 +641,19 @@ class Setting extends Model
             'photobooth_3h' => (float)self::get('price_photobooth_3h', 430),
             'photobooth_desc' => self::get(
                 'photobooth_desc',
-                'Cámara réflex profesional Canon 1200, impresora de alta calidad (imprime en 10s) y ordenador táctil con efecto espejo. Incluye fotos ilimitadas, 2 copias de cada foto (invitados + libro de firmas personalizado de imprenta con foto), formato 10x15 o tiras (5x15), marco personalizado (nombre, fecha y temática), atrezzo divertido (gafotas, boas, gorros...), photocall a elegir (8 fondos), animador de FotomatonCheese, USB con todas las fotos y subida a redes sociales. (Requiere enchufe cerca y espacio de 2m x 2m).'
+                'Cámara réflex Canon 1200, impresión 10s y espejo táctil. Fotos ilimitadas, 2 copias (invitados + libro firmas imprenta), 10x15 o tiras, marco y photocall a elegir, atrezzo, animador FotomatonCheese y USB (espacio 2x2m).'
             ),
             'video_360_2h' => (float)self::get('price_video_360_2h', 430),
             'video_360_3h' => (float)self::get('price_video_360_3h', 490),
             'video_360_desc' => self::get(
                 'video_360_desc',
-                'Plataforma de 100cm (capacidad 4-5 personas por vídeo) con cámara GoPro. Incluye vídeos 360 ilimitados grabados con slow motion y boomerang (~20 seg), marco personalizado, canción a elegir, atrezzo divertido, bolsa de confeti, 1 o 2 animadores de FotomatonCheese y transporte incluido hasta 50 km. (Montaje 45 min aprox., requiere enchufe cerca y espacio de 2m x 2m).'
+                'Plataforma 100cm (4-5 pers.) con cámara GoPro. Vídeos 360º ilimitados (20s) en slow motion y boomerang, marco y canción personalizados, atrezzo, confeti, 1-2 animadores FotomatonCheese y transporte 50km (espacio 2x2m).'
             ),
             'pack_duo_2h' => (float)self::get('price_pack_duo_2h', 690),
             'pack_duo_3h' => (float)self::get('price_pack_duo_3h', 850),
             'pack_duo_desc' => self::get(
                 'pack_duo_desc',
-                'Pack Dúo Todo Incluido (Fotomatón fotos impresas ilimitadas + Plataforma 360º vídeos slow motion/boomerang ilimitados): 2 copias por foto, libro de firmas personalizado de imprenta, USB, marcos y música personalizados, atrezzo completo, photocall, confeti, animadores FotomatonCheese y transporte incluido hasta 50 km.'
+                'Pack Dúo Todo Incluido: Fotomatón (Canon 1200, copias ilimitadas, libro firmas imprenta, photocall, USB) + Plataforma Vídeo 360º (100cm, GoPro slow motion/boomerang, confeti, atrezzo y animadores). Reserva: 100€/servicio.'
             ),
             'deposit_per_service' => (float)self::get('photobooth_deposit_per_service', 100),
             'chocolate_fountain_price' => (float)self::get('price_chocolate_fountain', 350),

@@ -2638,24 +2638,13 @@ class EventShow extends Component
             $total += ($p * $qty);
         }
 
-        $pbConfig = \App\Models\Setting::getPhotobooth360Config();
-
         if (!empty($this->quote_services['pack_duo_360']['selected'])) {
             $qty = (int)($this->quote_services['pack_duo_360']['quantity'] ?: 1);
             $hours = (int)($this->quote_services['pack_duo_360']['hours'] ?: 3);
             $p = (float)($this->quote_services['pack_duo_360']['price'] ?: 0);
-            $desc = trim((string)($this->quote_services['pack_duo_360']['desc'] ?? ''));
-            if ($hours === 2) {
-                $p3h = (float)$pbConfig['pack_duo_3h'];
-                $diff = max(0, $p3h - $p);
-                $upgradeNote = '💡 Opción 3 Horas disponible: Pack Dúo de 3h Fotomatón + 3h Plataforma 360º por ' . number_format($p3h, 0, ',', '.') . ' €' . ($diff > 0 ? ' (solo +' . number_format($diff, 0, ',', '.') . ' € más)' : '') . '.';
-                if (!str_contains($desc, 'Opción 3 Horas')) {
-                    $desc = rtrim($desc, '. ') . '. | ' . $upgradeNote;
-                }
-            }
             $items[] = [
                 'service_name' => 'Pack Dúo Todo Incluido: Fotomatón + Plataforma 360º (' . $hours . ' Horas)',
-                'description' => $desc,
+                'description' => trim((string)($this->quote_services['pack_duo_360']['desc'] ?? '')),
                 'price' => $p,
                 'quantity' => $qty
             ];
@@ -2665,18 +2654,9 @@ class EventShow extends Component
                 $qty = (int)($this->quote_services['photobooth']['quantity'] ?: 1);
                 $hours = (int)($this->quote_services['photobooth']['hours'] ?: 2);
                 $p = (float)($this->quote_services['photobooth']['price'] ?: 0);
-                $desc = trim((string)($this->quote_services['photobooth']['desc'] ?? ''));
-                if ($hours === 2) {
-                    $p3h = (float)$pbConfig['photobooth_3h'];
-                    $diff = max(0, $p3h - $p);
-                    $upgradeNote = '💡 Opción 3 Horas disponible: Amplía a 3 horas de Fotomatón ilimitado por ' . number_format($p3h, 0, ',', '.') . ' €' . ($diff > 0 ? ' (solo +' . number_format($diff, 0, ',', '.') . ' € más)' : '') . '.';
-                    if (!str_contains($desc, 'Opción 3 Horas')) {
-                        $desc = rtrim($desc, '. ') . '. | ' . $upgradeNote;
-                    }
-                }
                 $items[] = [
                     'service_name' => 'Fotomatón & Photocall (' . $hours . ' Horas)',
-                    'description' => $desc,
+                    'description' => trim((string)($this->quote_services['photobooth']['desc'] ?? '')),
                     'price' => $p,
                     'quantity' => $qty
                 ];
@@ -2687,18 +2667,9 @@ class EventShow extends Component
                 $qty = (int)($this->quote_services['video_360']['quantity'] ?: 1);
                 $hours = (int)($this->quote_services['video_360']['hours'] ?: 2);
                 $p = (float)($this->quote_services['video_360']['price'] ?: 0);
-                $desc = trim((string)($this->quote_services['video_360']['desc'] ?? ''));
-                if ($hours === 2) {
-                    $p3h = (float)$pbConfig['video_360_3h'];
-                    $diff = max(0, $p3h - $p);
-                    $upgradeNote = '💡 Opción 3 Horas disponible: Amplía a 3 horas de Plataforma 360º ilimitada por ' . number_format($p3h, 0, ',', '.') . ' €' . ($diff > 0 ? ' (solo +' . number_format($diff, 0, ',', '.') . ' € más)' : '') . '.';
-                    if (!str_contains($desc, 'Opción 3 Horas')) {
-                        $desc = rtrim($desc, '. ') . '. | ' . $upgradeNote;
-                    }
-                }
                 $items[] = [
                     'service_name' => 'Plataforma Vídeo 360º (' . $hours . ' Horas)',
-                    'description' => $desc,
+                    'description' => trim((string)($this->quote_services['video_360']['desc'] ?? '')),
                     'price' => $p,
                     'quantity' => $qty
                 ];
