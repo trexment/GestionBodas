@@ -77,11 +77,11 @@ class Settings extends Component
     public $price_karaoke;
     public $price_extra_hours;
     public $photobooth_settings_tab = 'logrono'; // 'logrono' | 'vitoria'
-    public $photobooth_logrono_name = 'Logroño (FotomatonCheese)';
+    public $photobooth_logrono_name = 'Logroño';
     public $price_photobooth;
-    public $price_photobooth_2h = 380;
-    public $price_photobooth_3h = 430;
-    public $price_photobooth_extra_hour = 50;
+    public $price_photobooth_2h = 430;
+    public $price_photobooth_3h = 480;
+    public $price_photobooth_extra_hour = 60;
     public $photobooth_desc;
     public $price_video_360_2h = 430;
     public $price_video_360_3h = 490;
@@ -92,18 +92,18 @@ class Settings extends Component
     public $pack_duo_desc;
     public $photobooth_deposit_per_service = 100;
 
-    // Proveedor 2: Vitoria / Álava
-    public $photobooth_vitoria_name = 'Vitoria / Álava';
-    public $price_photobooth_vitoria_2h = 400;
-    public $price_photobooth_vitoria_3h = 450;
+    // Proveedor 2: Vitoria / Álava (FotomatonCheese)
+    public $photobooth_vitoria_name = 'Vitoria (FotomatonCheese)';
+    public $price_photobooth_vitoria_2h = 380;
+    public $price_photobooth_vitoria_3h = 430;
     public $price_photobooth_vitoria_extra_hour = 50;
     public $photobooth_vitoria_desc;
-    public $price_video_360_vitoria_2h = 450;
-    public $price_video_360_vitoria_3h = 500;
+    public $price_video_360_vitoria_2h = 430;
+    public $price_video_360_vitoria_3h = 490;
     public $price_video_360_vitoria_extra_hour = 60;
     public $video_360_vitoria_desc;
-    public $price_pack_duo_vitoria_2h = 750;
-    public $price_pack_duo_vitoria_3h = 890;
+    public $price_pack_duo_vitoria_2h = 690;
+    public $price_pack_duo_vitoria_3h = 850;
     public $pack_duo_vitoria_desc;
     public $photobooth_vitoria_deposit_per_service = 100;
 

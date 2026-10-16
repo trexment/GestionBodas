@@ -639,29 +639,53 @@ class Setting extends Model
     {
         $provider = strtolower(trim($provider));
 
+        // Auto-migración única si estaban invertidos los valores por defecto anteriores
+        if (self::get('photobooth_providers_v2_migrated') !== '1') {
+            $oldLogName = self::get('photobooth_logrono_name');
+            if ($oldLogName === 'Logroño (FotomatonCheese)' || (float)self::get('price_photobooth_3h', 0) == 430) {
+                self::set('photobooth_logrono_name', 'Logroño');
+                self::set('price_photobooth_2h', 430);
+                self::set('price_photobooth_3h', 480);
+                self::set('photobooth_desc', 'Servicio de Fotomatón profesional (3 horas, tarifa más IVA): fotos e impresiones ilimitadas, 2 copias (invitados + libro de firmas), marco personalizado, atrezzo divertido, photocall, USB y animador durante el evento.');
+
+                self::set('photobooth_vitoria_name', 'Vitoria (FotomatonCheese)');
+                self::set('price_photobooth_vitoria_2h', 380);
+                self::set('price_photobooth_vitoria_3h', 430);
+                self::set('photobooth_vitoria_desc', 'Cámara réflex Canon 1200, impresión 10s y espejo táctil. Fotos ilimitadas, 2 copias (invitados + libro firmas imprenta), 10x15 o tiras, marco y photocall a elegir, atrezzo, animador FotomatonCheese y USB (espacio 2x2m).');
+                self::set('price_video_360_vitoria_2h', 430);
+                self::set('price_video_360_vitoria_3h', 490);
+                self::set('video_360_vitoria_desc', 'Plataforma 100cm (4-5 pers.) con cámara GoPro. Vídeos 360º ilimitados (20s) en slow motion y boomerang, marco y canción personalizados, atrezzo, confeti, 1-2 animadores FotomatonCheese y transporte 50km (espacio 2x2m).');
+                self::set('price_pack_duo_vitoria_2h', 690);
+                self::set('price_pack_duo_vitoria_3h', 850);
+                self::set('pack_duo_vitoria_desc', 'Pack Dúo Todo Incluido: Fotomatón (Canon 1200, copias ilimitadas, libro firmas imprenta, photocall, USB) + Plataforma Vídeo 360º (100cm, GoPro slow motion/boomerang, confeti, atrezzo y animadores). Reserva: 100€/servicio.');
+            }
+            self::set('photobooth_providers_v2_migrated', '1');
+        }
+
         if ($provider === 'vitoria') {
             return [
                 'provider_key' => 'vitoria',
-                'provider_name' => self::get('photobooth_vitoria_name', 'Vitoria / Álava'),
-                'photobooth_2h' => (float)self::get('price_photobooth_vitoria_2h', 400),
-                'photobooth_3h' => (float)self::get('price_photobooth_vitoria_3h', 450),
+                'provider_name' => self::get('photobooth_vitoria_name', 'Vitoria (FotomatonCheese)'),
+                'default_hours' => 2,
+                'photobooth_2h' => (float)self::get('price_photobooth_vitoria_2h', 380),
+                'photobooth_3h' => (float)self::get('price_photobooth_vitoria_3h', 430),
                 'photobooth_extra_hour' => (float)self::get('price_photobooth_vitoria_extra_hour', 50),
                 'photobooth_desc' => self::get(
                     'photobooth_vitoria_desc',
-                    'Fotomatón profesional con cámara réflex e impresión rápida. Fotos ilimitadas, 2 copias (invitados + libro de firmas), 10x15 o tiras, marco y photocall a elegir, atrezzo divertido, animador/a y USB/galería (espacio 2x2m).'
+                    'Cámara réflex Canon 1200, impresión 10s y espejo táctil. Fotos ilimitadas, 2 copias (invitados + libro firmas imprenta), 10x15 o tiras, marco y photocall a elegir, atrezzo, animador FotomatonCheese y USB (espacio 2x2m).'
                 ),
-                'video_360_2h' => (float)self::get('price_video_360_vitoria_2h', 450),
-                'video_360_3h' => (float)self::get('price_video_360_vitoria_3h', 500),
+                'video_360_2h' => (float)self::get('price_video_360_vitoria_2h', 430),
+                'video_360_3h' => (float)self::get('price_video_360_vitoria_3h', 490),
                 'video_360_extra_hour' => (float)self::get('price_video_360_vitoria_extra_hour', 60),
                 'video_360_desc' => self::get(
                     'video_360_vitoria_desc',
-                    'Plataforma Vídeo 360º (4-5 pers.) con vídeos ilimitados en slow motion y boomerang, marco y canción personalizados, atrezzo divertido, confeti y animadores durante todo el servicio (espacio 2x2m).'
+                    'Plataforma 100cm (4-5 pers.) con cámara GoPro. Vídeos 360º ilimitados (20s) en slow motion y boomerang, marco y canción personalizados, atrezzo, confeti, 1-2 animadores FotomatonCheese y transporte 50km (espacio 2x2m).'
                 ),
-                'pack_duo_2h' => (float)self::get('price_pack_duo_vitoria_2h', 750),
-                'pack_duo_3h' => (float)self::get('price_pack_duo_vitoria_3h', 890),
+                'pack_duo_2h' => (float)self::get('price_pack_duo_vitoria_2h', 690),
+                'pack_duo_3h' => (float)self::get('price_pack_duo_vitoria_3h', 850),
                 'pack_duo_desc' => self::get(
                     'pack_duo_vitoria_desc',
-                    'Pack Dúo Todo Incluido: Fotomatón (copias ilimitadas, libro de firmas, photocall, USB) + Plataforma Vídeo 360º (slow motion/boomerang ilimitados, confeti, atrezzo y animadores).'
+                    'Pack Dúo Todo Incluido: Fotomatón (Canon 1200, copias ilimitadas, libro firmas imprenta, photocall, USB) + Plataforma Vídeo 360º (100cm, GoPro slow motion/boomerang, confeti, atrezzo y animadores). Reserva: 100€/servicio.'
                 ),
                 'deposit_per_service' => (float)self::get('photobooth_vitoria_deposit_per_service', 100),
                 'chocolate_fountain_price' => (float)self::get('price_chocolate_fountain', 350),
@@ -674,26 +698,27 @@ class Setting extends Model
 
         return [
             'provider_key' => 'logrono',
-            'provider_name' => self::get('photobooth_logrono_name', 'Logroño (FotomatonCheese)'),
-            'photobooth_2h' => (float)self::get('price_photobooth_2h', 380),
-            'photobooth_3h' => (float)self::get('price_photobooth_3h', 430),
-            'photobooth_extra_hour' => (float)self::get('price_photobooth_extra_hour', 50),
+            'provider_name' => self::get('photobooth_logrono_name', 'Logroño'),
+            'default_hours' => 3,
+            'photobooth_2h' => (float)self::get('price_photobooth_2h', 430),
+            'photobooth_3h' => (float)self::get('price_photobooth_3h', 480),
+            'photobooth_extra_hour' => (float)self::get('price_photobooth_extra_hour', 60),
             'photobooth_desc' => self::get(
                 'photobooth_desc',
-                'Cámara réflex Canon 1200, impresión 10s y espejo táctil. Fotos ilimitadas, 2 copias (invitados + libro firmas imprenta), 10x15 o tiras, marco y photocall a elegir, atrezzo, animador FotomatonCheese y USB (espacio 2x2m).'
+                'Servicio de Fotomatón profesional (3 horas, tarifa más IVA): fotos e impresiones ilimitadas, 2 copias (invitados + libro de firmas), marco personalizado, atrezzo divertido, photocall, USB y animador durante el evento.'
             ),
             'video_360_2h' => (float)self::get('price_video_360_2h', 430),
             'video_360_3h' => (float)self::get('price_video_360_3h', 490),
             'video_360_extra_hour' => (float)self::get('price_video_360_extra_hour', 60),
             'video_360_desc' => self::get(
                 'video_360_desc',
-                'Plataforma 100cm (4-5 pers.) con cámara GoPro. Vídeos 360º ilimitados (20s) en slow motion y boomerang, marco y canción personalizados, atrezzo, confeti, 1-2 animadores FotomatonCheese y transporte 50km (espacio 2x2m).'
+                'Plataforma 100cm (4-5 pers.) con vídeos 360º ilimitados en slow motion y boomerang, marco y canción personalizados, atrezzo, confeti y animadores (espacio 2x2m).'
             ),
             'pack_duo_2h' => (float)self::get('price_pack_duo_2h', 690),
             'pack_duo_3h' => (float)self::get('price_pack_duo_3h', 850),
             'pack_duo_desc' => self::get(
                 'pack_duo_desc',
-                'Pack Dúo Todo Incluido: Fotomatón (Canon 1200, copias ilimitadas, libro firmas imprenta, photocall, USB) + Plataforma Vídeo 360º (100cm, GoPro slow motion/boomerang, confeti, atrezzo y animadores). Reserva: 100€/servicio.'
+                'Pack Dúo Todo Incluido: Fotomatón (copias ilimitadas, libro de firmas, photocall, USB) + Plataforma Vídeo 360º (slow motion/boomerang, confeti, atrezzo y animadores).'
             ),
             'deposit_per_service' => (float)self::get('photobooth_deposit_per_service', 100),
             'chocolate_fountain_price' => (float)self::get('price_chocolate_fountain', 350),

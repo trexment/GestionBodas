@@ -774,7 +774,7 @@ class WhatsAppTemplateService
         $duo2 = number_format($pb['pack_duo_2h'], 0, ',', '.');
         $duo3 = number_format($pb['pack_duo_3h'], 0, ',', '.');
         $dep = number_format($pb['deposit_per_service'], 0, ',', '.');
-        $staffLabel = ($provider === 'vitoria') ? 'nuestro equipo' : 'FotomatonCheese';
+        $staffLabel = ($provider === 'vitoria') ? 'FotomatonCheese' : 'nuestro equipo';
 
         return "¡Hola {$clientName}! 👋 Os pasamos toda la información y tarifas de los servicios de *Fotomatón* y *Plataforma 360º*:\n\n"
              . "📸 *FOTOMATÓN!*\n"

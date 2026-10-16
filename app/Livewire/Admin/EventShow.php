@@ -357,11 +357,12 @@ class EventShow extends Component
         }
 
         $pbConfig = \App\Models\Setting::getPhotobooth360Config($this->photobooth_provider);
+        $defaultPbHours = (int)($pbConfig['default_hours'] ?? ($this->photobooth_provider === 'logrono' ? 3 : 2));
         $this->quote_services['photobooth']['price_2h'] = $pbConfig['photobooth_2h'];
         $this->quote_services['photobooth']['price_3h'] = $pbConfig['photobooth_3h'];
         $this->quote_services['photobooth']['extra_hour'] = $pbConfig['photobooth_extra_hour'] ?? 50;
-        $this->quote_services['photobooth']['hours'] = 2;
-        $this->quote_services['photobooth']['price'] = $pbConfig['photobooth_2h'];
+        $this->quote_services['photobooth']['hours'] = $defaultPbHours;
+        $this->quote_services['photobooth']['price'] = $defaultPbHours >= 3 ? $pbConfig['photobooth_3h'] : $pbConfig['photobooth_2h'];
         $this->quote_services['photobooth']['desc'] = $pbConfig['photobooth_desc'];
 
         $this->quote_services['video_360']['price_2h'] = $pbConfig['video_360_2h'];
@@ -2268,6 +2269,10 @@ class EventShow extends Component
         $pbConfig = \App\Models\Setting::getPhotobooth360Config($this->photobooth_provider);
 
         $pbHours = max(1, (int)($this->quote_services['photobooth']['hours'] ?? 2));
+        if ($this->photobooth_provider === 'logrono' && $pbHours < 3) {
+            $pbHours = 3;
+            $this->quote_services['photobooth']['hours'] = 3;
+        }
         $pbExtra = (float)($pbConfig['photobooth_extra_hour'] ?? 50);
         $this->quote_services['photobooth']['price_2h'] = $pbConfig['photobooth_2h'];
         $this->quote_services['photobooth']['price_3h'] = $pbConfig['photobooth_3h'];
