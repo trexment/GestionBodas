@@ -2236,6 +2236,22 @@ class EventShow extends Component
             return;
         }
 
+        if ($key === 'photobooth.price') {
+            $prov = $this->photobooth_provider ?: 'logrono';
+            $pbConfig = \App\Models\Setting::getPhotobooth360Config($prov);
+            $h = max(1, (int)($this->quote_services['photobooth']['hours'] ?? 2));
+            $price = (float)$value;
+            if ($h <= 2) {
+                $this->quote_services['photobooth']['price_2h'] = $price;
+                $pbConfig['photobooth_2h'] = $price;
+            } elseif ($h === 3) {
+                $this->quote_services['photobooth']['price_3h'] = $price;
+                $pbConfig['photobooth_3h'] = $price;
+            }
+            \App\Models\Setting::saveSinglePhotoboothProvider($prov, $pbConfig);
+            return;
+        }
+
         if ($key === 'video_360.hours') {
             $h = max(1, (int)$value);
             $pbConfig = \App\Models\Setting::getPhotobooth360Config($this->photobooth_provider ?: 'logrono');
@@ -2247,6 +2263,22 @@ class EventShow extends Component
             } else {
                 $this->quote_services['video_360']['price'] = $pbConfig['video_360_3h'] + (($h - 3) * $extraRate);
             }
+            return;
+        }
+
+        if ($key === 'video_360.price') {
+            $prov = $this->photobooth_provider ?: 'logrono';
+            $pbConfig = \App\Models\Setting::getPhotobooth360Config($prov);
+            $h = max(1, (int)($this->quote_services['video_360']['hours'] ?? 2));
+            $price = (float)$value;
+            if ($h <= 2) {
+                $this->quote_services['video_360']['price_2h'] = $price;
+                $pbConfig['video_360_2h'] = $price;
+            } elseif ($h === 3) {
+                $this->quote_services['video_360']['price_3h'] = $price;
+                $pbConfig['video_360_3h'] = $price;
+            }
+            \App\Models\Setting::saveSinglePhotoboothProvider($prov, $pbConfig);
             return;
         }
 
@@ -2264,10 +2296,62 @@ class EventShow extends Component
             return;
         }
 
+        if ($key === 'pack_duo_360.price') {
+            $prov = $this->photobooth_provider ?: 'logrono';
+            $pbConfig = \App\Models\Setting::getPhotobooth360Config($prov);
+            $h = max(1, (int)($this->quote_services['pack_duo_360']['hours'] ?? 3));
+            $price = (float)$value;
+            if ($h <= 2) {
+                $this->quote_services['pack_duo_360']['price_2h'] = $price;
+                $pbConfig['pack_duo_2h'] = $price;
+            } elseif ($h === 3) {
+                $this->quote_services['pack_duo_360']['price_3h'] = $price;
+                $pbConfig['pack_duo_3h'] = $price;
+            }
+            \App\Models\Setting::saveSinglePhotoboothProvider($prov, $pbConfig);
+            return;
+        }
+
+        if ($key === 'chocolate_fountain.price') {
+            $prov = $this->photobooth_provider ?: 'vitoria';
+            $pbConfig = \App\Models\Setting::getPhotobooth360Config($prov);
+            $chocF = (int)($this->quote_services['chocolate_fountain']['fountains'] ?? 1) >= 2 ? 2 : 1;
+            $chocH = (int)($this->quote_services['chocolate_fountain']['hours'] ?? 2) >= 3 ? 3 : 2;
+            $price = (float)$value;
+            $this->quote_services['chocolate_fountain']["price_{$chocF}_{$chocH}h"] = $price;
+            $pbConfig["chocolate_fountain_{$chocF}_{$chocH}h"] = $price;
+            \App\Models\Setting::saveSinglePhotoboothProvider($prov, $pbConfig);
+            return;
+        }
+
+        if ($key === 'candy_bar.price') {
+            $prov = $this->photobooth_provider ?: 'vitoria';
+            $pbConfig = \App\Models\Setting::getPhotobooth360Config($prov);
+            $pbConfig['candy_bar_price'] = (float)$value;
+            \App\Models\Setting::saveSinglePhotoboothProvider($prov, $pbConfig);
+            return;
+        }
+
         if ($key === 'waffle_cart.hours') {
             $h = max(2, (int)$value);
             $pbConfig = \App\Models\Setting::getPhotobooth360Config($this->photobooth_provider ?: 'vitoria');
             $this->quote_services['waffle_cart']['price'] = ($h <= 2) ? ($pbConfig['waffle_cart_2h'] ?? 420) : ($pbConfig['waffle_cart_3h'] ?? 550);
+            return;
+        }
+
+        if ($key === 'waffle_cart.price') {
+            $prov = $this->photobooth_provider ?: 'vitoria';
+            $pbConfig = \App\Models\Setting::getPhotobooth360Config($prov);
+            $waffleH = (int)($this->quote_services['waffle_cart']['hours'] ?? 2) >= 3 ? 3 : 2;
+            $price = (float)$value;
+            if ($waffleH === 3) {
+                $this->quote_services['waffle_cart']['price_3h'] = $price;
+                $pbConfig['waffle_cart_3h'] = $price;
+            } else {
+                $this->quote_services['waffle_cart']['price_2h'] = $price;
+                $pbConfig['waffle_cart_2h'] = $price;
+            }
+            \App\Models\Setting::saveSinglePhotoboothProvider($prov, $pbConfig);
             return;
         }
 
@@ -2388,7 +2472,7 @@ class EventShow extends Component
         }
         $newState = empty($providers[$provKey][$serviceFlag]);
         $providers[$provKey][$serviceFlag] = $newState;
-        \App\Models\Setting::savePhotoboothProviders($providers);
+        \App\Models\Setting::saveSinglePhotoboothProvider($provKey, $providers[$provKey]);
 
         if (!$newState) {
             $serviceKey = $allowedFlags[$serviceFlag];
@@ -2466,7 +2550,7 @@ class EventShow extends Component
         \App\Models\Setting::set('price_extra_hours', (float)($this->quote_services['extra_hours']['price'] ?? 120));
         \App\Models\Setting::set('price_karaoke', (float)($this->quote_services['karaoke']['price'] ?? 80));
 
-        // Proveedor activo por defecto y tarifas en el catálogo de proveedores
+        // Proveedor activo por defecto y tarifas SOLO para el proveedor seleccionado
         $providers = \App\Models\Setting::getPhotoboothProviders();
         $prov = isset($providers[$this->photobooth_provider]) ? $this->photobooth_provider : (array_key_first($providers) ?: 'logrono');
         \App\Models\Setting::set('default_photobooth_provider', $prov);
@@ -2539,7 +2623,7 @@ class EventShow extends Component
                 $providers[$prov]['waffle_cart_desc'] = $this->quote_services['waffle_cart']['desc'];
             }
 
-            \App\Models\Setting::savePhotoboothProviders($providers);
+            \App\Models\Setting::saveSinglePhotoboothProvider($prov, $providers[$prov]);
         }
 
         // Efectos y Fotografía

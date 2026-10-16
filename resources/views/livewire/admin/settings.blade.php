@@ -889,9 +889,12 @@
                     </div>
                 @endif
 
-                <!-- PANEL DEL PROVEEDOR ACTIVO (con wire:key único para evitar que Livewire mezcle inputs entre pestañas) -->
-                @if(!empty($activeProv))
-                    <div wire:key="pb-provider-panel-{{ $activeProvKey }}" class="space-y-4">
+                <!-- PANELES INDEPENDIENTES POR PROVEEDOR (Cada proveedor tiene sus propios inputs en el DOM con wire:key exclusivo para no mezclar jamás tarifas entre pestañas) -->
+                @foreach($photobooth_providers as $provKey => $provData)
+                    <div
+                        wire:key="pb-provider-panel-{{ $provKey }}"
+                        class="{{ $activeProvKey === $provKey ? 'block space-y-4' : 'hidden' }}"
+                    >
                         <!-- Datos identificativos del proveedor -->
                         <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
                             <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -899,8 +902,8 @@
                                     <label class="block text-[11px] font-bold text-slate-700 mb-1">Nombre del Proveedor (independiente)</label>
                                     <input
                                         type="text"
-                                        wire:key="input-prov-name-{{ $activeProvKey }}"
-                                        wire:model.live="photobooth_providers.{{ $activeProvKey }}.name"
+                                        wire:key="pb-in-{{ $provKey }}-name"
+                                        wire:model.live.debounce.400ms="photobooth_providers.{{ $provKey }}.name"
                                         class="w-full border-indigo-300 rounded-lg text-xs font-black px-3 py-1.5 bg-white text-indigo-950"
                                     >
                                 </div>
@@ -908,8 +911,8 @@
                                     <label class="block text-[11px] font-bold text-slate-700 mb-1">Zona / Ciudad de Cobertura</label>
                                     <input
                                         type="text"
-                                        wire:key="input-prov-zone-{{ $activeProvKey }}"
-                                        wire:model="photobooth_providers.{{ $activeProvKey }}.zone"
+                                        wire:key="pb-in-{{ $provKey }}-zone"
+                                        wire:model.live.debounce.400ms="photobooth_providers.{{ $provKey }}.zone"
                                         placeholder="Ej: La Rioja / Álava / Navarra"
                                         class="w-full border-slate-300 rounded-lg text-xs font-semibold px-3 py-1.5 bg-white"
                                     >
@@ -919,15 +922,16 @@
                                     <div class="flex items-center gap-2">
                                         <input
                                             type="text"
-                                            wire:key="input-prov-contact-{{ $activeProvKey }}"
-                                            wire:model="photobooth_providers.{{ $activeProvKey }}.contact_info"
+                                            wire:key="pb-in-{{ $provKey }}-contact"
+                                            wire:model.live.debounce.400ms="photobooth_providers.{{ $provKey }}.contact_info"
                                             placeholder="Ej: Águeda 697198216"
                                             class="w-full border-slate-300 rounded-lg text-xs px-3 py-1.5 bg-white"
                                         >
-                                        @if(!in_array($activeProvKey, ['logrono', 'vitoria']))
+                                        @if(!in_array($provKey, ['logrono', 'vitoria']))
                                             <button
                                                 type="button"
-                                                wire:click="deletePhotoboothProvider('{{ $activeProvKey }}')"
+                                                wire:key="pb-del-{{ $provKey }}"
+                                                wire:click="deletePhotoboothProvider('{{ $provKey }}')"
                                                 wire:confirm="¿Seguro que quieres eliminar este proveedor externo?"
                                                 class="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 whitespace-nowrap cursor-pointer"
                                                 title="Eliminar proveedor"
@@ -943,9 +947,9 @@
                             <div class="pt-3 border-t border-slate-200">
                                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
                                     <span class="text-[11px] font-black uppercase tracking-wider text-slate-700">
-                                        🎚️ Servicios activos para «{{ $activeProv['name'] ?? ucfirst($activeProvKey) }}» (haz clic para activar o desactivar en el presupuesto):
+                                        🎚️ Servicios activos para «{{ $provData['name'] ?? ucfirst($provKey) }}» (haz clic para activar o desactivar en el presupuesto):
                                     </span>
-                                    <span class="text-[11px] text-slate-500">Los servicios desactivados no saldrán al elegir este proveedor.</span>
+                                    <span class="text-[11px] text-emerald-700 font-semibold">✓ Guardado automático e independiente para {{ $provData['name'] ?? ucfirst($provKey) }}</span>
                                 </div>
                                 @php
                                     $serviceToggles = [
@@ -959,11 +963,11 @@
                                 @endphp
                                 <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
                                     @foreach($serviceToggles as $flagKey => $meta)
-                                        @php $isOn = !empty($activeProv[$flagKey]); @endphp
+                                        @php $isOn = !empty($provData[$flagKey]); @endphp
                                         <button
                                             type="button"
-                                            wire:key="toggle-{{ $activeProvKey }}-{{ $flagKey }}"
-                                            wire:click="toggleProviderService('{{ $activeProvKey }}', '{{ $flagKey }}')"
+                                            wire:key="toggle-{{ $provKey }}-{{ $flagKey }}"
+                                            wire:click="toggleProviderService('{{ $provKey }}', '{{ $flagKey }}')"
                                             class="px-2.5 py-2 rounded-xl border text-left transition cursor-pointer flex items-center justify-between gap-1.5 {{ $isOn ? 'bg-emerald-50 border-emerald-300 text-emerald-950 shadow-2xs' : 'bg-slate-100 border-slate-200 text-slate-400 hover:text-slate-600' }}"
                                         >
                                             <span class="text-xs font-bold truncate">{{ $meta['icon'] }} {{ $meta['label'] }}</span>
@@ -976,89 +980,89 @@
                             </div>
                         </div>
 
-                        <!-- TARJETAS DE TARIFAS Y DESCRIPCIONES DEL PROVEEDOR ACTIVO -->
+                        <!-- TARJETAS DE TARIFAS Y DESCRIPCIONES DEL PROVEEDOR -->
                         <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
                             <!-- 1. FOTOMATÓN -->
-                            <div class="p-4 rounded-xl border space-y-3 transition {{ !empty($activeProv['photobooth_enabled']) ? 'bg-indigo-50/40 border-indigo-200' : 'bg-slate-50 border-slate-200 opacity-60' }}">
+                            <div class="p-4 rounded-xl border space-y-3 transition {{ !empty($provData['photobooth_enabled']) ? 'bg-indigo-50/40 border-indigo-200' : 'bg-slate-50 border-slate-200 opacity-60' }}">
                                 <div class="flex items-center justify-between border-b border-indigo-100 pb-2">
-                                    <span class="text-xs font-black uppercase text-indigo-900">📸 Fotomatón ({{ $activeProv['name'] }})</span>
-                                    <button type="button" wire:click="toggleProviderService('{{ $activeProvKey }}', 'photobooth_enabled')" class="text-[10px] font-black px-2 py-0.5 rounded cursor-pointer {{ !empty($activeProv['photobooth_enabled']) ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600' }}">
-                                        {{ !empty($activeProv['photobooth_enabled']) ? '✓ Activo' : '✕ Desactivado' }}
+                                    <span class="text-xs font-black uppercase text-indigo-900">📸 Fotomatón ({{ $provData['name'] }})</span>
+                                    <button type="button" wire:key="btn-on-pb-{{ $provKey }}" wire:click="toggleProviderService('{{ $provKey }}', 'photobooth_enabled')" class="text-[10px] font-black px-2 py-0.5 rounded cursor-pointer {{ !empty($provData['photobooth_enabled']) ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600' }}">
+                                        {{ !empty($provData['photobooth_enabled']) ? '✓ Activo' : '✕ Desactivado' }}
                                     </button>
                                 </div>
                                 <div class="grid grid-cols-3 gap-2">
                                     <div>
                                         <label class="block text-[11px] font-bold text-gray-700 mb-1">Precio 2 Horas (€)</label>
-                                        <input type="number" step="0.01" wire:model="photobooth_providers.{{ $activeProvKey }}.photobooth_2h" class="w-full border-indigo-300 rounded-lg text-sm font-black text-indigo-700">
+                                        <input type="number" step="0.01" wire:key="pb-in-{{ $provKey }}-pb2h" wire:model.live.debounce.400ms="photobooth_providers.{{ $provKey }}.photobooth_2h" class="w-full border-indigo-300 rounded-lg text-sm font-black text-indigo-700">
                                     </div>
                                     <div>
                                         <label class="block text-[11px] font-bold text-gray-700 mb-1">Precio 3 Horas (€)</label>
-                                        <input type="number" step="0.01" wire:model="photobooth_providers.{{ $activeProvKey }}.photobooth_3h" class="w-full border-indigo-300 rounded-lg text-sm font-black text-indigo-700">
+                                        <input type="number" step="0.01" wire:key="pb-in-{{ $provKey }}-pb3h" wire:model.live.debounce.400ms="photobooth_providers.{{ $provKey }}.photobooth_3h" class="w-full border-indigo-300 rounded-lg text-sm font-black text-indigo-700">
                                     </div>
                                     <div>
                                         <label class="block text-[11px] font-bold text-gray-700 mb-1">+ Hora Extra (€/h)</label>
-                                        <input type="number" step="0.01" wire:model="photobooth_providers.{{ $activeProvKey }}.photobooth_extra_hour" class="w-full border-indigo-300 rounded-lg text-sm font-black text-amber-700">
+                                        <input type="number" step="0.01" wire:key="pb-in-{{ $provKey }}-pbextra" wire:model.live.debounce.400ms="photobooth_providers.{{ $provKey }}.photobooth_extra_hour" class="w-full border-indigo-300 rounded-lg text-sm font-black text-amber-700">
                                     </div>
                                 </div>
                                 <div>
                                     <label class="block text-[11px] font-bold text-gray-700 mb-1">Plantilla Descriptiva (Qué incluye en PDF)</label>
-                                    <textarea rows="3" wire:model="photobooth_providers.{{ $activeProvKey }}.photobooth_desc" class="w-full border-gray-300 rounded-lg text-xs"></textarea>
+                                    <textarea rows="3" wire:key="pb-in-{{ $provKey }}-pbdesc" wire:model.live.debounce.400ms="photobooth_providers.{{ $provKey }}.photobooth_desc" class="w-full border-gray-300 rounded-lg text-xs"></textarea>
                                 </div>
                             </div>
 
                             <!-- 2. PLATAFORMA 360º -->
-                            <div class="p-4 rounded-xl border space-y-3 transition {{ !empty($activeProv['video_360_enabled']) ? 'bg-purple-50/40 border-purple-200' : 'bg-slate-50 border-slate-200 opacity-60' }}">
+                            <div class="p-4 rounded-xl border space-y-3 transition {{ !empty($provData['video_360_enabled']) ? 'bg-purple-50/40 border-purple-200' : 'bg-slate-50 border-slate-200 opacity-60' }}">
                                 <div class="flex items-center justify-between border-b border-purple-100 pb-2">
-                                    <span class="text-xs font-black uppercase text-purple-900">🎥 Plataforma 360º ({{ $activeProv['name'] }})</span>
-                                    <button type="button" wire:click="toggleProviderService('{{ $activeProvKey }}', 'video_360_enabled')" class="text-[10px] font-black px-2 py-0.5 rounded cursor-pointer {{ !empty($activeProv['video_360_enabled']) ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600' }}">
-                                        {{ !empty($activeProv['video_360_enabled']) ? '✓ Activo' : '✕ Desactivado' }}
+                                    <span class="text-xs font-black uppercase text-purple-900">🎥 Plataforma 360º ({{ $provData['name'] }})</span>
+                                    <button type="button" wire:key="btn-on-360-{{ $provKey }}" wire:click="toggleProviderService('{{ $provKey }}', 'video_360_enabled')" class="text-[10px] font-black px-2 py-0.5 rounded cursor-pointer {{ !empty($provData['video_360_enabled']) ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600' }}">
+                                        {{ !empty($provData['video_360_enabled']) ? '✓ Activo' : '✕ Desactivado' }}
                                     </button>
                                 </div>
                                 <div class="grid grid-cols-3 gap-2">
                                     <div>
                                         <label class="block text-[11px] font-bold text-gray-700 mb-1">Precio 2 Horas (€)</label>
-                                        <input type="number" step="0.01" wire:model="photobooth_providers.{{ $activeProvKey }}.video_360_2h" class="w-full border-purple-300 rounded-lg text-sm font-black text-purple-700">
+                                        <input type="number" step="0.01" wire:key="pb-in-{{ $provKey }}-v360_2h" wire:model.live.debounce.400ms="photobooth_providers.{{ $provKey }}.video_360_2h" class="w-full border-purple-300 rounded-lg text-sm font-black text-purple-700">
                                     </div>
                                     <div>
                                         <label class="block text-[11px] font-bold text-gray-700 mb-1">Precio 3 Horas (€)</label>
-                                        <input type="number" step="0.01" wire:model="photobooth_providers.{{ $activeProvKey }}.video_360_3h" class="w-full border-purple-300 rounded-lg text-sm font-black text-purple-700">
+                                        <input type="number" step="0.01" wire:key="pb-in-{{ $provKey }}-v360_3h" wire:model.live.debounce.400ms="photobooth_providers.{{ $provKey }}.video_360_3h" class="w-full border-purple-300 rounded-lg text-sm font-black text-purple-700">
                                     </div>
                                     <div>
                                         <label class="block text-[11px] font-bold text-gray-700 mb-1">+ Hora Extra (€/h)</label>
-                                        <input type="number" step="0.01" wire:model="photobooth_providers.{{ $activeProvKey }}.video_360_extra_hour" class="w-full border-purple-300 rounded-lg text-sm font-black text-amber-700">
+                                        <input type="number" step="0.01" wire:key="pb-in-{{ $provKey }}-v360_extra" wire:model.live.debounce.400ms="photobooth_providers.{{ $provKey }}.video_360_extra_hour" class="w-full border-purple-300 rounded-lg text-sm font-black text-amber-700">
                                     </div>
                                 </div>
                                 <div>
                                     <label class="block text-[11px] font-bold text-gray-700 mb-1">Plantilla Descriptiva (Qué incluye en PDF)</label>
-                                    <textarea rows="3" wire:model="photobooth_providers.{{ $activeProvKey }}.video_360_desc" class="w-full border-gray-300 rounded-lg text-xs"></textarea>
+                                    <textarea rows="3" wire:key="pb-in-{{ $provKey }}-v360_desc" wire:model.live.debounce.400ms="photobooth_providers.{{ $provKey }}.video_360_desc" class="w-full border-gray-300 rounded-lg text-xs"></textarea>
                                 </div>
                             </div>
 
                             <!-- 3. PACK DÚO TODO INCLUIDO -->
-                            <div class="p-4 rounded-xl border-2 space-y-3 transition {{ !empty($activeProv['pack_duo_enabled']) ? 'bg-gradient-to-br from-indigo-50/70 to-purple-50/70 border-indigo-300' : 'bg-slate-50 border-slate-200 opacity-60' }}">
+                            <div class="p-4 rounded-xl border-2 space-y-3 transition {{ !empty($provData['pack_duo_enabled']) ? 'bg-gradient-to-br from-indigo-50/70 to-purple-50/70 border-indigo-300' : 'bg-slate-50 border-slate-200 opacity-60' }}">
                                 <div class="flex items-center justify-between border-b border-indigo-200 pb-2">
-                                    <span class="text-xs font-black uppercase text-indigo-950">🔹 Pack Dúo ({{ $activeProv['name'] }})</span>
-                                    <button type="button" wire:click="toggleProviderService('{{ $activeProvKey }}', 'pack_duo_enabled')" class="text-[10px] font-black px-2 py-0.5 rounded cursor-pointer {{ !empty($activeProv['pack_duo_enabled']) ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600' }}">
-                                        {{ !empty($activeProv['pack_duo_enabled']) ? '✓ Activo' : '✕ Desactivado' }}
+                                    <span class="text-xs font-black uppercase text-indigo-950">🔹 Pack Dúo ({{ $provData['name'] }})</span>
+                                    <button type="button" wire:key="btn-on-duo-{{ $provKey }}" wire:click="toggleProviderService('{{ $provKey }}', 'pack_duo_enabled')" class="text-[10px] font-black px-2 py-0.5 rounded cursor-pointer {{ !empty($provData['pack_duo_enabled']) ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600' }}">
+                                        {{ !empty($provData['pack_duo_enabled']) ? '✓ Activo' : '✕ Desactivado' }}
                                     </button>
                                 </div>
                                 <div class="grid grid-cols-3 gap-2">
                                     <div>
                                         <label class="block text-[11px] font-bold text-indigo-950 mb-1">Pack Dúo 2h (€)</label>
-                                        <input type="number" step="0.01" wire:model="photobooth_providers.{{ $activeProvKey }}.pack_duo_2h" class="w-full border-indigo-300 rounded-lg text-sm font-black text-indigo-700">
+                                        <input type="number" step="0.01" wire:key="pb-in-{{ $provKey }}-duo2h" wire:model.live.debounce.400ms="photobooth_providers.{{ $provKey }}.pack_duo_2h" class="w-full border-indigo-300 rounded-lg text-sm font-black text-indigo-700">
                                     </div>
                                     <div>
                                         <label class="block text-[11px] font-bold text-indigo-950 mb-1">Pack Dúo 3h (€)</label>
-                                        <input type="number" step="0.01" wire:model="photobooth_providers.{{ $activeProvKey }}.pack_duo_3h" class="w-full border-indigo-300 rounded-lg text-sm font-black text-indigo-700">
+                                        <input type="number" step="0.01" wire:key="pb-in-{{ $provKey }}-duo3h" wire:model.live.debounce.400ms="photobooth_providers.{{ $provKey }}.pack_duo_3h" class="w-full border-indigo-300 rounded-lg text-sm font-black text-indigo-700">
                                     </div>
                                     <div>
                                         <label class="block text-[11px] font-bold text-indigo-950 mb-1">Reserva / Serv. (€)</label>
-                                        <input type="number" step="0.01" wire:model="photobooth_providers.{{ $activeProvKey }}.deposit_per_service" class="w-full border-indigo-300 rounded-lg text-sm font-bold text-gray-800">
+                                        <input type="number" step="0.01" wire:key="pb-in-{{ $provKey }}-deposit" wire:model.live.debounce.400ms="photobooth_providers.{{ $provKey }}.deposit_per_service" class="w-full border-indigo-300 rounded-lg text-sm font-bold text-gray-800">
                                     </div>
                                 </div>
                                 <div>
                                     <label class="block text-[11px] font-bold text-indigo-950 mb-1">Plantilla Descriptiva Pack Dúo</label>
-                                    <textarea rows="3" wire:model="photobooth_providers.{{ $activeProvKey }}.pack_duo_desc" class="w-full border-indigo-300 rounded-lg text-xs"></textarea>
+                                    <textarea rows="3" wire:key="pb-in-{{ $provKey }}-duodesc" wire:model.live.debounce.400ms="photobooth_providers.{{ $provKey }}.pack_duo_desc" class="w-full border-indigo-300 rounded-lg text-xs"></textarea>
                                 </div>
                             </div>
                         </div>
@@ -1066,85 +1070,85 @@
                         <!-- FILA 2: SERVICIOS DULCES / EXTRAS DE ESTE PROVEEDOR -->
                         <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 pt-2">
                             <!-- 4. MESA CON FUENTE DE CHOCOLATE -->
-                            <div class="p-4 rounded-xl border space-y-3 transition {{ !empty($activeProv['chocolate_fountain_enabled']) ? 'bg-amber-50/40 border-amber-200' : 'bg-slate-50 border-slate-200 opacity-60' }}">
+                            <div class="p-4 rounded-xl border space-y-3 transition {{ !empty($provData['chocolate_fountain_enabled']) ? 'bg-amber-50/40 border-amber-200' : 'bg-slate-50 border-slate-200 opacity-60' }}">
                                 <div class="flex items-center justify-between border-b border-amber-100 pb-2">
-                                    <span class="text-xs font-black uppercase text-amber-900">🍫 Fuente de Chocolate ({{ $activeProv['name'] }})</span>
-                                    <button type="button" wire:click="toggleProviderService('{{ $activeProvKey }}', 'chocolate_fountain_enabled')" class="text-[10px] font-black px-2 py-0.5 rounded cursor-pointer {{ !empty($activeProv['chocolate_fountain_enabled']) ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600' }}">
-                                        {{ !empty($activeProv['chocolate_fountain_enabled']) ? '✓ Activo' : '✕ No lo ofrece' }}
+                                    <span class="text-xs font-black uppercase text-amber-900">🍫 Fuente de Chocolate ({{ $provData['name'] }})</span>
+                                    <button type="button" wire:key="btn-on-choc-{{ $provKey }}" wire:click="toggleProviderService('{{ $provKey }}', 'chocolate_fountain_enabled')" class="text-[10px] font-black px-2 py-0.5 rounded cursor-pointer {{ !empty($provData['chocolate_fountain_enabled']) ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600' }}">
+                                        {{ !empty($provData['chocolate_fountain_enabled']) ? '✓ Activo' : '✕ No lo ofrece' }}
                                     </button>
                                 </div>
                                 <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
                                     <div>
                                         <label class="block text-[10px] font-bold text-gray-700 mb-1">1 Fuente · 2h (€)</label>
-                                        <input type="number" step="0.01" wire:model="photobooth_providers.{{ $activeProvKey }}.chocolate_fountain_1_2h" class="w-full border-amber-300 rounded-lg text-sm font-black text-amber-800">
+                                        <input type="number" step="0.01" wire:key="pb-in-{{ $provKey }}-choc1_2h" wire:model.live.debounce.400ms="photobooth_providers.{{ $provKey }}.chocolate_fountain_1_2h" class="w-full border-amber-300 rounded-lg text-sm font-black text-amber-800">
                                     </div>
                                     <div>
                                         <label class="block text-[10px] font-bold text-gray-700 mb-1">1 Fuente · 3h (€)</label>
-                                        <input type="number" step="0.01" wire:model="photobooth_providers.{{ $activeProvKey }}.chocolate_fountain_1_3h" class="w-full border-amber-300 rounded-lg text-sm font-black text-amber-800">
+                                        <input type="number" step="0.01" wire:key="pb-in-{{ $provKey }}-choc1_3h" wire:model.live.debounce.400ms="photobooth_providers.{{ $provKey }}.chocolate_fountain_1_3h" class="w-full border-amber-300 rounded-lg text-sm font-black text-amber-800">
                                     </div>
                                     <div>
                                         <label class="block text-[10px] font-bold text-gray-700 mb-1">2 Fuentes · 2h (€)</label>
-                                        <input type="number" step="0.01" wire:model="photobooth_providers.{{ $activeProvKey }}.chocolate_fountain_2_2h" class="w-full border-amber-300 rounded-lg text-sm font-black text-amber-900">
+                                        <input type="number" step="0.01" wire:key="pb-in-{{ $provKey }}-choc2_2h" wire:model.live.debounce.400ms="photobooth_providers.{{ $provKey }}.chocolate_fountain_2_2h" class="w-full border-amber-300 rounded-lg text-sm font-black text-amber-900">
                                     </div>
                                     <div>
                                         <label class="block text-[10px] font-bold text-gray-700 mb-1">2 Fuentes · 3h (€)</label>
-                                        <input type="number" step="0.01" wire:model="photobooth_providers.{{ $activeProvKey }}.chocolate_fountain_2_3h" class="w-full border-amber-300 rounded-lg text-sm font-black text-amber-900">
+                                        <input type="number" step="0.01" wire:key="pb-in-{{ $provKey }}-choc2_3h" wire:model.live.debounce.400ms="photobooth_providers.{{ $provKey }}.chocolate_fountain_2_3h" class="w-full border-amber-300 rounded-lg text-sm font-black text-amber-900">
                                     </div>
                                     <div class="col-span-2 sm:col-span-1">
                                         <label class="block text-[10px] font-bold text-gray-700 mb-1">Rincón Gofre (€/ud)</label>
-                                        <input type="number" step="0.01" wire:model="photobooth_providers.{{ $activeProvKey }}.chocolate_fountain_waffle_extra" class="w-full border-amber-300 rounded-lg text-sm font-bold text-gray-800">
+                                        <input type="number" step="0.01" wire:key="pb-in-{{ $provKey }}-chocwaffle" wire:model.live.debounce.400ms="photobooth_providers.{{ $provKey }}.chocolate_fountain_waffle_extra" class="w-full border-amber-300 rounded-lg text-sm font-bold text-gray-800">
                                     </div>
                                 </div>
                                 <div>
                                     <label class="block text-[11px] font-bold text-gray-700 mb-1">Plantilla Descriptiva (Qué incluye en PDF)</label>
-                                    <textarea rows="3" wire:model="photobooth_providers.{{ $activeProvKey }}.chocolate_fountain_desc" class="w-full border-gray-300 rounded-lg text-xs"></textarea>
+                                    <textarea rows="3" wire:key="pb-in-{{ $provKey }}-chocdesc" wire:model.live.debounce.400ms="photobooth_providers.{{ $provKey }}.chocolate_fountain_desc" class="w-full border-gray-300 rounded-lg text-xs"></textarea>
                                 </div>
                             </div>
 
                             <!-- 5. MESA DE SOLO CHUCHES -->
-                            <div class="p-4 rounded-xl border space-y-3 transition {{ !empty($activeProv['candy_bar_enabled']) ? 'bg-pink-50/40 border-pink-200' : 'bg-slate-50 border-slate-200 opacity-60' }}">
+                            <div class="p-4 rounded-xl border space-y-3 transition {{ !empty($provData['candy_bar_enabled']) ? 'bg-pink-50/40 border-pink-200' : 'bg-slate-50 border-slate-200 opacity-60' }}">
                                 <div class="flex items-center justify-between border-b border-pink-100 pb-2">
-                                    <span class="text-xs font-black uppercase text-pink-900">🍬 Mesa de Chuches ({{ $activeProv['name'] }})</span>
-                                    <button type="button" wire:click="toggleProviderService('{{ $activeProvKey }}', 'candy_bar_enabled')" class="text-[10px] font-black px-2 py-0.5 rounded cursor-pointer {{ !empty($activeProv['candy_bar_enabled']) ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600' }}">
-                                        {{ !empty($activeProv['candy_bar_enabled']) ? '✓ Activo' : '✕ No lo ofrece' }}
+                                    <span class="text-xs font-black uppercase text-pink-900">🍬 Mesa de Chuches ({{ $provData['name'] }})</span>
+                                    <button type="button" wire:key="btn-on-candy-{{ $provKey }}" wire:click="toggleProviderService('{{ $provKey }}', 'candy_bar_enabled')" class="text-[10px] font-black px-2 py-0.5 rounded cursor-pointer {{ !empty($provData['candy_bar_enabled']) ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600' }}">
+                                        {{ !empty($provData['candy_bar_enabled']) ? '✓ Activo' : '✕ No lo ofrece' }}
                                     </button>
                                 </div>
                                 <div>
                                     <label class="block text-[11px] font-bold text-gray-700 mb-1">Precio Servicio Completo (€)</label>
-                                    <input type="number" step="0.01" wire:model="photobooth_providers.{{ $activeProvKey }}.candy_bar_price" class="w-full border-pink-300 rounded-lg text-sm font-black text-pink-800">
+                                    <input type="number" step="0.01" wire:key="pb-in-{{ $provKey }}-candyprice" wire:model.live.debounce.400ms="photobooth_providers.{{ $provKey }}.candy_bar_price" class="w-full border-pink-300 rounded-lg text-sm font-black text-pink-800">
                                 </div>
                                 <div>
                                     <label class="block text-[11px] font-bold text-gray-700 mb-1">Plantilla Descriptiva (Qué incluye en PDF)</label>
-                                    <textarea rows="3" wire:model="photobooth_providers.{{ $activeProvKey }}.candy_bar_desc" class="w-full border-gray-300 rounded-lg text-xs"></textarea>
+                                    <textarea rows="3" wire:key="pb-in-{{ $provKey }}-candydesc" wire:model.live.debounce.400ms="photobooth_providers.{{ $provKey }}.candy_bar_desc" class="w-full border-gray-300 rounded-lg text-xs"></textarea>
                                 </div>
                             </div>
 
                             <!-- 6. CARRITO DE GOFRES -->
-                            <div class="p-4 rounded-xl border space-y-3 transition {{ !empty($activeProv['waffle_cart_enabled']) ? 'bg-orange-50/40 border-orange-200' : 'bg-slate-50 border-slate-200 opacity-60' }}">
+                            <div class="p-4 rounded-xl border space-y-3 transition {{ !empty($provData['waffle_cart_enabled']) ? 'bg-orange-50/40 border-orange-200' : 'bg-slate-50 border-slate-200 opacity-60' }}">
                                 <div class="flex items-center justify-between border-b border-orange-100 pb-2">
-                                    <span class="text-xs font-black uppercase text-orange-900">🧇 Carrito de Gofres ({{ $activeProv['name'] }})</span>
-                                    <button type="button" wire:click="toggleProviderService('{{ $activeProvKey }}', 'waffle_cart_enabled')" class="text-[10px] font-black px-2 py-0.5 rounded cursor-pointer {{ !empty($activeProv['waffle_cart_enabled']) ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600' }}">
-                                        {{ !empty($activeProv['waffle_cart_enabled']) ? '✓ Activo' : '✕ No lo ofrece' }}
+                                    <span class="text-xs font-black uppercase text-orange-900">🧇 Carrito de Gofres ({{ $provData['name'] }})</span>
+                                    <button type="button" wire:key="btn-on-waffle-{{ $provKey }}" wire:click="toggleProviderService('{{ $provKey }}', 'waffle_cart_enabled')" class="text-[10px] font-black px-2 py-0.5 rounded cursor-pointer {{ !empty($provData['waffle_cart_enabled']) ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600' }}">
+                                        {{ !empty($provData['waffle_cart_enabled']) ? '✓ Activo' : '✕ No lo ofrece' }}
                                     </button>
                                 </div>
                                 <div class="grid grid-cols-2 gap-2">
                                     <div>
                                         <label class="block text-[11px] font-bold text-gray-700 mb-1">2h (~60 gofres) (€)</label>
-                                        <input type="number" step="0.01" wire:model="photobooth_providers.{{ $activeProvKey }}.waffle_cart_2h" class="w-full border-orange-300 rounded-lg text-sm font-black text-orange-800">
+                                        <input type="number" step="0.01" wire:key="pb-in-{{ $provKey }}-waffle2h" wire:model.live.debounce.400ms="photobooth_providers.{{ $provKey }}.waffle_cart_2h" class="w-full border-orange-300 rounded-lg text-sm font-black text-orange-800">
                                     </div>
                                     <div>
                                         <label class="block text-[11px] font-bold text-gray-700 mb-1">3h (~100 gofres) (€)</label>
-                                        <input type="number" step="0.01" wire:model="photobooth_providers.{{ $activeProvKey }}.waffle_cart_3h" class="w-full border-orange-300 rounded-lg text-sm font-black text-orange-800">
+                                        <input type="number" step="0.01" wire:key="pb-in-{{ $provKey }}-waffle3h" wire:model.live.debounce.400ms="photobooth_providers.{{ $provKey }}.waffle_cart_3h" class="w-full border-orange-300 rounded-lg text-sm font-black text-orange-800">
                                     </div>
                                 </div>
                                 <div>
                                     <label class="block text-[11px] font-bold text-gray-700 mb-1">Plantilla Descriptiva (Qué incluye en PDF)</label>
-                                    <textarea rows="3" wire:model="photobooth_providers.{{ $activeProvKey }}.waffle_cart_desc" class="w-full border-gray-300 rounded-lg text-xs"></textarea>
+                                    <textarea rows="3" wire:key="pb-in-{{ $provKey }}-waffledesc" wire:model.live.debounce.400ms="photobooth_providers.{{ $provKey }}.waffle_cart_desc" class="w-full border-gray-300 rounded-lg text-xs"></textarea>
                                 </div>
                             </div>
                         </div>
                     </div>
-                @endif
+                @endforeach
             </div>
 
             <!-- SECCIÓN 4: CONDICIONES DE PAGO Y SEÑAL DE RESERVA -->

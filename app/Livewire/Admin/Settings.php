@@ -639,6 +639,15 @@ class Settings extends Component
         $this->tidalConnectionStatus = MusicSearchService::testTidalConnection();
     }
 
+    public function updatedPhotoboothProviders($value, $key): void
+    {
+        $parts = explode('.', (string)$key);
+        $providerKey = $parts[0] ?? '';
+        if ($providerKey !== '' && isset($this->photobooth_providers[$providerKey]) && is_array($this->photobooth_providers[$providerKey])) {
+            Setting::saveSinglePhotoboothProvider($providerKey, $this->photobooth_providers[$providerKey]);
+        }
+    }
+
     public function toggleProviderService(string $providerKey, string $serviceFlag): void
     {
         if (!isset($this->photobooth_providers[$providerKey])) {
@@ -657,7 +666,7 @@ class Settings extends Component
         }
         $current = !empty($this->photobooth_providers[$providerKey][$serviceFlag]);
         $this->photobooth_providers[$providerKey][$serviceFlag] = !$current;
-        Setting::savePhotoboothProviders($this->photobooth_providers);
+        Setting::saveSinglePhotoboothProvider($providerKey, $this->photobooth_providers[$providerKey]);
     }
 
     public function addPhotoboothProvider(): void
@@ -695,7 +704,7 @@ class Settings extends Component
         ]);
 
         $this->photobooth_providers[$slug] = $newProvider;
-        Setting::savePhotoboothProviders($this->photobooth_providers);
+        Setting::saveSinglePhotoboothProvider($slug, $newProvider);
 
         $this->photobooth_settings_tab = $slug;
         $this->new_provider_name = '';
@@ -717,7 +726,7 @@ class Settings extends Component
         }
         $removedName = $this->photobooth_providers[$providerKey]['name'] ?? $providerKey;
         unset($this->photobooth_providers[$providerKey]);
-        Setting::savePhotoboothProviders($this->photobooth_providers);
+        Setting::deleteSinglePhotoboothProvider($providerKey);
 
         if ($this->default_photobooth_provider === $providerKey) {
             $this->default_photobooth_provider = array_key_first($this->photobooth_providers) ?: 'logrono';
