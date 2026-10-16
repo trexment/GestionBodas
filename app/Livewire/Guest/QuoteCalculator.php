@@ -256,12 +256,54 @@ class QuoteCalculator extends Component
                 'name' => 'Horas Adicionales de Fiesta', 
                 'description' => 'Ampliación de horario para continuar el baile sin interrupciones.'
             ],
+            'pack_duo_360' => [
+                'selected' => false,
+                'quantity' => 1,
+                'hours' => 2,
+                'icon' => '🔹',
+                'name' => 'Pack Dúo Todo Incluido (Fotomatón + Plataforma 360º)',
+                'description' => 'Pack ahorro con ambos servicios: Fotomatón con copias ilimitadas y álbum de firmas + Plataforma de Vídeo 360º slow motion con atrezzo y animadores.'
+            ],
             'photobooth' => [
                 'selected' => false, 
-                'quantity' => 1, 
+                'quantity' => 1,
+                'hours' => 2,
                 'icon' => '📸',
                 'name' => 'Fotomatón & Photocall', 
-                'description' => 'Servicio de fotomatón con impresión instantánea, atrezzo divertido y libro de firmas personalizado.'
+                'description' => 'Servicio de fotomatón con cámara réflex, impresión instantánea ilimitada, atrezzo divertido, pendrive USB, animador y libro de firmas personalizado.'
+            ],
+            'video_360' => [
+                'selected' => false,
+                'quantity' => 1,
+                'hours' => 2,
+                'icon' => '🎥',
+                'name' => 'Plataforma Vídeo 360º',
+                'description' => 'Plataforma de 100cm (4-5 personas) con vídeos slow motion y boomerang ilimitados al instante por QR/AirDrop, confeti, pistola de billetes, atrezzo y animadores.'
+            ],
+            'chocolate_fountain' => [
+                'selected' => false,
+                'quantity' => 1,
+                'fountains' => 1,
+                'hours' => 2,
+                'waffle_corner' => false,
+                'icon' => '🍫',
+                'name' => 'Mesa Dulce con Fuente de Chocolate',
+                'description' => 'Chocolate a elegir (blanco, negro o con leche), fruta variada de temporada, donuts, gofres cortados, profiteroles, galletas, chocolatinas, chuches y arco de globos con reposición a mitad del servicio.'
+            ],
+            'candy_bar' => [
+                'selected' => false,
+                'quantity' => 1,
+                'icon' => '🍬',
+                'name' => 'Mesa de Solo Chuches (Candy Bar)',
+                'description' => 'Gran variado de golosinas (eligiendo las favoritas del anfitrión), decoración temática personalizada a elegir y globos decorativos.'
+            ],
+            'waffle_cart' => [
+                'selected' => false,
+                'quantity' => 1,
+                'hours' => 2,
+                'icon' => '🧇',
+                'name' => 'Carrito de Gofres hechos al momento',
+                'description' => 'Gofres recién hechos en directo con 4 siropes a elegir (Kinder, Lotus, Nutella, choco blanco, pistacho...) y 4 toppings secos (Lotus, Oreo, Lacasitos, mini nubes), decorado con globos y banderín con nombre.'
             ],
         ];
 
@@ -283,8 +325,34 @@ class QuoteCalculator extends Component
             'cold_sparks' => (float) Setting::get('price_effects_sparks', 60),
             'karaoke' => (float) Setting::get('price_karaoke', 80),
             'extra_hours' => (float) Setting::get('price_extra_hours', 120),
-            'photobooth' => (float) Setting::get('price_photobooth', 350),
+            'photobooth' => (float) Setting::get('price_photobooth', 380),
         ];
+    }
+
+    /**
+     * Detect best external provider based on event location
+     */
+    protected function resolveExternalProviderKey(): string
+    {
+        $loc = mb_strtolower(trim((string)$this->event_location));
+        if (
+            str_contains($loc, 'vitoria') ||
+            str_contains($loc, 'gasteiz') ||
+            str_contains($loc, 'álava') ||
+            str_contains($loc, 'alava') ||
+            str_contains($loc, 'araba') ||
+            str_contains($loc, 'bilbao') ||
+            str_contains($loc, 'bizkaia') ||
+            str_contains($loc, 'vizcaya') ||
+            str_contains($loc, 'donostia') ||
+            str_contains($loc, 'gipuzkoa') ||
+            str_contains($loc, 'guipuzcoa') ||
+            str_contains($loc, 'euskadi') ||
+            str_contains($loc, 'miranda')
+        ) {
+            return 'vitoria';
+        }
+        return 'logrono';
     }
 
     /**
@@ -337,6 +405,21 @@ class QuoteCalculator extends Component
             $this->services[$key]['manually_toggled'] = true;
         }
 
+        if ($key === 'pack_duo_360' && !empty($this->services['pack_duo_360']['selected'])) {
+            if (isset($this->services['photobooth'])) {
+                $this->services['photobooth']['selected'] = false;
+            }
+            if (isset($this->services['video_360'])) {
+                $this->services['video_360']['selected'] = false;
+            }
+        }
+
+        if (($key === 'photobooth' || $key === 'video_360') && !empty($this->services[$key]['selected'])) {
+            if (isset($this->services['pack_duo_360'])) {
+                $this->services['pack_duo_360']['selected'] = false;
+            }
+        }
+
         if ($key === 'dj') {
             $this->syncPackEffects();
         }
@@ -360,6 +443,80 @@ class QuoteCalculator extends Component
     {
         $this->services['extra_hours']['quantity'] = max(1, min(6, $quantity));
         $this->services['extra_hours']['selected'] = true;
+    }
+
+    public function setPackDuoHours(int $hours)
+    {
+        if (!isset($this->services['pack_duo_360'])) {
+            return;
+        }
+        $this->services['pack_duo_360']['hours'] = max(2, min(6, $hours));
+        $this->services['pack_duo_360']['selected'] = true;
+        if (isset($this->services['photobooth'])) {
+            $this->services['photobooth']['selected'] = false;
+        }
+        if (isset($this->services['video_360'])) {
+            $this->services['video_360']['selected'] = false;
+        }
+    }
+
+    public function setPhotoboothHours(int $hours)
+    {
+        if (!isset($this->services['photobooth'])) {
+            return;
+        }
+        $this->services['photobooth']['hours'] = max(2, min(6, $hours));
+        $this->services['photobooth']['selected'] = true;
+        if (isset($this->services['pack_duo_360'])) {
+            $this->services['pack_duo_360']['selected'] = false;
+        }
+    }
+
+    public function setVideo360Hours(int $hours)
+    {
+        if (!isset($this->services['video_360'])) {
+            return;
+        }
+        $this->services['video_360']['hours'] = max(2, min(6, $hours));
+        $this->services['video_360']['selected'] = true;
+        if (isset($this->services['pack_duo_360'])) {
+            $this->services['pack_duo_360']['selected'] = false;
+        }
+    }
+
+    public function applyPackDuoFromSeparate()
+    {
+        $pbHours = (int)($this->services['photobooth']['hours'] ?? 2);
+        $v360Hours = (int)($this->services['video_360']['hours'] ?? 2);
+        $this->setPackDuoHours(max($pbHours, $v360Hours));
+    }
+
+    public function setChocolateFountainOption(int $fountains, int $hours)
+    {
+        if (!isset($this->services['chocolate_fountain'])) {
+            return;
+        }
+        $this->services['chocolate_fountain']['fountains'] = $fountains >= 2 ? 2 : 1;
+        $this->services['chocolate_fountain']['hours'] = $hours >= 3 ? 3 : 2;
+        $this->services['chocolate_fountain']['selected'] = true;
+    }
+
+    public function toggleChocolateWaffleCorner()
+    {
+        if (!isset($this->services['chocolate_fountain'])) {
+            return;
+        }
+        $this->services['chocolate_fountain']['waffle_corner'] = empty($this->services['chocolate_fountain']['waffle_corner']);
+        $this->services['chocolate_fountain']['selected'] = true;
+    }
+
+    public function setWaffleCartHours(int $hours)
+    {
+        if (!isset($this->services['waffle_cart'])) {
+            return;
+        }
+        $this->services['waffle_cart']['hours'] = $hours >= 3 ? 3 : 2;
+        $this->services['waffle_cart']['selected'] = true;
     }
 
     /**
@@ -472,6 +629,116 @@ class QuoteCalculator extends Component
         $catalog = $this->getPriceCatalog();
         $totalEstimated = 0;
         $djPack = !empty($this->services['dj']['selected']) ? $this->dj_pack_info : null;
+        $provKey = $this->resolveExternalProviderKey();
+        $pbDetected = Setting::getPhotobooth360Config($provKey);
+        $pbVitoria = Setting::getPhotobooth360Config('vitoria');
+
+        $resolveExternalPriceAndMeta = function (string $key, array $service) use ($pbDetected, $pbVitoria, $catalog): array {
+            if ($key === 'pack_duo_360') {
+                $h = max(2, (int)($service['hours'] ?? 2));
+                if ($h <= 2) {
+                    $p = (float)($pbDetected['pack_duo_2h'] ?? 690);
+                } elseif ($h === 3) {
+                    $p = (float)($pbDetected['pack_duo_3h'] ?? 850);
+                } else {
+                    $extraRate = (float)(($pbDetected['photobooth_extra_hour'] ?? 50) + ($pbDetected['video_360_extra_hour'] ?? 60));
+                    $p = (float)($pbDetected['pack_duo_3h'] ?? 850) + (($h - 3) * $extraRate);
+                }
+                return [
+                    'price' => $p,
+                    'item_name' => "Pack Dúo Todo Incluido: Fotomatón + Plataforma 360º ({$h} Horas)",
+                    'note_label' => "Pack Dúo Todo Incluido: Fotomatón + Plataforma 360º ({$h} Horas)",
+                    'description' => $pbDetected['pack_duo_desc'] ?? $service['description'],
+                ];
+            }
+
+            if ($key === 'photobooth') {
+                $h = max(2, (int)($service['hours'] ?? 2));
+                if ($h <= 2) {
+                    $p = (float)($pbDetected['photobooth_2h'] ?? 380);
+                } elseif ($h === 3) {
+                    $p = (float)($pbDetected['photobooth_3h'] ?? 430);
+                } else {
+                    $p = (float)($pbDetected['photobooth_3h'] ?? 430) + (($h - 3) * (float)($pbDetected['photobooth_extra_hour'] ?? 50));
+                }
+                return [
+                    'price' => $p,
+                    'item_name' => "Fotomatón & Photocall ({$h} Horas)",
+                    'note_label' => "Fotomatón & Photocall ({$h} Horas)",
+                    'description' => $pbDetected['photobooth_desc'] ?? $service['description'],
+                ];
+            }
+
+            if ($key === 'video_360') {
+                $h = max(2, (int)($service['hours'] ?? 2));
+                if ($h <= 2) {
+                    $p = (float)($pbDetected['video_360_2h'] ?? 430);
+                } elseif ($h === 3) {
+                    $p = (float)($pbDetected['video_360_3h'] ?? 490);
+                } else {
+                    $p = (float)($pbDetected['video_360_3h'] ?? 490) + (($h - 3) * (float)($pbDetected['video_360_extra_hour'] ?? 60));
+                }
+                return [
+                    'price' => $p,
+                    'item_name' => "Plataforma Vídeo 360º ({$h} Horas)",
+                    'note_label' => "Plataforma Vídeo 360º ({$h} Horas)",
+                    'description' => $pbDetected['video_360_desc'] ?? $service['description'],
+                ];
+            }
+
+            if ($key === 'chocolate_fountain') {
+                $f = (int)($service['fountains'] ?? 1) >= 2 ? 2 : 1;
+                $h = (int)($service['hours'] ?? 2) >= 3 ? 3 : 2;
+                $waffleCorner = !empty($service['waffle_corner']);
+                $cfg = !empty($pbDetected['chocolate_fountain_enabled']) ? $pbDetected : $pbVitoria;
+                $p = (float)($cfg["chocolate_fountain_{$f}_{$h}h"] ?? 420);
+                $fLabel = $f === 2 ? '2 Fuentes de Chocolate' : '1 Fuente de Chocolate';
+                $waffleUnit = number_format((float)($cfg['chocolate_waffle_extra_unit'] ?? 2.90), 2, ',', '.');
+                $waffleSuffix = $waffleCorner ? " + Rincón de Gofres ({$waffleUnit} €/ud)" : '';
+                $baseDesc = $cfg['chocolate_fountain_desc'] ?? $service['description'];
+                if ($waffleCorner) {
+                    $baseDesc .= " | 🧇 Solicita añadir Rincón de Gofres (3 biberones de siropes + nata spray a {$waffleUnit} €/unidad).";
+                }
+                return [
+                    'price' => $p,
+                    'item_name' => "Mesa Dulce con {$fLabel} ({$h} Horas)" . ($waffleCorner ? ' + Rincón de Gofres' : ''),
+                    'note_label' => "Mesa Dulce con {$fLabel} ({$h} Horas){$waffleSuffix}",
+                    'description' => $baseDesc,
+                ];
+            }
+
+            if ($key === 'candy_bar') {
+                $cfg = !empty($pbDetected['candy_bar_enabled']) ? $pbDetected : $pbVitoria;
+                $p = (float)($cfg['candy_bar_price'] ?? 420);
+                return [
+                    'price' => $p,
+                    'item_name' => 'Mesa de Solo Chuches',
+                    'note_label' => 'Mesa de Solo Chuches (Candy Bar)',
+                    'description' => $cfg['candy_bar_desc'] ?? $service['description'],
+                ];
+            }
+
+            if ($key === 'waffle_cart') {
+                $h = (int)($service['hours'] ?? 2) >= 3 ? 3 : 2;
+                $approx = $h === 3 ? 'unos 100 gofres' : 'unos 60 gofres';
+                $cfg = !empty($pbDetected['waffle_cart_enabled']) ? $pbDetected : $pbVitoria;
+                $p = (float)($h === 3 ? ($cfg['waffle_cart_3h'] ?? 550) : ($cfg['waffle_cart_2h'] ?? 420));
+                return [
+                    'price' => $p,
+                    'item_name' => "Carrito de Gofres hechos al momento ({$h} Horas · {$approx})",
+                    'note_label' => "Carrito de Gofres hechos al momento ({$h} Horas · {$approx})",
+                    'description' => $cfg['waffle_cart_desc'] ?? $service['description'],
+                ];
+            }
+
+            $p = (float)($catalog[$key] ?? 0);
+            return [
+                'price' => $p,
+                'item_name' => $service['name'],
+                'note_label' => $service['name'],
+                'description' => $service['description'] ?? '',
+            ];
+        };
 
         // 1. Calculate internal total
         foreach ($this->services as $key => $service) {
@@ -491,6 +758,12 @@ class QuoteCalculator extends Component
                     } else {
                         $totalEstimated += ($qty * $unitPrice);
                     }
+                } elseif (in_array($key, ['pack_duo_360', 'photobooth', 'video_360', 'chocolate_fountain', 'candy_bar', 'waffle_cart'], true)) {
+                    if (($key === 'photobooth' || $key === 'video_360') && !empty($this->services['pack_duo_360']['selected'])) {
+                        continue;
+                    }
+                    $resolved = $resolveExternalPriceAndMeta($key, $service);
+                    $totalEstimated += $resolved['price'];
                 } else {
                     $qty = (int)($service['quantity'] ?: 1);
                     $price = $catalog[$key] ?? 0;
@@ -580,6 +853,12 @@ class QuoteCalculator extends Component
                     $totalHoursNote = !empty($this->services['dj']['selected']) ? " ➔ Total baile: {$totalPartyHours}h" : "";
                     $recNote = $recommendedPackForExtra ? " (💡 Recomendado: {$recommendedPackForExtra['base_name']} que ya cubre {$totalPartyHours}h)" : "";
                     $requestedServicesList[] = "• " . $service['name'] . " (+{$hoursLabel}{$totalHoursNote}){$recNote}";
+                } elseif (in_array($key, ['pack_duo_360', 'photobooth', 'video_360', 'chocolate_fountain', 'candy_bar', 'waffle_cart'], true)) {
+                    if (($key === 'photobooth' || $key === 'video_360') && !empty($this->services['pack_duo_360']['selected'])) {
+                        continue;
+                    }
+                    $resolved = $resolveExternalPriceAndMeta($key, $service);
+                    $requestedServicesList[] = "• " . $resolved['note_label'];
                 } else {
                     $qty = (int)($service['quantity'] ?: 1);
                     $qtyText = $qty > 1 ? " ({$qty} uds)" : "";
@@ -731,6 +1010,18 @@ class QuoteCalculator extends Component
                         'quantity' => $qty,
                         'price' => $price,
                         'total' => $price * $qty,
+                    ]);
+                } elseif (in_array($key, ['pack_duo_360', 'photobooth', 'video_360', 'chocolate_fountain', 'candy_bar', 'waffle_cart'], true)) {
+                    if (($key === 'photobooth' || $key === 'video_360') && !empty($this->services['pack_duo_360']['selected'])) {
+                        continue;
+                    }
+                    $resolved = $resolveExternalPriceAndMeta($key, $service);
+                    $quote->items()->create([
+                        'service_name' => $resolved['item_name'],
+                        'description' => $resolved['description'],
+                        'quantity' => 1,
+                        'price' => $resolved['price'],
+                        'total' => $resolved['price'],
                     ]);
                 } else {
                     $qty = (int)($service['quantity'] ?: 1);

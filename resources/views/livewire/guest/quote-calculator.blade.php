@@ -55,7 +55,7 @@
                     <p class="text-xs uppercase font-bold tracking-wider text-slate-400 mb-2">Servicios solicitados:</p>
                     @foreach($services as $key => $serv)
                         @if($serv['selected'])
-                            <div class="flex items-center gap-2 text-sm text-slate-200">
+                            <div class="flex items-center gap-2 flex-wrap text-sm text-slate-200">
                                 <span>{{ $serv['icon'] }}</span>
                                 <span class="font-medium">{{ $serv['name'] }}</span>
                                 @if($key === 'dj')
@@ -78,6 +78,22 @@
                                     @if(!empty($services['dj']['selected']))
                                         <span class="text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-full">Total: {{ $this->total_party_hours }}h de baile</span>
                                     @endif
+                                @endif
+                                @if(in_array($key, ['pack_duo_360', 'photobooth', 'video_360']))
+                                    <span class="text-xs bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-full font-bold">{{ $serv['hours'] ?? 2 }} Horas</span>
+                                @endif
+                                @if($key === 'chocolate_fountain')
+                                    <span class="text-xs bg-amber-500/20 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded-full font-bold">
+                                        {{ ($serv['fountains'] ?? 1) == 2 ? '2 Fuentes' : '1 Fuente' }} &bull; {{ $serv['hours'] ?? 2 }} Horas
+                                    </span>
+                                    @if(!empty($serv['waffle_corner']))
+                                        <span class="text-[10px] font-bold bg-orange-500/20 text-orange-300 border border-orange-500/30 px-2 py-0.5 rounded-full">+ Rincón de Gofres</span>
+                                    @endif
+                                @endif
+                                @if($key === 'waffle_cart')
+                                    <span class="text-xs bg-orange-500/20 text-orange-300 border border-orange-500/30 px-2 py-0.5 rounded-full font-bold">
+                                        {{ $serv['hours'] ?? 2 }} Horas ({{ ($serv['hours'] ?? 2) == 3 ? '~100 gofres' : '~60 gofres' }})
+                                    </span>
                                 @endif
                             </div>
                         @endif
@@ -112,7 +128,7 @@
                         <h2 class="text-lg font-bold text-white flex items-center gap-2">
                             <span>1.</span> Elige las Fases y Servicios
                         </h2>
-                        <span class="text-xs text-slate-400">Toca para seleccionar / deseleccionar</span>
+                        <span class="text-xs text-slate-400">Toca para seleccionar / elegir opción</span>
                     </div>
 
                     @if($this->has_cocktail_restaurant_pack && $this->cocktail_restaurant_pack_info['enabled'])
@@ -165,6 +181,18 @@
                                                     <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/30 text-amber-200 border border-amber-500/40">
                                                         +{{ $service['quantity'] ?? 1 }} {{ ($service['quantity'] ?? 1) == 1 ? 'HORA EXTRA' : 'HORAS EXTRA' }}
                                                     </span>
+                                                @elseif(in_array($key, ['pack_duo_360', 'photobooth', 'video_360']))
+                                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/30 text-indigo-200 border border-indigo-400/40">
+                                                        ⏱️ {{ $service['hours'] ?? 2 }} HORAS
+                                                    </span>
+                                                @elseif($key === 'chocolate_fountain')
+                                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/30 text-amber-200 border border-amber-400/40">
+                                                        🍫 {{ ($service['fountains'] ?? 1) == 2 ? '2 FUENTES' : '1 FUENTE' }} &bull; {{ $service['hours'] ?? 2 }}H
+                                                    </span>
+                                                @elseif($key === 'waffle_cart')
+                                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-500/30 text-orange-200 border border-orange-400/40">
+                                                        🧇 {{ $service['hours'] ?? 2 }}H ({{ ($service['hours'] ?? 2) == 3 ? '~100 GOFRES' : '~60 GOFRES' }})
+                                                    </span>
                                                 @else
                                                     <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/30 text-indigo-300 border border-indigo-500/40">
                                                         INCLUIDO
@@ -175,6 +203,8 @@
                                                     <span class="text-[10px] text-emerald-400/90 font-medium">✨ Incluido gratis desde 5h DJ</span>
                                                 @elseif($key === 'cold_sparks')
                                                     <span class="text-[10px] text-amber-400/90 font-medium">👑 2 máquinas incluidas en Pack Deluxe Show</span>
+                                                @elseif($key === 'pack_duo_360')
+                                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">🔥 PACK AHORRO</span>
                                                 @endif
                                             @endif
                                         </div>
@@ -320,6 +350,151 @@
                                                         </div>
                                                     </div>
                                                 @endif
+                                            </div>
+                                        @endif
+
+                                        <!-- Opciones para Pack Dúo (Fotomatón + Plataforma 360º) -->
+                                        @if($key === 'pack_duo_360')
+                                            @php $duoH = (int)($service['hours'] ?? 2); @endphp
+                                            <div class="mt-3.5 pt-3 border-t border-slate-700/60 space-y-2" wire:click.stop>
+                                                <div class="flex flex-wrap items-center justify-between gap-2">
+                                                    <span class="text-[11px] font-semibold text-slate-300">Elige la duración del Pack Dúo:</span>
+                                                    <div class="flex flex-wrap items-center gap-1.5">
+                                                        <button type="button"
+                                                                wire:click="setPackDuoHours(2)"
+                                                                class="px-3 py-1.5 rounded-xl text-xs font-bold border transition cursor-pointer {{ $service['selected'] && $duoH === 2 ? 'bg-indigo-600 text-white border-indigo-400 shadow-md shadow-indigo-600/30' : 'bg-slate-900/80 text-slate-300 border-slate-700 hover:border-indigo-400 hover:text-white' }}">
+                                                            ⏱️ 2 Horas
+                                                        </button>
+                                                        <button type="button"
+                                                                wire:click="setPackDuoHours(3)"
+                                                                class="px-3 py-1.5 rounded-xl text-xs font-bold border transition cursor-pointer {{ $service['selected'] && $duoH === 3 ? 'bg-indigo-600 text-white border-indigo-400 shadow-md shadow-indigo-600/30' : 'bg-slate-900/80 text-slate-300 border-slate-700 hover:border-indigo-400 hover:text-white' }}">
+                                                            ⏱️ 3 Horas
+                                                        </button>
+                                                        <button type="button"
+                                                                wire:click="setPackDuoHours({{ $duoH >= 4 ? min(6, $duoH + 1) : 4 }})"
+                                                                class="px-2.5 py-1.5 rounded-xl text-xs font-bold border transition cursor-pointer {{ $service['selected'] && $duoH >= 4 ? 'bg-amber-600 text-white border-amber-400 shadow-md' : 'bg-slate-900/80 text-amber-300 border-amber-500/40 hover:bg-amber-950/50' }}">
+                                                            {{ $service['selected'] && $duoH >= 4 ? "⏱️ {$duoH} Horas (+1h)" : '+ Horas extra' }}
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        @endif
+
+                                        <!-- Opciones para Fotomatón & Photocall -->
+                                        @if($key === 'photobooth')
+                                            @php $pbH = (int)($service['hours'] ?? 2); @endphp
+                                            <div class="mt-3.5 pt-3 border-t border-slate-700/60 space-y-2" wire:click.stop>
+                                                <div class="flex flex-wrap items-center justify-between gap-2">
+                                                    <span class="text-[11px] font-semibold text-slate-300">Elige la duración del Fotomatón:</span>
+                                                    <div class="flex flex-wrap items-center gap-1.5">
+                                                        <button type="button"
+                                                                wire:click="setPhotoboothHours(2)"
+                                                                class="px-3 py-1.5 rounded-xl text-xs font-bold border transition cursor-pointer {{ $service['selected'] && $pbH === 2 ? 'bg-indigo-600 text-white border-indigo-400 shadow-md shadow-indigo-600/30' : 'bg-slate-900/80 text-slate-300 border-slate-700 hover:border-indigo-400 hover:text-white' }}">
+                                                            ⏱️ 2 Horas
+                                                        </button>
+                                                        <button type="button"
+                                                                wire:click="setPhotoboothHours(3)"
+                                                                class="px-3 py-1.5 rounded-xl text-xs font-bold border transition cursor-pointer {{ $service['selected'] && $pbH === 3 ? 'bg-indigo-600 text-white border-indigo-400 shadow-md shadow-indigo-600/30' : 'bg-slate-900/80 text-slate-300 border-slate-700 hover:border-indigo-400 hover:text-white' }}">
+                                                            ⏱️ 3 Horas
+                                                        </button>
+                                                        <button type="button"
+                                                                wire:click="setPhotoboothHours({{ $pbH >= 4 ? min(6, $pbH + 1) : 4 }})"
+                                                                class="px-2.5 py-1.5 rounded-xl text-xs font-bold border transition cursor-pointer {{ $service['selected'] && $pbH >= 4 ? 'bg-amber-600 text-white border-amber-400 shadow-md' : 'bg-slate-900/80 text-amber-300 border-amber-500/40 hover:bg-amber-950/50' }}">
+                                                            {{ $service['selected'] && $pbH >= 4 ? "⏱️ {$pbH} Horas (+1h)" : '+ Horas extra' }}
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        @endif
+
+                                        <!-- Opciones para Plataforma Vídeo 360º -->
+                                        @if($key === 'video_360')
+                                            @php $v360H = (int)($service['hours'] ?? 2); @endphp
+                                            <div class="mt-3.5 pt-3 border-t border-slate-700/60 space-y-2" wire:click.stop>
+                                                <div class="flex flex-wrap items-center justify-between gap-2">
+                                                    <span class="text-[11px] font-semibold text-slate-300">Elige la duración de la Plataforma 360º:</span>
+                                                    <div class="flex flex-wrap items-center gap-1.5">
+                                                        <button type="button"
+                                                                wire:click="setVideo360Hours(2)"
+                                                                class="px-3 py-1.5 rounded-xl text-xs font-bold border transition cursor-pointer {{ $service['selected'] && $v360H === 2 ? 'bg-indigo-600 text-white border-indigo-400 shadow-md shadow-indigo-600/30' : 'bg-slate-900/80 text-slate-300 border-slate-700 hover:border-indigo-400 hover:text-white' }}">
+                                                            ⏱️ 2 Horas
+                                                        </button>
+                                                        <button type="button"
+                                                                wire:click="setVideo360Hours(3)"
+                                                                class="px-3 py-1.5 rounded-xl text-xs font-bold border transition cursor-pointer {{ $service['selected'] && $v360H === 3 ? 'bg-indigo-600 text-white border-indigo-400 shadow-md shadow-indigo-600/30' : 'bg-slate-900/80 text-slate-300 border-slate-700 hover:border-indigo-400 hover:text-white' }}">
+                                                            ⏱️ 3 Horas
+                                                        </button>
+                                                        <button type="button"
+                                                                wire:click="setVideo360Hours({{ $v360H >= 4 ? min(6, $v360H + 1) : 4 }})"
+                                                                class="px-2.5 py-1.5 rounded-xl text-xs font-bold border transition cursor-pointer {{ $service['selected'] && $v360H >= 4 ? 'bg-amber-600 text-white border-amber-400 shadow-md' : 'bg-slate-900/80 text-amber-300 border-amber-500/40 hover:bg-amber-950/50' }}">
+                                                            {{ $service['selected'] && $v360H >= 4 ? "⏱️ {$v360H} Horas (+1h)" : '+ Horas extra' }}
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        @endif
+
+                                        <!-- Opciones para Mesa Dulce con Fuente de Chocolate (4 combinaciones + Rincón de Gofres) -->
+                                        @if($key === 'chocolate_fountain')
+                                            @php
+                                                $cfF = (int)($service['fountains'] ?? 1);
+                                                $cfH = (int)($service['hours'] ?? 2);
+                                                $cfWaffle = !empty($service['waffle_corner']);
+                                            @endphp
+                                            <div class="mt-3.5 pt-3 border-t border-slate-700/60 space-y-2.5" wire:click.stop>
+                                                <span class="block text-[11px] font-semibold text-slate-300">Elige el número de fuentes de chocolate y duración:</span>
+                                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                                                    <button type="button"
+                                                            wire:click="setChocolateFountainOption(1, 2)"
+                                                            class="px-2.5 py-2 rounded-xl text-xs font-bold border transition text-center cursor-pointer {{ $service['selected'] && $cfF === 1 && $cfH === 2 ? 'bg-amber-600 text-white border-amber-400 shadow-md shadow-amber-600/30' : 'bg-slate-900/80 text-slate-300 border-slate-700 hover:border-amber-400 hover:text-white' }}">
+                                                        🍫 1 Fuente &bull; 2h
+                                                    </button>
+                                                    <button type="button"
+                                                            wire:click="setChocolateFountainOption(1, 3)"
+                                                            class="px-2.5 py-2 rounded-xl text-xs font-bold border transition text-center cursor-pointer {{ $service['selected'] && $cfF === 1 && $cfH === 3 ? 'bg-amber-600 text-white border-amber-400 shadow-md shadow-amber-600/30' : 'bg-slate-900/80 text-slate-300 border-slate-700 hover:border-amber-400 hover:text-white' }}">
+                                                        🍫 1 Fuente &bull; 3h
+                                                    </button>
+                                                    <button type="button"
+                                                            wire:click="setChocolateFountainOption(2, 2)"
+                                                            class="px-2.5 py-2 rounded-xl text-xs font-bold border transition text-center cursor-pointer {{ $service['selected'] && $cfF === 2 && $cfH === 2 ? 'bg-amber-600 text-white border-amber-400 shadow-md shadow-amber-600/30' : 'bg-slate-900/80 text-slate-300 border-slate-700 hover:border-amber-400 hover:text-white' }}">
+                                                        🍫🍫 2 Fuentes &bull; 2h
+                                                    </button>
+                                                    <button type="button"
+                                                            wire:click="setChocolateFountainOption(2, 3)"
+                                                            class="px-2.5 py-2 rounded-xl text-xs font-bold border transition text-center cursor-pointer {{ $service['selected'] && $cfF === 2 && $cfH === 3 ? 'bg-amber-600 text-white border-amber-400 shadow-md shadow-amber-600/30' : 'bg-slate-900/80 text-slate-300 border-slate-700 hover:border-amber-400 hover:text-white' }}">
+                                                        🍫🍫 2 Fuentes &bull; 3h
+                                                    </button>
+                                                </div>
+                                                <div class="pt-1">
+                                                    <button type="button"
+                                                            wire:click="toggleChocolateWaffleCorner"
+                                                            class="w-full sm:w-auto inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-[11px] font-bold border transition cursor-pointer {{ $service['selected'] && $cfWaffle ? 'bg-orange-500/30 text-orange-200 border-orange-400' : 'bg-slate-900/60 text-slate-400 border-slate-700 hover:text-slate-200 hover:border-slate-500' }}">
+                                                        <span>{{ $service['selected'] && $cfWaffle ? '✅' : '➕' }}</span>
+                                                        <span>Añadir rincón extra de gofres con 3 biberones de siropes y nata spray</span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        @endif
+
+                                        <!-- Opciones para Carrito de Gofres hechos al momento -->
+                                        @if($key === 'waffle_cart')
+                                            @php $wcH = (int)($service['hours'] ?? 2); @endphp
+                                            <div class="mt-3.5 pt-3 border-t border-slate-700/60 space-y-2" wire:click.stop>
+                                                <div class="flex flex-wrap items-center justify-between gap-2">
+                                                    <span class="text-[11px] font-semibold text-slate-300">Elige la opción del Carrito de Gofres:</span>
+                                                    <div class="flex flex-wrap items-center gap-1.5">
+                                                        <button type="button"
+                                                                wire:click="setWaffleCartHours(2)"
+                                                                class="px-3 py-1.5 rounded-xl text-xs font-bold border transition cursor-pointer {{ $service['selected'] && $wcH === 2 ? 'bg-orange-600 text-white border-orange-400 shadow-md shadow-orange-600/30' : 'bg-slate-900/80 text-slate-300 border-slate-700 hover:border-orange-400 hover:text-white' }}">
+                                                            🧇 2 Horas (~60 gofres)
+                                                        </button>
+                                                        <button type="button"
+                                                                wire:click="setWaffleCartHours(3)"
+                                                                class="px-3 py-1.5 rounded-xl text-xs font-bold border transition cursor-pointer {{ $service['selected'] && $wcH === 3 ? 'bg-orange-600 text-white border-orange-400 shadow-md shadow-orange-600/30' : 'bg-slate-900/80 text-slate-300 border-slate-700 hover:border-orange-400 hover:text-white' }}">
+                                                            🧇 3 Horas (~100 gofres)
+                                                        </button>
+                                                    </div>
+                                                </div>
                                             </div>
                                         @endif
                                     </div>

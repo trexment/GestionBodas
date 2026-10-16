@@ -3342,7 +3342,7 @@
                                 @endif
 
                                 <div class="space-y-2.5">
-                                    @if(!empty($currentProvData['pack_duo_enabled']))
+                                    @if(!empty($currentProvData['pack_duo_enabled']) || !empty($quote_services['pack_duo_360']['selected']))
                                         <!-- Pack Dúo Todo Incluido (Fotomatón + Plataforma 360) -->
                                         <div class="p-3 rounded-xl border-2 transition {{ !empty($quote_services['pack_duo_360']['selected']) ? 'border-indigo-500 bg-indigo-50/40 shadow-xs' : 'border-gray-200 hover:bg-gray-50' }}">
                                             <div class="flex flex-col gap-2">
@@ -3394,7 +3394,7 @@
                                         </div>
                                     @endif
 
-                                    @if(!empty($currentProvData['photobooth_enabled']))
+                                    @if(!empty($currentProvData['photobooth_enabled']) || !empty($quote_services['photobooth']['selected']))
                                         <!-- Fotomatón & Photocall por horas -->
                                         <div class="p-3 rounded-xl border transition {{ !empty($quote_services['photobooth']['selected']) ? 'border-indigo-400 bg-indigo-50/40' : 'border-gray-200 hover:bg-gray-50' }}">
                                             <div class="flex flex-col gap-2">
@@ -3452,7 +3452,7 @@
                                         </div>
                                     @endif
 
-                                    @if(!empty($currentProvData['video_360_enabled']))
+                                    @if(!empty($currentProvData['video_360_enabled']) || !empty($quote_services['video_360']['selected']))
                                         <!-- Plataforma Vídeo 360º por horas -->
                                         <div class="p-3 rounded-xl border transition {{ !empty($quote_services['video_360']['selected']) ? 'border-purple-400 bg-purple-50/40' : 'border-gray-200 hover:bg-gray-50' }}">
                                             <div class="flex flex-col gap-2">
@@ -3510,7 +3510,7 @@
                                         </div>
                                     @endif
 
-                                    @if(!empty($currentProvData['chocolate_fountain_enabled']))
+                                    @if(!empty($currentProvData['chocolate_fountain_enabled']) || !empty($quote_services['chocolate_fountain']['selected']))
                                         <!-- Mesa Dulce con Fuente de Chocolate (1 o 2 fuentes · 2h o 3h) -->
                                         <div class="p-3 rounded-xl border transition {{ !empty($quote_services['chocolate_fountain']['selected']) ? 'border-amber-400 bg-amber-50/40' : 'border-gray-200 hover:bg-gray-50' }}">
                                             <div class="flex flex-col gap-2">
@@ -3568,7 +3568,7 @@
                                         </div>
                                     @endif
 
-                                    @if(!empty($currentProvData['candy_bar_enabled']))
+                                    @if(!empty($currentProvData['candy_bar_enabled']) || !empty($quote_services['candy_bar']['selected']))
                                         <!-- Mesa de Solo Chuches -->
                                         <div class="p-3 rounded-xl border transition {{ !empty($quote_services['candy_bar']['selected']) ? 'border-pink-400 bg-pink-50/40' : 'border-gray-200 hover:bg-gray-50' }}">
                                             <div class="flex items-start justify-between gap-3">
@@ -3604,7 +3604,7 @@
                                         </div>
                                     @endif
 
-                                    @if(!empty($currentProvData['waffle_cart_enabled']))
+                                    @if(!empty($currentProvData['waffle_cart_enabled']) || !empty($quote_services['waffle_cart']['selected']))
                                         <!-- Carrito de Gofres hechos al momento -->
                                         <div class="p-3 rounded-xl border transition {{ !empty($quote_services['waffle_cart']['selected']) ? 'border-orange-400 bg-orange-50/40' : 'border-gray-200 hover:bg-gray-50' }}">
                                             <div class="flex flex-col gap-2">
