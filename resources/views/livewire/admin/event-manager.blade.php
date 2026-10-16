@@ -76,119 +76,126 @@
         <button type="button" wire:click="setStatusFilter('completed')" class="px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer {{ $status_filter === 'completed' ? 'bg-blue-600 text-white shadow-xs' : 'bg-white dark:bg-slate-800 text-blue-800 dark:text-blue-300 hover:bg-blue-50 border border-gray-200 dark:border-slate-700' }}">
             🔵 Completados ({{ $statusCounts['completed'] ?? 0 }})
         </button>
+        @if(($statusCounts['rejected'] ?? 0) > 0 || $status_filter === 'rejected')
+            <button type="button" wire:click="setStatusFilter('rejected')" class="px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer {{ $status_filter === 'rejected' ? 'bg-rose-600 text-white shadow-xs' : 'bg-white dark:bg-slate-800 text-rose-700 dark:text-rose-300 hover:bg-rose-50 border border-rose-200 dark:border-rose-800' }}">
+                🔴 Rechazados ({{ $statusCounts['rejected'] ?? 0 }})
+            </button>
+        @endif
     </div>
 
-    <!-- ============================================== -->
-    <!-- VISTA MÓVIL: TARJETAS RESPONSIVAS (< 640px)    -->
-    <!-- ============================================== -->
-    <div class="block sm:hidden space-y-3.5 mb-6">
+    <!-- ========================================================== -->
+    <!-- VISTA MÓVIL Y TABLET: TARJETAS RESPONSIVAS (< 1024px)      -->
+    <!-- ========================================================== -->
+    <div class="block lg:hidden space-y-3 mb-6">
         @forelse($events as $event)
-            <div class="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-gray-200 dark:border-slate-800 shadow-sm transition space-y-3">
+            <div class="bg-white dark:bg-slate-900 rounded-2xl p-3.5 sm:p-4 border border-gray-200 dark:border-slate-800 shadow-sm transition space-y-2.5">
                 
-                <!-- Encabezado de Tarjeta: Icono + Nombre + Estado -->
+                <!-- Encabezado de Tarjeta: Nombre clicable + Botón Gestionar Inmediato Arriba -->
                 <div class="flex items-start justify-between gap-2 border-b border-gray-100 dark:border-slate-800 pb-2.5">
-                    <div class="flex items-center gap-2 min-w-0">
-                        <span class="text-xl p-1.5 bg-indigo-50 dark:bg-slate-800 rounded-xl shrink-0">{{ $event->event_type_icon }}</span>
-                        <div class="min-w-0">
-                            <h3 class="font-extrabold text-sm text-gray-900 dark:text-white truncate leading-tight">{{ $event->name }}</h3>
-                            <span class="text-[10px] text-indigo-700 dark:text-indigo-400 font-bold uppercase tracking-wider">
-                                {{ $event->event_type_label }}
-                            </span>
+                    <a href="{{ route('admin.events.show', $event->id) }}" class="flex items-center gap-2 min-w-0 flex-1 group">
+                        <span class="text-lg p-1.5 bg-indigo-50 dark:bg-slate-800 rounded-xl shrink-0">{{ $event->event_type_icon }}</span>
+                        <div class="min-w-0 flex-1">
+                            <h3 class="font-extrabold text-sm text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 truncate leading-tight transition">
+                                {{ $event->name }}
+                            </h3>
+                            <div class="flex flex-wrap items-center gap-1.5 mt-0.5">
+                                <span class="text-[10px] text-indigo-700 dark:text-indigo-400 font-bold uppercase tracking-wider">
+                                    {{ $event->event_type_label }}
+                                </span>
+                                <span class="px-2 py-0.2 text-[10px] font-bold rounded-full border {{ $event->status_badge_class }}">
+                                    {{ $event->status_icon }} {{ $event->status_label }}
+                                </span>
+                            </div>
                         </div>
-                    </div>
-                    <div class="text-right shrink-0">
-                        <span class="px-2.5 py-0.5 text-[11px] font-bold rounded-full border {{ $event->status_badge_class }}">
-                            {{ $event->status_icon }} {{ $event->status_label }}
-                        </span>
-                        @if($event->status === 'no_response')
-                            <span class="block text-[10px] mt-1 font-semibold {{ $event->no_response_urgency_level === 'critical' ? 'text-rose-600 font-bold' : ($event->no_response_urgency_level === 'warning' ? 'text-amber-600 font-bold' : 'text-purple-600') }}">
-                                {{ $event->no_response_time_label }}
-                            </span>
-                        @endif
+                    </a>
+
+                    <!-- Acceso Rápido Directo en Cabecera (Siempre visible sin hacer scroll) -->
+                    <div class="flex items-center gap-1.5 shrink-0">
+                        <a href="{{ route('admin.events.show', $event->id) }}" class="inline-flex items-center gap-1 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-extrabold text-xs px-3 py-2 rounded-xl shadow-xs transition">
+                            <span>⚙️</span>
+                            <span>Gestionar</span>
+                            <span>→</span>
+                        </a>
                     </div>
                 </div>
 
-                <!-- Detalles Rápidos: Fecha, Montaje y Horario Baile 24h -->
-                <div class="grid grid-cols-2 gap-2 text-xs">
+                @if($event->status === 'no_response')
+                    <div class="flex items-center justify-between gap-2 bg-purple-50/80 dark:bg-purple-950/40 px-2.5 py-1.5 rounded-xl border border-purple-200 dark:border-purple-800/60">
+                        <span class="text-[11px] font-semibold {{ $event->no_response_urgency_level === 'critical' ? 'text-rose-600 font-bold' : ($event->no_response_urgency_level === 'warning' ? 'text-amber-600 font-bold' : 'text-purple-700 dark:text-purple-300') }}">
+                            ⏳ {{ $event->no_response_time_label }}
+                        </span>
+                        @if($event->no_response_whatsapp_url)
+                            <button type="button" onclick="window.open('{{ $event->no_response_whatsapp_url }}', '_blank')" wire:click="promptFollowup({{ $event->id }})" class="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-[11px] py-1 px-2.5 rounded-lg shadow-2xs transition inline-flex items-center gap-1 shrink-0 cursor-pointer">
+                                💬 Recordar
+                            </button>
+                        @endif
+                    </div>
+                @endif
+
+                <!-- Detalles Rápidos: Fecha, Lugar y Cliente -->
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
                     <div class="bg-gray-50 dark:bg-slate-800/60 p-2 rounded-xl border border-gray-100 dark:border-slate-800">
-                        <span class="text-[10px] text-gray-400 dark:text-gray-400 uppercase font-bold block">📅 Fecha Evento</span>
+                        <span class="text-[10px] text-gray-400 dark:text-gray-400 uppercase font-bold block">📅 Fecha</span>
                         <span class="font-bold text-gray-800 dark:text-slate-200">{{ $event->event_date ? $event->event_date->format('d/m/Y') : 'Por definir' }}</span>
                     </div>
                     <div class="bg-gray-50 dark:bg-slate-800/60 p-2 rounded-xl border border-gray-100 dark:border-slate-800">
                         <span class="text-[10px] text-gray-400 dark:text-gray-400 uppercase font-bold block">📍 Lugar</span>
                         <span class="font-bold text-gray-800 dark:text-slate-200 truncate block" title="{{ $event->location }}">{{ $event->location }}</span>
                     </div>
+                    <div class="col-span-2 sm:col-span-1 bg-gray-50 dark:bg-slate-800/60 p-2 rounded-xl border border-gray-100 dark:border-slate-800 flex items-center justify-between gap-2">
+                        <div class="min-w-0">
+                            <span class="text-[10px] text-gray-400 dark:text-gray-400 uppercase font-bold block">👤 Cliente</span>
+                            <span class="font-bold text-gray-800 dark:text-slate-200 truncate block">{{ $event->client ? $event->client->name : 'Sin asignar' }}</span>
+                        </div>
+                        @if($event->client && $event->client->phone)
+                            @php
+                                $cPhone = preg_replace('/[^0-9]/', '', $event->client->phone);
+                                if (strlen($cPhone) === 9 && in_array(substr($cPhone, 0, 1), ['6', '7'])) {
+                                    $cPhone = '34' . $cPhone;
+                                }
+                            @endphp
+                            <a href="https://wa.me/{{ $cPhone }}" target="_blank" class="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 border border-emerald-300 dark:border-emerald-800 px-2 py-1 rounded-lg transition shrink-0" title="Abrir chat de WhatsApp">
+                                💬 WA
+                            </a>
+                        @endif
+                    </div>
                 </div>
 
-                <!-- Montaje & Baile (Si están configurados) -->
-                @if($event->setup_date || $event->start_time || $event->dance_start_time)
-                    <div class="bg-purple-50/70 dark:bg-purple-950/30 p-2.5 rounded-xl border border-purple-100 dark:border-purple-900/40 text-[11px] space-y-1">
-                        @if($event->setup_date || $event->start_time)
-                            <div class="text-amber-900 dark:text-amber-300 font-semibold flex items-center gap-1.5">
-                                <span>🚗</span>
-                                <span><strong>Montaje:</strong> {{ $event->setup_schedule_label }}</span>
-                            </div>
+                <!-- Montaje, Baile y Personal en línea compacta -->
+                <div class="flex flex-wrap items-center justify-between gap-1.5 text-[11px] pt-0.5">
+                    <div class="flex flex-wrap items-center gap-1.5">
+                        @if($event->dj)
+                            <span class="bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 font-bold px-2 py-0.5 rounded-lg border border-indigo-200 dark:border-indigo-900/60 inline-flex items-center gap-1">
+                                🎧 {{ $event->dj->name }}
+                            </span>
+                        @endif
+                        @php
+                            $mobileAsts = $event->all_assistants;
+                        @endphp
+                        @if($mobileAsts->isNotEmpty())
+                            <span class="bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 font-bold px-2 py-0.5 rounded-lg border border-amber-200 dark:border-amber-900/60 inline-flex items-center gap-1">
+                                👷‍♂️ {{ $mobileAsts->pluck('name')->implode(', ') }}
+                            </span>
                         @endif
                         @if($event->dance_start_time)
-                            <div class="text-purple-900 dark:text-purple-300 font-bold flex items-center gap-1.5">
-                                <span>⏰</span>
-                                <span><strong>Baile (24h):</strong> {{ substr((string)$event->dance_start_time, 0, 5) }}h @if($event->dance_duration_hours)({{ (float)$event->dance_duration_hours }}h)@endif</span>
-                            </div>
+                            <span class="bg-purple-50 dark:bg-purple-950/40 text-purple-800 dark:text-purple-300 font-bold px-2 py-0.5 rounded-lg border border-purple-200 dark:border-purple-900/50">
+                                ⏰ {{ substr((string)$event->dance_start_time, 0, 5) }}h
+                            </span>
                         @endif
                     </div>
-                @endif
 
-                <!-- Personal (DJ y Asistente) -->
-                <div class="flex flex-wrap items-center gap-1.5 text-xs pt-1">
-                    @if($event->dj)
-                        <span class="bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 font-bold px-2.5 py-1 rounded-lg border border-indigo-200 dark:border-indigo-900/60 inline-flex items-center gap-1">
-                            🎧 DJ: {{ $event->dj->name }}
-                        </span>
-                    @else
-                        <span class="text-gray-400 dark:text-gray-400 text-[11px]">Sin DJ asignado</span>
-                    @endif
-
-                    @if($event->assistant)
-                        <span class="bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 font-bold px-2.5 py-1 rounded-lg border border-amber-200 dark:border-amber-900/60 inline-flex items-center gap-1">
-                            👷‍♂️ Asist: {{ $event->assistant->name }}
-                        </span>
-                    @endif
-                </div>
-
-                <!-- Cliente & WhatsApp -->
-                <div class="flex items-center justify-between text-xs pt-1 border-t border-gray-100 dark:border-slate-800">
-                    <div class="truncate text-gray-700 dark:text-slate-300">
-                        <span class="text-gray-400 font-semibold">Cliente:</span> <strong>{{ $event->client ? $event->client->name : 'Sin asignar' }}</strong>
+                    <!-- Acciones Rápidas Secundarias (Editar / Eliminar) -->
+                    <div class="flex items-center gap-1.5 ml-auto">
+                        <button type="button" wire:click="openEditModal({{ $event->id }})" class="px-2.5 py-1.5 rounded-xl bg-amber-50 dark:bg-amber-950/50 hover:bg-amber-100 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 font-bold text-[11px] transition cursor-pointer inline-flex items-center gap-1" title="Editar Evento">
+                            <span>✏️</span>
+                            <span>Editar</span>
+                        </button>
+                        @if(auth()->user()->role === 'admin')
+                            <button type="button" wire:click="deleteEvent({{ $event->id }})" wire:confirm="¿Estás seguro de que deseas eliminar permanentemente el evento '{{ $event->name }}'?" class="px-2.5 py-1.5 rounded-xl bg-rose-50 dark:bg-rose-950/50 hover:bg-rose-100 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900/60 font-bold text-[11px] transition cursor-pointer" title="Eliminar Evento">
+                                🗑️
+                            </button>
+                        @endif
                     </div>
-                    @if($event->client && $event->client->phone)
-                        @php
-                            $cPhone = preg_replace('/[^0-9]/', '', $event->client->phone);
-                            if (strlen($cPhone) === 9 && in_array(substr($cPhone, 0, 1), ['6', '7'])) {
-                                $cPhone = '34' . $cPhone;
-                            }
-                        @endphp
-                        <a href="https://wa.me/{{ $cPhone }}" target="_blank" class="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 border border-emerald-300 dark:border-emerald-800 px-2 py-0.5 rounded-lg transition shrink-0" title="Abrir chat de WhatsApp">
-                            💬 WhatsApp
-                        </a>
-                    @endif
-                </div>
-
-                <!-- Botones de Acción Móvil -->
-                <div class="flex items-center gap-2 pt-2">
-                    <a href="{{ route('admin.events.show', $event->id) }}" class="flex-1 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-extrabold text-xs py-2.5 px-4 rounded-xl shadow-xs text-center transition flex items-center justify-center gap-1.5">
-                        <span>⚙️</span>
-                        <span>Gestionar Evento</span>
-                    </a>
-                    @if($event->status === 'no_response' && $event->no_response_whatsapp_url)
-                        <button type="button" onclick="window.open('{{ $event->no_response_whatsapp_url }}', '_blank')" wire:click="promptFollowup({{ $event->id }})" class="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs py-2.5 px-3 rounded-xl shadow-xs transition inline-flex items-center gap-1 shrink-0 cursor-pointer" title="Enviar recordatorio con técnica del NO">
-                            💬 Recordar
-                        </button>
-                    @endif
-                    @if(auth()->user()->role === 'admin')
-                        <button type="button" wire:click="deleteEvent({{ $event->id }})" wire:confirm="¿Estás seguro de que deseas eliminar permanentemente el evento '{{ $event->name }}'?" class="p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/50 hover:bg-rose-100 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900/60 transition cursor-pointer" title="Eliminar Evento">
-                            🗑️
-                        </button>
-                    @endif
                 </div>
 
             </div>
@@ -201,11 +208,11 @@
         @endforelse
     </div>
 
-    <!-- ============================================== -->
-    <!-- VISTA ESCRITORIO / TABLET: TABLA RESPONSIVA    -->
-    <!-- ============================================== -->
-    <div class="hidden sm:block bg-white dark:bg-slate-900 shadow-sm rounded-2xl border border-gray-200 dark:border-slate-800 overflow-hidden">
-        <div class="w-full">
+    <!-- ========================================================== -->
+    <!-- VISTA ESCRITORIO (>= 1024px): TABLA CON SCROLL SEGURO      -->
+    <!-- ========================================================== -->
+    <div class="hidden lg:block bg-white dark:bg-slate-900 shadow-sm rounded-2xl border border-gray-200 dark:border-slate-800 overflow-hidden">
+        <div class="w-full overflow-x-auto">
             <table class="w-full divide-y divide-gray-200 dark:divide-slate-800 table-auto text-left">
                 <thead class="bg-gray-50 dark:bg-slate-950">
                     <tr>
@@ -220,11 +227,11 @@
                 <tbody class="bg-white dark:bg-slate-900 divide-y divide-gray-200 dark:divide-slate-800">
                     @forelse($events as $event)
                         <tr class="hover:bg-gray-50/70 dark:hover:bg-slate-800/50 transition">
-                            <td class="px-3 lg:px-4 py-3 max-w-[200px] lg:max-w-[260px]">
-                                <div class="flex items-center gap-2 min-w-0">
+                            <td class="px-3 lg:px-4 py-3 max-w-[240px] xl:max-w-[280px]">
+                                <a href="{{ route('admin.events.show', $event->id) }}" class="flex items-center gap-2 min-w-0 group">
                                     <span class="text-base shrink-0">{{ $event->event_type_icon }}</span>
-                                    <span class="text-sm font-extrabold text-gray-900 dark:text-white truncate" title="{{ $event->name }}">{{ $event->name }}</span>
-                                </div>
+                                    <span class="text-sm font-extrabold text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 truncate transition" title="{{ $event->name }}">{{ $event->name }}</span>
+                                </a>
                                 <div class="flex flex-wrap items-center gap-1.5 mt-1">
                                     <span class="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold px-2 py-0.5 rounded-md">
                                         {{ $event->event_type_label }}
@@ -259,11 +266,11 @@
                                     </div>
                                 @endif
                             </td>
-                            <td class="px-3 lg:px-4 py-3 text-xs text-gray-600 dark:text-slate-400 truncate max-w-[130px] lg:max-w-[170px]" title="{{ $event->location }}">
+                            <td class="px-3 lg:px-4 py-3 text-xs text-gray-600 dark:text-slate-400 truncate max-w-[140px] xl:max-w-[180px]" title="{{ $event->location }}">
                                 📍 {{ $event->location }}
                             </td>
                             <td class="px-3 lg:px-4 py-3 text-xs text-gray-600 dark:text-slate-400">
-                                <div class="font-bold text-gray-800 dark:text-slate-200 truncate max-w-[120px] lg:max-w-[150px]" title="{{ $event->client ? $event->client->name : 'Sin asignar' }}">{{ $event->client ? $event->client->name : 'Sin asignar' }}</div>
+                                <div class="font-bold text-gray-800 dark:text-slate-200 truncate max-w-[130px] xl:max-w-[160px]" title="{{ $event->client ? $event->client->name : 'Sin asignar' }}">{{ $event->client ? $event->client->name : 'Sin asignar' }}</div>
                                 @if($event->client && $event->client->phone)
                                     @php
                                         $cPhone = preg_replace('/[^0-9]/', '', $event->client->phone);
@@ -294,7 +301,10 @@
                                 @endif
                             </td>
                             <td class="px-3 lg:px-4 py-3 whitespace-nowrap text-right text-xs font-medium">
-                                <a href="{{ route('admin.events.show', $event->id) }}" class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 font-extrabold bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 border border-indigo-200 dark:border-indigo-800 px-3 py-1.5 rounded-xl transition">Gestionar</a>
+                                <a href="{{ route('admin.events.show', $event->id) }}" class="inline-flex items-center gap-1 text-white bg-indigo-600 hover:bg-indigo-700 font-extrabold px-3 py-1.5 rounded-xl shadow-2xs transition">
+                                    <span>⚙️</span>
+                                    <span>Gestionar</span>
+                                </a>
                                 <button type="button" wire:click="openEditModal({{ $event->id }})" class="text-amber-600 hover:text-amber-900 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/60 border border-amber-200 dark:border-amber-800 px-2.5 py-1.5 rounded-xl transition ml-1 cursor-pointer" title="Editar Evento">
                                     ✏️
                                 </button>

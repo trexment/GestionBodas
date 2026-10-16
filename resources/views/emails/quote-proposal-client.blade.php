@@ -168,7 +168,7 @@
             </p>
 
             <div class="event-card">
-                <div class="event-card-item"><strong>📅 Fecha del Evento:</strong> {{ \Carbon\Carbon::parse($event->event_date)->format('d/m/Y') }}</div>
+                <div class="event-card-item"><strong>📅 Fecha del Evento:</strong> {{ $event->event_date ? \Carbon\Carbon::parse($event->event_date)->format('d/m/Y') : 'Por determinar' }}</div>
                 <div class="event-card-item"><strong>📍 Lugar / Finca:</strong> {{ $event->location ?: 'A determinar' }}</div>
                 <div class="event-card-item"><strong>📋 Referencia de Propuesta:</strong> #{{ $quote->id }}</div>
             </div>
@@ -223,8 +223,12 @@
             </div>
 
             <div class="btn-wrapper">
-                <a href="{{ $portalUrl }}" class="btn">
-                    ✨ Acceder a mi Portal de Evento
+                <a href="{{ $quotePortalUrl ?? $quote->public_url }}" class="btn" style="background: linear-gradient(135deg, #059669 0%, #10b981 100%); margin-bottom: 10px;">
+                    ✅ Ver Propuesta Online (Aceptar / Rechazar / PDF)
+                </a>
+                <br>
+                <a href="{{ $portalUrl }}" style="display: inline-block; margin-top: 8px; font-size: 12px; font-weight: 700; color: #4f46e5; text-decoration: underline;">
+                    ✨ O acceder al cuestionario musical de mi evento
                 </a>
             </div>
 

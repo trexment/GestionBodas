@@ -359,15 +359,17 @@
                                 <span class="text-xl font-extrabold leading-tight">{{ $ev->event_date ? $ev->event_date->format('d') : '--' }}</span>
                             </div>
 
-                            <div>
-                                <h4 class="text-sm font-bold text-slate-900 flex items-center gap-2">
-                                    {{ $ev->name }}
+                            <div class="min-w-0 flex-1">
+                                <h4 class="text-sm font-bold text-slate-900 flex items-center gap-2 flex-wrap">
+                                    <a href="{{ route('admin.events.show', $ev->id) }}" class="hover:text-indigo-600 transition">
+                                        {{ $ev->name }}
+                                    </a>
                                     @if($ev->type)
                                         <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">{{ $ev->type }}</span>
                                     @endif
                                 </h4>
                                 
-                                <p class="text-xs text-slate-500 mt-1 flex items-center gap-1.5">
+                                <p class="text-xs text-slate-500 mt-1 flex items-center gap-1.5 flex-wrap">
                                     <span>👤 {{ $ev->client ? $ev->client->name : 'Sin cliente' }}</span>
                                     @if($ev->location)
                                         <span>&bull;</span>
@@ -406,8 +408,9 @@
                         </div>
 
                         <!-- ACCIÓN -->
-                        <div class="flex-shrink-0 sm:self-center">
-                            <a href="{{ route('admin.events.show', $ev->id) }}" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-600 text-indigo-700 hover:text-white text-xs font-bold transition shadow-xs">
+                        <div class="flex-shrink-0 w-full sm:w-auto sm:self-center">
+                            <a href="{{ route('admin.events.show', $ev->id) }}" class="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2.5 sm:py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold transition shadow-xs">
+                                <span>⚙️</span>
                                 <span>Gestionar</span>
                                 <span>&rarr;</span>
                             </a>

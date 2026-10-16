@@ -35,7 +35,7 @@ class NewQuoteRequestAdminMail extends Mailable
     public function envelope(): Envelope
     {
         $clientName = $this->event->client ? $this->event->client->name : 'Nuevo Cliente';
-        $eventDate = \Carbon\Carbon::parse($this->event->event_date)->format('d/m/Y');
+        $eventDate = $this->event->event_date ? \Carbon\Carbon::parse($this->event->event_date)->format('d/m/Y') : 'Por definir';
         $typeName = $this->typeConfig['name'] ?? 'Evento';
 
         return new Envelope(

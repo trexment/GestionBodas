@@ -27,7 +27,9 @@ class AppServiceProvider extends ServiceProvider
         try {
             if (!\Illuminate\Support\Facades\Schema::hasTable('whatsapp_messages') 
                 || !\Illuminate\Support\Facades\Schema::hasColumn('contracts', 'contract_number')
-                || !\Illuminate\Support\Facades\Schema::hasColumn('events', 'partner_name')) {
+                || !\Illuminate\Support\Facades\Schema::hasColumn('events', 'partner_name')
+                || !\Illuminate\Support\Facades\Schema::hasColumn('events', 'no_response_since')
+                || !\Illuminate\Support\Facades\Schema::hasColumn('quotes', 'rejection_reason')) {
                 \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
             }
         } catch (\Throwable $e) {

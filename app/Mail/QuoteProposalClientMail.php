@@ -23,6 +23,7 @@ class QuoteProposalClientMail extends Mailable
     public string $companyPhone;
     public string $companyEmail;
     public string $portalUrl;
+    public string $quotePortalUrl;
 
     public function __construct(Event $event, Quote $quote)
     {
@@ -32,11 +33,12 @@ class QuoteProposalClientMail extends Mailable
         $this->companyPhone = Setting::get('company_phone', '');
         $this->companyEmail = Setting::get('company_email', '');
         $this->portalUrl = route('guest.form', $event->token);
+        $this->quotePortalUrl = $this->quote->public_url;
     }
 
     public function envelope(): Envelope
     {
-        $eventDate = \Carbon\Carbon::parse($this->event->event_date)->format('d/m/Y');
+        $eventDate = $this->event->event_date ? \Carbon\Carbon::parse($this->event->event_date)->format('d/m/Y') : 'Por definir';
 
         return new Envelope(
             subject: "📑 Propuesta de Presupuesto para tu Evento ({$eventDate}) - {$this->companyName}",

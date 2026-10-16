@@ -108,7 +108,7 @@
 
     <!-- TABLA DE CLIENTES -->
     <div class="bg-white dark:bg-slate-900 shadow-sm overflow-hidden rounded-3xl border border-slate-200 dark:border-slate-800">
-        <div class="w-full">
+        <div class="w-full overflow-x-auto">
             <table class="w-full divide-y divide-slate-200 dark:divide-slate-800 text-left">
                 <thead class="bg-slate-50 dark:bg-slate-950 text-slate-500 dark:text-slate-400 text-xs uppercase font-bold tracking-wider">
                     <tr>
