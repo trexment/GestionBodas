@@ -327,6 +327,24 @@ class WhatsAppTemplateService
     }
 
     /**
+     * DESCARTE CON ELEGANCIA Y POSICIONAMIENTO DE MARCA ("No eres nuestro perfil de cliente").
+     * Cuando responden que "se va de presupuesto": marca estatus y valor sin bajar tarifas ni regatear.
+     */
+    public static function descartePosicionamientoPrecio(Event $event): string
+    {
+        $clientName = $event->client ? $event->client->name : 'pareja';
+        $brand = Setting::getBrandInfo($event ? $event->brand_clean : null);
+        $companyName = $brand['name'] ?? Setting::get('company_name', 'Núñez & Son');
+        $eventDate = $event->event_date ? Carbon::parse($event->event_date)->locale('es')->isoFormat('D [de] MMMM [de] YYYY') : 'vuestra fecha';
+
+        return "¡Hola {$clientName}! 👋 No hay ningún problema, os agradecemos mucho vuestra sinceridad.\n\n"
+             . "Con total transparencia y cariño, en *{$companyName}* entendemos que más que tratarse de que se os vaya de presupuesto, simplemente es que no somos el perfil de servicio que estáis buscando (ni vosotros el perfil de cliente para nosotros en esta ocasión).\n\n"
+             . "Nosotros nunca recortamos en calidad técnica, montaje ni dedicación para competir por precio, porque nuestro trabajo está enfocado a parejas que buscan una producción musical de primer nivel, cero improvisaciones y la tranquilidad absoluta de que su gran día salga perfecto.\n\n"
+             . "Por nuestra parte liberamos desde este momento el *{$eventDate}* en nuestra agenda para otras parejas que sí buscan este nivel de experiencia.\n\n"
+             . "Os deseamos de corazón que encontréis una opción que encaje con lo que tenéis en mente y que disfrutéis muchísimo de vuestra boda. ¡Un saludo! ✨";
+    }
+
+    /**
      * Determina la clave de seguimiento recomendada según los días sin respuesta (Método Madrigal)
      */
     public static function getRecommendedFollowupKey(Event $event): string
@@ -408,11 +426,19 @@ class WhatsAppTemplateService
             ],
             'presupuesto' => [
                 'key' => 'presupuesto',
-                'title' => 'Objeción de Presupuesto',
+                'title' => 'Objeción de Presupuesto (Adaptar)',
                 'stage' => 'Económica',
                 'icon' => '💶',
                 'description' => 'Consulta si el freno es económico para ofrecer adaptar el equipamiento.',
                 'text' => self::seguimientoPresupuestoNo($event),
+            ],
+            'no_es_nuestro_cliente' => [
+                'key' => 'no_es_nuestro_cliente',
+                'title' => 'Descarte Elegante: "No eres nuestro perfil de cliente"',
+                'stage' => 'Posicionamiento',
+                'icon' => '👑',
+                'description' => 'Cuando dicen que "se va de presupuesto": responde con elegancia y estatus que no competís por precio y liberáis su fecha.',
+                'text' => self::descartePosicionamientoPrecio($event),
             ],
         ];
 
@@ -439,6 +465,7 @@ class WhatsAppTemplateService
             'dia7_escasez' => self::seguimientoDia7Escasez($event),
             'psicologia_inversa' => self::seguimientoPsicologiaInversa($event),
             'presupuesto' => self::seguimientoPresupuestoNo($event),
+            'no_es_nuestro_cliente' => self::descartePosicionamientoPrecio($event),
             default => self::seguimientoPreguntaNo($event),
         };
 
@@ -449,6 +476,7 @@ class WhatsAppTemplateService
             'dia7_escasez' => 'Día 5-7: Cierre por Escasez (Prioridad 24h)',
             'psicologia_inversa' => 'Psicología Inversa / Cierre de Expediente',
             'presupuesto' => 'Reactivación por Presupuesto (Técnica del NO)',
+            'no_es_nuestro_cliente' => 'Descarte por Posicionamiento ("No eres nuestro perfil de cliente")',
             default => 'Técnica del NO / ¿Descartáis la fecha?',
         };
 
@@ -459,6 +487,7 @@ class WhatsAppTemplateService
             'dia7_escasez' => '⚡',
             'psicologia_inversa' => '🚪',
             'presupuesto' => '💶',
+            'no_es_nuestro_cliente' => '👑',
             default => '🎯',
         };
 

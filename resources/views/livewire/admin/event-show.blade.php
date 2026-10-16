@@ -1694,7 +1694,10 @@
                                         <span>🔒</span> Cierre de Expediente
                                     </button>
                                     <button type="button" wire:click="loadWhatsAppTemplate('presupuesto')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-white dark:bg-slate-900 hover:bg-teal-50 dark:hover:bg-slate-800 text-teal-700 dark:text-teal-400 border border-slate-200 dark:border-slate-800 hover:border-teal-300 transition shadow-2xs cursor-pointer flex items-center gap-1">
-                                        <span>💰</span> Objeción Precio
+                                        <span>💰</span> Objeción Precio (Adaptar)
+                                    </button>
+                                    <button type="button" wire:click="loadWhatsAppTemplate('no_es_nuestro_cliente')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-white dark:bg-slate-900 hover:bg-amber-50 dark:hover:bg-slate-800 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700/70 hover:border-amber-400 transition shadow-2xs cursor-pointer flex items-center gap-1" title="Respuesta elegante: no es que se vaya de presupuesto, es que no somos el perfil que buscáis">
+                                        <span>👑</span> No es nuestro cliente (Precio)
                                     </button>
                                     <button type="button" wire:click="loadWhatsAppTemplate('cuestionario')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-white dark:bg-slate-900 hover:bg-blue-50 dark:hover:bg-slate-800 text-blue-700 dark:text-blue-400 border border-slate-200 dark:border-slate-800 hover:border-blue-300 transition shadow-2xs cursor-pointer flex items-center gap-1">
                                         <span>📋</span> Cuestionario
