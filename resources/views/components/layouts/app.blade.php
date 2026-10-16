@@ -304,13 +304,24 @@
         }
     </style>
     @livewireStyles
+    @php
+        $initialNotifData = Auth::check()
+            ? \App\Services\AppNotificationService::getForUser((int) Auth::id(), 20)
+            : ['unread_count' => 0, 'notifications' => [], 'latest_timestamp' => 0];
+    @endphp
 </head>
 <body 
     class="min-h-screen h-auto font-sans antialiased text-slate-800 dark:text-slate-100 bg-slate-50 dark:bg-slate-950 selection:bg-indigo-500 selection:text-white transition-colors duration-200 overflow-x-hidden"
     x-data="{
         mobileSidebarOpen: false,
+        notifOpen: false,
+        unreadCount: {{ (int) ($initialNotifData['unread_count'] ?? 0) }},
+        notifications: @js($initialNotifData['notifications'] ?? []),
+        lastSeenTimestamp: {{ (int) ($initialNotifData['latest_timestamp'] ?? 0) }},
+        pollCounter: 0,
+        notifPermission: ('Notification' in window) ? Notification.permission : 'unsupported',
         toasts: [],
-        addToast(message, type = 'success', duration = 4000) {
+        addToast(message, type = 'success', duration = 4500) {
             const id = Date.now() + Math.random();
             this.toasts.push({ id, message, type });
             setTimeout(() => {
@@ -319,6 +330,129 @@
         },
         removeToast(id) {
             this.toasts = this.toasts.filter(t => t.id !== id);
+        },
+        playNotificationSound() {
+            try {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if (!AudioCtx) return;
+                const ctx = new AudioCtx();
+                const now = ctx.currentTime;
+                const osc1 = ctx.createOscillator();
+                const osc2 = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc1.type = 'sine';
+                osc2.type = 'triangle';
+                osc1.frequency.setValueAtTime(587.33, now); // D5
+                osc1.frequency.setValueAtTime(880, now + 0.12); // A5
+                osc2.frequency.setValueAtTime(293.66, now);
+                osc2.frequency.setValueAtTime(440, now + 0.12);
+                gain.gain.setValueAtTime(0.18, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+                osc1.connect(gain);
+                osc2.connect(gain);
+                gain.connect(ctx.destination);
+                osc1.start(now);
+                osc2.start(now);
+                osc1.stop(now + 0.45);
+                osc2.stop(now + 0.45);
+            } catch (e) {}
+        },
+        requestNotificationPermission() {
+            if (!('Notification' in window)) return;
+            Notification.requestPermission().then(perm => {
+                this.notifPermission = perm;
+                if (perm === 'granted') {
+                    this.addToast('🔔 Avisos del navegador y móvil activados correctamente', 'success');
+                    this.playNotificationSound();
+                }
+            });
+        },
+        triggerBrowserNotification(notif) {
+            if (!('Notification' in window) || Notification.permission !== 'granted') return;
+            const title = notif.title || 'Nuevo aviso en Eventos Musicales';
+            const options = {
+                body: notif.body || '',
+                icon: '/favicon.ico',
+                badge: '/favicon.ico',
+                vibrate: [200, 100, 200],
+                data: { url: notif.url || '/admin/events' },
+                tag: notif.id || ('notif-' + Date.now())
+            };
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistration().then(reg => {
+                    if (reg && reg.showNotification) {
+                        reg.showNotification(title, options);
+                    } else {
+                        const n = new Notification(title, options);
+                        n.onclick = () => { window.focus(); window.location.href = options.data.url; };
+                    }
+                }).catch(() => {
+                    const n = new Notification(title, options);
+                    n.onclick = () => { window.focus(); window.location.href = options.data.url; };
+                });
+            } else {
+                const n = new Notification(title, options);
+                n.onclick = () => { window.focus(); window.location.href = options.data.url; };
+            }
+        },
+        pollNotifications() {
+            this.pollCounter++;
+            const checkImap = (this.pollCounter % 8 === 0) ? '?check_imap=1' : '';
+            fetch('/admin/notifications/poll' + checkImap, {
+                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(r => r.ok ? r.json() : null)
+            .then(data => {
+                if (!data || !Array.isArray(data.notifications)) return;
+                const prevTs = this.lastSeenTimestamp || 0;
+                const newItems = data.notifications.filter(n => (n.timestamp || 0) > prevTs && n.unread);
+                this.unreadCount = data.unread_count || 0;
+                this.notifications = data.notifications;
+                if (data.latest_timestamp && data.latest_timestamp > this.lastSeenTimestamp) {
+                    this.lastSeenTimestamp = data.latest_timestamp;
+                }
+                if (newItems.length > 0 && prevTs > 0) {
+                    this.playNotificationSound();
+                    newItems.forEach(item => {
+                        this.addToast((item.title || 'Nuevo aviso') + ' — ' + (item.body || ''), 'info', 7000);
+                        this.triggerBrowserNotification(item);
+                    });
+                } else if (prevTs === 0 && data.latest_timestamp) {
+                    this.lastSeenTimestamp = data.latest_timestamp;
+                }
+            })
+            .catch(() => {});
+        },
+        markAllNotificationsRead() {
+            fetch('/admin/notifications/read', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content || ''
+                },
+                body: JSON.stringify({ all: true })
+            })
+            .then(r => r.ok ? r.json() : null)
+            .then(data => {
+                if (data) {
+                    this.unreadCount = data.unread_count || 0;
+                    this.notifications = data.notifications || [];
+                }
+            });
+        },
+        openNotification(notif) {
+            fetch('/admin/notifications/read', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content || ''
+                },
+                body: JSON.stringify({ id: notif.id })
+            }).finally(() => {
+                window.location.href = notif.url || '/admin/events';
+            });
         },
         isDark: localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches),
         toggleTheme() {
@@ -347,6 +481,9 @@
             const type = e.detail.type || 'success';
             addToast(msg, type);
         });
+        @if(Auth::check() && in_array(Auth::user()->role, ['admin', 'dj']))
+            setInterval(() => { pollNotifications(); }, 15000);
+        @endif
     "
 >
 
@@ -573,6 +710,106 @@
                     <!-- ACCIONES SUPERIORES DERECHA -->
                     <div class="flex items-center gap-2 sm:gap-2.5">
                         
+                        <!-- CAMPANA DE NOTIFICACIONES EN TIEMPO REAL (WHATSAPP Y EMAILS) -->
+                        @if(Auth::check() && in_array(Auth::user()->role, ['admin', 'dj']))
+                        <div class="relative" @click.away="notifOpen = false">
+                            <button 
+                                type="button"
+                                @click="notifOpen = !notifOpen"
+                                title="Avisos de WhatsApp y Emails recibidos"
+                                class="relative p-2 sm:px-2.5 sm:py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700/80 font-bold text-xs flex items-center gap-1.5 transition cursor-pointer"
+                            >
+                                <span class="text-base leading-none">🔔</span>
+                                <span 
+                                    x-show="unreadCount > 0" 
+                                    x-text="unreadCount > 9 ? '9+' : unreadCount"
+                                    style="display: none;"
+                                    class="px-1.5 py-0.5 text-[10px] font-extrabold bg-rose-600 text-white rounded-full leading-none shadow-sm animate-pulse"
+                                ></span>
+                            </button>
+
+                            <!-- DROPDOWN PANEL DE NOTIFICACIONES -->
+                            <div 
+                                x-show="notifOpen"
+                                x-transition:enter="transition ease-out duration-200"
+                                x-transition:enter-start="opacity-0 translate-y-1 scale-95"
+                                x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+                                x-transition:leave="transition ease-in duration-150"
+                                x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+                                x-transition:leave-end="opacity-0 translate-y-1 scale-95"
+                                style="display: none;"
+                                class="absolute right-0 mt-2 w-80 sm:w-96 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-2xl z-50 overflow-hidden"
+                            >
+                                <div class="px-4 py-3 bg-slate-50 dark:bg-slate-800/90 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                                    <div>
+                                        <h4 class="text-xs font-extrabold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
+                                            <span>🔔</span> Avisos de WhatsApp y Email
+                                        </h4>
+                                        <p class="text-[11px] text-slate-500 dark:text-slate-400">Tiempo real (respuestas y leads entrantes)</p>
+                                    </div>
+                                    <button 
+                                        x-show="unreadCount > 0"
+                                        type="button"
+                                        @click="markAllNotificationsRead()"
+                                        class="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
+                                    >
+                                        Marcar leídas
+                                    </button>
+                                </div>
+
+                                <!-- BOTÓN ACTIVAR NOTIFICACIONES NATIVAS EN MÓVIL / NAVEGADOR -->
+                                <div x-show="notifPermission === 'default'" class="px-4 py-2.5 bg-indigo-50 dark:bg-indigo-950/60 border-b border-indigo-100 dark:border-indigo-900/60 flex items-center justify-between gap-2">
+                                    <span class="text-[11px] font-semibold text-indigo-800 dark:text-indigo-200 leading-tight">
+                                        📲 Activa las notificaciones push con sonido en este dispositivo
+                                    </span>
+                                    <button 
+                                        type="button"
+                                        @click="requestNotificationPermission()"
+                                        class="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-bold shrink-0 cursor-pointer transition"
+                                    >
+                                        Activar
+                                    </button>
+                                </div>
+
+                                <!-- LISTA DE NOTIFICACIONES -->
+                                <div class="max-h-80 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
+                                    <template x-if="notifications.length === 0">
+                                        <div class="p-6 text-center text-xs text-slate-400 dark:text-slate-500">
+                                            No hay notificaciones recientes de WhatsApp ni Emails.
+                                        </div>
+                                    </template>
+                                    <template x-for="item in notifications" :key="item.id">
+                                        <button 
+                                            type="button"
+                                            @click="openNotification(item)"
+                                            class="w-full text-left px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition flex items-start gap-3 cursor-pointer"
+                                            :class="item.unread ? 'bg-indigo-50/50 dark:bg-indigo-950/30' : ''"
+                                        >
+                                            <div 
+                                                class="w-8 h-8 rounded-xl flex items-center justify-center text-sm shrink-0 mt-0.5"
+                                                :class="{
+                                                    'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300': item.type === 'whatsapp_inbound',
+                                                    'bg-blue-100 dark:bg-blue-950/80 text-blue-700 dark:text-blue-300': item.type === 'email_lead',
+                                                    'bg-amber-100 dark:bg-amber-950/80 text-amber-700 dark:text-amber-300': item.type === 'quote_request'
+                                                }"
+                                            >
+                                                <span x-text="item.type === 'whatsapp_inbound' ? '💬' : (item.type === 'quote_request' ? '💶' : '📩')"></span>
+                                            </div>
+                                            <div class="flex-1 min-w-0">
+                                                <div class="flex items-center justify-between gap-2">
+                                                    <span class="text-xs font-extrabold text-slate-900 dark:text-white truncate" x-text="item.title"></span>
+                                                    <span class="text-[10px] text-slate-400 shrink-0" x-text="item.created_at"></span>
+                                                </div>
+                                                <p class="text-[11px] text-slate-600 dark:text-slate-300 line-clamp-2 mt-0.5 leading-snug" x-text="item.body"></p>
+                                            </div>
+                                            <span x-show="item.unread" class="w-2 h-2 rounded-full bg-rose-500 shrink-0 mt-2"></span>
+                                        </button>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+                        @endif
+
                         <!-- BOTÓN INSTALAR APP / GUÍA MÓVIL & TABLET -->
                         <button 
                             type="button"

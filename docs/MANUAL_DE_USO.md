@@ -71,7 +71,11 @@ El módulo **Eventos** (`/admin/events`) centraliza todas las fechas y bodas de 
 *Figura 4.1: Listado de eventos con filtros por estado, sincronización IMAP y acciones rápidas.*
 
 ### Características Principales:
-- **Captura Automática de Leads por Email (IMAP)**: Escanea los buzones configurados (tanto de forma automática al entrar al Dashboard/Eventos como mediante el botón manual) e importa las solicitudes de **Bodas.net**, **Madrigal Marketing** y formularios web, enviando un **aviso inmediato por WhatsApp y Email** a los socios/administradores.
+- **Captura Automática de Leads por Email (IMAP)**: Escanea los buzones configurados (tanto de forma automática al entrar al Dashboard/Eventos y en segundo plano como mediante el botón manual) e importa las solicitudes de **Bodas.net**, **Madrigal Marketing** y formularios web.
+- **Centro de Avisos en Tiempo Real (`🔔`) y Notificaciones Multicanal**: Tanto cuando **recibimos un nuevo Email de un Lead** como cuando **un cliente responde por WhatsApp**, la aplicación dispara un triple aviso inmediato:
+  1. **En la App (Campana `🔔` superior + Notificación Push con sonido en móvil/navegador)** con acceso en 1 clic a la ficha del evento.
+  2. **Por WhatsApp** a los teléfonos de notificación de los socios/administradores.
+  3. **Por Correo Electrónico** a las cuentas de administración de la marca.
 - **Memoria Permanente Anti-Duplicados**: Registra la huella única de cada solicitud (`imap_processed_signatures`). Si eliminas manualmente un evento, queda bloqueado para que **jamás vuelva a re-importarse** aunque el correo continúe en la bandeja de entrada.
 - **Autocompletado de Letra DNI / NIE**: En todos los formularios (Clientes, Evento, Pareja, Contrato y Portal de Invitados), basta con introducir los 8 dígitos del DNI (ej. `12345678`) para que el sistema calcule y complete automáticamente la letra oficial (`12345678Z`) mostrando el indicador `✅ DNI válido`.
 - **Fusión y Limpieza de Clientes**: En el apartado **Clientes / Novios** dispones de herramientas en 1 clic para fusionar contactos duplicados y eliminar registros basura sin eventos asociados.
@@ -98,7 +102,7 @@ Al pulsar en **Gestionar**, accedemos a la ficha integral del evento con barra d
 
 ## 6. WhatsApp Directo (Evolution API), Método Madrigal y Posicionamiento
 
-La ficha del evento integra envío directo por **Evolution API** (con selector de remitente en vivo) y el guion completo de **Plantillas Rápidas Madrigal & Comerciales**:
+La ficha del evento integra envío y recepción bidireccional por **Evolution API** (cuando el cliente contesta por WhatsApp, la App envía notificación inmediata en la campana `🔔` / Push móvil / WhatsApp de socios / Email y reactiva automáticamente el evento de *Sin Respuesta* a *Borrador*) junto con el guion completo de **Plantillas Rápidas Madrigal & Comerciales**:
 
 ![Hub de WhatsApp](images/whatsapp_followup_hub.png)
 *Figura 6.1: Hub de reactivación táctica con previsualización del mensaje personalizado.*

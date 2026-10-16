@@ -773,6 +773,23 @@ class ImapLeadFetcherService
                 . $leadData['full_body'],
         ]);
 
+        // 4b. Notificación en tiempo real dentro de la App (Campana + Push Navegador/PWA + Toast)
+        try {
+            $leadName = $leadData['client_name'] ?? 'Nuevo Contacto';
+            $leadDate = !empty($leadData['event_date']) ? \Carbon\Carbon::parse($leadData['event_date'])->format('d/m/Y') : 'Sin fecha';
+            $leadLoc = $leadData['location'] ?? 'Por definir';
+            AppNotificationService::push(
+                'email_lead',
+                "📩 Nuevo Email Lead: {$leadName}",
+                "{$leadSource} • Fecha: {$leadDate} • {$leadLoc}",
+                url("/admin/events/{$event->id}"),
+                $event->id,
+                $brandKey
+            );
+        } catch (\Throwable $e) {
+            Log::warning("No se pudo registrar notificación en App para lead IMAP (Evento #{$event->id}): " . $e->getMessage());
+        }
+
         // 5. Notificar a los administradores de la empresa y la marca por correo ("y nos avise")
         try {
             $adminEmails = Setting::getAdminNotificationEmails($brandKey);

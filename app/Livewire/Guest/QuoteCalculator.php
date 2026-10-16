@@ -704,6 +704,34 @@ class QuoteCalculator extends Component
             \Illuminate\Support\Facades\Log::warning('No se pudo enviar el email de confirmación al cliente: ' . $e->getMessage());
         }
 
+        // C) Notificación en la App (Campana + Push Navegador/PWA + Toast) y WhatsApp a los socios
+        try {
+            \App\Services\AppNotificationService::push(
+                'quote_request',
+                "💶 Presupuesto Web: {$this->client_name}",
+                "{$event->name} • Total est.: " . number_format((float)$quote->total_amount, 2, ',', '.') . " €",
+                url("/admin/events/{$event->id}"),
+                $event->id,
+                $event->brand_clean
+            );
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('No se pudo registrar notificación en App de presupuesto: ' . $e->getMessage());
+        }
+
+        try {
+            if (\App\Services\EvolutionWhatsAppService::isEnabled()) {
+                $waAlert = "💶 *¡NUEVA SOLICITUD DE PRESUPUESTO!*\n\n"
+                    . "👤 *Cliente:* {$this->client_name}\n"
+                    . "📞 *Teléfono:* " . ($this->client_phone ?: 'No indicado') . "\n"
+                    . "🎉 *Evento:* {$event->name}\n"
+                    . "💰 *Total estimado:* " . number_format((float)$quote->total_amount, 2, ',', '.') . " €\n\n"
+                    . "🔗 *Ficha:* " . url("/admin/events/{$event->id}");
+                \App\Services\EvolutionWhatsAppService::notifyAdmins($waAlert, $event->brand_clean);
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('No se pudo enviar alerta WhatsApp a socios de presupuesto: ' . $e->getMessage());
+        }
+
         $this->is_submitted = true;
     }
 

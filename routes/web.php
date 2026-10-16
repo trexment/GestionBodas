@@ -151,6 +151,36 @@ Route::middleware('auth')->group(function () {
             Route::get('/invoice/{invoice}/pdf', [PdfController::class, 'downloadInvoice'])->name('invoice.pdf');
             Route::get('/events/{event}/packing-list/pdf', [PdfController::class, 'downloadPackingList'])->name('events.packing_list.pdf');
             Route::get('/events/{event}/music-escaleta/pdf', [PdfController::class, 'downloadMusicEscaleta'])->name('events.music_escaleta.pdf');
+
+            // Real-time App Notifications Polling & Read State (WhatsApp inbound & Email Leads)
+            Route::get('/notifications/poll', function (\Illuminate\Http\Request $request) {
+                if ($request->boolean('check_imap') && \App\Models\Setting::get('imap_enabled', '0') === '1') {
+                    $lastSync = (int) \App\Models\Setting::get('imap_last_auto_sync', '0');
+                    if ((time() - $lastSync) >= 120) {
+                        \App\Models\Setting::set('imap_last_auto_sync', (string) time());
+                        try {
+                            app(\App\Services\ImapLeadFetcherService::class)->fetchAllMailboxes();
+                        } catch (\Throwable $e) {
+                            // Silencioso en polling
+                        }
+                    }
+                }
+                return response()->json(
+                    \App\Services\AppNotificationService::getForUser((int) auth()->id(), 20)
+                );
+            })->name('notifications.poll');
+
+            Route::post('/notifications/read', function (\Illuminate\Http\Request $request) {
+                $userId = (int) auth()->id();
+                if ($request->boolean('all')) {
+                    \App\Services\AppNotificationService::markAllRead($userId);
+                } elseif ($request->filled('id')) {
+                    \App\Services\AppNotificationService::markRead((string) $request->input('id'), $userId);
+                }
+                return response()->json(
+                    \App\Services\AppNotificationService::getForUser($userId, 20)
+                );
+            })->name('notifications.read');
         });
     });
 });

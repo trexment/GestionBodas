@@ -173,7 +173,7 @@ class LeadWebhookController extends Controller
             'notes' => $notesContent,
         ]);
 
-        // 9. Notificar a los administradores vía email
+        // 9. Notificación en la App + Email + WhatsApp a los administradores
         $leadData = [
             'client_name' => $name,
             'client_email' => $email,
@@ -183,6 +183,20 @@ class LeadWebhookController extends Controller
             'event_type' => $eventType,
             'full_body' => $notesContent,
         ];
+
+        try {
+            $leadDateStr = $eventDate ? Carbon::parse($eventDate)->format('d/m/Y') : 'Sin fecha';
+            \App\Services\AppNotificationService::push(
+                'email_lead',
+                "📩 Nuevo Lead Web: {$name}",
+                "Fecha: {$leadDateStr} • " . ($location ?: 'Por definir'),
+                url("/admin/events/{$event->id}"),
+                $event->id,
+                $brandKey
+            );
+        } catch (\Throwable $e) {
+            Log::warning("No se pudo registrar notificación en App para lead webhook (Evento #{$event->id}): " . $e->getMessage());
+        }
 
         try {
             $adminEmails = Setting::getAdminNotificationEmails($brandKey);
@@ -196,6 +210,23 @@ class LeadWebhookController extends Controller
             }
         } catch (\Throwable $e) {
             Log::warning("No se pudo enviar email de notificación para el nuevo lead web (Evento #{$event->id}): " . $e->getMessage());
+        }
+
+        try {
+            if (\App\Services\EvolutionWhatsAppService::isEnabled()) {
+                $leadDateStr = $eventDate ? Carbon::parse($eventDate)->format('d/m/Y') : 'Por definir';
+                $waLeadAlert = "📥 *¡NUEVO LEAD ENTRANTE!*\n\n"
+                    . "👤 *Contacto:* {$name}\n"
+                    . "📞 *Teléfono:* " . ($cleanPhone ?: 'No indicado') . "\n"
+                    . "📅 *Fecha Evento:* {$leadDateStr}\n"
+                    . "📍 *Lugar:* " . ($location ?: 'Por definir') . "\n"
+                    . "🏷️ *Origen:* Webhook Web / Elementor\n"
+                    . "🏢 *Marca:* " . strtoupper($brandKey) . "\n\n"
+                    . "🔗 *Ficha:* " . url("/admin/events/{$event->id}");
+                \App\Services\EvolutionWhatsAppService::notifyAdmins($waLeadAlert, $brandKey);
+            }
+        } catch (\Throwable $e) {
+            Log::warning("No se pudo enviar alerta WhatsApp para nuevo lead web (Evento #{$event->id}): " . $e->getMessage());
         }
 
         return response()->json([

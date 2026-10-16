@@ -607,7 +607,13 @@
       <li><strong>Portales Soportados:</strong> Extrae automáticamente los datos del cliente desde correos de <strong>Bodas.net</strong>, <strong>Madrigal Marketing</strong> (decodificando <em>quoted-printable</em>, fecha, lugar, teléfono y campaña/creativo) y formularios web.</li>
       <li><strong>Filtro Estricto Anti-Spam:</strong> Solo crea un cliente y evento si el correo contiene datos reales de solicitud (teléfono válido o fecha explícita del evento).</li>
       <li><strong>Memoria Permanente Anti-Duplicados:</strong> Registra la huella única de cada solicitud. Si <strong>eliminas manualmente un evento</strong> del listado, queda bloqueado en memoria para que <strong>jamás vuelva a re-importarse</strong> aunque el email siga en el buzón.</li>
-      <li><strong>Aviso Instantáneo por WhatsApp y Email:</strong> Al entrar un lead nuevo, envía automáticamente un WhatsApp de alerta a los administradores con el nombre, teléfono, fecha, lugar y campaña.</li>
+      <li><strong>Notificación Multicanal Instantánea (App + Push + WhatsApp + Email):</strong> Al entrar un email de lead nuevo, la aplicación dispara automáticamente:
+        <ol style="margin-top: 4px; padding-left: 16px;">
+          <li><strong>Aviso en la Campana <code>🔔</code> de la App y Notificación Push con sonido</strong> en el móvil/ordenador con acceso en 1 clic a la ficha.</li>
+          <li><strong>Alerta por WhatsApp</strong> a los números de los administradores/socios con los datos de contacto, fecha, lugar y campaña.</li>
+          <li><strong>Correo electrónico de aviso</strong> a las cuentas de administración de la marca.</li>
+        </ol>
+      </li>
     </ul>
   </div>
   <div class="card-box">
@@ -616,6 +622,14 @@
       <li><strong>Autocompletado de Letra DNI/NIE:</strong> En cualquier formulario (Clientes, Evento, Pareja, Contrato o Portal de Invitados), al escribir los 8 números de un DNI (ej. <code>12345678</code>) o 7 de un NIE (ej. <code>X1234567</code>), el sistema calcula y añade automáticamente la letra oficial (<code>12345678Z</code>) mostrando el indicador <span class="badge badge-emerald">✅ DNI válido</span>.</li>
       <li><strong>Fusión y Limpieza de Contactos:</strong> En <strong>Clientes / Novios</strong> dispones de botones para fusionar contactos duplicados por teléfono/nombre y limpiar contactos sin eventos asociados.</li>
     </ul>
+  </div>
+</div>
+
+<div class="alert alert-indigo" style="margin-top: 10px;">
+  <div class="alert-icon">🔔</div>
+  <div class="alert-body">
+    <strong>Centro de Avisos en Tiempo Real (Campana <code>🔔</code> en Barra Superior)</strong>
+    En la esquina superior derecha del panel dispones de la campana <strong>🔔 Avisos de WhatsApp y Email</strong>. La aplicación comprueba automáticamente cada pocos segundos si algún cliente ha respondido por WhatsApp o si ha entrado un nuevo email en el buzón, haciendo sonar un aviso acústico, mostrando una notificación nativa en tu móvil/navegador (pulsando en <em>"Activar notificaciones push"</em>) y llevándote directamente al evento al hacer clic.
   </div>
 </div>
 
@@ -737,6 +751,14 @@
     <blockquote style="font-style: italic; color: #4338ca; background: #eef2ff; padding: 8px; border-radius: 6px; margin: 4px 0;">
       "Para no ser pesados ni saturaros con más mensajes, cerramos vuestro expediente por nuestra parte... Si cambiáis de opinión antes de que la fecha se ocupe definitivamente, sabéis dónde encontrarnos."
     </blockquote>
+  </div>
+</div>
+
+<div class="alert alert-emerald" style="margin-top: 10px;">
+  <div class="alert-icon">💬</div>
+  <div class="alert-body">
+    <strong>Recepción de Respuestas de WhatsApp y Notificación Instantánea</strong>
+    Cuando un cliente contesta por WhatsApp, el webhook de Evolution API registra el mensaje en el historial de la ficha del evento, <strong>reactiva automáticamente el evento de <em>Sin Respuesta</em> a <em>Borrador</em></strong> y dispara un triple aviso inmediato: <strong>Notificación en la App (Campana <code>🔔</code> + Push móvil/escritorio con sonido)</strong>, <strong>mensaje de alerta al WhatsApp de los socios</strong> y <strong>correo electrónico de aviso</strong> con enlace directo al evento.
   </div>
 </div>
 

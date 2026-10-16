@@ -6,10 +6,13 @@ use App\Models\Event;
 use App\Models\Setting;
 use App\Models\User;
 use App\Models\WhatsAppMessage;
+use App\Services\AppNotificationService;
+use App\Services\EvolutionWhatsAppService;
 use App\Services\WhatsAppTemplateService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class WhatsAppWebhookController extends Controller
 {
@@ -96,6 +99,7 @@ class WhatsAppWebhookController extends Controller
         }
 
         $direction = $fromMe ? 'outbound' : 'inbound';
+        $effectiveBrand = $event ? $event->brand_clean : $brand;
 
         $record = WhatsAppMessage::create([
             'event_id' => $event ? $event->id : null,
@@ -106,11 +110,12 @@ class WhatsAppWebhookController extends Controller
             'message' => $text,
             'status' => $fromMe ? 'sent' : 'received',
             'external_id' => $externalId,
-            'brand' => $event ? $event->brand_clean : $brand,
+            'brand' => $effectiveBrand,
             'payload' => $payload,
         ]);
 
         // 3. AUTOMATIZACIÓN INTELIGENTE: Si el cliente responde y estaba en seguimiento ("no_response")
+        $reactivated = false;
         if (!$fromMe && $event && $event->status === 'no_response') {
             $event->update([
                 'status' => 'draft', // Vuelve automáticamente a Borrador activo
@@ -118,12 +123,77 @@ class WhatsAppWebhookController extends Controller
                 'notes' => ($event->notes ? $event->notes . "\n" : "") 
                     . "[" . now()->format('d/m/Y H:i') . "] 💬 [WhatsApp Entrante de {$senderName}]: \"" . mb_substr($text, 0, 150) . "\" -> Reactivado a Borrador automáticamente.",
             ]);
+            $reactivated = true;
         } elseif (!$fromMe && $event) {
             // Registrar en notas internas para que conste en el historial
             $event->update([
                 'notes' => ($event->notes ? $event->notes . "\n" : "") 
                     . "[" . now()->format('d/m/Y H:i') . "] 💬 [WhatsApp de {$senderName}]: \"" . mb_substr($text, 0, 150) . "\"",
             ]);
+        }
+
+        // 4. NOTIFICACIONES MULTICANAL CUANDO RESPONDE UN CLIENTE POR WHATSAPP
+        if (!$fromMe && !$this->isInternalNotificationMessage($cleanPhone, $text, $effectiveBrand)) {
+            $displayName = ($user && $user->name) ? $user->name : $senderName;
+            $eventTitle = $event ? $event->name : 'Contacto sin evento asignado';
+            $eventUrl = $event ? url("/admin/events/{$event->id}") : url('/admin/events');
+            $snippet = mb_substr(trim($text), 0, 140);
+
+            // 4a. Notificación en la App (Campana + Push Navegador/PWA + Toast)
+            try {
+                AppNotificationService::push(
+                    'whatsapp_inbound',
+                    "💬 WhatsApp de {$displayName}",
+                    ($event ? "[{$event->name}] " : '') . "\"{$snippet}\"",
+                    $eventUrl,
+                    $event ? $event->id : null,
+                    $effectiveBrand
+                );
+            } catch (\Throwable $e) {
+                Log::warning("No se pudo registrar notificación en App por WhatsApp entrante: " . $e->getMessage());
+            }
+
+            // 4b. Alerta de WhatsApp a los administradores / socios
+            try {
+                if (EvolutionWhatsAppService::isEnabled()) {
+                    $waAlert = "💬 *¡NUEVO WHATSAPP RECIBIDO!*\n\n"
+                        . "👤 *Cliente:* {$displayName} (+{$cleanPhone})\n"
+                        . "🎉 *Evento:* {$eventTitle}\n"
+                        . ($reactivated ? "✅ *Estado:* Reactivado automáticamente a BORRADOR\n" : "")
+                        . "✉️ *Mensaje:* \"{$snippet}\"\n\n"
+                        . "🔗 *Ficha:* {$eventUrl}";
+                    EvolutionWhatsAppService::notifyAdmins($waAlert, $effectiveBrand);
+                }
+            } catch (\Throwable $e) {
+                Log::warning("No se pudo enviar alerta WhatsApp a socios por respuesta de cliente: " . $e->getMessage());
+            }
+
+            // 4c. Alerta por Email a los administradores
+            try {
+                $adminEmails = Setting::getAdminNotificationEmails($effectiveBrand);
+                if (!empty($adminEmails)) {
+                    $primaryAdmin = array_shift($adminEmails);
+                    $subject = "💬 Nuevo WhatsApp de {$displayName}" . ($event ? " — {$event->name}" : "");
+                    $emailBody = "Has recibido una nueva respuesta por WhatsApp:\n\n"
+                        . "Cliente: {$displayName} (+{$cleanPhone})\n"
+                        . "Evento: {$eventTitle}\n"
+                        . ($reactivated ? "Estado: Reactivado automáticamente de 'Sin Respuesta' a 'Borrador'\n" : "")
+                        . "Fecha/Hora: " . now()->format('d/m/Y H:i') . "\n"
+                        . "----------------------------------------\n"
+                        . $text . "\n"
+                        . "----------------------------------------\n\n"
+                        . "Abrir en la App: {$eventUrl}";
+
+                    Mail::raw($emailBody, function ($msg) use ($primaryAdmin, $adminEmails, $subject) {
+                        $msg->to($primaryAdmin)->subject($subject);
+                        if (!empty($adminEmails)) {
+                            $msg->bcc($adminEmails);
+                        }
+                    });
+                }
+            } catch (\Throwable $e) {
+                Log::warning("No se pudo enviar email de aviso por WhatsApp entrante: " . $e->getMessage());
+            }
         }
 
         return response()->json([
@@ -133,6 +203,31 @@ class WhatsAppWebhookController extends Controller
             'client_phone' => $cleanPhone,
             'direction' => $direction,
         ]);
+    }
+
+    /**
+     * Evita bucles si el mensaje recibido proviene de uno de los teléfonos de notificación de administradores
+     * o si es un eco de una alerta interna del sistema.
+     */
+    protected function isInternalNotificationMessage(string $cleanPhone, string $text, string $brand): bool
+    {
+        if (
+            str_starts_with($text, '💬 *¡NUEVO WHATSAPP RECIBIDO!*') ||
+            str_starts_with($text, '📥 *¡NUEVO LEAD ENTRANTE!*') ||
+            str_starts_with($text, '💶 *¡NUEVA SOLICITUD DE PRESUPUESTO!*')
+        ) {
+            return true;
+        }
+
+        $adminPhones = Setting::getAdminNotificationPhones($brand);
+        foreach ($adminPhones as $adminPhone) {
+            $cleanAdmin = WhatsAppTemplateService::cleanPhone((string)$adminPhone);
+            if (!empty($cleanAdmin) && $cleanAdmin === $cleanPhone) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
