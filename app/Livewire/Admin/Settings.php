@@ -288,7 +288,7 @@ class Settings extends Component
 
         $this->company_name = Setting::get('company_name', 'Núñez and Son');
         $this->company_subtitle = Setting::get('company_subtitle', 'Sound in Motion');
-        $this->company_phone = Setting::get('company_phone', '+34 622 634 790');
+        $this->company_phone = Setting::fixLegacyTypoPhone(Setting::get('company_phone', '+34 622 634 790'), 'company_phone');
         $this->company_cif = Setting::get('company_cif', 'B-12345678');
         $this->company_email = Setting::get('company_email', 'info@nunezandson.com');
         if ($this->company_email === 'info@eventosmusicales.es') {
@@ -299,7 +299,7 @@ class Settings extends Component
         $this->company_season = Setting::get('company_season', 'Temporada 2026/2027');
         $this->public_website_url = Setting::get('public_website_url', '');
         $this->company_iban = Setting::get('company_iban', 'ES00 0000 0000 0000 0000 0000');
-        $this->company_bizum = Setting::get('company_bizum', '622634790');
+        $this->company_bizum = Setting::fixLegacyTypoPhone(Setting::get('company_bizum', '622634790'), 'company_bizum');
         $this->deposit_type = Setting::get('deposit_type', 'percentage');
         $this->deposit_percentage = (float)Setting::get('deposit_percentage', 40);
         $this->deposit_fixed_amount = (float)Setting::get('deposit_fixed_amount', 200);
@@ -307,8 +307,8 @@ class Settings extends Component
         // Perfiles de Marca
         $this->brand_nunez_name = Setting::get('brand_nunez_name', 'Núñez and Son');
         $this->brand_nunez_subtitle = Setting::get('brand_nunez_subtitle', 'DJ & Sonido');
-        $this->brand_nunez_phone = Setting::get('brand_nunez_phone', '+34 622 62 47 90 (Fran)');
-        $this->brand_nunez_phone_2 = Setting::get('brand_nunez_phone_2', '+34 674 37 89 93 (Miguel)');
+        $this->brand_nunez_phone = Setting::fixLegacyTypoPhone(Setting::get('brand_nunez_phone', '+34 622 63 47 90 (Fran)'), 'brand_nunez_phone');
+        $this->brand_nunez_phone_2 = Setting::fixLegacyTypoPhone(Setting::get('brand_nunez_phone_2', '+34 674 37 89 93 (Miguel)'), 'brand_nunez_phone_2');
         $this->brand_nunez_email = Setting::get('brand_nunez_email', 'info@nunezandson.com');
         if ($this->brand_nunez_email === 'info@eventosmusicales.es') {
             $this->brand_nunez_email = 'info@nunezandson.com';
@@ -320,15 +320,15 @@ class Settings extends Component
 
         $this->brand_javnx_name = Setting::get('brand_javnx_name', 'JAVNX DJ');
         $this->brand_javnx_subtitle = Setting::get('brand_javnx_subtitle', 'DJ & Producción de Eventos');
-        $this->brand_javnx_phone = Setting::get('brand_javnx_phone', '+34 622 62 47 90');
-        $this->brand_javnx_phone_2 = Setting::get('brand_javnx_phone_2', '');
+        $this->brand_javnx_phone = Setting::fixLegacyTypoPhone(Setting::get('brand_javnx_phone', '+34 622 63 47 90'), 'brand_javnx_phone');
+        $this->brand_javnx_phone_2 = Setting::fixLegacyTypoPhone(Setting::get('brand_javnx_phone_2', ''), 'brand_javnx_phone_2');
         $this->brand_javnx_email = Setting::get('brand_javnx_email', 'info@javnxdj.com');
         $this->brand_javnx_website = Setting::get('brand_javnx_website', 'javnxdj.com');
 
         $this->brand_leugim_name = Setting::get('brand_leugim_name', 'Mago Leugim');
         $this->brand_leugim_subtitle = Setting::get('brand_leugim_subtitle', 'Ilusionismo, Magia de Cerca & Eventos');
-        $this->brand_leugim_phone = Setting::get('brand_leugim_phone', '+34 674 37 89 93 (Miguel)');
-        $this->brand_leugim_phone_2 = Setting::get('brand_leugim_phone_2', '+34 622 62 47 90 (Fran)');
+        $this->brand_leugim_phone = Setting::fixLegacyTypoPhone(Setting::get('brand_leugim_phone', '+34 674 37 89 93 (Miguel)'), 'brand_leugim_phone');
+        $this->brand_leugim_phone_2 = Setting::fixLegacyTypoPhone(Setting::get('brand_leugim_phone_2', '+34 622 63 47 90 (Fran)'), 'brand_leugim_phone_2');
         $this->brand_leugim_email = Setting::get('brand_leugim_email', 'magoleugim@gmail.com');
         $this->brand_leugim_website = Setting::get('brand_leugim_website', 'magoleugim.es');
 

@@ -247,6 +247,29 @@ class Setting extends Model
     }
 
     /**
+    /**
+     * Corrige automáticamente la errata antigua del teléfono de Fran (622 62 47 90 -> 622 63 47 90)
+     */
+    public static function fixLegacyTypoPhone(?string $val, ?string $settingKeyToUpdate = null): string
+    {
+        $str = (string) $val;
+        if ($str === '') {
+            return '';
+        }
+        $fixed = str_replace(
+            ['622 62 47 90', '622 624 790', '622624790'],
+            ['622 63 47 90', '622 634 790', '622634790'],
+            $str
+        );
+        if ($fixed !== $str && $settingKeyToUpdate) {
+            try {
+                self::set($settingKeyToUpdate, $fixed);
+            } catch (\Throwable $e) {}
+        }
+        return $fixed;
+    }
+
+    /**
      * Get details for a specific brand profile ('nunez_and_son' | 'javnx' | 'mago_leugim')
      */
     public static function getBrandInfo(?string $brandKey = null): array
@@ -258,13 +281,13 @@ class Setting extends Model
         if ($brandKey === 'mago_leugim') {
             $name = self::get('brand_leugim_name', 'Mago Leugim');
             $subtitle = self::get('brand_leugim_subtitle', 'Ilusionismo, Magia de Cerca & Eventos');
-            $phone = self::get('brand_leugim_phone');
+            $phone = self::fixLegacyTypoPhone(self::get('brand_leugim_phone'), 'brand_leugim_phone');
             if (empty($phone) || strlen(trim(preg_replace('/[^0-9]/', '', $phone))) < 7) {
                 $phone = '+34 674 37 89 93 (Miguel)';
             }
-            $phone2 = self::get('brand_leugim_phone_2');
+            $phone2 = self::fixLegacyTypoPhone(self::get('brand_leugim_phone_2'), 'brand_leugim_phone_2');
             if (empty($phone2) || strlen(trim(preg_replace('/[^0-9]/', '', $phone2))) < 7) {
-                $phone2 = '+34 622 62 47 90 (Fran)';
+                $phone2 = '+34 622 63 47 90 (Fran)';
             }
             $email = self::get('brand_leugim_email', self::get('company_email', 'magoleugim@gmail.com'));
             $website = self::get('brand_leugim_website', 'magoleugim.es');
@@ -275,11 +298,11 @@ class Setting extends Model
         } elseif ($brandKey === 'javnx') {
             $name = self::get('brand_javnx_name', 'JAVNX DJ');
             $subtitle = self::get('brand_javnx_subtitle', 'DJ & Producción de Eventos');
-            $phone = self::get('brand_javnx_phone', self::get('company_phone'));
+            $phone = self::fixLegacyTypoPhone(self::get('brand_javnx_phone', self::get('company_phone')), 'brand_javnx_phone');
             if (empty($phone) || strlen(trim(preg_replace('/[^0-9]/', '', $phone))) < 7) {
-                $phone = '+34 622 62 47 90';
+                $phone = '+34 622 63 47 90';
             }
-            $phone2 = self::get('brand_javnx_phone_2', '');
+            $phone2 = self::fixLegacyTypoPhone(self::get('brand_javnx_phone_2', ''), 'brand_javnx_phone_2');
             $email = self::get('brand_javnx_email', self::get('company_email', 'info@javnxdj.com'));
             $website = self::get('brand_javnx_website', 'javnxdj.com');
             if (empty($website) || str_contains($website, 'landing-bodas')) {
@@ -290,11 +313,11 @@ class Setting extends Model
             // Default: Núñez and Son
             $name = self::get('brand_nunez_name', self::get('company_name', 'Núñez and Son'));
             $subtitle = self::get('brand_nunez_subtitle', self::get('company_subtitle', 'DJ & Sonido'));
-            $phone = self::get('brand_nunez_phone', self::get('company_phone'));
+            $phone = self::fixLegacyTypoPhone(self::get('brand_nunez_phone', self::get('company_phone')), 'brand_nunez_phone');
             if (empty($phone) || strlen(trim(preg_replace('/[^0-9]/', '', $phone))) < 7) {
-                $phone = '+34 622 62 47 90 (Fran)';
+                $phone = '+34 622 63 47 90 (Fran)';
             }
-            $phone2 = self::get('brand_nunez_phone_2', self::get('company_phone_2'));
+            $phone2 = self::fixLegacyTypoPhone(self::get('brand_nunez_phone_2', self::get('company_phone_2')), 'brand_nunez_phone_2');
             if (empty($phone2) || strlen(trim(preg_replace('/[^0-9]/', '', $phone2))) < 7) {
                 $phone2 = '+34 674 37 89 93 (Miguel)';
             }
@@ -413,11 +436,16 @@ class Setting extends Model
 
         // 1. Teléfonos de usuarios registrados con rol admin
         try {
-            $adminUserPhones = \App\Models\User::where('role', 'admin')
+            $adminUsers = \App\Models\User::where('role', 'admin')
                 ->whereNotNull('phone')
-                ->pluck('phone')
-                ->toArray();
-            $phones = array_merge($phones, $adminUserPhones);
+                ->get();
+            foreach ($adminUsers as $adminUser) {
+                $fixedUserPhone = self::fixLegacyTypoPhone($adminUser->phone);
+                if ($fixedUserPhone !== (string)$adminUser->phone) {
+                    $adminUser->update(['phone' => $fixedUserPhone]);
+                }
+                $phones[] = $fixedUserPhone;
+            }
         } catch (\Throwable $e) {}
 
         // 2. Teléfonos configurados en los ajustes de marcas
@@ -430,8 +458,8 @@ class Setting extends Model
         }
 
         // 3. Teléfonos globales de la empresa
-        $companyPhone1 = self::get('company_phone');
-        $companyPhone2 = self::get('company_phone_2');
+        $companyPhone1 = self::fixLegacyTypoPhone(self::get('company_phone'), 'company_phone');
+        $companyPhone2 = self::fixLegacyTypoPhone(self::get('company_phone_2'), 'company_phone_2');
         if (!empty($companyPhone1)) {
             $phones[] = $companyPhone1;
         }
@@ -440,12 +468,13 @@ class Setting extends Model
         }
 
         // 4. Fallbacks por defecto para Fran y su hermano/socio
-        $phones[] = '+34 622 62 47 90';
+        $phones[] = '+34 622 63 47 90';
         $phones[] = '+34 674 37 89 93';
 
         $validPhones = [];
         foreach ($phones as $p) {
-            $cleaned = \App\Services\WhatsAppTemplateService::cleanPhone((string)$p);
+            $fixedP = self::fixLegacyTypoPhone((string)$p);
+            $cleaned = \App\Services\WhatsAppTemplateService::cleanPhone($fixedP);
             if (!empty($cleaned) && strlen($cleaned) >= 9) {
                 $validPhones[] = $cleaned;
             }
