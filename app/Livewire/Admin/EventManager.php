@@ -394,6 +394,7 @@ class EventManager extends Component
         // Registrar huella del evento eliminado para que el sincronizador IMAP jamás vuelva a importarlo
         try {
             \App\Services\ImapLeadFetcherService::markEventAsDeleted($event);
+            \App\Services\AppNotificationService::removeByEventId((int) $event->id);
         } catch (\Throwable $e) {}
 
         // Cascade delete relations
@@ -406,6 +407,9 @@ class EventManager extends Component
         $event->dossiers()->delete();
         $event->playlists()->delete();
         $event->musicRequests()->delete();
+        try {
+            $event->whatsappMessages()->delete();
+        } catch (\Throwable $e) {}
         $event->equipment()->detach();
         $event->delete();
 

@@ -141,7 +141,16 @@ Route::middleware('auth')->group(function () {
         Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('/dashboard', \App\Livewire\Admin\Dashboard::class)->name('dashboard');
             Route::get('/events', EventManager::class)->name('events');
-            Route::get('/events/{event}', EventShow::class)->name('events.show');
+            Route::get('/events/{event}', EventShow::class)
+                ->name('events.show')
+                ->missing(function (\Illuminate\Http\Request $request) {
+                    $missingId = (int) $request->route('event');
+                    if ($missingId > 0) {
+                        \App\Services\AppNotificationService::removeByEventId($missingId);
+                    }
+                    return redirect()->route('admin.events')
+                        ->with('message', '⚠️ Ese evento o lead ya fue eliminado anteriormente.');
+                });
             Route::get('/events/{event}/live', DjBoothMode::class)->name('events.live');
             Route::get('/calendar', \App\Livewire\Admin\CalendarManager::class)->name('calendar');
             Route::get('/clients', \App\Livewire\Admin\ClientManager::class)->name('clients');

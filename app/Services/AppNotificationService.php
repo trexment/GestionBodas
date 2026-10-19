@@ -141,8 +141,28 @@ class AppNotificationService
     }
 
     /**
+     * Elimina todas las notificaciones asociadas a un evento concreto (por ejemplo al borrar el evento)
+     */
+    public static function removeByEventId(int $eventId): void
+    {
+        $raw = Setting::get(self::SETTING_KEY, '[]');
+        $decoded = is_string($raw) ? json_decode($raw, true) : null;
+        if (!is_array($decoded)) {
+            return;
+        }
+
+        $filtered = array_values(array_filter($decoded, function ($item) use ($eventId) {
+            return (int)($item['event_id'] ?? 0) !== $eventId;
+        }));
+
+        if (count($filtered) !== count($decoded)) {
+            Setting::set(self::SETTING_KEY, json_encode($filtered, JSON_UNESCAPED_UNICODE));
+        }
+    }
+
+    /**
      * Devuelve el array bruto de notificaciones almacenadas, purgando cualquier
-     * aviso de WhatsApp personal que no pertenezca a un evento registrado.
+     * aviso de WhatsApp personal o de eventos que hayan sido eliminados.
      */
     protected static function getRawList(): array
     {
@@ -155,26 +175,63 @@ class AppNotificationService
 
         $raw = Setting::get(self::SETTING_KEY, '[]');
         $decoded = is_string($raw) ? json_decode($raw, true) : null;
-        if (!is_array($decoded)) {
+        if (!is_array($decoded) || empty($decoded)) {
             return [];
         }
 
+        // Comprobar qué event_ids siguen existiendo en la base de datos
+        $existingEventIds = [];
+        try {
+            $eventIds = array_values(array_unique(array_filter(array_map(function ($item) {
+                $eid = (int)($item['event_id'] ?? 0);
+                if ($eid > 0) {
+                    return $eid;
+                }
+                if (!empty($item['url']) && preg_match('~/admin/events/(\d+)\b~', (string)$item['url'], $m)) {
+                    return (int)$m[1];
+                }
+                return 0;
+            }, $decoded))));
+
+            if (!empty($eventIds)) {
+                $existingEventIds = \App\Models\Event::whereIn('id', $eventIds)
+                    ->pluck('id')
+                    ->map(fn ($id) => (int)$id)
+                    ->all();
+            }
+        } catch (\Throwable $e) {
+            $existingEventIds = null; // En caso de error de BD no purgar por event_id
+        }
+
         $filtered = [];
-        $removedPersonal = false;
+        $listChanged = false;
 
         foreach ($decoded as $item) {
-            // Si es una notificación de WhatsApp sin event_id o con el formato antiguo previo al filtro de privacidad -> descartar
+            // 1. Si es una notificación de WhatsApp sin event_id o con el formato antiguo previo al filtro de privacidad -> descartar
             if (
                 ($item['type'] ?? '') === 'whatsapp_inbound' &&
                 (empty($item['event_id']) || str_starts_with($item['title'] ?? '', '💬 WhatsApp de '))
             ) {
-                $removedPersonal = true;
+                $listChanged = true;
                 continue;
             }
+
+            // 2. Si apunta a un evento que ya fue eliminado -> descartar para evitar errores 404
+            if (is_array($existingEventIds)) {
+                $itemEventId = (int)($item['event_id'] ?? 0);
+                if ($itemEventId === 0 && !empty($item['url']) && preg_match('~/admin/events/(\d+)\b~', (string)$item['url'], $m)) {
+                    $itemEventId = (int)$m[1];
+                }
+                if ($itemEventId > 0 && !in_array($itemEventId, $existingEventIds, true)) {
+                    $listChanged = true;
+                    continue;
+                }
+            }
+
             $filtered[] = $item;
         }
 
-        if ($removedPersonal) {
+        if ($listChanged) {
             Setting::set(self::SETTING_KEY, json_encode($filtered, JSON_UNESCAPED_UNICODE));
         }
 

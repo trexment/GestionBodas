@@ -807,6 +807,12 @@ class EventShow extends Component
         }
 
         $name = $this->event->name;
+        $eventId = (int) $this->event->id;
+
+        try {
+            \App\Services\ImapLeadFetcherService::markEventAsDeleted($this->event);
+            \App\Services\AppNotificationService::removeByEventId($eventId);
+        } catch (\Throwable $e) {}
 
         // Cascade delete relations
         foreach ($this->event->quotes as $quote) {
@@ -818,6 +824,9 @@ class EventShow extends Component
         $this->event->dossiers()->delete();
         $this->event->playlists()->delete();
         $this->event->musicRequests()->delete();
+        try {
+            $this->event->whatsappMessages()->delete();
+        } catch (\Throwable $e) {}
         $this->event->equipment()->detach();
         $this->event->delete();
 
