@@ -1994,9 +1994,13 @@
                                             <code class="px-1 py-0.5 rounded bg-white dark:bg-slate-800 text-amber-700 dark:text-amber-300 font-bold">{nombre}</code>
                                             <code class="px-1 py-0.5 rounded bg-white dark:bg-slate-800 text-amber-700 dark:text-amber-300 font-bold">{firma}</code>
                                             <code class="px-1 py-0.5 rounded bg-white dark:bg-slate-800 text-amber-700 dark:text-amber-300 font-bold">{fecha}</code>
+                                            <code class="px-1 py-0.5 rounded bg-white dark:bg-slate-800 text-amber-700 dark:text-amber-300 font-bold">{mes}</code>
                                             <code class="px-1 py-0.5 rounded bg-white dark:bg-slate-800 text-amber-700 dark:text-amber-300 font-bold">{lugar}</code>
                                             <code class="px-1 py-0.5 rounded bg-white dark:bg-slate-800 text-amber-700 dark:text-amber-300 font-bold">{empresa}</code>
-                                            <code class="px-1 py-0.5 rounded bg-white dark:bg-slate-800 text-amber-700 dark:text-amber-300 font-bold">{evento}</code>
+                                            <code class="px-1 py-0.5 rounded bg-white dark:bg-slate-800 text-amber-700 dark:text-amber-300 font-bold">{horario}</code>
+                                            <code class="px-1 py-0.5 rounded bg-white dark:bg-slate-800 text-amber-700 dark:text-amber-300 font-bold">{importe_senal}</code>
+                                            <code class="px-1 py-0.5 rounded bg-white dark:bg-slate-800 text-amber-700 dark:text-amber-300 font-bold">{importe_pendiente}</code>
+                                            <code class="px-1 py-0.5 rounded bg-white dark:bg-slate-800 text-amber-700 dark:text-amber-300 font-bold">{fecha_limite_pago}</code>
                                             <code class="px-1 py-0.5 rounded bg-white dark:bg-slate-800 text-amber-700 dark:text-amber-300 font-bold">{enlace_presupuesto}</code>
                                             <code class="px-1 py-0.5 rounded bg-white dark:bg-slate-800 text-amber-700 dark:text-amber-300 font-bold">{enlace_dossier}</code>
                                             <code class="px-1 py-0.5 rounded bg-white dark:bg-slate-800 text-amber-700 dark:text-amber-300 font-bold">{enlace_cuestionario}</code>
@@ -2024,6 +2028,9 @@
                                     <button type="button" wire:click="loadWhatsAppTemplate('primer_contacto_madrigal')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-white dark:bg-slate-900 hover:bg-emerald-50 dark:hover:bg-slate-800 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/60 hover:border-emerald-300 transition shadow-2xs cursor-pointer flex items-center gap-1">
                                         <span>🟢</span> 1er Contacto (Madrigal)
                                     </button>
+                                    <button type="button" wire:click="loadWhatsAppTemplate('verificacion_lead')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-white dark:bg-slate-900 hover:bg-orange-50 dark:hover:bg-slate-800 text-orange-700 dark:text-orange-400 border border-orange-200 dark:border-orange-800/60 hover:border-orange-300 transition shadow-2xs cursor-pointer flex items-center gap-1" title="Antes de enviar presupuesto: pedir nombre completo y confirmar teléfono">
+                                        <span>🕵️</span> Verificación Lead
+                                    </button>
                                     <button type="button" wire:click="loadWhatsAppTemplate('llamada')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:border-slate-300 transition shadow-2xs cursor-pointer flex items-center gap-1">
                                         <span>📞</span> Proponer Llamada
                                     </button>
@@ -2034,7 +2041,7 @@
                                         <span>💡</span> Dudas (Día 3)
                                     </button>
                                     <button type="button" wire:click="loadWhatsAppTemplate('dia7_escasez')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-white dark:bg-slate-900 hover:bg-amber-50 dark:hover:bg-slate-800 text-amber-700 dark:text-amber-400 border border-slate-200 dark:border-slate-800 hover:border-amber-300 transition shadow-2xs cursor-pointer flex items-center gap-1">
-                                        <span>⚡</span> Escasez 24h (Día 7)
+                                        <span>⚡</span> Escasez (Día 7)
                                     </button>
                                     <button type="button" wire:click="loadWhatsAppTemplate('pregunta_no')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-white dark:bg-slate-900 hover:bg-rose-50 dark:hover:bg-slate-800 text-rose-700 dark:text-rose-400 border border-slate-200 dark:border-slate-800 hover:border-rose-300 transition shadow-2xs cursor-pointer flex items-center gap-1">
                                         <span>🎯</span> Técnica NO (Día 10)
@@ -2045,7 +2052,7 @@
                                     <button type="button" wire:click="loadWhatsAppTemplate('presupuesto')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-white dark:bg-slate-900 hover:bg-teal-50 dark:hover:bg-slate-800 text-teal-700 dark:text-teal-400 border border-slate-200 dark:border-slate-800 hover:border-teal-300 transition shadow-2xs cursor-pointer flex items-center gap-1">
                                         <span>💰</span> Objeción Precio (Adaptar)
                                     </button>
-                                    <button type="button" wire:click="loadWhatsAppTemplate('no_es_nuestro_cliente')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-white dark:bg-slate-900 hover:bg-amber-50 dark:hover:bg-slate-800 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700/70 hover:border-amber-400 transition shadow-2xs cursor-pointer flex items-center gap-1" title="Respuesta elegante: no es que se vaya de presupuesto, es que no somos el perfil que buscáis">
+                                    <button type="button" wire:click="loadWhatsAppTemplate('no_es_nuestro_cliente')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-white dark:bg-slate-900 hover:bg-amber-50 dark:hover:bg-slate-800 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700/70 hover:border-amber-400 transition shadow-2xs cursor-pointer flex items-center gap-1" title="Versión cordial: gracias por la sinceridad, cerramos la consulta y os deseamos suerte">
                                         <span>👑</span> No es nuestro cliente (Precio)
                                     </button>
                                     <button type="button" wire:click="loadWhatsAppTemplate('cuestionario')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-white dark:bg-slate-900 hover:bg-blue-50 dark:hover:bg-slate-800 text-blue-700 dark:text-blue-400 border border-slate-200 dark:border-slate-800 hover:border-blue-300 transition shadow-2xs cursor-pointer flex items-center gap-1">
@@ -2053,6 +2060,15 @@
                                     </button>
                                     <button type="button" wire:click="loadWhatsAppTemplate('contrato')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-white dark:bg-slate-900 hover:bg-emerald-50 dark:hover:bg-slate-800 text-emerald-700 dark:text-emerald-400 border border-slate-200 dark:border-slate-800 hover:border-emerald-300 transition shadow-2xs cursor-pointer flex items-center gap-1">
                                         <span>✍️</span> Enlace Contrato
+                                    </button>
+                                    <button type="button" wire:click="loadWhatsAppTemplate('confirmacion_senal')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-white dark:bg-slate-900 hover:bg-emerald-50 dark:hover:bg-slate-800 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/60 hover:border-emerald-300 transition shadow-2xs cursor-pointer flex items-center gap-1">
+                                        <span>✅</span> Confirmación Señal
+                                    </button>
+                                    <button type="button" wire:click="loadWhatsAppTemplate('recordatorio_pago')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-white dark:bg-slate-900 hover:bg-yellow-50 dark:hover:bg-slate-800 text-yellow-700 dark:text-yellow-400 border border-yellow-200 dark:border-yellow-800/60 hover:border-yellow-300 transition shadow-2xs cursor-pointer flex items-center gap-1">
+                                        <span>⏳</span> Recordatorio Pago
+                                    </button>
+                                    <button type="button" wire:click="loadWhatsAppTemplate('pre_boda')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-white dark:bg-slate-900 hover:bg-pink-50 dark:hover:bg-slate-800 text-pink-700 dark:text-pink-400 border border-pink-200 dark:border-pink-800/60 hover:border-pink-300 transition shadow-2xs cursor-pointer flex items-center gap-1">
+                                        <span>🎉</span> Pre-boda (Logística)
                                     </button>
                                 </div>
                             </div>
