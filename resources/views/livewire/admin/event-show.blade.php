@@ -779,6 +779,50 @@
         @endif
     @endif
 
+    @if(in_array($event->status, ['rejected', 'cancelled']))
+        <div class="mb-6 rounded-2xl border {{ $event->status === 'rejected' ? 'border-slate-300 dark:border-slate-700 bg-gradient-to-r from-slate-100 via-rose-50/50 to-slate-100 dark:from-slate-900 dark:via-rose-950/30 dark:to-slate-900' : 'border-rose-300 dark:border-rose-800/80 bg-gradient-to-r from-rose-50 via-red-50/70 to-rose-50 dark:from-rose-950/50 dark:via-red-950/30 dark:to-slate-900' }} p-4 sm:p-5 shadow-sm">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div class="flex items-start gap-3.5">
+                    <div class="w-11 h-11 rounded-2xl {{ $event->status === 'rejected' ? 'bg-slate-800 text-white dark:bg-slate-700' : 'bg-rose-600 text-white' }} flex items-center justify-center text-xl shrink-0 shadow-xs">
+                        {{ $event->status === 'rejected' ? '❌' : '🔴' }}
+                    </div>
+                    <div class="space-y-1">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span class="text-xs font-black uppercase tracking-wider {{ $event->status === 'rejected' ? 'text-slate-800 dark:text-slate-200' : 'text-rose-800 dark:text-rose-300' }}">
+                                {{ $event->status === 'rejected' ? 'Evento Rechazado / Descartado' : 'Evento Cancelado' }}
+                            </span>
+                            <span class="text-[11px] font-bold px-2.5 py-0.5 rounded-full {{ $event->status === 'rejected' ? 'bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300' : 'bg-rose-200/80 text-rose-900 dark:bg-rose-900/60 dark:text-rose-200' }}">
+                                Motivo registrado
+                            </span>
+                        </div>
+                        <p class="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white">
+                            @if($event->cancellation_reason_display)
+                                «{{ $event->cancellation_reason_display }}»
+                            @else
+                                <span class="text-slate-500 dark:text-slate-400 italic font-semibold">Sin motivo especificado todavía</span>
+                            @endif
+                        </p>
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-2 shrink-0">
+                    <button type="button"
+                            wire:click="openCancellationModal('{{ $event->status }}')"
+                            class="px-3.5 py-2 rounded-xl text-xs font-extrabold bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 shadow-2xs transition cursor-pointer inline-flex items-center gap-1.5">
+                        <span>✏️</span>
+                        <span>{{ $event->cancellation_reason_display ? 'Editar motivo' : 'Añadir motivo' }}</span>
+                    </button>
+                    <button type="button"
+                            wire:click="changeStatus('draft')"
+                            class="px-3.5 py-2 rounded-xl text-xs font-extrabold bg-indigo-600 hover:bg-indigo-500 text-white shadow-xs transition cursor-pointer inline-flex items-center gap-1.5">
+                        <span>🔄</span>
+                        <span>Reactivar a Borrador</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    @endif
+
     <!-- Banner Cuestionario Musical con WhatsApp -->
     <div class="bg-white p-4 rounded-xl border border-gray-200 mb-6 shadow-sm flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
         <div>
@@ -2015,22 +2059,43 @@
 
                         <!-- Pegar texto de chat a las notas generales -->
                         <div class="bg-white dark:bg-slate-950 p-3.5 rounded-xl border border-emerald-200 dark:border-slate-800 shadow-xs space-y-2">
-                            <label class="block text-xs font-bold text-emerald-900 dark:text-emerald-300">
-                                📥 Pegar fragmento manual a las notas
-                            </label>
-                            <textarea wire:model="whatsapp_chat_input" rows="2" class="w-full text-xs border border-slate-300 dark:border-slate-700 rounded-lg p-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500" placeholder="Pega aquí fragmentos de conversación o audios transcritos para archivarlos en las notas del evento..."></textarea>
+                            <div class="flex items-center justify-between gap-2">
+                                <label class="block text-xs font-bold text-emerald-900 dark:text-emerald-300">
+                                    📥 Pegar fragmento o nota rápida
+                                </label>
+                                <span class="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
+                                    ⬆️ Se inserta arriba del todo
+                                </span>
+                            </div>
+                            <textarea wire:model="whatsapp_chat_input" rows="2" class="w-full text-xs border border-slate-300 dark:border-slate-700 rounded-lg p-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500" placeholder="Escribe o pega aquí cualquier nota o acuerdo para colocarlo al principio de las notas..."></textarea>
                             <div class="flex justify-end">
                                 <button type="button" wire:click="applyWhatsappTextToNotes" class="bg-emerald-50 dark:bg-emerald-950/80 hover:bg-emerald-100 dark:hover:bg-emerald-900 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer">
-                                    <span>➕</span> Añadir a las Notas del Evento
+                                    <span>⬆️</span> Añadir arriba en las Notas del Evento
                                 </button>
                             </div>
                         </div>
 
                         <!-- Visualizador / Editor completo de notas -->
                         <div>
-                            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                                📝 Notas y Requisitos Generales del Evento
-                            </label>
+                            <div class="flex items-center justify-between gap-2 mb-1">
+                                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                                    📝 Notas y Requisitos Generales del Evento
+                                </label>
+                                <span class="text-[10px] font-semibold text-slate-500 dark:text-slate-400">
+                                    📌 Las últimas notas aparecen primero (arriba)
+                                </span>
+                            </div>
+                            @if(in_array($event->status, ['rejected', 'cancelled']) && $event->cancellation_reason_display)
+                                <div class="mb-2 p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 flex items-center justify-between gap-2 text-xs">
+                                    <div class="text-rose-900 dark:text-rose-200 font-bold">
+                                        <span>{{ $event->status === 'rejected' ? '❌ Motivo de rechazo:' : '🔴 Motivo de cancelación:' }}</span>
+                                        <span class="font-extrabold ml-1">{{ $event->cancellation_reason_display }}</span>
+                                    </div>
+                                    <button type="button" wire:click="openCancellationModal('{{ $event->status }}')" class="text-[11px] font-bold text-rose-700 dark:text-rose-300 hover:underline shrink-0 cursor-pointer">
+                                        ✏️ Cambiar
+                                    </button>
+                                </div>
+                            @endif
                             <textarea wire:model="event_notes" rows="6" class="w-full text-xs font-mono bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl p-3 focus:ring-indigo-500 focus:border-indigo-500 text-slate-900 dark:text-white leading-relaxed placeholder-slate-400 dark:placeholder-slate-500" placeholder="Notas internas, servicios acordados, peticiones especiales..."></textarea>
                         </div>
                     </div>
@@ -7153,6 +7218,104 @@
             </div>
         </div>
     </div>
+    @endif
+
+    <!-- ============================================================== -->
+    <!-- MODAL: MOTIVO DE RECHAZO / CANCELACIÓN DEL EVENTO              -->
+    <!-- ============================================================== -->
+    @if($showCancellationModal)
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/75 backdrop-blur-xs animate-fadeIn">
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-5 overflow-y-auto max-h-[92vh]">
+                <div class="flex items-start justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-11 h-11 rounded-2xl {{ $cancellation_target_status === 'rejected' ? 'bg-slate-800 text-white' : 'bg-rose-600 text-white' }} flex items-center justify-center text-xl shrink-0 shadow-sm">
+                            {{ $cancellation_target_status === 'rejected' ? '❌' : '🔴' }}
+                        </div>
+                        <div>
+                            <h3 class="text-base sm:text-lg font-black text-slate-900 dark:text-white">
+                                {{ $cancellation_target_status === 'rejected' ? 'Motivo del Rechazo / Descarte' : 'Motivo de la Cancelación' }}
+                            </h3>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">
+                                Indica por qué se {{ $cancellation_target_status === 'rejected' ? 'rechaza' : 'cancela' }} <span class="font-bold text-slate-700 dark:text-slate-200">{{ $event->name }}</span>. Se mostrará arriba en la ficha y en la primera línea de las notas.
+                            </p>
+                        </div>
+                    </div>
+                    <button type="button" wire:click="closeCancellationModal" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xl font-bold leading-none cursor-pointer">&times;</button>
+                </div>
+
+                <!-- Selector entre Rechazado y Cancelado -->
+                <div class="grid grid-cols-2 gap-2 p-1 bg-slate-100 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800">
+                    <button type="button"
+                            wire:click="$set('cancellation_target_status', 'rejected')"
+                            class="py-2 px-3 rounded-xl text-xs font-extrabold transition flex items-center justify-center gap-1.5 cursor-pointer {{ $cancellation_target_status === 'rejected' ? 'bg-slate-800 text-white shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white' }}">
+                        <span>❌</span>
+                        <span>Rechazado (No contrataron)</span>
+                    </button>
+                    <button type="button"
+                            wire:click="$set('cancellation_target_status', 'cancelled')"
+                            class="py-2 px-3 rounded-xl text-xs font-extrabold transition flex items-center justify-center gap-1.5 cursor-pointer {{ $cancellation_target_status === 'cancelled' ? 'bg-rose-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white' }}">
+                        <span>🔴</span>
+                        <span>Cancelado (Anulado)</span>
+                    </button>
+                </div>
+
+                <!-- Motivos rápidos de 1 clic -->
+                <div class="space-y-2">
+                    <label class="block text-[11px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                        ⚡ Motivos frecuentes (pulsa uno o escribe debajo):
+                    </label>
+                    <div class="flex flex-wrap gap-1.5">
+                        @php
+                            $presetReasons = [
+                                '💸 Fuera de presupuesto / Precio' => 'Fuera de presupuesto / Precio elevado',
+                                '🎧 Contrataron otro DJ / proveedor' => 'Ya han contratado a otro DJ o proveedor',
+                                '👻 Dejaron de responder' => 'Dejaron de responder tras varios seguimientos',
+                                '📅 Sin disponibilidad de fecha' => 'Sin disponibilidad para esa fecha',
+                                '🏰 Exclusividad de la finca / restaurante' => 'La finca o restaurante impone exclusividad con otro proveedor',
+                                '💔 Se cancela / aplaza el evento' => 'Cancelación o aplazamiento de la boda / evento por parte de los clientes',
+                                '🎯 No encaja con nuestro perfil' => 'El tipo de evento no encaja con nuestros servicios',
+                            ];
+                        @endphp
+                        @foreach($presetReasons as $chipLabel => $chipValue)
+                            <button type="button"
+                                    wire:click="setPresetCancellationReason('{{ $chipValue }}')"
+                                    class="px-2.5 py-1.5 rounded-xl text-xs font-bold border transition cursor-pointer {{ $cancellation_reason_input === $chipValue ? 'bg-rose-600 text-white border-rose-600 shadow-2xs' : 'bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700' }}">
+                                {{ $chipLabel }}
+                            </button>
+                        @endforeach
+                    </div>
+                </div>
+
+                <!-- Campo de texto del motivo -->
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                        📝 Motivo detallado *
+                    </label>
+                    <textarea wire:model="cancellation_reason_input"
+                              rows="3"
+                              placeholder="Escribe el motivo por el que se rechaza o cancela (ej: Les parecía caro el pack completo, contrataron al DJ de la finca...)"
+                              class="w-full text-xs sm:text-sm rounded-2xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-white p-3 focus:ring-2 focus:ring-rose-500 focus:border-rose-500"></textarea>
+                    @if (session()->has('cancellation_error'))
+                        <p class="text-xs font-bold text-rose-600 dark:text-rose-400">
+                            ⚠️ {{ session('cancellation_error') }}
+                        </p>
+                    @endif
+                </div>
+
+                <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                    <button type="button"
+                            wire:click="closeCancellationModal"
+                            class="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer">
+                        Cancelar
+                    </button>
+                    <button type="button"
+                            wire:click="confirmCancellationStatus"
+                            class="px-5 py-2.5 rounded-xl text-xs font-black text-white shadow-md transition cursor-pointer flex items-center gap-1.5 {{ $cancellation_target_status === 'rejected' ? 'bg-slate-900 hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600' : 'bg-rose-600 hover:bg-rose-500' }}">
+                        <span>{{ $cancellation_target_status === 'rejected' ? '❌ Confirmar Rechazo' : '🔴 Confirmar Cancelación' }}</span>
+                    </button>
+                </div>
+            </div>
+        </div>
     @endif
 
 </div>

@@ -194,13 +194,14 @@ class WhatsAppTemplateService
             \Illuminate\Support\Facades\Log::warning("No se pudo guardar registro de email en whatsapp_messages: " . $e->getMessage());
         }
 
-        // Actualizar no_response_at y notas del evento
+        // Actualizar no_response_at y notas del evento (arriba del todo)
         try {
             $authorName = auth()->check() ? auth()->user()->name : $companyName;
             $label = $templateTitle ?: $subject;
+            $newEntry = "[" . now()->format('d/m/Y H:i') . "] 📧 Email enviado a {$toEmail} ({$label}) por {$authorName}. Contador reseteado a 0.";
             $event->update([
                 'no_response_at' => now(),
-                'notes' => ($event->notes ? $event->notes . "\n" : "") . "[" . now()->format('d/m/Y H:i') . "] 📧 Email enviado a {$toEmail} ({$label}) por {$authorName}. Contador reseteado a 0.",
+                'notes' => \App\Models\Event::prependNote($event->notes, $newEntry),
             ]);
         } catch (\Throwable $e) {}
 

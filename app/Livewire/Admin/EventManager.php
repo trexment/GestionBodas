@@ -497,9 +497,10 @@ class EventManager extends Component
         $event = Event::find($this->confirmingFollowupEventId);
         if ($event) {
             $templateName = $this->confirmingFollowupOptions[$this->confirmingFollowupSelectedKey]['title'] ?? 'Seguimiento Madrigal';
+            $newEntry = "[" . now()->format('d/m/Y H:i') . "] 💬 Seguimiento enviado por " . auth()->user()->name . " ({$templateName}). Contador reseteado a 0.";
             $event->update([
                 'no_response_at' => now(),
-                'notes' => ($event->notes ? $event->notes . "\n" : "") . "[" . now()->format('d/m/Y H:i') . "] 💬 Seguimiento enviado por " . auth()->user()->name . " ({$templateName}). Contador reseteado a 0.",
+                'notes' => Event::prependNote($event->notes, $newEntry),
             ]);
             session()->flash('message', "¡Seguimiento registrado para {$event->name}! ({$templateName}). Contador reseteado.");
         }
@@ -514,10 +515,11 @@ class EventManager extends Component
 
         $event = Event::find($this->confirmingFollowupEventId);
         if ($event) {
+            $newEntry = "[" . now()->format('d/m/Y H:i') . "] 🎉 El cliente ha respondido al seguimiento. Estado cambiado a " . ucfirst($newStatus) . " por " . auth()->user()->name . ".";
             $event->update([
                 'status' => in_array($newStatus, ['draft', 'confirmed']) ? $newStatus : 'draft',
                 'no_response_at' => null,
-                'notes' => ($event->notes ? $event->notes . "\n" : "") . "[" . now()->format('d/m/Y H:i') . "] 🎉 El cliente ha respondido al seguimiento. Estado cambiado a " . ucfirst($newStatus) . " por " . auth()->user()->name . ".",
+                'notes' => Event::prependNote($event->notes, $newEntry),
             ]);
             session()->flash('message', "¡Genial! {$event->name} se ha marcado como " . ($newStatus === 'confirmed' ? 'Confirmado' : 'Borrador') . ".");
         }

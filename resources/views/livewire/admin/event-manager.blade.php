@@ -347,6 +347,10 @@
                                             </button>
                                         @endif
                                     </div>
+                                @elseif(in_array($event->status, ['rejected', 'cancelled']) && $event->cancellation_reason_display)
+                                    <div class="mt-1 text-[10px] font-bold text-rose-700 dark:text-rose-300 bg-rose-50/80 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800/70 px-1.5 py-0.5 rounded-md truncate max-w-[180px]" title="Motivo: {{ $event->cancellation_reason_display }}">
+                                        📌 {{ $event->cancellation_reason_display }}
+                                    </div>
                                 @endif
                             </td>
                             <td class="px-3 py-2.5 text-right text-xs font-medium">

@@ -980,9 +980,14 @@ class ImapLeadFetcherService
 
                 if (!$hasInitialLeadBubble) {
                     $notesText = (string)$event->notes;
-                    // Extraer bloque inicial del lead antes de otras notas añadidas después
-                    $parts = preg_split('/\n\[\d{2}\/\d{2}\/\d{4}/', $notesText);
-                    $leadBlock = trim($parts[0] ?? $notesText);
+                    $posLead = strpos($notesText, '📩 LEAD IMPORTADO VÍA EMAIL');
+                    if ($posLead === false) {
+                        $posLead = strpos($notesText, 'LEAD IMPORTADO VÍA EMAIL');
+                    }
+                    $fromLeadText = $posLead !== false ? substr($notesText, $posLead) : $notesText;
+                    // Extraer bloque inicial del lead antes de otras notas que pudieran estar debajo
+                    $parts = preg_split('/\n\[\d{2}\/\d{2}\/\d{4}/', $fromLeadText);
+                    $leadBlock = trim($parts[0] ?? $fromLeadText);
 
                     $subject = 'Solicitud de presupuesto por Email';
                     if (preg_match('/Asunto:\s*(.+)$/mi', $leadBlock, $mSub)) {

@@ -31,6 +31,7 @@ class Event extends Model
         'venue_notes',
         'status',
         'no_response_at',
+        'cancellation_reason',
         'deposit_paid',
         'deposit_paid_amount',
         'deposit_payment_method',
@@ -1004,5 +1005,39 @@ class Event extends Model
         }
         return $clientName ?: ($this->name ?: 'Cliente');
     }
+
+    /**
+     * Inserta una nueva nota ARRIBA DEL TODO para que lo más reciente sea siempre lo primero en leerse
+     */
+    public static function prependNote(?string $existingNotes, string $newEntry): string
+    {
+        $newEntry = trim($newEntry);
+        $existing = trim((string) $existingNotes);
+
+        if ($existing === '') {
+            return $newEntry;
+        }
+
+        return $newEntry . "\n\n" . $existing;
+    }
+
+    /**
+     * Devuelve el motivo de cancelación o rechazo (desde la columna dedicada o extrayéndolo de las notas)
+     */
+    public function getCancellationReasonDisplayAttribute(): ?string
+    {
+        if (!empty($this->attributes['cancellation_reason'] ?? null)) {
+            return trim($this->attributes['cancellation_reason']);
+        }
+
+        if (!empty($this->notes)) {
+            if (preg_match('/(?:EVENTO RECHAZADO|EVENTO CANCELADO)[^\n]*?Motivo:\s*(.+)$/mi', $this->notes, $m)) {
+                return trim($m[1]);
+            }
+        }
+
+        return null;
+    }
 }
+
 

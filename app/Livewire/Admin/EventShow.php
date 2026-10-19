@@ -472,6 +472,71 @@ class EventShow extends Component
         $this->whatsapp_sender_brand = ($this->event->brand_clean === 'javnx') ? 'fran' : 'miguel';
     }
 
+    public $showCancellationModal = false;
+    public $cancellation_target_status = 'rejected';
+    public $cancellation_reason_input = '';
+
+    public function openCancellationModal(string $targetStatus = 'rejected')
+    {
+        $this->cancellation_target_status = in_array($targetStatus, ['rejected', 'cancelled']) ? $targetStatus : 'rejected';
+        $this->cancellation_reason_input = $this->event->cancellation_reason_display ?? '';
+        $this->showCancellationModal = true;
+    }
+
+    public function setPresetCancellationReason(string $reason)
+    {
+        $this->cancellation_reason_input = $reason;
+    }
+
+    public function closeCancellationModal()
+    {
+        $this->showCancellationModal = false;
+    }
+
+    public function confirmCancellationStatus()
+    {
+        $reason = trim((string)$this->cancellation_reason_input);
+        if ($reason === '') {
+            session()->flash('cancellation_error', 'Por favor, selecciona o escribe el motivo antes de confirmar.');
+            return;
+        }
+
+        $status = in_array($this->cancellation_target_status, ['rejected', 'cancelled'])
+            ? $this->cancellation_target_status
+            : 'rejected';
+
+        $labelUpper = $status === 'rejected' ? '❌ EVENTO RECHAZADO' : '🔴 EVENTO CANCELADO';
+        $userName = auth()->user()?->name ?? 'Sistema';
+        $noteEntry = "[" . now()->format('d/m/Y H:i') . "] {$labelUpper} por {$userName} — Motivo: {$reason}";
+
+        $newNotes = \App\Models\Event::prependNote($this->event->notes, $noteEntry);
+
+        try {
+            if (!\Illuminate\Support\Facades\Schema::hasColumn('events', 'cancellation_reason')) {
+                \Illuminate\Support\Facades\DB::statement("ALTER TABLE `events` ADD COLUMN `cancellation_reason` TEXT NULL AFTER `no_response_at`");
+            }
+        } catch (\Throwable $e) {}
+
+        $updateData = [
+            'status' => $status,
+            'notes' => $newNotes,
+        ];
+        if (\Illuminate\Support\Facades\Schema::hasColumn('events', 'no_response_at')) {
+            $updateData['no_response_at'] = null;
+        }
+        if (\Illuminate\Support\Facades\Schema::hasColumn('events', 'cancellation_reason')) {
+            $updateData['cancellation_reason'] = $reason;
+        }
+
+        $this->event->update($updateData);
+        $this->event->refresh();
+        $this->event_notes = $this->event->notes;
+        $this->showCancellationModal = false;
+
+        $statusText = $status === 'rejected' ? 'Rechazado' : 'Cancelado';
+        session()->flash('message', "📌 Estado actualizado a {$statusText}. Motivo registrado: {$reason}");
+    }
+
     public function changeStatus($status)
     {
         if ($status === 'confirmed') {
@@ -481,6 +546,11 @@ class EventShow extends Component
 
         if ($status === 'completed') {
             $this->openFinalPaymentModal();
+            return;
+        }
+
+        if (in_array($status, ['rejected', 'cancelled'])) {
+            $this->openCancellationModal($status);
             return;
         }
 
@@ -575,9 +645,10 @@ class EventShow extends Component
     public function confirmFollowupSentFromShow()
     {
         $templateName = $this->confirmingFollowupOptions[$this->confirmingFollowupSelectedKey]['title'] ?? 'Seguimiento Madrigal';
+        $newEntry = "[" . now()->format('d/m/Y H:i') . "] ✅ Seguimiento enviado por " . auth()->user()->name . " ({$templateName}). Contador reseteado a 0.";
         $this->event->update([
             'no_response_at' => now(),
-            'notes' => ($this->event->notes ? $this->event->notes . "\n" : "") . "[" . now()->format('d/m/Y H:i') . "] ✅ Seguimiento enviado por " . auth()->user()->name . " ({$templateName}). Contador reseteado a 0.",
+            'notes' => \App\Models\Event::prependNote($this->event->notes, $newEntry),
         ]);
         $this->event->refresh();
         $this->event_notes = $this->event->notes;
@@ -610,9 +681,10 @@ class EventShow extends Component
             auth()->id()
         );
 
+        $newEntry = "[" . now()->format('d/m/Y H:i') . "] 💬 WhatsApp ({$templateName}) enviado desde {$senderLabel} por " . auth()->user()->name . ". Contador reseteado a 0.";
         $this->event->update([
             'no_response_at' => now(),
-            'notes' => ($this->event->notes ? $this->event->notes . "\n" : "") . "[" . now()->format('d/m/Y H:i') . "] 💬 WhatsApp ({$templateName}) enviado desde {$senderLabel} por " . auth()->user()->name . ". Contador reseteado a 0.",
+            'notes' => \App\Models\Event::prependNote($this->event->notes, $newEntry),
         ]);
         $this->event->refresh();
         $this->event_notes = $this->event->notes;
@@ -1877,12 +1949,12 @@ class EventShow extends Component
         $timestamp = now()->format('d/m/Y H:i');
         $newEntry = "--- Acuerdos WhatsApp ({$timestamp}) ---\n" . trim($this->whatsapp_chat_input);
         
-        $this->event_notes = $this->event_notes ? ($this->event_notes . "\n\n" . $newEntry) : $newEntry;
+        $this->event_notes = \App\Models\Event::prependNote($this->event_notes, $newEntry);
         $this->event->update(['notes' => $this->event_notes]);
         $this->whatsapp_chat_input = '';
         $this->event->refresh();
         
-        session()->flash('notes_message', 'Conversación / Acuerdos de WhatsApp añadidos a las notas del evento.');
+        session()->flash('notes_message', 'Conversación / Acuerdos de WhatsApp añadidos al principio de las notas del evento.');
     }
 
     public $whatsapp_chat_message = '';
@@ -2288,11 +2360,13 @@ class EventShow extends Component
             auth()->id()
         );
 
+        $newEntry = "[" . now()->format('d/m/Y H:i') . "] 💬 WhatsApp ({$title}) enviado desde {$senderLabel} por " . auth()->user()->name . ". Contador reseteado a 0.";
         $this->event->update([
             'no_response_at' => now(),
-            'notes' => ($this->event->notes ? $this->event->notes . "\n" : "") . "[" . now()->format('d/m/Y H:i') . "] 💬 WhatsApp ({$title}) enviado desde {$senderLabel} por " . auth()->user()->name . ". Contador reseteado a 0.",
+            'notes' => \App\Models\Event::prependNote($this->event->notes, $newEntry),
         ]);
         $this->event->refresh();
+        $this->event_notes = $this->event->notes;
         $this->event->load('whatsappMessages');
 
         if ($result['mode'] === 'api' && $result['success']) {
@@ -2334,11 +2408,13 @@ class EventShow extends Component
             auth()->id()
         );
 
+        $newEntry = "[" . now()->format('d/m/Y H:i') . "] 💬 WhatsApp ({$title}) enviado desde {$senderLabel} por " . auth()->user()->name . ". Contador reseteado a 0.";
         $this->event->update([
             'no_response_at' => now(),
-            'notes' => ($this->event->notes ? $this->event->notes . "\n" : "") . "[" . now()->format('d/m/Y H:i') . "] 💬 WhatsApp ({$title}) enviado desde {$senderLabel} por " . auth()->user()->name . ". Contador reseteado a 0.",
+            'notes' => \App\Models\Event::prependNote($this->event->notes, $newEntry),
         ]);
         $this->event->refresh();
+        $this->event_notes = $this->event->notes;
         $this->event->load('whatsappMessages');
 
         if ($result['mode'] === 'api' && $result['success']) {
@@ -2382,11 +2458,13 @@ class EventShow extends Component
             auth()->id()
         );
 
+        $newEntry = "[" . now()->format('d/m/Y H:i') . "] 💬 WhatsApp ({$title}) enviado desde {$senderLabel} por " . auth()->user()->name . ". Contador reseteado a 0.";
         $this->event->update([
             'no_response_at' => now(),
-            'notes' => ($this->event->notes ? $this->event->notes . "\n" : "") . "[" . now()->format('d/m/Y H:i') . "] 💬 WhatsApp ({$title}) enviado desde {$senderLabel} por " . auth()->user()->name . ". Contador reseteado a 0.",
+            'notes' => \App\Models\Event::prependNote($this->event->notes, $newEntry),
         ]);
         $this->event->refresh();
+        $this->event_notes = $this->event->notes;
         $this->event->load('whatsappMessages');
 
         if ($result['mode'] === 'api' && $result['success']) {
@@ -2430,11 +2508,13 @@ class EventShow extends Component
             auth()->id()
         );
 
+        $newEntry = "[" . now()->format('d/m/Y H:i') . "] 💬 WhatsApp ({$docName}) enviado desde {$senderLabel} por " . auth()->user()->name . ".";
         $this->event->update([
             'no_response_at' => now(),
-            'notes' => ($this->event->notes ? $this->event->notes . "\n" : "") . "[" . now()->format('d/m/Y H:i') . "] 💬 WhatsApp ({$docName}) enviado desde {$senderLabel} por " . auth()->user()->name . ".",
+            'notes' => \App\Models\Event::prependNote($this->event->notes, $newEntry),
         ]);
         $this->event->refresh();
+        $this->event_notes = $this->event->notes;
         $this->event->load('whatsappMessages');
 
         if ($result['mode'] === 'api' && $result['success']) {
@@ -2480,11 +2560,13 @@ class EventShow extends Component
             auth()->id()
         );
 
+        $newEntry = "[" . now()->format('d/m/Y H:i') . "] 💬 WhatsApp ({$title}) enviado desde {$senderLabel} por " . auth()->user()->name . ".";
         $this->event->update([
             'no_response_at' => now(),
-            'notes' => ($this->event->notes ? $this->event->notes . "\n" : "") . "[" . now()->format('d/m/Y H:i') . "] 💬 WhatsApp ({$title}) enviado desde {$senderLabel} por " . auth()->user()->name . ".",
+            'notes' => \App\Models\Event::prependNote($this->event->notes, $newEntry),
         ]);
         $this->event->refresh();
+        $this->event_notes = $this->event->notes;
         $this->event->load('whatsappMessages');
 
         if ($result['mode'] === 'api' && $result['success']) {
