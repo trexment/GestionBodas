@@ -133,8 +133,8 @@ class WhatsAppTemplateService
         // 2. Reemplazar presentaciones tipo "Soy Fran,", "Soy Miguel,", "Os escribe Fran,"
         $updated = preg_replace('/\b(Soy|Os escribe|Te escribe|Me llamo)\s+(Miguel|Fran|Ezequiel)\b/iu', '$1 ' . $senderName, $updated);
 
-        // 3. Reemplazar firmas finales tipo "¡Un saludo! Fran", "¡Un abrazo! Miguel", "Un saludo, Ezequiel"
-        $updated = preg_replace('/(¡?Un\s+(?:saludo|abrazo)(?:\s+grande)?[!.,]*)\s+(Miguel|Fran|Ezequiel)\b/iu', '$1 ' . $senderName, $updated);
+        // 3. Reemplazar firmas finales tipo "¡Un saludo! Fran", "¡Gracias! Fran", "¡Gracias por confiar en nosotros! Fran"
+        $updated = preg_replace('/(¡?(?:Un\s+(?:saludo|abrazo)(?:\s+grande)?|Gracias(?:\s+por\s+confiar\s+en\s+nosotros)?)[!.,]*)\s+(Miguel|Fran|Ezequiel)\b/iu', '$1 ' . $senderName, $updated);
 
         return $updated;
     }
@@ -174,7 +174,7 @@ class WhatsAppTemplateService
             'dossier', 'envio_dossier', 'quote_propuesta', 'resumen_presupuesto' =>
                 "Dossier y propuesta para vuestra boda ({$eventDate}) - {$companyName}",
             'cuestionario' =>
-                "Preguntas para preparar vuestra propuesta a medida - {$companyName}",
+                "Cuestionario musical corto para vuestra propuesta a medida - {$companyName}",
             'contrato' =>
                 "Contrato para formalizar la reserva ({$eventDate}) - {$companyName}",
             'confirmacion_senal' =>
@@ -352,19 +352,19 @@ class WhatsAppTemplateService
             ],
             'presupuesto' => [
                 'label' => '💰 Objeción Precio (Adaptar)',
-                'default' => "¡Hola {nombre}! Entiendo lo del presupuesto. Puedo ajustar horas de baile o cóctel para que encaje con vuestro presupuesto, sin tocar lo esencial: sonido, montaje e iluminación profesional. ¿Os preparo esa opción? ¡Un saludo! {firma}",
+                'default' => "¡Hola {nombre}! Entiendo lo del presupuesto. Puedo ajustar algunos servicios para que encaje con lo que tenéis en mente, sin tocar lo esencial del sonido y el montaje. ¿Os preparo esa opción? ¡Un saludo! {firma}",
             ],
             'no_es_nuestro_cliente' => [
                 'label' => '👑 No es nuestro cliente (Precio)',
-                'default' => "¡Hola {nombre}! Gracias por la sinceridad. Entendemos que no encaja con lo que buscáis, así que cerramos la consulta. Os deseamos mucha suerte con la boda. ¡Un saludo! {firma}",
+                'default' => "¡Hola {nombre}! Gracias por la sinceridad. Entendemos que no encaja con lo que buscáis, así que cerramos la consulta por ahora. Os deseamos mucha suerte con {evento}. ¡Un saludo! {firma}",
             ],
             'cuestionario' => [
                 'label' => '📋 Cuestionario',
-                'default' => "¡Hola {nombre}! Para preparar vuestra propuesta a medida, ¿me contáis?\n1) Fecha y lugar\n2) Número aproximado de invitados\n3) Horario de ceremonia, cóctel y banquete\n4) Tipo de música que os gusta\n5) Presupuesto aproximado que tenéis en mente.\n¡Un saludo! {firma}",
+                'default' => "¡Hola {nombre}! Para preparar vuestra propuesta a medida, rellenad este cuestionario corto (menos de 2 minutos): {enlace_cuestionario}. ¡Gracias! {firma}",
             ],
             'contrato' => [
                 'label' => '✍️ Enlace Contrato',
-                'default' => "¡Hola {nombre}! Aquí tenéis el contrato para formalizar la reserva: {enlace_contrato}. Con la firma y la señal de {importe_senal} queda reservada la fecha. ¡Gracias por confiar en nosotros! ¡Un saludo! {firma}",
+                'default' => "¡Hola {nombre}! Aquí tenéis el contrato para formalizar la reserva de vuestra boda del {fecha}: {enlace_contrato}. Con la firma y la señal queda reservada la fecha. Cualquier duda, me decís. ¡Gracias por confiar en nosotros! {firma}",
             ],
             'confirmacion_senal' => [
                 'label' => '✅ Confirmación tras la Señal',

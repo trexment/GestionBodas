@@ -1996,6 +1996,7 @@
                                             <code class="px-1 py-0.5 rounded bg-white dark:bg-slate-800 text-amber-700 dark:text-amber-300 font-bold">{fecha}</code>
                                             <code class="px-1 py-0.5 rounded bg-white dark:bg-slate-800 text-amber-700 dark:text-amber-300 font-bold">{mes}</code>
                                             <code class="px-1 py-0.5 rounded bg-white dark:bg-slate-800 text-amber-700 dark:text-amber-300 font-bold">{lugar}</code>
+                                            <code class="px-1 py-0.5 rounded bg-white dark:bg-slate-800 text-amber-700 dark:text-amber-300 font-bold">{evento}</code>
                                             <code class="px-1 py-0.5 rounded bg-white dark:bg-slate-800 text-amber-700 dark:text-amber-300 font-bold">{empresa}</code>
                                             <code class="px-1 py-0.5 rounded bg-white dark:bg-slate-800 text-amber-700 dark:text-amber-300 font-bold">{horario}</code>
                                             <code class="px-1 py-0.5 rounded bg-white dark:bg-slate-800 text-amber-700 dark:text-amber-300 font-bold">{importe_senal}</code>
