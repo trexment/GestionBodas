@@ -1783,7 +1783,7 @@
                         </div>
 
                         <!-- Historial de Chat WhatsApp & Email -->
-                        <div class="bg-slate-100 dark:bg-slate-950 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 space-y-2.5">
+                        <div wire:init="autoSyncWhatsAppOnLoad" class="bg-slate-100 dark:bg-slate-950 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 space-y-2.5">
                             <div class="flex flex-wrap items-center justify-between gap-2">
                                 <span class="text-[11px] font-black text-slate-700 dark:text-slate-200 uppercase tracking-wider flex items-center gap-1">
                                     <span>🗨️</span> Conversación Registrada (WhatsApp & Email)

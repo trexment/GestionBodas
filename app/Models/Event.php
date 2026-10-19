@@ -120,7 +120,7 @@ class Event extends Model
 
     public function whatsappMessages()
     {
-        return $this->hasMany(WhatsAppMessage::class)->orderBy('created_at', 'asc');
+        return $this->hasMany(WhatsAppMessage::class)->orderBy('created_at', 'asc')->orderBy('id', 'asc');
     }
 
     public function dossiers()

@@ -38,40 +38,72 @@ class WhatsAppWebhookController extends Controller
         }
 
         $payload = $request->all();
-        $eventType = $payload['event'] ?? ($payload['type'] ?? '');
+        $eventType = strtolower((string)($payload['event'] ?? ($payload['type'] ?? '')));
 
         // Ignorar eventos que no sean mensajes entrantes/salientes (ej: qrcode.updated, connection.update)
-        if (!in_array($eventType, ['messages.upsert', 'MESSAGES_UPSERT', 'message.create', ''])) {
+        if (!in_array($eventType, [
+            'messages.upsert',
+            'messages_upsert',
+            'messages-upsert',
+            'message.create',
+            'send.message',
+            'send_message',
+            'send-message',
+            '',
+        ])) {
             return response()->json(['success' => true, 'ignored' => true, 'event' => $eventType]);
         }
 
         $data = $payload['data'] ?? $payload;
+        if (isset($data['messages'][0]) && is_array($data['messages'][0])) {
+            $data = $data['messages'][0];
+        }
+
         $key = $data['key'] ?? [];
-        $fromMe = (bool)($key['fromMe'] ?? false);
-        $remoteJid = $key['remoteJid'] ?? '';
-        $externalId = $key['id'] ?? null;
+        $fromMe = (bool)($key['fromMe'] ?? ($data['fromMe'] ?? false));
+        $remoteJid = (string)($key['remoteJid'] ?? ($data['remoteJid'] ?? ''));
+        $remoteJidAlt = (string)($key['remoteJidAlt'] ?? ($data['remoteJidAlt'] ?? ($key['senderPn'] ?? ($data['senderPn'] ?? ($key['participantAlt'] ?? ($data['participantAlt'] ?? ''))))));
+        $externalId = $key['id'] ?? ($data['id'] ?? null);
 
         // Evitar procesar estados de WhatsApp o mensajes de grupos si no aplican
         if (str_contains($remoteJid, '@broadcast') || str_contains($remoteJid, '@g.us')) {
             return response()->json(['success' => true, 'ignored' => 'group_or_status']);
         }
 
-        // Extraer número de teléfono limpio
-        $rawPhone = explode('@', $remoteJid)[0];
-        $cleanPhone = WhatsAppTemplateService::cleanPhone($rawPhone);
-        if (empty($cleanPhone)) {
-            return response()->json(['success' => true, 'ignored' => 'empty_phone']);
+        // Extraer texto del mensaje (soportando ephemeralMessage / viewOnceMessage / extendedTextMessage)
+        $msgObj = $data['message'] ?? [];
+        if (isset($msgObj['ephemeralMessage']['message']) && is_array($msgObj['ephemeralMessage']['message'])) {
+            $msgObj = $msgObj['ephemeralMessage']['message'];
+        }
+        if (isset($msgObj['viewOnceMessage']['message']) && is_array($msgObj['viewOnceMessage']['message'])) {
+            $msgObj = $msgObj['viewOnceMessage']['message'];
+        }
+        if (isset($msgObj['viewOnceMessageV2']['message']) && is_array($msgObj['viewOnceMessageV2']['message'])) {
+            $msgObj = $msgObj['viewOnceMessageV2']['message'];
         }
 
-        // Extraer texto del mensaje
-        $msgObj = $data['message'] ?? [];
         $text = $msgObj['conversation'] 
             ?? ($msgObj['extendedTextMessage']['text'] 
             ?? ($msgObj['imageMessage']['caption'] 
             ?? ($msgObj['videoMessage']['caption'] 
-            ?? '')));
+            ?? ($msgObj['documentMessage']['caption']
+            ?? ($msgObj['documentWithCaptionMessage']['message']['documentMessage']['caption']
+            ?? '')))));
 
-        if (empty(trim($text))) {
+        if (empty(trim((string)$text))) {
+            if (isset($msgObj['imageMessage'])) {
+                $text = '📷 [Imagen adjunta]';
+            } elseif (isset($msgObj['videoMessage'])) {
+                $text = '🎥 [Vídeo adjunto]';
+            } elseif (isset($msgObj['audioMessage'])) {
+                $text = '🎵 [Nota de voz / Audio]';
+            } elseif (isset($msgObj['documentMessage'])) {
+                $fileName = $msgObj['documentMessage']['fileName'] ?? 'archivo';
+                $text = "📄 [Documento: {$fileName}]";
+            }
+        }
+
+        if (empty(trim((string)$text))) {
             return response()->json(['success' => true, 'ignored' => 'non_text_or_empty']);
         }
 
@@ -86,13 +118,75 @@ class WhatsAppWebhookController extends Controller
             $brand = 'mago_leugim';
         }
 
+        // Extraer número de teléfono limpio (priorizando remoteJidAlt / senderPn si remoteJid es un @lid de Meta/WhatsApp)
+        $isLid = str_ends_with($remoteJid, '@lid');
+        $rawPhoneSource = $remoteJid;
+        if ($isLid && !empty($remoteJidAlt) && str_contains($remoteJidAlt, '@s.whatsapp.net')) {
+            $rawPhoneSource = $remoteJidAlt;
+        }
+
+        $rawPhone = explode('@', $rawPhoneSource)[0];
+        // Quitar sufijo de dispositivo si viniera como 34699212825:12
+        $rawPhone = explode(':', $rawPhone)[0];
+        $cleanPhone = WhatsAppTemplateService::cleanPhone($rawPhone);
+
+        $event = null;
+
+        // Si no es un @lid (o si ya obtuvimos el teléfono real vía remoteJidAlt), buscar evento por teléfono
+        if (!$isLid || (!empty($remoteJidAlt) && str_contains($remoteJidAlt, '@s.whatsapp.net'))) {
+            if (!empty($cleanPhone)) {
+                if ($this->isInternalNotificationMessage($cleanPhone, $text, $brand)) {
+                    return response()->json(['success' => true, 'ignored' => 'internal_team_or_alert_phone']);
+                }
+                $event = $this->findMatchingEvent($cleanPhone);
+            }
+        }
+
+        // Si el mensaje viene con @lid (Linked Identity de campaña Meta/Instagram o WhatsApp moderno) y aún no hemos resuelto el evento:
+        if (!$event) {
+            // A) Comprobar si cita/responde a un mensaje nuestro previo (contextInfo.stanzaId)
+            $stanzaId = $msgObj['extendedTextMessage']['contextInfo']['stanzaId']
+                ?? ($data['contextInfo']['stanzaId'] ?? null);
+            if (!empty($stanzaId)) {
+                $quotedMsg = WhatsAppMessage::where('external_id', $stanzaId)
+                    ->whereNotNull('event_id')
+                    ->first();
+                if ($quotedMsg && $quotedMsg->event) {
+                    $event = $quotedMsg->event;
+                    $cleanPhone = $quotedMsg->phone ?: $cleanPhone;
+                }
+            }
+
+            // B) Resolver el @lid cruzando con payloads previos, mensajes en Evolution API o nombre del cliente
+            if (!$event && !empty($remoteJid)) {
+                $resolved = EvolutionWhatsAppService::resolveEventAndPhoneFromLid($remoteJid, $instanceName, $senderName);
+                if (!empty($resolved['phone'])) {
+                    $cleanPhone = $resolved['phone'];
+                }
+                if (!empty($resolved['event'])) {
+                    $event = $resolved['event'];
+                } elseif (!empty($cleanPhone)) {
+                    if ($this->isInternalNotificationMessage($cleanPhone, $text, $brand)) {
+                        return response()->json(['success' => true, 'ignored' => 'internal_team_or_alert_phone']);
+                    }
+                    $event = $this->findMatchingEvent($cleanPhone);
+                }
+            }
+        }
+
+        if (empty($cleanPhone) && $event) {
+            $evPhone = $event->client ? ($event->client->phone ?: $event->partner_phone) : $event->partner_phone;
+            $cleanPhone = WhatsAppTemplateService::cleanPhone((string)$evPhone);
+        }
+
+        if (empty($cleanPhone)) {
+            return response()->json(['success' => true, 'ignored' => 'empty_phone']);
+        }
+
         // 2. PRIVACIDAD: Ignorar mensajes entre teléfonos internos del equipo (socios, DJs, admins)
         if ($this->isInternalNotificationMessage($cleanPhone, $text, $brand)) {
             return response()->json(['success' => true, 'ignored' => 'internal_team_or_alert_phone']);
         }
-
-        // 3. Asociar únicamente con Eventos reales de clientes/novios en la base de datos
-        $event = $this->findMatchingEvent($cleanPhone);
 
         // REGLA DE PRIVACIDAD ESTRICTA:
         // Como los números de WhatsApp conectados son personales/profesionales, si el teléfono
@@ -108,14 +202,48 @@ class WhatsAppWebhookController extends Controller
 
         // Evitar duplicados si el webhook se dispara múltiples veces con el mismo externalId
         if ($externalId) {
-            $alreadyExists = WhatsAppMessage::where('external_id', $externalId)->exists();
+            $alreadyExists = WhatsAppMessage::where('event_id', $event->id)
+                ->where(function ($q) use ($externalId, $event) {
+                    $q->where('external_id', $externalId)
+                      ->orWhere('external_id', $externalId . '_ev' . $event->id);
+                })
+                ->exists();
             if ($alreadyExists) {
                 return response()->json(['success' => true, 'duplicate' => true]);
             }
         }
 
+        // Si es un mensaje saliente enviado desde la propia app hace unos segundos, actualizar su payload/external_id sin duplicar la burbuja
+        if ($fromMe) {
+            $recentOutbound = WhatsAppMessage::where('event_id', $event->id)
+                ->where('direction', 'outbound')
+                ->where('message', $text)
+                ->where('created_at', '>=', now()->subMinutes(5))
+                ->orderBy('id', 'desc')
+                ->first();
+
+            if ($recentOutbound) {
+                $updates = ['payload' => $payload];
+                if (empty($recentOutbound->external_id) && !empty($externalId)) {
+                    $updates['external_id'] = $externalId;
+                }
+                $recentOutbound->update($updates);
+                return response()->json([
+                    'success' => true,
+                    'updated_existing' => true,
+                    'message_id' => $recentOutbound->id,
+                    'event_id' => $event->id,
+                ]);
+            }
+        }
+
         $direction = $fromMe ? 'outbound' : 'inbound';
         $effectiveBrand = $event->brand_clean ?: $brand;
+
+        $safeExternalId = $externalId;
+        if ($safeExternalId && WhatsAppMessage::where('external_id', $safeExternalId)->exists()) {
+            $safeExternalId = $safeExternalId . '_ev' . $event->id;
+        }
 
         $record = WhatsAppMessage::create([
             'event_id' => $event->id,
@@ -125,7 +253,7 @@ class WhatsAppWebhookController extends Controller
             'direction' => $direction,
             'message' => $text,
             'status' => $fromMe ? 'sent' : 'received',
-            'external_id' => $externalId,
+            'external_id' => $safeExternalId,
             'brand' => $effectiveBrand,
             'payload' => $payload,
         ]);
@@ -133,18 +261,18 @@ class WhatsAppWebhookController extends Controller
         // 4. AUTOMATIZACIÓN INTELIGENTE: Si los novios/clientes responden y estaban en seguimiento ("no_response")
         $reactivated = false;
         if (!$fromMe && $event->status === 'no_response') {
+            $noteEntry = "[" . now()->format('d/m/Y H:i') . "] 💬 [WhatsApp Entrante de {$senderName}]: \"" . mb_substr($text, 0, 150) . "\" -> Reactivado a Borrador automáticamente.";
             $event->update([
                 'status' => 'draft', // Vuelve automáticamente a Borrador activo
                 'no_response_at' => null, // Resetea el reloj de sin respuesta
-                'notes' => ($event->notes ? $event->notes . "\n" : "") 
-                    . "[" . now()->format('d/m/Y H:i') . "] 💬 [WhatsApp Entrante de {$senderName}]: \"" . mb_substr($text, 0, 150) . "\" -> Reactivado a Borrador automáticamente.",
+                'notes' => Event::prependNote($event->notes, $noteEntry),
             ]);
             $reactivated = true;
         } elseif (!$fromMe) {
-            // Registrar en notas internas para que conste en el historial del evento
+            // Registrar arriba del todo en notas internas para que conste en el historial del evento
+            $noteEntry = "[" . now()->format('d/m/Y H:i') . "] 💬 [WhatsApp de {$senderName}]: \"" . mb_substr($text, 0, 150) . "\"";
             $event->update([
-                'notes' => ($event->notes ? $event->notes . "\n" : "") 
-                    . "[" . now()->format('d/m/Y H:i') . "] 💬 [WhatsApp de {$senderName}]: \"" . mb_substr($text, 0, 150) . "\"",
+                'notes' => Event::prependNote($event->notes, $noteEntry),
             ]);
         }
 
@@ -270,7 +398,7 @@ class WhatsAppWebhookController extends Controller
     }
 
     /**
-     * Busca un evento activo cuyos novios/clientes coincidan con el número de teléfono
+     * Busca un evento cuyos novios/clientes coincidan con el número de teléfono (priorizando eventos activos)
      */
     protected function findMatchingEvent(string $cleanPhone): ?Event
     {
@@ -279,9 +407,8 @@ class WhatsAppWebhookController extends Controller
             return null;
         }
 
-        // Búsqueda directa en SQL + respaldo normalizado sin espacios/guiones
-        $directMatch = Event::where('status', '!=', 'cancelled')
-            ->where(function ($query) use ($cleanPhone, $national) {
+        // Búsqueda directa en SQL + respaldo normalizado sin espacios/guiones (priorizando eventos activos frente a cancelados/rechazados)
+        $directMatch = Event::where(function ($query) use ($cleanPhone, $national) {
                 $query->whereHas('client', function ($q) use ($cleanPhone, $national) {
                     $q->whereNotNull('phone')
                       ->where('phone', '!=', '')
@@ -301,6 +428,7 @@ class WhatsAppWebhookController extends Controller
                       });
                 });
             })
+            ->orderByRaw("CASE WHEN status IN ('cancelled', 'rejected') THEN 1 ELSE 0 END ASC")
             ->orderBy('event_date', 'desc')
             ->first();
 

@@ -123,6 +123,8 @@ class EvolutionWhatsAppService
         $apiKey = self::getApiKey();
         $instance = self::getInstanceName($brand);
 
+        self::ensureWebhookConfigured($baseUrl, $apiKey, $instance);
+
         try {
             $endpoint = "{$baseUrl}/message/sendText/{$instance}";
             $response = Http::withHeaders([
@@ -212,6 +214,7 @@ class EvolutionWhatsAppService
                             $ownerPhone = $ownerJid ? ('+' . explode('@', $ownerJid)[0]) : null;
 
                             if ($status === 'open') {
+                                self::ensureWebhookConfigured($baseUrl, $apiKey, $instance, true);
                                 return [
                                     'configured' => true,
                                     'state' => 'open',
@@ -248,6 +251,9 @@ class EvolutionWhatsAppService
             if ($res->successful()) {
                 $data = $res->json();
                 $state = $data['instance']['state'] ?? ($data['state'] ?? 'unknown');
+                if ($state === 'open') {
+                    self::ensureWebhookConfigured($baseUrl, $apiKey, $instance, true);
+                }
                 return [
                     'configured' => true,
                     'state' => $state,
@@ -298,6 +304,7 @@ class EvolutionWhatsAppService
             // 1. Comprobar si ya está conectada antes de solicitar QR
             $statusCheck = self::checkInstanceStatus($brand);
             if (($statusCheck['state'] ?? '') === 'open') {
+                self::ensureWebhookConfigured($baseUrl, $apiKey, $instance, true);
                 return [
                     'success' => true,
                     'already_connected' => true,
@@ -315,6 +322,7 @@ class EvolutionWhatsAppService
                 $data = $res->json();
 
                 if (($data['instance']['state'] ?? ($data['state'] ?? '')) === 'open') {
+                    self::ensureWebhookConfigured($baseUrl, $apiKey, $instance, true);
                     return [
                         'success' => true,
                         'already_connected' => true,
@@ -428,11 +436,28 @@ class EvolutionWhatsAppService
     /**
      * Asegura que el webhook hacia nuestra app esté configurado en Evolution API
      */
-    public static function ensureWebhookConfigured(string $baseUrl, string $apiKey, string $instance): void
+    public static function ensureWebhookConfigured(string $baseUrl, string $apiKey, string $instance, bool $force = false): void
     {
+        if (empty($baseUrl) || empty($apiKey) || empty($instance)) {
+            return;
+        }
+
+        $cacheKey = 'evo_webhook_configured_' . md5($baseUrl . '|' . $instance);
+        if (!$force && \Illuminate\Support\Facades\Cache::has($cacheKey)) {
+            return;
+        }
+
         try {
             $webhookUrl = url('/api/whatsapp/webhook');
-            Http::withHeaders([
+            if (str_contains($webhookUrl, 'localhost') || str_contains($webhookUrl, '127.0.0.1')) {
+                $appUrl = rtrim((string) config('app.url', ''), '/');
+                if (!empty($appUrl) && !str_contains($appUrl, 'localhost')) {
+                    $webhookUrl = $appUrl . '/api/whatsapp/webhook';
+                }
+            }
+
+            // Formato Evolution API v2 (anidado en "webhook")
+            $res = Http::withHeaders([
                 'apikey' => $apiKey,
                 'Content-Type' => 'application/json',
             ])->timeout(5)->post("{$baseUrl}/webhook/set/{$instance}", [
@@ -444,6 +469,24 @@ class EvolutionWhatsAppService
                     'events' => ['MESSAGES_UPSERT'],
                 ],
             ]);
+
+            // Fallback formato plano (Evolution API v1 / v2.0)
+            if (!$res->successful()) {
+                $res = Http::withHeaders([
+                    'apikey' => $apiKey,
+                    'Content-Type' => 'application/json',
+                ])->timeout(5)->post("{$baseUrl}/webhook/set/{$instance}", [
+                    'enabled' => true,
+                    'url' => $webhookUrl,
+                    'webhookByEvents' => false,
+                    'webhookBase64' => false,
+                    'events' => ['MESSAGES_UPSERT'],
+                ]);
+            }
+
+            if ($res->successful()) {
+                \Illuminate\Support\Facades\Cache::put($cacheKey, true, now()->addMinutes(15));
+            }
         } catch (\Throwable $e) {
             Log::warning("No se pudo auto-configurar webhook para {$instance}: " . $e->getMessage());
         }
@@ -486,7 +529,8 @@ class EvolutionWhatsAppService
 
     /**
      * Busca la conversación previa con un número de teléfono en Evolution API (y en la BD local)
-     * e importa todos los mensajes anteriores dentro del evento indicado.
+     * e importa todos los mensajes anteriores y respuestas entrantes (incluyendo chats con @lid de Meta/Instagram)
+     * dentro del evento indicado.
      */
     public static function syncConversationHistory(
         Event $event,
@@ -506,6 +550,7 @@ class EvolutionWhatsAppService
 
         $national = strlen($cleanPhone) > 9 ? substr($cleanPhone, -9) : $cleanPhone;
         $importedCount = 0;
+        $newInboundMessages = [];
         $clientName = $event->client ? $event->client->name : ($event->partner_name ?: 'Cliente');
 
         // 1. Vincular/copiar posibles mensajes previos que ya existieran en la BD local con ese teléfono
@@ -548,6 +593,7 @@ class EvolutionWhatsAppService
                             'status' => $localMsg->status,
                             'external_id' => $localMsg->external_id ? ($localMsg->external_id . '_ev' . $event->id) : null,
                             'brand' => $localMsg->brand ?: ($preferredBrand ?: $event->brand_clean),
+                            'payload' => $localMsg->payload,
                             'created_at' => $localMsg->created_at,
                             'updated_at' => $localMsg->created_at,
                         ]);
@@ -587,172 +633,400 @@ class EvolutionWhatsAppService
                     $instancesToSearch[$inst] = $brandKey;
                 }
             }
+
+            // Añadir también cualquier otra instancia conectada ('open') en Evolution API por si tuviera nombre personalizado
+            try {
+                $fetchRes = Http::withHeaders(['apikey' => $apiKey])->timeout(5)->get("{$baseUrl}/instance/fetchInstances");
+                if ($fetchRes->successful() && is_array($fetchRes->json())) {
+                    foreach ($fetchRes->json() as $item) {
+                        $instName = $item['name'] ?? ($item['instance']['instanceName'] ?? ($item['instanceName'] ?? null));
+                        $st = $item['connectionStatus'] ?? ($item['instance']['state'] ?? ($item['state'] ?? ''));
+                        if (!empty($instName) && strtolower((string)$st) === 'open' && !isset($instancesToSearch[$instName])) {
+                            $instancesToSearch[$instName] = $preferredBrand ?: 'miguel';
+                        }
+                    }
+                }
+            } catch (\Throwable $e) {}
         }
 
-        // Posibles JIDs para el teléfono en WhatsApp
+        // Posibles JIDs iniciales para el teléfono en WhatsApp + cualquier JID/LID guardado previamente en BD
         $candidateJids = array_values(array_unique(array_filter([
             "{$cleanPhone}@s.whatsapp.net",
             strlen($national) === 9 ? "34{$national}@s.whatsapp.net" : null,
             "{$national}@s.whatsapp.net",
         ])));
 
-        $apiErrors = [];
+        $knownExternalIds = [];
+        $knownOutboundSnippets = [];
+        try {
+            $existingEventMsgs = WhatsAppMessage::where('event_id', $event->id)
+                ->orWhere('phone', 'LIKE', "%{$national}%")
+                ->get();
+
+            foreach ($existingEventMsgs as $em) {
+                if (!empty($em->external_id)) {
+                    $cleanExtId = explode('_ev', (string)$em->external_id)[0];
+                    if (!empty($cleanExtId)) {
+                        $knownExternalIds[$cleanExtId] = true;
+                    }
+                }
+                if ($em->direction === 'outbound' && !empty($em->message) && !str_starts_with($em->message, '📧')) {
+                    $snippet = trim(mb_substr($em->message, 0, 45));
+                    if (mb_strlen($snippet) >= 12) {
+                        $knownOutboundSnippets[] = $snippet;
+                    }
+                }
+                if (is_array($em->payload)) {
+                    $pKey = $em->payload['key'] ?? ($em->payload['data']['key'] ?? []);
+                    foreach ([
+                        $pKey['remoteJid'] ?? null,
+                        $pKey['remoteJidAlt'] ?? null,
+                        $em->payload['remoteJid'] ?? null,
+                        $em->payload['data']['remoteJid'] ?? null,
+                    ] as $possibleJid) {
+                        if (!empty($possibleJid) && is_string($possibleJid) && str_contains($possibleJid, '@') && !in_array($possibleJid, $candidateJids)) {
+                            $candidateJids[] = $possibleJid;
+                        }
+                    }
+                }
+            }
+        } catch (\Throwable $e) {}
+
+        // Preparar variantes del nombre del cliente/pareja para localizar chats @lid (ej. "* Alvaro y ana" -> "alvaro y ana")
+        $cleanClientSearchName = trim((string)preg_replace('/[^\p{L}\p{N}\s]/u', ' ', mb_strtolower($clientName)));
+        $cleanClientSearchName = trim((string)preg_replace('/\s+/', ' ', $cleanClientSearchName));
+        if (in_array($cleanClientSearchName, ['cliente', 'novios', 'pareja', 'evento', 'boda', 'sin nombre']) || mb_strlen($cleanClientSearchName) < 4) {
+            $cleanClientSearchName = '';
+        }
 
         foreach ($instancesToSearch as $instance => $brandKey) {
-            $jidsForInstance = $candidateJids;
+            self::ensureWebhookConfigured($baseUrl, $apiKey, $instance);
 
-            // Intentar también descubrir si el contacto tiene algún JID alternativo o chat registrado en esta instancia
+            $trustedJids = $candidateJids;
+            $collectedRawMessages = [];
+
+            // 2a. Consultar /chat/whatsappNumbers/{instance} por si devuelve un JID o LID asociado al teléfono
             try {
-                $chatsRes = Http::withHeaders([
+                $numCheckRes = Http::withHeaders([
                     'apikey' => $apiKey,
                     'Content-Type' => 'application/json',
-                ])->timeout(8)->post("{$baseUrl}/chat/findChats/{$instance}", [
-                    'where' => [
-                        'remoteJid' => $candidateJids[0],
-                    ],
+                ])->timeout(6)->post("{$baseUrl}/chat/whatsappNumbers/{$instance}", [
+                    'numbers' => [$cleanPhone, $national],
                 ]);
-                if ($chatsRes->successful()) {
-                    $chatsData = $chatsRes->json();
-                    if (is_array($chatsData)) {
-                        foreach ($chatsData as $chatItem) {
-                            $cJid = $chatItem['remoteJid'] ?? ($chatItem['id'] ?? '');
-                            if (!empty($cJid) && str_contains($cJid, $national) && !in_array($cJid, $jidsForInstance)) {
-                                $jidsForInstance[] = $cJid;
+                if ($numCheckRes->successful() && is_array($numCheckRes->json())) {
+                    foreach ($numCheckRes->json() as $numItem) {
+                        if (!is_array($numItem)) continue;
+                        foreach (['jid', 'lid', 'remoteJid', 'id'] as $f) {
+                            $val = $numItem[$f] ?? null;
+                            if (!empty($val) && is_string($val) && str_contains($val, '@') && !in_array($val, $trustedJids)) {
+                                $trustedJids[] = $val;
                             }
                         }
+                    }
+                }
+            } catch (\Throwable $e) {}
+
+            // 2b. Buscar en /chat/findChats y /chat/findContacts cualquier chat o contacto que contenga el teléfono o el nombre exacto del cliente (descubre @lid)
+            foreach (['/chat/findChats/', '/chat/findContacts/'] as $endpointPrefix) {
+                try {
+                    $listRes = Http::withHeaders([
+                        'apikey' => $apiKey,
+                        'Content-Type' => 'application/json',
+                    ])->timeout(8)->post("{$baseUrl}{$endpointPrefix}{$instance}", (object)[]);
+
+                    if ($listRes->successful() && is_array($listRes->json())) {
+                        $items = self::extractRecordsFromResponse($listRes->json());
+                        if (empty($items) && array_is_list($listRes->json())) {
+                            $items = $listRes->json();
+                        }
+                        foreach ($items as $item) {
+                            if (!is_array($item)) continue;
+                            $rawJson = json_encode($item, JSON_UNESCAPED_UNICODE) ?: '';
+                            $itemName = mb_strtolower(trim((string)($item['name'] ?? ($item['pushName'] ?? ($item['verifiedName'] ?? '')))));
+                            $cleanItemName = trim((string)preg_replace('/\s+/', ' ', (string)preg_replace('/[^\p{L}\p{N}\s]/u', ' ', $itemName)));
+
+                            $matchesPhone = str_contains($rawJson, $national);
+                            $matchesExtId = false;
+                            foreach (array_keys($knownExternalIds) as $extId) {
+                                if (str_contains($rawJson, $extId)) {
+                                    $matchesExtId = true;
+                                    break;
+                                }
+                            }
+                            $matchesName = !empty($cleanClientSearchName)
+                                && !empty($cleanItemName)
+                                && ($cleanItemName === $cleanClientSearchName || (mb_strlen($cleanClientSearchName) >= 6 && str_contains($cleanItemName, $cleanClientSearchName)));
+
+                            if ($matchesPhone || $matchesExtId || $matchesName) {
+                                foreach (['remoteJid', 'id', 'jid', 'lid', 'remoteJidAlt'] as $jidField) {
+                                    $cJid = $item[$jidField] ?? null;
+                                    if (!empty($cJid) && is_string($cJid) && str_contains($cJid, '@') && !str_contains($cJid, '@g.us') && !str_contains($cJid, '@broadcast')) {
+                                        if (!in_array($cJid, $trustedJids)) {
+                                            $trustedJids[] = $cJid;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } catch (\Throwable $e) {}
+            }
+
+            // 2c. Si tenemos external_id de mensajes enviados desde la app para este evento, buscar ese mensaje en Evolution API para descubrir su remoteJid real (ej. @lid)
+            foreach (array_slice(array_keys($knownExternalIds), 0, 5) as $extId) {
+                try {
+                    $extRecords = self::fetchEvolutionMessages($baseUrl, $apiKey, $instance, [
+                        'key' => ['id' => $extId],
+                    ], 20);
+                    foreach ($extRecords as $rMsg) {
+                        if (!is_array($rMsg)) continue;
+                        $rJid = $rMsg['key']['remoteJid'] ?? ($rMsg['remoteJid'] ?? null);
+                        if (!empty($rJid) && is_string($rJid) && str_contains($rJid, '@') && !in_array($rJid, $trustedJids)) {
+                            $trustedJids[] = $rJid;
+                        }
+                        $collectedRawMessages[] = $rMsg;
+                    }
+                } catch (\Throwable $e) {}
+            }
+
+            // 2d. Escanear los últimos 200 mensajes recientes de la instancia (sin filtro restrictivo de remoteJid)
+            // Esto permite descubrir conversaciones @lid donde el número viene en remoteJidAlt/senderPn, o donde enviamos un saludo al cliente
+            try {
+                $recentRecords = self::fetchEvolutionMessages($baseUrl, $apiKey, $instance, [], 200);
+                foreach ($recentRecords as $rMsg) {
+                    if (!is_array($rMsg)) continue;
+                    $rKey = $rMsg['key'] ?? [];
+                    $rJid = (string)($rKey['remoteJid'] ?? ($rMsg['remoteJid'] ?? ''));
+                    if (empty($rJid) || str_contains($rJid, '@g.us') || str_contains($rJid, '@broadcast')) {
+                        continue;
+                    }
+
+                    $rJson = json_encode($rMsg, JSON_UNESCAPED_UNICODE) ?: '';
+                    $rId = (string)($rKey['id'] ?? ($rMsg['id'] ?? ''));
+                    $rText = self::extractTextFromEvolutionMessage($rMsg);
+                    $rFromMe = (bool)($rKey['fromMe'] ?? ($rMsg['fromMe'] ?? false));
+                    $rPushName = mb_strtolower(trim((string)($rMsg['pushName'] ?? '')));
+                    $cleanPushName = trim((string)preg_replace('/\s+/', ' ', (string)preg_replace('/[^\p{L}\p{N}\s]/u', ' ', $rPushName)));
+
+                    $matchedThisMsg = false;
+
+                    // Coincidencia 1: El JSON del mensaje contiene los 9 dígitos del teléfono (en remoteJid, remoteJidAlt, senderPn, participant, etc.)
+                    if (str_contains($rJson, $national)) {
+                        $matchedThisMsg = true;
+                    }
+
+                    // Coincidencia 2: El ID del mensaje coincide con un mensaje que ya tenemos registrado en el evento
+                    if (!$matchedThisMsg && !empty($rId) && isset($knownExternalIds[$rId])) {
+                        $matchedThisMsg = true;
+                    }
+
+                    // Coincidencia 3: Es un mensaje saliente nuestro que contiene el mismo texto enviado desde el evento o saluda por su nombre a la pareja
+                    if (!$matchedThisMsg && !empty($rText)) {
+                        foreach ($knownOutboundSnippets as $snip) {
+                            if (str_contains($rText, $snip)) {
+                                $matchedThisMsg = true;
+                                break;
+                            }
+                        }
+                        if (!$matchedThisMsg && $rFromMe && !empty($cleanClientSearchName)) {
+                            $cleanMsgText = trim((string)preg_replace('/\s+/', ' ', (string)preg_replace('/[^\p{L}\p{N}\s]/u', ' ', mb_strtolower($rText))));
+                            if (str_contains($cleanMsgText, 'hola ' . $cleanClientSearchName)) {
+                                $matchedThisMsg = true;
+                            }
+                        }
+                    }
+
+                    // Coincidencia 4: El pushName del remitente coincide exactamente con el nombre del cliente del evento
+                    if (!$matchedThisMsg && !empty($cleanClientSearchName) && !empty($cleanPushName)) {
+                        if ($cleanPushName === $cleanClientSearchName || (mb_strlen($cleanClientSearchName) >= 6 && str_contains($cleanPushName, $cleanClientSearchName))) {
+                            $matchedThisMsg = true;
+                        }
+                    }
+
+                    if ($matchedThisMsg && !in_array($rJid, $trustedJids)) {
+                        $trustedJids[] = $rJid;
+                    }
+                }
+
+                // Añadir todos los mensajes de la ventana reciente que pertenezcan a cualquiera de los JIDs/LIDs confiables descubiertos
+                foreach ($recentRecords as $rMsg) {
+                    if (!is_array($rMsg)) continue;
+                    $rKey = $rMsg['key'] ?? [];
+                    $rJid = (string)($rKey['remoteJid'] ?? ($rMsg['remoteJid'] ?? ''));
+                    $rJidAlt = (string)($rKey['remoteJidAlt'] ?? ($rMsg['remoteJidAlt'] ?? ''));
+                    if (in_array($rJid, $trustedJids, true) || (!empty($rJidAlt) && in_array($rJidAlt, $trustedJids, true)) || str_contains($rJid, $national) || str_contains($rJidAlt, $national)) {
+                        $collectedRawMessages[] = $rMsg;
                     }
                 }
             } catch (\Throwable $e) {
-                // Continuar silenciosamente con findMessages
+                Log::warning("Error escaneando mensajes recientes en {$instance}: " . $e->getMessage());
             }
 
-            foreach ($jidsForInstance as $jid) {
+            // 2e. Para cada JID confiable (incluyendo cualquier XXXXXXX@lid descubierto), consultar el historial completo de ese JID
+            foreach ($trustedJids as $jid) {
                 try {
-                    $res = Http::withHeaders([
-                        'apikey' => $apiKey,
-                        'Content-Type' => 'application/json',
-                    ])->timeout(12)->post("{$baseUrl}/chat/findMessages/{$instance}", [
-                        'where' => [
-                            'key' => [
-                                'remoteJid' => $jid,
-                            ],
+                    $jidRecords = self::fetchEvolutionMessages($baseUrl, $apiKey, $instance, [
+                        'key' => [
+                            'remoteJid' => $jid,
                         ],
-                        'limit' => 200,
-                    ]);
+                    ], 200);
 
-                    if (!$res->successful()) {
-                        continue;
-                    }
-
-                    $records = self::extractRecordsFromResponse($res->json());
-                    if (empty($records)) {
-                        continue;
-                    }
-
-                    foreach ($records as $rawMsg) {
-                        if (!is_array($rawMsg)) {
-                            continue;
+                    foreach ($jidRecords as $rawMsg) {
+                        if (is_array($rawMsg)) {
+                            $collectedRawMessages[] = $rawMsg;
                         }
-
-                        $key = $rawMsg['key'] ?? [];
-                        $remoteJid = (string)($key['remoteJid'] ?? ($rawMsg['remoteJid'] ?? ''));
-                        $remoteJidAlt = (string)($key['remoteJidAlt'] ?? ($rawMsg['remoteJidAlt'] ?? ''));
-
-                        // Seguridad y privacidad: verificar que el mensaje pertenece realmente a este número
-                        if (!str_contains($remoteJid, $national) && !str_contains($remoteJidAlt, $national)) {
-                            continue;
-                        }
-
-                        // Ignorar estados o grupos
-                        if (str_contains($remoteJid, '@broadcast') || str_contains($remoteJid, '@g.us')) {
-                            continue;
-                        }
-
-                        $text = self::extractTextFromEvolutionMessage($rawMsg);
-                        if (empty(trim($text))) {
-                            continue;
-                        }
-
-                        $fromMe = (bool)($key['fromMe'] ?? ($rawMsg['fromMe'] ?? false));
-                        $direction = $fromMe ? 'outbound' : 'inbound';
-                        $externalId = $key['id'] ?? ($rawMsg['id'] ?? null);
-                        $pushName = $rawMsg['pushName'] ?? null;
-                        $senderName = $fromMe
-                            ? 'Nosotros'
-                            : ((!empty($pushName) && strtolower($pushName) !== 'voce' && strtolower($pushName) !== 'tú') ? $pushName : $clientName);
-
-                        $ts = $rawMsg['messageTimestamp'] ?? ($rawMsg['timestamp'] ?? null);
-                        $msgDate = now();
-                        if (is_numeric($ts) && (int)$ts > 0) {
-                            $tsInt = (int)$ts;
-                            if ($tsInt > 9999999999) {
-                                $tsInt = (int)floor($tsInt / 1000);
-                            }
-                            $msgDate = \Carbon\Carbon::createFromTimestamp($tsInt)->setTimezone(config('app.timezone', 'Europe/Madrid'));
-                        } elseif (is_string($ts) && !empty($ts)) {
-                            try {
-                                $msgDate = \Carbon\Carbon::parse($ts)->setTimezone(config('app.timezone', 'Europe/Madrid'));
-                            } catch (\Throwable $e) {}
-                        }
-
-                        // Evitar duplicados en el evento
-                        $alreadyExists = WhatsAppMessage::where('event_id', $event->id)
-                            ->where(function ($q) use ($externalId, $direction, $text, $msgDate) {
-                                if (!empty($externalId)) {
-                                    $q->where('external_id', $externalId);
-                                } else {
-                                    $q->where('direction', $direction)
-                                      ->where('message', $text)
-                                      ->whereBetween('created_at', [
-                                          $msgDate->copy()->subMinutes(2),
-                                          $msgDate->copy()->addMinutes(2),
-                                      ]);
-                                }
-                            })
-                            ->exists();
-
-                        if ($alreadyExists) {
-                            continue;
-                        }
-
-                        // También evitar duplicar un mensaje que ya se envió desde la web sin external_id pero con el mismo texto exacto
-                        $sameTextExists = WhatsAppMessage::where('event_id', $event->id)
-                            ->where('direction', $direction)
-                            ->where('message', $text)
-                            ->exists();
-
-                        if ($sameTextExists) {
-                            continue;
-                        }
-
-                        // Si el external_id ya estaba en otro evento, sufijarlo para no chocar con índices únicos si los hubiera
-                        $safeExternalId = $externalId;
-                        if ($safeExternalId && WhatsAppMessage::where('external_id', $safeExternalId)->exists()) {
-                            $safeExternalId = $safeExternalId . '_ev' . $event->id;
-                        }
-
-                        WhatsAppMessage::create([
-                            'event_id' => $event->id,
-                            'user_id' => $fromMe ? ($userId ?: auth()->id()) : ($event->client_id ?: null),
-                            'phone' => $cleanPhone,
-                            'sender_name' => $senderName,
-                            'direction' => $direction,
-                            'message' => $text,
-                            'status' => $fromMe ? 'sent' : 'received',
-                            'external_id' => $safeExternalId,
-                            'brand' => $brandKey,
-                            'payload' => $rawMsg,
-                            'created_at' => $msgDate,
-                            'updated_at' => $msgDate,
-                        ]);
-
-                        $importedCount++;
                     }
                 } catch (\Throwable $e) {
-                    $apiErrors[] = $e->getMessage();
                     Log::warning("Error consultando findMessages en {$instance} para {$jid}: " . $e->getMessage());
                 }
             }
+
+            if (empty($collectedRawMessages)) {
+                continue;
+            }
+
+            // Ordenar cronológicamente (del más antiguo al más reciente) antes de insertar
+            usort($collectedRawMessages, function ($a, $b) {
+                $tsA = (int)($a['messageTimestamp'] ?? ($a['timestamp'] ?? 0));
+                $tsB = (int)($b['messageTimestamp'] ?? ($b['timestamp'] ?? 0));
+                if ($tsA > 9999999999) $tsA = (int)floor($tsA / 1000);
+                if ($tsB > 9999999999) $tsB = (int)floor($tsB / 1000);
+                return $tsA <=> $tsB;
+            });
+
+            foreach ($collectedRawMessages as $rawMsg) {
+                $key = $rawMsg['key'] ?? [];
+                $remoteJid = (string)($key['remoteJid'] ?? ($rawMsg['remoteJid'] ?? ''));
+                $remoteJidAlt = (string)($key['remoteJidAlt'] ?? ($rawMsg['remoteJidAlt'] ?? ($key['senderPn'] ?? ($rawMsg['senderPn'] ?? ''))));
+
+                // Ignorar estados o grupos
+                if (str_contains($remoteJid, '@broadcast') || str_contains($remoteJid, '@g.us')) {
+                    continue;
+                }
+
+                // Verificar que pertenece a un JID confiable de este cliente (incluye su @lid) o contiene su teléfono
+                $isTrustedJid = in_array($remoteJid, $trustedJids, true)
+                    || (!empty($remoteJidAlt) && in_array($remoteJidAlt, $trustedJids, true))
+                    || str_contains($remoteJid, $national)
+                    || str_contains($remoteJidAlt, $national);
+
+                if (!$isTrustedJid) {
+                    continue;
+                }
+
+                $text = self::extractTextFromEvolutionMessage($rawMsg);
+                if (empty(trim($text))) {
+                    continue;
+                }
+
+                $fromMe = (bool)($key['fromMe'] ?? ($rawMsg['fromMe'] ?? false));
+                $direction = $fromMe ? 'outbound' : 'inbound';
+                $externalId = $key['id'] ?? ($rawMsg['id'] ?? null);
+                $pushName = $rawMsg['pushName'] ?? null;
+                $senderName = $fromMe
+                    ? 'Nosotros'
+                    : ((!empty($pushName) && !in_array(mb_strtolower($pushName), ['voce', 'você', 'tú', 'tu', 'you'])) ? $pushName : $clientName);
+
+                $ts = $rawMsg['messageTimestamp'] ?? ($rawMsg['timestamp'] ?? null);
+                $msgDate = now();
+                if (is_numeric($ts) && (int)$ts > 0) {
+                    $tsInt = (int)$ts;
+                    if ($tsInt > 9999999999) {
+                        $tsInt = (int)floor($tsInt / 1000);
+                    }
+                    $msgDate = \Carbon\Carbon::createFromTimestamp($tsInt)->setTimezone(config('app.timezone', 'Europe/Madrid'));
+                } elseif (is_string($ts) && !empty($ts)) {
+                    try {
+                        $msgDate = \Carbon\Carbon::parse($ts)->setTimezone(config('app.timezone', 'Europe/Madrid'));
+                    } catch (\Throwable $e) {}
+                }
+
+                // Evitar duplicados por external_id en el evento
+                if (!empty($externalId)) {
+                    $existsByExtId = WhatsAppMessage::where('event_id', $event->id)
+                        ->where(function ($q) use ($externalId, $event) {
+                            $q->where('external_id', $externalId)
+                              ->orWhere('external_id', $externalId . '_ev' . $event->id);
+                        })
+                        ->exists();
+
+                    if ($existsByExtId) {
+                        continue;
+                    }
+                }
+
+                // Evitar duplicar un mensaje con el mismo texto y dirección en una ventana cercana (±15 min)
+                $sameTextNearTime = WhatsAppMessage::where('event_id', $event->id)
+                    ->where('direction', $direction)
+                    ->where('message', $text)
+                    ->whereBetween('created_at', [
+                        $msgDate->copy()->subMinutes(15),
+                        $msgDate->copy()->addMinutes(15),
+                    ])
+                    ->exists();
+
+                if ($sameTextNearTime) {
+                    continue;
+                }
+
+                // Si es un mensaje largo (ej. plantilla comercial enviada desde la web sin external_id), evitar duplicarlo
+                if (mb_strlen($text) > 30) {
+                    $sameLongTextExists = WhatsAppMessage::where('event_id', $event->id)
+                        ->where('direction', $direction)
+                        ->where('message', $text)
+                        ->exists();
+                    if ($sameLongTextExists) {
+                        continue;
+                    }
+                }
+
+                $safeExternalId = $externalId;
+                if ($safeExternalId && WhatsAppMessage::where('external_id', $safeExternalId)->exists()) {
+                    $safeExternalId = $safeExternalId . '_ev' . $event->id;
+                }
+
+                $createdMsg = WhatsAppMessage::create([
+                    'event_id' => $event->id,
+                    'user_id' => $fromMe ? ($userId ?: auth()->id()) : ($event->client_id ?: null),
+                    'phone' => $cleanPhone,
+                    'sender_name' => $senderName,
+                    'direction' => $direction,
+                    'message' => $text,
+                    'status' => $fromMe ? 'sent' : 'received',
+                    'external_id' => $safeExternalId,
+                    'brand' => $brandKey,
+                    'payload' => $rawMsg,
+                    'created_at' => $msgDate,
+                    'updated_at' => $msgDate,
+                ]);
+
+                $importedCount++;
+                if (!$fromMe) {
+                    $newInboundMessages[] = $createdMsg;
+                }
+            }
+        }
+
+        // Si se han importado respuestas entrantes nuevas del cliente, anotarlas arriba del todo en Notas si no estaban
+        if (!empty($newInboundMessages)) {
+            try {
+                $latestInbound = end($newInboundMessages);
+                if ($latestInbound) {
+                    $snippet = mb_substr(trim($latestInbound->message), 0, 150);
+                    if (!str_contains((string)$event->notes, $snippet)) {
+                        $dateFormatted = $latestInbound->created_at ? $latestInbound->created_at->format('d/m/Y H:i') : now()->format('d/m/Y H:i');
+                        $noteLine = "[{$dateFormatted}] 💬 [WhatsApp de {$latestInbound->sender_name}]: \"{$snippet}\"";
+                        $updateArr = [
+                            'notes' => Event::prependNote($event->notes, $noteLine),
+                        ];
+                        if ($event->status === 'no_response' && (!$event->no_response_at || ($latestInbound->created_at && $latestInbound->created_at->gte($event->no_response_at)))) {
+                            $updateArr['status'] = 'draft';
+                            $updateArr['no_response_at'] = null;
+                        }
+                        $event->update($updateArr);
+                    }
+                }
+            } catch (\Throwable $e) {}
         }
 
         if ($importedCount > 0) {
@@ -766,8 +1040,205 @@ class EvolutionWhatsAppService
         return [
             'success' => false,
             'imported' => 0,
-            'message' => "ℹ️ No se encontraron mensajes nuevos en Evolution API para +{$cleanPhone} (o ya estaban todos en la conversación). Si la charla fue antes de conectar Evolution API, puedes pegarla justo debajo con «📋 Pegar / Añadir Mensajes».",
+            'message' => "ℹ️ No se encontraron mensajes nuevos en Evolution API para +{$cleanPhone} (o ya estaban todos en la conversación). Si la charla fue antes de conectar Evolution API, puedes pegarla justo debajo con «📋 Pegar / Añadir conversación».",
         ];
+    }
+
+    /**
+     * Consulta el endpoint /chat/findMessages/{instance} de Evolution API soportando paginación v1 y v2
+     * (y tanto si devuelve los mensajes en orden DESC como ASC).
+     */
+    protected static function fetchEvolutionMessages(
+        string $baseUrl,
+        string $apiKey,
+        string $instance,
+        array $where = [],
+        int $count = 200
+    ): array {
+        $records = [];
+
+        $payloadV2 = [
+            'offset' => $count,
+            'page' => 1,
+        ];
+        if (!empty($where)) {
+            $payloadV2['where'] = $where;
+        }
+
+        $res = Http::withHeaders([
+            'apikey' => $apiKey,
+            'Content-Type' => 'application/json',
+        ])->timeout(10)->post("{$baseUrl}/chat/findMessages/{$instance}", $payloadV2);
+
+        if ($res->successful()) {
+            $json = $res->json();
+            $pageRecords = self::extractRecordsFromResponse($json);
+            if (!empty($pageRecords)) {
+                $records = array_merge($records, $pageRecords);
+            }
+
+            // Si hay más de 1 página y la página 1 trajo los más antiguos (orden ASC), pedir también la última página para tener los más recientes
+            $totalPages = (int)($json['messages']['pages'] ?? ($json['pages'] ?? 1));
+            if ($totalPages > 1 && count($pageRecords) >= 2) {
+                $firstTs = (int)($pageRecords[0]['messageTimestamp'] ?? 0);
+                $lastTs = (int)($pageRecords[count($pageRecords) - 1]['messageTimestamp'] ?? 0);
+                if ($firstTs > 0 && $lastTs >= $firstTs) {
+                    $payloadLastPage = $payloadV2;
+                    $payloadLastPage['page'] = $totalPages;
+                    $resLast = Http::withHeaders([
+                        'apikey' => $apiKey,
+                        'Content-Type' => 'application/json',
+                    ])->timeout(10)->post("{$baseUrl}/chat/findMessages/{$instance}", $payloadLastPage);
+                    if ($resLast->successful()) {
+                        $lastPageRecords = self::extractRecordsFromResponse($resLast->json());
+                        if (!empty($lastPageRecords)) {
+                            $records = array_merge($records, $lastPageRecords);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Fallback si no devolvió nada con offset/page o si es Evolution API v1 (Mongoose)
+        if (empty($records)) {
+            $fallbackPayloads = [
+                !empty($where) ? ['where' => $where, 'limit' => $count] : ['limit' => $count],
+            ];
+            if (isset($where['key']['remoteJid'])) {
+                $fallbackPayloads[] = [
+                    'where' => ['key.remoteJid' => $where['key']['remoteJid']],
+                    'limit' => $count,
+                ];
+            }
+            foreach ($fallbackPayloads as $fbPayload) {
+                $resFb = Http::withHeaders([
+                    'apikey' => $apiKey,
+                    'Content-Type' => 'application/json',
+                ])->timeout(10)->post("{$baseUrl}/chat/findMessages/{$instance}", $fbPayload);
+                if ($resFb->successful()) {
+                    $fbRecords = self::extractRecordsFromResponse($resFb->json());
+                    if (!empty($fbRecords)) {
+                        $records = array_merge($records, $fbRecords);
+                        break;
+                    }
+                }
+            }
+        }
+
+        return $records;
+    }
+
+    /**
+     * Resuelve a qué Evento y teléfono corresponde un identificador @lid de WhatsApp cuando llega por Webhook en tiempo real.
+     */
+    public static function resolveEventAndPhoneFromLid(string $lidJid, ?string $instanceName = null, ?string $pushName = null): array
+    {
+        // 1. Buscar primero en whatsapp_messages locales si ya habíamos guardado algún mensaje con ese @lid en su payload
+        try {
+            $existingMsg = WhatsAppMessage::whereNotNull('event_id')
+                ->where('payload', 'LIKE', '%' . $lidJid . '%')
+                ->orderBy('id', 'desc')
+                ->first();
+
+            if ($existingMsg && $existingMsg->event) {
+                return [
+                    'event' => $existingMsg->event,
+                    'phone' => $existingMsg->phone,
+                ];
+            }
+        } catch (\Throwable $e) {}
+
+        // 2. Consultar en Evolution API los mensajes recientes de ese @lid para ver si alguno contiene remoteJidAlt, un external_id nuestro o el saludo al nombre del cliente
+        if (self::isEnabled()) {
+            try {
+                $baseUrl = self::getBaseUrl();
+                $apiKey = self::getApiKey();
+                $inst = $instanceName ?: self::getInstanceName('miguel');
+
+                $lidMessages = self::fetchEvolutionMessages($baseUrl, $apiKey, $inst, [
+                    'key' => ['remoteJid' => $lidJid],
+                ], 50);
+
+                foreach ($lidMessages as $m) {
+                    if (!is_array($m)) continue;
+                    $k = $m['key'] ?? [];
+
+                    // 2a. ¿Tiene remoteJidAlt o senderPn con número de teléfono?
+                    foreach ([$k['remoteJidAlt'] ?? null, $m['remoteJidAlt'] ?? null, $k['senderPn'] ?? null, $m['senderPn'] ?? null] as $alt) {
+                        if (!empty($alt) && is_string($alt) && str_contains($alt, '@s.whatsapp.net')) {
+                            $candidatePhone = WhatsAppTemplateService::cleanPhone(explode('@', $alt)[0]);
+                            if (strlen($candidatePhone) >= 7) {
+                                return [
+                                    'event' => null,
+                                    'phone' => $candidatePhone,
+                                ];
+                            }
+                        }
+                    }
+
+                    // 2b. ¿Coincide el key.id con algún external_id que hayamos enviado desde un evento?
+                    $mId = $k['id'] ?? ($m['id'] ?? null);
+                    if (!empty($mId)) {
+                        $matchedOutbound = WhatsAppMessage::where('external_id', $mId)
+                            ->whereNotNull('event_id')
+                            ->first();
+                        if ($matchedOutbound && $matchedOutbound->event) {
+                            return [
+                                'event' => $matchedOutbound->event,
+                                'phone' => $matchedOutbound->phone,
+                            ];
+                        }
+                    }
+
+                    // 2c. ¿Es un mensaje saliente nuestro que coincide con un mensaje guardado en whatsapp_messages?
+                    $mFromMe = (bool)($k['fromMe'] ?? ($m['fromMe'] ?? false));
+                    if ($mFromMe) {
+                        $mText = self::extractTextFromEvolutionMessage($m);
+                        if (!empty($mText) && mb_strlen($mText) >= 20) {
+                            $matchedByText = WhatsAppMessage::where('direction', 'outbound')
+                                ->whereNotNull('event_id')
+                                ->where('message', $mText)
+                                ->orderBy('id', 'desc')
+                                ->first();
+                            if ($matchedByText && $matchedByText->event) {
+                                return [
+                                    'event' => $matchedByText->event,
+                                    'phone' => $matchedByText->phone,
+                                ];
+                            }
+                        }
+                    }
+                }
+            } catch (\Throwable $e) {}
+        }
+
+        // 3. Si viene pushName (ej. "* Alvaro y ana"), comprobar si coincide con el nombre de algún cliente activo
+        if (!empty($pushName)) {
+            $cleanPush = trim((string)preg_replace('/\s+/', ' ', (string)preg_replace('/[^\p{L}\p{N}\s]/u', ' ', mb_strtolower($pushName))));
+            if (mb_strlen($cleanPush) >= 5 && !in_array($cleanPush, ['cliente', 'novios', 'pareja'])) {
+                try {
+                    $activeEvents = Event::with('client')
+                        ->where('status', '!=', 'cancelled')
+                        ->orderBy('event_date', 'desc')
+                        ->limit(100)
+                        ->get();
+
+                    foreach ($activeEvents as $ev) {
+                        $cName = $ev->client ? $ev->client->name : ($ev->partner_name ?: '');
+                        $cleanCName = trim((string)preg_replace('/\s+/', ' ', (string)preg_replace('/[^\p{L}\p{N}\s]/u', ' ', mb_strtolower((string)$cName))));
+                        if (!empty($cleanCName) && $cleanCName === $cleanPush) {
+                            $evPhone = $ev->client ? ($ev->client->phone ?: $ev->partner_phone) : $ev->partner_phone;
+                            return [
+                                'event' => $ev,
+                                'phone' => WhatsAppTemplateService::cleanPhone((string)$evPhone),
+                            ];
+                        }
+                    }
+                } catch (\Throwable $e) {}
+            }
+        }
+
+        return ['event' => null, 'phone' => null];
     }
 
     /**

@@ -2118,6 +2118,8 @@ class EventShow extends Component
         // Si ha introducido un Email (contiene @), sincronizar historial de correo IMAP y notas de lead
         if (str_contains($query, '@')) {
             $emailResult = (new \App\Services\ImapLeadFetcherService())->syncEmailHistoryForEvent($this->event, $query);
+            $this->event->refresh();
+            $this->event_notes = $this->event->notes;
             $this->event->load('whatsappMessages.user');
             if (!empty($emailResult['success'])) {
                 session()->flash('whatsapp_success', $emailResult['message']);
@@ -2136,12 +2138,55 @@ class EventShow extends Component
             true
         );
 
+        $this->event->refresh();
+        $this->event_notes = $this->event->notes;
         $this->event->load('whatsappMessages.user');
 
         if (!empty($result['success'])) {
             session()->flash('whatsapp_success', $result['message']);
         } else {
             session()->flash('whatsapp_error', $result['message']);
+        }
+    }
+
+    /**
+     * Sincroniza silenciosamente en segundo plano al abrir la ficha del evento
+     * para traer cualquier mensaje entrante reciente (incluyendo chats @lid de campañas Meta/Instagram).
+     */
+    public function autoSyncWhatsAppOnLoad()
+    {
+        try {
+            if (!\App\Services\EvolutionWhatsAppService::isEnabled()) {
+                return;
+            }
+
+            $cacheKey = 'wa_autosync_event_' . $this->event->id;
+            if (\Illuminate\Support\Facades\Cache::has($cacheKey)) {
+                return;
+            }
+            \Illuminate\Support\Facades\Cache::put($cacheKey, true, now()->addSeconds(45));
+
+            $phone = trim((string)($this->event->client ? ($this->event->client->phone ?? '') : ($this->event->partner_phone ?? '')));
+            if (empty($phone)) {
+                return;
+            }
+
+            $senderBrand = $this->whatsapp_sender_brand ?: $this->event->brand_clean;
+            $result = \App\Services\EvolutionWhatsAppService::syncConversationHistory(
+                $this->event,
+                $phone,
+                $senderBrand,
+                auth()->id(),
+                true
+            );
+
+            if (!empty($result['imported']) && $result['imported'] > 0) {
+                $this->event->refresh();
+                $this->event_notes = $this->event->notes;
+                $this->event->load('whatsappMessages.user');
+            }
+        } catch (\Throwable $e) {
+            // Fallo silencioso en auto-sync
         }
     }
 
