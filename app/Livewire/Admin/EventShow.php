@@ -89,6 +89,11 @@ class EventShow extends Component
     public $event_notes;
     public $whatsapp_chat_input = '';
     public $whatsapp_sender_brand = null; // 'miguel', 'fran', 'ezequiel', 'mago_leugim'
+    public $whatsapp_sync_phone = '';
+    public $showWhatsAppImportBox = false;
+    public $whatsapp_import_text = '';
+    public $whatsapp_import_direction = 'inbound';
+    public $whatsapp_import_date = '';
     public $selected_pack_type = 'custom'; // basic, medium, premium, wedding_dj, wedding_full, custom
     public $photobooth_provider = 'logrono'; // 'logrono' | 'vitoria'
 
@@ -281,6 +286,8 @@ class EventShow extends Component
         $this->venue_notes = $this->event->venue_notes;
         $this->is_dossier_completed = $this->event->is_dossier_completed;
         $this->event_notes = $this->event->notes;
+        $this->whatsapp_sync_phone = $this->event->client ? ($this->event->client->phone ?? '') : ($this->event->partner_phone ?? '');
+        $this->whatsapp_import_date = now()->format('Y-m-d\TH:i');
 
         // Horarios
         $this->setup_date = $this->event->setup_date ? \Carbon\Carbon::parse($this->event->setup_date)->format('Y-m-d') : null;
@@ -1847,6 +1854,78 @@ class EventShow extends Component
             $this->dispatch('open-whatsapp-link', ['url' => $result['url']]);
             session()->flash('whatsapp_success', '💬 Abriendo WhatsApp con el mensaje preparado...');
         }
+    }
+
+    public function syncWhatsAppHistoryByPhone()
+    {
+        $phoneToSearch = trim((string)$this->whatsapp_sync_phone);
+        if (empty($phoneToSearch)) {
+            $phoneToSearch = $this->event->client ? ($this->event->client->phone ?? '') : ($this->event->partner_phone ?? '');
+            $this->whatsapp_sync_phone = $phoneToSearch;
+        }
+
+        if (empty($phoneToSearch)) {
+            session()->flash('whatsapp_error', 'Introduce un número de teléfono para buscar la conversación.');
+            return;
+        }
+
+        $senderBrand = $this->whatsapp_sender_brand ?: $this->event->brand_clean;
+        $result = \App\Services\EvolutionWhatsAppService::syncConversationHistory(
+            $this->event,
+            $phoneToSearch,
+            $senderBrand,
+            auth()->id(),
+            true
+        );
+
+        $this->event->load('whatsappMessages.user');
+
+        if (!empty($result['success'])) {
+            session()->flash('whatsapp_success', $result['message']);
+        } else {
+            session()->flash('whatsapp_error', $result['message']);
+        }
+    }
+
+    public function importWhatsAppConversationText()
+    {
+        if (empty(trim((string)$this->whatsapp_import_text))) {
+            session()->flash('whatsapp_error', 'Pega o escribe el texto de la conversación que quieres añadir al historial.');
+            return;
+        }
+
+        $phoneToUse = trim((string)$this->whatsapp_sync_phone) ?: ($this->event->client ? ($this->event->client->phone ?? '') : ($this->event->partner_phone ?? ''));
+        $senderBrand = $this->whatsapp_sender_brand ?: $this->event->brand_clean;
+
+        $count = \App\Services\EvolutionWhatsAppService::importPastedConversation(
+            $this->event,
+            (string)$this->whatsapp_import_text,
+            $this->whatsapp_import_direction ?: 'inbound',
+            $this->whatsapp_import_date ?: null,
+            $phoneToUse,
+            $senderBrand,
+            auth()->id()
+        );
+
+        $this->whatsapp_import_text = '';
+        $this->showWhatsAppImportBox = false;
+        $this->event->load('whatsappMessages.user');
+
+        if ($count > 0) {
+            session()->flash('whatsapp_success', "✅ Se han añadido {$count} mensaje(s) a la Conversación Registrada.");
+        } else {
+            session()->flash('whatsapp_error', 'No se añadieron mensajes nuevos (puede que ya estuvieran registrados).');
+        }
+    }
+
+    public function deleteWhatsAppMessage(int $messageId)
+    {
+        try {
+            \App\Models\WhatsAppMessage::where('event_id', $this->event->id)
+                ->where('id', $messageId)
+                ->delete();
+            $this->event->load('whatsappMessages.user');
+        } catch (\Throwable $e) {}
     }
 
     public function sendDirectTemplate(string $templateKey, ?string $recipientType = 'client')

@@ -1670,43 +1670,134 @@
                         </div>
 
                         <!-- Historial de Chat WhatsApp -->
-                        <div class="bg-slate-100 dark:bg-slate-950 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 space-y-2">
-                            <div class="flex items-center justify-between">
+                        <div class="bg-slate-100 dark:bg-slate-950 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 space-y-2.5">
+                            <div class="flex flex-wrap items-center justify-between gap-2">
                                 <span class="text-[11px] font-black text-slate-700 dark:text-slate-200 uppercase tracking-wider flex items-center gap-1">
                                     <span>🗨️</span> Conversación Registrada
                                 </span>
-                                @if($this->whatsappMessages && $this->whatsappMessages->count() > 0)
-                                    <span class="text-[10px] font-bold text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-900 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-800">
-                                        {{ $this->whatsappMessages->count() }} mensaje(s)
-                                    </span>
-                                @endif
+                                <div class="flex flex-wrap items-center gap-1.5">
+                                    <button type="button"
+                                            wire:click="$toggle('showWhatsAppImportBox')"
+                                            class="text-[10px] font-bold px-2.5 py-1 rounded-lg border transition cursor-pointer flex items-center gap-1 {{ $showWhatsAppImportBox ? 'bg-indigo-600 text-white border-indigo-500 shadow-xs' : 'bg-white dark:bg-slate-900 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800 hover:bg-indigo-50 dark:hover:bg-slate-800' }}">
+                                        <span>📋</span>
+                                        <span>{{ $showWhatsAppImportBox ? 'Cerrar importador' : 'Pegar / Añadir conversación' }}</span>
+                                    </button>
+                                    @if($this->whatsappMessages && $this->whatsappMessages->count() > 0)
+                                        <span class="text-[10px] font-bold text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-900 px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-800">
+                                            {{ $this->whatsappMessages->count() }} mensaje(s)
+                                        </span>
+                                    @endif
+                                </div>
                             </div>
 
-                            <div class="max-h-56 overflow-y-auto space-y-2.5 p-2 bg-slate-50 dark:bg-slate-900/70 rounded-lg border border-slate-200 dark:border-slate-800 text-xs">
+                            <!-- Buscador de conversación previa por número de teléfono (Evolution API + Base de Datos) -->
+                            <div class="p-2 bg-white dark:bg-slate-900/90 rounded-lg border border-slate-200 dark:border-slate-800 flex flex-wrap items-center gap-1.5">
+                                <span class="text-[10px] font-bold text-slate-600 dark:text-slate-400 flex items-center gap-1 shrink-0">
+                                    <span>🔍</span> Buscar por Nº:
+                                </span>
+                                <input type="text"
+                                       wire:model="whatsapp_sync_phone"
+                                       placeholder="Ej: 688868344 o +34688868344"
+                                       class="flex-1 min-w-[140px] text-xs px-2.5 py-1 rounded-md border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white focus:ring-emerald-500 focus:border-emerald-500 font-semibold" />
+                                <button type="button"
+                                        wire:click="syncWhatsAppHistoryByPhone"
+                                        wire:loading.attr="disabled"
+                                        class="px-2.5 py-1 rounded-md text-[10px] font-extrabold bg-emerald-600 hover:bg-emerald-700 text-white border border-emerald-500 transition shadow-2xs cursor-pointer flex items-center gap-1 shrink-0">
+                                    <span wire:loading.remove wire:target="syncWhatsAppHistoryByPhone">🔄 Buscar y Añadir al Evento</span>
+                                    <span wire:loading wire:target="syncWhatsAppHistoryByPhone">⏳ Buscando en WhatsApp...</span>
+                                </button>
+                            </div>
+
+                            <!-- Panel desplegable para Pegar / Añadir conversación anterior manualmente -->
+                            @if($showWhatsAppImportBox)
+                                <div class="p-3 bg-indigo-50/70 dark:bg-indigo-950/30 rounded-xl border border-indigo-200 dark:border-indigo-800/80 space-y-2">
+                                    <div class="flex items-start justify-between gap-2">
+                                        <div>
+                                            <span class="text-[11px] font-extrabold text-indigo-900 dark:text-indigo-200 block">
+                                                📥 Importar conversación anterior de WhatsApp
+                                            </span>
+                                            <p class="text-[10px] text-indigo-700 dark:text-indigo-300/90 leading-snug">
+                                                Puedes <strong>copiar y pegar directamente varios mensajes desde WhatsApp</strong> (con formato <code>[fecha, hora] Nombre: texto</code> y separará automáticamente los del cliente y los vuestros), o bien escribir un mensaje suelto eligiendo quién lo envió:
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex flex-wrap items-center gap-2 pt-0.5">
+                                        <span class="text-[10px] font-bold text-slate-700 dark:text-slate-300">Si es un mensaje suelto:</span>
+                                        <button type="button"
+                                                wire:click="$set('whatsapp_import_direction', 'inbound')"
+                                                class="px-2 py-0.5 rounded-md text-[10px] font-bold border transition cursor-pointer {{ $whatsapp_import_direction === 'inbound' ? 'bg-indigo-600 text-white border-indigo-500' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-300 dark:border-slate-700' }}">
+                                            ⬅️ Recibido del Cliente
+                                        </button>
+                                        <button type="button"
+                                                wire:click="$set('whatsapp_import_direction', 'outbound')"
+                                                class="px-2 py-0.5 rounded-md text-[10px] font-bold border transition cursor-pointer {{ $whatsapp_import_direction === 'outbound' ? 'bg-emerald-600 text-white border-emerald-500' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-300 dark:border-slate-700' }}">
+                                            ➡️ Enviado por Nosotros
+                                        </button>
+                                        <input type="datetime-local"
+                                               wire:model="whatsapp_import_date"
+                                               class="text-[10px] px-2 py-0.5 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200" />
+                                    </div>
+
+                                    <textarea wire:model="whatsapp_import_text"
+                                              rows="3"
+                                              class="w-full text-xs border border-indigo-300 dark:border-indigo-800 rounded-lg p-2 bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-400"
+                                              placeholder="Pega aquí la conversación copiada de WhatsApp o el mensaje anterior..."></textarea>
+
+                                    <div class="flex justify-end gap-2">
+                                        <button type="button"
+                                                wire:click="$set('showWhatsAppImportBox', false)"
+                                                class="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-300 dark:border-slate-700 cursor-pointer">
+                                            Cancelar
+                                        </button>
+                                        <button type="button"
+                                                wire:click="importWhatsAppConversationText"
+                                                class="px-3 py-1 rounded-lg text-[10px] font-extrabold bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition cursor-pointer flex items-center gap-1">
+                                            <span>➕</span> Añadir a la Conversación
+                                        </button>
+                                    </div>
+                                </div>
+                            @endif
+
+                            <div class="max-h-64 overflow-y-auto space-y-2.5 p-2 bg-slate-50 dark:bg-slate-900/70 rounded-lg border border-slate-200 dark:border-slate-800 text-xs">
                                 @forelse($this->whatsappMessages as $msg)
                                     @if($msg->direction === 'outbound')
                                         <!-- Mensaje Saliente (Staff / DJ) -->
-                                        <div class="flex flex-col items-end">
-                                            <div class="max-w-[85%] bg-emerald-100 dark:bg-emerald-950/80 text-emerald-950 dark:text-emerald-100 p-2.5 rounded-2xl rounded-tr-xs border border-emerald-200 dark:border-emerald-800 shadow-2xs space-y-1">
+                                        <div class="flex flex-col items-end group">
+                                            <div class="max-w-[85%] bg-emerald-100 dark:bg-emerald-950/80 text-emerald-950 dark:text-emerald-100 p-2.5 rounded-2xl rounded-tr-xs border border-emerald-200 dark:border-emerald-800 shadow-2xs space-y-1 relative">
                                                 <p class="whitespace-pre-line leading-relaxed text-[11px]">{{ $msg->message }}</p>
                                                 <div class="flex items-center justify-end gap-1.5 text-[9px] text-emerald-800 dark:text-emerald-300 font-bold">
-                                                    <span>{{ $msg->user ? $msg->user->name : 'Staff' }}</span>
+                                                    <span>{{ $msg->user ? $msg->user->name : ($msg->sender_name ?: 'Staff') }}</span>
                                                     <span>&bull;</span>
-                                                    <span>{{ $msg->created_at->format('d/m H:i') }}</span>
+                                                    <span>{{ $msg->created_at->format('d/m/Y H:i') }}</span>
                                                     <span class="text-emerald-600 dark:text-emerald-400 font-black">✓✓</span>
+                                                    <button type="button"
+                                                            wire:click="deleteWhatsAppMessage({{ $msg->id }})"
+                                                            wire:confirm="¿Seguro que quieres quitar este mensaje del historial del evento?"
+                                                            title="Quitar mensaje del historial"
+                                                            class="opacity-0 group-hover:opacity-100 text-rose-500 hover:text-rose-400 ml-1 transition cursor-pointer">
+                                                        &times;
+                                                    </button>
                                                 </div>
                                             </div>
                                         </div>
                                     @else
                                         <!-- Mensaje Entrante (Cliente) -->
-                                        <div class="flex flex-col items-start">
-                                            <div class="max-w-[85%] bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 p-2.5 rounded-2xl rounded-tl-xs border border-gray-200 dark:border-slate-700 shadow-2xs space-y-1">
-                                                <div class="text-[10px] font-black text-indigo-700 dark:text-indigo-400">
-                                                    {{ $msg->sender_name ?: ($event->client ? $event->client->name : 'Cliente') }}
+                                        <div class="flex flex-col items-start group">
+                                            <div class="max-w-[85%] bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 p-2.5 rounded-2xl rounded-tl-xs border border-gray-200 dark:border-slate-700 shadow-2xs space-y-1 relative">
+                                                <div class="flex items-center justify-between gap-2 text-[10px] font-black text-indigo-700 dark:text-indigo-400">
+                                                    <span>{{ $msg->sender_name ?: ($event->client ? $event->client->name : 'Cliente') }}</span>
+                                                    <button type="button"
+                                                            wire:click="deleteWhatsAppMessage({{ $msg->id }})"
+                                                            wire:confirm="¿Seguro que quieres quitar este mensaje del historial del evento?"
+                                                            title="Quitar mensaje del historial"
+                                                            class="opacity-0 group-hover:opacity-100 text-rose-500 hover:text-rose-400 transition cursor-pointer">
+                                                        &times;
+                                                    </button>
                                                 </div>
                                                 <p class="whitespace-pre-line leading-relaxed text-[11px]">{{ $msg->message }}</p>
                                                 <div class="text-right text-[9px] text-gray-400 dark:text-slate-400 font-medium">
-                                                    {{ $msg->created_at->format('d/m H:i') }}
+                                                    {{ $msg->created_at->format('d/m/Y H:i') }}
                                                 </div>
                                             </div>
                                         </div>
@@ -1715,7 +1806,7 @@
                                     <div class="py-6 text-center text-gray-400 dark:text-slate-500 space-y-1">
                                         <span class="text-2xl block">💬</span>
                                         <span class="text-xs font-semibold text-gray-600 dark:text-slate-300">Sin mensajes registrados aún</span>
-                                        <p class="text-[10px] text-gray-400 dark:text-slate-400 max-w-xs mx-auto">Selecciona una plantilla abajo para redactar y enviar un mensaje al WhatsApp del cliente.</p>
+                                        <p class="text-[10px] text-gray-400 dark:text-slate-400 max-w-xs mx-auto">Pulsa arriba en <strong>«🔄 Buscar y Añadir al Evento»</strong> para recuperar conversaciones previas por número o usa una plantilla abajo.</p>
                                     </div>
                                 @endforelse
                             </div>

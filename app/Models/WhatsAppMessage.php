@@ -23,6 +23,8 @@ class WhatsAppMessage extends Model
         'external_id',
         'brand',
         'payload',
+        'created_at',
+        'updated_at',
     ];
 
     protected $casts = [
