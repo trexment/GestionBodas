@@ -228,6 +228,10 @@ class Dashboard extends Component
     public $confirmingFollowupOptions = [];
     public $confirmingFollowupUrl = '';
     public $confirmingFollowupText = '';
+    public $confirmingFollowupEmail = '';
+    public $confirmingFollowupSubject = '';
+    public $confirmingFollowupMailtoUrl = '';
+    public $confirmingFollowupHasPhone = false;
 
     public function promptFollowup(int $eventId, ?string $templateKey = null)
     {
@@ -236,8 +240,10 @@ class Dashboard extends Component
 
         $this->confirmingFollowupEventId = $event->id;
         $this->confirmingFollowupEventName = $event->name;
-        $this->confirmingFollowupClientName = $event->client ? $event->client->name : 'Cliente';
+        $this->confirmingFollowupClientName = $event->client ? $event->client->name : ($event->partner_name ?: 'Cliente');
         $this->confirmingFollowupDays = $event->days_without_response;
+        $this->confirmingFollowupEmail = $event->client_contact_email ?: '';
+        $this->confirmingFollowupHasPhone = !empty($event->client_contact_phone);
 
         $this->confirmingFollowupOptions = \App\Services\WhatsAppTemplateService::getFollowupOptions($event);
         $key = $templateKey ?: \App\Services\WhatsAppTemplateService::getRecommendedFollowupKey($event);
@@ -248,8 +254,46 @@ class Dashboard extends Component
     {
         $this->confirmingFollowupSelectedKey = $key;
         if (isset($this->confirmingFollowupOptions[$key])) {
-            $this->confirmingFollowupUrl = $this->confirmingFollowupOptions[$key]['url'];
-            $this->confirmingFollowupText = $this->confirmingFollowupOptions[$key]['text'];
+            $this->confirmingFollowupUrl = $this->confirmingFollowupOptions[$key]['url'] ?? '';
+            $this->confirmingFollowupText = $this->confirmingFollowupOptions[$key]['text'] ?? '';
+            $this->confirmingFollowupSubject = $this->confirmingFollowupOptions[$key]['subject'] ?? ('Seguimiento · ' . $this->confirmingFollowupEventName);
+            $this->confirmingFollowupMailtoUrl = $this->confirmingFollowupOptions[$key]['mailto_url'] ?? '';
+        }
+    }
+
+    public function sendDirectFollowupEmail()
+    {
+        if (!$this->confirmingFollowupEventId) return;
+
+        $event = Event::with('client')->find($this->confirmingFollowupEventId);
+        if (!$event) return;
+
+        $toEmail = trim((string) ($this->confirmingFollowupEmail ?: $event->client_contact_email));
+        if (empty($toEmail) || !filter_var($toEmail, FILTER_VALIDATE_EMAIL)) {
+            session()->flash('error', 'Introduce un email válido del cliente para enviar el seguimiento por correo.');
+            return;
+        }
+
+        $templateName = $this->confirmingFollowupOptions[$this->confirmingFollowupSelectedKey]['title'] ?? 'Seguimiento Madrigal';
+        $subject = trim((string) $this->confirmingFollowupSubject) ?: \App\Services\WhatsAppTemplateService::getEmailSubjectForKey($event, $this->confirmingFollowupSelectedKey);
+
+        $res = \App\Services\WhatsAppTemplateService::sendAndLogClientEmail(
+            $event,
+            $toEmail,
+            $subject,
+            (string) $this->confirmingFollowupText,
+            $this->confirmingFollowupSelectedKey,
+            $templateName
+        );
+
+        $this->confirmingFollowupEventId = null;
+        $this->mount();
+
+        if ($res['success']) {
+            session()->flash('message', "📧 ¡Seguimiento enviado por Email a {$toEmail} para {$event->name}! Registrado en la conversación del evento y contador a 0.");
+        } else {
+            $this->dispatch('open-whatsapp-link', url: $res['mailto_url']);
+            session()->flash('message', "📧 Seguimiento registrado en el evento ({$templateName}) y abierto en tu gestor de correo para {$toEmail}.");
         }
     }
 
@@ -262,7 +306,7 @@ class Dashboard extends Component
             $templateName = $this->confirmingFollowupOptions[$this->confirmingFollowupSelectedKey]['title'] ?? 'Seguimiento Madrigal';
             $event->update([
                 'no_response_at' => now(),
-                'notes' => ($event->notes ? $event->notes . "\n" : "") . "[" . now()->format('d/m/Y H:i') . "] 💬 WhatsApp enviado por " . auth()->user()->name . " ({$templateName}). Contador reseteado a 0.",
+                'notes' => ($event->notes ? $event->notes . "\n" : "") . "[" . now()->format('d/m/Y H:i') . "] 💬 Seguimiento enviado por " . auth()->user()->name . " ({$templateName}). Contador reseteado a 0.",
             ]);
             session()->flash('message', "¡Seguimiento registrado para {$event->name}! ({$templateName}). Contador reseteado.");
         }

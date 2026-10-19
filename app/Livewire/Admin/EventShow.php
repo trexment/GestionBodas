@@ -85,7 +85,7 @@ class EventShow extends Component
     public $invoice_status = 'unpaid';
     public $invoice_notes = '';
 
-    // Notas de Evento / Acuerdos WhatsApp
+    // Notas de Evento / Acuerdos WhatsApp & Email
     public $event_notes;
     public $whatsapp_chat_input = '';
     public $whatsapp_sender_brand = null; // 'miguel', 'fran', 'ezequiel', 'mago_leugim'
@@ -93,7 +93,10 @@ class EventShow extends Component
     public $showWhatsAppImportBox = false;
     public $whatsapp_import_text = '';
     public $whatsapp_import_direction = 'inbound';
+    public $whatsapp_import_channel = 'whatsapp'; // 'whatsapp' | 'email'
     public $whatsapp_import_date = '';
+    public $email_chat_to = '';
+    public $email_chat_subject = '';
     public $selected_pack_type = 'custom'; // basic, medium, premium, wedding_dj, wedding_full, custom
     public $photobooth_provider = 'logrono'; // 'logrono' | 'vitoria'
 
@@ -297,7 +300,23 @@ class EventShow extends Component
         $this->is_dossier_completed = $this->event->is_dossier_completed;
         $this->event_notes = $this->event->notes;
         $this->whatsapp_sync_phone = $this->event->client ? ($this->event->client->phone ?? '') : ($this->event->partner_phone ?? '');
+        $this->email_chat_to = $this->event->client_contact_email ?? '';
+        $this->email_chat_subject = \App\Services\WhatsAppTemplateService::getEmailSubjectForKey($this->event, 'default');
+        if (empty($this->whatsapp_sync_phone) && !empty($this->email_chat_to)) {
+            $this->whatsapp_sync_phone = $this->email_chat_to;
+            $this->whatsapp_import_channel = 'email';
+        }
         $this->whatsapp_import_date = now()->format('Y-m-d\TH:i');
+
+        // Si el evento entró por Email y aún no tiene su correo inicial en Conversación Registrada, registrarlo automáticamente
+        if (!empty($this->event->notes) && str_contains((string)$this->event->notes, 'LEAD IMPORTADO VÍA EMAIL')) {
+            try {
+                if ($this->event->whatsappMessages->isEmpty()) {
+                    (new \App\Services\ImapLeadFetcherService())->syncEmailHistoryForEvent($this->event, $this->email_chat_to);
+                    $this->event->load('whatsappMessages.user');
+                }
+            } catch (\Throwable $e) {}
+        }
 
         // Horarios
         $this->setup_date = $this->event->setup_date ? \Carbon\Carbon::parse($this->event->setup_date)->format('Y-m-d') : null;
@@ -506,9 +525,13 @@ class EventShow extends Component
     public $confirmingFollowupOptions = [];
     public $confirmingFollowupUrl = '';
     public $confirmingFollowupText = '';
+    public $confirmingFollowupEmail = '';
+    public $confirmingFollowupSubject = '';
+    public $confirmingFollowupMailtoUrl = '';
 
     public function promptFollowupFromShow(?string $templateKey = null)
     {
+        $this->confirmingFollowupEmail = $this->event->client_contact_email ?: $this->email_chat_to;
         $this->confirmingFollowupOptions = \App\Services\WhatsAppTemplateService::getFollowupOptions($this->event);
         $key = $templateKey ?: \App\Services\WhatsAppTemplateService::getRecommendedFollowupKey($this->event);
         $this->selectFollowupTemplateFromShow($key);
@@ -519,9 +542,34 @@ class EventShow extends Component
     {
         $this->confirmingFollowupSelectedKey = $key;
         if (isset($this->confirmingFollowupOptions[$key])) {
-            $this->confirmingFollowupUrl = $this->confirmingFollowupOptions[$key]['url'];
-            $this->confirmingFollowupText = $this->confirmingFollowupOptions[$key]['text'];
+            $opt = $this->confirmingFollowupOptions[$key];
+            $this->confirmingFollowupUrl = $opt['url'] ?? '';
+            $this->confirmingFollowupText = $opt['text'] ?? '';
+            $this->confirmingFollowupSubject = $opt['subject'] ?? \App\Services\WhatsAppTemplateService::getEmailSubjectForKey($this->event, $key);
+            $this->confirmingFollowupMailtoUrl = \App\Services\WhatsAppTemplateService::buildMailtoUrl(
+                $this->confirmingFollowupEmail,
+                $this->confirmingFollowupSubject,
+                $this->confirmingFollowupText
+            );
         }
+    }
+
+    public function updatedConfirmingFollowupEmail($value)
+    {
+        $this->confirmingFollowupMailtoUrl = \App\Services\WhatsAppTemplateService::buildMailtoUrl(
+            $value,
+            $this->confirmingFollowupSubject,
+            $this->confirmingFollowupText
+        );
+    }
+
+    public function updatedConfirmingFollowupSubject($value)
+    {
+        $this->confirmingFollowupMailtoUrl = \App\Services\WhatsAppTemplateService::buildMailtoUrl(
+            $this->confirmingFollowupEmail,
+            $value,
+            $this->confirmingFollowupText
+        );
     }
 
     public function confirmFollowupSentFromShow()
@@ -529,9 +577,10 @@ class EventShow extends Component
         $templateName = $this->confirmingFollowupOptions[$this->confirmingFollowupSelectedKey]['title'] ?? 'Seguimiento Madrigal';
         $this->event->update([
             'no_response_at' => now(),
-            'notes' => ($this->event->notes ? $this->event->notes . "\n" : "") . "[" . now()->format('d/m/Y H:i') . "] 💬 WhatsApp enviado por " . auth()->user()->name . " ({$templateName}). Contador reseteado a 0.",
+            'notes' => ($this->event->notes ? $this->event->notes . "\n" : "") . "[" . now()->format('d/m/Y H:i') . "] ✅ Seguimiento enviado por " . auth()->user()->name . " ({$templateName}). Contador reseteado a 0.",
         ]);
         $this->event->refresh();
+        $this->event_notes = $this->event->notes;
         $this->showConfirmFollowupModal = false;
         session()->flash('message', "¡Seguimiento registrado! ({$templateName}). El contador se ha reseteado a 0.");
     }
@@ -566,7 +615,8 @@ class EventShow extends Component
             'notes' => ($this->event->notes ? $this->event->notes . "\n" : "") . "[" . now()->format('d/m/Y H:i') . "] 💬 WhatsApp ({$templateName}) enviado desde {$senderLabel} por " . auth()->user()->name . ". Contador reseteado a 0.",
         ]);
         $this->event->refresh();
-        $this->event->load('whatsappMessages');
+        $this->event_notes = $this->event->notes;
+        $this->event->load('whatsappMessages.user');
         $this->showConfirmFollowupModal = false;
 
         if ($result['mode'] === 'api' && $result['success']) {
@@ -575,6 +625,54 @@ class EventShow extends Component
             $this->dispatch('open-whatsapp-link', ['url' => $result['url']]);
             session()->flash('message', "💬 Abriendo WhatsApp con el mensaje de seguimiento ({$templateName})...");
         }
+    }
+
+    public function sendDirectEmailFromShow()
+    {
+        $toEmail = strtolower(trim((string)($this->confirmingFollowupEmail ?: $this->event->client_contact_email)));
+        if (empty($toEmail) || !filter_var($toEmail, FILTER_VALIDATE_EMAIL)) {
+            session()->flash('error', 'Introduce un email válido del cliente para enviar el seguimiento.');
+            return;
+        }
+
+        $text = $this->confirmingFollowupText;
+        $templateName = $this->confirmingFollowupOptions[$this->confirmingFollowupSelectedKey]['title'] ?? 'Seguimiento Madrigal';
+        $subject = trim((string)$this->confirmingFollowupSubject) ?: \App\Services\WhatsAppTemplateService::getEmailSubjectForKey($this->event, $this->confirmingFollowupSelectedKey);
+
+        if (empty($text)) {
+            return;
+        }
+
+        // Si el cliente no tenía email guardado o tenía uno ficticio, guardar este email en su ficha
+        if ($this->event->client && (empty($this->event->client->email) || str_ends_with($this->event->client->email, '@eventosmusicales.local'))) {
+            try {
+                $this->event->client->update(['email' => $toEmail]);
+            } catch (\Throwable $e) {}
+        }
+
+        $senderBrand = $this->whatsapp_sender_brand ?: $this->event->brand_clean;
+        $result = \App\Services\WhatsAppTemplateService::sendAndLogClientEmail(
+            $this->event,
+            $toEmail,
+            $subject,
+            $text,
+            $senderBrand,
+            auth()->id(),
+            $templateName
+        );
+
+        $this->event->refresh();
+        $this->event_notes = $this->event->notes;
+        $this->email_chat_to = $toEmail;
+        $this->event->load('whatsappMessages.user');
+        $this->showConfirmFollowupModal = false;
+
+        if ($result['mode'] === 'mailto_fallback' && !empty($result['mailto_url'])) {
+            $this->dispatch('open-whatsapp-link', ['url' => $result['mailto_url']]);
+        }
+
+        session()->flash('message', $result['message']);
+        session()->flash('whatsapp_success', $result['message']);
     }
 
     public function markAsRespondedFromShow(string $newStatus = 'draft')
@@ -1804,20 +1902,32 @@ class EventShow extends Component
         $options = \App\Services\WhatsAppTemplateService::getFollowupOptions($this->event);
         if (isset($options[$resolvedKey])) {
             $this->whatsapp_chat_message = $options[$resolvedKey]['text'];
+            $this->email_chat_subject = $options[$resolvedKey]['subject'] ?? \App\Services\WhatsAppTemplateService::getEmailSubjectForKey($this->event, $resolvedKey);
         } elseif ($resolvedKey === 'primer_contacto_presupuesto') {
             $this->whatsapp_chat_message = \App\Services\WhatsAppTemplateService::primeraTomaContacto($this->event, 'presupuesto_online');
+            $this->email_chat_subject = \App\Services\WhatsAppTemplateService::getEmailSubjectForKey($this->event, 'primer_contacto_presupuesto');
         } elseif ($resolvedKey === 'primer_contacto_madrigal') {
             $this->whatsapp_chat_message = \App\Services\WhatsAppTemplateService::primeraTomaContacto($this->event, 'filtro_finca');
+            $this->email_chat_subject = \App\Services\WhatsAppTemplateService::getEmailSubjectForKey($this->event, 'primer_contacto_madrigal');
         } elseif ($resolvedKey === 'cuestionario') {
             $this->whatsapp_chat_message = \App\Services\WhatsAppTemplateService::cuestionario($this->event);
+            $this->email_chat_subject = \App\Services\WhatsAppTemplateService::getEmailSubjectForKey($this->event, 'cuestionario');
         } elseif ($resolvedKey === 'contrato') {
             $this->whatsapp_chat_message = \App\Services\WhatsAppTemplateService::contrato($this->event);
+            $this->email_chat_subject = \App\Services\WhatsAppTemplateService::getEmailSubjectForKey($this->event, 'contrato');
         } elseif ($resolvedKey === 'llamada') {
             $this->whatsapp_chat_message = \App\Services\WhatsAppTemplateService::propuestaLlamada($this->event);
+            $this->email_chat_subject = \App\Services\WhatsAppTemplateService::getEmailSubjectForKey($this->event, 'llamada');
         } elseif ($resolvedKey === 'dossier') {
             $this->whatsapp_chat_message = \App\Services\WhatsAppTemplateService::envioDossierPresupuesto($this->event);
+            $this->email_chat_subject = \App\Services\WhatsAppTemplateService::getEmailSubjectForKey($this->event, 'dossier');
         } elseif ($resolvedKey === 'fotomaton_360') {
             $this->whatsapp_chat_message = \App\Services\WhatsAppTemplateService::infoFotomatonY360($this->event);
+            $this->email_chat_subject = \App\Services\WhatsAppTemplateService::getEmailSubjectForKey($this->event, 'fotomaton_360');
+        }
+
+        if (empty($this->email_chat_to)) {
+            $this->email_chat_to = $this->event->client_contact_email ?? '';
         }
     }
 
@@ -1839,7 +1949,7 @@ class EventShow extends Component
 
         $phone = $this->event->client ? $this->event->client->phone : $this->event->partner_phone;
         if (empty($phone)) {
-            session()->flash('whatsapp_error', 'El cliente no tiene teléfono registrado.');
+            session()->flash('whatsapp_error', 'El cliente no tiene teléfono registrado. Puedes enviárselo justo al lado con el botón «📧 Enviar por Email».');
             return;
         }
 
@@ -1853,9 +1963,11 @@ class EventShow extends Component
             auth()->id()
         );
 
-        $sentMsg = $this->whatsapp_chat_message;
+        $this->event->update([
+            'no_response_at' => now(),
+        ]);
         $this->whatsapp_chat_message = '';
-        $this->event->load('whatsappMessages');
+        $this->event->load('whatsappMessages.user');
 
         if ($result['mode'] === 'api' && $result['success']) {
             session()->flash('whatsapp_success', "✅ Mensaje enviado directamente desde el WhatsApp de {$senderLabel}.");
@@ -1866,23 +1978,87 @@ class EventShow extends Component
         }
     }
 
-    public function syncWhatsAppHistoryByPhone()
+    public function sendDirectEmailMessage()
     {
-        $phoneToSearch = trim((string)$this->whatsapp_sync_phone);
-        if (empty($phoneToSearch)) {
-            $phoneToSearch = $this->event->client ? ($this->event->client->phone ?? '') : ($this->event->partner_phone ?? '');
-            $this->whatsapp_sync_phone = $phoneToSearch;
+        if (empty(trim((string)$this->whatsapp_chat_message))) {
+            session()->flash('whatsapp_error', 'Escribe un mensaje o selecciona una plantilla arriba antes de enviar por Email.');
+            return;
         }
 
-        if (empty($phoneToSearch)) {
-            session()->flash('whatsapp_error', 'Introduce un número de teléfono para buscar la conversación.');
+        $toEmail = strtolower(trim((string)($this->email_chat_to ?: $this->event->client_contact_email)));
+        if (empty($toEmail) || !filter_var($toEmail, FILTER_VALIDATE_EMAIL)) {
+            session()->flash('whatsapp_error', 'Introduce el email del cliente en el campo «Para:» antes de enviar.');
+            return;
+        }
+
+        // Si el cliente no tenía email real guardado, actualizar su ficha automáticamente
+        if ($this->event->client && (empty($this->event->client->email) || str_ends_with($this->event->client->email, '@eventosmusicales.local'))) {
+            try {
+                $this->event->client->update(['email' => $toEmail]);
+            } catch (\Throwable $e) {}
+        }
+
+        $subject = trim((string)$this->email_chat_subject) ?: \App\Services\WhatsAppTemplateService::getEmailSubjectForKey($this->event, 'default');
+        $senderBrand = $this->whatsapp_sender_brand ?: $this->event->brand_clean;
+
+        $result = \App\Services\WhatsAppTemplateService::sendAndLogClientEmail(
+            $this->event,
+            $toEmail,
+            $subject,
+            (string)$this->whatsapp_chat_message,
+            $senderBrand,
+            auth()->id()
+        );
+
+        $this->whatsapp_chat_message = '';
+        $this->email_chat_to = $toEmail;
+        $this->event->refresh();
+        $this->event_notes = $this->event->notes;
+        $this->event->load('whatsappMessages.user');
+
+        if ($result['mode'] === 'mailto_fallback' && !empty($result['mailto_url'])) {
+            $this->dispatch('open-whatsapp-link', ['url' => $result['mailto_url']]);
+        }
+
+        if (!empty($result['success'])) {
+            session()->flash('whatsapp_success', $result['message']);
+        } else {
+            session()->flash('whatsapp_error', $result['message']);
+        }
+    }
+
+    public function syncWhatsAppHistoryByPhone()
+    {
+        $query = trim((string)$this->whatsapp_sync_phone);
+        if (empty($query)) {
+            $query = $this->event->client ? ($this->event->client->phone ?? '') : ($this->event->partner_phone ?? '');
+            if (empty($query)) {
+                $query = $this->event->client_contact_email ?? '';
+            }
+            $this->whatsapp_sync_phone = $query;
+        }
+
+        if (empty($query)) {
+            session()->flash('whatsapp_error', 'Introduce un número de teléfono o dirección de email para buscar la conversación.');
+            return;
+        }
+
+        // Si ha introducido un Email (contiene @), sincronizar historial de correo IMAP y notas de lead
+        if (str_contains($query, '@')) {
+            $emailResult = (new \App\Services\ImapLeadFetcherService())->syncEmailHistoryForEvent($this->event, $query);
+            $this->event->load('whatsappMessages.user');
+            if (!empty($emailResult['success'])) {
+                session()->flash('whatsapp_success', $emailResult['message']);
+            } else {
+                session()->flash('whatsapp_success', $emailResult['message']);
+            }
             return;
         }
 
         $senderBrand = $this->whatsapp_sender_brand ?: $this->event->brand_clean;
         $result = \App\Services\EvolutionWhatsAppService::syncConversationHistory(
             $this->event,
-            $phoneToSearch,
+            $query,
             $senderBrand,
             auth()->id(),
             true
@@ -1900,12 +2076,57 @@ class EventShow extends Component
     public function importWhatsAppConversationText()
     {
         if (empty(trim((string)$this->whatsapp_import_text))) {
-            session()->flash('whatsapp_error', 'Pega o escribe el texto de la conversación que quieres añadir al historial.');
+            session()->flash('whatsapp_error', 'Pega o escribe el texto de la conversación o email que quieres añadir al historial.');
+            return;
+        }
+
+        $senderBrand = $this->whatsapp_sender_brand ?: $this->event->brand_clean;
+
+        // Si el canal seleccionado es Email, guardarlo como burbuja de Email en Conversación Registrada
+        if ($this->whatsapp_import_channel === 'email') {
+            $emailToUse = strtolower(trim((string)($this->email_chat_to ?: $this->event->client_contact_email ?: 'email')));
+            $direction = $this->whatsapp_import_direction ?: 'inbound';
+            $clientName = $this->event->client ? $this->event->client->name : ($this->event->partner_name ?: 'Cliente');
+            $baseDate = now();
+            if (!empty($this->whatsapp_import_date)) {
+                try {
+                    $baseDate = \Carbon\Carbon::parse($this->whatsapp_import_date);
+                } catch (\Throwable $e) {}
+            }
+
+            $rawText = trim((string)$this->whatsapp_import_text);
+            $msgText = str_starts_with($rawText, '📧') ? $rawText : ("📧 [Email]\n" . $rawText);
+
+            \App\Models\WhatsAppMessage::create([
+                'event_id' => $this->event->id,
+                'user_id' => $direction === 'outbound' ? auth()->id() : ($this->event->client_id ?: null),
+                'phone' => $emailToUse,
+                'sender_name' => $direction === 'outbound' ? 'Nosotros (Email)' : $clientName,
+                'direction' => $direction,
+                'message' => $msgText,
+                'status' => $direction === 'outbound' ? 'sent' : 'received',
+                'brand' => $senderBrand,
+                'payload' => [
+                    'channel' => 'email',
+                    'from' => $direction === 'inbound' ? $emailToUse : null,
+                    'to' => $direction === 'outbound' ? $emailToUse : null,
+                ],
+                'created_at' => $baseDate,
+                'updated_at' => $baseDate,
+            ]);
+
+            if ($direction === 'outbound') {
+                $this->event->update(['no_response_at' => now()]);
+            }
+
+            $this->whatsapp_import_text = '';
+            $this->showWhatsAppImportBox = false;
+            $this->event->load('whatsappMessages.user');
+            session()->flash('whatsapp_success', '✅ Correo añadido a la Conversación Registrada.');
             return;
         }
 
         $phoneToUse = trim((string)$this->whatsapp_sync_phone) ?: ($this->event->client ? ($this->event->client->phone ?? '') : ($this->event->partner_phone ?? ''));
-        $senderBrand = $this->whatsapp_sender_brand ?: $this->event->brand_clean;
 
         $count = \App\Services\EvolutionWhatsAppService::importPastedConversation(
             $this->event,

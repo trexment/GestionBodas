@@ -87,6 +87,10 @@
                                 <button type="button" onclick="window.open('{{ $ev->no_response_whatsapp_url }}', '_blank')" wire:click="promptFollowup({{ $ev->id }})" class="py-1.5 px-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold rounded-lg transition inline-flex items-center gap-1 cursor-pointer" title="Enviar WhatsApp y actualizar seguimiento">
                                     💬 Reactivar
                                 </button>
+                            @else
+                                <button type="button" wire:click="promptFollowup({{ $ev->id }})" class="py-1.5 px-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold rounded-lg transition inline-flex items-center gap-1 cursor-pointer" title="Enviar seguimiento por Email">
+                                    📧 Reactivar
+                                </button>
                             @endif
                         </div>
                     </div>
@@ -503,7 +507,7 @@
 
     </div>
 
-    <!-- MODAL DE SEGUIMIENTO MULTIETAPA MADRIGAL WHATSAPP -->
+    <!-- MODAL DE SEGUIMIENTO MULTIETAPA MADRIGAL WHATSAPP & EMAIL -->
     @if($confirmingFollowupEventId)
         <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-xs animate-in fade-in duration-150">
             <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-xl w-full p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
@@ -511,11 +515,11 @@
                 <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
                     <div class="flex items-center gap-2.5">
                         <div class="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xl font-bold">
-                            💬
+                            {{ $confirmingFollowupHasPhone ? '💬' : '📧' }}
                         </div>
                         <div>
                             <h3 class="text-base font-black text-slate-900 dark:text-white">
-                                Seguimiento Madrigal · WhatsApp
+                                Seguimiento Madrigal · WhatsApp & Email
                             </h3>
                             <p class="text-xs text-slate-500 dark:text-slate-400">
                                 <strong class="text-slate-800 dark:text-slate-200">{{ $confirmingFollowupClientName }}</strong> &bull; {{ $confirmingFollowupEventName }}
@@ -552,23 +556,60 @@
                     </div>
                 </div>
 
-                <!-- Vista previa del mensaje -->
+                <!-- Vista previa editable del mensaje -->
                 <div class="mt-4 space-y-1.5">
                     <div class="flex items-center justify-between text-xs">
-                        <span class="font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">Mensaje a enviar:</span>
-                        <span class="text-[10px] text-slate-400">Listo para abrir en WhatsApp</span>
+                        <span class="font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">Mensaje a enviar (editable):</span>
+                        <span class="text-[10px] text-slate-400">Válido para WhatsApp y Email</span>
                     </div>
-                    <div class="bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/60 dark:border-emerald-800/40 rounded-2xl p-3.5 text-xs text-slate-800 dark:text-slate-200 whitespace-pre-wrap font-sans leading-relaxed max-h-44 overflow-y-auto">
-{{ $confirmingFollowupText }}
-                    </div>
+                    <textarea wire:model.live="confirmingFollowupText" rows="5" class="w-full bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/60 dark:border-emerald-800/40 rounded-2xl p-3 text-xs text-slate-800 dark:text-slate-200 font-sans leading-relaxed focus:ring-emerald-500 focus:border-emerald-500"></textarea>
                 </div>
 
                 <!-- Botón de apertura de WhatsApp -->
-                <div class="mt-4">
-                    <a href="{{ $confirmingFollowupUrl }}" target="_blank" class="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-extrabold text-xs rounded-xl shadow-md shadow-emerald-600/30 transition flex items-center justify-center gap-2">
-                        <span>💬 Abrir WhatsApp y Enviar Mensaje</span>
-                        <span class="text-xs">↗</span>
-                    </a>
+                @if(!empty($confirmingFollowupUrl))
+                    <div class="mt-3">
+                        <a href="{{ $confirmingFollowupUrl }}" target="_blank" class="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-extrabold text-xs rounded-xl shadow-md shadow-emerald-600/30 transition flex items-center justify-center gap-2">
+                            <span>💬 Abrir WhatsApp y Enviar Mensaje</span>
+                            <span class="text-xs">↗</span>
+                        </a>
+                    </div>
+                @else
+                    <div class="mt-3 p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/70 text-[11px] text-amber-800 dark:text-amber-300 font-semibold flex items-center gap-2">
+                        <span>📵</span>
+                        <span>Este cliente no dejó teléfono móvil. Envía el seguimiento por Email aquí abajo:</span>
+                    </div>
+                @endif
+
+                <!-- Envío directo por Email -->
+                <div class="mt-3 p-3 bg-indigo-50/70 dark:bg-indigo-950/30 rounded-2xl border border-indigo-200 dark:border-indigo-800/80 space-y-2">
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="text-[11px] font-extrabold text-indigo-900 dark:text-indigo-200 flex items-center gap-1">
+                            <span>📧</span> Enviar Seguimiento por Email
+                        </span>
+                        <span class="text-[10px] text-indigo-600 dark:text-indigo-400 font-semibold">Se guardará en el chat del evento</span>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-600 dark:text-slate-400 mb-0.5">Email destino:</label>
+                            <input type="email" wire:model.live="confirmingFollowupEmail" placeholder="cliente@email.com" class="w-full text-xs px-2.5 py-1.5 rounded-lg border border-indigo-200 dark:border-indigo-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-semibold" />
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-600 dark:text-slate-400 mb-0.5">Asunto:</label>
+                            <input type="text" wire:model.live="confirmingFollowupSubject" placeholder="Asunto del seguimiento..." class="w-full text-xs px-2.5 py-1.5 rounded-lg border border-indigo-200 dark:border-indigo-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-semibold" />
+                        </div>
+                    </div>
+                    <div class="flex flex-col sm:flex-row gap-2 pt-1">
+                        <button type="button" wire:click="sendDirectFollowupEmail" wire:loading.attr="disabled" class="flex-1 py-2.5 px-4 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white font-extrabold text-xs rounded-xl shadow-md shadow-indigo-600/20 transition flex items-center justify-center gap-1.5 cursor-pointer">
+                            <span wire:loading.remove wire:target="sendDirectFollowupEmail">📧 Enviar por Email Ahora</span>
+                            <span wire:loading wire:target="sendDirectFollowupEmail">⏳ Enviando Email...</span>
+                        </button>
+                        @if(!empty($confirmingFollowupEmail))
+                            <a href="{{ \App\Services\WhatsAppTemplateService::buildMailtoUrl($confirmingFollowupEmail, $confirmingFollowupSubject, $confirmingFollowupText) }}" target="_blank" class="py-2.5 px-3 bg-white dark:bg-slate-900 hover:bg-indigo-100 dark:hover:bg-slate-800 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-700 font-bold text-xs rounded-xl transition flex items-center justify-center gap-1 shrink-0">
+                                <span>✉️ Abrir gestor correo</span>
+                                <span>↗</span>
+                            </a>
+                        @endif
+                    </div>
                 </div>
 
                 <!-- Confirmaciones de acción posterior -->
@@ -577,7 +618,7 @@
                         Una vez enviado o revisado:
                     </span>
                     <button type="button" wire:click="confirmFollowupSent" class="w-full py-2.5 px-3 bg-purple-600 hover:bg-purple-500 text-white font-extrabold text-xs rounded-xl transition flex items-center justify-center gap-2 cursor-pointer shadow-xs">
-                        <span>✅ He enviado el mensaje</span>
+                        <span>✅ He enviado el mensaje manualmente</span>
                         <span class="text-[10px] opacity-80">(Poner contador a 0 hoy)</span>
                     </button>
 

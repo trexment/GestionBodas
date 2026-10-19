@@ -524,6 +524,7 @@
             $daysWaiting = $event->days_without_response;
             $urgency = $event->no_response_urgency_level;
             $clientPhone = $event->client ? $event->client->phone : ($event->partner_phone ?? '');
+            $clientEmail = $event->client_contact_email;
             $followupData = \App\Services\WhatsAppTemplateService::followupReminder($event, 'pregunta_no');
         @endphp
         <div class="bg-white dark:bg-slate-900 p-4 sm:p-5 mb-6 rounded-2xl border transition shadow-sm {{ $urgency === 'critical' ? 'border-rose-400 dark:border-rose-600/70' : ($urgency === 'warning' ? 'border-amber-400 dark:border-amber-600/70' : 'border-purple-300 dark:border-purple-600/60') }}">
@@ -540,6 +541,11 @@
                             <span class="text-[11px] font-bold px-2.5 py-0.5 rounded-full border {{ $urgency === 'critical' ? 'bg-rose-100 text-rose-800 border-rose-300 dark:bg-rose-900/60 dark:text-rose-200 dark:border-rose-700' : ($urgency === 'warning' ? 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-900/60 dark:text-amber-200 dark:border-amber-700' : 'bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-900/60 dark:text-purple-200 dark:border-purple-700') }}">
                                 {{ $event->no_response_time_label }}
                             </span>
+                            @if(empty($clientPhone) && !empty($clientEmail))
+                                <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-800 dark:bg-indigo-950/70 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+                                    📧 Solo Email ({{ $clientEmail }})
+                                </span>
+                            @endif
                             @if($urgency === 'critical')
                                 <span class="text-[10px] uppercase font-black bg-rose-600 text-white px-2 py-0.5 rounded-md animate-pulse">
                                     ¡Reactivar Ahora!
@@ -552,7 +558,7 @@
                             @elseif($daysWaiting >= 2)
                                 Han pasado <strong class="text-amber-600 dark:text-amber-400 font-bold">{{ $daysWaiting }} días</strong> desde que se marcó en espera. Es buen momento para enviar un toque rápido antes de que se enfríe la fecha.
                             @else
-                                Evento marcado en espera de respuesta. Tienes disponibles las plantillas tácticas de Chris Voss para cuando toque hacer seguimiento.
+                                Evento marcado en espera de respuesta. Tienes disponibles las plantillas tácticas de Chris Voss y Método Madrigal por WhatsApp y Email para cuando toque hacer seguimiento.
                             @endif
                         </p>
                     </div>
@@ -574,6 +580,12 @@
                             </button>
                         @endif
                     @endif
+
+                    <!-- Botón Seguimiento por Email (Especialmente útil cuando el cliente no dio móvil) -->
+                    <button type="button" wire:click="promptFollowupFromShow" class="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-bold text-xs px-3.5 py-2.5 rounded-xl shadow-xs transition cursor-pointer" title="Abrir guiones de seguimiento por Email o WhatsApp">
+                        <span>📧</span>
+                        <span>{{ empty($clientPhone) ? 'Enviar Seguimiento por Email' : 'Seguimiento Email / Guiones' }}</span>
+                    </button>
 
                     <!-- Abrir todas las plantillas de seguimiento del Hub -->
                     <button type="button" @click="openWhatsappHub = true" class="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs px-3 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 transition cursor-pointer">
@@ -607,7 +619,7 @@
             </div>
         </div>
 
-        <!-- MODAL DE SEGUIMIENTO MULTIETAPA MADRIGAL WHATSAPP EN EVENT SHOW -->
+        <!-- MODAL DE SEGUIMIENTO MULTIETAPA MADRIGAL WHATSAPP & EMAIL EN EVENT SHOW -->
         @if($showConfirmFollowupModal)
             <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-xs animate-in fade-in duration-150">
                 <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-xl w-full p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
@@ -615,11 +627,11 @@
                     <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
                         <div class="flex items-center gap-2.5">
                             <div class="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xl font-bold">
-                                💬
+                                {{ empty($clientPhone) ? '📧' : '💬' }}
                             </div>
                             <div>
                                 <h3 class="text-base font-black text-slate-900 dark:text-white">
-                                    Seguimiento Madrigal · WhatsApp
+                                    Seguimiento Madrigal · WhatsApp & Email
                                 </h3>
                                 <p class="text-xs text-slate-500 dark:text-slate-400">
                                     <strong class="text-slate-800 dark:text-slate-200">{{ $event->client ? $event->client->name : 'la pareja' }}</strong> &bull; {{ $event->name }}
@@ -659,18 +671,16 @@
                     <!-- Vista previa del mensaje -->
                     <div class="mt-4 space-y-1.5">
                         <div class="flex items-center justify-between text-xs">
-                            <span class="font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">Mensaje a enviar:</span>
-                            <span class="text-[10px] text-slate-400">Listo para WhatsApp</span>
+                            <span class="font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">Mensaje a enviar (editable):</span>
+                            <span class="text-[10px] text-slate-400">Válido para WhatsApp y Email</span>
                         </div>
-                        <div class="bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/60 dark:border-emerald-800/40 rounded-2xl p-3.5 text-xs text-slate-800 dark:text-slate-200 whitespace-pre-wrap font-sans leading-relaxed max-h-44 overflow-y-auto">
-{{ $confirmingFollowupText }}
-                        </div>
+                        <textarea wire:model.live="confirmingFollowupText" rows="5" class="w-full bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/60 dark:border-emerald-800/40 rounded-2xl p-3 text-xs text-slate-800 dark:text-slate-200 font-sans leading-relaxed focus:ring-emerald-500 focus:border-emerald-500"></textarea>
                     </div>
 
-                    <!-- Selector de Número Remitente WhatsApp -->
+                    <!-- Selector de Marca / Remitente -->
                     <div class="mt-3 p-2.5 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-2">
                         <span class="text-[11px] font-bold text-slate-600 dark:text-slate-300 flex items-center gap-1">
-                            <span>📲</span> Enviar desde el número de:
+                            <span>📲</span> Firma / Remitente:
                         </span>
                         <div class="inline-flex rounded-lg bg-white dark:bg-slate-900 p-0.5 border border-slate-200 dark:border-slate-700 shadow-2xs">
                             <button type="button" wire:click="$set('whatsapp_sender_brand', 'miguel')" class="px-2.5 py-1 rounded-md text-[11px] font-bold transition cursor-pointer {{ $whatsapp_sender_brand === 'miguel' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100' }}">
@@ -685,18 +695,59 @@
                         </div>
                     </div>
 
-                    <!-- Botones de envío de WhatsApp -->
-                    <div class="mt-3 space-y-2">
-                        @if($gatewayActive)
-                            <button type="button" wire:click="sendDirectFollowupFromShow" wire:loading.attr="disabled" class="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-extrabold text-xs rounded-xl shadow-md shadow-emerald-600/30 transition flex items-center justify-center gap-2 cursor-pointer">
-                                <span wire:loading.remove wire:target="sendDirectFollowupFromShow">🚀 Enviar Ahora desde WhatsApp de {{ $this->getSenderBrandLabel() }}</span>
-                                <span wire:loading wire:target="sendDirectFollowupFromShow">⏳ Enviando mensaje...</span>
+                    <!-- OPCIÓN 1: Envío por WhatsApp (si tiene teléfono) -->
+                    @if(!empty($clientPhone))
+                        <div class="mt-3 space-y-2">
+                            @if($gatewayActive)
+                                <button type="button" wire:click="sendDirectFollowupFromShow" wire:loading.attr="disabled" class="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-extrabold text-xs rounded-xl shadow-md shadow-emerald-600/30 transition flex items-center justify-center gap-2 cursor-pointer">
+                                    <span wire:loading.remove wire:target="sendDirectFollowupFromShow">🚀 Enviar Ahora desde WhatsApp de {{ $this->getSenderBrandLabel() }}</span>
+                                    <span wire:loading wire:target="sendDirectFollowupFromShow">⏳ Enviando mensaje...</span>
+                                </button>
+                            @endif
+                            @if(!empty($confirmingFollowupUrl))
+                                <a href="{{ $confirmingFollowupUrl }}" target="_blank" class="w-full py-2.5 px-4 {{ $gatewayActive ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-200' : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-600/30' }} font-bold text-xs rounded-xl transition flex items-center justify-center gap-2">
+                                    <span>💬 Abrir en mi WhatsApp Web / App personal</span>
+                                    <span class="text-xs">↗</span>
+                                </a>
+                            @endif
+                        </div>
+                    @else
+                        <div class="mt-3 p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/70 text-[11px] text-amber-800 dark:text-amber-300 font-semibold flex items-center gap-2">
+                            <span>📵</span>
+                            <span>Este cliente no dejó teléfono móvil. Puedes enviarle el seguimiento directamente por Email aquí abajo:</span>
+                        </div>
+                    @endif
+
+                    <!-- OPCIÓN 2: Envío por Email (con registro en Conversación Registrada) -->
+                    <div class="mt-3 p-3 bg-indigo-50/70 dark:bg-indigo-950/30 rounded-2xl border border-indigo-200 dark:border-indigo-800/80 space-y-2">
+                        <div class="flex items-center justify-between gap-2">
+                            <span class="text-[11px] font-extrabold text-indigo-900 dark:text-indigo-200 flex items-center gap-1">
+                                <span>📧</span> Seguimiento por Email
+                            </span>
+                            <span class="text-[10px] text-indigo-600 dark:text-indigo-400 font-semibold">Se registrará en el chat del evento</span>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-600 dark:text-slate-400 mb-0.5">Email del cliente:</label>
+                                <input type="email" wire:model.live="confirmingFollowupEmail" placeholder="cliente@email.com" class="w-full text-xs px-2.5 py-1.5 rounded-lg border border-indigo-200 dark:border-indigo-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-semibold" />
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-600 dark:text-slate-400 mb-0.5">Asunto del correo:</label>
+                                <input type="text" wire:model.live="confirmingFollowupSubject" placeholder="Asunto del seguimiento..." class="w-full text-xs px-2.5 py-1.5 rounded-lg border border-indigo-200 dark:border-indigo-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-semibold" />
+                            </div>
+                        </div>
+                        <div class="flex flex-col sm:flex-row gap-2 pt-1">
+                            <button type="button" wire:click="sendDirectEmailFromShow" wire:loading.attr="disabled" class="flex-1 py-2.5 px-4 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white font-extrabold text-xs rounded-xl shadow-md shadow-indigo-600/20 transition flex items-center justify-center gap-1.5 cursor-pointer">
+                                <span wire:loading.remove wire:target="sendDirectEmailFromShow">📧 Enviar Seguimiento por Email Ahora</span>
+                                <span wire:loading wire:target="sendDirectEmailFromShow">⏳ Enviando Email...</span>
                             </button>
-                        @endif
-                        <a href="{{ $confirmingFollowupUrl }}" target="_blank" class="w-full py-2.5 px-4 {{ $gatewayActive ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-200' : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-600/30' }} font-bold text-xs rounded-xl transition flex items-center justify-center gap-2">
-                            <span>💬 Abrir en mi WhatsApp Web / App personal</span>
-                            <span class="text-xs">↗</span>
-                        </a>
+                            @if(!empty($confirmingFollowupEmail))
+                                <a href="{{ \App\Services\WhatsAppTemplateService::buildMailtoUrl($confirmingFollowupEmail, $confirmingFollowupSubject, $confirmingFollowupText) }}" target="_blank" class="py-2.5 px-3 bg-white dark:bg-slate-900 hover:bg-indigo-100 dark:hover:bg-slate-800 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-700 font-bold text-xs rounded-xl transition flex items-center justify-center gap-1 shrink-0" title="Abrir en tu aplicación de correo (Outlook, Gmail, Apple Mail)">
+                                    <span>✉️ Abrir gestor correo</span>
+                                    <span>↗</span>
+                                </a>
+                            @endif
+                        </div>
                     </div>
 
                     <!-- Confirmaciones de acción posterior -->
@@ -705,7 +756,7 @@
                             Una vez enviado o revisado:
                         </span>
                         <button type="button" wire:click="confirmFollowupSentFromShow" class="w-full py-2.5 px-3 bg-purple-600 hover:bg-purple-500 text-white font-extrabold text-xs rounded-xl transition flex items-center justify-center gap-2 cursor-pointer shadow-xs">
-                            <span>✅ He enviado el mensaje</span>
+                            <span>✅ He enviado el seguimiento manualmente</span>
                             <span class="text-[10px] opacity-80">(Poner contador a 0 hoy)</span>
                         </button>
 
@@ -1607,14 +1658,14 @@
                 @endif
 
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <!-- Columna 1: Centro de Comunicación WhatsApp & Notas del Evento -->
+                    <!-- Columna 1: Centro de Comunicación WhatsApp, Email & Notas del Evento -->
                     <div class="bg-slate-50/80 dark:bg-slate-900/90 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
                         <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
                             <div class="flex items-center gap-2">
                                 <span class="text-xl">💬</span>
                                 <div>
-                                    <h4 class="font-bold text-slate-900 dark:text-white text-sm">WhatsApp & Acuerdos del Evento</h4>
-                                    <p class="text-[11px] text-slate-500 dark:text-slate-400">Historial de mensajes con el cliente, plantillas de seguimiento y notas internas</p>
+                                    <h4 class="font-bold text-slate-900 dark:text-white text-sm">WhatsApp, Email & Acuerdos del Evento</h4>
+                                    <p class="text-[11px] text-slate-500 dark:text-slate-400">Historial de WhatsApp y Emails con el cliente, plantillas de seguimiento y notas internas</p>
                                 </div>
                             </div>
                             <button type="button" wire:click="saveEventNotes" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-xs transition cursor-pointer">
@@ -1622,14 +1673,15 @@
                             </button>
                         </div>
 
-                        <!-- Estado y Teléfono del Cliente -->
+                        <!-- Estado, Teléfono y Email del Cliente -->
                         @php
                             $clientPhone = $event->client ? $event->client->phone : $event->partner_phone;
                             $cleanPhone = \App\Services\WhatsAppTemplateService::cleanPhone($clientPhone ?? '');
+                            $clientEmail = $event->client_contact_email;
                             $gatewayActive = \App\Services\EvolutionWhatsAppService::isEnabled();
                         @endphp
                         <div class="p-3 bg-white dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 shadow-2xs flex flex-wrap items-center justify-between gap-2">
-                            <div class="flex items-center gap-2">
+                            <div class="flex flex-wrap items-center gap-1.5">
                                 <span class="text-xs font-bold text-slate-700 dark:text-slate-300">Cliente:</span>
                                 <span class="text-xs font-black text-slate-900 dark:text-white">{{ $event->client ? $event->client->name : ($event->partner_name ?? 'Sin nombre') }}</span>
                                 @if($cleanPhone)
@@ -1637,27 +1689,35 @@
                                         <span>📱</span> +{{ $cleanPhone }}
                                     </a>
                                 @else
-                                    <span class="text-[11px] text-amber-600 dark:text-amber-400 font-bold bg-amber-50 dark:bg-amber-950/50 px-2 py-0.5 rounded-md border border-amber-200 dark:border-amber-800">Sin teléfono</span>
+                                    <span class="text-[11px] text-amber-600 dark:text-amber-400 font-bold bg-amber-50 dark:bg-amber-950/50 px-2 py-0.5 rounded-md border border-amber-200 dark:border-amber-800">📵 Sin teléfono</span>
+                                @endif
+
+                                @if($clientEmail)
+                                    <a href="mailto:{{ $clientEmail }}" class="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-700 dark:text-indigo-300 hover:text-indigo-800 dark:hover:text-indigo-200 bg-indigo-50 dark:bg-indigo-950/60 px-2 py-0.5 rounded-md border border-indigo-200 dark:border-indigo-800 transition">
+                                        <span>📧</span> {{ $clientEmail }}
+                                    </a>
+                                @else
+                                    <span class="text-[11px] text-slate-400 dark:text-slate-500 font-medium bg-slate-50 dark:bg-slate-900 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-800">Sin email</span>
                                 @endif
                             </div>
                             <div>
                                 @if($gatewayActive)
                                     <span class="inline-flex items-center gap-1.5 text-[10px] font-black text-emerald-800 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/80 px-2.5 py-0.5 rounded-full border border-emerald-300 dark:border-emerald-800">
-                                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Evolution API Activo
+                                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Evolution API + Email
                                     </span>
                                 @else
-                                    <span class="inline-flex items-center gap-1 text-[10px] font-bold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-900 px-2.5 py-0.5 rounded-full border border-slate-200 dark:border-slate-800" title="Envía mediante enlaces wa.me que abren WhatsApp Web o la App oficial">
-                                        🔗 Modo Directo (wa.me)
+                                    <span class="inline-flex items-center gap-1 text-[10px] font-bold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-900 px-2.5 py-0.5 rounded-full border border-slate-200 dark:border-slate-800" title="Envía mediante enlaces wa.me o por Email">
+                                        🔗 WhatsApp / Email Activo
                                     </span>
                                 @endif
                             </div>
                         </div>
 
-                        <!-- Selector de Remitente de WhatsApp (Miguel, Fran, Ezequiel) -->
+                        <!-- Selector de Remitente de WhatsApp / Email (Miguel, Fran, Ezequiel) -->
                         <div class="p-2.5 bg-slate-100 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 shadow-2xs flex flex-wrap items-center justify-between gap-2">
                             <div class="flex items-center gap-1.5 text-xs font-bold text-slate-700 dark:text-slate-200">
                                 <span class="text-emerald-600 dark:text-emerald-400">📲</span>
-                                <span>Remitente WhatsApp:</span>
+                                <span>Remitente / Firma:</span>
                             </div>
                             <div class="inline-flex rounded-xl p-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xs gap-1 flex-wrap">
                                 <button type="button" 
@@ -1678,11 +1738,11 @@
                             </div>
                         </div>
 
-                        <!-- Historial de Chat WhatsApp -->
+                        <!-- Historial de Chat WhatsApp & Email -->
                         <div class="bg-slate-100 dark:bg-slate-950 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 space-y-2.5">
                             <div class="flex flex-wrap items-center justify-between gap-2">
                                 <span class="text-[11px] font-black text-slate-700 dark:text-slate-200 uppercase tracking-wider flex items-center gap-1">
-                                    <span>🗨️</span> Conversación Registrada
+                                    <span>🗨️</span> Conversación Registrada (WhatsApp & Email)
                                 </span>
                                 <div class="flex flex-wrap items-center gap-1.5">
                                     <button type="button"
@@ -1699,21 +1759,21 @@
                                 </div>
                             </div>
 
-                            <!-- Buscador de conversación previa por número de teléfono (Evolution API + Base de Datos) -->
+                            <!-- Buscador de conversación previa por número de teléfono o email (Evolution API + IMAP + Base de Datos) -->
                             <div class="p-2 bg-white dark:bg-slate-900/90 rounded-lg border border-slate-200 dark:border-slate-800 flex flex-wrap items-center gap-1.5">
                                 <span class="text-[10px] font-bold text-slate-600 dark:text-slate-400 flex items-center gap-1 shrink-0">
-                                    <span>🔍</span> Buscar por Nº:
+                                    <span>🔍</span> Buscar por Nº o Email:
                                 </span>
                                 <input type="text"
                                        wire:model="whatsapp_sync_phone"
-                                       placeholder="Ej: 688868344 o +34688868344"
+                                       placeholder="Ej: 688868344 o cliente@email.com"
                                        class="flex-1 min-w-[140px] text-xs px-2.5 py-1 rounded-md border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white focus:ring-emerald-500 focus:border-emerald-500 font-semibold" />
                                 <button type="button"
                                         wire:click="syncWhatsAppHistoryByPhone"
                                         wire:loading.attr="disabled"
                                         class="px-2.5 py-1 rounded-md text-[10px] font-extrabold bg-emerald-600 hover:bg-emerald-700 text-white border border-emerald-500 transition shadow-2xs cursor-pointer flex items-center gap-1 shrink-0">
                                     <span wire:loading.remove wire:target="syncWhatsAppHistoryByPhone">🔄 Buscar y Añadir al Evento</span>
-                                    <span wire:loading wire:target="syncWhatsAppHistoryByPhone">⏳ Buscando en WhatsApp...</span>
+                                    <span wire:loading wire:target="syncWhatsAppHistoryByPhone">⏳ Buscando mensajes...</span>
                                 </button>
                             </div>
 
@@ -1723,16 +1783,28 @@
                                     <div class="flex items-start justify-between gap-2">
                                         <div>
                                             <span class="text-[11px] font-extrabold text-indigo-900 dark:text-indigo-200 block">
-                                                📥 Importar conversación anterior de WhatsApp
+                                                📥 Importar conversación anterior de WhatsApp o Email
                                             </span>
                                             <p class="text-[10px] text-indigo-700 dark:text-indigo-300/90 leading-snug">
-                                                Puedes <strong>copiar y pegar directamente varios mensajes desde WhatsApp</strong> (con formato <code>[fecha, hora] Nombre: texto</code> y separará automáticamente los del cliente y los vuestros), o bien escribir un mensaje suelto eligiendo quién lo envió:
+                                                Puedes <strong>copiar y pegar varios mensajes de WhatsApp</strong> (con formato <code>[fecha, hora] Nombre: texto</code>), o pegar un <strong>correo electrónico / mensaje suelto</strong> eligiendo el canal y quién lo envió:
                                             </p>
                                         </div>
                                     </div>
 
                                     <div class="flex flex-wrap items-center gap-2 pt-0.5">
-                                        <span class="text-[10px] font-bold text-slate-700 dark:text-slate-300">Si es un mensaje suelto:</span>
+                                        <span class="text-[10px] font-bold text-slate-700 dark:text-slate-300">Canal:</span>
+                                        <button type="button"
+                                                wire:click="$set('whatsapp_import_channel', 'whatsapp')"
+                                                class="px-2 py-0.5 rounded-md text-[10px] font-bold border transition cursor-pointer {{ ($whatsapp_import_channel ?? 'whatsapp') === 'whatsapp' ? 'bg-emerald-600 text-white border-emerald-500' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-300 dark:border-slate-700' }}">
+                                            💬 WhatsApp
+                                        </button>
+                                        <button type="button"
+                                                wire:click="$set('whatsapp_import_channel', 'email')"
+                                                class="px-2 py-0.5 rounded-md text-[10px] font-bold border transition cursor-pointer {{ ($whatsapp_import_channel ?? 'whatsapp') === 'email' ? 'bg-indigo-600 text-white border-indigo-500' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-300 dark:border-slate-700' }}">
+                                            📧 Email
+                                        </button>
+
+                                        <span class="text-[10px] font-bold text-slate-700 dark:text-slate-300 ml-1">Dirección:</span>
                                         <button type="button"
                                                 wire:click="$set('whatsapp_import_direction', 'inbound')"
                                                 class="px-2 py-0.5 rounded-md text-[10px] font-bold border transition cursor-pointer {{ $whatsapp_import_direction === 'inbound' ? 'bg-indigo-600 text-white border-indigo-500' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-300 dark:border-slate-700' }}">
@@ -1751,7 +1823,7 @@
                                     <textarea wire:model="whatsapp_import_text"
                                               rows="3"
                                               class="w-full text-xs border border-indigo-300 dark:border-indigo-800 rounded-lg p-2 bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-400"
-                                              placeholder="Pega aquí la conversación copiada de WhatsApp o el mensaje anterior..."></textarea>
+                                              placeholder="Pega aquí la conversación de WhatsApp o el contenido del Email recibido/enviado..."></textarea>
 
                                     <div class="flex justify-end gap-2">
                                         <button type="button"
@@ -1770,16 +1842,29 @@
 
                             <div class="max-h-64 overflow-y-auto space-y-2.5 p-2 bg-slate-50 dark:bg-slate-900/70 rounded-lg border border-slate-200 dark:border-slate-800 text-xs">
                                 @forelse($this->whatsappMessages as $msg)
+                                    @php
+                                        $isEmailMsg = (($msg->payload['channel'] ?? '') === 'email')
+                                            || str_contains((string) ($msg->phone ?? ''), '@')
+                                            || str_starts_with((string) ($msg->message ?? ''), '📧');
+                                    @endphp
                                     @if($msg->direction === 'outbound')
                                         <!-- Mensaje Saliente (Staff / DJ) -->
                                         <div class="flex flex-col items-end group">
-                                            <div class="max-w-[85%] bg-emerald-100 dark:bg-emerald-950/80 text-emerald-950 dark:text-emerald-100 p-2.5 rounded-2xl rounded-tr-xs border border-emerald-200 dark:border-emerald-800 shadow-2xs space-y-1 relative">
+                                            <div class="max-w-[85%] {{ $isEmailMsg ? 'bg-indigo-100/90 dark:bg-indigo-950/80 text-indigo-950 dark:text-indigo-100 border-indigo-200 dark:border-indigo-800' : 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-950 dark:text-emerald-100 border-emerald-200 dark:border-emerald-800' }} p-2.5 rounded-2xl rounded-tr-xs border shadow-2xs space-y-1 relative">
+                                                <div class="flex items-center justify-between gap-2">
+                                                    <span class="inline-flex items-center gap-1 text-[9px] font-extrabold uppercase px-1.5 py-0.2 rounded {{ $isEmailMsg ? 'bg-indigo-200/80 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200' : 'bg-emerald-200/70 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200' }}">
+                                                        {{ $isEmailMsg ? '📧 Email enviado' : '💬 WhatsApp' }}
+                                                    </span>
+                                                    @if(!empty($msg->payload['to'] ?? null))
+                                                        <span class="text-[9px] opacity-75 truncate">{{ $msg->payload['to'] }}</span>
+                                                    @endif
+                                                </div>
                                                 <p class="whitespace-pre-line leading-relaxed text-[11px]">{{ $msg->message }}</p>
-                                                <div class="flex items-center justify-end gap-1.5 text-[9px] text-emerald-800 dark:text-emerald-300 font-bold">
+                                                <div class="flex items-center justify-end gap-1.5 text-[9px] {{ $isEmailMsg ? 'text-indigo-800 dark:text-indigo-300' : 'text-emerald-800 dark:text-emerald-300' }} font-bold">
                                                     <span>{{ $msg->user ? $msg->user->name : ($msg->sender_name ?: 'Staff') }}</span>
                                                     <span>&bull;</span>
                                                     <span>{{ $msg->created_at->format('d/m/Y H:i') }}</span>
-                                                    <span class="text-emerald-600 dark:text-emerald-400 font-black">✓✓</span>
+                                                    <span class="{{ $isEmailMsg ? 'text-indigo-600 dark:text-indigo-400' : 'text-emerald-600 dark:text-emerald-400' }} font-black">✓✓</span>
                                                     <button type="button"
                                                             wire:click="deleteWhatsAppMessage({{ $msg->id }})"
                                                             wire:confirm="¿Seguro que quieres quitar este mensaje del historial del evento?"
@@ -1793,9 +1878,14 @@
                                     @else
                                         <!-- Mensaje Entrante (Cliente) -->
                                         <div class="flex flex-col items-start group">
-                                            <div class="max-w-[85%] bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 p-2.5 rounded-2xl rounded-tl-xs border border-gray-200 dark:border-slate-700 shadow-2xs space-y-1 relative">
+                                            <div class="max-w-[85%] bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 p-2.5 rounded-2xl rounded-tl-xs border {{ $isEmailMsg ? 'border-indigo-200 dark:border-indigo-800/80' : 'border-gray-200 dark:border-slate-700' }} shadow-2xs space-y-1 relative">
                                                 <div class="flex items-center justify-between gap-2 text-[10px] font-black text-indigo-700 dark:text-indigo-400">
-                                                    <span>{{ $msg->sender_name ?: ($event->client ? $event->client->name : 'Cliente') }}</span>
+                                                    <div class="flex items-center gap-1.5 flex-wrap">
+                                                        <span class="inline-flex items-center gap-0.5 text-[9px] font-extrabold uppercase px-1.5 py-0.2 rounded {{ $isEmailMsg ? 'bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300' : 'bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300' }}">
+                                                            {{ $isEmailMsg ? '📧 Email' : '💬 WhatsApp' }}
+                                                        </span>
+                                                        <span>{{ $msg->sender_name ?: ($event->client ? $event->client->name : 'Cliente') }}</span>
+                                                    </div>
                                                     <button type="button"
                                                             wire:click="deleteWhatsAppMessage({{ $msg->id }})"
                                                             wire:confirm="¿Seguro que quieres quitar este mensaje del historial del evento?"
@@ -1813,9 +1903,9 @@
                                     @endif
                                 @empty
                                     <div class="py-6 text-center text-gray-400 dark:text-slate-500 space-y-1">
-                                        <span class="text-2xl block">💬</span>
+                                        <span class="text-2xl block">💬 📧</span>
                                         <span class="text-xs font-semibold text-gray-600 dark:text-slate-300">Sin mensajes registrados aún</span>
-                                        <p class="text-[10px] text-gray-400 dark:text-slate-400 max-w-xs mx-auto">Pulsa arriba en <strong>«🔄 Buscar y Añadir al Evento»</strong> para recuperar conversaciones previas por número o usa una plantilla abajo.</p>
+                                        <p class="text-[10px] text-gray-400 dark:text-slate-400 max-w-xs mx-auto">Pulsa arriba en <strong>«🔄 Buscar y Añadir al Evento»</strong> (por teléfono o email) o usa una plantilla abajo para responder por WhatsApp o Email.</p>
                                     </div>
                                 @endforelse
                             </div>
@@ -1823,7 +1913,7 @@
                             <!-- Selector Rápido de Plantillas Madrigal -->
                             <div class="space-y-1.5 pt-1">
                                 <span class="text-[10px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 block">
-                                    ⚡ Plantillas Rápidas Madrigal & Comerciales:
+                                    ⚡ Plantillas Rápidas Madrigal & Comerciales (para WhatsApp o Email):
                                 </span>
                                 <div class="flex flex-wrap gap-1.5">
                                     <button type="button" wire:click="loadWhatsAppTemplate('primer_contacto_presupuesto')" class="px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-emerald-600 hover:bg-emerald-700 text-white border border-emerald-500 transition shadow-xs cursor-pointer flex items-center gap-1">
@@ -1865,9 +1955,27 @@
                                 </div>
                             </div>
 
-                            <!-- Caja de Redacción / Envío Directo -->
+                            <!-- Caja de Redacción / Envío Directo por WhatsApp o por Email -->
                             <div class="space-y-2 pt-1">
-                                <textarea wire:model="whatsapp_chat_message" rows="3" class="w-full text-xs border border-slate-300 dark:border-slate-700 rounded-xl p-2.5 focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500" placeholder="Escribe tu mensaje personalizado o pulsa en una plantilla arriba..."></textarea>
+                                <!-- Datos rápidos para envío por Email (Destinatario + Asunto) -->
+                                <div class="p-2 bg-white dark:bg-slate-900 rounded-xl border border-indigo-200/80 dark:border-indigo-900/60 grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                                    <div class="flex items-center gap-1.5">
+                                        <span class="text-[10px] font-bold text-indigo-700 dark:text-indigo-300 shrink-0">📧 Para:</span>
+                                        <input type="email"
+                                               wire:model="email_chat_to"
+                                               placeholder="Email del cliente (ej: cliente@gmail.com)"
+                                               class="w-full text-[11px] px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white font-semibold focus:ring-indigo-500 focus:border-indigo-500" />
+                                    </div>
+                                    <div class="flex items-center gap-1.5">
+                                        <span class="text-[10px] font-bold text-indigo-700 dark:text-indigo-300 shrink-0">Asunto:</span>
+                                        <input type="text"
+                                               wire:model="email_chat_subject"
+                                               placeholder="Asunto del correo..."
+                                               class="w-full text-[11px] px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white font-semibold focus:ring-indigo-500 focus:border-indigo-500" />
+                                    </div>
+                                </div>
+
+                                <textarea wire:model="whatsapp_chat_message" rows="3" class="w-full text-xs border border-slate-300 dark:border-slate-700 rounded-xl p-2.5 focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500" placeholder="Escribe tu mensaje o seguimiento (o pulsa una plantilla arriba) y envíalo por WhatsApp o por Email..."></textarea>
                                 
                                 @if (session()->has('whatsapp_success'))
                                     <div class="text-[11px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/70 p-2 rounded-lg border border-emerald-200 dark:border-emerald-800 flex items-center justify-between">
@@ -1883,14 +1991,24 @@
                                     </div>
                                 @endif
 
-                                <div class="flex items-center justify-between pt-1">
+                                <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
                                     <span class="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
-                                        {{ $gatewayActive ? '⚡ Envío instantáneo por API' : '💬 Abrirá WhatsApp Web / App' }}
+                                        @if(!$cleanPhone && $clientEmail)
+                                            📧 Cliente sin móvil · Envía por Email y quedará registrado arriba
+                                        @else
+                                            {{ $gatewayActive ? '⚡ Envío directo por WhatsApp API o Email' : '💬 Envía por WhatsApp o Email con registro automático' }}
+                                        @endif
                                     </span>
-                                    <button type="button" wire:click="sendDirectWhatsAppMessage" wire:loading.attr="disabled" class="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-extrabold px-4 py-2 rounded-xl text-xs transition shadow-md cursor-pointer flex items-center gap-1.5">
-                                        <span wire:loading.remove wire:target="sendDirectWhatsAppMessage">🚀 Enviar WhatsApp</span>
-                                        <span wire:loading wire:target="sendDirectWhatsAppMessage">Enviando...</span>
-                                    </button>
+                                    <div class="flex flex-wrap items-center gap-2 ml-auto">
+                                        <button type="button" wire:click="sendDirectEmailMessage" wire:loading.attr="disabled" class="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-extrabold px-3.5 py-2 rounded-xl text-xs transition shadow-md cursor-pointer flex items-center gap-1.5">
+                                            <span wire:loading.remove wire:target="sendDirectEmailMessage">📧 Enviar por Email</span>
+                                            <span wire:loading wire:target="sendDirectEmailMessage">Enviando Email...</span>
+                                        </button>
+                                        <button type="button" wire:click="sendDirectWhatsAppMessage" wire:loading.attr="disabled" class="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-extrabold px-3.5 py-2 rounded-xl text-xs transition shadow-md cursor-pointer flex items-center gap-1.5">
+                                            <span wire:loading.remove wire:target="sendDirectWhatsAppMessage">🚀 Enviar WhatsApp</span>
+                                            <span wire:loading wire:target="sendDirectWhatsAppMessage">Enviando...</span>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>

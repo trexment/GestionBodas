@@ -250,12 +250,77 @@ class Event extends Model
     }
 
     /**
+     * Teléfono de contacto efectivo del cliente o pareja
+     */
+    public function getClientContactPhoneAttribute(): ?string
+    {
+        $phone = $this->client ? $this->client->phone : null;
+        if (empty($phone)) {
+            $phone = $this->partner_phone ?? null;
+        }
+        return !empty(trim((string)$phone)) ? trim((string)$phone) : null;
+    }
+
+    /**
+     * Email de contacto real del cliente o pareja (excluyendo emails ficticios autogenerados)
+     */
+    public function getClientContactEmailAttribute(): ?string
+    {
+        $candidates = [
+            $this->client ? $this->client->email : null,
+            $this->partner_email ?? null,
+        ];
+
+        foreach ($candidates as $email) {
+            $clean = strtolower(trim((string)$email));
+            if (
+                !empty($clean) &&
+                filter_var($clean, FILTER_VALIDATE_EMAIL) &&
+                !str_ends_with($clean, '@eventosmusicales.local') &&
+                !str_starts_with($clean, 'sin-email@') &&
+                !str_starts_with($clean, 'cliente_') &&
+                !str_starts_with($clean, 'lead_')
+            ) {
+                return $clean;
+            }
+        }
+
+        // Fallback: buscar si en las notas del evento figura un email del lead
+        if (!empty($this->notes) && preg_match('/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/', (string)$this->notes, $m)) {
+            $found = strtolower(trim($m[0]));
+            if (
+                !str_ends_with($found, '@eventosmusicales.local') &&
+                !str_contains($found, 'bodas.net') &&
+                !str_contains($found, 'madrigalmarketing') &&
+                !str_contains($found, 'nunezandson') &&
+                !str_contains($found, 'javnx')
+            ) {
+                return $found;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Enlace directo de WhatsApp con la plantilla recomendada según los días transcurridos (Madrigal Funnel)
      */
     public function getNoResponseWhatsappUrlAttribute(): string
     {
+        if (empty($this->client_contact_phone)) {
+            return '';
+        }
         $data = \App\Services\WhatsAppTemplateService::followupReminder($this);
         return $data['url'] ?? '';
+    }
+
+    /**
+     * Enlace mailto: directo con la plantilla recomendada para seguimiento por Email
+     */
+    public function getNoResponseMailtoUrlAttribute(): string
+    {
+        $data = \App\Services\WhatsAppTemplateService::followupReminder($this);
+        return $data['mailto_url'] ?? '';
     }
 
     /**

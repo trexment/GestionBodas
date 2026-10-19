@@ -161,6 +161,9 @@ class ImapLeadFetcherService
 
             $parsed = $this->parseLeadFromEmail($subject, $body, $fromName, $fromEmail, $brandKey);
 
+            // Si el correo proviene de un cliente ya registrado en un evento, guardar la respuesta en su Conversación Registrada
+            $this->recordClientEmailReplyIfExisting($fromEmail, $fromName, $subject, $body, $brandKey);
+
             if ($parsed['is_lead']) {
                 $event = $this->createLeadEvent($parsed, $brandKey, $initialStatus);
                 if ($event) {
@@ -237,6 +240,9 @@ class ImapLeadFetcherService
             $fromName = $this->decodeMimeHeader($fromParsed['name']);
             $fromEmail = strtolower($fromParsed['email']);
             $parsed = $this->parseLeadFromEmail($subject, $body, $fromName, $fromEmail, $brandKey);
+
+            // Si el correo proviene de un cliente ya registrado en un evento, guardar la respuesta en su Conversación Registrada
+            $this->recordClientEmailReplyIfExisting($fromEmail, $fromName, $subject, $body, $brandKey);
 
             if ($parsed['is_lead']) {
                 $event = $this->createLeadEvent($parsed, $brandKey, $initialStatus);
@@ -773,6 +779,34 @@ class ImapLeadFetcherService
                 . $leadData['full_body'],
         ]);
 
+        // 4a. Registrar el correo entrante inicial en Conversación Registrada (whatsapp_messages con canal 'email')
+        try {
+            if (\Illuminate\Support\Facades\Schema::hasTable('whatsapp_messages')) {
+                $contactIdentifier = !empty($leadData['client_email'])
+                    ? strtolower(trim($leadData['client_email']))
+                    : (!empty($leadData['client_phone']) ? WhatsAppTemplateService::cleanPhone($leadData['client_phone']) : 'email');
+
+                \App\Models\WhatsAppMessage::create([
+                    'event_id' => $event->id,
+                    'user_id' => $client ? $client->id : null,
+                    'phone' => $contactIdentifier,
+                    'sender_name' => $leadData['client_name'] ?? 'Cliente',
+                    'direction' => 'inbound',
+                    'message' => "📧 [Email recibido · {$leadSource}]\nAsunto: {$leadData['subject']}\n\n" . trim((string)$leadData['full_body']),
+                    'status' => 'received',
+                    'brand' => $brandKey,
+                    'payload' => [
+                        'channel' => 'email',
+                        'subject' => $leadData['subject'],
+                        'source' => $leadSource,
+                        'from' => $leadData['client_email'] ?? null,
+                    ],
+                ]);
+            }
+        } catch (\Throwable $e) {
+            Log::warning("No se pudo guardar correo inicial en whatsapp_messages (Evento #{$event->id}): " . $e->getMessage());
+        }
+
         // 4b. Notificación en tiempo real dentro de la App (Campana + Push Navegador/PWA + Toast)
         try {
             $leadName = $leadData['client_name'] ?? 'Nuevo Contacto';
@@ -829,6 +863,183 @@ class ImapLeadFetcherService
         }
 
         return $event;
+    }
+
+    /**
+     * Si llega un correo desde una dirección de email que pertenece a un cliente existente,
+     * lo añade automáticamente a la Conversación Registrada de su evento activo.
+     */
+    protected function recordClientEmailReplyIfExisting(
+        string $fromEmail,
+        string $fromName,
+        string $subject,
+        string $rawBody,
+        string $brandKey
+    ): bool {
+        try {
+            $cleanEmail = strtolower(trim($fromEmail));
+            if (empty($cleanEmail) || !filter_var($cleanEmail, FILTER_VALIDATE_EMAIL)) {
+                return false;
+            }
+
+            // Ignorar portales de leads o correos propios de la empresa
+            if (
+                str_contains($cleanEmail, 'bodas.net') ||
+                str_contains($cleanEmail, 'madrigalmarketing') ||
+                str_contains($cleanEmail, 'nunezandson') ||
+                str_contains($cleanEmail, 'javnx') ||
+                str_contains($cleanEmail, 'magoleugim') ||
+                str_ends_with($cleanEmail, '@eventosmusicales.local')
+            ) {
+                return false;
+            }
+
+            $client = User::where('email', $cleanEmail)->first();
+            $event = null;
+            if ($client) {
+                $event = Event::where('client_id', $client->id)->orderByDesc('id')->first();
+            }
+            if (!$event && \Illuminate\Support\Facades\Schema::hasColumn('events', 'partner_email')) {
+                $event = Event::where('partner_email', $cleanEmail)->orderByDesc('id')->first();
+            }
+
+            if (!$event || !\Illuminate\Support\Facades\Schema::hasTable('whatsapp_messages')) {
+                return false;
+            }
+
+            $bodyClean = trim($this->cleanEmailBody($rawBody));
+            if (empty($bodyClean)) {
+                return false;
+            }
+
+            $externalSig = 'email_' . md5($event->id . '|' . $cleanEmail . '|' . $subject . '|' . substr($bodyClean, 0, 300));
+            $alreadyExists = \App\Models\WhatsAppMessage::where('event_id', $event->id)
+                ->where(function ($q) use ($externalSig, $bodyClean) {
+                    $q->where('external_id', $externalSig)
+                      ->orWhere('message', 'like', '%' . substr($bodyClean, 0, 120) . '%');
+                })
+                ->exists();
+
+            if ($alreadyExists) {
+                return false;
+            }
+
+            $senderDisplay = ($client && $client->name) ? $client->name : ($fromName ?: $cleanEmail);
+
+            \App\Models\WhatsAppMessage::create([
+                'event_id' => $event->id,
+                'user_id' => $client ? $client->id : null,
+                'phone' => $cleanEmail,
+                'sender_name' => $senderDisplay,
+                'direction' => 'inbound',
+                'message' => "📧 [Email · Asunto: {$subject}]\n\n" . $bodyClean,
+                'status' => 'received',
+                'external_id' => $externalSig,
+                'brand' => $brandKey,
+                'payload' => [
+                    'channel' => 'email',
+                    'subject' => $subject,
+                    'from' => $cleanEmail,
+                ],
+            ]);
+
+            AppNotificationService::push(
+                'email_reply',
+                "📧 Respuesta por Email: {$senderDisplay}",
+                $subject,
+                url("/admin/events/{$event->id}"),
+                $event->id,
+                $brandKey
+            );
+
+            return true;
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
+    /**
+     * Asegura que el correo inicial del lead (si está en las notas del evento) y cualquier
+     * correo recibido del cliente aparezcan como burbujas en Conversación Registrada.
+     */
+    public function syncEmailHistoryForEvent(Event $event, ?string $emailToSearch = null): array
+    {
+        $imported = 0;
+        $targetEmail = strtolower(trim($emailToSearch ?: ($event->client_contact_email ?? '')));
+
+        try {
+            if (!\Illuminate\Support\Facades\Schema::hasTable('whatsapp_messages')) {
+                return ['success' => false, 'imported' => 0, 'message' => 'La tabla de mensajes no está disponible.'];
+            }
+
+            // 1. Si el evento fue importado por email y tiene el texto en $event->notes pero aún no está en Conversación Registrada
+            if (!empty($event->notes) && str_contains($event->notes, 'LEAD IMPORTADO VÍA EMAIL')) {
+                $hasInitialLeadBubble = \App\Models\WhatsAppMessage::where('event_id', $event->id)
+                    ->where('direction', 'inbound')
+                    ->exists();
+
+                if (!$hasInitialLeadBubble) {
+                    $notesText = (string)$event->notes;
+                    // Extraer bloque inicial del lead antes de otras notas añadidas después
+                    $parts = preg_split('/\n\[\d{2}\/\d{2}\/\d{4}/', $notesText);
+                    $leadBlock = trim($parts[0] ?? $notesText);
+
+                    $subject = 'Solicitud de presupuesto por Email';
+                    if (preg_match('/Asunto:\s*(.+)$/mi', $leadBlock, $mSub)) {
+                        $subject = trim($mSub[1]);
+                    }
+                    $bodyPart = $leadBlock;
+                    if (str_contains($leadBlock, '----------------------------------------')) {
+                        $split = explode('----------------------------------------', $leadBlock, 2);
+                        $bodyPart = trim($split[1] ?? $leadBlock);
+                    }
+
+                    \App\Models\WhatsAppMessage::create([
+                        'event_id' => $event->id,
+                        'user_id' => $event->client_id,
+                        'phone' => $targetEmail ?: 'email',
+                        'sender_name' => $event->client ? $event->client->name : 'Cliente',
+                        'direction' => 'inbound',
+                        'message' => "📧 [Email · Asunto: {$subject}]\n\n" . $bodyPart,
+                        'status' => 'received',
+                        'brand' => $event->brand_clean,
+                        'payload' => [
+                            'channel' => 'email',
+                            'subject' => $subject,
+                            'from' => $targetEmail,
+                        ],
+                        'created_at' => $event->created_at ?? now(),
+                        'updated_at' => $event->created_at ?? now(),
+                    ]);
+                    $imported++;
+                }
+            }
+
+            // 2. Vincular mensajes huérfanos en la BD local cuyo 'phone' coincida con el email del cliente
+            if (!empty($targetEmail)) {
+                $orphans = \App\Models\WhatsAppMessage::whereNull('event_id')
+                    ->where('phone', $targetEmail)
+                    ->get();
+                foreach ($orphans as $orph) {
+                    $orph->update(['event_id' => $event->id]);
+                    $imported++;
+                }
+            }
+
+            // 3. Ejecutar escaneo rápido de buzones IMAP activos para detectar nuevas respuestas del cliente
+            $this->fetchAllActiveMailboxes($event->brand_clean);
+
+        } catch (\Throwable $e) {
+            Log::warning("Error en syncEmailHistoryForEvent (#{$event->id}): " . $e->getMessage());
+        }
+
+        return [
+            'success' => $imported > 0,
+            'imported' => $imported,
+            'message' => $imported > 0
+                ? "✅ Se han sincronizado {$imported} correo(s) en la Conversación Registrada."
+                : "ℹ️ Buzón sincronizado. No hay correos nuevos pendientes de importar para {$targetEmail}.",
+        ];
     }
 
     /**

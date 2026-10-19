@@ -42,6 +42,188 @@ class WhatsAppTemplateService
         return "https://web.whatsapp.com/send?text=" . rawurlencode($message);
     }
 
+    /**
+     * Limpia el formato de asteriscos de WhatsApp (*texto*) para su envío limpio por Email
+     */
+    public static function cleanTextForEmail(string $text): string
+    {
+        $clean = preg_replace('/\*([^*\n]+)\*/u', '$1', $text);
+        return trim((string)$clean);
+    }
+
+    /**
+     * Construye un enlace mailto: con asunto y cuerpo listos para cualquier gestor de correo
+     */
+    public static function buildMailtoUrl(?string $email, string $subject, string $body): string
+    {
+        $to = trim((string)$email);
+        $cleanBody = self::cleanTextForEmail($body);
+        return "mailto:{$to}?subject=" . rawurlencode($subject) . "&body=" . rawurlencode($cleanBody);
+    }
+
+    /**
+     * Devuelve el asunto de correo recomendado según la plantilla y el evento
+     */
+    public static function getEmailSubjectForKey(Event $event, string $key): string
+    {
+        $brand = Setting::getBrandInfo($event ? $event->brand_clean : null);
+        $companyName = $brand['name'] ?? Setting::get('company_name', 'Núñez & Son');
+        $eventDate = $event->event_date ? Carbon::parse($event->event_date)->format('d/m/Y') : 'vuestra fecha';
+        $eventName = $event->name ?: 'vuestro evento';
+
+        return match ($key) {
+            'primer_contacto_presupuesto', 'primer_contacto_madrigal', 'disponibilidad', 'filtro_finca', 'estandar' =>
+                "Disponibilidad para {$eventName} ({$eventDate}) y presupuesto a medida - {$companyName}",
+            'dia3_dudas', 'seguimiento_dia_3', 'conversacion_suave', 'post_presupuesto' =>
+                "¿Alguna duda con la propuesta musical para {$eventName}? - {$companyName}",
+            'dia7_escasez', 'seguimiento_dia_7' =>
+                "Prioridad de reserva 24h para vuestra fecha ({$eventDate}) - {$companyName}",
+            'pregunta_no', 'tecnica_no', 'tecnica_del_no' =>
+                "Consulta rápida sobre la reserva de vuestra fecha ({$eventDate}) - {$companyName}",
+            'psicologia_inversa', 'cierre_expediente' =>
+                "Cierre de expediente para {$eventName} ({$eventDate}) - {$companyName}",
+            'presupuesto', 'objecion_precio', 'seguimiento_no', 'presupuesto_no', 'followup_budget' =>
+                "Opciones y adaptación de presupuesto para {$eventName} - {$companyName}",
+            'no_es_nuestro_cliente' =>
+                "Sobre vuestra solicitud para el {$eventDate} - {$companyName}",
+            'fotomaton_360' =>
+                "Información y precios: Fotomatón, Plataforma 360º y Pack Dúo - {$companyName}",
+            'mesa_dulce_gofres' =>
+                "Información y precios: Mesa Dulce, Fuente de Chocolate y Gofres - {$companyName}",
+            'llamada', 'propuesta_llamada' =>
+                "¿Hablamos 10 minutos sobre la música de {$eventName}? - {$companyName}",
+            'dossier', 'envio_dossier', 'quote_propuesta', 'resumen_presupuesto' =>
+                "Propuesta y Dossier personalizado para {$eventName} ({$eventDate}) - {$companyName}",
+            'cuestionario' =>
+                "Cuestionario musical y momentos especiales para {$eventName} - {$companyName}",
+            'contrato' =>
+                "Enlace para firma online de contrato - {$eventName} ({$companyName})",
+            'liquidacion' =>
+                "Recordatorio de liquidación final - {$eventName} ({$companyName})",
+            default =>
+                "Seguimiento de vuestro evento {$eventName} ({$eventDate}) - {$companyName}",
+        };
+    }
+
+    /**
+     * Envía un correo al cliente usando el servidor de correo configurado y lo registra
+     * en la tabla whatsapp_messages (con canal 'email') para que quede reflejado en la Conversación Registrada.
+     */
+    public static function sendAndLogClientEmail(
+        Event $event,
+        string $toEmail,
+        string $subject,
+        string $rawBody,
+        ?string $brandKey = null,
+        ?int $userId = null,
+        ?string $templateTitle = null
+    ): array {
+        $toEmail = strtolower(trim($toEmail));
+        $cleanBody = self::cleanTextForEmail($rawBody);
+        $subject = trim($subject) ?: self::getEmailSubjectForKey($event, 'default');
+        $effectiveBrand = $brandKey ?: ($event->brand_clean ?: 'nunez_and_son');
+        $brandInfo = Setting::getBrandInfo($effectiveBrand);
+        $companyName = $brandInfo['name'] ?? Setting::get('company_name', 'Núñez & Son');
+        $replyToEmail = $brandInfo['email'] ?? Setting::get('company_email', config('mail.from.address'));
+        $mailtoUrl = self::buildMailtoUrl($toEmail, $subject, $cleanBody);
+
+        if (empty($toEmail) || !filter_var($toEmail, FILTER_VALIDATE_EMAIL)) {
+            return [
+                'success' => false,
+                'mode' => 'invalid_email',
+                'message' => 'La dirección de correo electrónico no es válida.',
+                'mailto_url' => $mailtoUrl,
+            ];
+        }
+
+        $sentViaSmtp = false;
+        $smtpError = null;
+
+        try {
+            // Convertir saltos de línea y hacer clicables las URLs en la versión HTML del correo
+            $escaped = e($cleanBody);
+            $htmlParagraphs = preg_replace(
+                '~(https?://[^\s<]+)~i',
+                '<a href="$1" style="color:#4f46e5;font-weight:bold;text-decoration:underline;" target="_blank">$1</a>',
+                $escaped
+            );
+            $htmlContent = '<div style="font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, Helvetica, Arial, sans-serif; font-size: 15px; line-height: 1.65; color: #1e293b; max-width: 640px; margin: 0 auto; padding: 20px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px;">'
+                . nl2br($htmlParagraphs)
+                . '<hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0 12px 0;">'
+                . '<div style="font-size:12px;color:#64748b;"><strong>' . e($companyName) . '</strong>'
+                . (!empty($brandInfo['phone']) ? ' &bull; Tel/WhatsApp: ' . e($brandInfo['phone']) : '')
+                . (!empty($replyToEmail) ? ' &bull; ' . e($replyToEmail) : '')
+                . '</div></div>';
+
+            \Illuminate\Support\Facades\Mail::html($htmlContent, function ($message) use ($toEmail, $subject, $companyName, $replyToEmail) {
+                $message->to($toEmail)
+                        ->subject($subject);
+                if (!empty($replyToEmail) && filter_var($replyToEmail, FILTER_VALIDATE_EMAIL)) {
+                    $message->replyTo($replyToEmail, $companyName);
+                }
+            });
+
+            $sentViaSmtp = true;
+        } catch (\Throwable $e) {
+            $smtpError = $e->getMessage();
+            \Illuminate\Support\Facades\Log::warning("Fallo envío SMTP directo a {$toEmail}: " . $smtpError);
+        }
+
+        // Registrar siempre en Conversación Registrada (whatsapp_messages con canal 'email')
+        $msgRecord = null;
+        try {
+            $bubbleMessage = "📧 [Email · Asunto: {$subject}]\n\n" . $cleanBody;
+            $msgRecord = \App\Models\WhatsAppMessage::create([
+                'event_id' => $event->id,
+                'user_id' => $userId ?: (auth()->check() ? auth()->id() : null),
+                'phone' => $toEmail,
+                'sender_name' => $companyName,
+                'direction' => 'outbound',
+                'message' => $bubbleMessage,
+                'status' => $sentViaSmtp ? 'sent' : 'manual',
+                'brand' => $effectiveBrand,
+                'payload' => [
+                    'channel' => 'email',
+                    'subject' => $subject,
+                    'to' => $toEmail,
+                    'template' => $templateTitle,
+                    'smtp_sent' => $sentViaSmtp,
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning("No se pudo guardar registro de email en whatsapp_messages: " . $e->getMessage());
+        }
+
+        // Actualizar no_response_at y notas del evento
+        try {
+            $authorName = auth()->check() ? auth()->user()->name : $companyName;
+            $label = $templateTitle ?: $subject;
+            $event->update([
+                'no_response_at' => now(),
+                'notes' => ($event->notes ? $event->notes . "\n" : "") . "[" . now()->format('d/m/Y H:i') . "] 📧 Email enviado a {$toEmail} ({$label}) por {$authorName}. Contador reseteado a 0.",
+            ]);
+        } catch (\Throwable $e) {}
+
+        if ($sentViaSmtp) {
+            return [
+                'success' => true,
+                'mode' => 'smtp',
+                'message' => "✅ ¡Email enviado directamente a {$toEmail} y añadido a la Conversación Registrada!",
+                'record_id' => $msgRecord ? $msgRecord->id : null,
+                'mailto_url' => $mailtoUrl,
+            ];
+        }
+
+        return [
+            'success' => true,
+            'mode' => 'mailto_fallback',
+            'message' => "📧 Mensaje registrado en la conversación. Abriendo tu gestor de correo para enviar a {$toEmail}...",
+            'error' => $smtpError,
+            'record_id' => $msgRecord ? $msgRecord->id : null,
+            'mailto_url' => $mailtoUrl,
+        ];
+    }
+
     public static function cuestionario(Event $event): string
     {
         $clientName = $event->client ? $event->client->name : 'pareja';
@@ -461,10 +643,16 @@ class WhatsAppTemplateService
             ],
         ];
 
+        $clientEmail = $event->client_contact_email ?? '';
+
         foreach ($options as $k => &$opt) {
             $opt['is_recommended'] = ($k === $recommendedKey);
             $opt['url'] = self::buildUrl($clientPhone, $opt['text']);
             $opt['web_url'] = self::getWebLink($clientPhone, $opt['text']);
+            $opt['subject'] = self::getEmailSubjectForKey($event, $k);
+            $opt['email_text'] = self::cleanTextForEmail($opt['text']);
+            $opt['mailto_url'] = self::buildMailtoUrl($clientEmail, $opt['subject'], $opt['text']);
+            $opt['email'] = $clientEmail;
         }
 
         return $options;
@@ -473,6 +661,7 @@ class WhatsAppTemplateService
     public static function followupReminder(Event $event, ?string $variant = null): array
     {
         $clientPhone = $event->client ? $event->client->phone : ($event->partner_phone ?? '');
+        $clientEmail = $event->client_contact_email ?? '';
         if (empty($variant)) {
             $variant = self::getRecommendedFollowupKey($event);
         }
@@ -516,14 +705,20 @@ class WhatsAppTemplateService
             default => '🎯',
         };
 
+        $subject = self::getEmailSubjectForKey($event, $variant);
+
         return [
             'key' => $variant,
             'title' => $title,
             'icon' => $icon,
             'phone' => $clientPhone,
+            'email' => $clientEmail,
+            'subject' => $subject,
             'text' => $text,
+            'email_text' => self::cleanTextForEmail($text),
             'url' => self::buildUrl($clientPhone, $text),
             'web_url' => self::getWebLink($clientPhone, $text),
+            'mailto_url' => self::buildMailtoUrl($clientEmail, $subject, $text),
         ];
     }
 
