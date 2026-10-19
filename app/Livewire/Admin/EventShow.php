@@ -475,7 +475,19 @@ class EventShow extends Component
             }
         }
 
-        $this->whatsapp_sender_brand = ($this->event->brand_clean === 'javnx') ? 'fran' : 'miguel';
+        $user = auth()->user();
+        $userBrand = null;
+        if ($user) {
+            $uCheck = mb_strtolower(($user->name ?? '') . ' ' . ($user->email ?? ''));
+            if (str_contains($uCheck, 'fran') || str_contains($uCheck, 'javnx')) {
+                $userBrand = 'fran';
+            } elseif (str_contains($uCheck, 'ezequiel')) {
+                $userBrand = 'ezequiel';
+            } elseif (str_contains($uCheck, 'miguel')) {
+                $userBrand = 'miguel';
+            }
+        }
+        $this->whatsapp_sender_brand = $userBrand ?? (($this->event->brand_clean === 'javnx') ? 'fran' : 'miguel');
     }
 
     public $showCancellationModal = false;
@@ -2025,35 +2037,66 @@ class EventShow extends Component
             $this->editingTemplateRawText = \App\Services\WhatsAppTemplateService::getRawTemplateForEdit($resolvedKey);
         }
 
-        $options = \App\Services\WhatsAppTemplateService::getFollowupOptions($this->event);
+        $sender = $this->whatsapp_sender_brand ?: null;
+        $options = \App\Services\WhatsAppTemplateService::getFollowupOptions($this->event, $sender);
         if (isset($options[$resolvedKey])) {
             $this->whatsapp_chat_message = $options[$resolvedKey]['text'];
             $this->email_chat_subject = $options[$resolvedKey]['subject'] ?? \App\Services\WhatsAppTemplateService::getEmailSubjectForKey($this->event, $resolvedKey);
         } elseif ($resolvedKey === 'primer_contacto_presupuesto') {
-            $this->whatsapp_chat_message = \App\Services\WhatsAppTemplateService::primeraTomaContacto($this->event, 'presupuesto_online');
+            $this->whatsapp_chat_message = \App\Services\WhatsAppTemplateService::primeraTomaContacto($this->event, 'presupuesto_online', $sender);
             $this->email_chat_subject = \App\Services\WhatsAppTemplateService::getEmailSubjectForKey($this->event, 'primer_contacto_presupuesto');
         } elseif ($resolvedKey === 'primer_contacto_madrigal') {
-            $this->whatsapp_chat_message = \App\Services\WhatsAppTemplateService::primeraTomaContacto($this->event, 'filtro_finca');
+            $this->whatsapp_chat_message = \App\Services\WhatsAppTemplateService::primeraTomaContacto($this->event, 'filtro_finca', $sender);
             $this->email_chat_subject = \App\Services\WhatsAppTemplateService::getEmailSubjectForKey($this->event, 'primer_contacto_madrigal');
         } elseif ($resolvedKey === 'cuestionario') {
-            $this->whatsapp_chat_message = \App\Services\WhatsAppTemplateService::cuestionario($this->event);
+            $this->whatsapp_chat_message = \App\Services\WhatsAppTemplateService::cuestionario($this->event, $sender);
             $this->email_chat_subject = \App\Services\WhatsAppTemplateService::getEmailSubjectForKey($this->event, 'cuestionario');
         } elseif ($resolvedKey === 'contrato') {
-            $this->whatsapp_chat_message = \App\Services\WhatsAppTemplateService::contrato($this->event);
+            $this->whatsapp_chat_message = \App\Services\WhatsAppTemplateService::contrato($this->event, $sender);
             $this->email_chat_subject = \App\Services\WhatsAppTemplateService::getEmailSubjectForKey($this->event, 'contrato');
         } elseif ($resolvedKey === 'llamada') {
-            $this->whatsapp_chat_message = \App\Services\WhatsAppTemplateService::propuestaLlamada($this->event);
+            $this->whatsapp_chat_message = \App\Services\WhatsAppTemplateService::propuestaLlamada($this->event, $sender);
             $this->email_chat_subject = \App\Services\WhatsAppTemplateService::getEmailSubjectForKey($this->event, 'llamada');
         } elseif ($resolvedKey === 'dossier') {
-            $this->whatsapp_chat_message = \App\Services\WhatsAppTemplateService::envioDossierPresupuesto($this->event);
+            $this->whatsapp_chat_message = \App\Services\WhatsAppTemplateService::envioDossierPresupuesto($this->event, $sender);
             $this->email_chat_subject = \App\Services\WhatsAppTemplateService::getEmailSubjectForKey($this->event, 'dossier');
         } elseif ($resolvedKey === 'fotomaton_360') {
             $this->whatsapp_chat_message = \App\Services\WhatsAppTemplateService::infoFotomatonY360($this->event);
             $this->email_chat_subject = \App\Services\WhatsAppTemplateService::getEmailSubjectForKey($this->event, 'fotomaton_360');
         }
 
+        if (!empty($this->whatsapp_chat_message)) {
+            $this->whatsapp_chat_message = \App\Services\WhatsAppTemplateService::applySenderSignatureToMessage(
+                (string)$this->whatsapp_chat_message,
+                $sender,
+                $this->event
+            );
+        }
+
         if (empty($this->email_chat_to)) {
             $this->email_chat_to = $this->event->client_contact_email ?? '';
+        }
+    }
+
+    public function setSenderBrand(string $brand): void
+    {
+        $this->whatsapp_sender_brand = $brand;
+        $this->syncSenderSignatureInCurrentMessage();
+    }
+
+    public function updatedWhatsappSenderBrand($value): void
+    {
+        $this->syncSenderSignatureInCurrentMessage();
+    }
+
+    protected function syncSenderSignatureInCurrentMessage(): void
+    {
+        if (!empty(trim((string)$this->whatsapp_chat_message))) {
+            $this->whatsapp_chat_message = \App\Services\WhatsAppTemplateService::applySenderSignatureToMessage(
+                (string)$this->whatsapp_chat_message,
+                $this->whatsapp_sender_brand ?: null,
+                $this->event
+            );
         }
     }
 
@@ -2080,6 +2123,7 @@ class EventShow extends Component
         }
 
         $senderBrand = $this->whatsapp_sender_brand ?: $this->event->brand_clean;
+        $this->syncSenderSignatureInCurrentMessage();
         $senderLabel = $this->getSenderBrandLabel();
         $result = \App\Services\EvolutionWhatsAppService::sendMessage(
             $phone,
@@ -2126,6 +2170,7 @@ class EventShow extends Component
 
         $subject = trim((string)$this->email_chat_subject) ?: \App\Services\WhatsAppTemplateService::getEmailSubjectForKey($this->event, 'default');
         $senderBrand = $this->whatsapp_sender_brand ?: $this->event->brand_clean;
+        $this->syncSenderSignatureInCurrentMessage();
 
         $result = \App\Services\WhatsAppTemplateService::sendAndLogClientEmail(
             $this->event,
@@ -2344,7 +2389,8 @@ class EventShow extends Component
             return;
         }
 
-        $options = \App\Services\WhatsAppTemplateService::getFollowupOptions($this->event);
+        $sender = $this->whatsapp_sender_brand ?: null;
+        $options = \App\Services\WhatsAppTemplateService::getFollowupOptions($this->event, $sender);
         $text = null;
         $title = 'Mensaje';
 
@@ -2360,15 +2406,15 @@ class EventShow extends Component
         } else {
             switch ($templateKey) {
                 case 'disponibilidad':
-                    $text = \App\Services\WhatsAppTemplateService::primeraTomaContacto($this->event, 'disponibilidad');
+                    $text = \App\Services\WhatsAppTemplateService::primeraTomaContacto($this->event, 'disponibilidad', $sender);
                     $title = 'Disponibilidad Fecha';
                     break;
                 case 'filtro_finca':
-                    $text = \App\Services\WhatsAppTemplateService::primeraTomaContacto($this->event, 'filtro_finca');
+                    $text = \App\Services\WhatsAppTemplateService::primeraTomaContacto($this->event, 'filtro_finca', $sender);
                     $title = 'Filtro Finca';
                     break;
                 case 'estandar':
-                    $text = \App\Services\WhatsAppTemplateService::primeraTomaContacto($this->event, 'estandar');
+                    $text = \App\Services\WhatsAppTemplateService::primeraTomaContacto($this->event, 'estandar', $sender);
                     $title = 'Contacto Inicial';
                     break;
                 case 'conversacion_suave':
@@ -2376,15 +2422,15 @@ class EventShow extends Component
                     $title = 'Seguimiento Conversación';
                     break;
                 case 'propuesta_llamada':
-                    $text = \App\Services\WhatsAppTemplateService::propuestaLlamada($this->event);
+                    $text = \App\Services\WhatsAppTemplateService::propuestaLlamada($this->event, $sender);
                     $title = 'Propuesta de Llamada';
                     break;
                 case 'envio_dossier':
-                    $text = \App\Services\WhatsAppTemplateService::envioDossierPresupuesto($this->event);
+                    $text = \App\Services\WhatsAppTemplateService::envioDossierPresupuesto($this->event, $sender);
                     $title = 'Dossier y Presupuesto';
                     break;
                 case 'post_presupuesto':
-                    $text = \App\Services\WhatsAppTemplateService::seguimientoPostPresupuesto($this->event);
+                    $text = \App\Services\WhatsAppTemplateService::seguimientoPostPresupuesto($this->event, $sender);
                     $title = 'Seguimiento Presupuesto';
                     break;
                 case 'quote_propuesta':
@@ -2399,25 +2445,25 @@ class EventShow extends Component
                     break;
                 case 'tecnica_no':
                 case 'pregunta_no':
-                    $text = \App\Services\WhatsAppTemplateService::seguimientoPreguntaNo($this->event);
+                    $text = \App\Services\WhatsAppTemplateService::seguimientoPreguntaNo($this->event, $sender);
                     $title = 'Técnica del NO';
                     break;
                 case 'seguimiento_no':
                 case 'presupuesto_no':
                 case 'followup_budget':
-                    $text = \App\Services\WhatsAppTemplateService::seguimientoPresupuestoNo($this->event);
+                    $text = \App\Services\WhatsAppTemplateService::seguimientoPresupuestoNo($this->event, $sender);
                     $title = 'Objeción Presupuesto';
                     break;
                 case 'psicologia_inversa':
-                    $text = \App\Services\WhatsAppTemplateService::seguimientoPsicologiaInversa($this->event);
+                    $text = \App\Services\WhatsAppTemplateService::seguimientoPsicologiaInversa($this->event, $sender);
                     $title = 'Psicología Inversa';
                     break;
                 case 'cuestionario':
-                    $text = \App\Services\WhatsAppTemplateService::cuestionario($this->event);
+                    $text = \App\Services\WhatsAppTemplateService::cuestionario($this->event, $sender);
                     $title = 'Cuestionario Musical';
                     break;
                 case 'contrato':
-                    $text = \App\Services\WhatsAppTemplateService::contrato($this->event);
+                    $text = \App\Services\WhatsAppTemplateService::contrato($this->event, $sender);
                     $title = 'Firma de Contrato';
                     break;
                 case 'liquidacion':
@@ -2438,10 +2484,14 @@ class EventShow extends Component
                     $title = $recipientType === 'assistant' ? 'Hoja de Ruta Asistente' : 'Hoja de Ruta DJ';
                     break;
                 default:
-                    $text = \App\Services\WhatsAppTemplateService::seguimientoPreguntaNo($this->event);
+                    $text = \App\Services\WhatsAppTemplateService::seguimientoPreguntaNo($this->event, $sender);
                     $title = 'Seguimiento';
                     break;
             }
+        }
+
+        if (!empty($text) && $recipientType === 'client') {
+            $text = \App\Services\WhatsAppTemplateService::applySenderSignatureToMessage((string)$text, $sender, $this->event);
         }
 
         if (empty($text)) {

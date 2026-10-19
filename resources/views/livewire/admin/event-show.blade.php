@@ -1765,17 +1765,17 @@
                             </div>
                             <div class="inline-flex rounded-xl p-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xs gap-1 flex-wrap">
                                 <button type="button" 
-                                    wire:click="$set('whatsapp_sender_brand', 'miguel')"
+                                    wire:click="setSenderBrand('miguel')"
                                     class="px-2.5 py-1 rounded-lg font-bold text-[11px] transition flex items-center gap-1 cursor-pointer {{ in_array(($whatsapp_sender_brand ?? 'miguel'), ['miguel', 'nunez', 'nunez_and_son']) ? 'bg-amber-500 text-white shadow-xs ring-1 ring-amber-400/40' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800' }}">
                                     <span>👑</span> Miguel (Núñez & Son)
                                 </button>
                                 <button type="button" 
-                                    wire:click="$set('whatsapp_sender_brand', 'fran')"
+                                    wire:click="setSenderBrand('fran')"
                                     class="px-2.5 py-1 rounded-lg font-bold text-[11px] transition flex items-center gap-1 cursor-pointer {{ in_array(($whatsapp_sender_brand ?? ''), ['fran', 'javnx', 'javnx_dj']) ? 'bg-indigo-600 text-white shadow-xs ring-1 ring-indigo-400/40' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800' }}">
                                     <span>🎧</span> Fran (JAVNX DJ / Núñez)
                                 </button>
                                 <button type="button" 
-                                    wire:click="$set('whatsapp_sender_brand', 'ezequiel')"
+                                    wire:click="setSenderBrand('ezequiel')"
                                     class="px-2.5 py-1 rounded-lg font-bold text-[11px] transition flex items-center gap-1 cursor-pointer {{ ($whatsapp_sender_brand ?? '') === 'ezequiel' ? 'bg-sky-600 text-white shadow-xs ring-1 ring-sky-400/40' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800' }}">
                                     <span>👥</span> Ezequiel (Núñez & Son)
                                 </button>
@@ -1992,6 +1992,7 @@
                                         <div class="text-[10px] text-slate-600 dark:text-slate-400 leading-relaxed">
                                             Variables automáticas que puedes usar:
                                             <code class="px-1 py-0.5 rounded bg-white dark:bg-slate-800 text-amber-700 dark:text-amber-300 font-bold">{nombre}</code>
+                                            <code class="px-1 py-0.5 rounded bg-white dark:bg-slate-800 text-amber-700 dark:text-amber-300 font-bold">{firma}</code>
                                             <code class="px-1 py-0.5 rounded bg-white dark:bg-slate-800 text-amber-700 dark:text-amber-300 font-bold">{fecha}</code>
                                             <code class="px-1 py-0.5 rounded bg-white dark:bg-slate-800 text-amber-700 dark:text-amber-300 font-bold">{lugar}</code>
                                             <code class="px-1 py-0.5 rounded bg-white dark:bg-slate-800 text-amber-700 dark:text-amber-300 font-bold">{empresa}</code>
