@@ -13,7 +13,10 @@ class WhatsAppTemplateService
     public static function cleanPhone($phone): string
     {
         $clean = preg_replace('/[^0-9]/', '', (string)$phone);
-        if (strlen($clean) === 9 && in_array(substr($clean, 0, 1), ['6', '7'])) {
+        if (str_starts_with($clean, '00') && strlen($clean) > 9) {
+            $clean = substr($clean, 2);
+        }
+        if (strlen($clean) === 9 && in_array(substr($clean, 0, 1), ['6', '7', '8', '9'], true)) {
             $clean = '34' . $clean;
         }
         return $clean;
