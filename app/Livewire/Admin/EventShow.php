@@ -278,6 +278,16 @@ class EventShow extends Component
         }
 
         $this->event = $event->load($relations);
+
+        if (empty(trim((string)$this->event->venue_contact_phone)) && \App\Services\VenueLookupService::isSearchableLocation($this->event->location)) {
+            try {
+                $foundVenue = \App\Services\VenueLookupService::autoPopulateEventVenuePhone($this->event, false);
+                if ($foundVenue) {
+                    $this->event->refresh();
+                }
+            } catch (\Throwable $e) {}
+        }
+
         $this->assigned_dj_id = $this->event->dj_id;
         $this->assigned_assistant_id = $this->event->assistant_id;
         $this->assigned_assistant_ids = $this->event->all_assistants->pluck('id')->map(fn($id) => (int)$id)->toArray();
@@ -3696,6 +3706,27 @@ class EventShow extends Component
         session()->flash('venue_message', 'Contacto de la finca/bodega guardado correctamente.');
     }
 
+    public function lookupVenuePhoneAutomatically()
+    {
+        $location = trim((string)$this->event->location);
+        if (!\App\Services\VenueLookupService::isSearchableLocation($location)) {
+            session()->flash('message', '⚠️ Indica primero el nombre del restaurante, bodega o finca en el lugar del evento.');
+            return;
+        }
+
+        $found = \App\Services\VenueLookupService::autoPopulateEventVenuePhone($this->event, true);
+        if ($found && !empty($found['phone'])) {
+            $this->event->refresh();
+            $this->venue_contact_phone = $this->event->venue_contact_phone;
+            $this->venue_contact_name = $this->event->venue_contact_name;
+            $source = $found['source'] ?? 'Web';
+            session()->flash('message', "✅ Teléfono de «{$location}» localizado automáticamente ({$found['phone']}) vía {$source}.");
+        } else {
+            $this->openVenueModal();
+            session()->flash('venue_lookup_error', "No se pudo localizar automáticamente un teléfono público para «{$location}». Puedes introducirlo manualmente aquí.");
+        }
+    }
+
     public function openEditEventModal()
     {
         $this->event_edit_name = $this->event->name;
@@ -3736,6 +3767,9 @@ class EventShow extends Component
             'event_edit_notes' => 'nullable|string',
         ]);
 
+        $previousLocation = trim((string)$this->event->location);
+        $newLocation = trim((string)$this->event_edit_location);
+
         $updateData = [
             'name' => $this->event_edit_name,
             'event_date' => $this->event_edit_date,
@@ -3772,6 +3806,20 @@ class EventShow extends Component
         }
 
         $this->event->refresh();
+
+        // Si cambió el restaurante/finca o aún no tenía teléfono, buscar su teléfono automáticamente en la web
+        if (mb_strtolower($previousLocation) !== mb_strtolower($newLocation) || empty(trim((string)$this->event->venue_contact_phone))) {
+            try {
+                $forceLookup = mb_strtolower($previousLocation) !== mb_strtolower($newLocation);
+                $foundVenue = \App\Services\VenueLookupService::autoPopulateEventVenuePhone($this->event, $forceLookup);
+                if ($foundVenue) {
+                    $this->event->refresh();
+                    $this->venue_contact_phone = $this->event->venue_contact_phone;
+                    $this->venue_contact_name = $this->event->venue_contact_name;
+                }
+            } catch (\Throwable $e) {}
+        }
+
         $this->showEditEventModal = false;
         session()->flash('message', '¡Detalles y estado del evento actualizados correctamente!');
     }

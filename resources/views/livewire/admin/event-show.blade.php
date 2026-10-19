@@ -476,7 +476,7 @@
                                 📍 {{ $event->location }}
                             </div>
                             @if($event->venue_contact_phone)
-                                <div class="flex items-center gap-1.5 pt-1">
+                                <div class="flex flex-wrap items-center gap-1.5 pt-1">
                                     <a href="tel:{{ $event->venue_contact_phone }}" class="inline-flex items-center gap-1 text-[10px] font-bold text-blue-700 dark:text-blue-300 bg-blue-100 hover:bg-blue-200 dark:bg-blue-950 dark:border dark:border-blue-800 px-2 py-0.5 rounded transition">
                                         📞 {{ $event->venue_contact_phone }}
                                     </a>
@@ -487,9 +487,18 @@
                                     @endif
                                 </div>
                             @else
-                                <button type="button" wire:click="openVenueModal" class="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer block pt-0.5">
-                                    + Añadir Teléfono Finca
-                                </button>
+                                <div class="flex flex-wrap items-center gap-2 pt-0.5">
+                                    <button type="button"
+                                            wire:click="lookupVenuePhoneAutomatically"
+                                            wire:loading.attr="disabled"
+                                            class="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/80 border border-emerald-200 dark:border-emerald-800 px-2 py-0.5 rounded-md transition cursor-pointer">
+                                        <span wire:loading.remove wire:target="lookupVenuePhoneAutomatically">🔍 Buscar Teléfono en Web</span>
+                                        <span wire:loading wire:target="lookupVenuePhoneAutomatically">⏳ Buscando...</span>
+                                    </button>
+                                    <button type="button" wire:click="openVenueModal" class="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer">
+                                        + Añadir manual
+                                    </button>
+                                </div>
                             @endif
                         </div>
                     </div>
@@ -5540,14 +5549,29 @@
 
                 <form wire:submit.prevent="saveVenueContact">
                     <div class="p-6 space-y-4">
+                        @if (session()->has('venue_lookup_error'))
+                            <div class="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs font-semibold">
+                                ℹ️ {{ session('venue_lookup_error') }}
+                            </div>
+                        @endif
+
                         <div>
                             <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Nombre del Responsable / Coordinador</label>
                             <input type="text" wire:model="venue_contact_name" placeholder="Ej: Marta (Coordinadora Eventos) o Juan (Maître)" class="w-full border-gray-300 rounded-xl text-sm focus:ring-indigo-500 focus:border-indigo-500">
                         </div>
 
                         <div>
-                            <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Teléfono Directo de Contacto</label>
-                            <input type="tel" wire:model="venue_contact_phone" placeholder="Ej: 612 345 678" class="w-full border-gray-300 rounded-xl text-sm focus:ring-indigo-500 focus:border-indigo-500">
+                            <div class="flex items-center justify-between mb-1">
+                                <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider">Teléfono Directo de Contacto</label>
+                                <button type="button"
+                                        wire:click="lookupVenuePhoneAutomatically"
+                                        wire:loading.attr="disabled"
+                                        class="text-[11px] font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-2.5 py-0.5 rounded-lg transition cursor-pointer flex items-center gap-1">
+                                    <span wire:loading.remove wire:target="lookupVenuePhoneAutomatically">🔍 Buscar en Web / Google («{{ $event->location }}»)</span>
+                                    <span wire:loading wire:target="lookupVenuePhoneAutomatically">⏳ Buscando teléfono...</span>
+                                </button>
+                            </div>
+                            <input type="tel" wire:model="venue_contact_phone" placeholder="Ej: 943 14 27 09 o 612 345 678" class="w-full border-gray-300 rounded-xl text-sm focus:ring-indigo-500 focus:border-indigo-500">
                             <p class="text-[11px] text-gray-500 mt-1">Este número tendrá botones de llamada directa y WhatsApp en 1-clic.</p>
                         </div>
 

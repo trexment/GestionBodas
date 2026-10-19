@@ -173,6 +173,11 @@ class LeadWebhookController extends Controller
             'notes' => $notesContent,
         ]);
 
+        // Localizar automáticamente el teléfono del restaurante / bodega / finca
+        try {
+            \App\Services\VenueLookupService::autoPopulateEventVenuePhone($event);
+        } catch (\Throwable $e) {}
+
         // 9. Notificación en la App + Email + WhatsApp a los administradores
         $leadData = [
             'client_name' => $name,

@@ -331,6 +331,9 @@ class EventManager extends Component
                 if (\Illuminate\Support\Facades\Schema::hasTable('event_assistants')) {
                     $event->assistants()->sync($this->assistant_ids ?: []);
                 }
+                try {
+                    \App\Services\VenueLookupService::autoPopulateEventVenuePhone($event);
+                } catch (\Throwable $e) {}
                 $msg = '¡Evento "' . $this->name . '" actualizado exitosamente!';
             } else {
                 $eventStatus = ($this->event_type === 'video') ? ($this->initial_status ?: 'confirmed') : 'draft';
@@ -339,6 +342,9 @@ class EventManager extends Component
                 if (\Illuminate\Support\Facades\Schema::hasTable('event_assistants')) {
                     $event->assistants()->sync(($this->event_type === 'video') ? [] : ($this->assistant_ids ?: []));
                 }
+                try {
+                    \App\Services\VenueLookupService::autoPopulateEventVenuePhone($event);
+                } catch (\Throwable $e) {}
 
                 // Generar automáticamente presupuesto de videógrafo si es tipo video y tiene precio acordado
                 if ($this->event_type === 'video' && (float)$this->agreed_price > 0) {

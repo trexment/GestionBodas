@@ -947,6 +947,11 @@ class QuoteCalculator extends Component
             ]);
         }
 
+        // Localizar automáticamente el teléfono del restaurante / bodega / finca si se ha indicado lugar
+        try {
+            \App\Services\VenueLookupService::autoPopulateEventVenuePhone($event);
+        } catch (\Throwable $e) {}
+
         // 5. Create Quote Draft for Admin
         $quote = $event->quotes()->create([
             'brand' => $event->brand ?: Setting::getDetectedBrand(),

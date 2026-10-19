@@ -113,6 +113,10 @@ class CalendarManager extends Component
         try {
             $event = Event::create($eventData);
 
+            try {
+                \App\Services\VenueLookupService::autoPopulateEventVenuePhone($event);
+            } catch (\Throwable $e) {}
+
             if ($this->new_event_type === 'video' && (float)$this->new_agreed_price > 0) {
                 $quote = Quote::create([
                     'event_id' => $event->id,
