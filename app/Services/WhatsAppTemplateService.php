@@ -225,18 +225,132 @@ class WhatsAppTemplateService
         ];
     }
 
+    /**
+     * Catálogo de plantillas editables desde el panel web (con soporte de variables dinámicas)
+     */
+    public static function getEditableTemplatesCatalog(): array
+    {
+        return [
+            'primer_contacto_presupuesto' => [
+                'label' => '👋 1er Contacto + /presupuesto',
+                'default' => "¡Hola {nombre}! 👋 ¡Qué ilusión recibir vuestra solicitud! Os escribe *{empresa}*.\n\n¡Enhorabuena por vuestro enlace! 💍 Acabo de consultar nuestra agenda para el *{fecha}* en *{lugar}* y os confirmo que *¡tenemos la fecha disponible!* 🎉\n\nPara poder prepararos el presupuesto a medida necesitamos saber qué servicios necesitáis para vuestro gran día (sonorización de ceremonia, cóctel, banquete, horas de DJ en barra libre, fuego frío, plataforma 360...).\n\nPara ello podéis seleccionarlos directamente en 1 minuto aquí:\n👉 {enlace_presupuesto}\n\nTambién podéis contármelo por aquí o, si lo preferís, hacemos una llamada rápida de 5 minutos para orientaros sin compromiso. ¡Un saludo! 🎧✨",
+            ],
+            'primer_contacto_madrigal' => [
+                'label' => '🟢 1er Contacto (Madrigal)',
+                'default' => "¡Hola {nombre}! 👋 ¡Qué alegría recibir vuestra consulta para el *{fecha}*! Os escribe *{empresa}*.\n\nTenemos la fecha libre en el calendario. 🎉 Antes de enviaros catálogos genéricos que no os digan nada, nos gusta conocer vuestra idea de fiesta para proponeros justo lo que necesitáis.\n\n¿Tenéis ya cerrado el lugar o finca en {lugar}? ¿Buscáis música para todo el día o principalmente para la barra libre?\n\nSi queréis ir marcando los servicios que necesitáis para prepararos el presupuesto, lo tenéis disponible en:\n👉 {enlace_presupuesto}\n\n¡Un abrazo!",
+            ],
+            'llamada' => [
+                'label' => '📞 Proponer Llamada',
+                'default' => "¡Hola {nombre}! 👋 Os escribe *{empresa}*.\n\nPara no volveros locos con mil audios y mensajes de texto por WhatsApp, ¿qué os parece si hacemos una llamada o videollamada rápida de 10-15 minutos esta semana?\n\nAsí nos ponemos cara, me contáis vuestro estilo de música, los temas que no pueden faltar (y los que queréis prohibir), y os explico exactamente cómo organizamos el montaje para que tengáis la máxima tranquilidad.\n\n¿Qué día y franja horaria os vendría mejor? (Tardes o noches nos adaptamos sin problema). ¡Un abrazo! 💻📱",
+            ],
+            'dossier' => [
+                'label' => '📑 Envío Dossier',
+                'default' => "¡Hola {nombre}! 👋 Os escribe *{empresa}*.\n\nOs comparto por aquí vuestro dossier completo y personalizado para *{evento}* ({fecha} en {lugar}):\n\n📑 En el documento podréis ver fotos reales de nuestros montajes de sonido e iluminación profesional, cómo trabajamos paso a paso, y al final tenéis el *presupuesto cerrado con las opciones seleccionadas*.\n\n👉 *Podéis ver la propuesta online, descargar el Dossier en PDF y Aceptar o Rechazar el presupuesto desde aquí:*\n{enlace_dossier}\n\nEchadle un vistazo cuando tengáis un momento y decidme: ¿qué os parece? ¿Tenéis alguna duda? 🎧✨",
+            ],
+            'dia3_dudas' => [
+                'label' => '💡 Dudas (Día 3)',
+                'default' => "¡Hola {nombre}! 👋 Os escribe *{empresa}*.\n\n¿Pudisteis echarle un vistazo con calma al presupuesto que os pasé para *{evento}*?\n\nOs escribía porque muchas veces surgen dudas con los horarios, o queréis quitar o añadir algún extra (como la plataforma 360, la hora loca o sonido para el cóctel). Nos adaptamos al 100% a lo que tengáis en mente sin ningún problema.\n\n¿Cómo lo veis? ¿Tenéis alguna duda o queréis que ajustemos algún detalle? 🎧✨",
+            ],
+            'dia7_escasez' => [
+                'label' => '⚡ Escasez 24h (Día 7)',
+                'default' => "¡Hola {nombre}! 👋 Os escribo rápido desde *{empresa}*.\n\nNos acaba de entrar otra consulta para vuestra misma fecha (*{fecha}* en {lugar}).\n\nComo me escribisteis vosotros primero y ya tenéis el presupuesto en mano, por respeto y cortesía os guardo la prioridad durante *24 horas* antes de disponer del día.\n\n¿Seguís interesados en reservar la fecha o la dejamos libre para la otra pareja? Decidme algo en cuanto podáis para tenerlo en cuenta. ¡Un saludo! 🎧",
+            ],
+            'pregunta_no' => [
+                'label' => '🎯 Técnica NO (Día 10)',
+                'default' => "¡Hola {nombre}! 👋 Os escribe *{empresa}*.\n\nOs hago una consulta muy rápida y directa: *¿habéis decidido descartar la opción de contar con nosotros para {evento} ({fecha})?*\n\nOs pregunto con total confianza porque nos ha entrado otra consulta para vuestra misma fecha y, por respeto y deferencia a vosotros que contactasteis primero, no queríamos disponer del día sin consultaros antes.\n\nSi habéis elegido otra opción o preferís no seguir adelante, no os preocupéis en absoluto: respondedme simplemente *\"la descartamos\"* y así liberamos la fecha para la otra pareja con total tranquilidad.\n\nY si por el contrario seguís con la idea de contar con nosotros o queréis que adaptemos algún detalle del presupuesto a vuestra medida, decidnos y lo dejamos reservado hoy mismo.\n\n¡Un abrazo y que tengáis muy buen día! 🎧✨",
+            ],
+            'psicologia_inversa' => [
+                'label' => '🔒 Cierre de Expediente',
+                'default' => "¡Hola {nombre}! 👋 Os escribe *{empresa}*.\n\nImagino que estáis a tope de gestiones con los preparativos de *{evento}*.\n\nComo no hemos tenido noticias vuestras tras enviaros la propuesta, doy por hecho que habéis decidido elegir otra opción o aplazar la música para más adelante (lo cual entendemos perfectamente).\n\nPara no ser pesados ni saturaros con más mensajes, cerramos vuestro expediente por nuestra parte para no molestaros más.\n\nSolo os escribía para despedirme y desearos lo mejor en vuestro evento. Si por algún motivo cambiáis de opinión o aún queréis contar con nosotros antes de que la fecha ({fecha}) se ocupe definitivamente, sabéis dónde encontrarnos.\n\n¡Mucho éxito con todo y un abrazo grande! 🎉",
+            ],
+            'presupuesto' => [
+                'label' => '💰 Objeción Precio (Adaptar)',
+                'default' => "¡Hola {nombre}! 👋 Os escribe *{empresa}*.\n\n*¿Habéis decidido descartar nuestra propuesta para {evento} principalmente por un tema de presupuesto?*\n\nSi es por eso, no os preocupéis: tenemos alternativas más flexibles o podemos adaptar el equipamiento para encajar dentro de lo que teníais pensado invertir, sin renunciar a la calidad del sonido ni de la fiesta.\n\nSi por el contrario ya tenéis otra opción contratada o preferís dejarlo, avisadnos con toda confianza para poder liberar vuestra fecha ({fecha}) en nuestra agenda.\n\n¡Quedamos a vuestra disposición! 🎧",
+            ],
+            'no_es_nuestro_cliente' => [
+                'label' => '👑 No es nuestro cliente (Precio)',
+                'default' => "¡Hola {nombre}! 👋 No hay ningún problema, os agradecemos mucho vuestra sinceridad.\n\nCon total transparencia y cariño, en *{empresa}* entendemos que más que tratarse de que se os vaya de presupuesto, simplemente es que no somos el perfil de servicio que estáis buscando (ni vosotros el perfil de cliente para nosotros en esta ocasión).\n\nNosotros nunca recortamos en calidad técnica, montaje ni dedicación para competir por precio, porque nuestro trabajo está enfocado a parejas que buscan una producción musical de primer nivel, cero improvisaciones y la tranquilidad absoluta de que su gran día salga perfecto.\n\nPor nuestra parte liberamos desde este momento el *{fecha}* en nuestra agenda para otras parejas que sí buscan este nivel de experiencia.\n\nOs deseamos de corazón que encontréis una opción que encaje con lo que tenéis en mente y que disfrutéis muchísimo de vuestra boda. ¡Un saludo! ✨",
+            ],
+            'cuestionario' => [
+                'label' => '📋 Cuestionario Musical',
+                'default' => "¡Hola {nombre}! 👋 Os escribe el equipo de *{empresa}*.\n\nSe acerca vuestro gran día (*{evento}*) y estamos preparando la música y momentos especiales. 🎵💍\n\nPor favor, cuando tengáis un momento, completad vuestras canciones y preferencias desde este enlace:\n👉 {enlace_cuestionario}\n\nPodréis elegir las canciones de la entrada, tarta, baile, regalos y vuestros temazos favoritos para la fiesta.\n\n¡Cualquier duda nos decís! 🎧",
+            ],
+            'contrato' => [
+                'label' => '✍️ Enlace Contrato',
+                'default' => "¡Hola {nombre}! 👋 Os escribe *{empresa}*.\n\nOs compartimos el enlace para revisar y firmar online vuestro contrato oficial de servicios para *{evento}*:\n\n✍️ {enlace_contrato}\n\nPodéis confirmar vuestros datos y estampar la firma digital directamente desde la pantalla de vuestro móvil en 30 segundos.\n\n¡Un saludo!",
+            ],
+        ];
+    }
+
+    public static function getRawTemplateForEdit(string $key): string
+    {
+        $catalog = self::getEditableTemplatesCatalog();
+        $custom = Setting::get('wa_custom_tpl_' . $key, '');
+        if (!empty(trim((string)$custom))) {
+            return (string)$custom;
+        }
+        return $catalog[$key]['default'] ?? '';
+    }
+
+    public static function hasCustomTemplate(string $key): bool
+    {
+        return !empty(trim((string)Setting::get('wa_custom_tpl_' . $key, '')));
+    }
+
+    public static function saveCustomTemplate(string $key, string $rawText): void
+    {
+        Setting::set('wa_custom_tpl_' . $key, trim($rawText));
+    }
+
+    public static function resetCustomTemplate(string $key): void
+    {
+        Setting::set('wa_custom_tpl_' . $key, '');
+    }
+
+    public static function renderCustomIfPresent(string $key, ?Event $event, string $defaultRendered): string
+    {
+        try {
+            $custom = trim((string)Setting::get('wa_custom_tpl_' . $key, ''));
+            if (empty($custom) || !$event) {
+                return $defaultRendered;
+            }
+
+            $clientName = $event->client ? $event->client->name : ($event->partner_name ?: 'pareja');
+            $brand = Setting::getBrandInfo($event->brand_clean);
+            $companyName = $brand['name'] ?? Setting::get('company_name', 'Núñez & Son');
+            $eventDate = $event->event_date ? Carbon::parse($event->event_date)->locale('es')->isoFormat('D [de] MMMM [de] YYYY') : 'vuestra fecha';
+            $location = $event->location ?: 'vuestro espacio elegido';
+            $eventName = $event->name ?: 'vuestro evento';
+            $presupuestoUrl = self::getQuoteCalculatorUrl($event);
+            $formUrl = $event->token ? route('guest.form', $event->token) : '';
+            $signUrl = $event->token ? route('guest.contract', $event->token) : '';
+            $activeQuote = $event->quotes()->latest()->first();
+            $onlineUrl = $activeQuote ? $activeQuote->public_url : ($event->token ? route('guest.quote.view', $event->token) : '');
+
+            return str_replace(
+                ['{nombre}', '{fecha}', '{lugar}', '{empresa}', '{evento}', '{enlace_presupuesto}', '{enlace_cuestionario}', '{enlace_contrato}', '{enlace_dossier}'],
+                [$clientName, $eventDate, $location, $companyName, $eventName, $presupuestoUrl, $formUrl, $signUrl, $onlineUrl],
+                $custom
+            );
+        } catch (\Throwable $e) {
+            return $defaultRendered;
+        }
+    }
+
     public static function cuestionario(Event $event): string
     {
         $clientName = $event->client ? $event->client->name : 'pareja';
         $companyName = Setting::get('company_name', 'Eventos Musicales');
         $formUrl = route('guest.form', $event->token);
 
-        return "¡Hola {$clientName}! 👋 Os escribe el equipo de *{$companyName}*.\n\n"
+        $default = "¡Hola {$clientName}! 👋 Os escribe el equipo de *{$companyName}*.\n\n"
              . "Se acerca vuestro gran día (*{$event->name}*) y estamos preparando la música y momentos especiales. 🎵💍\n\n"
              . "Por favor, cuando tengáis un momento, completad vuestras canciones y preferencias desde este enlace:\n"
              . "👉 {$formUrl}\n\n"
              . "Podréis elegir las canciones de la entrada, tarta, baile, regalos y vuestros temazos favoritos para la fiesta.\n\n"
              . "¡Cualquier duda nos decís! 🎧";
+
+        return self::renderCustomIfPresent('cuestionario', $event, $default);
     }
 
     public static function contrato($contractOrEvent): string
@@ -256,11 +370,13 @@ class WhatsAppTemplateService
 
         $signUrl = route('guest.contract', $token);
 
-        return "¡Hola {$clientName}! 👋 Os escribe *{$companyName}*.\n\n"
+        $default = "¡Hola {$clientName}! 👋 Os escribe *{$companyName}*.\n\n"
              . "Os compartimos el enlace para revisar y firmar online vuestro contrato oficial de servicios para *{$eventName}*:\n\n"
              . "✍️ {$signUrl}\n\n"
              . "Podéis confirmar vuestros datos y estampar la firma digital directamente desde la pantalla de vuestro móvil en 30 segundos.\n\n"
              . "¡Un saludo!";
+
+        return self::renderCustomIfPresent('contrato', $event, $default);
     }
 
     public static function liquidacion(Event $event): string
@@ -298,12 +414,13 @@ class WhatsAppTemplateService
         $presupuestoUrl = self::getQuoteCalculatorUrl($event);
 
         if ($variant === 'presupuesto_online' || $variant === 'primer_contacto_presupuesto') {
-            return "¡Hola {$clientName}! 👋 ¡Qué ilusión recibir vuestra solicitud! Os escribe *{$companyName}*.\n\n"
+            $default = "¡Hola {$clientName}! 👋 ¡Qué ilusión recibir vuestra solicitud! Os escribe *{$companyName}*.\n\n"
                  . "¡Enhorabuena por vuestro enlace! 💍 Acabo de consultar nuestra agenda para el *{$eventDate}* en *{$location}* y os confirmo que *¡tenemos la fecha disponible!* 🎉\n\n"
                  . "Para poder prepararos el presupuesto a medida necesitamos saber qué servicios necesitáis para vuestro gran día (sonorización de ceremonia, cóctel, banquete, horas de DJ en barra libre, fuego frío, plataforma 360...).\n\n"
                  . "Para ello podéis seleccionarlos directamente en 1 minuto aquí:\n"
                  . "👉 {$presupuestoUrl}\n\n"
                  . "También podéis contármelo por aquí o, si lo preferís, hacemos una llamada rápida de 5 minutos para orientaros sin compromiso. ¡Un saludo! 🎧✨";
+            return self::renderCustomIfPresent('primer_contacto_presupuesto', $event, $default);
         }
 
         if ($variant === 'disponibilidad') {
@@ -315,20 +432,22 @@ class WhatsAppTemplateService
         }
 
         if ($variant === 'filtro_finca') {
-            return "¡Hola {$clientName}! 👋 ¡Qué alegría recibir vuestra consulta para el *{$eventDate}*! Os escribe *{$companyName}*.\n\n"
+            $default = "¡Hola {$clientName}! 👋 ¡Qué alegría recibir vuestra consulta para el *{$eventDate}*! Os escribe *{$companyName}*.\n\n"
                  . "Tenemos la fecha libre en el calendario. 🎉 Antes de enviaros catálogos genéricos que no os digan nada, nos gusta conocer vuestra idea de fiesta para proponeros justo lo que necesitáis.\n\n"
                  . "¿Tenéis ya cerrado el lugar o finca en {$location}? ¿Buscáis música para todo el día o principalmente para la barra libre?\n\n"
                  . "Si queréis ir marcando los servicios que necesitáis para prepararos el presupuesto, lo tenéis disponible en:\n"
                  . "👉 {$presupuestoUrl}\n\n"
                  . "¡Un abrazo!";
+            return self::renderCustomIfPresent('primer_contacto_madrigal', $event, $default);
         }
 
         // Variante por defecto: estándar cálida y directa con enlace a /presupuesto
-        return "¡Hola {$clientName}! 👋 ¡Qué ilusión saber de vosotros! Os escribe *{$companyName}*.\n\n"
+        $default = "¡Hola {$clientName}! 👋 ¡Qué ilusión saber de vosotros! Os escribe *{$companyName}*.\n\n"
              . "Confirmado: ¡tenemos libre vuestra fecha (*{$eventDate}*)! 🎉 Nos encantaría acompañaros en *{$location}* y montar un fiestón a vuestra medida.\n\n"
              . "Necesitamos saber qué servicios necesitáis para haceros el presupuesto, y para ello podéis seleccionarlos en un momento desde aquí:\n"
              . "👉 {$presupuestoUrl}\n\n"
              . "¡Cualquier duda me decís por aquí! ¡Un saludo!";
+        return self::renderCustomIfPresent('primer_contacto_presupuesto', $event, $default);
     }
 
     /**
@@ -365,10 +484,12 @@ class WhatsAppTemplateService
         $brand = Setting::getBrandInfo($event ? $event->brand_clean : null);
         $companyName = $brand['name'] ?? Setting::get('company_name', 'Núñez & Son');
 
-        return "¡Hola {$clientName}! 👋 Os escribe *{$companyName}*.\n\n"
+        $default = "¡Hola {$clientName}! 👋 Os escribe *{$companyName}*.\n\n"
              . "Para no volveros locos con mil audios y mensajes de texto por WhatsApp, ¿qué os parece si hacemos una llamada o videollamada rápida de 10-15 minutos esta semana?\n\n"
              . "Así nos ponemos cara, me contáis vuestro estilo de música, los temas que no pueden faltar (y los que queréis prohibir), y os explico exactamente cómo organizamos el montaje para que tengáis la máxima tranquilidad.\n\n"
              . "¿Qué día y franja horaria os vendría mejor? (Tardes o noches nos adaptamos sin problema). ¡Un abrazo! 💻📱";
+
+        return self::renderCustomIfPresent('llamada', $event, $default);
     }
 
     /**
@@ -393,12 +514,14 @@ class WhatsAppTemplateService
         $onlineUrl = $activeQuote ? $activeQuote->public_url : ($event->token ? route('guest.quote.view', $event->token) : '');
         $onlineLinkBlock = $onlineUrl ? "\n\n👉 *Podéis ver la propuesta online, descargar el Dossier en PDF y Aceptar o Rechazar el presupuesto desde aquí:*\n{$onlineUrl}" : "";
 
-        return "¡Hola {$clientName}! 👋 Os escribe *{$companyName}*.\n\n"
+        $default = "¡Hola {$clientName}! 👋 Os escribe *{$companyName}*.\n\n"
              . "Os comparto por aquí vuestro dossier completo y personalizado para *{$event->name}* ({$eventDate} en {$location}):\n\n"
              . "📑 En el documento podréis ver fotos reales de nuestros montajes de sonido e iluminación profesional, cómo trabajamos paso a paso, y al final tenéis el *presupuesto cerrado con las opciones seleccionadas*{$priceNote}."
              . $onlineLinkBlock . "\n\n"
              . "{$validityNote}\n\n"
              . "Echadle un vistazo cuando tengáis un momento y decidme: ¿qué os parece? ¿Tenéis alguna duda? 🎧✨";
+
+        return self::renderCustomIfPresent('dossier', $event, $default);
     }
 
     /**
@@ -430,12 +553,14 @@ class WhatsAppTemplateService
         $eventDate = $event->event_date ? Carbon::parse($event->event_date)->locale('es')->isoFormat('D [de] MMMM [de] YYYY') : 'vuestro gran día';
         $eventName = $event->name ?: 'vuestro evento';
 
-        return "¡Hola {$clientName}! 👋 Os escribe *{$companyName}*.\n\n"
+        $default = "¡Hola {$clientName}! 👋 Os escribe *{$companyName}*.\n\n"
              . "Os hago una consulta muy rápida y directa: *¿habéis decidido descartar la opción de contar con nosotros para {$eventName} ({$eventDate})?*\n\n"
              . "Os pregunto con total confianza porque nos ha entrado otra consulta para vuestra misma fecha y, por respeto y deferencia a vosotros que contactasteis primero, no queríamos disponer del día sin consultaros antes.\n\n"
              . "Si habéis elegido otra opción o preferís no seguir adelante, no os preocupéis en absoluto: respondedme simplemente *\"la descartamos\"* y así liberamos la fecha para la otra pareja con total tranquilidad.\n\n"
              . "Y si por el contrario seguís con la idea de contar con nosotros o queréis que adaptemos algún detalle del presupuesto a vuestra medida, decidnos y lo dejamos reservado hoy mismo.\n\n"
              . "¡Un abrazo y que tengáis muy buen día! 🎧✨";
+
+        return self::renderCustomIfPresent('pregunta_no', $event, $default);
     }
 
     /**
@@ -451,12 +576,14 @@ class WhatsAppTemplateService
         $eventDate = $event->event_date ? Carbon::parse($event->event_date)->locale('es')->isoFormat('D [de] MMMM [de] YYYY') : 'la fecha prevista';
         $eventName = $event->name ?: 'vuestro evento';
 
-        return "¡Hola {$clientName}! 👋 Os escribe *{$companyName}*.\n\n"
+        $default = "¡Hola {$clientName}! 👋 Os escribe *{$companyName}*.\n\n"
              . "Imagino que estáis a tope de gestiones con los preparativos de *{$eventName}*.\n\n"
              . "Como no hemos tenido noticias vuestras tras enviaros la propuesta, doy por hecho que habéis decidido elegir otra opción o aplazar la música para más adelante (lo cual entendemos perfectamente).\n\n"
              . "Para no ser pesados ni saturaros con más mensajes, cerramos vuestro expediente por nuestra parte para no molestaros más.\n\n"
              . "Solo os escribía para despedirme y desearos lo mejor en vuestro evento. Si por algún motivo cambiáis de opinión o aún queréis contar con nosotros antes de que la fecha ({$eventDate}) se ocupe definitivamente, sabéis dónde encontrarnos.\n\n"
              . "¡Mucho éxito con todo y un abrazo grande! 🎉";
+
+        return self::renderCustomIfPresent('psicologia_inversa', $event, $default);
     }
 
     /**
@@ -470,10 +597,12 @@ class WhatsAppTemplateService
         $companyName = $brand['name'] ?? Setting::get('company_name', 'Núñez & Son');
         $eventName = $event->name ?: 'vuestro evento';
 
-        return "¡Hola {$clientName}! 👋 Os escribe *{$companyName}*.\n\n"
+        $default = "¡Hola {$clientName}! 👋 Os escribe *{$companyName}*.\n\n"
              . "¿Pudisteis echarle un vistazo con calma al presupuesto que os pasé para *{$eventName}*?\n\n"
              . "Os escribía porque muchas veces surgen dudas con los horarios, o queréis quitar o añadir algún extra (como la plataforma 360, la hora loca o sonido para el cóctel). Nos adaptamos al 100% a lo que tengáis en mente sin ningún problema.\n\n"
              . "¿Cómo lo veis? ¿Tenéis alguna duda o queréis que ajustemos algún detalle? 🎧✨";
+
+        return self::renderCustomIfPresent('dia3_dudas', $event, $default);
     }
 
     /**
@@ -488,10 +617,12 @@ class WhatsAppTemplateService
         $eventDate = $event->event_date ? Carbon::parse($event->event_date)->locale('es')->isoFormat('D [de] MMMM [de] YYYY') : 'vuestra fecha';
         $location = $event->location ?: 'vuestra zona';
 
-        return "¡Hola {$clientName}! 👋 Os escribo rápido desde *{$companyName}*.\n\n"
+        $default = "¡Hola {$clientName}! 👋 Os escribo rápido desde *{$companyName}*.\n\n"
              . "Nos acaba de entrar otra consulta para vuestra misma fecha (*{$eventDate}* en {$location}).\n\n"
              . "Como me escribisteis vosotros primero y ya tenéis el presupuesto en mano, por respeto y cortesía os guardo la prioridad durante *24 horas* antes de disponer del día.\n\n"
              . "¿Seguís interesados en reservar la fecha o la dejamos libre para la otra pareja? Decidme algo en cuanto podáis para tenerlo en cuenta. ¡Un saludo! 🎧";
+
+        return self::renderCustomIfPresent('dia7_escasez', $event, $default);
     }
 
     /**
@@ -505,11 +636,13 @@ class WhatsAppTemplateService
         $eventDate = $event->event_date ? Carbon::parse($event->event_date)->locale('es')->isoFormat('D [de] MMMM [de] YYYY') : 'vuestra fecha';
         $eventName = $event->name ?: 'vuestro evento';
 
-        return "¡Hola {$clientName}! 👋 Os escribe *{$companyName}*.\n\n"
+        $default = "¡Hola {$clientName}! 👋 Os escribe *{$companyName}*.\n\n"
              . "*¿Habéis decidido descartar nuestra propuesta para {$eventName} principalmente por un tema de presupuesto?*\n\n"
              . "Si es por eso, no os preocupéis: tenemos alternativas más flexibles o podemos adaptar el equipamiento para encajar dentro de lo que teníais pensado invertir, sin renunciar a la calidad del sonido ni de la fiesta.\n\n"
              . "Si por el contrario ya tenéis otra opción contratada o preferís dejarlo, avisadnos con toda confianza para poder liberar vuestra fecha ({$eventDate}) en nuestra agenda.\n\n"
              . "¡Quedamos a vuestra disposición! 🎧";
+
+        return self::renderCustomIfPresent('presupuesto', $event, $default);
     }
 
     /**
@@ -523,11 +656,13 @@ class WhatsAppTemplateService
         $companyName = $brand['name'] ?? Setting::get('company_name', 'Núñez & Son');
         $eventDate = $event->event_date ? Carbon::parse($event->event_date)->locale('es')->isoFormat('D [de] MMMM [de] YYYY') : 'vuestra fecha';
 
-        return "¡Hola {$clientName}! 👋 No hay ningún problema, os agradecemos mucho vuestra sinceridad.\n\n"
+        $default = "¡Hola {$clientName}! 👋 No hay ningún problema, os agradecemos mucho vuestra sinceridad.\n\n"
              . "Con total transparencia y cariño, en *{$companyName}* entendemos que más que tratarse de que se os vaya de presupuesto, simplemente es que no somos el perfil de servicio que estáis buscando (ni vosotros el perfil de cliente para nosotros en esta ocasión).\n\n"
              . "Nosotros nunca recortamos en calidad técnica, montaje ni dedicación para competir por precio, porque nuestro trabajo está enfocado a parejas que buscan una producción musical de primer nivel, cero improvisaciones y la tranquilidad absoluta de que su gran día salga perfecto.\n\n"
              . "Por nuestra parte liberamos desde este momento el *{$eventDate}* en nuestra agenda para otras parejas que sí buscan este nivel de experiencia.\n\n"
              . "Os deseamos de corazón que encontréis una opción que encaje con lo que tenéis en mente y que disfrutéis muchísimo de vuestra boda. ¡Un saludo! ✨";
+
+        return self::renderCustomIfPresent('no_es_nuestro_cliente', $event, $default);
     }
 
     /**

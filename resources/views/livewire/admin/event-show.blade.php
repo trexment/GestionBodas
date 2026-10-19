@@ -1956,9 +1956,66 @@
 
                             <!-- Selector Rápido de Plantillas Madrigal -->
                             <div class="space-y-1.5 pt-1">
-                                <span class="text-[10px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 block">
-                                    ⚡ Plantillas Rápidas Madrigal & Comerciales (para WhatsApp o Email):
-                                </span>
+                                <div class="flex flex-wrap items-center justify-between gap-2">
+                                    <span class="text-[10px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 block">
+                                        ⚡ Plantillas Rápidas Madrigal & Comerciales (para WhatsApp o Email):
+                                    </span>
+                                    <button type="button"
+                                            wire:click="toggleTemplateEditor"
+                                            class="text-[10px] font-bold px-2.5 py-0.5 rounded-lg border transition cursor-pointer flex items-center gap-1 {{ $showTemplateEditor ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-xs' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-300 dark:border-slate-700 hover:border-amber-400 hover:text-amber-600 dark:hover:text-amber-400' }}">
+                                        <span>✏️</span>
+                                        <span>{{ $showTemplateEditor ? 'Cerrar editor de plantillas' : 'Personalizar textos de plantillas' }}</span>
+                                    </button>
+                                </div>
+
+                                @if($showTemplateEditor)
+                                    <div class="p-3 bg-amber-50/70 dark:bg-slate-900/95 rounded-xl border border-amber-300 dark:border-amber-700/70 space-y-2.5 my-1.5">
+                                        <div class="flex flex-wrap items-center justify-between gap-2">
+                                            <div class="flex items-center gap-2 flex-1 min-w-[200px]">
+                                                <label class="text-[10px] font-black uppercase text-amber-800 dark:text-amber-300 shrink-0">Plantilla a editar:</label>
+                                                <select wire:model.live="editingTemplateKey" class="flex-1 text-xs px-2.5 py-1 rounded-lg border border-amber-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-white font-bold">
+                                                    @foreach(\App\Services\WhatsAppTemplateService::getEditableTemplatesCatalog() as $tplKey => $tplMeta)
+                                                        <option value="{{ $tplKey }}">
+                                                            {{ $tplMeta['label'] }}{{ \App\Services\WhatsAppTemplateService::hasCustomTemplate($tplKey) ? ' (Personalizada ✓)' : '' }}
+                                                        </option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                            <button type="button"
+                                                    wire:click="resetTemplateToDefault"
+                                                    wire:confirm="¿Restaurar esta plantilla a su texto original por defecto?"
+                                                    class="text-[10px] font-bold px-2 py-1 rounded-lg bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-300 dark:border-slate-700 hover:text-rose-600 dark:hover:text-rose-400 transition cursor-pointer">
+                                                🔄 Restaurar original
+                                            </button>
+                                        </div>
+
+                                        <div class="text-[10px] text-slate-600 dark:text-slate-400 leading-relaxed">
+                                            Variables automáticas que puedes usar:
+                                            <code class="px-1 py-0.5 rounded bg-white dark:bg-slate-800 text-amber-700 dark:text-amber-300 font-bold">{nombre}</code>
+                                            <code class="px-1 py-0.5 rounded bg-white dark:bg-slate-800 text-amber-700 dark:text-amber-300 font-bold">{fecha}</code>
+                                            <code class="px-1 py-0.5 rounded bg-white dark:bg-slate-800 text-amber-700 dark:text-amber-300 font-bold">{lugar}</code>
+                                            <code class="px-1 py-0.5 rounded bg-white dark:bg-slate-800 text-amber-700 dark:text-amber-300 font-bold">{empresa}</code>
+                                            <code class="px-1 py-0.5 rounded bg-white dark:bg-slate-800 text-amber-700 dark:text-amber-300 font-bold">{evento}</code>
+                                            <code class="px-1 py-0.5 rounded bg-white dark:bg-slate-800 text-amber-700 dark:text-amber-300 font-bold">{enlace_presupuesto}</code>
+                                            <code class="px-1 py-0.5 rounded bg-white dark:bg-slate-800 text-amber-700 dark:text-amber-300 font-bold">{enlace_dossier}</code>
+                                            <code class="px-1 py-0.5 rounded bg-white dark:bg-slate-800 text-amber-700 dark:text-amber-300 font-bold">{enlace_cuestionario}</code>
+                                            <code class="px-1 py-0.5 rounded bg-white dark:bg-slate-800 text-amber-700 dark:text-amber-300 font-bold">{enlace_contrato}</code>
+                                        </div>
+
+                                        <textarea wire:model="editingTemplateRawText"
+                                                  rows="6"
+                                                  class="w-full text-xs p-2.5 rounded-lg border border-amber-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-white focus:ring-amber-500 focus:border-amber-500 leading-relaxed"></textarea>
+
+                                        <div class="flex justify-end gap-2">
+                                            <button type="button"
+                                                    wire:click="saveTemplateCustomization"
+                                                    class="px-3 py-1.5 rounded-lg text-[11px] font-extrabold bg-amber-500 hover:bg-amber-600 text-slate-950 shadow-xs transition cursor-pointer flex items-center gap-1">
+                                                <span>💾</span> Guardar Plantilla para todos los Eventos
+                                            </button>
+                                        </div>
+                                    </div>
+                                @endif
+
                                 <div class="flex flex-wrap gap-1.5">
                                     <button type="button" wire:click="loadWhatsAppTemplate('primer_contacto_presupuesto')" class="px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-emerald-600 hover:bg-emerald-700 text-white border border-emerald-500 transition shadow-xs cursor-pointer flex items-center gap-1">
                                         <span>👋</span> 1er Contacto + /presupuesto

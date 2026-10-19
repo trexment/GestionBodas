@@ -48,11 +48,89 @@ class ImapLeadFetcherService
     }
 
     /**
+     * Corrige automáticamente eventos de Madrigal/Email ya importados cuya fecha quedó como +3 meses (ej. 19 de enero)
+     * por venir con formato *Fecha:* YYYY-MM-DD con asteriscos.
+     */
+    public static function repairMisParsedLeadDates(?Event $singleEvent = null): int
+    {
+        $repaired = 0;
+        try {
+            $events = $singleEvent
+                ? collect([$singleEvent])
+                : Event::where('notes', 'LIKE', '%*Fecha:*%')
+                    ->orWhere('notes', 'LIKE', '%LEAD IMPORTADO VÍA EMAIL%')
+                    ->get();
+
+            foreach ($events as $ev) {
+                $notes = (string)($ev->notes ?? '');
+                if (empty($notes)) {
+                    continue;
+                }
+
+                $updates = [];
+
+                // 1. Extraer fecha explícita del bloque de lead en las notas (*Fecha:* 2027-09-25 o *Fecha:* 25/09/2027)
+                $parsedDate = null;
+                if (preg_match('/\*?Fecha(?:\s+de)?(?:\s+la)?(?:\s+boda|\s+evento)?\*?\s*:\*?\s*(20\d{2}[\/\-\.][0-1]?\d[\/\-\.][0-3]?\d)/iu', $notes, $m)) {
+                    try {
+                        $parsedDate = Carbon::parse(str_replace(['.', '/'], '-', trim($m[1])))->format('Y-m-d');
+                    } catch (\Throwable $e) {}
+                } elseif (preg_match('/\*?Fecha(?:\s+de)?(?:\s+la)?(?:\s+boda|\s+evento)?\*?\s*:\*?\s*([0-3]?\d[\/\-\.][0-1]?\d[\/\-\.]20\d{2})/iu', $notes, $m)) {
+                    try {
+                        $parsedDate = Carbon::createFromFormat('d/m/Y', str_replace(['.', '-'], '/', trim($m[1])))->format('Y-m-d');
+                    } catch (\Throwable $e) {}
+                }
+
+                if ($parsedDate) {
+                    $currentDate = $ev->event_date ? Carbon::parse($ev->event_date)->format('Y-m-d') : null;
+                    if ($currentDate !== $parsedDate) {
+                        // Verificar si la fecha actual era la fecha automática (+3 meses desde created_at o desde recepción)
+                        $createdAt = $ev->created_at ? Carbon::parse($ev->created_at) : now();
+                        $fallbackDate = $createdAt->copy()->addMonths(3);
+                        $isFallbackDate = !$currentDate
+                            || abs(Carbon::parse($currentDate)->diffInDays($fallbackDate, false)) <= 5
+                            || str_ends_with($currentDate, '-01-19');
+
+                        if ($isFallbackDate) {
+                            $updates['event_date'] = $parsedDate;
+                        }
+                    }
+                }
+
+                // 2. Limpiar asterisco residual en location (ej. "* Álava" -> "Álava")
+                if (!empty($ev->location) && str_starts_with(trim($ev->location), '*')) {
+                    $updates['location'] = trim($ev->location, " \t\n\r\0\x0B*_");
+                } elseif (($ev->location === 'Por definir' || empty($ev->location)) && preg_match('/\*?Lugar\*?\s*:\*?\s*([^\n\r]+)/iu', $notes, $m)) {
+                    $locClean = trim($m[1], " \t\n\r\0\x0B*_");
+                    if (mb_strlen($locClean) > 1) {
+                        $updates['location'] = $locClean;
+                    }
+                }
+
+                // 3. Limpiar asterisco residual en Origen: Madrigal Marketing (* Creativo X)
+                if (str_contains($notes, '(* ')) {
+                    $updates['notes'] = str_replace('(* ', '(', $notes);
+                }
+
+                if (!empty($updates)) {
+                    $ev->update($updates);
+                    $repaired++;
+                }
+            }
+        } catch (\Throwable $e) {
+            Log::warning('Error en repairMisParsedLeadDates: ' . $e->getMessage());
+        }
+
+        return $repaired;
+    }
+
+    /**
      * Sincroniza en segundo plano si ha pasado el tiempo de enfriamiento (por defecto 120s)
      */
     public function autoSyncIfDue(int $cooldownSeconds = 120): ?array
     {
         try {
+            self::repairMisParsedLeadDates();
             $cacheKey = 'imap_auto_sync_last_run';
             $lastRun = \Illuminate\Support\Facades\Cache::get($cacheKey);
             if ($lastRun && (time() - (int)$lastRun) < $cooldownSeconds) {
@@ -71,6 +149,7 @@ class ImapLeadFetcherService
      */
     public function fetchAllActiveMailboxes(?string $specificBrand = null): array
     {
+        self::repairMisParsedLeadDates();
         $brandsToScan = $specificBrand ? [$specificBrand] : ['nunez_and_son', 'javnx', 'mago_leugim'];
         $results = [
             'total_scanned' => 0,
@@ -387,9 +466,9 @@ class ImapLeadFetcherService
         $isMadrigal = $isFromMadrigal || str_contains($lowerText, 'madrigalmarketing.es') || str_contains($lowerText, 'madrigal marketing');
         $isPortalEmail = $isBodasNet || $isMadrigal;
         
-        // 4. Extraer Teléfono
+        // 4. Extraer Teléfono (soporta etiquetas con asteriscos ej. *Telefono:* +34633546432)
         $phone = null;
-        if (preg_match('/(?:Tel[eé]fono|Tel|M[oó]vil|Whatsapp|WhatsApp|Phone)\s*[:\-]?\s*([+\d\s().-]{9,20})/iu', $bodyClean, $m)) {
+        if (preg_match('/(?:Tel[eé]fono|Tel|M[oó]vil|Whatsapp|WhatsApp|Phone)[\s\*_]*[:\-]?[\s\*_]*([+\d\s().-]{9,20})/iu', $bodyClean, $m)) {
             $rawPhone = preg_replace('/[^\d+]/', '', trim($m[1]));
             if (strlen(preg_replace('/[^\d]/', '', $rawPhone)) >= 9) {
                 $phone = $rawPhone;
@@ -398,16 +477,17 @@ class ImapLeadFetcherService
             $phone = preg_replace('/[^\d+]/', '', trim($m[0]));
         }
 
-        // 5. Extraer Nombre del Cliente
+        // 5. Extraer Nombre del Cliente (soporta *Nombre:* Diana Lorena)
         $clientName = $isPortalEmail ? null : ($fromName ?: 'Cliente Potencial');
-        if ($isPortalEmail || str_contains($lowerText, 'nombre:')) {
-            if (preg_match('/(?:Nombre(?:\s+completo)?|Novios?|Contacto)\s*[:\-]\s*([^\n\r,]+)/iu', $bodyClean, $m)) {
-                $candidateName = trim($m[1]);
+        if ($isPortalEmail || str_contains($lowerText, 'nombre')) {
+            if (preg_match('/(?:Nombre(?:\s+completo)?|Novios?|Contacto)[\s\*_]*[:\-][\s\*_]*([^\n\r,]+)/iu', $bodyClean, $m)) {
+                $candidateName = trim($m[1], " \t\n\r\0\x0B*_");
                 // Limpiar si por algún motivo quedó pegada la etiqueta siguiente
-                $candidateName = preg_replace('/\s*(?:Fecha|Lugar|Tel[eé]fono|Email|Correo|Campa[ñn]a)\s*[:\-].*$/iu', '', $candidateName);
+                $candidateName = preg_replace('/[\s\*_]*(?:Fecha|Lugar|Tel[eé]fono|Email|Correo|Campa[ñn]a|Otro)[\s\*_]*[:\-].*$/iu', '', $candidateName);
+                $candidateName = trim((string)$candidateName, " \t\n\r\0\x0B*_");
                 $candidateLower = mb_strtolower($candidateName);
                 if (!empty($candidateName) && !str_contains($candidateLower, 'bodas.net') && !str_contains($candidateLower, 'madrigal')) {
-                    $clientName = trim($candidateName);
+                    $clientName = $candidateName;
                 }
             }
         }
@@ -418,7 +498,7 @@ class ImapLeadFetcherService
         ]);
         $clientEmail = $isPortalEmail ? null : $fromEmail;
         if ($isPortalEmail || str_contains($fromEmailLower, 'no-reply') || str_contains($fromEmailLower, 'noreply') || in_array($fromEmailLower, $portalOrSystemEmails)) {
-            if (preg_match('/(?:Email|Correo|E-mail)\s*[:\-]?\s*([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i', $bodyClean, $m)) {
+            if (preg_match('/(?:Email|Correo|E-mail)[\s\*_]*[:\-]?[\s\*_]*([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i', $bodyClean, $m)) {
                 $candidateEmail = strtolower(trim($m[1]));
                 if (!str_contains($candidateEmail, 'bodas.net')
                     && !str_contains($candidateEmail, 'madrigalmarketing.es')
@@ -432,16 +512,16 @@ class ImapLeadFetcherService
             }
         }
 
-        // 7. Extraer Fecha del Evento
+        // 7. Extraer Fecha del Evento (soporta *Fecha:* 2027-09-25, Fecha: 25/09/2027, 25 de septiembre de 2027, etc.)
         $eventDate = null;
         $explicitDateFound = false;
-        if (preg_match('/(?:Fecha(?:\s+de)?(?:\s+la)?(?:\s+boda|\s+evento)?|Día|Dia|Celebración|Celebracion|Enlace)\s*[:\-]?\s*([0-3]?\d[\/\-\.][0-1]?\d[\/\-\.]20\d{2})/iu', $bodyClean, $m)) {
+        if (preg_match('/(?:Fecha(?:\s+de)?(?:\s+la)?(?:\s+boda|\s+evento)?|Día|Dia|Celebración|Celebracion|Enlace)[\s\*_]*[:\-]?[\s\*_]*([0-3]?\d[\/\-\.][0-1]?\d[\/\-\.]20\d{2})/iu', $bodyClean, $m)) {
             try {
                 $dateStr = str_replace(['.', '-'], '/', trim($m[1]));
                 $eventDate = Carbon::createFromFormat('d/m/Y', $dateStr)->format('Y-m-d');
                 $explicitDateFound = true;
             } catch (\Throwable $e) {}
-        } elseif (preg_match('/(?:Fecha(?:\s+de)?(?:\s+la)?(?:\s+boda|\s+evento)?|Día|Dia|Celebración|Celebracion|Enlace)\s*[:\-]?\s*(20\d{2}[\/\-\.][0-1]?\d[\/\-\.][0-3]?\d)/iu', $bodyClean, $m)) {
+        } elseif (preg_match('/(?:Fecha(?:\s+de)?(?:\s+la)?(?:\s+boda|\s+evento)?|Día|Dia|Celebración|Celebracion|Enlace)[\s\*_]*[:\-]?[\s\*_]*(20\d{2}[\/\-\.][0-1]?\d[\/\-\.][0-3]?\d)/iu', $bodyClean, $m)) {
             try {
                 $dateStr = str_replace(['.', '/'], '-', trim($m[1]));
                 $eventDate = Carbon::parse($dateStr)->format('Y-m-d');
@@ -458,6 +538,12 @@ class ImapLeadFetcherService
             $year = (int)$m[3];
             try {
                 $eventDate = Carbon::createFromDate($year, $month, $day)->format('Y-m-d');
+                $explicitDateFound = true;
+            } catch (\Throwable $e) {}
+        } elseif (preg_match('/\b(202[6-9][\/\-\.][0-1]\d[\/\-\.][0-3]\d)\b/', $bodyClean, $m)) {
+            try {
+                $dateStr = str_replace(['.', '/'], '-', trim($m[1]));
+                $eventDate = Carbon::parse($dateStr)->format('Y-m-d');
                 $explicitDateFound = true;
             } catch (\Throwable $e) {}
         }
@@ -492,20 +578,21 @@ class ImapLeadFetcherService
             $eventDate = Carbon::now()->addMonths(3)->format('Y-m-d');
         }
 
-        // 8. Extraer Lugar / Finca / Ciudad
+        // 8. Extraer Lugar / Finca / Ciudad (soporta *Lugar:* Álava)
         $location = 'Por definir';
-        if (preg_match('/(?:Lugar|Finca|Restaurante|Espacio|Ubicaci[oó]n|Ciudad|Poblaci[oó]n)\s*[:\-]?\s*([^\n\r,]+)/iu', $bodyClean, $m)) {
-            $locClean = trim($m[1]);
-            $locClean = preg_replace('/\s*(?:Tel[eé]fono|Fecha|Campa[ñn]a|Email)\s*[:\-].*$/iu', '', $locClean);
+        if (preg_match('/(?:Lugar|Finca|Restaurante|Espacio|Ubicaci[oó]n|Ciudad|Poblaci[oó]n|Provincia)[\s\*_]*[:\-]?[\s\*_]*([^\n\r,]+)/iu', $bodyClean, $m)) {
+            $locClean = trim($m[1], " \t\n\r\0\x0B*_");
+            $locClean = preg_replace('/[\s\*_]*(?:Tel[eé]fono|Fecha|Campa[ñn]a|Email|Otro)[\s\*_]*[:\-].*$/iu', '', $locClean);
+            $locClean = trim((string)$locClean, " \t\n\r\0\x0B*_");
             if (mb_strlen($locClean) > 1) {
-                $location = trim($locClean);
+                $location = $locClean;
             }
         }
 
-        // 8b. Extraer Campaña / Creativo (ej. Madrigal Marketing)
+        // 8b. Extraer Campaña / Creativo (ej. Madrigal Marketing: *Campaña / Creativo:* Creativo 4)
         $campaign = null;
-        if (preg_match('/(?:Campa[ñn]a(?:\s*\/\s*Creativo)?|Creativo|Anuncio)\s*[:\-]\s*([^\n\r]+)/iu', $bodyClean, $m)) {
-            $campaign = trim($m[1]);
+        if (preg_match('/(?:Campa[ñn]a(?:\s*\/\s*Creativo)?|Creativo|Anuncio)[\s\*_]*[:\-][\s\*_]*([^\n\r]+)/iu', $bodyClean, $m)) {
+            $campaign = trim($m[1], " \t\n\r\0\x0B*_");
         }
 
         $sourceLabel = 'Formulario / Email';

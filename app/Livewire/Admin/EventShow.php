@@ -282,6 +282,12 @@ class EventShow extends Component
 
         $this->event = $event->load($relations);
 
+        try {
+            if (\App\Services\ImapLeadFetcherService::repairMisParsedLeadDates($this->event) > 0) {
+                $this->event->refresh();
+            }
+        } catch (\Throwable $e) {}
+
         if (empty(trim((string)$this->event->venue_contact_phone)) && \App\Services\VenueLookupService::isSearchableLocation($this->event->location)) {
             try {
                 $foundVenue = \App\Services\VenueLookupService::autoPopulateEventVenuePhone($this->event, false);
@@ -1958,6 +1964,49 @@ class EventShow extends Component
     }
 
     public $whatsapp_chat_message = '';
+    public $showTemplateEditor = false;
+    public $editingTemplateKey = 'primer_contacto_presupuesto';
+    public $editingTemplateRawText = '';
+
+    public function toggleTemplateEditor(?string $key = null)
+    {
+        if ($key) {
+            $this->editingTemplateKey = $key;
+            $this->showTemplateEditor = true;
+        } else {
+            $this->showTemplateEditor = !$this->showTemplateEditor;
+        }
+
+        if ($this->showTemplateEditor) {
+            $this->editingTemplateRawText = \App\Services\WhatsAppTemplateService::getRawTemplateForEdit($this->editingTemplateKey);
+        }
+    }
+
+    public function updatedEditingTemplateKey($value)
+    {
+        $this->editingTemplateRawText = \App\Services\WhatsAppTemplateService::getRawTemplateForEdit((string)$value);
+    }
+
+    public function saveTemplateCustomization()
+    {
+        if (empty(trim((string)$this->editingTemplateRawText))) {
+            session()->flash('whatsapp_error', 'El texto de la plantilla no puede estar vacío.');
+            return;
+        }
+
+        \App\Services\WhatsAppTemplateService::saveCustomTemplate($this->editingTemplateKey, (string)$this->editingTemplateRawText);
+        $this->loadWhatsAppTemplate($this->editingTemplateKey);
+        $this->showTemplateEditor = false;
+        session()->flash('whatsapp_success', '✅ ¡Plantilla guardada! A partir de ahora se usará este texto en todos los eventos.');
+    }
+
+    public function resetTemplateToDefault()
+    {
+        \App\Services\WhatsAppTemplateService::resetCustomTemplate($this->editingTemplateKey);
+        $this->editingTemplateRawText = \App\Services\WhatsAppTemplateService::getRawTemplateForEdit($this->editingTemplateKey);
+        $this->loadWhatsAppTemplate($this->editingTemplateKey);
+        session()->flash('whatsapp_success', '🔄 Plantilla restaurada a su texto original por defecto.');
+    }
 
     public function loadWhatsAppTemplate(string $templateKey)
     {
@@ -1970,6 +2019,11 @@ class EventShow extends Component
             'objecion_precio' => 'presupuesto',
         ];
         $resolvedKey = $keyMap[$templateKey] ?? $templateKey;
+
+        if ($this->showTemplateEditor && isset(\App\Services\WhatsAppTemplateService::getEditableTemplatesCatalog()[$resolvedKey])) {
+            $this->editingTemplateKey = $resolvedKey;
+            $this->editingTemplateRawText = \App\Services\WhatsAppTemplateService::getRawTemplateForEdit($resolvedKey);
+        }
 
         $options = \App\Services\WhatsAppTemplateService::getFollowupOptions($this->event);
         if (isset($options[$resolvedKey])) {
