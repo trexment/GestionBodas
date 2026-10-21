@@ -2069,7 +2069,7 @@
                                         <span>⏳</span> Recordatorio Pago
                                     </button>
                                     <button type="button" wire:click="loadWhatsAppTemplate('pre_boda')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-white dark:bg-slate-900 hover:bg-pink-50 dark:hover:bg-slate-800 text-pink-700 dark:text-pink-400 border border-pink-200 dark:border-pink-800/60 hover:border-pink-300 transition shadow-2xs cursor-pointer flex items-center gap-1">
-                                        <span>🎉</span> Pre-boda (Logística)
+                                        <span>🎉</span> {{ $event->is_wedding ? 'Pre-boda (Logística)' : 'Pre-evento (Logística)' }}
                                     </button>
                                 </div>
                             </div>
@@ -4515,7 +4515,9 @@
                                         $taxLabel = $quote->tax_label;
                                         $quoteExpiresNotice = $quote->expires_at ? "\n\n⏳ *Validez:* Oferta vigente hasta el " . $quote->expires_at->format('d/m/Y') . " (" . $quote->validity_days . " días naturales)." : "";
                                         $quoteOnlineUrl = $quote->public_url;
-                                        $quoteMsg = "¡Hola " . ($event->client ? $event->client->name : 'pareja') . "! 👋\n\nTe compartimos la propuesta detallada para *" . $event->name . "* por un importe total de *" . number_format($quote->amount, 2, ',', '.') . " €* (" . $taxLabel . " - Señal de reserva: *" . number_format($qSignal, 2, ',', '.') . " €* - " . $qLabel . ")." . $quoteExpiresNotice . "\n\n👉 *Ver propuesta online, descargar Dossier en PDF y Aceptar o Rechazar:*\n" . $quoteOnlineUrl . "\n\nPodéis consultarlo con calma y avisarnos para cualquier duda o cambio. ¡Un saludo!";
+                                        $quoteClientName = \App\Services\WhatsAppTemplateService::cleanClientDisplayName($event->client ? $event->client->name : null, $event->is_wedding ? 'pareja' : '', $event);
+                                        $quoteGreeting = $quoteClientName !== '' ? "¡Hola {$quoteClientName}!" : "¡Hola!";
+                                        $quoteMsg = $quoteGreeting . " 👋\n\nTe compartimos la propuesta detallada para *" . $event->name . "* por un importe total de *" . number_format($quote->amount, 2, ',', '.') . " €* (" . $taxLabel . " - Señal de reserva: *" . number_format($qSignal, 2, ',', '.') . " €* - " . $qLabel . ")." . $quoteExpiresNotice . "\n\n👉 *Ver propuesta online, descargar Dossier en PDF y Aceptar o Rechazar:*\n" . $quoteOnlineUrl . "\n\nPodéis consultarlo con calma y avisarnos para cualquier duda o cambio. ¡Un saludo!";
                                         $qWaUrl = $clientPhone ? "https://wa.me/{$clientPhone}?text=" . rawurlencode($quoteMsg) : "https://api.whatsapp.com/send?text=" . rawurlencode($quoteMsg);
                                     @endphp
                                     <div class="p-4 border rounded-xl transition shadow-xs space-y-3 {{ $isEditingThis ? 'border-amber-400 bg-amber-50/40 ring-2 ring-amber-300' : ($quote->status === 'accepted' ? 'border-emerald-400 bg-emerald-50/30 ring-1 ring-emerald-300' : ($quote->status === 'rejected' ? 'border-rose-300 bg-rose-50/20' : ($isLatest ? 'border-emerald-300 bg-emerald-50/20' : 'border-gray-200 bg-gray-50/60 opacity-90'))) }}">

@@ -65,11 +65,40 @@ class WhatsAppTemplateService
     }
 
     /**
-     * Limpia asteriscos iniciales del nombre del cliente (ej. "* Alvaro y ana" -> "Alvaro y ana")
+     * Limpia asteriscos iniciales del nombre del cliente y extrae el nombre de contacto
+     * si viene con formato compuesto (ej. "Festival de Navidad / Cristina" -> "Cristina")
      */
-    public static function cleanClientDisplayName(?string $rawName, string $fallback = 'pareja'): string
+    public static function cleanClientDisplayName(?string $rawName, string $fallback = 'pareja', ?Event $event = null): string
     {
+        if ($event && !$event->is_wedding && $fallback === 'pareja') {
+            $fallback = '';
+        }
+
         $clean = trim((string)preg_replace('/^[\s\*_]+/u', '', (string)$rawName));
+
+        if ($clean !== '' && str_contains($clean, '/')) {
+            $parts = array_values(array_filter(array_map('trim', explode('/', $clean))));
+            if (count($parts) >= 2) {
+                $firstLower = mb_strtolower($parts[0]);
+                $eventKeywords = [
+                    'festival', 'evento', 'fiesta', 'boda', 'comunión', 'comunion',
+                    'bautizo', 'cumpleaños', 'cumpleanos', 'colegio', 'ampa',
+                    'ayuntamiento', 'empresa', 'gala', 'cena', 'sonorización',
+                    'sonorizacion', 'discomovil', 'discomóvil', 'navidad', 'fin de curso',
+                ];
+                foreach ($eventKeywords as $kw) {
+                    if (str_contains($firstLower, $kw)) {
+                        $clean = end($parts);
+                        break;
+                    }
+                }
+            }
+        }
+
+        if ($event && !$event->is_wedding && mb_strtolower($clean) === 'pareja') {
+            $clean = '';
+        }
+
         return $clean !== '' ? $clean : $fallback;
     }
 
@@ -124,7 +153,36 @@ class WhatsAppTemplateService
     }
 
     /**
-     * Adapta dinámicamente el nombre del remitente / firma (Miguel, Fran, Ezequiel) dentro de un mensaje ya redactado
+     * Adapta dinámicamente el vocabulario de la plantilla al tipo de evento (Boda vs Evento / Colegio / Fiesta / Empresa)
+     */
+    public static function adaptMessageToEventType(string $text, ?Event $event = null): string
+    {
+        // Limpiar saludo si {nombre} quedó vacío: "¡Hola !" -> "¡Hola!"
+        $updated = preg_replace('/¡Hola\s+!/u', '¡Hola!', $text);
+
+        $isWedding = !$event || $event->is_wedding;
+
+        if ($isWedding) {
+            // Si es boda pero la plantilla personalizada tenía "vuestra evento", corregirlo a "vuestra boda"
+            $updated = preg_replace('/\bvuestra\s+evento\b/iu', 'vuestra boda', $updated);
+            return $updated;
+        }
+
+        // Eventos que NO son bodas (colegios, fiestas, empresa, comuniones, sonorización, etc.)
+        $updated = preg_replace('/\bhorarios\s+definitivos\s+de\s+ceremonia,\s*cóctel,\s*banquete\s+y\s+barra\s+libre,\s*y\s+el\s+contacto\s+del\s+responsable\s+de\s+la\s+finca\b/iu', 'horarios definitivos de montaje, prueba de sonido y actuación, y el contacto del responsable del espacio', $updated);
+        $updated = preg_replace('/\bresponsable\s+de\s+la\s+finca\b/iu', 'responsable del espacio', $updated);
+        $updated = preg_replace('/\b(?:vuestra|vuestro)\s+(?:boda|evento)\b/iu', 'vuestro evento', $updated);
+        $updated = preg_replace('/\btu\s+boda\b/iu', 'tu evento', $updated);
+        $updated = preg_replace('/\b(?:una|un)\s+(?:boda|evento)\b/iu', 'un evento', $updated);
+        $updated = preg_replace('/\bla\s+boda\b/iu', 'el evento', $updated);
+        $updated = preg_replace('/\bpre-boda\b/iu', 'pre-evento', $updated);
+        $updated = preg_replace('/¡Hola\s+pareja!/iu', '¡Hola!', $updated);
+
+        return $updated;
+    }
+
+    /**
+     * Adapta dinámicamente el nombre del remitente / firma (Miguel, Fran, Ezequiel) y el tipo de evento dentro de un mensaje ya redactado
      */
     public static function applySenderSignatureToMessage(string $text, ?string $senderBrand = null, ?Event $event = null): string
     {
@@ -139,7 +197,8 @@ class WhatsAppTemplateService
         // 3. Reemplazar firmas finales tipo "¡Un saludo! Fran", "¡Gracias! Fran", "¡Gracias por confiar en nosotros! Fran"
         $updated = preg_replace('/(¡?(?:Un\s+(?:saludo|abrazo)(?:\s+grande)?|Gracias(?:\s+por\s+confiar\s+en\s+nosotros)?)[!.,]*)\s+(Miguel|Fran|Ezequiel)\b/iu', '$1 ' . $senderName, $updated);
 
-        return $updated;
+        // 4. Adaptar vocabulario según sea Boda o Evento/Fiesta/Colegio
+        return self::adaptMessageToEventType($updated, $event);
     }
 
     /**
@@ -150,10 +209,13 @@ class WhatsAppTemplateService
         $companyName = ($event && $event->brand_clean === 'javnx') ? 'JAVNX DJ' : 'Núñez and Son DJ';
         $eventDate = $event->event_date ? Carbon::parse($event->event_date)->format('d/m/Y') : 'vuestra fecha';
         $eventName = self::cleanEventDisplayName($event->name);
+        $isWedding = $event->is_wedding;
+        $targetEventLabel = $isWedding ? 'vuestra boda' : 'vuestro evento';
+        $preEventLabel = $isWedding ? 'pre-boda' : 'del evento';
 
         return match ($key) {
             'primer_contacto_presupuesto', 'primer_contacto_madrigal', 'disponibilidad', 'filtro_finca', 'estandar' =>
-                "Presupuesto y música para vuestra boda ({$eventDate}) - {$companyName}",
+                "Presupuesto y música para {$targetEventLabel} ({$eventDate}) - {$companyName}",
             'verificacion_lead' =>
                 "Confirmación de datos para vuestra solicitud ({$eventDate}) - {$companyName}",
             'dia3_dudas', 'seguimiento_dia_3', 'conversacion_suave', 'post_presupuesto' =>
@@ -173,9 +235,9 @@ class WhatsAppTemplateService
             'mesa_dulce_gofres' =>
                 "Información y precios: Mesa Dulce, Fuente de Chocolate y Gofres - {$companyName}",
             'llamada', 'propuesta_llamada' =>
-                "¿Hablamos 10 minutos por teléfono sobre vuestra boda? - {$companyName}",
+                "¿Hablamos 10 minutos por teléfono sobre {$targetEventLabel}? - {$companyName}",
             'dossier', 'envio_dossier', 'quote_propuesta', 'resumen_presupuesto' =>
-                "Dossier y propuesta para vuestra boda ({$eventDate}) - {$companyName}",
+                "Dossier y propuesta para {$targetEventLabel} ({$eventDate}) - {$companyName}",
             'cuestionario' =>
                 "Cuestionario musical corto para vuestra propuesta a medida - {$companyName}",
             'contrato' =>
@@ -185,7 +247,7 @@ class WhatsAppTemplateService
             'recordatorio_pago', 'liquidacion' =>
                 "Recordatorio de pago pendiente - {$eventName} ({$companyName})",
             'pre_boda' =>
-                "Preparativos y logística pre-boda ({$eventDate}) - {$companyName}",
+                "Preparativos y logística {$preEventLabel} ({$eventDate}) - {$companyName}",
             default =>
                 "Seguimiento de vuestro evento {$eventName} ({$eventDate}) - {$companyName}",
         };
@@ -414,8 +476,10 @@ class WhatsAppTemplateService
      */
     public static function getTemplateVariables(?Event $event, ?string $senderBrand = null): array
     {
-        $rawClientName = ($event && $event->client) ? $event->client->name : ($event ? ($event->partner_name ?: 'pareja') : 'pareja');
-        $clientName = self::cleanClientDisplayName($rawClientName);
+        $isWedding = !$event || $event->is_wedding;
+        $defaultFallback = $isWedding ? 'pareja' : '';
+        $rawClientName = ($event && $event->client) ? $event->client->name : ($event ? ($event->partner_name ?: $defaultFallback) : $defaultFallback);
+        $clientName = self::cleanClientDisplayName($rawClientName, $defaultFallback, $event);
         $senderName = self::resolveSenderFirstName($senderBrand, $event);
 
         $isJavnx = ($event && $event->brand_clean === 'javnx' && in_array(mb_strtolower((string)$senderBrand), ['fran', 'javnx', 'javnx_dj'], true));
@@ -473,7 +537,8 @@ class WhatsAppTemplateService
         // Horario resumido
         $scheduleParts = [];
         if ($event && !empty($event->ceremony_time)) {
-            $scheduleParts[] = 'Ceremonia ' . substr($event->ceremony_time, 0, 5) . 'h';
+            $ceremonyLabel = $isWedding ? 'Ceremonia' : 'Sonorización';
+            $scheduleParts[] = $ceremonyLabel . ' ' . substr($event->ceremony_time, 0, 5) . 'h';
         }
         if ($event && !empty($event->cocktail_time)) {
             $scheduleParts[] = 'Cóctel ' . substr($event->cocktail_time, 0, 5) . 'h';
@@ -493,6 +558,8 @@ class WhatsAppTemplateService
             '{lugar}' => $location,
             '{empresa}' => $companyName,
             '{evento}' => $eventName,
+            '{tipo_evento}' => $isWedding ? 'boda' : 'evento',
+            '{vuestro_evento}' => $isWedding ? 'vuestra boda' : 'vuestro evento',
             '{firma}' => $senderName,
             '{remitente}' => $senderName,
             '{usuario}' => $senderName,
@@ -787,7 +854,9 @@ class WhatsAppTemplateService
                 'title' => 'No es nuestro cliente (Precio)',
                 'stage' => 'Descarte Cordial',
                 'icon' => '👑',
-                'description' => 'Versión cordial: agradece la sinceridad, cierra la consulta y les desea suerte con la boda.',
+                'description' => $event->is_wedding
+                    ? 'Versión cordial: agradece la sinceridad, cierra la consulta y les desea suerte con la boda.'
+                    : 'Versión cordial: agradece la sinceridad, cierra la consulta y les desea suerte con el evento.',
                 'text' => self::descartePosicionamientoPrecio($event, $senderBrand),
             ],
             'cuestionario' => [
@@ -824,10 +893,12 @@ class WhatsAppTemplateService
             ],
             'pre_boda' => [
                 'key' => 'pre_boda',
-                'title' => 'Pre-boda (Logística)',
-                'stage' => 'Pre-boda',
+                'title' => $event->is_wedding ? 'Pre-boda (Logística)' : 'Pre-evento (Logística)',
+                'stage' => $event->is_wedding ? 'Pre-boda' : 'Pre-evento',
                 'icon' => '🎉',
-                'description' => 'Mensaje de logística unas semanas antes del evento para confirmar horarios y contacto de finca.',
+                'description' => $event->is_wedding
+                    ? 'Mensaje de logística unas semanas antes del evento para confirmar horarios y contacto de finca.'
+                    : 'Mensaje de logística antes del evento para confirmar horarios de montaje, sonido y responsable del espacio.',
                 'text' => self::preBodaLogistica($event, $senderBrand),
             ],
             'fotomaton_360' => [
@@ -1034,7 +1105,8 @@ class WhatsAppTemplateService
     public static function meetingConfirmation(\App\Models\ClientMeeting $meeting): string
     {
         $event = $meeting->event;
-        $clientName = $event && $event->client ? $event->client->name : 'pareja';
+        $clientName = self::cleanClientDisplayName($event && $event->client ? $event->client->name : null, ($event && !$event->is_wedding) ? '' : 'pareja', $event);
+        $greeting = $clientName !== '' ? "¡Hola {$clientName}!" : "¡Hola!";
         $brand = Setting::getBrandInfo($event ? $event->brand_clean : null);
         $companyName = $brand['name'] ?? Setting::get('company_name', 'Núñez & Son');
 
@@ -1043,7 +1115,7 @@ class WhatsAppTemplateService
             ? "💻 *Videollamada online*" . ($meeting->video_call_url ? "\nEnlace: " . $meeting->video_call_url : '')
             : ($meeting->location_type === 'phone' ? "📱 *Llamada telefónica*" : "📍 *Lugar:* " . ($meeting->location ?: 'Lugar acordado'));
 
-        return "¡Hola {$clientName}! 👋 Os escribe *{$companyName}*.\n\n"
+        return "{$greeting} 👋 Os escribe *{$companyName}*.\n\n"
              . "Os confirmamos nuestra cita para *{$meeting->title}* ({$meeting->meeting_type_label}):\n\n"
              . "📅 *Fecha y hora:* {$dateFormatted}\n"
              . "⏱️ *Duración estimada:* {$meeting->duration_minutes} min\n"
@@ -1054,7 +1126,8 @@ class WhatsAppTemplateService
     public static function meetingReminder(\App\Models\ClientMeeting $meeting): string
     {
         $event = $meeting->event;
-        $clientName = $event && $event->client ? $event->client->name : 'pareja';
+        $clientName = self::cleanClientDisplayName($event && $event->client ? $event->client->name : null, ($event && !$event->is_wedding) ? '' : 'pareja', $event);
+        $greeting = $clientName !== '' ? "¡Hola {$clientName}!" : "¡Hola!";
         $brand = Setting::getBrandInfo($event ? $event->brand_clean : null);
         $companyName = $brand['name'] ?? Setting::get('company_name', 'Núñez & Son');
 
@@ -1063,7 +1136,7 @@ class WhatsAppTemplateService
             ? "💻 *Videollamada online*" . ($meeting->video_call_url ? "\nEnlace: " . $meeting->video_call_url : '')
             : ($meeting->location_type === 'phone' ? "📱 *Llamada telefónica*" : "📍 *Lugar:* " . ($meeting->location ?: 'Lugar acordado'));
 
-        return "¡Hola {$clientName}! 👋 Recordatorio de *{$companyName}*:\n\n"
+        return "{$greeting} 👋 Recordatorio de *{$companyName}*:\n\n"
              . "Os recordamos que tenemos nuestra reunión (*{$meeting->title}*) el próximo *{$dateFormatted}*.\n\n"
              . "{$locText}\n\n"
              . "¡Hasta pronto! 🎧";
@@ -1071,7 +1144,8 @@ class WhatsAppTemplateService
 
     public static function resumenPresupuesto(Event $event, ?\App\Models\Quote $quote = null): string
     {
-        $clientName = $event->client ? $event->client->name : 'pareja';
+        $clientName = self::cleanClientDisplayName($event->client ? $event->client->name : null, $event->is_wedding ? 'pareja' : '', $event);
+        $greeting = $clientName !== '' ? "¡Hola {$clientName}!" : "¡Hola!";
         $latestQuote = $quote ?: $event->quotes()->latest()->first();
         $quoteAmount = $latestQuote ? (float)$latestQuote->amount : 0;
 
@@ -1126,7 +1200,7 @@ class WhatsAppTemplateService
         $onlineUrl = $latestQuote ? $latestQuote->public_url : ($event->token ? route('guest.quote.view', $event->token) : '');
         $onlineLinkText = $onlineUrl ? "\n\n👉 *Ver propuesta online, descargar Dossier en PDF y Aceptar / Rechazar:*\n{$onlineUrl}" : "";
 
-        return "¡Hola {$clientName}! 👋\n\nOs compartimos la propuesta detallada para vuestro evento *{$event->name}*" . ($eventDate ? " ({$eventDate}{$loc})" : "") . ":\n\n"
+        return "{$greeting} 👋\n\nOs compartimos la propuesta detallada para vuestro evento *{$event->name}*" . ($eventDate ? " ({$eventDate}{$loc})" : "") . ":\n\n"
              . ($quoteItemsText ?: '• Servicios musicales y sonorización profesional.') . "\n"
              . $adminNotesText . "\n"
              . "💰 *TOTAL PRESUPUESTO:* " . number_format($quoteAmount, 2, ',', '.') . " €\n\n"
@@ -1139,7 +1213,8 @@ class WhatsAppTemplateService
 
     public static function senalReserva(Event $event, ?\App\Models\Quote $quote = null): string
     {
-        $clientName = $event->client ? $event->client->name : 'pareja';
+        $clientName = self::cleanClientDisplayName($event->client ? $event->client->name : null, $event->is_wedding ? 'pareja' : '', $event);
+        $greeting = $clientName !== '' ? "¡Hola {$clientName}!" : "¡Hola!";
         $latestQuote = $quote ?: $event->quotes()->latest()->first();
         $quoteAmount = $latestQuote ? (float)$latestQuote->amount : 0;
 
@@ -1159,7 +1234,7 @@ class WhatsAppTemplateService
         $bizum = Setting::get('company_bizum', '');
         $eventDate = $event->event_date ? Carbon::parse($event->event_date)->format('d/m/Y') : '';
 
-        return "¡Hola {$clientName}! 👋\n\nPara confirmar la fecha de vuestro evento *{$event->name}*" . ($eventDate ? " ({$eventDate})" : "") . ", podéis abonar la *Señal de reserva (" . number_format($signalAmount, 2, ',', '.') . " €)* mediante:\n\n"
+        return "{$greeting} 👋\n\nPara confirmar la fecha de vuestro evento *{$event->name}*" . ($eventDate ? " ({$eventDate})" : "") . ", podéis abonar la *Señal de reserva (" . number_format($signalAmount, 2, ',', '.') . " €)* mediante:\n\n"
              . ($iban ? "🏦 *Transferencia Bancaria:*\n" . $iban . "\n\n" : "")
              . ($bizum ? "📱 *Bizum:* " . $bizum . "\n\n" : "")
              . "Concepto: " . $event->name . "\n\n"
@@ -1168,14 +1243,15 @@ class WhatsAppTemplateService
 
     public static function facturaRecibo(Event $event, \App\Models\Invoice $invoice): string
     {
-        $clientName = $event->client ? $event->client->name : 'pareja';
+        $clientName = self::cleanClientDisplayName($event->client ? $event->client->name : null, $event->is_wedding ? 'pareja' : '', $event);
+        $greeting = $clientName !== '' ? "¡Hola {$clientName}!" : "¡Hola!";
         $brand = Setting::getBrandInfo($event->brand_clean);
         $companyName = $brand['name'] ?? Setting::get('company_name', 'Núñez & Son');
         $docTypeLabel = $invoice->type === 'recibo' ? 'Recibo / Justificante de Pago' : 'Factura Oficial';
         $issueDate = $invoice->issue_date ? Carbon::parse($invoice->issue_date)->format('d/m/Y') : now()->format('d/m/Y');
         $statusLabel = $invoice->status === 'paid' ? '✅ Cobrado / Pagado' : '⏳ Pendiente de pago';
 
-        return "¡Hola {$clientName}! 👋 Os escribe *{$companyName}*.\n\n"
+        return "{$greeting} 👋 Os escribe *{$companyName}*.\n\n"
              . "Os compartimos los datos de vuestro documento *{$docTypeLabel} ({$invoice->invoice_number})* correspondiente al evento *{$event->name}*:\n\n"
              . "📄 *Documento:* {$docTypeLabel} Nº {$invoice->invoice_number}\n"
              . "📅 *Fecha de emisión:* {$issueDate}\n"
@@ -1190,17 +1266,19 @@ class WhatsAppTemplateService
         if (!$event) {
             return 'pareja';
         }
-        $c1 = $event->client && !empty($event->client->name) ? trim($event->client->name) : '';
-        $c2 = !empty($event->partner_name) ? trim($event->partner_name) : '';
+        $defaultFallback = $event->is_wedding ? 'pareja' : '';
+        $c1 = $event->client && !empty($event->client->name) ? self::cleanClientDisplayName($event->client->name, '', $event) : '';
+        $c2 = !empty($event->partner_name) ? self::cleanClientDisplayName($event->partner_name, '', $event) : '';
         if ($c1 && $c2 && stripos($c1, $c2) === false) {
             return "{$c1} y {$c2}";
         }
-        return $c1 ?: ($c2 ?: 'pareja');
+        return $c1 ?: ($c2 ?: $defaultFallback);
     }
 
     public static function infoFotomatonY360(?Event $event = null, ?string $provider = null): string
     {
         $clientName = self::resolveCouplesFirstNames($event);
+        $greeting = $clientName !== '' ? "¡Hola {$clientName}!" : "¡Hola!";
         if (empty($provider) && $event) {
             $loc = mb_strtolower((string)($event->location ?? ''));
             $provider = (str_contains($loc, 'vitoria') || str_contains($loc, 'alava') || str_contains($loc, 'álava') || str_contains($loc, 'gasteiz') || str_contains($loc, 'araba')) ? 'vitoria' : 'logrono';
@@ -1215,7 +1293,7 @@ class WhatsAppTemplateService
         $dep = number_format($pb['deposit_per_service'], 0, ',', '.');
         $staffLabel = ($provider === 'vitoria') ? 'FotomatonCheese' : 'nuestro equipo';
 
-        return "¡Hola {$clientName}! 👋 Os pasamos toda la información y tarifas de los servicios de *Fotomatón* y *Plataforma 360º*:\n\n"
+        return "{$greeting} 👋 Os pasamos toda la información y tarifas de los servicios de *Fotomatón* y *Plataforma 360º*:\n\n"
              . "📸 *FOTOMATÓN!*\n"
              . "Nuestras máquinas llevan cámara réflex profesional Canon 1200, con impresora de alta calidad que imprime en 10 segundos, y ordenador táctil con efecto espejo, donde te ves continuamente.\n\n"
              . "Este servicio incluye:\n"
@@ -1260,6 +1338,7 @@ class WhatsAppTemplateService
     public static function infoMesaDulceYGofres(?Event $event = null, ?string $provider = null): string
     {
         $clientName = self::resolveCouplesFirstNames($event);
+        $greeting = $clientName !== '' ? "¡Hola {$clientName}!" : "¡Hola!";
         $pb = Setting::getPhotobooth360Config($provider ?: 'vitoria');
 
         $f1_2h = number_format($pb['chocolate_fountain_1_2h'] ?? 420, 0, ',', '.');
@@ -1272,7 +1351,7 @@ class WhatsAppTemplateService
         $waffle3h = number_format($pb['waffle_cart_3h'] ?? 550, 0, ',', '.');
         $dep = number_format($pb['deposit_per_service'] ?? 100, 0, ',', '.');
 
-        return "¡Hola {$clientName}! 👋 Os pasamos toda la información y tarifas de nuestras *Mesas Dulces, Fuente de Chocolate y Carrito de Gofres*:\n\n"
+        return "{$greeting} 👋 Os pasamos toda la información y tarifas de nuestras *Mesas Dulces, Fuente de Chocolate y Carrito de Gofres*:\n\n"
              . "🍫 *MESA DULCE CON FUENTE DE CHOCOLATE*\n"
              . "- Eligen el chocolate que más les gusta: blanco, negro o con leche.\n"
              . "- Donut de azúcar, gofres cortados y profiteroles de nata.\n"
