@@ -1100,10 +1100,17 @@ class WhatsAppTemplateService
         $quoteSummaryLines = [];
         if ($latestQuote && $latestQuote->items) {
             foreach ($latestQuote->items as $item) {
-                $quoteSummaryLines[] = "• " . $item->service_name . ($item->quantity > 1 ? " ({$item->quantity}x)" : "") . ": " . number_format($item->price * $item->quantity, 2, ',', '.') . " €";
+                $line = "• *" . $item->service_name . "*" . ($item->quantity > 1 ? " ({$item->quantity}x)" : "") . ": " . number_format($item->price * $item->quantity, 2, ',', '.') . " €";
+                if (!empty(trim((string)$item->description))) {
+                    $line .= "\n  _" . trim((string)$item->description) . "_";
+                }
+                $quoteSummaryLines[] = $line;
             }
         }
         $quoteItemsText = implode("\n", $quoteSummaryLines);
+        $adminNotesText = ($latestQuote && !empty(trim((string)$latestQuote->admin_notes)))
+            ? "\n📝 *NOTAS Y CONDICIONES INCLUIDAS:*\n" . trim((string)$latestQuote->admin_notes) . "\n"
+            : "";
         $quoteValidityNotice = "";
         if ($latestQuote && $latestQuote->expires_at) {
             $quoteValidityNotice = "\n\n⏳ *VALIDEZ DE LA OFERTA:*\nPropuesta válida hasta el *" . $latestQuote->expires_at->format('d/m/Y') . "* (" . $latestQuote->validity_days . " días naturales). Pasada esta fecha, tarifas y disponibilidad quedan sujetas a revisión.";
@@ -1120,7 +1127,8 @@ class WhatsAppTemplateService
         $onlineLinkText = $onlineUrl ? "\n\n👉 *Ver propuesta online, descargar Dossier en PDF y Aceptar / Rechazar:*\n{$onlineUrl}" : "";
 
         return "¡Hola {$clientName}! 👋\n\nOs compartimos la propuesta detallada para vuestro evento *{$event->name}*" . ($eventDate ? " ({$eventDate}{$loc})" : "") . ":\n\n"
-             . ($quoteItemsText ?: '• Servicios musicales y sonorización profesional.') . "\n\n"
+             . ($quoteItemsText ?: '• Servicios musicales y sonorización profesional.') . "\n"
+             . $adminNotesText . "\n"
              . "💰 *TOTAL PRESUPUESTO:* " . number_format($quoteAmount, 2, ',', '.') . " €\n\n"
              . "📌 *CONDICIONES DE PAGO:*\n"
              . $paymentConditionsText

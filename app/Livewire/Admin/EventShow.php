@@ -112,6 +112,7 @@ class EventShow extends Component
     public $quote_tax_type = 'included'; // 'included' (IVA incluido), 'excluded' (Base + 21% IVA), 'none' (Sin IVA / Exento)
     public $quote_tax_rate = 21.00;
     public $quote_payment_methods = ['transfer', 'bizum', 'cash']; // transfer, bizum, cash, card
+    public $quote_admin_notes = ''; // Notas / condiciones especiales visibles para el cliente en el presupuesto
 
     // Señal / Reserva cobrada
     public $showDepositModal = false;
@@ -3304,6 +3305,7 @@ class EventShow extends Component
             $this->custom_extras = [
                 ['name' => '', 'price' => 0, 'desc' => '', 'consult' => false]
             ];
+            $this->quote_admin_notes = '';
             $this->selected_pack_type = 'custom';
         }
     }
@@ -3573,14 +3575,19 @@ class EventShow extends Component
         if (!empty($this->quote_services['dj_custom']['selected'])) {
             $qty = (int)($this->quote_services['dj_custom']['quantity'] ?: 1);
             $p = (float)($this->quote_services['dj_custom']['price'] ?: 0);
-            $items[] = ['service_name' => 'Baile DJ (' . $qty . ' Horas)', 'description' => 'Actuación DJ en directo con repertorio a medida (ampliable durante el evento)', 'price' => $p, 'quantity' => $qty];
+            $djDesc = trim((string)($this->quote_services['dj_custom']['desc'] ?? ''));
+            if ($djDesc === '' || $djDesc === 'Horas de DJ en directo.') {
+                $djDesc = 'Actuación DJ en directo con repertorio a medida (ampliable durante el evento)';
+            }
+            $items[] = ['service_name' => 'Baile DJ (' . $qty . ' Horas)', 'description' => $djDesc, 'price' => $p, 'quantity' => $qty];
             $total += ($p * $qty);
         }
         
         $eh_qty = (int)($this->quote_services['extra_hours']['quantity'] ?: 0);
         if ($eh_qty > 0) {
             $p = (float)($this->quote_services['extra_hours']['price'] ?: 0);
-            $items[] = ['service_name' => 'Horas Extra de Baile (' . $eh_qty . 'h)', 'description' => 'Horas adicionales sobre el horario pactado', 'price' => $p, 'quantity' => $eh_qty];
+            $ehDesc = trim((string)($this->quote_services['extra_hours']['desc'] ?? '')) ?: 'Horas adicionales sobre el horario pactado';
+            $items[] = ['service_name' => 'Horas Extra de Baile (' . $eh_qty . 'h)', 'description' => $ehDesc, 'price' => $p, 'quantity' => $eh_qty];
             $total += ($p * $eh_qty);
         }
 
@@ -3803,6 +3810,7 @@ class EventShow extends Component
         $quote = $this->event->quotes()->create([
             'amount' => $finalTotal,
             'status' => 'pending',
+            'admin_notes' => trim((string)$this->quote_admin_notes) ?: null,
             'deposit_type' => $this->quote_deposit_type,
             'deposit_percentage' => $this->quote_deposit_type === 'percentage' ? (float)$this->quote_deposit_percentage : ($this->quote_deposit_type === 'none' ? 0 : null),
             'deposit_amount' => $signal,
@@ -3846,6 +3854,7 @@ class EventShow extends Component
 
         $quote->update([
             'amount' => $finalTotal,
+            'admin_notes' => trim((string)$this->quote_admin_notes) ?: null,
             'deposit_type' => $this->quote_deposit_type,
             'deposit_percentage' => $this->quote_deposit_type === 'percentage' ? (float)$this->quote_deposit_percentage : ($this->quote_deposit_type === 'none' ? 0 : null),
             'deposit_amount' => $signal,
@@ -3888,6 +3897,7 @@ class EventShow extends Component
 
         // Limpiar selección previa
         $this->selectPack('clear');
+        $this->quote_admin_notes = $quote->admin_notes ?? '';
         $this->selected_pack_type = 'custom';
         $loadedCustomExtras = [];
         $pbConfig = \App\Models\Setting::getPhotobooth360Config($this->photobooth_provider ?: 'vitoria');
@@ -3933,6 +3943,9 @@ class EventShow extends Component
                 $this->quote_services['dj_custom']['selected'] = true;
                 $this->quote_services['dj_custom']['quantity'] = (int)($item->quantity ?: 1);
                 $this->quote_services['dj_custom']['price'] = (float)$item->price;
+                if (!empty($item->description)) {
+                    $this->quote_services['dj_custom']['desc'] = $item->description;
+                }
             } elseif (str_contains($name, 'hora extra') || str_contains($name, 'horas extra')) {
                 $this->quote_services['extra_hours']['quantity'] = (int)($item->quantity ?: 1);
                 $this->quote_services['extra_hours']['price'] = (float)$item->price;

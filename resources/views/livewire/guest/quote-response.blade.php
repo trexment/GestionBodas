@@ -219,6 +219,18 @@
                 @endforeach
             </div>
 
+            @if(!empty($quote->admin_notes))
+                <div class="px-5 py-4 bg-amber-50/80 dark:bg-amber-950/30 border-t border-amber-200 dark:border-amber-800/60">
+                    <div class="flex items-start gap-2.5">
+                        <span class="text-base leading-none mt-0.5">📝</span>
+                        <div class="text-xs text-amber-950 dark:text-amber-200 leading-relaxed">
+                            <strong class="font-black uppercase tracking-wider text-[11px] text-amber-900 dark:text-amber-300 block mb-1">Notas y Condiciones Especiales de la Propuesta:</strong>
+                            <p class="whitespace-pre-line font-medium">{{ $quote->admin_notes }}</p>
+                        </div>
+                    </div>
+                </div>
+            @endif
+
             <!-- TOTALES Y CONDICIONES DE RESERVA -->
             <div class="bg-slate-50 dark:bg-slate-950/60 p-5 sm:p-6 border-t border-slate-200 dark:border-slate-800">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">

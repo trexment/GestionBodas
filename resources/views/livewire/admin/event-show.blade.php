@@ -3506,14 +3506,14 @@
                                             </div>
                                         </div>
                                         @if(!empty($quote_services['ceremony']['selected']))
-                                            <div class="pt-1.5 border-t border-indigo-100 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                            <div class="pt-2 border-t border-indigo-100 space-y-2">
                                                 <div>
-                                                    <label class="block text-[10px] font-bold text-indigo-900 mb-0.5">Nombre del concepto en el PDF:</label>
-                                                    <input type="text" wire:model.live.debounce.400ms="quote_services.ceremony.name" class="w-full text-[11px] border-indigo-200 rounded-lg p-1.5 bg-white font-semibold text-gray-800">
+                                                    <label class="block text-[10px] font-bold text-indigo-900 mb-0.5">📌 Título del concepto en el Presupuesto / PDF:</label>
+                                                    <input type="text" wire:model.live.debounce.400ms="quote_services.ceremony.name" placeholder="Ej: Sonorización de Evento / Acto / Festival" class="w-full text-[11px] border-indigo-200 rounded-lg p-1.5 bg-white font-semibold text-gray-800">
                                                 </div>
                                                 <div>
-                                                    <label class="block text-[10px] font-bold text-indigo-900 mb-0.5">Descripción en el PDF:</label>
-                                                    <input type="text" wire:model.live.debounce.400ms="quote_services.ceremony.desc" class="w-full text-[11px] border-indigo-200 rounded-lg p-1.5 bg-white text-gray-700">
+                                                    <label class="block text-[10px] font-bold text-indigo-900 mb-0.5">📝 Notas / Qué incluye este servicio (sale debajo del concepto en el PDF):</label>
+                                                    <textarea rows="2" wire:model.live.debounce.400ms="quote_services.ceremony.desc" placeholder="Ej: Incluye montaje e instalación de sonido, prueba de sonido / ensayo previo y 2 horas de baile/espectáculo. Hora adicional a 140 €/h." class="w-full text-[11px] border-indigo-200 rounded-lg p-1.5 bg-white text-gray-700 leading-snug"></textarea>
                                                 </div>
                                             </div>
                                         @endif
@@ -3573,20 +3573,28 @@
                                     @endif
 
                                     <!-- DJ Baile (Horas sueltas) -->
-                                    <div class="flex items-center justify-between p-2 rounded-lg border border-gray-100 hover:bg-gray-50 gap-2">
-                                        <label class="flex items-center cursor-pointer flex-1 gap-2">
-                                            <input type="checkbox" wire:model.live="quote_services.dj_custom.selected" class="rounded text-indigo-600 focus:ring-indigo-500 h-4 w-4">
-                                            <div>
-                                                <span class="text-xs font-bold text-gray-800">DJ Baile (Horas)</span>
-                                                <span class="block text-[10px] text-gray-500">{{ $quote_services['dj_custom']['desc'] }}</span>
+                                    <div class="p-2 rounded-lg border {{ !empty($quote_services['dj_custom']['selected']) ? 'border-indigo-300 bg-indigo-50/30' : 'border-gray-100 hover:bg-gray-50' }} space-y-2">
+                                        <div class="flex items-center justify-between gap-2">
+                                            <label class="flex items-center cursor-pointer flex-1 gap-2">
+                                                <input type="checkbox" wire:model.live="quote_services.dj_custom.selected" class="rounded text-indigo-600 focus:ring-indigo-500 h-4 w-4">
+                                                <div>
+                                                    <span class="text-xs font-bold text-gray-800">DJ Baile (Horas)</span>
+                                                    <span class="block text-[10px] text-gray-500">{{ $quote_services['dj_custom']['desc'] }}</span>
+                                                </div>
+                                            </label>
+                                            <div class="flex items-center gap-1">
+                                                <input type="number" wire:model.live="quote_services.dj_custom.quantity" min="1" max="12" class="w-10 border rounded p-1 text-xs text-center">
+                                                <span class="text-xs text-gray-400">h @</span>
+                                                <input type="number" step="0.01" wire:model.live="quote_services.dj_custom.price" class="w-16 border rounded p-1 text-xs text-right font-bold">
+                                                <span class="text-xs text-gray-600">€</span>
                                             </div>
-                                        </label>
-                                        <div class="flex items-center gap-1">
-                                            <input type="number" wire:model.live="quote_services.dj_custom.quantity" min="1" max="12" class="w-10 border rounded p-1 text-xs text-center">
-                                            <span class="text-xs text-gray-400">h @</span>
-                                            <input type="number" step="0.01" wire:model.live="quote_services.dj_custom.price" class="w-16 border rounded p-1 text-xs text-right font-bold">
-                                            <span class="text-xs text-gray-600">€</span>
                                         </div>
+                                        @if(!empty($quote_services['dj_custom']['selected']))
+                                            <div class="pt-1.5 border-t border-indigo-100">
+                                                <label class="block text-[10px] font-bold text-indigo-900 mb-0.5">📝 Notas / Detalle del servicio DJ en el PDF:</label>
+                                                <textarea rows="2" wire:model.live.debounce.400ms="quote_services.dj_custom.desc" placeholder="Ej: Incluye prueba de sonido y {{ $quote_services['dj_custom']['quantity'] ?? 2 }} horas de baile/espectáculo. Hora adicional a {{ $quote_services['extra_hours']['price'] ?? 140 }} €/h." class="w-full text-[11px] border-indigo-200 rounded-lg p-1.5 bg-white text-gray-700 leading-snug"></textarea>
+                                            </div>
+                                        @endif
                                     </div>
 
                                     <!-- Horas Extra Baile -->
@@ -4231,6 +4239,25 @@
                                 </div>
                             </div>
 
+                            <!-- SECCIÓN: NOTAS / OBSERVACIONES Y CONDICIONES ESPECIALES DEL PRESUPUESTO -->
+                            <div class="bg-amber-50/60 p-4 rounded-xl border border-amber-200 space-y-2.5 shadow-xs">
+                                <div class="flex items-center justify-between border-b border-amber-200/80 pb-2">
+                                    <h6 class="text-xs font-black uppercase text-amber-900 tracking-wider flex items-center gap-1.5">
+                                        <span>📝</span> Notas y Condiciones Especiales en el Presupuesto
+                                    </h6>
+                                    <span class="text-[10px] bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded-full">Visible en PDF y Enlace Cliente</span>
+                                </div>
+                                <p class="text-[11px] text-amber-800/90 leading-snug">
+                                    Añade cualquier aclaración que quieras dejar reflejada por escrito en el presupuesto (ej: qué incluye exactamente, pruebas de sonido el día anterior, horarios o precio de la hora extra en caso de ampliar).
+                                </p>
+                                <textarea
+                                    rows="3"
+                                    wire:model.live.debounce.400ms="quote_admin_notes"
+                                    placeholder="Ej: Incluye instalación y prueba de sonido con ensayo general + 2 horas de baile/espectáculo. En caso de ampliar horario, cada hora adicional será a 140 €/h."
+                                    class="w-full border-amber-300 rounded-xl p-2.5 text-xs text-gray-800 focus:ring-amber-500 focus:border-amber-500 bg-white placeholder:text-gray-400"
+                                ></textarea>
+                            </div>
+
                             <!-- SECCIÓN: CONDICIONES DE SEÑAL DE RESERVA -->
                             <div class="bg-white p-4 rounded-xl border border-indigo-200 space-y-3 shadow-xs">
                                 <div class="flex items-center justify-between border-b pb-2">
@@ -4632,11 +4659,23 @@
                                         @if($quote->items && $quote->items->count() > 0)
                                             <div class="pt-2 border-t border-gray-200/80 text-[11px] text-gray-600 space-y-1">
                                                 @foreach($quote->items as $item)
-                                                    <div class="flex justify-between">
-                                                        <span>&bull; {{ $item->concept ?: $item->service_name }} {{ $item->quantity > 1 ? '('.$item->quantity.'x)' : '' }}</span>
-                                                        <span class="font-mono font-bold text-gray-800">{{ number_format($item->subtotal ?: ($item->price * $item->quantity), 2) }} €</span>
+                                                    <div>
+                                                        <div class="flex justify-between">
+                                                            <span class="font-medium text-gray-800">&bull; {{ $item->concept ?: $item->service_name }} {{ $item->quantity > 1 ? '('.$item->quantity.'x)' : '' }}</span>
+                                                            <span class="font-mono font-bold text-gray-800">{{ number_format($item->subtotal ?: ($item->price * $item->quantity), 2) }} €</span>
+                                                        </div>
+                                                        @if(!empty($item->description))
+                                                            <div class="text-[10px] text-gray-500 pl-3 leading-snug">{{ $item->description }}</div>
+                                                        @endif
                                                     </div>
                                                 @endforeach
+                                            </div>
+                                        @endif
+
+                                        @if(!empty($quote->admin_notes))
+                                            <div class="p-2.5 rounded-lg bg-amber-50/90 border border-amber-200 text-[11px] text-amber-950">
+                                                <strong class="font-bold text-amber-900 block mb-0.5">📝 Notas / Condiciones incluidas en la propuesta:</strong>
+                                                <span class="whitespace-pre-line">{{ $quote->admin_notes }}</span>
                                             </div>
                                         @endif
 

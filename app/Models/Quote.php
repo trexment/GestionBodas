@@ -16,6 +16,7 @@ class Quote extends Model
         'status',
         'rejection_reason',
         'client_notes',
+        'admin_notes',
         'responded_at',
         'pdf_path',
         'deposit_type',
@@ -57,6 +58,11 @@ class Quote extends Model
                         $table->text('rejection_reason')->nullable()->after('status');
                         $table->text('client_notes')->nullable()->after('rejection_reason');
                         $table->timestamp('responded_at')->nullable()->after('client_notes');
+                    });
+                }
+                if (!\Illuminate\Support\Facades\Schema::hasColumn('quotes', 'admin_notes')) {
+                    \Illuminate\Support\Facades\Schema::table('quotes', function (\Illuminate\Database\Schema\Blueprint $table) {
+                        $table->text('admin_notes')->nullable()->after('status');
                     });
                 }
                 \Illuminate\Support\Facades\DB::statement("ALTER TABLE `quotes` MODIFY COLUMN `status` VARCHAR(50) NOT NULL DEFAULT 'pending'");

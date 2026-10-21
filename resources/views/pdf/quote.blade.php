@@ -1473,6 +1473,13 @@
                 </table>
             </div>
 
+            @if(!empty($quote->admin_notes))
+                <div style="margin-bottom: 6px; background-color: #fffbeb; border: 1px solid #fcd34d; border-left: 3.5px solid #d97706; border-radius: 6px; padding: 6px 10px;">
+                    <div style="font-size: 6.5pt; text-transform: uppercase; letter-spacing: 0.8px; color: #92400e; font-weight: 800; margin-bottom: 2px;">📝 NOTAS Y CONDICIONES ESPECIALES DE LA PROPUESTA</div>
+                    <div style="font-size: 7.5pt; color: #451a03; line-height: 1.35; font-weight: 600;">{!! nl2br(e($quote->admin_notes)) !!}</div>
+                </div>
+            @endif
+
             <!-- 3. PRECIO FINAL Y CONDICIONES DE PAGO -->
             <div class="quote-total-banner">
                 <table class="quote-total-table">
