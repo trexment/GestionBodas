@@ -1086,6 +1086,7 @@ class QuoteCalculator extends Component
                     $price = $catalog[$key] ?? 0;
                     $quote->items()->create([
                         'service_name' => $service['name'],
+                        'description' => $service['description'] ?? null,
                         'quantity' => $qty,
                         'price' => $price,
                         'total' => $price * $qty,

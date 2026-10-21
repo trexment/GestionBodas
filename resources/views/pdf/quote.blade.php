@@ -1229,15 +1229,15 @@
             <table style="width: 100%; border-collapse: separate; border-spacing: 8px 6px;">
                 <tr>
                     <td style="width: 50%; vertical-align: top; background-color: #f8fafc; border: 1px solid #e2e8f0; border-left: 3px solid #3b82f6; border-radius: 6px; padding: 8px 10px;">
-                        <div style="font-size: 8pt; font-weight: 800; color: #1e3a8a; margin-bottom: 2px;">💍 Ceremonia Civil & Cóctel</div>
+                        <div style="font-size: 8pt; font-weight: 800; color: #1e3a8a; margin-bottom: 2px;">{{ $event->is_wedding ? '💍 Ceremonia Civil & Cóctel' : '📢 Sonorización de Acto & Recepción' }}</div>
                         <div style="font-size: 6.8pt; color: #475569; line-height: 1.3;">
-                            Equipos independientes a batería o corriente, microfonía inalámbrica para oficiante y lecturas, y música de ambientación elegante y fluida.
+                            {{ $event->is_wedding ? 'Equipos independientes a batería o corriente, microfonía inalámbrica para oficiante y lecturas, y música de ambientación elegante y fluida.' : 'Equipos de sonido profesionales independientes, microfonía inalámbrica para intervenciones o actuaciones y música de ambientación adaptada.' }}
                         </div>
                     </td>
                     <td style="width: 50%; vertical-align: top; background-color: #f8fafc; border: 1px solid #e2e8f0; border-left: 3px solid #10b981; border-radius: 6px; padding: 8px 10px;">
-                        <div style="font-size: 8pt; font-weight: 800; color: #065f46; margin-bottom: 2px;">🍽️ Banquete & Momentos Especiales</div>
+                        <div style="font-size: 8pt; font-weight: 800; color: #065f46; margin-bottom: 2px;">🍽️ {{ $event->is_wedding ? 'Banquete & Momentos Especiales' : 'Comida / Cena & Momentos Clave' }}</div>
                         <div style="font-size: 6.8pt; color: #475569; line-height: 1.3;">
-                            Coordinación precisa de temas para entrada de los novios, corte de tarta, regalos emotivos y sorpresas sin silencios incómodos.
+                            {{ $event->is_wedding ? 'Coordinación precisa de temas para entrada de los novios, corte de tarta, regalos emotivos y sorpresas sin silencios incómodos.' : 'Coordinación precisa de temas musicales, entregas de premios o detalles, actuaciones y momentos destacados sin silencios incómodos.' }}
                         </div>
                     </td>
                 </tr>
@@ -1307,7 +1307,7 @@
             <div class="couple-meta-card">
                 <table class="couple-meta-table">
                     <tr>
-                        <td class="couple-meta-lbl">PAREJA / EVENTO:</td>
+                        <td class="couple-meta-lbl">{{ $event->is_wedding ? 'PAREJA / EVENTO:' : 'CLIENTE / EVENTO:' }}</td>
                         <td class="couple-meta-val" style="font-size: 8.5pt; color: #1e3a8a;">{{ $event->name }}</td>
                         <td class="couple-meta-lbl">FECHA:</td>
                         <td class="couple-meta-val" style="color: #0f172a;">{{ $dateFormatted }}</td>

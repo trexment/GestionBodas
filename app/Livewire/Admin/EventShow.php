@@ -135,7 +135,7 @@ class EventShow extends Component
         'pack_basic' => ['selected' => false, 'name' => 'Pack Esencial', 'price' => 600, 'hours' => 4, 'desc' => '4 horas de sesión DJ. Sonido profesional estéreo (2 altavoces de alta definición) + iluminación rítmica básica de pista (2 focos/efectos LED). Microfonía inalámbrica para discursos.'],
         'pack_medium' => ['selected' => false, 'name' => 'Pack Signature', 'price' => 950, 'hours' => 5, 'desc' => '5 horas de sesión DJ. Sonido reforzado con subgraves (impacto y pegada en pista). Cabina DJ retroiluminada + puente/barras de iluminación LED sincronizada y ambientación de pista. Microfonía inalámbrica.'],
         'pack_premium' => ['selected' => false, 'name' => 'Pack Deluxe Show', 'price' => 1350, 'hours' => 6, 'desc' => 'Cobertura completa (hasta 6h). Montaje de gran formato: sonido multizona/subgraves potentes + show de iluminación avanzada sincronizada. Incluye efecto especial de máquina de humo frío / chispas frías para momentos clave (apertura de baile).'],
-        'ceremony' => ['selected' => false, 'quantity' => 1, 'price' => 180, 'desc' => 'Sonorización + Música ambiente + Micrófonos inalámbricos.'],
+        'ceremony' => ['selected' => false, 'name' => 'Ceremonia', 'quantity' => 1, 'price' => 180, 'desc' => 'Sonorización + Música ambiente + Micrófonos inalámbricos.'],
         'cocktail' => ['selected' => false, 'quantity' => 1, 'price' => 150, 'desc' => 'Música ambiente durante el cóctel.'],
         'restaurant' => ['selected' => false, 'quantity' => 1, 'price' => 150, 'desc' => 'Música ambiente + Sonorización de regalos y detalles en el banquete.'],
         'dj_custom' => ['selected' => false, 'quantity' => 2, 'price' => 150, 'desc' => 'Horas de DJ en directo.'],
@@ -388,6 +388,23 @@ class EventShow extends Component
 
         // Servicios individuales
         $this->quote_services['ceremony']['price'] = (float)\App\Models\Setting::get('price_ceremony', 180);
+        $evType = $this->event ? $this->event->event_type_clean : 'boda';
+        if ($evType === 'boda') {
+            $this->quote_services['ceremony']['name'] = 'Ceremonia';
+            $this->quote_services['ceremony']['desc'] = 'Sonorización + Música ambiente + Micrófonos inalámbricos.';
+        } elseif ($evType === 'empresa') {
+            $this->quote_services['ceremony']['name'] = 'Sonorización Presentación / Acto Corporativo';
+            $this->quote_services['ceremony']['desc'] = 'Equipo de sonido profesional, microfonía inalámbrica y control técnico.';
+        } elseif ($evType === 'comunion') {
+            $this->quote_services['ceremony']['name'] = 'Sonorización Especial / Entrada';
+            $this->quote_services['ceremony']['desc'] = 'Equipo de sonido profesional, música ambiente y microfonía inalámbrica.';
+        } elseif ($evType === 'cumpleanos') {
+            $this->quote_services['ceremony']['name'] = 'Sonorización Sorpresa / Discursos';
+            $this->quote_services['ceremony']['desc'] = 'Equipo de sonido profesional, música de apoyo y microfonía inalámbrica.';
+        } else {
+            $this->quote_services['ceremony']['name'] = 'Sonorización de Evento / Acto / Escenario';
+            $this->quote_services['ceremony']['desc'] = 'Instalación de equipo de sonido profesional, microfonía inalámbrica y asistencia técnica.';
+        }
         $this->quote_services['cocktail']['price'] = (float)\App\Models\Setting::get('price_cocktail', 150);
         $this->quote_services['restaurant']['price'] = (float)\App\Models\Setting::get('price_restaurant', 150);
         $this->quote_services['dj_custom']['price'] = (float)\App\Models\Setting::get('price_dj', 150);
@@ -3517,7 +3534,11 @@ class EventShow extends Component
         if (!empty($this->quote_services['ceremony']['selected'])) {
             $qty = (int)($this->quote_services['ceremony']['quantity'] ?: 1);
             $p = (float)($this->quote_services['ceremony']['price'] ?: 0);
-            $items[] = ['service_name' => 'Ceremonia', 'description' => $this->quote_services['ceremony']['desc'], 'price' => $p, 'quantity' => $qty];
+            $ceremonyTitle = trim((string)($this->quote_services['ceremony']['name'] ?? ''));
+            if ($ceremonyTitle === '') {
+                $ceremonyTitle = ($this->event && !$this->event->is_wedding) ? 'Sonorización de Evento / Acto / Escenario' : 'Ceremonia';
+            }
+            $items[] = ['service_name' => $ceremonyTitle, 'description' => $this->quote_services['ceremony']['desc'], 'price' => $p, 'quantity' => $qty];
             $total += ($p * $qty);
         }
         if (!empty($this->quote_services['cocktail']['selected'])) {
@@ -3887,10 +3908,19 @@ class EventShow extends Component
                 $this->quote_services['pack_premium']['selected'] = true;
                 $this->quote_services['pack_premium']['price'] = (float)$item->price;
                 $this->selected_pack_type = 'premium';
-            } elseif (str_contains($name, 'ceremonia') && !str_contains($name, 'foto')) {
+            } elseif (
+                (str_contains($name, 'ceremonia') && !str_contains($name, 'foto')) ||
+                (str_contains($name, 'sonorizaci') && !str_contains($name, 'banquete') && !str_contains($name, 'regalos')) ||
+                str_contains($name, 'acto protocolario') ||
+                str_contains($name, 'escenario')
+            ) {
                 $this->quote_services['ceremony']['selected'] = true;
+                $this->quote_services['ceremony']['name'] = $item->service_name ?: ($item->concept ?: $this->quote_services['ceremony']['name']);
                 $this->quote_services['ceremony']['quantity'] = (int)($item->quantity ?: 1);
                 $this->quote_services['ceremony']['price'] = (float)$item->price;
+                if (!empty($item->description)) {
+                    $this->quote_services['ceremony']['desc'] = $item->description;
+                }
             } elseif (str_contains($name, 'cóctel') || str_contains($name, 'coctel')) {
                 $this->quote_services['cocktail']['selected'] = true;
                 $this->quote_services['cocktail']['quantity'] = (int)($item->quantity ?: 1);

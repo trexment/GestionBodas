@@ -3488,21 +3488,35 @@
                                 </h6>
 
                                 <div class="space-y-2">
-                                    <!-- Ceremonia -->
-                                    <div class="flex items-center justify-between p-2 rounded-lg border border-gray-100 hover:bg-gray-50 gap-2">
-                                        <label class="flex items-center cursor-pointer flex-1 gap-2">
-                                            <input type="checkbox" wire:model.live="quote_services.ceremony.selected" class="rounded text-indigo-600 focus:ring-indigo-500 h-4 w-4">
-                                            <div>
-                                                <span class="text-xs font-bold text-gray-800">Ceremonia</span>
-                                                <span class="block text-[10px] text-gray-500">{{ $quote_services['ceremony']['desc'] }}</span>
+                                    <!-- Ceremonia / Sonorización Acto -->
+                                    <div class="p-2 rounded-lg border {{ !empty($quote_services['ceremony']['selected']) ? 'border-indigo-300 bg-indigo-50/30' : 'border-gray-100 hover:bg-gray-50' }} space-y-2">
+                                        <div class="flex items-center justify-between gap-2">
+                                            <label class="flex items-center cursor-pointer flex-1 gap-2">
+                                                <input type="checkbox" wire:model.live="quote_services.ceremony.selected" class="rounded text-indigo-600 focus:ring-indigo-500 h-4 w-4">
+                                                <div>
+                                                    <span class="text-xs font-bold text-gray-800">{{ $quote_services['ceremony']['name'] ?? ($event->is_wedding ? 'Ceremonia' : 'Sonorización de Evento / Acto / Escenario') }}</span>
+                                                    <span class="block text-[10px] text-gray-500">{{ $quote_services['ceremony']['desc'] }}</span>
+                                                </div>
+                                            </label>
+                                            <div class="flex items-center gap-1">
+                                                <input type="number" wire:model.live="quote_services.ceremony.quantity" class="w-10 border rounded p-1 text-xs text-center">
+                                                <span class="text-xs text-gray-400">x</span>
+                                                <input type="number" step="0.01" wire:model.live="quote_services.ceremony.price" class="w-16 border rounded p-1 text-xs text-right font-bold">
+                                                <span class="text-xs text-gray-600">€</span>
                                             </div>
-                                        </label>
-                                        <div class="flex items-center gap-1">
-                                            <input type="number" wire:model.live="quote_services.ceremony.quantity" class="w-10 border rounded p-1 text-xs text-center">
-                                            <span class="text-xs text-gray-400">x</span>
-                                            <input type="number" step="0.01" wire:model.live="quote_services.ceremony.price" class="w-16 border rounded p-1 text-xs text-right font-bold">
-                                            <span class="text-xs text-gray-600">€</span>
                                         </div>
+                                        @if(!empty($quote_services['ceremony']['selected']))
+                                            <div class="pt-1.5 border-t border-indigo-100 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                                <div>
+                                                    <label class="block text-[10px] font-bold text-indigo-900 mb-0.5">Nombre del concepto en el PDF:</label>
+                                                    <input type="text" wire:model.live.debounce.400ms="quote_services.ceremony.name" class="w-full text-[11px] border-indigo-200 rounded-lg p-1.5 bg-white font-semibold text-gray-800">
+                                                </div>
+                                                <div>
+                                                    <label class="block text-[10px] font-bold text-indigo-900 mb-0.5">Descripción en el PDF:</label>
+                                                    <input type="text" wire:model.live.debounce.400ms="quote_services.ceremony.desc" class="w-full text-[11px] border-indigo-200 rounded-lg p-1.5 bg-white text-gray-700">
+                                                </div>
+                                            </div>
+                                        @endif
                                     </div>
 
                                     <!-- Cóctel -->
