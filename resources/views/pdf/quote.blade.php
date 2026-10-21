@@ -622,6 +622,7 @@
 <body>
 
     @php
+        $cleanPdf = fn(?string $str) => trim(preg_replace('/\s{2,}/', ' ', preg_replace('/[\x{1F000}-\x{1FFFF}\x{2300}-\x{23FF}\x{26A1}\x{2728}\x{FE0F}]/u', '', (string)$str)));
         $isSinglePage = $isSinglePage ?? false;
         $brandKey = $event->brand_clean ?? (\App\Models\Setting::getBrandInfo()['key']);
         $brand = \App\Models\Setting::getBrandInfo($brandKey);
@@ -1069,17 +1070,17 @@
                 <table style="width: 100%; border-collapse: collapse;">
                     <tr>
                         <td style="width: 33.3%; vertical-align: middle; text-align: center; border-right: 1px solid #1e293b; padding: 0 10px;">
-                            <div style="font-size: 13pt; margin-bottom: 2px;">⚡</div>
+                            <div style="display: inline-block; background-color: rgba(234, 179, 8, 0.2); border: 1px solid #eab308; color: #eab308; font-size: 6pt; font-weight: 800; padding: 1.5px 6px; border-radius: 3px; margin-bottom: 3px; letter-spacing: 0.8px;">SONIDO PRO</div>
                             <div style="font-size: 8pt; font-weight: 800; color: #eab308;">Equipos 100% Propios</div>
                             <div style="font-size: 6.5pt; color: #94a3b8; margin-top: 2px; line-height: 1.25;">Sonido e iluminación profesional revisados antes de cada evento.</div>
                         </td>
                         <td style="width: 33.3%; vertical-align: middle; text-align: center; border-right: 1px solid #1e293b; padding: 0 10px;">
-                            <div style="font-size: 13pt; margin-bottom: 2px;">🎧</div>
+                            <div style="display: inline-block; background-color: rgba(59, 130, 246, 0.25); border: 1px solid #60a5fa; color: #93c5fd; font-size: 6pt; font-weight: 800; padding: 1.5px 6px; border-radius: 3px; margin-bottom: 3px; letter-spacing: 0.8px;">EN DIRECTO</div>
                             <div style="font-size: 8pt; font-weight: 800; color: #eab308;">DJ Profesional Asignado</div>
                             <div style="font-size: 6.5pt; color: #94a3b8; margin-top: 2px; line-height: 1.25;">Mezclas en directo, animación cercana y lectura de pista.</div>
                         </td>
                         <td style="width: 33.3%; vertical-align: middle; text-align: center; padding: 0 10px;">
-                            <div style="font-size: 13pt; margin-bottom: 2px;">📱</div>
+                            <div style="display: inline-block; background-color: rgba(16, 185, 129, 0.25); border: 1px solid #34d399; color: #6ee7b7; font-size: 6pt; font-weight: 800; padding: 1.5px 6px; border-radius: 3px; margin-bottom: 3px; letter-spacing: 0.8px;">APP ONLINE</div>
                             <div style="font-size: 8pt; font-weight: 800; color: #eab308;">Panel Musical Online</div>
                             <div style="font-size: 6.5pt; color: #94a3b8; margin-top: 2px; line-height: 1.25;">Pedid vuestras canciones favoritas y lista negra desde el móvil.</div>
                         </td>
@@ -1141,7 +1142,7 @@
                                 <div style="font-size: 7pt; color: #cbd5e1; margin-top: 3px; line-height: 1.35;">{{ $bannerSubtitle }}</div>
                             </td>
                             <td style="width: 110px; text-align: right; vertical-align: middle; border-left: 1px solid rgba(255,255,255,0.12); padding-left: 14px;">
-                                <div style="font-size: 16pt; line-height: 1;">✨ 🎧 🔥</div>
+                                <div style="font-size: 14pt; line-height: 1; color: #eab308; font-weight: 900;">&#9733; &#9835; &#9733;</div>
                                 <div style="font-size: 6.5pt; color: #eab308; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; margin-top: 4px;">Pista Llena</div>
                             </td>
                         </tr>
@@ -1229,13 +1230,13 @@
             <table style="width: 100%; border-collapse: separate; border-spacing: 8px 6px;">
                 <tr>
                     <td style="width: 50%; vertical-align: top; background-color: #f8fafc; border: 1px solid #e2e8f0; border-left: 3px solid #3b82f6; border-radius: 6px; padding: 8px 10px;">
-                        <div style="font-size: 8pt; font-weight: 800; color: #1e3a8a; margin-bottom: 2px;">{{ $event->is_wedding ? '💍 Ceremonia Civil & Cóctel' : '📢 Sonorización de Acto & Recepción' }}</div>
+                        <div style="font-size: 8pt; font-weight: 800; color: #1e3a8a; margin-bottom: 2px;">&bull; {{ $event->is_wedding ? 'Ceremonia Civil & Cóctel' : 'Sonorización de Acto & Recepción' }}</div>
                         <div style="font-size: 6.8pt; color: #475569; line-height: 1.3;">
                             {{ $event->is_wedding ? 'Equipos independientes a batería o corriente, microfonía inalámbrica para oficiante y lecturas, y música de ambientación elegante y fluida.' : 'Equipos de sonido profesionales independientes, microfonía inalámbrica para intervenciones o actuaciones y música de ambientación adaptada.' }}
                         </div>
                     </td>
                     <td style="width: 50%; vertical-align: top; background-color: #f8fafc; border: 1px solid #e2e8f0; border-left: 3px solid #10b981; border-radius: 6px; padding: 8px 10px;">
-                        <div style="font-size: 8pt; font-weight: 800; color: #065f46; margin-bottom: 2px;">🍽️ {{ $event->is_wedding ? 'Banquete & Momentos Especiales' : 'Comida / Cena & Momentos Clave' }}</div>
+                        <div style="font-size: 8pt; font-weight: 800; color: #065f46; margin-bottom: 2px;">&bull; {{ $event->is_wedding ? 'Banquete & Momentos Especiales' : 'Comida / Cena & Momentos Clave' }}</div>
                         <div style="font-size: 6.8pt; color: #475569; line-height: 1.3;">
                             {{ $event->is_wedding ? 'Coordinación precisa de temas para entrada de los novios, corte de tarta, regalos emotivos y sorpresas sin silencios incómodos.' : 'Coordinación precisa de temas musicales, entregas de premios o detalles, actuaciones y momentos destacados sin silencios incómodos.' }}
                         </div>
@@ -1243,15 +1244,15 @@
                 </tr>
                 <tr>
                     <td style="width: 50%; vertical-align: top; background-color: #f8fafc; border: 1px solid #e2e8f0; border-left: 3px solid #d97706; border-radius: 6px; padding: 8px 10px;">
-                        <div style="font-size: 8pt; font-weight: 800; color: #92400e; margin-bottom: 2px;">⏰ {{ $dossierExtraHoursTitle }}</div>
+                        <div style="font-size: 8pt; font-weight: 800; color: #92400e; margin-bottom: 2px;">&bull; {{ $cleanPdf($dossierExtraHoursTitle) }}</div>
                         <div style="font-size: 6.8pt; color: #475569; line-height: 1.3;">
-                            {{ $dossierExtraHoursDesc }} (Tarifa fijada: <strong>{{ number_format($extraHourPrice, 0, ',', '.') }}€/hora</strong>).
+                            {{ $cleanPdf($dossierExtraHoursDesc) }} (Tarifa fijada: <strong>{{ number_format($extraHourPrice, 0, ',', '.') }}€/hora</strong>).
                         </div>
                     </td>
                     <td style="width: 50%; vertical-align: top; background-color: #f8fafc; border: 1px solid #e2e8f0; border-left: 3px solid #8b5cf6; border-radius: 6px; padding: 8px 10px;">
-                        <div style="font-size: 8pt; font-weight: 800; color: #5b21b6; margin-bottom: 2px;">🎵 {{ $dossierMusicCustomTitle }}</div>
+                        <div style="font-size: 8pt; font-weight: 800; color: #5b21b6; margin-bottom: 2px;">&#9835; {{ $cleanPdf($dossierMusicCustomTitle) }}</div>
                         <div style="font-size: 6.8pt; color: #475569; line-height: 1.3;">
-                            {{ $dossierMusicCustomDesc }}
+                            {{ $cleanPdf($dossierMusicCustomDesc) }}
                         </div>
                     </td>
                 </tr>
@@ -1269,7 +1270,7 @@
                             </div>
                         </td>
                         <td style="width: 130px; text-align: right; vertical-align: middle; border-left: 1px solid #1e293b; padding-left: 14px;">
-                            <div style="font-size: 15pt; line-height: 1;">🛡️ ✍️ 🎶</div>
+                            <div style="font-size: 13pt; line-height: 1; color: #eab308; font-weight: 900;">&#10003; 100%</div>
                             <div style="font-size: 6.5pt; color: #eab308; font-weight: 800; text-transform: uppercase; margin-top: 3px;">Garantía de Fiesta</div>
                         </td>
                     </tr>
@@ -1365,7 +1366,7 @@
                                 $isVitoriaLoc = str_contains($locLower, 'vitoria') || str_contains($locLower, 'alava') || str_contains($locLower, 'álava') || str_contains($locLower, 'gasteiz') || str_contains($locLower, 'araba');
                                 $pbCfg = $isVitoriaLoc ? $pbProviders['vitoria'] : $pbProviders['logrono'];
                                 $lowerTitle = mb_strtolower($itemTitle);
-                                $cleanItemDesc = $itemDesc ? trim(explode('| 💡 Opción 3 Horas', $itemDesc)[0]) : '';
+                                $cleanItemDesc = $itemDesc ? $cleanPdf(explode('| 💡 Opción 3 Horas', $itemDesc)[0]) : '';
                                 $upgrade3hBanner = null;
                                 $is2hItem = str_contains($lowerTitle, '2 hora') || str_contains($lowerTitle, '2h');
 
@@ -1380,7 +1381,7 @@
                                         $diff = max(0, $p3h - $itemUnitPrice);
                                         $pbExtra = (float)($pbCfg['photobooth_extra_hour'] ?? 50);
                                         $vExtra = (float)($pbCfg['video_360_extra_hour'] ?? 60);
-                                        $upgrade3hBanner = '✨ OPCIÓN 3 HORAS Y HORAS EXTRA: Podéis elegir el Pack Dúo de 3 Horas por ' . number_format($p3h, 0, ',', '.') . ' €' . ($diff > 0 ? ' (+' . number_format($diff, 0, ',', '.') . ' €)' : '') . ' · Posibilidad de añadir horas extra (+' . number_format($pbExtra, 0, ',', '.') . ' €/h Fotomatón · +' . number_format($vExtra, 0, ',', '.') . ' €/h 360º).';
+                                        $upgrade3hBanner = '★ OPCIÓN 3 HORAS Y HORAS EXTRA: Podéis elegir el Pack Dúo de 3 Horas por ' . number_format($p3h, 0, ',', '.') . ' €' . ($diff > 0 ? ' (+' . number_format($diff, 0, ',', '.') . ' €)' : '') . ' · Posibilidad de añadir horas extra (+' . number_format($pbExtra, 0, ',', '.') . ' €/h Fotomatón · +' . number_format($vExtra, 0, ',', '.') . ' €/h 360º).';
                                     } else {
                                         if (abs($itemUnitPrice - (float)$pbProviders['vitoria']['pack_duo_3h']) < 0.01 && abs($itemUnitPrice - (float)$pbProviders['logrono']['pack_duo_3h']) > 0.01) {
                                             $pbCfg = $pbProviders['vitoria'];
@@ -1389,7 +1390,7 @@
                                         }
                                         $pbExtra = (float)($pbCfg['photobooth_extra_hour'] ?? 50);
                                         $vExtra = (float)($pbCfg['video_360_extra_hour'] ?? 60);
-                                        $upgrade3hBanner = '✨ OPCIÓN HORAS EXTRA DISPONIBLE: Si queréis ampliar durante el baile, podéis añadir horas extra (+' . number_format($pbExtra, 0, ',', '.') . ' €/h Fotomatón · +' . number_format($vExtra, 0, ',', '.') . ' €/h Plataforma 360º).';
+                                        $upgrade3hBanner = '★ OPCIÓN HORAS EXTRA DISPONIBLE: Si queréis ampliar durante el baile, podéis añadir horas extra (+' . number_format($pbExtra, 0, ',', '.') . ' €/h Fotomatón · +' . number_format($vExtra, 0, ',', '.') . ' €/h Plataforma 360º).';
                                     }
                                 } elseif (str_contains($lowerTitle, 'fotomatón') || str_contains($lowerTitle, 'fotomaton') || str_contains($lowerTitle, 'photobooth')) {
                                     if ($is2hItem) {
@@ -1401,7 +1402,7 @@
                                         $p3h = (float)$pbCfg['photobooth_3h'];
                                         $diff = max(0, $p3h - $itemUnitPrice);
                                         $pbExtra = (float)($pbCfg['photobooth_extra_hour'] ?? 50);
-                                        $upgrade3hBanner = '✨ OPCIÓN 3 HORAS Y HORAS EXTRA: Podéis elegir 3 Horas completas de Fotomatón por ' . number_format($p3h, 0, ',', '.') . ' €' . ($diff > 0 ? ' (solo +' . number_format($diff, 0, ',', '.') . ' € más)' : '') . ($pbExtra > 0 ? ' · Hora extra adicional disponible (+' . number_format($pbExtra, 0, ',', '.') . ' €/h).' : '');
+                                        $upgrade3hBanner = '★ OPCIÓN 3 HORAS Y HORAS EXTRA: Podéis elegir 3 Horas completas de Fotomatón por ' . number_format($p3h, 0, ',', '.') . ' €' . ($diff > 0 ? ' (solo +' . number_format($diff, 0, ',', '.') . ' € más)' : '') . ($pbExtra > 0 ? ' · Hora extra adicional disponible (+' . number_format($pbExtra, 0, ',', '.') . ' €/h).' : '');
                                     } else {
                                         if (abs($itemUnitPrice - (float)$pbProviders['vitoria']['photobooth_3h']) < 0.01 && abs($itemUnitPrice - (float)$pbProviders['logrono']['photobooth_3h']) > 0.01) {
                                             $pbCfg = $pbProviders['vitoria'];
@@ -1409,7 +1410,7 @@
                                             $pbCfg = $pbProviders['logrono'];
                                         }
                                         $pbExtra = (float)($pbCfg['photobooth_extra_hour'] ?? 50);
-                                        $upgrade3hBanner = '✨ OPCIÓN HORAS EXTRA DISPONIBLE: Si queréis ampliar el servicio durante el baile, podéis añadir horas extra de Fotomatón' . ($pbExtra > 0 ? ' (+' . number_format($pbExtra, 0, ',', '.') . ' €/hora adicional).' : '.');
+                                        $upgrade3hBanner = '★ OPCIÓN HORAS EXTRA DISPONIBLE: Si queréis ampliar el servicio durante el baile, podéis añadir horas extra de Fotomatón' . ($pbExtra > 0 ? ' (+' . number_format($pbExtra, 0, ',', '.') . ' €/hora adicional).' : '.');
                                     }
                                 } elseif (str_contains($lowerTitle, '360') || str_contains($lowerTitle, 'plataforma')) {
                                     if ($is2hItem) {
@@ -1421,7 +1422,7 @@
                                         $p3h = (float)$pbCfg['video_360_3h'];
                                         $diff = max(0, $p3h - $itemUnitPrice);
                                         $vExtra = (float)($pbCfg['video_360_extra_hour'] ?? 60);
-                                        $upgrade3hBanner = '✨ OPCIÓN 3 HORAS Y HORAS EXTRA: Podéis elegir 3 Horas completas de Plataforma 360º por ' . number_format($p3h, 0, ',', '.') . ' €' . ($diff > 0 ? ' (solo +' . number_format($diff, 0, ',', '.') . ' € más)' : '') . ($vExtra > 0 ? ' · Hora extra adicional disponible (+' . number_format($vExtra, 0, ',', '.') . ' €/h).' : '');
+                                        $upgrade3hBanner = '★ OPCIÓN 3 HORAS Y HORAS EXTRA: Podéis elegir 3 Horas completas de Plataforma 360º por ' . number_format($p3h, 0, ',', '.') . ' €' . ($diff > 0 ? ' (solo +' . number_format($diff, 0, ',', '.') . ' € más)' : '') . ($vExtra > 0 ? ' · Hora extra adicional disponible (+' . number_format($vExtra, 0, ',', '.') . ' €/h).' : '');
                                     } else {
                                         if (abs($itemUnitPrice - (float)$pbProviders['vitoria']['video_360_3h']) < 0.01 && abs($itemUnitPrice - (float)$pbProviders['logrono']['video_360_3h']) > 0.01) {
                                             $pbCfg = $pbProviders['vitoria'];
@@ -1429,14 +1430,14 @@
                                             $pbCfg = $pbProviders['logrono'];
                                         }
                                         $vExtra = (float)($pbCfg['video_360_extra_hour'] ?? 60);
-                                        $upgrade3hBanner = '✨ OPCIÓN HORAS EXTRA DISPONIBLE: Si queréis ampliar el servicio durante el baile, podéis añadir horas extra de Plataforma 360º' . ($vExtra > 0 ? ' (+' . number_format($vExtra, 0, ',', '.') . ' €/hora adicional).' : '.');
+                                        $upgrade3hBanner = '★ OPCIÓN HORAS EXTRA DISPONIBLE: Si queréis ampliar el servicio durante el baile, podéis añadir horas extra de Plataforma 360º' . ($vExtra > 0 ? ' (+' . number_format($vExtra, 0, ',', '.') . ' €/hora adicional).' : '.');
                                     }
                                 }
                             @endphp
                             <tr>
                                 <td>
                                     <div class="quote-item-title {{ $isDiscount ? 'quote-item-discount' : '' }}">
-                                        @if($isDiscount) [DESCUENTO] @else &bull; @endif {{ $itemTitle }}
+                                        @if($isDiscount) [DESCUENTO] @else &bull; @endif {{ $cleanPdf($itemTitle) }}
                                     </div>
                                     @if(!empty($cleanItemDesc))
                                         <div class="quote-item-desc">{{ $cleanItemDesc }}</div>
@@ -1475,8 +1476,8 @@
 
             @if(!empty($quote->admin_notes))
                 <div style="margin-bottom: 6px; background-color: #fffbeb; border: 1px solid #fcd34d; border-left: 3.5px solid #d97706; border-radius: 6px; padding: 6px 10px;">
-                    <div style="font-size: 6.5pt; text-transform: uppercase; letter-spacing: 0.8px; color: #92400e; font-weight: 800; margin-bottom: 2px;">📝 NOTAS Y CONDICIONES ESPECIALES DE LA PROPUESTA</div>
-                    <div style="font-size: 7.5pt; color: #451a03; line-height: 1.35; font-weight: 600;">{!! nl2br(e($quote->admin_notes)) !!}</div>
+                    <div style="font-size: 6.5pt; text-transform: uppercase; letter-spacing: 0.8px; color: #92400e; font-weight: 800; margin-bottom: 2px;">&bull; NOTAS Y CONDICIONES ESPECIALES DE LA PROPUESTA</div>
+                    <div style="font-size: 7.5pt; color: #451a03; line-height: 1.35; font-weight: 600;">{!! nl2br(e($cleanPdf($quote->admin_notes))) !!}</div>
                 </div>
             @endif
 
@@ -1505,18 +1506,18 @@
 
             <!-- 4. CÓMO RESERVAR LA FECHA (MÉTODOS DE PAGO) -->
             <div class="payment-methods-box">
-                <div class="payment-methods-title">💳 CÓMO RESERVAR Y BLOQUEAR LA FECHA EN FIRME:</div>
+                <div class="payment-methods-title">&#10003; CÓMO RESERVAR Y BLOQUEAR LA FECHA EN FIRME:</div>
                 <table class="payment-methods-table">
                     <tr>
                         <td style="width: 50%;">
                             @if(!empty($companyBizum))
-                                <div>📱 <strong>Bizum:</strong> {{ $companyBizum }}</div>
+                                <div><span style="display: inline-block; background-color: #059669; color: #ffffff; font-size: 5.5pt; font-weight: 800; padding: 1px 4px; border-radius: 3px; margin-right: 3px;">BIZUM</span> <strong>Bizum:</strong> {{ $companyBizum }}</div>
                                 <div style="font-size: 6.2pt; color: #64748b;">Concepto: <em>{{ $event->name }}</em></div>
                             @endif
                         </td>
                         <td style="width: 50%;">
                             @if(!empty($companyIban))
-                                <div>🏦 <strong>Transferencia Bancaria (IBAN):</strong></div>
+                                <div><span style="display: inline-block; background-color: #1e3a8a; color: #ffffff; font-size: 5.5pt; font-weight: 800; padding: 1px 4px; border-radius: 3px; margin-right: 3px;">IBAN</span> <strong>Transferencia Bancaria (IBAN):</strong></div>
                                 <div style="font-family: monospace; font-size: 6.5pt; font-weight: bold; color: #0f172a;">{{ $companyIban }}</div>
                                 <div style="font-size: 6.2pt; color: #64748b;">Concepto: <em>{{ $event->name }}</em></div>
                             @endif
@@ -1531,7 +1532,7 @@
                     <tr>
                         <td style="width: 72%; vertical-align: middle;">
                             <div class="quote-validity-title">
-                                ⏳ PLAZO DE VALIDEZ DE ESTA OFERTA
+                                &bull; PLAZO DE VALIDEZ DE ESTA OFERTA
                             </div>
                             <div class="quote-validity-text">
                                 Propuesta emitida el <strong>{{ $issueDateShort }}</strong> y válida hasta el <strong>{{ $expiresDateFormatted }}</strong> ({{ $validityDays }} días naturales).

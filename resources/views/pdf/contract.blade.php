@@ -291,7 +291,7 @@
                 <div class="signature-graphic">
                     @if(($contract->signature_type ?? '') === 'certificate' || (!empty($contract->certificate_hash) && empty($contract->signature_data)))
                         <div style="border: 1px solid #2563eb; background: #eff6ff; padding: 4px 6px; border-radius: 4px; text-align: left; font-size: 6.5pt; color: #1e3a8a; line-height: 1.25;">
-                            <strong style="color: #1d4ed8;">&#x1F510; SELLO DE CERTIFICADO DIGITAL</strong><br>
+                            <strong style="color: #1d4ed8;">&#x2714; SELLO DE CERTIFICADO DIGITAL</strong><br>
                             <strong>Emisor:</strong> {{ $contract->certificate_issuer ?? 'FNMT / DNIe' }}<br>
                             <strong>Titular:</strong> {{ $contract->certificate_subject ?? ($r['cliente'] ?? '') }}<br>
                             <strong>SHA-256:</strong> <span style="font-family: monospace; font-size: 5pt;">{{ substr($contract->certificate_hash ?? '', 0, 28) }}...</span>

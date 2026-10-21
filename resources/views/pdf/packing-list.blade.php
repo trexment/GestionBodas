@@ -42,7 +42,7 @@
         <table>
             <tr>
                 <td style="vertical-align: middle;">
-                    <h1 class="header-title">📦 Hoja de Carga y Material Técnico</h1>
+                    <h1 class="header-title">Hoja de Carga y Material Técnico</h1>
                     <div class="header-subtitle">Checklist de salida de almacén, montaje y recogida</div>
                 </td>
                 <td style="text-align: right; vertical-align: middle;">
@@ -72,9 +72,9 @@
                 <td class="info-val">{{ $client->name ?? 'No asignado' }} {{ isset($client->phone) ? '('.$client->phone.')' : '' }}</td>
             </tr>
             <tr>
-                <td class="info-label">🎧 DJ Asignado:</td>
+                <td class="info-label">DJ Asignado:</td>
                 <td class="info-val"><strong>{{ $dj->name ?? 'Sin asignar' }}</strong> {{ isset($dj->phone) ? '('.$dj->phone.')' : '' }}</td>
-                <td class="info-label">👷‍♂️ Asistente(s):</td>
+                <td class="info-label">Asistente(s):</td>
                 <td class="info-val">
                     @php
                         $packingAssistants = $event->all_assistants;
@@ -99,7 +99,7 @@
         @foreach($equipmentGrouped as $category => $items)
             <div class="category-block">
                 <div class="category-title">
-                    📂 {{ $category }} ({{ $items->sum('pivot.quantity') }} uds)
+                    &bull; {{ $category }} ({{ $items->sum('pivot.quantity') }} uds)
                 </div>
                 <table class="items-table">
                     <thead>
@@ -151,7 +151,7 @@
                                 </td>
                                 <td>
                                     @if($item->pivot->notes)
-                                        <span style="color: #475569;">📍 {{ $item->pivot->notes }}</span>
+                                        <span style="color: #475569;">&bull; {{ $item->pivot->notes }}</span>
                                     @else
                                         <span style="color: #cbd5e1;">—</span>
                                     @endif

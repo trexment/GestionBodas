@@ -302,7 +302,7 @@
                     <tr>
                         <td>
                             <div class="item-title {{ $isDiscount ? 'item-discount' : '' }}">
-                                @if($isDiscount) 🎁 @else • @endif {{ $itemTitle }}
+                                @if($isDiscount) [DESCUENTO] @else &bull; @endif {{ $itemTitle }}
                             </div>
                             @if(!empty($itemDesc))
                                 <div class="item-desc">{{ $itemDesc }}</div>

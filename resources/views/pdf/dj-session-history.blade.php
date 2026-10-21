@@ -139,7 +139,7 @@
         <table>
             <tr>
                 <td style="vertical-align: middle;">
-                    <h1 class="header-title">🎵 Tracklist Oficial de la Sesión DJ</h1>
+                    <h1 class="header-title">&#9835; Tracklist Oficial de la Sesión DJ</h1>
                     <div class="header-subtitle">Historial cronológico de la música en directo</div>
                 </td>
                 <td style="text-align: right; vertical-align: middle;">
@@ -215,9 +215,9 @@
                         @if($track->matchedRequest)
                             <span class="matched-badge">
                                 @if($track->matchedRequest->is_guest_request)
-                                    👥 {{ $track->matchedRequest->guest_name ?: 'Invitado' }}
+                                    Invitado: {{ $track->matchedRequest->guest_name ?: 'Invitado' }}
                                 @else
-                                    💍 Novios / Escaleta
+                                    &#9733; Novios / Escaleta
                                 @endif
                             </span>
                         @else

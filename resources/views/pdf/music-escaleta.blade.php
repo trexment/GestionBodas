@@ -40,7 +40,7 @@
         <table>
             <tr>
                 <td style="vertical-align: middle;">
-                    <h1 class="header-title">🎧 Escaleta Musical y Momentos</h1>
+                    <h1 class="header-title">&#9835; Escaleta Musical y Momentos</h1>
                     <div class="header-subtitle">Guía de canciones clave y peticiones para el DJ y Personal</div>
                 </td>
                 <td style="text-align: right; vertical-align: middle;">
@@ -70,9 +70,9 @@
                 <td class="info-val">{{ $client->name ?? 'No especificado' }} {{ isset($client->phone) ? '('.$client->phone.')' : '' }}</td>
             </tr>
             <tr>
-                <td class="info-label">🎧 DJ (Baile):</td>
+                <td class="info-label">DJ (Baile):</td>
                 <td class="info-val"><strong>{{ $dj->name ?? 'Sin asignar' }}</strong> {{ isset($dj->phone) ? '('.$dj->phone.')' : '' }}</td>
-                <td class="info-label">👷‍♂️ Asistente(s):</td>
+                <td class="info-label">Asistente(s):</td>
                 <td class="info-val">
                     @php
                         $escaletaAssistants = $event->all_assistants;
@@ -89,11 +89,11 @@
 
     @php
         $categoryNames = [
-            'ceremonia' => '💍 Ceremonia',
-            'coctel' => '🍸 Cóctel / Aperitivo',
-            'banquete' => '🍽️ Banquete / Comida / Cena',
-            'baile' => '💃 Baile / Fiesta',
-            'lista_negra' => '🚫 Lista Negra (Canciones Prohibidas)',
+            'ceremonia' => 'Ceremonia',
+            'coctel' => 'Cóctel / Aperitivo',
+            'banquete' => 'Banquete / Comida / Cena',
+            'baile' => 'Baile / Fiesta',
+            'lista_negra' => 'Lista Negra (Canciones Prohibidas)',
         ];
     @endphp
 
@@ -131,14 +131,14 @@
                                     </td>
                                     <td>
                                         @if($item->requested_by)
-                                            <span class="req-by">👤 {{ $item->requested_by }}</span>
+                                            <span class="req-by">&bull; {{ $item->requested_by }}</span>
                                         @else
                                             <span style="color: #94a3b8; font-size: 10px;">Novios</span>
                                         @endif
                                     </td>
                                     <td>
                                         @if($item->notes)
-                                            <div class="notes-box">📝 {{ $item->notes }}</div>
+                                            <div class="notes-box">{{ $item->notes }}</div>
                                         @else
                                             <span style="color: #cbd5e1;">—</span>
                                         @endif
