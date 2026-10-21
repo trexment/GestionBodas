@@ -343,6 +343,11 @@ class EventShow extends Component
         $this->invoice_tax_rate = 21.00;
         $this->invoice_issue_date = now()->format('Y-m-d');
         $this->invoice_number = \App\Models\Invoice::nextNumber('factura');
+
+        $requestedTab = request()->query('tab');
+        if (in_array($requestedTab, ['dossier', 'music', 'equipment', 'meetings', 'quotes', 'contracts', 'invoices'], true)) {
+            $this->activeTab = $requestedTab;
+        }
     }
 
     public function loadSettingsPrices()
