@@ -16,6 +16,8 @@ class QuoteCalculator extends Component
     public $client_phone = '';
     public $event_date = '';
     public $event_location = '';
+    public $event_schedule = '';
+    public $needs_prior_setup = false;
     public $client_notes = '';
     public $event_type = 'boda'; // boda, empresa, cumpleanos, comunion, otro
 
@@ -121,26 +123,26 @@ class QuoteCalculator extends Component
                 'prefix' => 'Comunión: ',
             ],
             'otro' => [
-                'name' => 'Otro Evento / Celebración',
+                'name' => 'Colegio / Asociación / Otro Evento',
                 'icon' => '🎉',
-                'badge' => 'Celebración General',
+                'badge' => 'Colegios, Fiestas & Actos',
                 'hero_title' => 'Música & Sonido para tu',
                 'hero_highlight' => 'Evento o Celebración',
-                'hero_subtitle' => 'Personaliza el equipamiento técnico, sonorización y DJ para cualquier tipo de fiesta o acto.',
-                'name_label' => 'Nombre del Evento / Contacto *',
-                'name_placeholder' => 'Ej: Fiesta de Verano / Asociación Cultural',
-                'ceremony_name' => 'Sonorización / Acto Protocolario',
+                'hero_subtitle' => 'Sonorización para festivales escolares, AMPAs, ayuntamientos, fiestas o actos especiales a medida.',
+                'name_label' => 'Nombre del Evento / Colegio / Contacto *',
+                'name_placeholder' => 'Ej: AMPA Colegio San Fernando / Asociación Cultural',
+                'ceremony_name' => 'Sonorización Acto / Festival / Escenario',
                 'ceremony_icon' => '📢',
-                'ceremony_desc' => 'Megafonía, microfonía y música institucional o protocolaria.',
+                'ceremony_desc' => 'Equipo de sonido profesional, microfonía y control técnico para actuaciones, festivales o actos.',
                 'cocktail_name' => 'Recepción / Música de Bienvenida',
                 'cocktail_icon' => '🍸',
                 'cocktail_desc' => 'Música ambiente y equipo de sonido independiente para la bienvenida.',
                 'restaurant_name' => 'Comida / Cena / Banquete',
                 'restaurant_icon' => '🍽️',
                 'restaurant_desc' => 'Ambientación musical durante la comida/cena y momentos destacados.',
-                'dj_name' => 'DJ Fiesta & Baile',
+                'dj_name' => 'DJ Fiesta & Animación Musical',
                 'dj_icon' => '💃',
-                'dj_desc' => 'Sesión musical completa con sonido e iluminación profesional para la fiesta.',
+                'dj_desc' => 'Sesión musical completa con sonido, microfonía e iluminación profesional para la celebración.',
                 'prefix' => 'Evento: ',
             ],
         ];
@@ -651,7 +653,9 @@ class QuoteCalculator extends Component
             'client_phone' => 'required|string|max:50',
             'event_date' => 'required|date',
             'event_location' => 'required|string|max:255',
-            'client_notes' => 'nullable|string|max:1000'
+            'event_schedule' => 'nullable|string|max:255',
+            'needs_prior_setup' => 'nullable|boolean',
+            'client_notes' => 'nullable|string|max:3000'
         ]);
 
         $catalog = $this->getPriceCatalog();
@@ -905,14 +909,35 @@ class QuoteCalculator extends Component
             $requestedServicesList[] = "• ✨ " . $customName . " (A consultar)" . ($customDesc ? " - " . $customDesc : "");
         }
 
+        if (!empty(trim((string)$this->event_schedule))) {
+            $requestedServicesList[] = "• ⏰ Horario / Duración indicada: " . trim((string)$this->event_schedule);
+        }
+
+        if ($this->needs_prior_setup) {
+            $requestedServicesList[] = "• 🔧 Requiere montaje el día anterior / ensayo previo / varios días (A valorar)";
+        }
+
+        if (empty($requestedServicesList)) {
+            $requestedServicesList[] = "• 📝 Solicitud personalizada a medida (ver notas y detalles del cliente)";
+        }
+
         $typeConfig = self::getEventTypes()[$this->event_type] ?? self::getEventTypes()['boda'];
         $eventTitle = $typeConfig['prefix'] . $this->client_name;
 
+        $scheduleAndSetupNotes = "";
+        if (!empty(trim((string)$this->event_schedule))) {
+            $scheduleAndSetupNotes .= "Horario / Tramo del Evento: " . trim((string)$this->event_schedule) . "\n";
+        }
+        if ($this->needs_prior_setup) {
+            $scheduleAndSetupNotes .= "Montaje Especial: SÍ (Requiere montaje el día anterior / ensayo previo / varios días)\n";
+        }
+
         $fullNotes = "SOLICITUD DE PRESUPUESTO ONLINE (/presupuesto):\n"
-                   . "Tipo de Evento: " . $typeConfig['name'] . "\n\n"
-                   . "Servicios Solicitados:\n"
+                   . "Tipo de Evento: " . $typeConfig['name'] . "\n"
+                   . $scheduleAndSetupNotes
+                   . "\nServicios Solicitados:\n"
                    . implode("\n", $requestedServicesList)
-                   . (!empty($this->client_notes) ? "\n\nObservaciones del Cliente:\n" . $this->client_notes : "");
+                   . (!empty(trim((string)$this->client_notes)) ? "\n\n📝 NOTAS Y EXPLICACIÓN DEL CLIENTE:\n" . trim((string)$this->client_notes) : "");
 
         // 4. Reutilizar evento existente del cliente si ya entró como Lead (para no duplicarlo) o crear uno nuevo
         $event = Event::where('client_id', $client->id)
@@ -1091,6 +1116,26 @@ class QuoteCalculator extends Component
             ]);
         }
 
+        if ($this->needs_prior_setup) {
+            $quote->items()->create([
+                'service_name' => 'Montaje Día Anterior / Ensayo General / Varios Días (A valorar)',
+                'description' => 'Desplazamiento, instalación previa de equipo de sonido/iluminación o asistencia a ensayo previo según necesidades del evento.',
+                'quantity' => 1,
+                'price' => 0,
+                'total' => 0,
+            ]);
+        }
+
+        if ($quote->items()->count() === 0) {
+            $quote->items()->create([
+                'service_name' => 'Servicio de Sonorización y DJ a Medida (' . ($typeConfig['name'] ?? 'Evento') . ')',
+                'description' => trim((string)$this->client_notes) ?: 'Propuesta personalizada según horarios y necesidades indicadas por el cliente.',
+                'quantity' => 1,
+                'price' => 0,
+                'total' => 0,
+            ]);
+        }
+
         // 7. Enviar notificaciones por email:
         // A) A los Administradores de la Empresa y de la Marca
         try {
@@ -1133,10 +1178,22 @@ class QuoteCalculator extends Component
 
         try {
             if (\App\Services\EvolutionWhatsAppService::isEnabled()) {
+                $waExtra = "";
+                if (!empty(trim((string)$this->event_schedule))) {
+                    $waExtra .= "⏰ *Horario:* " . trim((string)$this->event_schedule) . "\n";
+                }
+                if ($this->needs_prior_setup) {
+                    $waExtra .= "🔧 *Montaje previo / Ensayo:* Sí (Día anterior o varios días)\n";
+                }
+                if (!empty(trim((string)$this->client_notes))) {
+                    $waExtra .= "📝 *Notas del cliente:* " . Str::limit(trim((string)$this->client_notes), 350) . "\n";
+                }
                 $waAlert = "💶 *¡NUEVA SOLICITUD DE PRESUPUESTO!*\n\n"
                     . "👤 *Cliente:* {$this->client_name}\n"
                     . "📞 *Teléfono:* " . ($this->client_phone ?: 'No indicado') . "\n"
                     . "🎉 *Evento:* {$event->name}\n"
+                    . "📍 *Lugar:* {$this->event_location}\n"
+                    . $waExtra
                     . "💰 *Total estimado:* " . number_format((float)$quote->total_amount, 2, ',', '.') . " €\n\n"
                     . "🔗 *Ficha:* " . url("/admin/events/{$event->id}");
                 \App\Services\EvolutionWhatsAppService::notifyAdmins($waAlert, $event->brand_clean);

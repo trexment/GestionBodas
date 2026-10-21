@@ -1,36 +1,53 @@
 @php
     $types = \App\Livewire\Guest\QuoteCalculator::getEventTypes();
     $currentType = $types[$event_type] ?? $types['boda'];
+
+    $serviceGroups = [
+        [
+            'title' => '🎵 Sonido, Fases y Sesión DJ',
+            'subtitle' => 'Selecciona las partes de tu evento que quieres sonorizar',
+            'keys' => ['ceremony', 'cocktail', 'restaurant', 'dj'],
+        ],
+        [
+            'title' => '✨ Efectos, Animación y Horas Extra',
+            'subtitle' => 'Efectos de pista, karaoke y ampliación de horario',
+            'keys' => ['smoke_machine', 'cold_sparks', 'karaoke', 'extra_hours'],
+        ],
+        [
+            'title' => '📸 Fotomatón, Plataforma 360º y Rincón Dulce',
+            'subtitle' => 'Recuerdos divertidos y mesas dulces para tus invitados',
+            'keys' => ['pack_duo_360', 'photobooth', 'video_360', 'chocolate_fountain', 'candy_bar', 'waffle_cart'],
+        ],
+    ];
+
+    $selectedCount = collect($services)->where('selected', true)->count() + ($custom_service_selected ? 1 : 0);
 @endphp
 
-<div class="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 py-10 px-4 sm:px-6 lg:px-8 text-white">
-    <div class="max-w-5xl mx-auto">
+<div class="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 py-5 sm:py-7 px-3 sm:px-6 lg:px-8 text-white">
+    <div class="max-w-6xl mx-auto">
         
-        <!-- Header / Hero -->
-        <div class="text-center mb-8">
-            <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-semibold uppercase tracking-wider mb-4 shadow-inner">
+        <!-- Compact Header + Event Type Selector -->
+        <div class="text-center mb-5">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-[11px] font-semibold uppercase tracking-wider mb-2 shadow-inner">
                 <span>✨</span> Presupuesto a Medida &bull; {{ $currentType['badge'] }}
             </div>
-            <h1 class="text-3xl sm:text-5xl font-extrabold tracking-tight text-white mb-3">
+            <h1 class="text-2xl sm:text-4xl font-extrabold tracking-tight text-white mb-1.5">
                 {{ $currentType['hero_title'] }} <span class="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-pink-400 to-indigo-400">{{ $currentType['hero_highlight'] }}</span>
             </h1>
-            <p class="text-base sm:text-lg text-slate-400 max-w-2xl mx-auto">
+            <p class="text-xs sm:text-sm text-slate-400 max-w-2xl mx-auto">
                 {{ $currentType['hero_subtitle'] }}
             </p>
         </div>
 
         @if(!$is_submitted)
-            <!-- SELECTOR DE TIPO DE EVENTO -->
-            <div class="mb-8">
-                <div class="text-center mb-3">
-                    <span class="text-[11px] uppercase font-black tracking-widest text-slate-400">¿Qué tipo de celebración estás organizando?</span>
-                </div>
-                <div class="flex flex-wrap items-center justify-center gap-2 max-w-3xl mx-auto">
+            <!-- SELECTOR DE TIPO DE EVENTO COMPACTO -->
+            <div class="mb-5">
+                <div class="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 max-w-4xl mx-auto">
                     @foreach($types as $key => $type)
                         <button type="button" 
                                 wire:click="setEventType('{{ $key }}')"
-                                class="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all transform hover:scale-102 cursor-pointer {{ $event_type === $key ? 'bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 text-white shadow-lg shadow-indigo-600/30 border border-indigo-400/50' : 'bg-slate-800/80 hover:bg-slate-700/80 text-slate-300 border border-slate-700/80 hover:text-white' }}">
-                            <span class="text-base">{{ $type['icon'] }}</span>
+                                class="inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer {{ $event_type === $key ? 'bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 text-white shadow-md shadow-indigo-600/30 border border-indigo-400/50' : 'bg-slate-800/80 hover:bg-slate-700/80 text-slate-300 border border-slate-700/80 hover:text-white' }}">
+                            <span class="text-sm">{{ $type['icon'] }}</span>
                             <span>{{ $type['name'] }}</span>
                         </button>
                     @endforeach
@@ -40,19 +57,19 @@
 
         @if($is_submitted)
             <!-- Success / Confirmation Card -->
-            <div class="bg-slate-800/80 backdrop-blur-xl border border-emerald-500/30 rounded-3xl p-8 sm:p-12 text-center shadow-2xl max-w-2xl mx-auto animate-fade-in">
-                <div class="w-20 h-20 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center text-4xl mx-auto mb-6 ring-8 ring-emerald-500/10">
+            <div class="bg-slate-800/80 backdrop-blur-xl border border-emerald-500/30 rounded-3xl p-8 sm:p-10 text-center shadow-2xl max-w-2xl mx-auto animate-fade-in">
+                <div class="w-16 h-16 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center text-3xl mx-auto mb-5 ring-8 ring-emerald-500/10">
                     ✓
                 </div>
                 <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-indigo-500/20 text-indigo-300 text-xs font-bold mb-3 border border-indigo-500/30">
                     <span>{{ $currentType['icon'] }}</span> <span>{{ $currentType['name'] }}</span>
                 </div>
-                <h2 class="text-2xl sm:text-3xl font-bold text-white mb-3">¡Solicitud Recibida con Éxito!</h2>
-                <p class="text-slate-300 text-base mb-6 leading-relaxed">
+                <h2 class="text-2xl sm:text-3xl font-bold text-white mb-2">¡Solicitud Recibida con Éxito!</h2>
+                <p class="text-slate-300 text-sm sm:text-base mb-5 leading-relaxed">
                     Muchas gracias <strong class="text-white">{{ $client_name }}</strong>. Hemos registrado tu solicitud de presupuesto para el <strong class="text-emerald-400">{{ \Carbon\Carbon::parse($event_date)->format('d/m/Y') }}</strong> en <strong class="text-white">{{ $event_location }}</strong>.
                 </p>
-                <div class="bg-slate-900/60 rounded-2xl p-5 border border-slate-700/50 text-left mb-8 space-y-2">
-                    <p class="text-xs uppercase font-bold tracking-wider text-slate-400 mb-2">Servicios solicitados:</p>
+                <div class="bg-slate-900/60 rounded-2xl p-4 sm:p-5 border border-slate-700/50 text-left mb-6 space-y-2">
+                    <p class="text-xs uppercase font-bold tracking-wider text-slate-400 mb-2">Resumen de tu solicitud:</p>
                     @foreach($services as $key => $serv)
                         @if($serv['selected'])
                             <div class="flex items-center gap-2 flex-wrap text-sm text-slate-200">
@@ -105,14 +122,32 @@
                             <span class="text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded-full">A consultar</span>
                         </div>
                     @endif
+                    @if(!empty($event_schedule))
+                        <div class="flex items-center gap-2 text-xs text-indigo-200 pt-1">
+                            <span>⏰</span>
+                            <span><strong>Horario / Tramo:</strong> {{ $event_schedule }}</span>
+                        </div>
+                    @endif
+                    @if($needs_prior_setup)
+                        <div class="flex items-center gap-2 text-xs text-amber-300">
+                            <span>🔧</span>
+                            <span><strong>Montaje especial:</strong> Requiere montaje día anterior / ensayo previo / varios días</span>
+                        </div>
+                    @endif
+                    @if(!empty($client_notes))
+                        <div class="pt-2 mt-2 border-t border-slate-800 text-xs text-slate-300">
+                            <strong class="text-slate-400 block mb-0.5">📝 Tus notas / comentarios:</strong>
+                            <p class="whitespace-pre-line">{{ $client_notes }}</p>
+                        </div>
+                    @endif
                     @if($this->has_cocktail_restaurant_pack && $this->cocktail_restaurant_pack_info['enabled'])
                         <div class="pt-2 border-t border-slate-800 text-xs text-emerald-400 font-semibold flex items-center gap-1.5">
                             <span>✨</span> <span>Pack Cóctel + Banquete aplicado ({{ $this->cocktail_restaurant_pack_info['savings_label'] }})</span>
                         </div>
                     @endif
                 </div>
-                <p class="text-sm text-slate-400 mb-8">
-                    Nuestro equipo comprobará la disponibilidad de la fecha y te contactará muy pronto por teléfono o WhatsApp para enviarte todos los detalles.
+                <p class="text-xs sm:text-sm text-slate-400 mb-6">
+                    Nuestro equipo comprobará la disponibilidad y te contactará muy pronto por teléfono o WhatsApp con tu presupuesto personalizado.
                 </p>
                 <a href="/" class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-semibold rounded-xl shadow-lg transition-all transform hover:-translate-y-0.5">
                     <span>🏠</span> Volver a la página principal
@@ -120,24 +155,31 @@
             </div>
         @else
             <!-- Main Interactive Form Grid -->
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-6 items-start">
                 
-                <!-- Left Side: Service Selector Cards (No Prices) -->
+                <!-- Left Side: Compact Service Selector Grid (7 cols) -->
                 <div class="lg:col-span-7 space-y-4">
                     <div class="flex items-center justify-between px-1">
-                        <h2 class="text-lg font-bold text-white flex items-center gap-2">
-                            <span>1.</span> Elige las Fases y Servicios
+                        <h2 class="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                            <span class="w-6 h-6 rounded-lg bg-indigo-500/20 border border-indigo-500/40 text-indigo-300 text-xs flex items-center justify-center font-black">1</span>
+                            <span>Elige los Servicios (o descríbelo en Notas)</span>
                         </h2>
-                        <span class="text-xs text-slate-400">Toca para seleccionar / elegir opción</span>
+                        @if($selectedCount > 0)
+                            <span class="text-[11px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2.5 py-0.5 rounded-full">
+                                {{ $selectedCount }} {{ $selectedCount === 1 ? 'seleccionado' : 'seleccionados' }}
+                            </span>
+                        @else
+                            <span class="text-[11px] text-slate-400 hidden sm:inline">Toca cualquier tarjeta para marcarla</span>
+                        @endif
                     </div>
 
                     @if($this->has_cocktail_restaurant_pack && $this->cocktail_restaurant_pack_info['enabled'])
-                        <div class="p-3.5 bg-gradient-to-r from-emerald-950/80 via-indigo-950/80 to-purple-950/80 border border-emerald-500/50 rounded-2xl flex items-center justify-between gap-3 shadow-lg shadow-emerald-950/30 animate-pulse">
+                        <div class="p-3 bg-gradient-to-r from-emerald-950/80 via-indigo-950/80 to-purple-950/80 border border-emerald-500/50 rounded-2xl flex items-center justify-between gap-3 shadow-lg">
                             <div class="flex items-center gap-2.5">
-                                <span class="text-2xl">🎁</span>
+                                <span class="text-xl">🎁</span>
                                 <div>
                                     <span class="text-xs font-black text-emerald-300 uppercase tracking-wider block">¡Pack Cóctel + Banquete Activado!</span>
-                                    <span class="text-[11px] text-slate-300">Has desbloqueado una tarifa especial combinada con descuento en tu presupuesto.</span>
+                                    <span class="text-[11px] text-slate-300">Tarifa especial combinada con descuento aplicada en tu presupuesto.</span>
                                 </div>
                             </div>
                             <span class="shrink-0 text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2.5 py-1 rounded-full">
@@ -146,491 +188,376 @@
                         </div>
                     @endif
 
-                    <div class="space-y-3">
-                        @foreach($services as $key => $service)
-                            <div wire:key="service-{{ $key }}"
-                                 wire:click="toggleService('{{ $key }}')"
-                                 class="relative p-5 rounded-2xl border transition-all cursor-pointer select-none {{ $service['selected'] ? 'bg-indigo-950/60 border-indigo-500/60 shadow-lg shadow-indigo-950/50 ring-1 ring-indigo-500/50' : 'bg-slate-800/40 border-slate-700/60 hover:border-slate-600 hover:bg-slate-800/70' }}">
-                                
-                                <div class="flex items-start gap-4">
-                                    <!-- Icon Box -->
-                                    <div class="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0 {{ $service['selected'] ? 'bg-indigo-500/20 text-indigo-300 ring-2 ring-indigo-500/30' : 'bg-slate-700/40 text-slate-400' }}">
-                                        {{ $service['icon'] }}
-                                    </div>
+                    @foreach($serviceGroups as $group)
+                        <div class="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-3 sm:p-3.5 space-y-2.5">
+                            <div class="flex items-center justify-between px-1">
+                                <h3 class="text-xs sm:text-sm font-extrabold text-indigo-200 tracking-wide">{{ $group['title'] }}</h3>
+                                <span class="text-[10px] text-slate-400 hidden sm:inline">{{ $group['subtitle'] }}</span>
+                            </div>
 
-                                    <!-- Details -->
-                                    <div class="flex-1 min-w-0 pr-8">
-                                        <div class="flex items-center gap-2 flex-wrap">
-                                            <h3 class="font-bold text-base {{ $service['selected'] ? 'text-white' : 'text-slate-300' }}">
-                                                {{ $service['name'] }}
-                                            </h3>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                @foreach($group['keys'] as $key)
+                                    @if(isset($services[$key]))
+                                        @php
+                                            $service = $services[$key];
+                                            $hasSubControls = in_array($key, ['dj', 'cold_sparks', 'extra_hours', 'pack_duo_360', 'photobooth', 'video_360', 'chocolate_fountain', 'waffle_cart'], true);
+                                            $spanFull = $service['selected'] && $hasSubControls;
+                                        @endphp
+                                        <div wire:key="service-{{ $key }}"
+                                             wire:click="toggleService('{{ $key }}')"
+                                             class="{{ $spanFull ? 'sm:col-span-2' : '' }} relative p-3 sm:p-3.5 rounded-xl border transition-all cursor-pointer select-none {{ $service['selected'] ? 'bg-indigo-950/70 border-indigo-500/70 shadow-md shadow-indigo-950/50 ring-1 ring-indigo-500/50' : 'bg-slate-800/50 border-slate-700/60 hover:border-slate-500 hover:bg-slate-800/80' }}">
+                                            
+                                            <div class="flex items-start gap-2.5">
+                                                <!-- Compact Icon Box -->
+                                                <div class="w-9 h-9 rounded-lg flex items-center justify-center text-lg shrink-0 {{ $service['selected'] ? 'bg-indigo-500/20 text-indigo-300 ring-1 ring-indigo-500/40' : 'bg-slate-700/50 text-slate-300' }}">
+                                                    {{ $service['icon'] }}
+                                                </div>
+
+                                                <!-- Details -->
+                                                <div class="flex-1 min-w-0 pr-6">
+                                                    <div class="flex items-center gap-1.5 flex-wrap">
+                                                        <h4 class="font-bold text-xs sm:text-sm leading-tight {{ $service['selected'] ? 'text-white' : 'text-slate-200' }}">
+                                                            {{ $service['name'] }}
+                                                        </h4>
+                                                        @if($service['selected'])
+                                                            @if($key === 'smoke_machine' && !empty($service['included']))
+                                                                <span class="px-1.5 py-0.5 rounded-md text-[9px] font-bold bg-emerald-500/30 text-emerald-300 border border-emerald-500/40">
+                                                                    ✅ INCLUIDO EN PACK
+                                                                </span>
+                                                            @elseif($key === 'cold_sparks' && !empty($service['included']))
+                                                                <span class="px-1.5 py-0.5 rounded-md text-[9px] font-bold bg-emerald-500/30 text-emerald-300 border border-emerald-500/40">
+                                                                    ✅ 2 MÁQ. EN PACK
+                                                                </span>
+                                                            @elseif(($key === 'cocktail' || $key === 'restaurant') && $this->has_cocktail_restaurant_pack && $this->cocktail_restaurant_pack_info['enabled'])
+                                                                <span class="px-1.5 py-0.5 rounded-md text-[9px] font-bold bg-emerald-500/30 text-emerald-300 border border-emerald-500/40">
+                                                                    🎁 PACK DTO
+                                                                </span>
+                                                            @elseif($key === 'extra_hours')
+                                                                <span class="px-1.5 py-0.5 rounded-md text-[9px] font-bold bg-amber-500/30 text-amber-200 border border-amber-500/40">
+                                                                    +{{ $service['quantity'] ?? 1 }}H EXTRA
+                                                                </span>
+                                                            @elseif(in_array($key, ['pack_duo_360', 'photobooth', 'video_360']))
+                                                                <span class="px-1.5 py-0.5 rounded-md text-[9px] font-bold bg-indigo-500/30 text-indigo-200 border border-indigo-400/40">
+                                                                    ⏱️ {{ $service['hours'] ?? 2 }}H
+                                                                </span>
+                                                            @elseif($key === 'chocolate_fountain')
+                                                                <span class="px-1.5 py-0.5 rounded-md text-[9px] font-bold bg-amber-500/30 text-amber-200 border border-amber-400/40">
+                                                                    🍫 {{ ($service['fountains'] ?? 1) == 2 ? '2 FUENTES' : '1 FUENTE' }} &bull; {{ $service['hours'] ?? 2 }}H
+                                                                </span>
+                                                            @elseif($key === 'waffle_cart')
+                                                                <span class="px-1.5 py-0.5 rounded-md text-[9px] font-bold bg-orange-500/30 text-orange-200 border border-orange-400/40">
+                                                                    🧇 {{ $service['hours'] ?? 2 }}H
+                                                                </span>
+                                                            @endif
+                                                        @else
+                                                            @if($key === 'smoke_machine')
+                                                                <span class="text-[9px] text-emerald-400/90 font-semibold">✨ Gratis desde 5h DJ</span>
+                                                            @elseif($key === 'cold_sparks')
+                                                                <span class="text-[9px] text-amber-400/90 font-semibold">👑 2 incl. en Pack Deluxe</span>
+                                                            @elseif($key === 'pack_duo_360')
+                                                                <span class="px-1.5 py-0.5 rounded-md text-[9px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">🔥 AHORRO</span>
+                                                            @elseif(($key === 'photobooth' || $key === 'video_360') && !empty($services['pack_duo_360']['selected']))
+                                                                <span class="px-1.5 py-0.5 rounded-md text-[9px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">✅ EN PACK DÚO</span>
+                                                            @endif
+                                                        @endif
+                                                    </div>
+                                                    <p class="text-[11px] text-slate-400 mt-0.5 leading-snug {{ $service['selected'] ? '' : 'line-clamp-2' }}">
+                                                        {{ $service['description'] }}
+                                                    </p>
+
+                                                    @if($key === 'cocktail' && $service['selected'] && empty($services['restaurant']['selected']) && $this->cocktail_restaurant_pack_info['enabled'])
+                                                        <div class="mt-1.5 text-[10px] text-amber-300 font-semibold">
+                                                            💡 Añade Banquete para descuento de Pack.
+                                                        </div>
+                                                    @elseif($key === 'restaurant' && $service['selected'] && empty($services['cocktail']['selected']) && $this->cocktail_restaurant_pack_info['enabled'])
+                                                        <div class="mt-1.5 text-[10px] text-amber-300 font-semibold">
+                                                            💡 Añade Cóctel para descuento de Pack.
+                                                        </div>
+                                                    @endif
+                                                </div>
+
+                                                <!-- Checkmark Status Bubble -->
+                                                <div class="absolute top-3 right-3 w-5 h-5 rounded-full flex items-center justify-center border transition-colors {{ $service['selected'] ? 'bg-indigo-500 border-indigo-400 text-white shadow-sm shadow-indigo-500/40' : 'border-slate-600 bg-slate-900/40 text-transparent' }}">
+                                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+                                                    </svg>
+                                                </div>
+                                            </div>
+
+                                            <!-- SUB-CONTROLS: ONLY SHOWN WHEN SELECTED -->
                                             @if($service['selected'])
-                                                @if($key === 'smoke_machine' && !empty($service['included']))
-                                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/30 text-emerald-300 border border-emerald-500/40">
-                                                        ✅ INCLUIDO EN {{ strtoupper($this->dj_pack_info['base_name'] ?? 'PACK') }} (0 €)
-                                                    </span>
-                                                @elseif($key === 'cold_sparks' && !empty($service['included']))
-                                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/30 text-emerald-300 border border-emerald-500/40">
-                                                        ✅ 2 MÁQUINAS EN {{ strtoupper($this->dj_pack_info['base_name'] ?? 'PACK') }} (0 €)
-                                                    </span>
-                                                @elseif(($key === 'cocktail' || $key === 'restaurant') && $this->has_cocktail_restaurant_pack && $this->cocktail_restaurant_pack_info['enabled'])
-                                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/30 text-emerald-300 border border-emerald-500/40">
-                                                        🎁 EN PACK CON DESCUENTO
-                                                    </span>
-                                                @elseif($key === 'extra_hours')
-                                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/30 text-amber-200 border border-amber-500/40">
-                                                        +{{ $service['quantity'] ?? 1 }} {{ ($service['quantity'] ?? 1) == 1 ? 'HORA EXTRA' : 'HORAS EXTRA' }}
-                                                    </span>
-                                                @elseif(in_array($key, ['pack_duo_360', 'photobooth', 'video_360']))
-                                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/30 text-indigo-200 border border-indigo-400/40">
-                                                        ⏱️ {{ $service['hours'] ?? 2 }} HORAS
-                                                    </span>
-                                                @elseif($key === 'chocolate_fountain')
-                                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/30 text-amber-200 border border-amber-400/40">
-                                                        🍫 {{ ($service['fountains'] ?? 1) == 2 ? '2 FUENTES' : '1 FUENTE' }} &bull; {{ $service['hours'] ?? 2 }}H
-                                                    </span>
-                                                @elseif($key === 'waffle_cart')
-                                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-500/30 text-orange-200 border border-orange-400/40">
-                                                        🧇 {{ $service['hours'] ?? 2 }}H ({{ ($service['hours'] ?? 2) == 3 ? '~100 GOFRES' : '~60 GOFRES' }})
-                                                    </span>
-                                                @else
-                                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/30 text-indigo-300 border border-indigo-500/40">
-                                                        INCLUIDO
-                                                    </span>
+                                                @if($key === 'dj')
+                                                    <div class="mt-3 pt-2.5 border-t border-indigo-500/20 space-y-2" wire:click.stop>
+                                                        <div class="flex flex-wrap items-center justify-between gap-2">
+                                                            <span class="text-xs font-semibold text-slate-200">⏱️ Duración estimada de baile / DJ:</span>
+                                                            <div class="inline-flex items-center bg-slate-900/90 rounded-xl p-1 border border-indigo-500/40">
+                                                                <button type="button" wire:click="setDjHours({{ max(2, $service['quantity'] - 1) }})" class="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-800 hover:bg-indigo-600 text-white font-bold text-sm transition cursor-pointer">-</button>
+                                                                <span class="px-3 text-xs font-extrabold text-indigo-200">{{ $service['quantity'] }} Horas</span>
+                                                                <button type="button" wire:click="setDjHours({{ min(9, $service['quantity'] + 1) }})" class="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-800 hover:bg-indigo-600 text-white font-bold text-sm transition cursor-pointer">+</button>
+                                                            </div>
+                                                        </div>
+                                                        <div class="p-2.5 bg-slate-900/80 rounded-xl border border-indigo-400/30 flex items-start gap-2 text-xs text-slate-200">
+                                                            <span class="text-sm shrink-0">
+                                                                @if($this->dj_pack_info['pack_key'] === 'premium') 👑 @elseif($this->dj_pack_info['pack_key'] === 'medium') 🌟 @else ✨ @endif
+                                                            </span>
+                                                            <div class="flex-1 min-w-0">
+                                                                <div class="flex items-center gap-1.5 flex-wrap">
+                                                                    <strong class="text-indigo-300 font-bold">{{ $this->dj_pack_info['name'] }}</strong>
+                                                                    @if(!empty($this->dj_pack_info['effects_badge']))
+                                                                        <span class="text-[10px] font-semibold text-emerald-300 bg-emerald-500/10 border border-emerald-500/30 px-1.5 py-0.5 rounded">✨ Incluye: {{ $this->dj_pack_info['effects_badge'] }}</span>
+                                                                    @endif
+                                                                </div>
+                                                                <p class="text-[11px] text-slate-300 mt-0.5 leading-snug">{{ $this->dj_pack_info['description'] }}</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
                                                 @endif
-                                            @else
-                                                @if($key === 'smoke_machine')
-                                                    <span class="text-[10px] text-emerald-400/90 font-medium">✨ Incluido gratis desde 5h DJ</span>
-                                                @elseif($key === 'cold_sparks')
-                                                    <span class="text-[10px] text-amber-400/90 font-medium">👑 2 máquinas incluidas en Pack Deluxe Show</span>
-                                                @elseif($key === 'pack_duo_360')
-                                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">🔥 PACK AHORRO</span>
-                                                @elseif(($key === 'photobooth' || $key === 'video_360') && !empty($services['pack_duo_360']['selected']))
-                                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">✅ INCLUIDO EN PACK DÚO</span>
+
+                                                @if($key === 'cold_sparks')
+                                                    <div class="mt-3 pt-2.5 border-t border-indigo-500/20 flex flex-wrap items-center justify-between gap-2" wire:click.stop>
+                                                        <div>
+                                                            <span class="text-xs font-semibold text-slate-200">Nº de máquinas de chispas:</span>
+                                                            @if(!empty($service['included']))
+                                                                <span class="block text-[10px] text-emerald-300">👑 2 máquinas incluidas en tu Pack (0 €)</span>
+                                                            @endif
+                                                        </div>
+                                                        <div class="inline-flex items-center bg-slate-900/90 rounded-xl p-1 border border-indigo-500/40">
+                                                            <button type="button" wire:click="setColdSparksQuantity({{ max(1, ($service['quantity'] ?? 2) - 1) }})" class="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-800 hover:bg-indigo-600 text-white font-bold text-sm transition cursor-pointer">-</button>
+                                                            <span class="px-3 text-xs font-extrabold text-indigo-200">{{ $service['quantity'] ?? 2 }} {{ ($service['quantity'] ?? 2) == 1 ? 'Máquina' : 'Máquinas' }}</span>
+                                                            <button type="button" wire:click="setColdSparksQuantity({{ min(10, ($service['quantity'] ?? 2) + 1) }})" class="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-800 hover:bg-indigo-600 text-white font-bold text-sm transition cursor-pointer">+</button>
+                                                        </div>
+                                                    </div>
+                                                @endif
+
+                                                @if($key === 'extra_hours')
+                                                    <div class="mt-3 pt-2.5 border-t border-indigo-500/20 space-y-2" wire:click.stop>
+                                                        <div class="flex flex-wrap items-center justify-between gap-2">
+                                                            <span class="text-xs font-semibold text-slate-200">Horas adicionales a añadir:</span>
+                                                            <div class="inline-flex items-center bg-slate-900/90 rounded-xl p-1 border border-indigo-500/40">
+                                                                <button type="button" wire:click="setExtraHoursQuantity({{ max(1, ($service['quantity'] ?? 1) - 1) }})" class="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-800 hover:bg-indigo-600 text-white font-bold text-sm transition cursor-pointer">-</button>
+                                                                <span class="px-3 text-xs font-extrabold text-amber-300">+{{ $service['quantity'] ?? 1 }} {{ ($service['quantity'] ?? 1) == 1 ? 'Hora' : 'Horas' }}</span>
+                                                                <button type="button" wire:click="setExtraHoursQuantity({{ min(6, ($service['quantity'] ?? 1) + 1) }})" class="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-800 hover:bg-indigo-600 text-white font-bold text-sm transition cursor-pointer">+</button>
+                                                            </div>
+                                                        </div>
+                                                        @php $recPack = $this->recommended_dj_pack_for_extra_hours; @endphp
+                                                        @if($recPack)
+                                                            <div class="p-2.5 bg-amber-950/60 rounded-xl border border-amber-400/40 flex flex-wrap items-center justify-between gap-2 text-xs">
+                                                                <span class="text-amber-100 text-[11px]">
+                                                                    💡 Para <strong>{{ $recPack['combined_total_hours'] }}h</strong> te sale mejor el <strong>{{ $recPack['base_name'] }}</strong>
+                                                                </span>
+                                                                <button type="button" wire:click="applyRecommendedDjPack" class="px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-[11px] cursor-pointer">
+                                                                    Cambiar al {{ $recPack['base_name'] }}
+                                                                </button>
+                                                            </div>
+                                                        @endif
+                                                    </div>
+                                                @endif
+
+                                                @if($key === 'pack_duo_360')
+                                                    @php $duoH = (int)($service['hours'] ?? 2); @endphp
+                                                    <div class="mt-3 pt-2.5 border-t border-indigo-500/20 flex flex-wrap items-center justify-between gap-2" wire:click.stop>
+                                                        <span class="text-[11px] font-semibold text-slate-200">Duración del Pack Dúo:</span>
+                                                        <div class="flex flex-wrap items-center gap-1.5">
+                                                            <button type="button" wire:click="setPackDuoHours(2)" class="px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer {{ $duoH === 2 ? 'bg-indigo-600 text-white border-indigo-400' : 'bg-slate-900/80 text-slate-300 border-slate-700' }}">⏱️ 2 Horas</button>
+                                                            <button type="button" wire:click="setPackDuoHours(3)" class="px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer {{ $duoH === 3 ? 'bg-indigo-600 text-white border-indigo-400' : 'bg-slate-900/80 text-slate-300 border-slate-700' }}">⏱️ 3 Horas</button>
+                                                            <button type="button" wire:click="setPackDuoHours({{ $duoH >= 4 ? min(6, $duoH + 1) : 4 }})" class="px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer {{ $duoH >= 4 ? 'bg-amber-600 text-white border-amber-400' : 'bg-slate-900/80 text-amber-300 border-amber-500/40' }}">{{ $duoH >= 4 ? "⏱️ {$duoH}h (+1h)" : '+ Horas' }}</button>
+                                                        </div>
+                                                    </div>
+                                                @endif
+
+                                                @if($key === 'photobooth')
+                                                    @php $pbH = (int)($service['hours'] ?? 2); @endphp
+                                                    <div class="mt-3 pt-2.5 border-t border-indigo-500/20 flex flex-wrap items-center justify-between gap-2" wire:click.stop>
+                                                        <span class="text-[11px] font-semibold text-slate-200">Duración del Fotomatón:</span>
+                                                        <div class="flex flex-wrap items-center gap-1.5">
+                                                            <button type="button" wire:click="setPhotoboothHours(2)" class="px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer {{ $pbH === 2 ? 'bg-indigo-600 text-white border-indigo-400' : 'bg-slate-900/80 text-slate-300 border-slate-700' }}">⏱️ 2 Horas</button>
+                                                            <button type="button" wire:click="setPhotoboothHours(3)" class="px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer {{ $pbH === 3 ? 'bg-indigo-600 text-white border-indigo-400' : 'bg-slate-900/80 text-slate-300 border-slate-700' }}">⏱️ 3 Horas</button>
+                                                            <button type="button" wire:click="setPhotoboothHours({{ $pbH >= 4 ? min(6, $pbH + 1) : 4 }})" class="px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer {{ $pbH >= 4 ? 'bg-amber-600 text-white border-amber-400' : 'bg-slate-900/80 text-amber-300 border-amber-500/40' }}">{{ $pbH >= 4 ? "⏱️ {$pbH}h (+1h)" : '+ Horas' }}</button>
+                                                        </div>
+                                                    </div>
+                                                @endif
+
+                                                @if($key === 'video_360')
+                                                    @php $v360H = (int)($service['hours'] ?? 2); @endphp
+                                                    <div class="mt-3 pt-2.5 border-t border-indigo-500/20 flex flex-wrap items-center justify-between gap-2" wire:click.stop>
+                                                        <span class="text-[11px] font-semibold text-slate-200">Duración Plataforma 360º:</span>
+                                                        <div class="flex flex-wrap items-center gap-1.5">
+                                                            <button type="button" wire:click="setVideo360Hours(2)" class="px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer {{ $v360H === 2 ? 'bg-indigo-600 text-white border-indigo-400' : 'bg-slate-900/80 text-slate-300 border-slate-700' }}">⏱️ 2 Horas</button>
+                                                            <button type="button" wire:click="setVideo360Hours(3)" class="px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer {{ $v360H === 3 ? 'bg-indigo-600 text-white border-indigo-400' : 'bg-slate-900/80 text-slate-300 border-slate-700' }}">⏱️ 3 Horas</button>
+                                                            <button type="button" wire:click="setVideo360Hours({{ $v360H >= 4 ? min(6, $v360H + 1) : 4 }})" class="px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer {{ $v360H >= 4 ? 'bg-amber-600 text-white border-amber-400' : 'bg-slate-900/80 text-amber-300 border-amber-500/40' }}">{{ $v360H >= 4 ? "⏱️ {$v360H}h (+1h)" : '+ Horas' }}</button>
+                                                        </div>
+                                                    </div>
+                                                @endif
+
+                                                @if($key === 'chocolate_fountain')
+                                                    @php
+                                                        $cfF = (int)($service['fountains'] ?? 1);
+                                                        $cfH = (int)($service['hours'] ?? 2);
+                                                        $cfWaffle = !empty($service['waffle_corner']);
+                                                    @endphp
+                                                    <div class="mt-3 pt-2.5 border-t border-indigo-500/20 space-y-2" wire:click.stop>
+                                                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                                                            <button type="button" wire:click="setChocolateFountainOption(1, 2)" class="px-2 py-1.5 rounded-lg text-xs font-bold border transition cursor-pointer {{ $cfF === 1 && $cfH === 2 ? 'bg-amber-600 text-white border-amber-400' : 'bg-slate-900/80 text-slate-300 border-slate-700' }}">🍫 1 Fuente · 2h</button>
+                                                            <button type="button" wire:click="setChocolateFountainOption(1, 3)" class="px-2 py-1.5 rounded-lg text-xs font-bold border transition cursor-pointer {{ $cfF === 1 && $cfH === 3 ? 'bg-amber-600 text-white border-amber-400' : 'bg-slate-900/80 text-slate-300 border-slate-700' }}">🍫 1 Fuente · 3h</button>
+                                                            <button type="button" wire:click="setChocolateFountainOption(2, 2)" class="px-2 py-1.5 rounded-lg text-xs font-bold border transition cursor-pointer {{ $cfF === 2 && $cfH === 2 ? 'bg-amber-600 text-white border-amber-400' : 'bg-slate-900/80 text-slate-300 border-slate-700' }}">🍫🍫 2 Fuentes · 2h</button>
+                                                            <button type="button" wire:click="setChocolateFountainOption(2, 3)" class="px-2 py-1.5 rounded-lg text-xs font-bold border transition cursor-pointer {{ $cfF === 2 && $cfH === 3 ? 'bg-amber-600 text-white border-amber-400' : 'bg-slate-900/80 text-slate-300 border-slate-700' }}">🍫🍫 2 Fuentes · 3h</button>
+                                                        </div>
+                                                        <button type="button" wire:click="toggleChocolateWaffleCorner" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold border transition cursor-pointer {{ $cfWaffle ? 'bg-orange-500/30 text-orange-200 border-orange-400' : 'bg-slate-900/60 text-slate-400 border-slate-700' }}">
+                                                            <span>{{ $cfWaffle ? '✅' : '➕' }}</span>
+                                                            <span>Añadir rincón extra de gofres con siropes y nata</span>
+                                                        </button>
+                                                    </div>
+                                                @endif
+
+                                                @if($key === 'waffle_cart')
+                                                    @php $wcH = (int)($service['hours'] ?? 2); @endphp
+                                                    <div class="mt-3 pt-2.5 border-t border-indigo-500/20 flex flex-wrap items-center justify-between gap-2" wire:click.stop>
+                                                        <span class="text-[11px] font-semibold text-slate-200">Duración Carrito de Gofres:</span>
+                                                        <div class="flex flex-wrap items-center gap-1.5">
+                                                            <button type="button" wire:click="setWaffleCartHours(2)" class="px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer {{ $wcH === 2 ? 'bg-orange-600 text-white border-orange-400' : 'bg-slate-900/80 text-slate-300 border-slate-700' }}">🧇 2 Horas (~60 gofres)</button>
+                                                            <button type="button" wire:click="setWaffleCartHours(3)" class="px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer {{ $wcH === 3 ? 'bg-orange-600 text-white border-orange-400' : 'bg-slate-900/80 text-slate-300 border-slate-700' }}">🧇 3 Horas (~100 gofres)</button>
+                                                        </div>
+                                                    </div>
                                                 @endif
                                             @endif
                                         </div>
-                                        <p class="text-xs text-slate-400 mt-1 leading-relaxed">
-                                            {{ $service['description'] }}
-                                        </p>
-
-                                        @if($key === 'cocktail' && $service['selected'] && empty($services['restaurant']['selected']) && $this->cocktail_restaurant_pack_info['enabled'])
-                                            <div class="mt-2 text-[11px] text-amber-300 font-semibold flex items-center gap-1">
-                                                <span>💡</span> <span>Añade Banquete para desbloquear el precio especial de Pack Cóctel + Banquete.</span>
-                                            </div>
-                                        @elseif($key === 'restaurant' && $service['selected'] && empty($services['cocktail']['selected']) && $this->cocktail_restaurant_pack_info['enabled'])
-                                            <div class="mt-2 text-[11px] text-amber-300 font-semibold flex items-center gap-1">
-                                                <span>💡</span> <span>Añade Cóctel para desbloquear el precio especial de Pack Cóctel + Banquete.</span>
-                                            </div>
-                                        @endif
-
-                                        <!-- Sub-controls (e.g. DJ Hours & Resolved Pack) if selected -->
-                                        @if($key === 'dj' && $service['selected'])
-                                            <div class="mt-4 pt-3.5 border-t border-indigo-500/20 space-y-2.5" wire:click.stop>
-                                                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-                                                    <span class="text-xs font-semibold text-slate-300">Duración estimada del baile / fiesta:</span>
-                                                    <div class="inline-flex items-center bg-slate-900/90 rounded-xl p-1 border border-indigo-500/40 shadow-inner">
-                                                        <button type="button" wire:click="setDjHours({{ max(2, $service['quantity'] - 1) }})" class="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-800 hover:bg-indigo-600 text-white font-bold text-base transition">
-                                                            -
-                                                        </button>
-                                                        <span class="px-4 text-xs font-extrabold text-indigo-200 tracking-wide">{{ $service['quantity'] }} Horas</span>
-                                                        <button type="button" wire:click="setDjHours({{ min(9, $service['quantity'] + 1) }})" class="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-800 hover:bg-indigo-600 text-white font-bold text-base transition">
-                                                            +
-                                                        </button>
-                                                    </div>
-                                                </div>
-
-                                                <!-- Dynamic Pack Badge Banner for DJ -->
-                                                <div class="p-3 bg-gradient-to-r from-indigo-900/60 via-purple-900/40 to-slate-900/80 rounded-xl border border-indigo-400/30 flex items-start gap-2.5 text-xs text-slate-200">
-                                                    <span class="text-base shrink-0 mt-0.5">
-                                                        @if($this->dj_pack_info['pack_key'] === 'premium') 👑 @elseif($this->dj_pack_info['pack_key'] === 'medium') 🌟 @else ✨ @endif
-                                                    </span>
-                                                    <div class="flex-1 min-w-0">
-                                                        <div class="flex items-center gap-2 flex-wrap">
-                                                            <strong class="text-indigo-300 font-bold">{{ $this->dj_pack_info['name'] }}</strong>
-                                                            <span class="text-[10px] uppercase font-bold bg-indigo-500/30 text-indigo-200 border border-indigo-400/40 px-2 py-0.5 rounded-md">Pack Asignado</span>
-                                                        </div>
-                                                        <p class="text-[11px] text-slate-300 mt-0.5 leading-snug">
-                                                            {{ $this->dj_pack_info['description'] }}
-                                                        </p>
-                                                        @if(!empty($this->dj_pack_info['effects_badge']))
-                                                            <div class="mt-2 pt-2 border-t border-indigo-500/20 flex items-center gap-1.5 text-[11px] text-emerald-300 font-semibold">
-                                                                <span>✨</span>
-                                                                <span>Efectos incluidos automáticamente: <strong>{{ $this->dj_pack_info['effects_badge'] }}</strong></span>
-                                                            </div>
-                                                        @endif
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        @endif
-
-                                        <!-- Sub-controls for Cold Sparks (Máquinas de Chispas Frías) -->
-                                        @if($key === 'cold_sparks' && $service['selected'])
-                                            <div class="mt-4 pt-3.5 border-t border-indigo-500/20 space-y-2.5" wire:click.stop>
-                                                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-                                                    <div>
-                                                        <span class="text-xs font-semibold text-slate-300">Número de máquinas de chispas:</span>
-                                                        <p class="text-[11px] text-slate-400">Tarifa: 60 € por máquina (lo estándar son 2 máquinas)</p>
-                                                    </div>
-                                                    <div class="inline-flex items-center bg-slate-900/90 rounded-xl p-1 border border-indigo-500/40 shadow-inner">
-                                                        <button type="button" wire:click="setColdSparksQuantity({{ max(1, ($service['quantity'] ?? 2) - 1) }})" class="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-800 hover:bg-indigo-600 text-white font-bold text-base transition">
-                                                            -
-                                                        </button>
-                                                        <span class="px-4 text-xs font-extrabold text-indigo-200 tracking-wide">{{ $service['quantity'] ?? 2 }} {{ ($service['quantity'] ?? 2) == 1 ? 'Máquina' : 'Máquinas' }}</span>
-                                                        <button type="button" wire:click="setColdSparksQuantity({{ min(10, ($service['quantity'] ?? 2) + 1) }})" class="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-800 hover:bg-indigo-600 text-white font-bold text-base transition">
-                                                            +
-                                                        </button>
-                                                    </div>
-                                                </div>
-
-                                                @if(!empty($service['included']))
-                                                    <div class="p-2.5 bg-emerald-950/40 rounded-xl border border-emerald-500/30 flex items-center justify-between text-xs text-emerald-200">
-                                                        <span class="flex items-center gap-1.5 font-medium">
-                                                            <span>👑</span>
-                                                            <span>2 máquinas incluidas en tu pack (0 €)</span>
-                                                        </span>
-                                                        @if(($service['quantity'] ?? 2) > 2)
-                                                            <span class="font-bold text-amber-300">
-                                                                +{{ (($service['quantity'] ?? 2) - 2) * 60 }} € ({{ ($service['quantity'] ?? 2) - 2 }} extra)
-                                                            </span>
-                                                        @else
-                                                            <span class="font-bold text-emerald-400">0 € extra</span>
-                                                        @endif
-                                                    </div>
-                                                @endif
-                                            </div>
-                                        @endif
-
-                                        <!-- Sub-controls for Extra Hours (Horas Adicionales de Fiesta) -->
-                                        @if($key === 'extra_hours' && $service['selected'])
-                                            <div class="mt-4 pt-3.5 border-t border-indigo-500/20 space-y-2.5" wire:click.stop>
-                                                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-                                                    <div>
-                                                        <span class="text-xs font-semibold text-slate-300">¿Cuántas horas adicionales quieres añadir?</span>
-                                                        @if(!empty($services['dj']['selected']))
-                                                            <p class="text-[11px] text-indigo-300 font-semibold mt-0.5">
-                                                                ⏱️ {{ $services['dj']['quantity'] }}h base + {{ $service['quantity'] ?? 1 }}h extra = <strong class="text-white">{{ $this->total_party_hours }} Horas de baile en total</strong>
-                                                            </p>
-                                                        @endif
-                                                    </div>
-                                                    <div class="inline-flex items-center bg-slate-900/90 rounded-xl p-1 border border-indigo-500/40 shadow-inner">
-                                                        <button type="button" wire:click="setExtraHoursQuantity({{ max(1, ($service['quantity'] ?? 1) - 1) }})" class="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-800 hover:bg-indigo-600 text-white font-bold text-base transition">
-                                                            -
-                                                        </button>
-                                                        <span class="px-4 text-xs font-extrabold text-amber-300 tracking-wide">+{{ $service['quantity'] ?? 1 }} {{ ($service['quantity'] ?? 1) == 1 ? 'Hora' : 'Horas' }}</span>
-                                                        <button type="button" wire:click="setExtraHoursQuantity({{ min(6, ($service['quantity'] ?? 1) + 1) }})" class="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-800 hover:bg-indigo-600 text-white font-bold text-base transition">
-                                                            +
-                                                        </button>
-                                                    </div>
-                                                </div>
-
-                                                @php $recPack = $this->recommended_dj_pack_for_extra_hours; @endphp
-                                                @if($recPack)
-                                                    <div class="p-3.5 bg-gradient-to-r from-amber-950/70 via-indigo-950/80 to-purple-950/70 rounded-xl border border-amber-400/50 space-y-2.5 shadow-lg">
-                                                        <div class="flex items-start gap-2.5 text-xs text-amber-100">
-                                                            <span class="text-lg shrink-0 mt-0.5">💡</span>
-                                                            <div class="flex-1 min-w-0 leading-relaxed">
-                                                                <strong class="text-amber-300 font-extrabold block mb-0.5">
-                                                                    Recomendación para {{ $recPack['combined_total_hours'] }} horas de fiesta:
-                                                                </strong>
-                                                                Al sumar <strong>{{ $recPack['base_hours'] }}h + {{ $recPack['added_extra_hours'] }}h extra ({{ $recPack['combined_total_hours'] }}h en total)</strong>, te recomendamos elegir directamente el
-                                                                <strong class="text-white underline decoration-amber-400">{{ $recPack['base_name'] }}</strong>, que <strong>ya cubre ese número de horas</strong> y además incluye un montaje superior
-                                                                @if(!empty($recPack['effects_badge']))
-                                                                    con <strong class="text-emerald-300">{{ $recPack['effects_badge'] }} gratis</strong>.
-                                                                @else
-                                                                    ({{ $recPack['description'] }}).
-                                                                @endif
-                                                            </div>
-                                                        </div>
-                                                        <div class="flex justify-end">
-                                                            <button type="button"
-                                                                    wire:click="applyRecommendedDjPack"
-                                                                    class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-indigo-600 hover:from-amber-400 hover:to-indigo-500 text-white text-xs font-extrabold shadow-md transition transform hover:scale-102 cursor-pointer">
-                                                                <span>✨</span>
-                                                                <span>Cambiar al {{ $recPack['base_name'] }} ({{ $recPack['combined_total_hours'] }} Horas)</span>
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                @endif
-                                            </div>
-                                        @endif
-
-                                        <!-- Opciones para Pack Dúo (Fotomatón + Plataforma 360º) -->
-                                        @if($key === 'pack_duo_360')
-                                            @php $duoH = (int)($service['hours'] ?? 2); @endphp
-                                            <div class="mt-3.5 pt-3 border-t border-slate-700/60 space-y-2" wire:click.stop>
-                                                @if($service['selected'])
-                                                    <div class="px-3 py-1.5 rounded-xl bg-emerald-950/60 border border-emerald-500/30 text-[11px] text-emerald-300 font-semibold flex items-center gap-1.5">
-                                                        <span>✨</span>
-                                                        <span>Incluye Fotomatón & Photocall + Plataforma Vídeo 360º ({{ $duoH }}h) con descuento de Pack Dúo</span>
-                                                    </div>
-                                                @endif
-                                                <div class="flex flex-wrap items-center justify-between gap-2">
-                                                    <span class="text-[11px] font-semibold text-slate-300">Elige la duración del Pack Dúo:</span>
-                                                    <div class="flex flex-wrap items-center gap-1.5">
-                                                        <button type="button"
-                                                                wire:click="setPackDuoHours(2)"
-                                                                class="px-3 py-1.5 rounded-xl text-xs font-bold border transition cursor-pointer {{ $service['selected'] && $duoH === 2 ? 'bg-indigo-600 text-white border-indigo-400 shadow-md shadow-indigo-600/30' : 'bg-slate-900/80 text-slate-300 border-slate-700 hover:border-indigo-400 hover:text-white' }}">
-                                                            ⏱️ 2 Horas
-                                                        </button>
-                                                        <button type="button"
-                                                                wire:click="setPackDuoHours(3)"
-                                                                class="px-3 py-1.5 rounded-xl text-xs font-bold border transition cursor-pointer {{ $service['selected'] && $duoH === 3 ? 'bg-indigo-600 text-white border-indigo-400 shadow-md shadow-indigo-600/30' : 'bg-slate-900/80 text-slate-300 border-slate-700 hover:border-indigo-400 hover:text-white' }}">
-                                                            ⏱️ 3 Horas
-                                                        </button>
-                                                        <button type="button"
-                                                                wire:click="setPackDuoHours({{ $duoH >= 4 ? min(6, $duoH + 1) : 4 }})"
-                                                                class="px-2.5 py-1.5 rounded-xl text-xs font-bold border transition cursor-pointer {{ $service['selected'] && $duoH >= 4 ? 'bg-amber-600 text-white border-amber-400 shadow-md' : 'bg-slate-900/80 text-amber-300 border-amber-500/40 hover:bg-amber-950/50' }}">
-                                                            {{ $service['selected'] && $duoH >= 4 ? "⏱️ {$duoH} Horas (+1h)" : '+ Horas extra' }}
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        @endif
-
-                                        <!-- Opciones para Fotomatón & Photocall -->
-                                        @if($key === 'photobooth')
-                                            @php $pbH = (int)($service['hours'] ?? 2); @endphp
-                                            <div class="mt-3.5 pt-3 border-t border-slate-700/60 space-y-2" wire:click.stop>
-                                                <div class="flex flex-wrap items-center justify-between gap-2">
-                                                    <span class="text-[11px] font-semibold text-slate-300">Elige la duración del Fotomatón:</span>
-                                                    <div class="flex flex-wrap items-center gap-1.5">
-                                                        <button type="button"
-                                                                wire:click="setPhotoboothHours(2)"
-                                                                class="px-3 py-1.5 rounded-xl text-xs font-bold border transition cursor-pointer {{ $service['selected'] && $pbH === 2 ? 'bg-indigo-600 text-white border-indigo-400 shadow-md shadow-indigo-600/30' : 'bg-slate-900/80 text-slate-300 border-slate-700 hover:border-indigo-400 hover:text-white' }}">
-                                                            ⏱️ 2 Horas
-                                                        </button>
-                                                        <button type="button"
-                                                                wire:click="setPhotoboothHours(3)"
-                                                                class="px-3 py-1.5 rounded-xl text-xs font-bold border transition cursor-pointer {{ $service['selected'] && $pbH === 3 ? 'bg-indigo-600 text-white border-indigo-400 shadow-md shadow-indigo-600/30' : 'bg-slate-900/80 text-slate-300 border-slate-700 hover:border-indigo-400 hover:text-white' }}">
-                                                            ⏱️ 3 Horas
-                                                        </button>
-                                                        <button type="button"
-                                                                wire:click="setPhotoboothHours({{ $pbH >= 4 ? min(6, $pbH + 1) : 4 }})"
-                                                                class="px-2.5 py-1.5 rounded-xl text-xs font-bold border transition cursor-pointer {{ $service['selected'] && $pbH >= 4 ? 'bg-amber-600 text-white border-amber-400 shadow-md' : 'bg-slate-900/80 text-amber-300 border-amber-500/40 hover:bg-amber-950/50' }}">
-                                                            {{ $service['selected'] && $pbH >= 4 ? "⏱️ {$pbH} Horas (+1h)" : '+ Horas extra' }}
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        @endif
-
-                                        <!-- Opciones para Plataforma Vídeo 360º -->
-                                        @if($key === 'video_360')
-                                            @php $v360H = (int)($service['hours'] ?? 2); @endphp
-                                            <div class="mt-3.5 pt-3 border-t border-slate-700/60 space-y-2" wire:click.stop>
-                                                <div class="flex flex-wrap items-center justify-between gap-2">
-                                                    <span class="text-[11px] font-semibold text-slate-300">Elige la duración de la Plataforma 360º:</span>
-                                                    <div class="flex flex-wrap items-center gap-1.5">
-                                                        <button type="button"
-                                                                wire:click="setVideo360Hours(2)"
-                                                                class="px-3 py-1.5 rounded-xl text-xs font-bold border transition cursor-pointer {{ $service['selected'] && $v360H === 2 ? 'bg-indigo-600 text-white border-indigo-400 shadow-md shadow-indigo-600/30' : 'bg-slate-900/80 text-slate-300 border-slate-700 hover:border-indigo-400 hover:text-white' }}">
-                                                            ⏱️ 2 Horas
-                                                        </button>
-                                                        <button type="button"
-                                                                wire:click="setVideo360Hours(3)"
-                                                                class="px-3 py-1.5 rounded-xl text-xs font-bold border transition cursor-pointer {{ $service['selected'] && $v360H === 3 ? 'bg-indigo-600 text-white border-indigo-400 shadow-md shadow-indigo-600/30' : 'bg-slate-900/80 text-slate-300 border-slate-700 hover:border-indigo-400 hover:text-white' }}">
-                                                            ⏱️ 3 Horas
-                                                        </button>
-                                                        <button type="button"
-                                                                wire:click="setVideo360Hours({{ $v360H >= 4 ? min(6, $v360H + 1) : 4 }})"
-                                                                class="px-2.5 py-1.5 rounded-xl text-xs font-bold border transition cursor-pointer {{ $service['selected'] && $v360H >= 4 ? 'bg-amber-600 text-white border-amber-400 shadow-md' : 'bg-slate-900/80 text-amber-300 border-amber-500/40 hover:bg-amber-950/50' }}">
-                                                            {{ $service['selected'] && $v360H >= 4 ? "⏱️ {$v360H} Horas (+1h)" : '+ Horas extra' }}
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        @endif
-
-                                        <!-- Opciones para Mesa Dulce con Fuente de Chocolate (4 combinaciones + Rincón de Gofres) -->
-                                        @if($key === 'chocolate_fountain')
-                                            @php
-                                                $cfF = (int)($service['fountains'] ?? 1);
-                                                $cfH = (int)($service['hours'] ?? 2);
-                                                $cfWaffle = !empty($service['waffle_corner']);
-                                            @endphp
-                                            <div class="mt-3.5 pt-3 border-t border-slate-700/60 space-y-2.5" wire:click.stop>
-                                                <span class="block text-[11px] font-semibold text-slate-300">Elige el número de fuentes de chocolate y duración:</span>
-                                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
-                                                    <button type="button"
-                                                            wire:click="setChocolateFountainOption(1, 2)"
-                                                            class="px-2.5 py-2 rounded-xl text-xs font-bold border transition text-center cursor-pointer {{ $service['selected'] && $cfF === 1 && $cfH === 2 ? 'bg-amber-600 text-white border-amber-400 shadow-md shadow-amber-600/30' : 'bg-slate-900/80 text-slate-300 border-slate-700 hover:border-amber-400 hover:text-white' }}">
-                                                        🍫 1 Fuente &bull; 2h
-                                                    </button>
-                                                    <button type="button"
-                                                            wire:click="setChocolateFountainOption(1, 3)"
-                                                            class="px-2.5 py-2 rounded-xl text-xs font-bold border transition text-center cursor-pointer {{ $service['selected'] && $cfF === 1 && $cfH === 3 ? 'bg-amber-600 text-white border-amber-400 shadow-md shadow-amber-600/30' : 'bg-slate-900/80 text-slate-300 border-slate-700 hover:border-amber-400 hover:text-white' }}">
-                                                        🍫 1 Fuente &bull; 3h
-                                                    </button>
-                                                    <button type="button"
-                                                            wire:click="setChocolateFountainOption(2, 2)"
-                                                            class="px-2.5 py-2 rounded-xl text-xs font-bold border transition text-center cursor-pointer {{ $service['selected'] && $cfF === 2 && $cfH === 2 ? 'bg-amber-600 text-white border-amber-400 shadow-md shadow-amber-600/30' : 'bg-slate-900/80 text-slate-300 border-slate-700 hover:border-amber-400 hover:text-white' }}">
-                                                        🍫🍫 2 Fuentes &bull; 2h
-                                                    </button>
-                                                    <button type="button"
-                                                            wire:click="setChocolateFountainOption(2, 3)"
-                                                            class="px-2.5 py-2 rounded-xl text-xs font-bold border transition text-center cursor-pointer {{ $service['selected'] && $cfF === 2 && $cfH === 3 ? 'bg-amber-600 text-white border-amber-400 shadow-md shadow-amber-600/30' : 'bg-slate-900/80 text-slate-300 border-slate-700 hover:border-amber-400 hover:text-white' }}">
-                                                        🍫🍫 2 Fuentes &bull; 3h
-                                                    </button>
-                                                </div>
-                                                <div class="pt-1">
-                                                    <button type="button"
-                                                            wire:click="toggleChocolateWaffleCorner"
-                                                            class="w-full sm:w-auto inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-[11px] font-bold border transition cursor-pointer {{ $service['selected'] && $cfWaffle ? 'bg-orange-500/30 text-orange-200 border-orange-400' : 'bg-slate-900/60 text-slate-400 border-slate-700 hover:text-slate-200 hover:border-slate-500' }}">
-                                                        <span>{{ $service['selected'] && $cfWaffle ? '✅' : '➕' }}</span>
-                                                        <span>Añadir rincón extra de gofres con 3 biberones de siropes y nata spray</span>
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        @endif
-
-                                        <!-- Opciones para Carrito de Gofres hechos al momento -->
-                                        @if($key === 'waffle_cart')
-                                            @php $wcH = (int)($service['hours'] ?? 2); @endphp
-                                            <div class="mt-3.5 pt-3 border-t border-slate-700/60 space-y-2" wire:click.stop>
-                                                <div class="flex flex-wrap items-center justify-between gap-2">
-                                                    <span class="text-[11px] font-semibold text-slate-300">Elige la opción del Carrito de Gofres:</span>
-                                                    <div class="flex flex-wrap items-center gap-1.5">
-                                                        <button type="button"
-                                                                wire:click="setWaffleCartHours(2)"
-                                                                class="px-3 py-1.5 rounded-xl text-xs font-bold border transition cursor-pointer {{ $service['selected'] && $wcH === 2 ? 'bg-orange-600 text-white border-orange-400 shadow-md shadow-orange-600/30' : 'bg-slate-900/80 text-slate-300 border-slate-700 hover:border-orange-400 hover:text-white' }}">
-                                                            🧇 2 Horas (~60 gofres)
-                                                        </button>
-                                                        <button type="button"
-                                                                wire:click="setWaffleCartHours(3)"
-                                                                class="px-3 py-1.5 rounded-xl text-xs font-bold border transition cursor-pointer {{ $service['selected'] && $wcH === 3 ? 'bg-orange-600 text-white border-orange-400 shadow-md shadow-orange-600/30' : 'bg-slate-900/80 text-slate-300 border-slate-700 hover:border-orange-400 hover:text-white' }}">
-                                                            🧇 3 Horas (~100 gofres)
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        @endif
-                                    </div>
-
-                                    <!-- Checkmark Status Bubble -->
-                                    <div class="absolute top-5 right-5 w-6 h-6 rounded-full flex items-center justify-center border transition-colors {{ $service['selected'] ? 'bg-indigo-500 border-indigo-400 text-white shadow-md shadow-indigo-500/40' : 'border-slate-600 bg-slate-900/40 text-transparent' }}">
-                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
-                                        </svg>
-                                    </div>
-                                </div>
+                                    @endif
+                                @endforeach
                             </div>
-                        @endforeach
+                        </div>
+                    @endforeach
 
-                        <!-- Servicio / Efecto Especial Personalizado en Blanco -->
-                        <div class="p-5 rounded-2xl border transition-all select-none {{ $custom_service_selected ? 'bg-indigo-950/60 border-indigo-500/60 shadow-lg shadow-indigo-950/50 ring-1 ring-indigo-500/50' : 'bg-slate-800/40 border-slate-700/60 hover:border-slate-600 hover:bg-slate-800/70' }}">
-                            <div class="flex items-start gap-4 cursor-pointer" wire:click="$toggle('custom_service_selected')">
-                                <!-- Icon Box -->
-                                <div class="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0 {{ $custom_service_selected ? 'bg-indigo-500/20 text-indigo-300 ring-2 ring-indigo-500/30' : 'bg-slate-700/40 text-slate-400' }}">
+                    <!-- Bloque Especial: Otro Servicio / Montaje Día Anterior / Evento a Medida -->
+                    <div class="p-3.5 rounded-2xl border transition-all select-none {{ $custom_service_selected ? 'bg-indigo-950/60 border-indigo-500/60 shadow-lg ring-1 ring-indigo-500/50' : 'bg-slate-900/40 border-slate-800/80 hover:border-slate-600' }}">
+                        <div class="flex items-center justify-between gap-3 cursor-pointer" wire:click="$toggle('custom_service_selected')">
+                            <div class="flex items-center gap-2.5 min-w-0">
+                                <div class="w-9 h-9 rounded-lg flex items-center justify-center text-lg shrink-0 {{ $custom_service_selected ? 'bg-indigo-500/20 text-indigo-300' : 'bg-slate-800 text-slate-400' }}">
                                     ✨
                                 </div>
-
-                                <!-- Details -->
-                                <div class="flex-1 min-w-0 pr-8">
-                                    <div class="flex items-center gap-2 flex-wrap">
-                                        <h3 class="font-bold text-base {{ $custom_service_selected ? 'text-white' : 'text-slate-300' }}">
-                                            ¿Quieres añadir otro servicio o efecto especial?
-                                        </h3>
-                                        @if($custom_service_selected)
-                                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/30 text-amber-300 border border-amber-500/40">
-                                                A CONSULTAR
-                                            </span>
-                                        @endif
-                                    </div>
-                                    <p class="text-xs text-slate-400 mt-1 leading-relaxed">
-                                        Fuego frío, máquinas de humo bajo, plataforma 360, iluminación decorativa de jardín... Dinos qué necesitas y te lo presupuestamos a medida.
+                                <div class="min-w-0">
+                                    <h3 class="font-bold text-xs sm:text-sm {{ $custom_service_selected ? 'text-white' : 'text-slate-200' }}">
+                                        ¿Necesitas un montaje especial, sonorización a medida u otro extra?
+                                    </h3>
+                                    <p class="text-[11px] text-slate-400 truncate">
+                                        Festivales escolares, sonorización de pabellones/frontones, iluminación extra, ensayos...
                                     </p>
                                 </div>
+                            </div>
+                            <div class="w-5 h-5 rounded-full flex items-center justify-center border transition-colors shrink-0 {{ $custom_service_selected ? 'bg-indigo-500 border-indigo-400 text-white' : 'border-slate-600 bg-slate-900/40 text-transparent' }}">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                            </div>
+                        </div>
 
-                                <!-- Checkmark Status Bubble -->
-                                <div class="w-6 h-6 rounded-full flex items-center justify-center border transition-colors shrink-0 {{ $custom_service_selected ? 'bg-indigo-500 border-indigo-400 text-white shadow-md shadow-indigo-500/40' : 'border-slate-600 bg-slate-900/40 text-transparent' }}">
-                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
-                                    </svg>
+                        @if($custom_service_selected)
+                            <div class="mt-3 pt-3 border-t border-indigo-500/20 grid grid-cols-1 sm:grid-cols-2 gap-2.5" wire:click.stop>
+                                <div>
+                                    <label class="block text-[11px] font-semibold text-slate-300 mb-1">¿Qué servicio o montaje necesitas? *</label>
+                                    <input type="text" wire:model.defer="custom_service_name" placeholder="Ej: Sonorización Festival Navidad / Humo bajo..."
+                                           class="w-full bg-slate-900/80 border border-indigo-500/40 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-semibold text-slate-300 mb-1">Detalles rápidos (opcional)</label>
+                                    <input type="text" wire:model.defer="custom_service_description" placeholder="Ej: Montaje el día anterior + ensayo con niños..."
+                                           class="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500">
                                 </div>
                             </div>
-
-                            @if($custom_service_selected)
-                                <div class="mt-4 pt-4 border-t border-indigo-500/20 space-y-3" wire:click.stop>
-                                    <div>
-                                        <label class="block text-xs font-semibold text-slate-300 mb-1">Nombre del servicio o extra deseado *</label>
-                                        <input type="text" wire:model.defer="custom_service_name" placeholder="Ej: Fuego frío para el baile / Máquina de humo bajo / Plataforma 360"
-                                               class="w-full bg-slate-900/80 border border-indigo-500/40 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                                    </div>
-                                    <div>
-                                        <label class="block text-xs font-semibold text-slate-300 mb-1">Detalles o especificaciones (opcional)</label>
-                                        <textarea wire:model.defer="custom_service_description" rows="2" placeholder="Momento en el que te gustaría incluirlo, horario o cualquier detalle que nos ayude a cotizarlo..."
-                                                  class="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"></textarea>
-                                    </div>
-                                </div>
-                            @endif
-                        </div>
+                        @endif
                     </div>
                 </div>
 
-                <!-- Right Side: Contact & Event Form -->
+                <!-- Right Side: Contact, Schedule & Notes Form (5 cols) -->
                 <div class="lg:col-span-5">
-                    <div class="bg-slate-800/70 backdrop-blur-xl border border-slate-700/80 rounded-3xl p-6 sm:p-7 shadow-2xl sticky top-8">
-                        <h2 class="text-lg font-bold text-white flex items-center gap-2 mb-1">
-                            <span>2.</span> Datos del Evento
+                    <div class="bg-slate-800/75 backdrop-blur-xl border border-slate-700/80 rounded-3xl p-5 sm:p-6 shadow-2xl sticky top-4">
+                        <h2 class="text-base sm:text-lg font-bold text-white flex items-center gap-2 mb-1">
+                            <span class="w-6 h-6 rounded-lg bg-indigo-500/20 border border-indigo-500/40 text-indigo-300 text-xs flex items-center justify-center font-black">2</span>
+                            <span>Datos, Horarios y Notas del Evento</span>
                         </h2>
-                        <p class="text-xs text-slate-400 mb-5">
-                            Indícanos dónde y cuándo será para comprobar disponibilidad de fecha y técnicos.
+                        <p class="text-xs text-slate-400 mb-4">
+                            Rellena tus datos y cuéntanos cualquier horario, ensayo previo o necesidad especial.
                         </p>
 
-                        <form wire:submit.prevent="submitRequest" class="space-y-4">
+                        <form wire:submit.prevent="submitRequest" class="space-y-3.5">
                             <!-- Name -->
                             <div>
                                 <label class="block text-xs font-semibold text-slate-300 mb-1">{{ $currentType['name_label'] }}</label>
                                 <input type="text" wire:model.defer="client_name" placeholder="{{ $currentType['name_placeholder'] }}"
-                                       class="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition">
+                                       class="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition">
                                 @error('client_name') <span class="text-rose-400 text-xs mt-1 block">{{ $message }}</span> @enderror
                             </div>
 
                             <!-- Phone & Email Grid -->
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                                 <div>
                                     <label class="block text-xs font-semibold text-slate-300 mb-1">Teléfono / WhatsApp *</label>
                                     <input type="tel" wire:model.defer="client_phone" placeholder="600 000 000"
-                                           class="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition">
+                                           class="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition">
                                     @error('client_phone') <span class="text-rose-400 text-xs mt-1 block">{{ $message }}</span> @enderror
                                 </div>
                                 <div>
                                     <label class="block text-xs font-semibold text-slate-300 mb-1">Email *</label>
                                     <input type="email" wire:model.defer="client_email" placeholder="email@ejemplo.com"
-                                           class="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition">
+                                           class="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition">
                                     @error('client_email') <span class="text-rose-400 text-xs mt-1 block">{{ $message }}</span> @enderror
                                 </div>
                             </div>
 
                             <!-- Date & Location Grid -->
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                                 <div>
                                     <label class="block text-xs font-semibold text-slate-300 mb-1">Fecha del evento *</label>
                                     <input type="date" wire:model.defer="event_date"
-                                           class="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition [color-scheme:dark]">
+                                           class="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition [color-scheme:dark]">
                                     @error('event_date') <span class="text-rose-400 text-xs mt-1 block">{{ $message }}</span> @enderror
                                 </div>
                                 <div>
-                                    <label class="block text-xs font-semibold text-slate-300 mb-1">Lugar / Finca *</label>
-                                    <input type="text" wire:model.defer="event_location" placeholder="Finca, Restaurante..."
-                                           class="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition">
+                                    <label class="block text-xs font-semibold text-slate-300 mb-1">Lugar / Recinto / Localidad *</label>
+                                    <input type="text" wire:model.defer="event_location" placeholder="Finca, Frontón, Colegio, Hotel..."
+                                           class="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition">
                                     @error('event_location') <span class="text-rose-400 text-xs mt-1 block">{{ $message }}</span> @enderror
                                 </div>
                             </div>
 
-                            <!-- Notes -->
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-300 mb-1">Detalles adicionales u observaciones (opcional)</label>
-                                <textarea wire:model.defer="client_notes" rows="3" placeholder="Horarios aproximados, estilo musical preferido, si el cóctel es al aire libre..."
-                                          class="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition resize-none"></textarea>
+                            <!-- Horario Aproximado + Check Montaje Día Anterior / Ensayo -->
+                            <div class="p-3 rounded-2xl bg-slate-900/70 border border-indigo-500/30 space-y-2.5">
+                                <div>
+                                    <label class="block text-xs font-bold text-indigo-200 mb-1">⏰ Horario aproximado o tramo del evento (opcional)</label>
+                                    <input type="text" wire:model.defer="event_schedule" placeholder="Ej: De 17:00 a 20:30h / Boda de tarde / Mañana y tarde..."
+                                           class="w-full bg-slate-950/80 border border-slate-700 rounded-xl px-3 py-1.5 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition">
+                                </div>
+
+                                <label class="flex items-start gap-2.5 pt-1 cursor-pointer select-none group">
+                                    <input type="checkbox" wire:model.defer="needs_prior_setup"
+                                           class="mt-0.5 w-4 h-4 rounded border-slate-600 bg-slate-900 text-indigo-600 focus:ring-indigo-500 cursor-pointer">
+                                    <span class="text-xs text-slate-300 group-hover:text-white leading-snug">
+                                        🔧 <strong class="text-amber-300">Necesitamos montaje el día anterior, ensayo previo o varios días</strong> (ej. festivales de colegio, pruebas de sonido previas, etc.)
+                                    </span>
+                                </label>
+                            </div>
+
+                            <!-- Highlighted Notes / Free Explanation Section -->
+                            <div class="p-3.5 rounded-2xl bg-indigo-950/30 border border-indigo-500/40">
+                                <div class="flex items-center justify-between mb-1">
+                                    <label class="block text-xs font-extrabold text-amber-300 flex items-center gap-1.5">
+                                        <span>📝</span>
+                                        <span>Notas, horarios o explicación de tu evento</span>
+                                    </label>
+                                    <span class="text-[10px] text-indigo-300 font-semibold">Espacio libre</span>
+                                </div>
+                                <p class="text-[11px] text-slate-300 mb-2 leading-snug">
+                                    ¿Tu evento tiene necesidades especiales, horarios concretos, ensayos o quieres pegarnos directamente tu consulta? Escríbelo aquí con total libertad:
+                                </p>
+                                <textarea wire:model.defer="client_notes" rows="4"
+                                          placeholder="Ej: Somos el AMPA del colegio y necesitamos sonido y DJ para el festival en el frontón municipal. Sería ir el día anterior a montar y hacer el ensayo general, y al día siguiente el festival de 17:30 a 20:30h..."
+                                          class="w-full bg-slate-900/90 border border-indigo-500/40 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition resize-y"></textarea>
                                 @error('client_notes') <span class="text-rose-400 text-xs mt-1 block">{{ $message }}</span> @enderror
                             </div>
 
                             <!-- Privacy / Assurance Note -->
-                            <div class="flex items-center gap-2 py-1 text-xs text-slate-400">
-                                <span class="text-emerald-400 text-sm">🔒</span>
-                                <span>Tus datos son 100% confidenciales. Sin spam.</span>
+                            <div class="flex items-center gap-2 text-[11px] text-slate-400">
+                                <span class="text-emerald-400 text-xs">🔒</span>
+                                <span>Tus datos son 100% confidenciales. Te responderemos con tu presupuesto a medida.</span>
                             </div>
 
                             <!-- Submit Button -->
@@ -653,10 +580,10 @@
         @endif
 
         <!-- Footer assurances -->
-        <div class="mt-16 pt-8 border-t border-slate-800 text-center text-xs text-slate-500 flex flex-wrap items-center justify-center gap-6">
+        <div class="mt-10 pt-6 border-t border-slate-800 text-center text-xs text-slate-500 flex flex-wrap items-center justify-center gap-6">
             <span class="flex items-center gap-1.5">🎧 <span>Sonido Profesional de Alta Fidelidad</span></span>
             <span class="flex items-center gap-1.5">💡 <span>Iluminación Robotizada y Ambiental</span></span>
-            <span class="flex items-center gap-1.5">🎵 <span>Repertorio 100% Personalizado</span></span>
+            <span class="flex items-center gap-1.5">🎵 <span>Adaptado a Bodas, Colegios, Empresas y Fiestas</span></span>
             <span class="flex items-center gap-1.5">📑 <span>Contrato y Garantía de Servicio</span></span>
         </div>
 
