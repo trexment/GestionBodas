@@ -312,29 +312,25 @@ class WhatsAppWebhookController extends Controller
                 Log::warning("No se pudo enviar alerta WhatsApp a socios por respuesta de cliente: " . $e->getMessage());
             }
 
-            // 5c. Alerta por Email a los administradores
+            // 5c. Alerta por Email a todos los administradores (envío individual tolerante a fallos)
             try {
-                $adminEmails = Setting::getAdminNotificationEmails($effectiveBrand);
-                if (!empty($adminEmails)) {
-                    $primaryAdmin = array_shift($adminEmails);
-                    $subject = "💬 Respuesta WhatsApp de {$displayName} — {$eventTitle}";
-                    $emailBody = "Un cliente con evento activo ha respondido por WhatsApp:\n\n"
-                        . "Cliente: {$displayName} (+{$cleanPhone})\n"
-                        . "Evento: {$eventTitle}\n"
-                        . ($reactivated ? "Estado: Reactivado automáticamente de 'Sin Respuesta' a 'Borrador'\n" : "")
-                        . "Fecha/Hora: " . now()->format('d/m/Y H:i') . "\n"
-                        . "----------------------------------------\n"
-                        . $text . "\n"
-                        . "----------------------------------------\n\n"
-                        . "Abrir en la App: {$eventUrl}";
-
-                    Mail::raw($emailBody, function ($msg) use ($primaryAdmin, $adminEmails, $subject) {
-                        $msg->to($primaryAdmin)->subject($subject);
-                        if (!empty($adminEmails)) {
-                            $msg->bcc($adminEmails);
-                        }
-                    });
-                }
+                $djEmail = ($event->dj && !empty($event->dj->email)) ? $event->dj->email : null;
+                AppNotificationService::sendAlertEmailToAdmins(
+                    "💬 Respuesta WhatsApp de {$displayName} — {$eventTitle}",
+                    "💬 Nuevo WhatsApp recibido de {$displayName}",
+                    [
+                        'Evento' => $eventTitle,
+                        'Cliente' => "{$displayName} (+{$cleanPhone})",
+                        'Estado' => $reactivated ? "Reactivado automáticamente de 'Sin Respuesta' a 'Borrador'" : null,
+                        'Fecha y Hora' => now()->format('d/m/Y H:i'),
+                        'Mensaje recibido' => $text,
+                    ],
+                    $eventUrl,
+                    'Ver Conversación y Responder en la App',
+                    $effectiveBrand,
+                    '#059669',
+                    $djEmail
+                );
             } catch (\Throwable $e) {
                 Log::warning("No se pudo enviar email de aviso por WhatsApp entrante: " . $e->getMessage());
             }
@@ -359,7 +355,12 @@ class WhatsAppWebhookController extends Controller
             str_starts_with($text, '💬 *¡NUEVO WHATSAPP RECIBIDO!*') ||
             str_starts_with($text, '💬 *¡RESPUESTA DE CLIENTE RECIBIDA!*') ||
             str_starts_with($text, '📥 *¡NUEVO LEAD ENTRANTE!*') ||
-            str_starts_with($text, '💶 *¡NUEVA SOLICITUD DE PRESUPUESTO!*')
+            str_starts_with($text, '💶 *¡NUEVA SOLICITUD DE PRESUPUESTO!*') ||
+            str_starts_with($text, '✅ *¡PRESUPUESTO ACEPTADO ONLINE!*') ||
+            str_starts_with($text, '❌ *PRESUPUESTO RECHAZADO ONLINE*') ||
+            str_starts_with($text, '🎉 *¡NUEVO CONTRATO FIRMADO!*') ||
+            str_starts_with($text, '🎵 *¡CUESTIONARIO MUSICAL RECIBIDO!*') ||
+            str_starts_with($text, '📧 *¡RESPUESTA POR EMAIL RECIBIDA!*')
         ) {
             return true;
         }

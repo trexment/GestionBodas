@@ -327,25 +327,30 @@ class ContractSign extends Component
             ]);
         }
 
-        // Send contract signed email notification to all admins & assigned DJ
+        // Notificación interna en tiempo real (Campana)
+        $brandKey = $this->event ? ($this->event->brand_clean ?? 'nunez_and_son') : 'nunez_and_son';
         try {
-            $brandKey = $this->event ? ($this->event->brand_clean ?? 'nunez_and_son') : 'nunez_and_son';
-            $adminEmails = \App\Models\Setting::getAdminNotificationEmails($brandKey);
-
-            if (!empty($adminEmails)) {
-                $primaryAdmin = array_shift($adminEmails);
-                $mailable = new \App\Mail\ContractSignedNotificationMail($this->contract);
-                $mail = \Illuminate\Support\Facades\Mail::to($primaryAdmin);
-                
-                if (!empty($adminEmails)) {
-                    $mail->bcc($adminEmails);
-                }
-                
-                if ($this->event && $this->event->dj && !empty($this->event->dj->email) && $this->event->dj->email !== $primaryAdmin) {
-                    $mail->cc($this->event->dj->email);
-                }
-                $mail->send($mailable);
+            if ($this->event) {
+                \App\Services\AppNotificationService::push(
+                    'quote_request',
+                    "✍️ Contrato Firmado ({$this->event->name})",
+                    "{$this->client_name} ha firmado digitalmente el contrato.",
+                    route('admin.events.show', $this->event->id),
+                    $this->event->id,
+                    $brandKey
+                );
             }
+        } catch (\Throwable $e) {
+        }
+
+        // Send contract signed email notification to all admins & assigned DJ (tolerante a fallos por destinatario)
+        try {
+            $djEmail = ($this->event && $this->event->dj && !empty($this->event->dj->email)) ? $this->event->dj->email : null;
+            \App\Services\AppNotificationService::sendMailableToAdmins(
+                fn () => new \App\Mail\ContractSignedNotificationMail($this->contract),
+                $brandKey,
+                $djEmail
+            );
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::error('Error enviando email de contrato firmado a admin: ' . $e->getMessage());
         }

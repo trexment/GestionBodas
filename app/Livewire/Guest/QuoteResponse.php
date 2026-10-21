@@ -133,29 +133,60 @@ class QuoteResponse extends Component
         $this->actionMode = 'view';
 
         // Notificación interna en tiempo real
+        $clientName = $this->event->client ? $this->event->client->name : 'Cliente';
+        $clientPhone = $this->event->client ? ($this->event->client->phone ?? '') : ($this->event->partner_phone ?? '');
+        $clientEmail = $this->event->client_contact_email ?? '';
+        $eventDate = $this->event->event_date ? \Carbon\Carbon::parse($this->event->event_date)->format('d/m/Y') : 'Sin fecha';
+        $eventUrl = route('admin.events.show', $this->event->id);
+
         try {
-            $clientName = $this->event->client ? $this->event->client->name : 'Cliente';
             AppNotificationService::push(
                 'quote_request',
                 "✅ ¡Presupuesto Aceptado! ({$this->event->name})",
                 "{$clientName} ha ACEPTADO online la Propuesta #{$this->quote->id} ({$amountFormatted} €)." . ($notesClean ? " Nota: {$notesClean}" : ''),
-                route('admin.events.show', $this->event->id),
+                $eventUrl,
                 $this->event->id,
                 $this->event->brand_clean
             );
         } catch (\Throwable $e) {
         }
 
+        // Notificación por Email a todos los Administradores (y DJ asignado)
+        try {
+            $djEmail = ($this->event->dj && !empty($this->event->dj->email)) ? $this->event->dj->email : null;
+            AppNotificationService::sendAlertEmailToAdmins(
+                "✅ ¡Presupuesto Aceptado Online! — {$this->event->name} ({$amountFormatted} €)",
+                "✅ ¡El cliente ha ACEPTADO el Presupuesto #{$this->quote->id}!",
+                [
+                    'Evento' => $this->event->name,
+                    'Fecha del Evento' => $eventDate,
+                    'Lugar / Espacio' => $this->event->location ?: 'Por definir',
+                    'Cliente' => $clientName,
+                    'Teléfono' => $clientPhone ?: 'No indicado',
+                    'Email' => $clientEmail ?: 'No indicado',
+                    'Propuesta Aceptada' => "Propuesta #{$this->quote->id} — {$amountFormatted} € (" . $this->quote->tax_label . ")",
+                    'Señal de Reserva' => number_format((float) $this->quote->signal_amount, 2, ',', '.') . ' € (' . $this->quote->signal_label . ')',
+                    'Comentario del Cliente' => $notesClean ?: null,
+                    'Nuevo Estado del Evento' => 'Confirmado ✅',
+                ],
+                $eventUrl,
+                'Ver Evento y Presupuesto en el Panel',
+                $this->event->brand_clean,
+                '#059669',
+                $djEmail
+            );
+        } catch (\Throwable $e) {
+        }
+
         // Alerta opcional por WhatsApp a administradores si está activo
         try {
-            $clientName = $this->event->client ? $this->event->client->name : 'Cliente';
-            $eventDate = $this->event->event_date ? \Carbon\Carbon::parse($this->event->event_date)->format('d/m/Y') : 'Sin fecha';
             $waAlert = "✅ *¡PRESUPUESTO ACEPTADO ONLINE!*\n\n"
                 . "👤 *Cliente:* {$clientName}\n"
                 . "🎉 *Evento:* {$this->event->name} ({$eventDate})\n"
                 . "💰 *Propuesta #{$this->quote->id}:* {$amountFormatted} €\n"
                 . ($notesClean ? "💬 *Nota:* {$notesClean}\n" : '')
-                . "\nEl estado del evento se ha actualizado automáticamente a *Confirmado*.";
+                . "\nEl estado del evento se ha actualizado automáticamente a *Confirmado*.\n"
+                . "🔗 *Ficha:* {$eventUrl}";
             EvolutionWhatsAppService::notifyAdmins($waAlert, $this->event->brand_clean);
         } catch (\Throwable $e) {
         }
@@ -205,30 +236,60 @@ class QuoteResponse extends Component
         $this->quote->refresh();
         $this->actionMode = 'view';
 
+        $clientName = $this->event->client ? $this->event->client->name : 'Cliente';
+        $clientPhone = $this->event->client ? ($this->event->client->phone ?? '') : ($this->event->partner_phone ?? '');
+        $clientEmail = $this->event->client_contact_email ?? '';
+        $eventDate = $this->event->event_date ? \Carbon\Carbon::parse($this->event->event_date)->format('d/m/Y') : 'Sin fecha';
+        $eventUrl = route('admin.events.show', $this->event->id);
+
         // Notificación interna en tiempo real
         try {
-            $clientName = $this->event->client ? $this->event->client->name : 'Cliente';
             AppNotificationService::push(
                 'quote_request',
                 "❌ Presupuesto Rechazado ({$this->event->name})",
                 "{$clientName} ha rechazado la Propuesta #{$this->quote->id}. Motivo: {$reasonClean}",
-                route('admin.events.show', $this->event->id),
+                $eventUrl,
                 $this->event->id,
                 $this->event->brand_clean
             );
         } catch (\Throwable $e) {
         }
 
+        // Notificación por Email a todos los Administradores (y DJ asignado)
+        try {
+            $djEmail = ($this->event->dj && !empty($this->event->dj->email)) ? $this->event->dj->email : null;
+            AppNotificationService::sendAlertEmailToAdmins(
+                "❌ Presupuesto Rechazado Online — {$this->event->name} ({$amountFormatted} €)",
+                "❌ El cliente ha RECHAZADO el Presupuesto #{$this->quote->id}",
+                [
+                    'Evento' => $this->event->name,
+                    'Fecha del Evento' => $eventDate,
+                    'Lugar / Espacio' => $this->event->location ?: 'Por definir',
+                    'Cliente' => $clientName,
+                    'Teléfono' => $clientPhone ?: 'No indicado',
+                    'Email' => $clientEmail ?: 'No indicado',
+                    'Propuesta Rechazada' => "Propuesta #{$this->quote->id} — {$amountFormatted} € (" . $this->quote->tax_label . ")",
+                    'Motivo Indicado por el Cliente' => $reasonClean,
+                    'Estado del Evento' => 'Rechazado ❌',
+                ],
+                $eventUrl,
+                'Abrir Ficha del Evento para Seguimiento / Ajuste',
+                $this->event->brand_clean,
+                '#e11d48',
+                $djEmail
+            );
+        } catch (\Throwable $e) {
+        }
+
         // Alerta opcional por WhatsApp a administradores
         try {
-            $clientName = $this->event->client ? $this->event->client->name : 'Cliente';
-            $eventDate = $this->event->event_date ? \Carbon\Carbon::parse($this->event->event_date)->format('d/m/Y') : 'Sin fecha';
             $waAlert = "❌ *PRESUPUESTO RECHAZADO ONLINE*\n\n"
                 . "👤 *Cliente:* {$clientName}\n"
                 . "📅 *Evento:* {$this->event->name} ({$eventDate})\n"
                 . "💰 *Propuesta #{$this->quote->id}:* {$amountFormatted} €\n"
                 . "📝 *Motivo indicado:* {$reasonClean}\n\n"
-                . "El estado del evento se ha actualizado a *Rechazado*.";
+                . "El estado del evento se ha actualizado a *Rechazado*.\n"
+                . "🔗 *Ficha:* {$eventUrl}";
             EvolutionWhatsAppService::notifyAdmins($waAlert, $this->event->brand_clean);
         } catch (\Throwable $e) {
         }

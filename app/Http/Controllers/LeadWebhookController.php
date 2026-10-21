@@ -204,15 +204,10 @@ class LeadWebhookController extends Controller
         }
 
         try {
-            $adminEmails = Setting::getAdminNotificationEmails($brandKey);
-            if (!empty($adminEmails)) {
-                $primaryAdmin = array_shift($adminEmails);
-                $mail = Mail::to($primaryAdmin);
-                if (!empty($adminEmails)) {
-                    $mail->bcc($adminEmails);
-                }
-                $mail->send(new NewLeadImportedAdminMail($event, $leadData, $brandKey));
-            }
+            \App\Services\AppNotificationService::sendMailableToAdmins(
+                fn () => new NewLeadImportedAdminMail($event, $leadData, $brandKey),
+                $brandKey
+            );
         } catch (\Throwable $e) {
             Log::warning("No se pudo enviar email de notificación para el nuevo lead web (Evento #{$event->id}): " . $e->getMessage());
         }

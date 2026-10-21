@@ -913,15 +913,10 @@ class ImapLeadFetcherService
 
         // 5. Notificar a los administradores de la empresa y la marca por correo ("y nos avise")
         try {
-            $adminEmails = Setting::getAdminNotificationEmails($brandKey);
-            if (!empty($adminEmails)) {
-                $primaryAdmin = array_shift($adminEmails);
-                $mail = Mail::to($primaryAdmin);
-                if (!empty($adminEmails)) {
-                    $mail->bcc($adminEmails);
-                }
-                $mail->send(new NewLeadImportedAdminMail($event, $leadData, $brandKey));
-            }
+            AppNotificationService::sendMailableToAdmins(
+                fn () => new NewLeadImportedAdminMail($event, $leadData, $brandKey),
+                $brandKey
+            );
         } catch (\Throwable $e) {
             Log::warning("No se pudo enviar notificación de nuevo lead por email (Evento #{$event->id}): " . $e->getMessage());
         }
@@ -1030,14 +1025,49 @@ class ImapLeadFetcherService
                 ],
             ]);
 
+            $eventUrl = url("/admin/events/{$event->id}");
+
             AppNotificationService::push(
                 'email_reply',
                 "📧 Respuesta por Email: {$senderDisplay}",
                 $subject,
-                url("/admin/events/{$event->id}"),
+                $eventUrl,
                 $event->id,
                 $brandKey
             );
+
+            // Notificar también por Email a todos los administradores
+            try {
+                AppNotificationService::sendAlertEmailToAdmins(
+                    "📧 Respuesta por Email de {$senderDisplay} — {$event->name}",
+                    "📧 Respuesta de cliente recibida por Email",
+                    [
+                        'Evento' => $event->name,
+                        'Cliente' => "{$senderDisplay} ({$cleanEmail})",
+                        'Asunto' => $subject,
+                        'Mensaje recibido' => \Illuminate\Support\Str::limit($bodyClean, 1000),
+                    ],
+                    $eventUrl,
+                    'Abrir Conversación en la Ficha',
+                    $brandKey,
+                    '#4f46e5'
+                );
+            } catch (\Throwable $e) {
+            }
+
+            // Notificar por WhatsApp a los administradores si está activo
+            try {
+                if (EvolutionWhatsAppService::isEnabled()) {
+                    $waAlert = "📧 *¡RESPUESTA POR EMAIL RECIBIDA!*\n\n"
+                        . "👤 *Cliente:* {$senderDisplay} ({$cleanEmail})\n"
+                        . "🎉 *Evento:* {$event->name}\n"
+                        . "📌 *Asunto:* {$subject}\n"
+                        . "✉️ *Mensaje:* \"" . \Illuminate\Support\Str::limit($bodyClean, 180) . "\"\n\n"
+                        . "🔗 *Ficha:* {$eventUrl}";
+                    EvolutionWhatsAppService::notifyAdmins($waAlert, $brandKey);
+                }
+            } catch (\Throwable $e) {
+            }
 
             return true;
         } catch (\Throwable $e) {

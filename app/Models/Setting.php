@@ -387,16 +387,26 @@ class Setting extends Model
             // Ignorar en caso de error
         }
 
-        // 2. Email de la marca específica (según dominio/marca del evento)
+        // 2. Lista personalizada opcional en ajustes (separada por comas, punto y coma o saltos de línea)
+        $customAdminEmails = (string) self::get('admin_notification_emails', '');
+        if (!empty(trim($customAdminEmails))) {
+            $parts = preg_split('/[\s,;]+/', $customAdminEmails, -1, PREG_SPLIT_NO_EMPTY);
+            if (is_array($parts)) {
+                $emails = array_merge($emails, $parts);
+            }
+        }
+
+        // 3. Email de la marca específica y de las marcas principales de los socios
         $brandInfo = self::getBrandInfo($brandKey);
         if (!empty($brandInfo['email'])) {
             $emails[] = $brandInfo['email'];
         }
 
-        // 3. Fallback a email general de la empresa y from.address
-        $companyEmail = self::get('company_email');
-        if (!empty($companyEmail)) {
-            $emails[] = $companyEmail;
+        foreach (['brand_nunez_email', 'brand_javnx_email', 'imap_nunez_email', 'imap_javnx_email', 'company_email'] as $settingKey) {
+            $val = self::get($settingKey);
+            if (!empty($val)) {
+                $emails[] = $val;
+            }
         }
 
         $mailFrom = config('mail.from.address');
@@ -407,12 +417,13 @@ class Setting extends Model
         // Normalizar, limpiar y eliminar duplicados y dominios dummy/inválidos
         $validEmails = [];
         foreach ($emails as $email) {
-            $email = trim(mb_strtolower($email));
+            $email = trim(mb_strtolower((string) $email));
             if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
                 continue;
             }
-            // Filtrar dominios dummy de pruebas y dominios no existentes
+            // Filtrar dominios dummy de pruebas y dominios locales
             if (
+                str_ends_with($email, '.local') ||
                 str_ends_with($email, '@example.com') ||
                 str_ends_with($email, '@example.org') ||
                 str_ends_with($email, '@test.com') ||

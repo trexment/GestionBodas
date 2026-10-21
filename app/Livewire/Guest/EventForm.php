@@ -442,27 +442,47 @@ class EventForm extends Component
             'Comentarios / Notas' => $this->comments,
         ];
 
-        // Send email notification to all admins & assigned DJ
+        $brandKey = $this->event->brand_clean ?? 'nunez_and_son';
+        $clientName = $this->event->client ? $this->event->client->name : 'Cliente';
+        $eventUrl = route('admin.events.show', $this->event->id);
+
+        // Notificación interna en la App (Campana)
         try {
-            $brandKey = $this->event->brand_clean ?? 'nunez_and_son';
-            $adminEmails = \App\Models\Setting::getAdminNotificationEmails($brandKey);
-            
-            if (!empty($adminEmails)) {
-                $primaryAdmin = array_shift($adminEmails);
-                $mailable = new \App\Mail\ClientMusicFormSubmittedMail($this->event, $summary);
-                $mail = \Illuminate\Support\Facades\Mail::to($primaryAdmin);
-                
-                if (!empty($adminEmails)) {
-                    $mail->bcc($adminEmails);
-                }
-                
-                if ($this->event->dj && !empty($this->event->dj->email) && $this->event->dj->email !== $primaryAdmin) {
-                    $mail->cc($this->event->dj->email);
-                }
-                $mail->send($mailable);
-            }
+            \App\Services\AppNotificationService::push(
+                'quote_request',
+                "🎵 Cuestionario Musical ({$this->event->name})",
+                "{$clientName} ha completado el cuestionario musical ({$this->totalSavedSongs} canciones).",
+                $eventUrl,
+                $this->event->id,
+                $brandKey
+            );
+        } catch (\Throwable $e) {
+        }
+
+        // Send email notification to all admins & assigned DJ (tolerante a fallos por destinatario)
+        try {
+            $djEmail = ($this->event->dj && !empty($this->event->dj->email)) ? $this->event->dj->email : null;
+            \App\Services\AppNotificationService::sendMailableToAdmins(
+                fn () => new \App\Mail\ClientMusicFormSubmittedMail($this->event, $summary),
+                $brandKey,
+                $djEmail
+            );
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::error('Error enviando email de cuestionario musical: ' . $e->getMessage());
+        }
+
+        // Notificación por WhatsApp a los administradores
+        try {
+            if (\App\Services\EvolutionWhatsAppService::isEnabled()) {
+                $eventDate = $this->event->event_date ? \Carbon\Carbon::parse($this->event->event_date)->format('d/m/Y') : 'Sin fecha';
+                $waAlert = "🎵 *¡CUESTIONARIO MUSICAL RECIBIDO!*\n\n"
+                    . "👤 *Cliente:* {$clientName}\n"
+                    . "🎉 *Evento:* {$this->event->name} ({$eventDate})\n"
+                    . "🎶 *Canciones guardadas:* {$this->totalSavedSongs}\n\n"
+                    . "🔗 *Ficha:* {$eventUrl}";
+                \App\Services\EvolutionWhatsAppService::notifyAdmins($waAlert, $brandKey);
+            }
+        } catch (\Throwable $e) {
         }
     }
 

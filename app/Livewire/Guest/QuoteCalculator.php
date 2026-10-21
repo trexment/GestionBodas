@@ -1138,17 +1138,12 @@ class QuoteCalculator extends Component
         }
 
         // 7. Enviar notificaciones por email:
-        // A) A los Administradores de la Empresa y de la Marca
+        // A) A los Administradores de la Empresa y de la Marca (tolerante a fallos por destinatario)
         try {
-            $adminEmails = Setting::getAdminNotificationEmails($event->brand_clean);
-            if (!empty($adminEmails)) {
-                $primaryAdmin = array_shift($adminEmails);
-                $mail = \Illuminate\Support\Facades\Mail::to($primaryAdmin);
-                if (!empty($adminEmails)) {
-                    $mail->bcc($adminEmails);
-                }
-                $mail->send(new \App\Mail\NewQuoteRequestAdminMail($event, $quote, $requestedServicesList, $typeConfig));
-            }
+            \App\Services\AppNotificationService::sendMailableToAdmins(
+                fn () => new \App\Mail\NewQuoteRequestAdminMail($event, $quote, $requestedServicesList, $typeConfig),
+                $event->brand_clean
+            );
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::warning('No se pudo enviar el email de aviso a administradores: ' . $e->getMessage());
         }

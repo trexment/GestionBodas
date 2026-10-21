@@ -3,10 +3,120 @@
 namespace App\Services;
 
 use App\Models\Setting;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class AppNotificationService
 {
     public const SETTING_KEY = 'app_admin_notifications';
+
+    /**
+     * Envía un Mailable a todos los correos de administradores de forma individual (tolerante a fallos:
+     * si un buzón concreto rechaza el correo, el resto de administradores lo sigue recibiendo).
+     */
+    public static function sendMailableToAdmins($mailableOrFactory, ?string $brandKey = null, ?string $extraRecipient = null): int
+    {
+        $recipients = Setting::getAdminNotificationEmails($brandKey);
+        if (!empty($extraRecipient)) {
+            $cleanExtra = trim(mb_strtolower($extraRecipient));
+            if (filter_var($cleanExtra, FILTER_VALIDATE_EMAIL) && !str_ends_with($cleanExtra, '.local') && !in_array($cleanExtra, $recipients, true)) {
+                $recipients[] = $cleanExtra;
+            }
+        }
+
+        $sentCount = 0;
+        foreach ($recipients as $recipient) {
+            try {
+                $instance = is_callable($mailableOrFactory) ? $mailableOrFactory() : clone $mailableOrFactory;
+                Mail::to($recipient)->send($instance);
+                $sentCount++;
+            } catch (\Throwable $e) {
+                Log::warning("Error enviando email admin a {$recipient}: " . $e->getMessage());
+            }
+        }
+
+        return $sentCount;
+    }
+
+    /**
+     * Envía un correo HTML estructurado de alerta a todos los administradores (y opcionalmente al DJ asignado).
+     * Envía individualmente a cada destinatario para máxima fiabilidad.
+     */
+    public static function sendAlertEmailToAdmins(
+        string $subject,
+        string $heading,
+        array $details,
+        ?string $actionUrl = null,
+        string $actionLabel = 'Abrir Ficha del Evento',
+        ?string $brandKey = null,
+        string $accentColor = '#4f46e5',
+        ?string $extraRecipient = null
+    ): int {
+        $recipients = Setting::getAdminNotificationEmails($brandKey);
+        if (!empty($extraRecipient)) {
+            $cleanExtra = trim(mb_strtolower($extraRecipient));
+            if (filter_var($cleanExtra, FILTER_VALIDATE_EMAIL) && !str_ends_with($cleanExtra, '.local') && !in_array($cleanExtra, $recipients, true)) {
+                $recipients[] = $cleanExtra;
+            }
+        }
+
+        if (empty($recipients)) {
+            return 0;
+        }
+
+        $brandInfo = Setting::getBrandInfo($brandKey);
+        $companyName = $brandInfo['name'] ?? Setting::get('company_name', 'Núñez & Son');
+
+        $rowsHtml = '';
+        foreach ($details as $label => $value) {
+            if ($value === null || trim((string) $value) === '') {
+                continue;
+            }
+            $rowsHtml .= '<tr>'
+                . '<td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;font-weight:700;color:#475569;width:36%;vertical-align:top;font-size:13px;">' . e((string) $label) . '</td>'
+                . '<td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;color:#0f172a;font-size:14px;line-height:1.5;white-space:pre-line;">' . nl2br(e((string) $value)) . '</td>'
+                . '</tr>';
+        }
+
+        $buttonHtml = '';
+        if (!empty($actionUrl)) {
+            $buttonHtml = '<div style="margin-top:24px;text-align:center;">'
+                . '<a href="' . e($actionUrl) . '" target="_blank" style="display:inline-block;background:' . e($accentColor) . ';color:#ffffff;font-weight:700;font-size:14px;padding:12px 24px;border-radius:10px;text-decoration:none;">'
+                . e($actionLabel) . ' &rarr;'
+                . '</a>'
+                . '</div>';
+        }
+
+        $html = '<div style="font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Roboto,Helvetica,Arial,sans-serif;background:#f8fafc;padding:24px;">'
+            . '<div style="max-width:620px;margin:0 auto;background:#ffffff;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden;box-shadow:0 2px 8px rgba(15,23,42,0.04);">'
+            . '<div style="background:' . e($accentColor) . ';color:#ffffff;padding:18px 24px;">'
+            . '<div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;opacity:0.9;font-weight:700;">Notificación de Administración &bull; ' . e($companyName) . '</div>'
+            . '<h2 style="margin:6px 0 0 0;font-size:19px;font-weight:800;">' . e($heading) . '</h2>'
+            . '</div>'
+            . '<div style="padding:22px 24px;">'
+            . '<table style="width:100%;border-collapse:collapse;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;">'
+            . $rowsHtml
+            . '</table>'
+            . $buttonHtml
+            . '<p style="margin:20px 0 0 0;font-size:11px;color:#94a3b8;text-align:center;">Aviso automático generado el ' . now()->format('d/m/Y \a \l\a\s H:i') . ' &bull; ' . e($companyName) . '</p>'
+            . '</div>'
+            . '</div>'
+            . '</div>';
+
+        $sentCount = 0;
+        foreach ($recipients as $recipient) {
+            try {
+                Mail::html($html, function ($message) use ($recipient, $subject) {
+                    $message->to($recipient)->subject($subject);
+                });
+                $sentCount++;
+            } catch (\Throwable $e) {
+                Log::warning("Error enviando alerta email admin a {$recipient}: " . $e->getMessage());
+            }
+        }
+
+        return $sentCount;
+    }
 
     /**
      * Registra una nueva notificación en la App para todos los administradores / DJs
