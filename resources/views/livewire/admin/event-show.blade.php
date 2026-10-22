@@ -3342,11 +3342,26 @@
                 @endif
                 
                 <!-- BARRA SUPERIOR COMPACTA: PACKS RÁPIDOS (1-CLIC) + GUARDAR TARIFAS POR TIPO DE EVENTO -->
-                <div class="bg-gradient-to-r from-indigo-900 via-indigo-800 to-purple-900 text-white p-3.5 rounded-2xl shadow-sm">
+                @php
+                    $isMagicBrand = ($event->brand_clean === 'mago_leugim');
+                    $hasAnyMagicSelected = !empty($quote_services['magic_kids']['selected'])
+                        || !empty($quote_services['magic_adults']['selected'])
+                        || !empty($quote_services['magic_mixed']['selected'])
+                        || !empty($quote_services['magic_closeup']['selected']);
+                    $hasAnyDjPackSelected = !empty($quote_services['pack_basic']['selected'])
+                        || !empty($quote_services['pack_medium']['selected'])
+                        || !empty($quote_services['pack_premium']['selected']);
+                @endphp
+                <div class="bg-gradient-to-r {{ $isMagicBrand ? 'from-purple-950 via-purple-900 to-indigo-950' : 'from-indigo-900 via-indigo-800 to-purple-900' }} text-white p-3.5 rounded-2xl shadow-sm">
                     <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
                         <div class="flex items-center gap-2 flex-wrap">
                             <h5 class="font-black text-xs uppercase tracking-wider text-indigo-200 flex items-center gap-1.5">
-                                <span>⚡</span> Packs Rápidos ({{ $event->event_type_icon }} {{ $event->event_type_label }}):
+                                <span>⚡</span>
+                                @if($isMagicBrand)
+                                    Packs Rápidos (🎩 Mago Leugim · {{ $event->event_type_label }}):
+                                @else
+                                    Packs Rápidos ({{ $event->event_type_icon }} {{ $event->event_type_label }}):
+                                @endif
                             </h5>
                             <button type="button" wire:click="selectPack('clear')" class="text-[11px] text-indigo-300 hover:text-white underline cursor-pointer">
                                 Limpiar selección
@@ -3362,76 +3377,121 @@
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
-                        <button type="button" wire:click="selectPack('basic')" class="px-2.5 py-2 rounded-xl border text-left transition flex items-center justify-between gap-1 cursor-pointer {{ $selected_pack_type === 'basic' ? 'bg-white text-indigo-900 border-white shadow-md ring-2 ring-indigo-400' : 'bg-white/10 hover:bg-white/20 border-white/20 text-white' }}">
-                            <div class="min-w-0">
-                                <span class="block text-[9px] uppercase font-bold opacity-75 truncate">{{ $quote_services['pack_basic']['hours'] ?? 4 }}h DJ</span>
-                                <h6 class="font-extrabold text-[11px] truncate">{{ $quote_services['pack_basic']['name'] ?? 'Pack Esencial' }}</h6>
-                            </div>
-                            <span class="font-black text-xs shrink-0">{{ number_format($quote_services['pack_basic']['price'], 0) }}€</span>
-                        </button>
-
-                        <button type="button" wire:click="selectPack('medium')" class="px-2.5 py-2 rounded-xl border text-left transition relative flex items-center justify-between gap-1 cursor-pointer {{ $selected_pack_type === 'medium' ? 'bg-white text-indigo-900 border-white shadow-md ring-2 ring-emerald-400' : 'bg-white/10 hover:bg-white/20 border-white/20 text-white' }}">
-                            <span class="absolute -top-1.5 right-2 bg-emerald-500 text-white text-[8px] font-black px-1.5 py-0.2 rounded-full uppercase">Top</span>
-                            <div class="min-w-0">
-                                <span class="block text-[9px] uppercase font-bold opacity-75 truncate">{{ $quote_services['pack_medium']['hours'] ?? 5 }}h + Sub + Humo</span>
-                                <h6 class="font-extrabold text-[11px] truncate">{{ $quote_services['pack_medium']['name'] ?? 'Pack Signature' }} ⭐</h6>
-                            </div>
-                            <span class="font-black text-xs shrink-0">{{ number_format($quote_services['pack_medium']['price'], 0) }}€</span>
-                        </button>
-
-                        <button type="button" wire:click="selectPack('premium')" class="px-2.5 py-2 rounded-xl border text-left transition flex items-center justify-between gap-1 cursor-pointer {{ $selected_pack_type === 'premium' ? 'bg-white text-indigo-900 border-white shadow-md ring-2 ring-amber-400' : 'bg-white/10 hover:bg-white/20 border-white/20 text-white' }}">
-                            <div class="min-w-0">
-                                <span class="block text-[9px] uppercase font-bold opacity-75 truncate">{{ $quote_services['pack_premium']['hours'] ?? 6 }}h + Humo & Chispas</span>
-                                <h6 class="font-extrabold text-[11px] truncate">{{ $quote_services['pack_premium']['name'] ?? 'Pack Deluxe Show' }}</h6>
-                            </div>
-                            <span class="font-black text-xs shrink-0">{{ number_format($quote_services['pack_premium']['price'], 0) }}€</span>
-                        </button>
-
-                        @if($event->is_wedding)
-                            <button type="button" wire:click="selectPack('wedding_dj')" class="px-2.5 py-2 rounded-xl border text-left transition flex items-center justify-between gap-1 cursor-pointer {{ $selected_pack_type === 'wedding_dj' ? 'bg-white text-indigo-900 border-white shadow-md ring-2 ring-indigo-400' : 'bg-white/10 hover:bg-white/20 border-white/20 text-white' }}">
+                    @if($isMagicBrand)
+                        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+                            <button type="button" wire:click="selectPack('magic_kids')" class="px-2.5 py-2 rounded-xl border text-left transition flex items-center justify-between gap-1 cursor-pointer {{ $selected_pack_type === 'magic_kids' ? 'bg-white text-purple-950 border-white shadow-md ring-2 ring-purple-400' : 'bg-white/10 hover:bg-white/20 border-white/20 text-white' }}">
                                 <div class="min-w-0">
-                                    <span class="block text-[9px] uppercase font-bold opacity-75 truncate">Cóctel+Banquete+4h</span>
-                                    <h6 class="font-extrabold text-[11px] truncate">Boda Solo DJ</h6>
+                                    <span class="block text-[9px] uppercase font-bold opacity-75 truncate">Show Infantil</span>
+                                    <h6 class="font-extrabold text-[11px] truncate">🎈 Magia Infantil</h6>
                                 </div>
-                                <span class="font-black text-[11px] shrink-0">Pack</span>
+                                <span class="font-black text-xs shrink-0">{{ number_format($quote_services['magic_kids']['price'], 0) }}€</span>
                             </button>
 
-                            <button type="button" wire:click="selectPack('wedding_full')" class="px-2.5 py-2 rounded-xl border text-left transition flex items-center justify-between gap-1 cursor-pointer {{ $selected_pack_type === 'wedding_full' ? 'bg-white text-indigo-900 border-white shadow-md ring-2 ring-purple-400' : 'bg-white/10 hover:bg-white/20 border-white/20 text-white' }}">
+                            <button type="button" wire:click="selectPack('magic_adults')" class="px-2.5 py-2 rounded-xl border text-left transition flex items-center justify-between gap-1 cursor-pointer {{ $selected_pack_type === 'magic_adults' ? 'bg-white text-purple-950 border-white shadow-md ring-2 ring-purple-400' : 'bg-white/10 hover:bg-white/20 border-white/20 text-white' }}">
                                 <div class="min-w-0">
-                                    <span class="block text-[9px] uppercase font-bold opacity-75 truncate">Pack 5h + Fotos</span>
-                                    <h6 class="font-extrabold text-[11px] truncate">Boda Completa 📸</h6>
+                                    <span class="block text-[9px] uppercase font-bold opacity-75 truncate">Salón / Mentalismo</span>
+                                    <h6 class="font-extrabold text-[11px] truncate">🎩 Magia Adultos</h6>
                                 </div>
-                                <span class="font-black text-[11px] shrink-0">DJ+Foto</span>
+                                <span class="font-black text-xs shrink-0">{{ number_format($quote_services['magic_adults']['price'], 0) }}€</span>
                             </button>
-                        @else
-                            <button type="button" wire:click="selectPack('event_sound_dj')" class="px-2.5 py-2 rounded-xl border text-left transition flex items-center justify-between gap-1 cursor-pointer {{ $selected_pack_type === 'event_sound_dj' ? 'bg-white text-indigo-900 border-white shadow-md ring-2 ring-indigo-400' : 'bg-white/10 hover:bg-white/20 border-white/20 text-white' }}">
+
+                            <button type="button" wire:click="selectPack('magic_mixed')" class="px-2.5 py-2 rounded-xl border text-left transition relative flex items-center justify-between gap-1 cursor-pointer {{ $selected_pack_type === 'magic_mixed' ? 'bg-white text-purple-950 border-white shadow-md ring-2 ring-emerald-400' : 'bg-white/10 hover:bg-white/20 border-white/20 text-white' }}">
+                                <span class="absolute -top-1.5 right-2 bg-emerald-500 text-white text-[8px] font-black px-1.5 py-0.2 rounded-full uppercase">Top</span>
                                 <div class="min-w-0">
-                                    <span class="block text-[9px] uppercase font-bold opacity-75 truncate">Sonorización + 2h DJ</span>
-                                    <h6 class="font-extrabold text-[11px] truncate">Acto + Fiesta 🎧</h6>
+                                    <span class="block text-[9px] uppercase font-bold opacity-75 truncate">Niños + Adultos</span>
+                                    <h6 class="font-extrabold text-[11px] truncate">✨ Magia Mixta ⭐</h6>
+                                </div>
+                                <span class="font-black text-xs shrink-0">{{ number_format($quote_services['magic_mixed']['price'], 0) }}€</span>
+                            </button>
+
+                            <button type="button" wire:click="selectPack('magic_mixed_music')" class="px-2.5 py-2 rounded-xl border text-left transition flex items-center justify-between gap-1 cursor-pointer {{ $selected_pack_type === 'magic_mixed_music' ? 'bg-white text-purple-950 border-white shadow-md ring-2 ring-amber-400' : 'bg-white/10 hover:bg-white/20 border-white/20 text-white' }}">
+                                <div class="min-w-0">
+                                    <span class="block text-[9px] uppercase font-bold opacity-75 truncate">Show Mixto + 2h DJ</span>
+                                    <h6 class="font-extrabold text-[11px] truncate">✨+🎶 Magia + Música</h6>
                                 </div>
                                 <span class="font-black text-[11px] shrink-0">Combo</span>
                             </button>
 
-                            @if(in_array($event->event_type_clean, ['comunion', 'cumpleanos', 'empresa'], true))
-                                <button type="button" wire:click="selectPack('event_meal_dj')" class="px-2.5 py-2 rounded-xl border text-left transition flex items-center justify-between gap-1 cursor-pointer {{ $selected_pack_type === 'event_meal_dj' ? 'bg-white text-indigo-900 border-white shadow-md ring-2 ring-purple-400' : 'bg-white/10 hover:bg-white/20 border-white/20 text-white' }}">
+                            <button type="button" wire:click="selectPack('magic_kids_music')" class="px-2.5 py-2 rounded-xl border text-left transition flex items-center justify-between gap-1 cursor-pointer {{ $selected_pack_type === 'magic_kids_music' ? 'bg-white text-purple-950 border-white shadow-md ring-2 ring-pink-400' : 'bg-white/10 hover:bg-white/20 border-white/20 text-white' }}">
+                                <div class="min-w-0">
+                                    <span class="block text-[9px] uppercase font-bold opacity-75 truncate">Infantil + 2h Música</span>
+                                    <h6 class="font-extrabold text-[11px] truncate">🎈+🎶 Infantil + Fiesta</h6>
+                                </div>
+                                <span class="font-black text-[11px] shrink-0">Combo</span>
+                            </button>
+                        </div>
+                    @else
+                        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+                            <button type="button" wire:click="selectPack('basic')" class="px-2.5 py-2 rounded-xl border text-left transition flex items-center justify-between gap-1 cursor-pointer {{ $selected_pack_type === 'basic' ? 'bg-white text-indigo-900 border-white shadow-md ring-2 ring-indigo-400' : 'bg-white/10 hover:bg-white/20 border-white/20 text-white' }}">
+                                <div class="min-w-0">
+                                    <span class="block text-[9px] uppercase font-bold opacity-75 truncate">{{ $quote_services['pack_basic']['hours'] ?? 4 }}h DJ</span>
+                                    <h6 class="font-extrabold text-[11px] truncate">{{ $quote_services['pack_basic']['name'] ?? 'Pack Esencial' }}</h6>
+                                </div>
+                                <span class="font-black text-xs shrink-0">{{ number_format($quote_services['pack_basic']['price'], 0) }}€</span>
+                            </button>
+
+                            <button type="button" wire:click="selectPack('medium')" class="px-2.5 py-2 rounded-xl border text-left transition relative flex items-center justify-between gap-1 cursor-pointer {{ $selected_pack_type === 'medium' ? 'bg-white text-indigo-900 border-white shadow-md ring-2 ring-emerald-400' : 'bg-white/10 hover:bg-white/20 border-white/20 text-white' }}">
+                                <span class="absolute -top-1.5 right-2 bg-emerald-500 text-white text-[8px] font-black px-1.5 py-0.2 rounded-full uppercase">Top</span>
+                                <div class="min-w-0">
+                                    <span class="block text-[9px] uppercase font-bold opacity-75 truncate">{{ $quote_services['pack_medium']['hours'] ?? 5 }}h + Sub + Humo</span>
+                                    <h6 class="font-extrabold text-[11px] truncate">{{ $quote_services['pack_medium']['name'] ?? 'Pack Signature' }} ⭐</h6>
+                                </div>
+                                <span class="font-black text-xs shrink-0">{{ number_format($quote_services['pack_medium']['price'], 0) }}€</span>
+                            </button>
+
+                            <button type="button" wire:click="selectPack('premium')" class="px-2.5 py-2 rounded-xl border text-left transition flex items-center justify-between gap-1 cursor-pointer {{ $selected_pack_type === 'premium' ? 'bg-white text-indigo-900 border-white shadow-md ring-2 ring-amber-400' : 'bg-white/10 hover:bg-white/20 border-white/20 text-white' }}">
+                                <div class="min-w-0">
+                                    <span class="block text-[9px] uppercase font-bold opacity-75 truncate">{{ $quote_services['pack_premium']['hours'] ?? 6 }}h + Humo & Chispas</span>
+                                    <h6 class="font-extrabold text-[11px] truncate">{{ $quote_services['pack_premium']['name'] ?? 'Pack Deluxe Show' }}</h6>
+                                </div>
+                                <span class="font-black text-xs shrink-0">{{ number_format($quote_services['pack_premium']['price'], 0) }}€</span>
+                            </button>
+
+                            @if($event->is_wedding)
+                                <button type="button" wire:click="selectPack('wedding_dj')" class="px-2.5 py-2 rounded-xl border text-left transition flex items-center justify-between gap-1 cursor-pointer {{ $selected_pack_type === 'wedding_dj' ? 'bg-white text-indigo-900 border-white shadow-md ring-2 ring-indigo-400' : 'bg-white/10 hover:bg-white/20 border-white/20 text-white' }}">
                                     <div class="min-w-0">
-                                        <span class="block text-[9px] uppercase font-bold opacity-75 truncate">Comida/Cena + 4h DJ</span>
-                                        <h6 class="font-extrabold text-[11px] truncate">Comida + Fiesta 🍽️</h6>
+                                        <span class="block text-[9px] uppercase font-bold opacity-75 truncate">Cóctel+Banquete+4h</span>
+                                        <h6 class="font-extrabold text-[11px] truncate">Boda Solo DJ</h6>
                                     </div>
                                     <span class="font-black text-[11px] shrink-0">Pack</span>
                                 </button>
-                            @else
-                                <button type="button" wire:click="selectPack('event_sound_only')" class="px-2.5 py-2 rounded-xl border text-left transition flex items-center justify-between gap-1 cursor-pointer {{ $selected_pack_type === 'event_sound_only' ? 'bg-white text-indigo-900 border-white shadow-md ring-2 ring-purple-400' : 'bg-white/10 hover:bg-white/20 border-white/20 text-white' }}">
+
+                                <button type="button" wire:click="selectPack('wedding_full')" class="px-2.5 py-2 rounded-xl border text-left transition flex items-center justify-between gap-1 cursor-pointer {{ $selected_pack_type === 'wedding_full' ? 'bg-white text-indigo-900 border-white shadow-md ring-2 ring-purple-400' : 'bg-white/10 hover:bg-white/20 border-white/20 text-white' }}">
                                     <div class="min-w-0">
-                                        <span class="block text-[9px] uppercase font-bold opacity-75 truncate">Equipo + Micros</span>
-                                        <h6 class="font-extrabold text-[11px] truncate">Solo Sonorización 🔊</h6>
+                                        <span class="block text-[9px] uppercase font-bold opacity-75 truncate">Pack 5h + Fotos</span>
+                                        <h6 class="font-extrabold text-[11px] truncate">Boda Completa 📸</h6>
                                     </div>
-                                    <span class="font-black text-[11px] shrink-0">{{ number_format($quote_services['ceremony']['price'], 0) }}€</span>
+                                    <span class="font-black text-[11px] shrink-0">DJ+Foto</span>
                                 </button>
+                            @else
+                                <button type="button" wire:click="selectPack('event_sound_dj')" class="px-2.5 py-2 rounded-xl border text-left transition flex items-center justify-between gap-1 cursor-pointer {{ $selected_pack_type === 'event_sound_dj' ? 'bg-white text-indigo-900 border-white shadow-md ring-2 ring-indigo-400' : 'bg-white/10 hover:bg-white/20 border-white/20 text-white' }}">
+                                    <div class="min-w-0">
+                                        <span class="block text-[9px] uppercase font-bold opacity-75 truncate">Sonorización + 2h DJ</span>
+                                        <h6 class="font-extrabold text-[11px] truncate">Acto + Fiesta 🎧</h6>
+                                    </div>
+                                    <span class="font-black text-[11px] shrink-0">Combo</span>
+                                </button>
+
+                                @if(in_array($event->event_type_clean, ['comunion', 'cumpleanos', 'empresa'], true))
+                                    <button type="button" wire:click="selectPack('event_meal_dj')" class="px-2.5 py-2 rounded-xl border text-left transition flex items-center justify-between gap-1 cursor-pointer {{ $selected_pack_type === 'event_meal_dj' ? 'bg-white text-indigo-900 border-white shadow-md ring-2 ring-purple-400' : 'bg-white/10 hover:bg-white/20 border-white/20 text-white' }}">
+                                        <div class="min-w-0">
+                                            <span class="block text-[9px] uppercase font-bold opacity-75 truncate">Comida/Cena + 4h DJ</span>
+                                            <h6 class="font-extrabold text-[11px] truncate">Comida + Fiesta 🍽️</h6>
+                                        </div>
+                                        <span class="font-black text-[11px] shrink-0">Pack</span>
+                                    </button>
+                                @else
+                                    <button type="button" wire:click="selectPack('event_sound_only')" class="px-2.5 py-2 rounded-xl border text-left transition flex items-center justify-between gap-1 cursor-pointer {{ $selected_pack_type === 'event_sound_only' ? 'bg-white text-indigo-900 border-white shadow-md ring-2 ring-purple-400' : 'bg-white/10 hover:bg-white/20 border-white/20 text-white' }}">
+                                        <div class="min-w-0">
+                                            <span class="block text-[9px] uppercase font-bold opacity-75 truncate">Equipo + Micros</span>
+                                            <h6 class="font-extrabold text-[11px] truncate">Solo Sonorización 🔊</h6>
+                                        </div>
+                                        <span class="font-black text-[11px] shrink-0">{{ number_format($quote_services['ceremony']['price'], 0) }}€</span>
+                                    </button>
+                                @endif
                             @endif
-                        @endif
-                    </div>
+                        </div>
+                    @endif
                 </div>
 
                 <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
@@ -3454,13 +3514,103 @@
 
                         <form wire:submit.prevent="{{ $editing_quote_id ? 'updateQuote' : 'createQuote' }}" class="space-y-3">
                             
-                            <!-- SECCIÓN: PACKS DE SONIDO & DJ (COMPACTA) -->
-                            <div class="bg-white p-3 rounded-xl border border-gray-200 space-y-2 shadow-xs">
-                                <h6 class="text-[11px] font-black uppercase text-indigo-900 tracking-wider flex items-center gap-1.5 border-b pb-1.5">
-                                    <span>🎛️</span> Packs de Sonido, Iluminación y DJ
-                                </h6>
+                            <!-- BLOQUE DE ESPECTÁCULOS DE MAGIA (MAGO LEUGIM): ABIERTO ARRIBA SI LA MARCA ES MAGO LEUGIM, O DESPLEGABLE SI ES OTRA MARCA -->
+                            <div x-data="{ openMagic: {{ ($isMagicBrand || $hasAnyMagicSelected) ? 'true' : 'false' }} }" class="bg-white rounded-xl border {{ $isMagicBrand ? 'border-purple-300 ring-1 ring-purple-200' : 'border-purple-200' }} shadow-xs overflow-hidden">
+                                <button type="button" @click="openMagic = !openMagic" class="w-full p-3 flex items-center justify-between gap-2 text-left {{ $isMagicBrand ? 'bg-purple-50/70 hover:bg-purple-100/60' : 'hover:bg-purple-50/40' }} transition cursor-pointer">
+                                    <div class="flex items-center gap-2 flex-wrap">
+                                        <span class="text-[11px] font-black uppercase text-purple-950 tracking-wider flex items-center gap-1.5">
+                                            <span>🎩</span> Espectáculos de Magia por Bloques (Infantil / Adultos / Mixto / Close-Up)
+                                        </span>
+                                        @if($hasAnyMagicSelected)
+                                            <span class="text-[10px] font-black bg-purple-600 text-white px-2 py-0.5 rounded-full">Activo</span>
+                                        @elseif(!$isMagicBrand)
+                                            <span class="text-[10px] font-semibold text-gray-400">(Clic para añadir Magia)</span>
+                                        @endif
+                                    </div>
+                                    <span class="text-xs font-bold text-purple-700" x-text="openMagic ? '🔼 Ocultar' : '🔽 Desplegar'"></span>
+                                </button>
 
-                                <div class="space-y-1.5">
+                                <div x-show="openMagic" class="p-3 pt-2 border-t border-purple-100 space-y-2">
+                                    @php
+                                        $magicBlocksMeta = [
+                                            'magic_kids' => [
+                                                'badge' => '🎈 INFANTIL',
+                                                'badge_class' => 'bg-pink-100 text-pink-800 border-pink-200',
+                                                'active_class' => 'border-pink-400 bg-pink-50/40',
+                                                'placeholder' => 'Ej: Espectáculo de Magia Infantil (60 min)',
+                                            ],
+                                            'magic_adults' => [
+                                                'badge' => '🎩 ADULTOS',
+                                                'badge_class' => 'bg-purple-100 text-purple-900 border-purple-200',
+                                                'active_class' => 'border-purple-400 bg-purple-50/40',
+                                                'placeholder' => 'Ej: Show de Magia y Humor para Adultos',
+                                            ],
+                                            'magic_mixed' => [
+                                                'badge' => '✨ MIXTO / FAMILIAR',
+                                                'badge_class' => 'bg-emerald-100 text-emerald-900 border-emerald-200',
+                                                'active_class' => 'border-emerald-400 bg-emerald-50/40',
+                                                'placeholder' => 'Ej: Espectáculo de Magia Mixto Familiar (Niños y Adultos)',
+                                            ],
+                                            'magic_closeup' => [
+                                                'badge' => '🃏 MAGIA DE CERCA',
+                                                'badge_class' => 'bg-amber-100 text-amber-900 border-amber-200',
+                                                'active_class' => 'border-amber-400 bg-amber-50/40',
+                                                'placeholder' => 'Ej: Magia de Cerca (Close-Up en Recepción / Mesas)',
+                                            ],
+                                        ];
+                                    @endphp
+
+                                    @foreach($magicBlocksMeta as $mKey => $mMeta)
+                                        @php
+                                            $mSelected = !empty($quote_services[$mKey]['selected']);
+                                        @endphp
+                                        <div class="p-2 rounded-lg border {{ $mSelected ? $mMeta['active_class'] : 'border-gray-200 hover:bg-gray-50' }} space-y-1.5 transition">
+                                            <div class="flex items-center justify-between gap-2">
+                                                <label class="flex items-center cursor-pointer flex-1 gap-2 min-w-0">
+                                                    <input type="checkbox" wire:model.live="quote_services.{{ $mKey }}.selected" class="rounded text-purple-600 focus:ring-purple-500 h-4 w-4 shrink-0">
+                                                    <div class="min-w-0 flex-1">
+                                                        <div class="flex items-center gap-1.5 flex-wrap">
+                                                            <span class="text-[9px] font-black uppercase px-1.5 py-0.2 rounded border {{ $mMeta['badge_class'] }}">{{ $mMeta['badge'] }}</span>
+                                                            <span class="text-xs font-bold text-gray-900 truncate">{{ $quote_services[$mKey]['name'] }}</span>
+                                                        </div>
+                                                        <p class="text-[10px] text-gray-500 truncate" title="{{ $quote_services[$mKey]['desc'] }}">{{ $quote_services[$mKey]['desc'] }}</p>
+                                                    </div>
+                                                </label>
+                                                <div class="flex items-center gap-1 shrink-0">
+                                                    <input type="number" wire:model.live="quote_services.{{ $mKey }}.quantity" min="1" max="10" class="w-10 border rounded p-1 text-xs text-center" title="Número de pases / bloques">
+                                                    <span class="text-xs text-gray-400">x</span>
+                                                    <input type="number" step="0.01" wire:model.live="quote_services.{{ $mKey }}.price" class="w-16 border rounded p-1 text-xs text-right font-bold focus:ring-purple-500">
+                                                    <span class="text-xs font-bold text-gray-600">€</span>
+                                                </div>
+                                            </div>
+
+                                            @if($mSelected)
+                                                <div class="pt-1.5 border-t border-purple-200/70 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                                    <div>
+                                                        <label class="block text-[10px] font-bold text-purple-950 mb-0.5">📌 Título en Dossier PDF:</label>
+                                                        <input type="text" wire:model.live.debounce.400ms="quote_services.{{ $mKey }}.name" placeholder="{{ $mMeta['placeholder'] }}" class="w-full text-[11px] border-purple-200 rounded-lg p-1.5 bg-white font-semibold text-gray-800">
+                                                    </div>
+                                                    <div>
+                                                        <label class="block text-[10px] font-bold text-purple-950 mb-0.5">📝 Detalle del espectáculo (sale en PDF):</label>
+                                                        <textarea rows="2" wire:model.live.debounce.400ms="quote_services.{{ $mKey }}.desc" class="w-full text-[11px] border-purple-200 rounded-lg p-1.5 bg-white text-gray-700 leading-snug"></textarea>
+                                                    </div>
+                                                </div>
+                                            @endif
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </div>
+
+                            <!-- SECCIÓN: PACKS DE SONIDO & DJ (PLEGADA SI ES MAGO LEUGIM PARA NO ESTORBAR; ABIERTA SI ES MARCA DJ) -->
+                            <div x-data="{ openDjPacks: {{ (!$isMagicBrand || $hasAnyDjPackSelected) ? 'true' : 'false' }} }" class="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
+                                <button type="button" @click="openDjPacks = !openDjPacks" class="w-full p-3 flex items-center justify-between gap-2 text-left hover:bg-gray-50 transition cursor-pointer">
+                                    <h6 class="text-[11px] font-black uppercase text-indigo-900 tracking-wider flex items-center gap-1.5">
+                                        <span>🎛️</span> {{ $isMagicBrand ? 'Packs DJ de Larga Duración (4h a 6h) — Opcional' : 'Packs de Sonido, Iluminación y DJ' }}
+                                    </h6>
+                                    <span class="text-[10px] font-bold text-indigo-600" x-text="openDjPacks ? '🔼 Ocultar' : '🔽 Desplegar'"></span>
+                                </button>
+
+                                <div x-show="openDjPacks" class="p-3 pt-1.5 border-t border-gray-100 space-y-1.5">
                                     <!-- Pack Básico -->
                                     <label class="flex items-center justify-between p-2 rounded-lg border hover:bg-gray-50 cursor-pointer transition gap-2 {{ $quote_services['pack_basic']['selected'] ? 'border-indigo-500 bg-indigo-50/50' : 'border-gray-200' }}">
                                         <div class="flex items-center gap-2 min-w-0 flex-1">
@@ -3508,7 +3658,7 @@
                                 </div>
                             </div>
 
-                            <!-- SECCIÓN: SERVICIOS MUSICALES & AMBIENTACIÓN ADAPTADOS AL TIPO DE EVENTO -->
+                            <!-- SECCIÓN: MÚSICA DESPUÉS DE LA MAGIA / SERVICIOS MUSICALES ADAPTADOS -->
                             @php
                                 $evTypeClean = $event->event_type_clean;
                                 $cSelected = !empty($quote_services['cocktail']['selected']);
@@ -3517,12 +3667,12 @@
                                 $rPrice = (float)($quote_services['restaurant']['price'] ?? 0);
                                 $packDiscountInfo = \App\Models\Setting::getCocktailRestaurantPackInfo($cPrice, $rPrice);
                             @endphp
-                            <div x-data="{ showMealOptions: {{ ($event->is_wedding || in_array($evTypeClean, ['empresa', 'comunion'], true) || $cSelected || $rSelected) ? 'true' : 'false' }} }" class="bg-white p-3 rounded-xl border border-gray-200 space-y-2 shadow-xs">
+                            <div x-data="{ showMealOptions: {{ (!$isMagicBrand && ($event->is_wedding || in_array($evTypeClean, ['empresa', 'comunion'], true)) || $cSelected || $rSelected) ? 'true' : 'false' }} }" class="bg-white p-3 rounded-xl border border-gray-200 space-y-2 shadow-xs">
                                 <div class="flex items-center justify-between border-b pb-1.5 gap-2">
                                     <h6 class="text-[11px] font-black uppercase text-indigo-900 tracking-wider flex items-center gap-1.5">
-                                        <span>🎵</span> Servicios Musicales ({{ $event->event_type_label }})
+                                        <span>🎶</span> {{ $isMagicBrand ? 'Música después de la Magia, Sonorización & Animación' : 'Servicios Musicales (' . $event->event_type_label . ')' }}
                                     </h6>
-                                    @if(!$event->is_wedding && !in_array($evTypeClean, ['empresa', 'comunion'], true))
+                                    @if($isMagicBrand || (!$event->is_wedding && !in_array($evTypeClean, ['empresa', 'comunion'], true)))
                                         <button type="button" @click="showMealOptions = !showMealOptions" class="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-2 py-0.5 rounded-full border border-indigo-200 transition cursor-pointer">
                                             <span x-text="showMealOptions ? '🔼 Ocultar comida/aperitivo' : '➕ Añadir comida/aperitivo'"></span>
                                         </button>
@@ -3530,7 +3680,40 @@
                                 </div>
 
                                 <div class="space-y-1.5">
-                                    <!-- 1. Ceremonia (Boda) / Sonorización Acto o Discursos (Otros eventos) -->
+                                    @if($isMagicBrand)
+                                        <!-- En Mago Leugim ponemos PRIMERO la Música después de la Magia -->
+                                        <div class="p-2 rounded-lg border {{ !empty($quote_services['dj_custom']['selected']) ? 'border-indigo-300 bg-indigo-50/30' : 'border-gray-100 hover:bg-gray-50' }} space-y-1.5">
+                                            <div class="flex items-center justify-between gap-2">
+                                                <label class="flex items-center cursor-pointer flex-1 gap-2 min-w-0">
+                                                    <input type="checkbox" wire:model.live="quote_services.dj_custom.selected" class="rounded text-indigo-600 focus:ring-indigo-500 h-4 w-4 shrink-0">
+                                                    <div class="min-w-0">
+                                                        <span class="text-xs font-bold text-gray-800">{{ $quote_services['dj_custom']['name'] ?? 'Música y Fiesta después de la Magia (DJ / Discomóvil)' }}</span>
+                                                        <span class="block text-[10px] text-gray-500 truncate">{{ $quote_services['dj_custom']['desc'] }}</span>
+                                                    </div>
+                                                </label>
+                                                <div class="flex items-center gap-1 shrink-0">
+                                                    <input type="number" wire:model.live="quote_services.dj_custom.quantity" min="1" max="12" class="w-10 border rounded p-1 text-xs text-center">
+                                                    <span class="text-xs text-gray-400">h @</span>
+                                                    <input type="number" step="0.01" wire:model.live="quote_services.dj_custom.price" class="w-16 border rounded p-1 text-xs text-right font-bold">
+                                                    <span class="text-xs text-gray-600">€</span>
+                                                </div>
+                                            </div>
+                                            @if(!empty($quote_services['dj_custom']['selected']))
+                                                <div class="pt-1.5 border-t border-indigo-100 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                                    <div>
+                                                        <label class="block text-[10px] font-bold text-indigo-900 mb-0.5">📌 Título en PDF:</label>
+                                                        <input type="text" wire:model.live.debounce.400ms="quote_services.dj_custom.name" placeholder="Ej: Música y Animación después de la Magia" class="w-full text-[11px] border-indigo-200 rounded-lg p-1.5 bg-white font-semibold text-gray-800">
+                                                    </div>
+                                                    <div>
+                                                        <label class="block text-[10px] font-bold text-indigo-900 mb-0.5">📝 Detalle en PDF:</label>
+                                                        <textarea rows="2" wire:model.live.debounce.400ms="quote_services.dj_custom.desc" class="w-full text-[11px] border-indigo-200 rounded-lg p-1.5 bg-white text-gray-700 leading-snug"></textarea>
+                                                    </div>
+                                                </div>
+                                            @endif
+                                        </div>
+                                    @endif
+
+                                    <!-- 1. Ceremonia (Boda) / Sonorización Extra de Acto o Escenario -->
                                     <div class="p-2 rounded-lg border {{ !empty($quote_services['ceremony']['selected']) ? 'border-indigo-300 bg-indigo-50/30' : 'border-gray-100 hover:bg-gray-50' }} space-y-1.5">
                                         <div class="flex items-center justify-between gap-2">
                                             <label class="flex items-center cursor-pointer flex-1 gap-2 min-w-0">
@@ -3561,7 +3744,7 @@
                                         @endif
                                     </div>
 
-                                    <!-- 2. Cóctel/Recepción y Banquete/Comida (Visible por defecto en Boda/Empresa/Comunión; oculto en Fiesta/Cumpleaños salvo que se active) -->
+                                    <!-- 2. Cóctel/Recepción y Banquete/Comida -->
                                     <div x-show="showMealOptions" class="space-y-1.5">
                                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                                             <!-- Cóctel / Recepción / Aperitivo -->
@@ -3619,36 +3802,38 @@
                                         @endif
                                     </div>
 
-                                    <!-- 3. Sesión DJ / Baile (Horas sueltas) -->
-                                    <div class="p-2 rounded-lg border {{ !empty($quote_services['dj_custom']['selected']) ? 'border-indigo-300 bg-indigo-50/30' : 'border-gray-100 hover:bg-gray-50' }} space-y-1.5">
-                                        <div class="flex items-center justify-between gap-2">
-                                            <label class="flex items-center cursor-pointer flex-1 gap-2 min-w-0">
-                                                <input type="checkbox" wire:model.live="quote_services.dj_custom.selected" class="rounded text-indigo-600 focus:ring-indigo-500 h-4 w-4 shrink-0">
-                                                <div class="min-w-0">
-                                                    <span class="text-xs font-bold text-gray-800">{{ $quote_services['dj_custom']['name'] ?? ($event->is_wedding ? 'DJ Baile (Horas sueltas)' : 'Sesión DJ Fiesta / Baile (Horas sueltas)') }}</span>
-                                                    <span class="block text-[10px] text-gray-500 truncate">{{ $quote_services['dj_custom']['desc'] }}</span>
+                                    @if(!$isMagicBrand)
+                                        <!-- 3. Sesión DJ / Baile (Horas sueltas) -->
+                                        <div class="p-2 rounded-lg border {{ !empty($quote_services['dj_custom']['selected']) ? 'border-indigo-300 bg-indigo-50/30' : 'border-gray-100 hover:bg-gray-50' }} space-y-1.5">
+                                            <div class="flex items-center justify-between gap-2">
+                                                <label class="flex items-center cursor-pointer flex-1 gap-2 min-w-0">
+                                                    <input type="checkbox" wire:model.live="quote_services.dj_custom.selected" class="rounded text-indigo-600 focus:ring-indigo-500 h-4 w-4 shrink-0">
+                                                    <div class="min-w-0">
+                                                        <span class="text-xs font-bold text-gray-800">{{ $quote_services['dj_custom']['name'] ?? ($event->is_wedding ? 'DJ Baile (Horas sueltas)' : 'Sesión DJ Fiesta / Baile (Horas sueltas)') }}</span>
+                                                        <span class="block text-[10px] text-gray-500 truncate">{{ $quote_services['dj_custom']['desc'] }}</span>
+                                                    </div>
+                                                </label>
+                                                <div class="flex items-center gap-1 shrink-0">
+                                                    <input type="number" wire:model.live="quote_services.dj_custom.quantity" min="1" max="12" class="w-10 border rounded p-1 text-xs text-center">
+                                                    <span class="text-xs text-gray-400">h @</span>
+                                                    <input type="number" step="0.01" wire:model.live="quote_services.dj_custom.price" class="w-16 border rounded p-1 text-xs text-right font-bold">
+                                                    <span class="text-xs text-gray-600">€</span>
                                                 </div>
-                                            </label>
-                                            <div class="flex items-center gap-1 shrink-0">
-                                                <input type="number" wire:model.live="quote_services.dj_custom.quantity" min="1" max="12" class="w-10 border rounded p-1 text-xs text-center">
-                                                <span class="text-xs text-gray-400">h @</span>
-                                                <input type="number" step="0.01" wire:model.live="quote_services.dj_custom.price" class="w-16 border rounded p-1 text-xs text-right font-bold">
-                                                <span class="text-xs text-gray-600">€</span>
                                             </div>
+                                            @if(!empty($quote_services['dj_custom']['selected']))
+                                                <div class="pt-1 border-t border-indigo-100">
+                                                    <textarea rows="2" wire:model.live.debounce.400ms="quote_services.dj_custom.desc" placeholder="Ej: Incluye prueba de sonido y {{ $quote_services['dj_custom']['quantity'] ?? 2 }} horas de baile/espectáculo. Hora adicional a {{ $quote_services['extra_hours']['price'] ?? 140 }} €/h." class="w-full text-[11px] border-indigo-200 rounded-lg p-1.5 bg-white text-gray-700 leading-snug"></textarea>
+                                                </div>
+                                            @endif
                                         </div>
-                                        @if(!empty($quote_services['dj_custom']['selected']))
-                                            <div class="pt-1 border-t border-indigo-100">
-                                                <textarea rows="2" wire:model.live.debounce.400ms="quote_services.dj_custom.desc" placeholder="Ej: Incluye prueba de sonido y {{ $quote_services['dj_custom']['quantity'] ?? 2 }} horas de baile/espectáculo. Hora adicional a {{ $quote_services['extra_hours']['price'] ?? 140 }} €/h." class="w-full text-[11px] border-indigo-200 rounded-lg p-1.5 bg-white text-gray-700 leading-snug"></textarea>
-                                            </div>
-                                        @endif
-                                    </div>
+                                    @endif
 
                                     <!-- 4. Horas Extra + Karaoke en 2 columnas -->
                                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                                         <!-- Horas Extra -->
                                         <div class="flex items-center justify-between p-2 rounded-lg border border-amber-200 bg-amber-50/50 gap-1.5">
                                             <div class="min-w-0">
-                                                <span class="text-xs font-bold text-amber-900 block truncate">{{ $event->is_wedding ? 'Horas Extra Baile' : 'Horas Extra de Fiesta' }}</span>
+                                                <span class="text-xs font-bold text-amber-900 block truncate">{{ $isMagicBrand ? 'Horas Extra Música / Fiesta' : ($event->is_wedding ? 'Horas Extra Baile' : 'Horas Extra de Fiesta') }}</span>
                                                 <span class="block text-[9px] text-amber-700 truncate">Opción de ampliar horario</span>
                                             </div>
                                             <div class="flex items-center gap-0.5 shrink-0">

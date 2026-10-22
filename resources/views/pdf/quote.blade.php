@@ -640,9 +640,10 @@
         $companyEmail = $brand['email'] ?: \App\Models\Setting::get('company_email', 'info@nunezandson.com');
         $logoPath = $brand['logo_path'];
 
-        // Configuración dinámica del Dossier adaptada al Tipo de Evento
+        // Configuración dinámica del Dossier adaptada al Tipo de Evento y Marca
         $evType = $event->event_type_clean;
         $isWedding = $event->is_wedding;
+        $isMagicBrand = ($event->brand_clean ?? 'nunez_and_son') === 'mago_leugim';
         $presets = \App\Services\DossierTemplateService::presets();
         $dDefaults = $isWedding
             ? \App\Services\DossierTemplateService::getDefaults()
@@ -663,18 +664,28 @@
             return (string)$stored;
         };
 
-        $defaultCoverByEvent = match ($evType) {
-            'boda' => 'Propuesta para vuestra boda',
-            'empresa' => 'Propuesta para vuestro evento corporativo',
-            'comunion' => 'Propuesta para vuestra comunión',
-            'cumpleanos' => 'Propuesta para vuestra celebración',
-            default => 'Propuesta para vuestro evento',
-        };
+        $defaultCoverByEvent = $isMagicBrand
+            ? 'Propuesta de Espectáculo de Magia y Animación'
+            : match ($evType) {
+                'boda' => 'Propuesta para vuestra boda',
+                'empresa' => 'Propuesta para vuestro evento corporativo',
+                'comunion' => 'Propuesta para vuestra comunión',
+                'cumpleanos' => 'Propuesta para vuestra celebración',
+                default => 'Propuesta para vuestro evento',
+            };
 
-        $dossierCoverTitle = $getDossierText('dossier_cover_title', $defaultCoverByEvent);
-        $dossierPage2Subtitle = $getDossierText('dossier_page2_subtitle');
-        $dossierPage2Title = $getDossierText('dossier_page2_title');
-        $dossierIntroText = $getDossierText('dossier_intro_text');
+        $dossierCoverTitle = $isMagicBrand
+            ? $defaultCoverByEvent
+            : $getDossierText('dossier_cover_title', $defaultCoverByEvent);
+        $dossierPage2Subtitle = $isMagicBrand
+            ? 'MAGIA PROFESIONAL, ILUSIONISMO Y ENTRETENIMIENTO'
+            : $getDossierText('dossier_page2_subtitle');
+        $dossierPage2Title = $isMagicBrand
+            ? 'Un Espectáculo Inolvidable para Todos'
+            : $getDossierText('dossier_page2_title');
+        $dossierIntroText = $isMagicBrand
+            ? "Con Mago Leugim viviréis un espectáculo de ilusionismo dinámico, participativo y sorprendente, diseñado a medida según las edades y el estilo de vuestra celebración (Infantil, Familiar/Mixto o Adultos).\n\nCuidamos cada detalle de la puesta en escena: sonido autónomo de alta nitidez, microfonía inalámbrica y la posibilidad de continuar la fiesta con sesión musical y animación después de la magia."
+            : $getDossierText('dossier_intro_text');
         
         // Cargar fotos de montajes y equipamiento (1 a 4 fotos)
         $dossierPhotos = [];
@@ -745,18 +756,20 @@
             return (float)\App\Models\Setting::get($key, $default);
         };
 
-        $packBasicName = \App\Models\Setting::get('pack_basic_name', 'Pack Esencial');
-        $packBasicPrice = $getEvPrice('pack_basic_price', 600);
+        $packBasicName = $isMagicBrand ? 'Magia Infantil' : \App\Models\Setting::get('pack_basic_name', 'Pack Esencial');
+        $packBasicPrice = $isMagicBrand ? $getEvPrice('price_magic_kids', 250) : $getEvPrice('pack_basic_price', 600);
         $packBasicHours = (int)\App\Models\Setting::get("pack_basic_hours_{$evType}", \App\Models\Setting::get('pack_basic_hours', 4));
         
-        $packMediumName = \App\Models\Setting::get('pack_medium_name', 'Pack Signature');
-        $packMediumPrice = $getEvPrice('pack_medium_price', 950);
+        $packMediumName = $isMagicBrand ? 'Magia Mixta / Familiar' : \App\Models\Setting::get('pack_medium_name', 'Pack Signature');
+        $packMediumPrice = $isMagicBrand ? $getEvPrice('price_magic_mixed', 300) : $getEvPrice('pack_medium_price', 950);
         $packMediumHours = (int)\App\Models\Setting::get("pack_medium_hours_{$evType}", \App\Models\Setting::get('pack_medium_hours', 5));
 
-        $packPremiumName = \App\Models\Setting::get('pack_premium_name', 'Pack Deluxe Show');
-        $packPremiumPrice = $getEvPrice('pack_premium_price', 1350);
+        $packPremiumName = $isMagicBrand ? 'Magia para Adultos' : \App\Models\Setting::get('pack_premium_name', 'Pack Deluxe Show');
+        $packPremiumPrice = $isMagicBrand ? $getEvPrice('price_magic_adults', 300) : $getEvPrice('pack_premium_price', 1350);
         $packPremiumHours = (int)\App\Models\Setting::get("pack_premium_hours_{$evType}", \App\Models\Setting::get('pack_premium_hours', 6));
 
+        $magicCloseupPrice = $getEvPrice('price_magic_closeup', 220);
+        $djCustomPrice = $getEvPrice('price_dj_custom', 80);
         $extraHourPrice = $getEvPrice('price_extra_hours', 120);
 
         // Formatted Date (del evento)
@@ -1198,66 +1211,93 @@
     <div class="page">
         <!-- Cabecera Azul Marino -->
         <div class="page-header-banner">
-            <div class="page-header-sub">PRODUCCIÓN Y OPCIONES DE SERVICIO &bull; {{ mb_strtoupper($companyName) }}</div>
-            <div class="page-header-title">Packs DJ y Coberturas para Vuestro Evento</div>
+            <div class="page-header-sub">{{ $isMagicBrand ? 'MODALIDADES DE ESPECTÁCULO Y FIESTA' : 'PRODUCCIÓN Y OPCIONES DE SERVICIO' }} &bull; {{ mb_strtoupper($companyName) }}</div>
+            <div class="page-header-title">{{ $isMagicBrand ? 'Espectáculos de Magia y Música post-Show' : 'Packs DJ y Coberturas para Vuestro Evento' }}</div>
         </div>
 
         <div class="page-content">
             <p class="intro-lead" style="margin-bottom: 12px;">
-                Diseñamos la experiencia musical y técnica a medida para cada momento de vuestra celebración. A continuación os presentamos nuestras configuraciones más demandadas y servicios de ambientación profesional para que conozcáis todas las opciones disponibles.
+                {{ $isMagicBrand ? 'Adaptamos el formato del espectáculo de magia al público de vuestro evento (infantil, familiar o adultos) y os ofrecemos la posibilidad de continuar la fiesta con sesión musical, iluminación y animación.' : 'Diseñamos la experiencia musical y técnica a medida para cada momento de vuestra celebración. A continuación os presentamos nuestras configuraciones más demandadas y servicios de ambientación profesional para que conozcáis todas las opciones disponibles.' }}
             </p>
 
-            <!-- 1. COMPARATIVA DE PACKS DE FIESTA -->
+            <!-- 1. COMPARATIVA DE PACKS DE FIESTA O MAGIA -->
             <div style="margin-bottom: 6px; font-size: 7.5pt; font-weight: 800; color: #0f172a; text-transform: uppercase; letter-spacing: 0.5px;">
-                Configuraciones DJ para Barra Libre y Fiesta:
+                {{ $isMagicBrand ? 'Modalidades de Espectáculo de Magia (Por Bloques):' : 'Configuraciones DJ para Barra Libre y Fiesta:' }}
             </div>
             <table class="packs-table">
                 <tr>
-                    <!-- PACK BÁSICO / ESENCIAL -->
+                    <!-- PACK BÁSICO / ESENCIAL / MAGIA INFANTIL -->
                     <td class="pack-col">
                         <div class="pack-card">
-                            <div class="pack-badge" style="background-color: #64748b; color: #ffffff;">OPCIÓN 1</div>
+                            <div class="pack-badge" style="background-color: #64748b; color: #ffffff;">{{ $isMagicBrand ? 'BLOQUE INFANTIL' : 'OPCIÓN 1' }}</div>
                             <div class="pack-title">{{ $packBasicName }}</div>
-                            <div class="pack-schedule">{{ $packBasicHours }} Horas de servicio DJ</div>
+                            <div class="pack-schedule">{{ $isMagicBrand ? 'Público Infantil y Cumpleaños' : $packBasicHours . ' Horas de servicio DJ' }}</div>
                             <div class="pack-price">{{ number_format($packBasicPrice, 0, ',', '.') }}€</div>
+                            @if($isMagicBrand)
+                            <ul class="pack-features">
+                                <li>Show 100% visual, cómico y dinámico</li>
+                                <li>Participación constante de los niños</li>
+                                <li>Protagonismo especial del homenajeado/a</li>
+                                <li>Equipo de sonido y microfonía incluido</li>
+                            </ul>
+                            @else
                             <ul class="pack-features">
                                 <li>{{ $packBasicHours }}h de sesión DJ profesional</li>
                                 <li>Sonido estéreo alta definición</li>
                                 <li>Iluminación rítmica LED de pista</li>
                                 <li>Microfonía inalámbrica</li>
                             </ul>
+                            @endif
                         </div>
                     </td>
 
-                    <!-- PACK MEDIO / SIGNATURE -->
+                    <!-- PACK MEDIO / SIGNATURE / MAGIA MIXTA -->
                     <td class="pack-col">
                         <div class="pack-card">
-                            <div class="pack-badge" style="background-color: #3b82f6; color: #ffffff;">OPCIÓN 2 &bull; RECOMENDADO</div>
+                            <div class="pack-badge" style="background-color: #3b82f6; color: #ffffff;">{{ $isMagicBrand ? 'BLOQUE MIXTO &bull; RECOMENDADO' : 'OPCIÓN 2 &bull; RECOMENDADO' }}</div>
                             <div class="pack-title">{{ $packMediumName }}</div>
-                            <div class="pack-schedule">{{ $packMediumHours }} Horas de servicio DJ</div>
+                            <div class="pack-schedule">{{ $isMagicBrand ? 'Infantil + Adultos (Familiar)' : $packMediumHours . ' Horas de servicio DJ' }}</div>
                             <div class="pack-price">{{ number_format($packMediumPrice, 0, ',', '.') }}€</div>
+                            @if($isMagicBrand)
+                            <ul class="pack-features">
+                                <li>Diseñado para niños y adultos a la vez</li>
+                                <li>Humor blanco, visual e ilusiones de impacto</li>
+                                <li>Ideal comuniones, bodas y fiestas familiares</li>
+                                <li>Sonido profesional y puesta en escena</li>
+                            </ul>
+                            @else
                             <ul class="pack-features">
                                 <li>{{ $packMediumHours }}h de sesión DJ profesional</li>
                                 <li>Sonido reforzado con subgraves</li>
                                 <li>Cabina DJ retroiluminada</li>
                                 <li>Puente/barras LED sincronizadas</li>
                             </ul>
+                            @endif
                         </div>
                     </td>
 
-                    <!-- PACK PREMIUM / DELUXE SHOW -->
+                    <!-- PACK PREMIUM / DELUXE SHOW / MAGIA ADULTOS -->
                     <td class="pack-col">
                         <div class="pack-card">
-                            <div class="pack-badge" style="background-color: #f59e0b; color: #ffffff;">OPCIÓN 3 &bull; SHOW COMPLETO</div>
+                            <div class="pack-badge" style="background-color: #f59e0b; color: #ffffff;">{{ $isMagicBrand ? 'BLOQUE ADULTOS' : 'OPCIÓN 3 &bull; SHOW COMPLETO' }}</div>
                             <div class="pack-title">{{ $packPremiumName }}</div>
-                            <div class="pack-schedule">Hasta {{ $packPremiumHours }} Horas de cobertura</div>
+                            <div class="pack-schedule">{{ $isMagicBrand ? 'Público Adulto y Eventos' : 'Hasta ' . $packPremiumHours . ' Horas de cobertura' }}</div>
                             <div class="pack-price">{{ number_format($packPremiumPrice, 0, ',', '.') }}€</div>
+                            @if($isMagicBrand)
+                            <ul class="pack-features">
+                                <li>Ilusionismo de alto impacto y mentalismo</li>
+                                <li>Humor elegante e interacción con invitados</li>
+                                <li>Ideal cenas, fiestas privadas y empresas</li>
+                                <li>Sonido autónomo de alta fidelidad</li>
+                            </ul>
+                            @else
                             <ul class="pack-features">
                                 <li>Hasta {{ $packPremiumHours }}h cobertura completa</li>
                                 <li>Sonido gran formato + subgraves</li>
                                 <li>Show iluminación sincronizada</li>
                                 <li>Efecto humo denso / chispas frías</li>
                             </ul>
+                            @endif
                         </div>
                     </td>
                 </tr>
@@ -1265,20 +1305,28 @@
 
             <!-- 2. COBERTURAS ADICIONALES PARA CADA MOMENTO -->
             <div style="margin-top: 14px; margin-bottom: 6px; font-size: 7.5pt; font-weight: 800; color: #0f172a; text-transform: uppercase; letter-spacing: 0.5px;">
-                Sonorización y Cobertura Integral del Evento:
+                {{ $isMagicBrand ? 'Complementos y Música después de la Magia:' : 'Sonorización y Cobertura Integral del Evento:' }}
             </div>
             <table style="width: 100%; border-collapse: separate; border-spacing: 8px 6px;">
                 <tr>
                     <td style="width: 50%; vertical-align: top; background-color: #f8fafc; border: 1px solid #e2e8f0; border-left: 3px solid #3b82f6; border-radius: 6px; padding: 8px 10px;">
-                        <div style="font-size: 8pt; font-weight: 800; color: #1e3a8a; margin-bottom: 2px;">&bull; {{ $event->is_wedding ? 'Ceremonia Civil & Cóctel' : 'Sonorización de Acto & Recepción' }}</div>
+                        <div style="font-size: 8pt; font-weight: 800; color: #1e3a8a; margin-bottom: 2px;">&bull; {{ $isMagicBrand ? 'Música y Fiesta después de la Magia' : ($event->is_wedding ? 'Ceremonia Civil & Cóctel' : 'Sonorización de Acto & Recepción') }}</div>
                         <div style="font-size: 6.8pt; color: #475569; line-height: 1.3;">
-                            {{ $event->is_wedding ? 'Equipos independientes a batería o corriente, microfonía inalámbrica para oficiante y lecturas, y música de ambientación elegante y fluida.' : 'Equipos de sonido profesionales independientes, microfonía inalámbrica para intervenciones o actuaciones y música de ambientación adaptada.' }}
+                            @if($isMagicBrand)
+                                Continuación del evento tras el espectáculo con sesión musical / DJ por horas, equipo de sonido profesional e iluminación rítmica LED (Desde <strong>{{ number_format($djCustomPrice, 0, ',', '.') }}€/hora</strong>).
+                            @else
+                                {{ $event->is_wedding ? 'Equipos independientes a batería o corriente, microfonía inalámbrica para oficiante y lecturas, y música de ambientación elegante y fluida.' : 'Equipos de sonido profesionales independientes, microfonía inalámbrica para intervenciones o actuaciones y música de ambientación adaptada.' }}
+                            @endif
                         </div>
                     </td>
                     <td style="width: 50%; vertical-align: top; background-color: #f8fafc; border: 1px solid #e2e8f0; border-left: 3px solid #10b981; border-radius: 6px; padding: 8px 10px;">
-                        <div style="font-size: 8pt; font-weight: 800; color: #065f46; margin-bottom: 2px;">&bull; {{ $event->is_wedding ? 'Banquete & Momentos Especiales' : 'Comida / Cena & Momentos Clave' }}</div>
+                        <div style="font-size: 8pt; font-weight: 800; color: #065f46; margin-bottom: 2px;">&bull; {{ $isMagicBrand ? 'Magia de Cerca (Close-Up en Cóctel / Mesas)' : ($event->is_wedding ? 'Banquete & Momentos Especiales' : 'Comida / Cena & Momentos Clave') }}</div>
                         <div style="font-size: 6.8pt; color: #475569; line-height: 1.3;">
-                            {{ $event->is_wedding ? 'Coordinación precisa de temas para entrada de los novios, corte de tarta, regalos emotivos y sorpresas sin silencios incómodos.' : 'Coordinación precisa de temas musicales, entregas de premios o detalles, actuaciones y momentos destacados sin silencios incómodos.' }}
+                            @if($isMagicBrand)
+                                Magia itinerante en pequeños grupos a pocos centímetros de los ojos de los invitados durante la recepción o aperitivo (Tarifa base: <strong>{{ number_format($magicCloseupPrice, 0, ',', '.') }}€</strong>).
+                            @else
+                                {{ $event->is_wedding ? 'Coordinación precisa de temas para entrada de los novios, corte de tarta, regalos emotivos y sorpresas sin silencios incómodos.' : 'Coordinación precisa de temas musicales, entregas de premios o detalles, actuaciones y momentos destacados sin silencios incómodos.' }}
+                            @endif
                         </div>
                     </td>
                 </tr>

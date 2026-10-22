@@ -155,6 +155,10 @@ class EventShow extends Component
         'waffle_cart' => ['selected' => false, 'hours' => 2, 'quantity' => 1, 'price_2h' => 420, 'price_3h' => 550, 'price' => 420, 'consult' => false, 'desc' => 'Carrito de Gofres hechos al momento: Incluye 4 siropes a elegir (Kinder, Lotus, Nutella, chocolate blanco, chocolate con leche, pistacho...), 4 ingredientes secos (galleta Lotus molida, Oreo, mini Lacasitos, mini nubes...), decoración del carrito con globos y banderín con nombre, servilletas, bandejas y cubiertos. (2h ~60 gofres / 3h ~100 gofres).'],
         'smoke_machine' => ['selected' => false, 'quantity' => 1, 'price' => 60, 'included' => false, 'desc' => 'Efecto de máquina de humo para ambientar la pista y realzar la iluminación.'],
         'cold_sparks' => ['selected' => false, 'quantity' => 2, 'price' => 60, 'included' => false, 'desc' => 'Efecto especial de fuego frío / chispas frías para momentos clave (apertura de baile / corte de tarta).'],
+        'magic_kids' => ['selected' => false, 'name' => 'Espectáculo de Magia Infantil', 'quantity' => 1, 'price' => 250, 'desc' => 'Show participativo de magia infantil con humor, juegos visuales e ilusión adaptado a niños (aprox. 60 min). Incluye equipo de sonido de apoyo y microfonía.'],
+        'magic_adults' => ['selected' => false, 'name' => 'Espectáculo de Magia para Adultos', 'quantity' => 1, 'price' => 300, 'desc' => 'Show de magia de salón/escenario, mentalismo y comedia elegante diseñado para público adulto (aprox. 60-75 min). Incluye sonido y microfonía inalámbrica.'],
+        'magic_mixed' => ['selected' => false, 'name' => 'Espectáculo de Magia Mixto / Familiar (Infantil y Adultos)', 'quantity' => 1, 'price' => 300, 'desc' => 'Espectáculo dinámico de magia, humor y participación para todas las edades (niños y adultos), ideal para fiestas, carnaval, colegios, comuniones y celebraciones familiares.'],
+        'magic_closeup' => ['selected' => false, 'name' => 'Magia de Cerca (Close-Up en Recepción / Cóctel)', 'quantity' => 1, 'price' => 250, 'desc' => 'Ilusionismo interactivo a pocos centímetros de los invitados por grupos o mesas durante recepción, cóctel o sobremesa.'],
     ];
 
     public $custom_extras = [
@@ -463,6 +467,31 @@ class EventShow extends Component
         $this->quote_services['restaurant']['desc'] = \App\Models\Setting::get("service_restaurant_desc_{$evType}", $defRestDesc);
         $this->quote_services['dj_custom']['name'] = \App\Models\Setting::get("service_dj_name_{$evType}", $defDjName);
         $this->quote_services['dj_custom']['desc'] = \App\Models\Setting::get("service_dj_desc_{$evType}", $defDjDesc);
+
+        // Espectáculos de Magia (Mago Leugim) por Bloques: Infantil, Adultos, Mixto/Familiar y Close-Up
+        $this->quote_services['magic_kids']['price'] = $getPrice('price_magic_kids', 250);
+        $this->quote_services['magic_kids']['name'] = \App\Models\Setting::get("service_magic_kids_name_{$evType}", \App\Models\Setting::get('service_magic_kids_name', 'Espectáculo de Magia Infantil'));
+        $this->quote_services['magic_kids']['desc'] = \App\Models\Setting::get("service_magic_kids_desc_{$evType}", \App\Models\Setting::get('service_magic_kids_desc', 'Show participativo de magia infantil con humor, juegos visuales e ilusión adaptado a niños (aprox. 60 min). Incluye equipo de sonido de apoyo y microfonía.'));
+
+        $this->quote_services['magic_adults']['price'] = $getPrice('price_magic_adults', 300);
+        $this->quote_services['magic_adults']['name'] = \App\Models\Setting::get("service_magic_adults_name_{$evType}", \App\Models\Setting::get('service_magic_adults_name', 'Espectáculo de Magia para Adultos'));
+        $this->quote_services['magic_adults']['desc'] = \App\Models\Setting::get("service_magic_adults_desc_{$evType}", \App\Models\Setting::get('service_magic_adults_desc', 'Show de magia de salón/escenario, mentalismo y comedia elegante diseñado para público adulto (aprox. 60-75 min). Incluye sonido y microfonía inalámbrica.'));
+
+        $this->quote_services['magic_mixed']['price'] = $getPrice('price_magic_mixed', 300);
+        $this->quote_services['magic_mixed']['name'] = \App\Models\Setting::get("service_magic_mixed_name_{$evType}", \App\Models\Setting::get('service_magic_mixed_name', 'Espectáculo de Magia Mixto / Familiar (Infantil y Adultos)'));
+        $this->quote_services['magic_mixed']['desc'] = \App\Models\Setting::get("service_magic_mixed_desc_{$evType}", \App\Models\Setting::get('service_magic_mixed_desc', 'Espectáculo dinámico de magia, humor y participación para todas las edades (niños y adultos), ideal para fiestas, carnaval, colegios, comuniones y celebraciones familiares.'));
+
+        $this->quote_services['magic_closeup']['price'] = $getPrice('price_magic_closeup', 250);
+        $this->quote_services['magic_closeup']['name'] = \App\Models\Setting::get("service_magic_closeup_name_{$evType}", \App\Models\Setting::get('service_magic_closeup_name', 'Magia de Cerca (Close-Up en Recepción / Cóctel)'));
+        $this->quote_services['magic_closeup']['desc'] = \App\Models\Setting::get("service_magic_closeup_desc_{$evType}", \App\Models\Setting::get('service_magic_closeup_desc', 'Ilusionismo interactivo a pocos centímetros de los invitados por grupos o mesas durante recepción, cóctel o sobremesa.'));
+
+        // Si la marca comercial es Mago Leugim, adaptar textos de Música después de la Magia
+        if ($this->event && $this->event->brand_clean === 'mago_leugim') {
+            $this->quote_services['dj_custom']['name'] = \App\Models\Setting::get("service_dj_name_mago_{$evType}", 'Música y Fiesta después de la Magia (DJ / Discomóvil)');
+            $this->quote_services['dj_custom']['desc'] = \App\Models\Setting::get("service_dj_desc_mago_{$evType}", 'Sesión musical, animación y baile al finalizar el espectáculo de magia con equipo de sonido e iluminación.');
+            $this->quote_services['ceremony']['name'] = \App\Models\Setting::get("service_ceremony_name_mago_{$evType}", 'Sonorización Extra de Evento / Escenario');
+            $this->quote_services['ceremony']['desc'] = \App\Models\Setting::get("service_ceremony_desc_mago_{$evType}", 'Equipo de sonido profesional, microfonía inalámbrica y asistencia técnica para el evento.');
+        }
 
         $loc = mb_strtolower((string)($this->event->location ?? ''));
         if (str_contains($loc, 'vitoria') || str_contains($loc, 'álava') || str_contains($loc, 'alava') || str_contains($loc, 'gasteiz') || str_contains($loc, 'bilbao') || str_contains($loc, 'bizkaia') || str_contains($loc, 'gipuzkoa') || str_contains($loc, 'araba')) {
@@ -874,8 +903,11 @@ class EventShow extends Component
         }
         $this->event->update($update);
         $this->event->refresh();
+        if (!$this->editing_quote_id) {
+            $this->loadSettingsPrices();
+        }
         $brandLabel = $brand === 'javnx' ? 'JAVNX DJ' : ($brand === 'mago_leugim' ? 'Mago Leugim' : 'Núñez and Son');
-        session()->flash('message', "Marca comercial del evento cambiada a: {$brandLabel}");
+        session()->flash('message', "Marca comercial del evento cambiada a: {$brandLabel} (servicios y tarifas adaptados)");
     }
 
     public function deleteEvent()
@@ -3236,9 +3268,30 @@ class EventShow extends Component
         }
         if (!empty($this->quote_services['dj_custom']['name'])) {
             \App\Models\Setting::set("service_dj_name_{$evType}", $this->quote_services['dj_custom']['name']);
+            if ($this->event && $this->event->brand_clean === 'mago_leugim') {
+                \App\Models\Setting::set("service_dj_name_mago_{$evType}", $this->quote_services['dj_custom']['name']);
+            }
         }
         if (!empty($this->quote_services['dj_custom']['desc'])) {
             \App\Models\Setting::set("service_dj_desc_{$evType}", $this->quote_services['dj_custom']['desc']);
+            if ($this->event && $this->event->brand_clean === 'mago_leugim') {
+                \App\Models\Setting::set("service_dj_desc_mago_{$evType}", $this->quote_services['dj_custom']['desc']);
+            }
+        }
+
+        // Espectáculos de Magia (Mago Leugim: Infantil, Adultos, Mixto y Close-Up)
+        foreach (['magic_kids', 'magic_adults', 'magic_mixed', 'magic_closeup'] as $mKey) {
+            $mPrice = (float)($this->quote_services[$mKey]['price'] ?? 250);
+            \App\Models\Setting::set("price_{$mKey}_{$evType}", $mPrice);
+            \App\Models\Setting::set("price_{$mKey}", $mPrice);
+            if (!empty($this->quote_services[$mKey]['name'])) {
+                \App\Models\Setting::set("service_{$mKey}_name_{$evType}", $this->quote_services[$mKey]['name']);
+                \App\Models\Setting::set("service_{$mKey}_name", $this->quote_services[$mKey]['name']);
+            }
+            if (!empty($this->quote_services[$mKey]['desc'])) {
+                \App\Models\Setting::set("service_{$mKey}_desc_{$evType}", $this->quote_services[$mKey]['desc']);
+                \App\Models\Setting::set("service_{$mKey}_desc", $this->quote_services[$mKey]['desc']);
+            }
         }
 
         // Guardar también condiciones de señal por tipo de evento
@@ -3388,6 +3441,10 @@ class EventShow extends Component
         $this->quote_services['pack_medium']['selected'] = false;
         $this->quote_services['pack_premium']['selected'] = false;
         $this->quote_services['dj_custom']['selected'] = false;
+        $this->quote_services['magic_kids']['selected'] = false;
+        $this->quote_services['magic_adults']['selected'] = false;
+        $this->quote_services['magic_mixed']['selected'] = false;
+        $this->quote_services['magic_closeup']['selected'] = false;
 
         if ($packKey === 'basic') {
             $this->quote_services['pack_basic']['selected'] = true;
@@ -3397,6 +3454,27 @@ class EventShow extends Component
             $this->syncPackEffectsAdmin();
         } elseif ($packKey === 'premium') {
             $this->quote_services['pack_premium']['selected'] = true;
+            $this->syncPackEffectsAdmin();
+        } elseif ($packKey === 'magic_kids') {
+            $this->quote_services['magic_kids']['selected'] = true;
+            $this->syncPackEffectsAdmin();
+        } elseif ($packKey === 'magic_adults') {
+            $this->quote_services['magic_adults']['selected'] = true;
+            $this->syncPackEffectsAdmin();
+        } elseif ($packKey === 'magic_mixed') {
+            $this->quote_services['magic_mixed']['selected'] = true;
+            $this->syncPackEffectsAdmin();
+        } elseif ($packKey === 'magic_mixed_music') {
+            // Espectáculo Magia Mixto / Familiar + 2h Música después de la Magia
+            $this->quote_services['magic_mixed']['selected'] = true;
+            $this->quote_services['dj_custom']['selected'] = true;
+            $this->quote_services['dj_custom']['quantity'] = 2;
+            $this->syncPackEffectsAdmin();
+        } elseif ($packKey === 'magic_kids_music') {
+            // Espectáculo Magia Infantil + 2h Música después de la Magia
+            $this->quote_services['magic_kids']['selected'] = true;
+            $this->quote_services['dj_custom']['selected'] = true;
+            $this->quote_services['dj_custom']['quantity'] = 2;
             $this->syncPackEffectsAdmin();
         } elseif ($packKey === 'wedding_dj') {
             // Pack Boda Típico DJ: Cóctel + Banquete/Regalos + Pack Básico (4h DJ, Sonido + Iluminación)
@@ -3472,6 +3550,13 @@ class EventShow extends Component
         }
         if (!empty($this->quote_services['pack_premium']['selected'])) {
             $total += (float)$this->quote_services['pack_premium']['price'];
+        }
+
+        // Espectáculos de Magia (Mago Leugim)
+        foreach (['magic_kids', 'magic_adults', 'magic_mixed', 'magic_closeup'] as $mKey) {
+            if (!empty($this->quote_services[$mKey]['selected'])) {
+                $total += (float)($this->quote_services[$mKey]['price'] ?? 0) * (int)($this->quote_services[$mKey]['quantity'] ?? 1);
+            }
         }
 
         // Servicios musicales
@@ -3665,6 +3750,28 @@ class EventShow extends Component
             $total += $p;
         }
 
+        // 1.B Espectáculos de Magia (Mago Leugim: Infantil, Adultos, Mixto y Close-Up)
+        $magicDefaults = [
+            'magic_kids' => 'Espectáculo de Magia Infantil',
+            'magic_adults' => 'Espectáculo de Magia para Adultos',
+            'magic_mixed' => 'Espectáculo de Magia Mixto / Familiar (Infantil y Adultos)',
+            'magic_closeup' => 'Magia de Cerca (Close-Up en Recepción / Cóctel)',
+        ];
+        foreach ($magicDefaults as $mKey => $mDefaultTitle) {
+            if (!empty($this->quote_services[$mKey]['selected'])) {
+                $qty = (int)($this->quote_services[$mKey]['quantity'] ?? 1) ?: 1;
+                $p = (float)($this->quote_services[$mKey]['price'] ?? 0);
+                $mTitle = trim((string)($this->quote_services[$mKey]['name'] ?? '')) ?: $mDefaultTitle;
+                $items[] = [
+                    'service_name' => $mTitle,
+                    'description' => $this->quote_services[$mKey]['desc'] ?? '',
+                    'price' => $p,
+                    'quantity' => $qty,
+                ];
+                $total += ($p * $qty);
+            }
+        }
+
         // 2. Servicios Musicales Individuales
         if (!empty($this->quote_services['ceremony']['selected'])) {
             $qty = (int)($this->quote_services['ceremony']['quantity'] ?: 1);
@@ -3721,9 +3828,17 @@ class EventShow extends Component
             $p = (float)($this->quote_services['dj_custom']['price'] ?: 0);
             $djDesc = trim((string)($this->quote_services['dj_custom']['desc'] ?? ''));
             if ($djDesc === '' || $djDesc === 'Horas de DJ en directo.') {
-                $djDesc = 'Actuación DJ en directo con repertorio a medida (ampliable durante el evento)';
+                $djDesc = ($this->event && $this->event->brand_clean === 'mago_leugim')
+                    ? 'Sesión musical, animación y baile al finalizar el espectáculo de magia con equipo de sonido e iluminación.'
+                    : 'Actuación DJ en directo con repertorio a medida (ampliable durante el evento)';
             }
-            $djBaseTitle = ($this->event && !$this->event->is_wedding) ? 'Sesión DJ Fiesta / Baile' : 'Baile DJ';
+            $customDjTitle = trim((string)($this->quote_services['dj_custom']['name'] ?? ''));
+            $customDjTitle = trim(str_ireplace('(Horas sueltas)', '', $customDjTitle));
+            if ($this->event && $this->event->brand_clean === 'mago_leugim') {
+                $djBaseTitle = $customDjTitle ?: 'Música y Fiesta después de la Magia';
+            } else {
+                $djBaseTitle = $customDjTitle ?: (($this->event && !$this->event->is_wedding) ? 'Sesión DJ Fiesta / Baile' : 'Baile DJ');
+            }
             $items[] = ['service_name' => $djBaseTitle . ' (' . $qty . ' ' . ($qty === 1 ? 'Hora' : 'Horas') . ')', 'description' => $djDesc, 'price' => $p, 'quantity' => $qty];
             $total += ($p * $qty);
         }
@@ -4093,7 +4208,39 @@ class EventShow extends Component
                 if (!empty($item->description)) {
                     $this->quote_services['restaurant']['desc'] = $item->description;
                 }
-            } elseif (str_contains($name, 'baile dj') || str_contains($name, 'dj baile') || (str_contains($name, 'dj') && !str_contains($name, 'pack'))) {
+            } elseif (str_contains($name, 'magia infantil') || (str_contains($name, 'magia') && str_contains($name, 'infantil') && !str_contains($name, 'mixt') && !str_contains($name, 'adulto'))) {
+                $this->quote_services['magic_kids']['selected'] = true;
+                $this->quote_services['magic_kids']['name'] = $item->service_name ?: ($item->concept ?: $this->quote_services['magic_kids']['name']);
+                $this->quote_services['magic_kids']['quantity'] = (int)($item->quantity ?: 1);
+                $this->quote_services['magic_kids']['price'] = (float)$item->price;
+                if (!empty($item->description)) {
+                    $this->quote_services['magic_kids']['desc'] = $item->description;
+                }
+            } elseif (str_contains($name, 'magia para adultos') || str_contains($name, 'magia adultos') || (str_contains($name, 'magia') && str_contains($name, 'adulto') && !str_contains($name, 'infantil') && !str_contains($name, 'mixt'))) {
+                $this->quote_services['magic_adults']['selected'] = true;
+                $this->quote_services['magic_adults']['name'] = $item->service_name ?: ($item->concept ?: $this->quote_services['magic_adults']['name']);
+                $this->quote_services['magic_adults']['quantity'] = (int)($item->quantity ?: 1);
+                $this->quote_services['magic_adults']['price'] = (float)$item->price;
+                if (!empty($item->description)) {
+                    $this->quote_services['magic_adults']['desc'] = $item->description;
+                }
+            } elseif (str_contains($name, 'magia mixt') || str_contains($name, 'magia familiar') || (str_contains($name, 'magia') && (str_contains($name, 'mixt') || str_contains($name, 'familiar') || (str_contains($name, 'infantil') && str_contains($name, 'adulto'))))) {
+                $this->quote_services['magic_mixed']['selected'] = true;
+                $this->quote_services['magic_mixed']['name'] = $item->service_name ?: ($item->concept ?: $this->quote_services['magic_mixed']['name']);
+                $this->quote_services['magic_mixed']['quantity'] = (int)($item->quantity ?: 1);
+                $this->quote_services['magic_mixed']['price'] = (float)$item->price;
+                if (!empty($item->description)) {
+                    $this->quote_services['magic_mixed']['desc'] = $item->description;
+                }
+            } elseif (str_contains($name, 'magia de cerca') || str_contains($name, 'close-up') || str_contains($name, 'close up')) {
+                $this->quote_services['magic_closeup']['selected'] = true;
+                $this->quote_services['magic_closeup']['name'] = $item->service_name ?: ($item->concept ?: $this->quote_services['magic_closeup']['name']);
+                $this->quote_services['magic_closeup']['quantity'] = (int)($item->quantity ?: 1);
+                $this->quote_services['magic_closeup']['price'] = (float)$item->price;
+                if (!empty($item->description)) {
+                    $this->quote_services['magic_closeup']['desc'] = $item->description;
+                }
+            } elseif (str_contains($name, 'después de la magia') || str_contains($name, 'despues de la magia') || str_contains($name, 'baile dj') || str_contains($name, 'dj baile') || (str_contains($name, 'dj') && !str_contains($name, 'pack'))) {
                 $this->quote_services['dj_custom']['selected'] = true;
                 $this->quote_services['dj_custom']['quantity'] = (int)($item->quantity ?: 1);
                 $this->quote_services['dj_custom']['price'] = (float)$item->price;
