@@ -377,44 +377,92 @@ class EventShow extends Component
             \App\Models\Setting::set('pack_premium_desc', 'Cobertura completa (hasta 6h). Montaje de gran formato: sonido multizona/subgraves potentes + show de iluminación avanzada sincronizada. Incluye efecto especial de máquina de humo frío / chispas frías para momentos clave (apertura de baile).');
         }
 
+        $evType = $this->event ? $this->event->event_type_clean : 'boda';
+        $getPrice = function (string $key, float $default) use ($evType): float {
+            $byType = \App\Models\Setting::get("{$key}_{$evType}");
+            if ($byType !== null && $byType !== '') {
+                return (float)$byType;
+            }
+            return (float)\App\Models\Setting::get($key, $default);
+        };
+
         $this->quote_services['pack_basic']['name'] = \App\Models\Setting::get('pack_basic_name', 'Pack Esencial');
-        $this->quote_services['pack_basic']['price'] = (float)\App\Models\Setting::get('pack_basic_price', 600);
-        $this->quote_services['pack_basic']['hours'] = (int)\App\Models\Setting::get('pack_basic_hours', 4);
-        $this->quote_services['pack_basic']['desc'] = \App\Models\Setting::get('pack_basic_desc', '4 horas de sesión DJ. Sonido profesional estéreo (2 altavoces de alta definición) + iluminación rítmica básica de pista (2 focos/efectos LED). Microfonía inalámbrica para discursos.');
+        $this->quote_services['pack_basic']['price'] = $getPrice('pack_basic_price', 600);
+        $this->quote_services['pack_basic']['hours'] = (int)\App\Models\Setting::get("pack_basic_hours_{$evType}", \App\Models\Setting::get('pack_basic_hours', 4));
+        $this->quote_services['pack_basic']['desc'] = \App\Models\Setting::get("pack_basic_desc_{$evType}", \App\Models\Setting::get('pack_basic_desc', '4 horas de sesión DJ. Sonido profesional estéreo (2 altavoces de alta definición) + iluminación rítmica básica de pista (2 focos/efectos LED). Microfonía inalámbrica para discursos.'));
 
         $this->quote_services['pack_medium']['name'] = \App\Models\Setting::get('pack_medium_name', 'Pack Signature');
-        $this->quote_services['pack_medium']['price'] = (float)\App\Models\Setting::get('pack_medium_price', 950);
-        $this->quote_services['pack_medium']['hours'] = (int)\App\Models\Setting::get('pack_medium_hours', 5);
-        $this->quote_services['pack_medium']['desc'] = \App\Models\Setting::get('pack_medium_desc', '5 horas de sesión DJ. Sonido reforzado con subgraves (impacto y pegada en pista). Cabina DJ retroiluminada + puente/barras de iluminación LED sincronizada y ambientación de pista. Microfonía inalámbrica.');
+        $this->quote_services['pack_medium']['price'] = $getPrice('pack_medium_price', 950);
+        $this->quote_services['pack_medium']['hours'] = (int)\App\Models\Setting::get("pack_medium_hours_{$evType}", \App\Models\Setting::get('pack_medium_hours', 5));
+        $this->quote_services['pack_medium']['desc'] = \App\Models\Setting::get("pack_medium_desc_{$evType}", \App\Models\Setting::get('pack_medium_desc', '5 horas de sesión DJ. Sonido reforzado con subgraves (impacto y pegada en pista). Cabina DJ retroiluminada + puente/barras de iluminación LED sincronizada y ambientación de pista. Microfonía inalámbrica.'));
 
         $this->quote_services['pack_premium']['name'] = \App\Models\Setting::get('pack_premium_name', 'Pack Deluxe Show');
-        $this->quote_services['pack_premium']['price'] = (float)\App\Models\Setting::get('pack_premium_price', 1350);
-        $this->quote_services['pack_premium']['hours'] = (int)\App\Models\Setting::get('pack_premium_hours', 6);
-        $this->quote_services['pack_premium']['desc'] = \App\Models\Setting::get('pack_premium_desc', 'Cobertura completa (hasta 6h). Montaje de gran formato: sonido multizona/subgraves potentes + show de iluminación avanzada sincronizada. Incluye efecto especial de máquina de humo frío / chispas frías para momentos clave (apertura de baile).');
+        $this->quote_services['pack_premium']['price'] = $getPrice('pack_premium_price', 1350);
+        $this->quote_services['pack_premium']['hours'] = (int)\App\Models\Setting::get("pack_premium_hours_{$evType}", \App\Models\Setting::get('pack_premium_hours', 6));
+        $this->quote_services['pack_premium']['desc'] = \App\Models\Setting::get("pack_premium_desc_{$evType}", \App\Models\Setting::get('pack_premium_desc', 'Cobertura completa (hasta 6h). Montaje de gran formato: sonido multizona/subgraves potentes + show de iluminación avanzada sincronizada. Incluye efecto especial de máquina de humo frío / chispas frías para momentos clave (apertura de baile).'));
 
-        // Servicios individuales
-        $this->quote_services['ceremony']['price'] = (float)\App\Models\Setting::get('price_ceremony', 180);
-        $evType = $this->event ? $this->event->event_type_clean : 'boda';
+        // Servicios individuales adaptados al tipo de evento
+        $this->quote_services['ceremony']['price'] = $getPrice('price_ceremony', 180);
+        $this->quote_services['cocktail']['price'] = $getPrice('price_cocktail', 150);
+        $this->quote_services['restaurant']['price'] = $getPrice('price_restaurant', 150);
+        $this->quote_services['dj_custom']['price'] = $getPrice('price_dj', 150);
+        $this->quote_services['karaoke']['price'] = $getPrice('price_karaoke', 80);
+
         if ($evType === 'boda') {
-            $this->quote_services['ceremony']['name'] = 'Ceremonia';
-            $this->quote_services['ceremony']['desc'] = 'Sonorización + Música ambiente + Micrófonos inalámbricos.';
+            $defCerName = 'Ceremonia Civil / Religiosa';
+            $defCerDesc = 'Sonorización + Música ambiente + Micrófonos inalámbricos.';
+            $defCockName = 'Música en Cóctel';
+            $defCockDesc = 'Ambientación musical durante el cóctel de bienvenida.';
+            $defRestName = 'Regalos & Banquete';
+            $defRestDesc = 'Música ambiente y sonorización de entradas, regalos y sorpresas en el banquete.';
+            $defDjName = 'DJ Baile / Barra Libre (Horas sueltas)';
+            $defDjDesc = 'Actuación DJ en directo con repertorio a medida (ampliable durante el evento).';
         } elseif ($evType === 'empresa') {
-            $this->quote_services['ceremony']['name'] = 'Sonorización Presentación / Acto Corporativo';
-            $this->quote_services['ceremony']['desc'] = 'Equipo de sonido profesional, microfonía inalámbrica y control técnico.';
+            $defCerName = 'Sonorización Presentación / Acto Corporativo';
+            $defCerDesc = 'Equipo de sonido profesional, microfonía inalámbrica para ponencias y control técnico.';
+            $defCockName = 'Ambientación Cóctel / Networking';
+            $defCockDesc = 'Música ambiente elegante durante la recepción, networking o vino español.';
+            $defRestName = 'Ambientación Comida / Cena de Gala & Premios';
+            $defRestDesc = 'Sonorización ambiental y coordinación musical para entregas de premios o discursos.';
+            $defDjName = 'Sesión DJ Fiesta Corporativa (Horas sueltas)';
+            $defDjDesc = 'Actuación DJ en directo con equipo de sonido e iluminación profesional.';
         } elseif ($evType === 'comunion') {
-            $this->quote_services['ceremony']['name'] = 'Sonorización Especial / Entrada';
-            $this->quote_services['ceremony']['desc'] = 'Equipo de sonido profesional, música ambiente y microfonía inalámbrica.';
+            $defCerName = 'Recibimiento / Sonorización Especial';
+            $defCerDesc = 'Equipo de sonido profesional, música ambiente y microfonía inalámbrica.';
+            $defCockName = 'Música en Aperitivo / Cóctel';
+            $defCockDesc = 'Ambientación musical durante el aperitivo de bienvenida.';
+            $defRestName = 'Ambientación Comida & Entrega de Regalos';
+            $defRestDesc = 'Música ambiente durante la comida y temas especiales para regalos y sorpresas.';
+            $defDjName = 'DJ Fiesta & Animación (Horas sueltas)';
+            $defDjDesc = 'Sesión DJ en directo con animación, sonido e iluminación de fiesta.';
         } elseif ($evType === 'cumpleanos') {
-            $this->quote_services['ceremony']['name'] = 'Sonorización Sorpresa / Discursos';
-            $this->quote_services['ceremony']['desc'] = 'Equipo de sonido profesional, música de apoyo y microfonía inalámbrica.';
+            $defCerName = 'Sonorización Sorpresas / Discursos / Recepción';
+            $defCerDesc = 'Equipo de sonido profesional, música de apoyo y microfonía inalámbrica para dedicatorias.';
+            $defCockName = 'Ambientación Recepción / Aperitivo';
+            $defCockDesc = 'Música ambiente para la llegada de invitados y aperitivo.';
+            $defRestName = 'Ambientación Comida / Cena & Sorpresas';
+            $defRestDesc = 'Música ambiente y sonorización de momentos especiales, tarta y sorpresas.';
+            $defDjName = 'Sesión DJ Fiesta / Baile (Horas sueltas)';
+            $defDjDesc = 'Actuación DJ en directo con sonido e iluminación profesional a medida.';
         } else {
-            $this->quote_services['ceremony']['name'] = 'Sonorización de Evento / Acto / Escenario';
-            $this->quote_services['ceremony']['desc'] = 'Instalación de equipo de sonido profesional, microfonía inalámbrica y asistencia técnica.';
+            $defCerName = 'Sonorización de Evento / Acto / Escenario';
+            $defCerDesc = 'Instalación de equipo de sonido profesional, microfonía inalámbrica y asistencia técnica.';
+            $defCockName = 'Ambientación Recepción / Aperitivo';
+            $defCockDesc = 'Música ambiente durante la recepción o aperitivo del evento.';
+            $defRestName = 'Ambientación Comida / Cena / Entregas';
+            $defRestDesc = 'Sonorización ambiental para comida/cena y momentos especiales del evento.';
+            $defDjName = 'Sesión DJ Fiesta / Espectáculo (Horas sueltas)';
+            $defDjDesc = 'Actuación DJ en directo con sonido e iluminación profesional.';
         }
-        $this->quote_services['cocktail']['price'] = (float)\App\Models\Setting::get('price_cocktail', 150);
-        $this->quote_services['restaurant']['price'] = (float)\App\Models\Setting::get('price_restaurant', 150);
-        $this->quote_services['dj_custom']['price'] = (float)\App\Models\Setting::get('price_dj', 150);
-        $this->quote_services['karaoke']['price'] = (float)\App\Models\Setting::get('price_karaoke', 80);
+
+        $this->quote_services['ceremony']['name'] = \App\Models\Setting::get("service_ceremony_name_{$evType}", $defCerName);
+        $this->quote_services['ceremony']['desc'] = \App\Models\Setting::get("service_ceremony_desc_{$evType}", $defCerDesc);
+        $this->quote_services['cocktail']['name'] = \App\Models\Setting::get("service_cocktail_name_{$evType}", $defCockName);
+        $this->quote_services['cocktail']['desc'] = \App\Models\Setting::get("service_cocktail_desc_{$evType}", $defCockDesc);
+        $this->quote_services['restaurant']['name'] = \App\Models\Setting::get("service_restaurant_name_{$evType}", $defRestName);
+        $this->quote_services['restaurant']['desc'] = \App\Models\Setting::get("service_restaurant_desc_{$evType}", $defRestDesc);
+        $this->quote_services['dj_custom']['name'] = \App\Models\Setting::get("service_dj_name_{$evType}", $defDjName);
+        $this->quote_services['dj_custom']['desc'] = \App\Models\Setting::get("service_dj_desc_{$evType}", $defDjDesc);
 
         $loc = mb_strtolower((string)($this->event->location ?? ''));
         if (str_contains($loc, 'vitoria') || str_contains($loc, 'álava') || str_contains($loc, 'alava') || str_contains($loc, 'gasteiz') || str_contains($loc, 'bilbao') || str_contains($loc, 'bizkaia') || str_contains($loc, 'gipuzkoa') || str_contains($loc, 'araba')) {
@@ -467,7 +515,7 @@ class EventShow extends Component
         $this->quote_services['smoke_machine']['price'] = (float)\App\Models\Setting::get('price_effects_smoke', 60);
         $this->quote_services['cold_sparks']['price'] = (float)\App\Models\Setting::get('price_effects_sparks', 60);
         $this->quote_services['cold_sparks']['quantity'] = (int)($this->quote_services['cold_sparks']['quantity'] ?? 2) ?: 2;
-        $this->quote_services['extra_hours']['price'] = (float)\App\Models\Setting::get('price_extra_hours', 120);
+        $this->quote_services['extra_hours']['price'] = $getPrice('price_extra_hours', 120);
 
         // Fotografía
         $this->quote_services['photo_ceremony']['price'] = (float)\App\Models\Setting::get('price_photo_ceremony', 250);
@@ -476,8 +524,13 @@ class EventShow extends Component
         $this->quote_services['photo_album']['price'] = (float)\App\Models\Setting::get('price_photo_album', 150);
         $this->quote_services['photo_full_pack']['price'] = (float)\App\Models\Setting::get('price_photo_full_pack', 800);
 
-        // Condiciones de Señal (por defecto 'none' sin señal si el evento es una fiesta)
-        if ($this->event && $this->event->event_type_clean === 'fiesta') {
+        // Condiciones de Señal (por defecto según tipo de evento o configuración guardada para ese tipo)
+        $savedDepTypeByEv = \App\Models\Setting::get("deposit_type_{$evType}");
+        if ($savedDepTypeByEv !== null && $savedDepTypeByEv !== '') {
+            $this->quote_deposit_type = $savedDepTypeByEv;
+            $this->quote_deposit_percentage = (float)\App\Models\Setting::get("deposit_percentage_{$evType}", \App\Models\Setting::get('deposit_percentage', 40));
+            $this->quote_deposit_fixed_amount = (float)\App\Models\Setting::get("deposit_fixed_amount_{$evType}", \App\Models\Setting::get('deposit_fixed_amount', 200));
+        } elseif ($this->event && in_array($evType, ['fiesta', 'otro'], true)) {
             $this->quote_deposit_type = 'none';
             $this->quote_deposit_percentage = 0;
             $this->quote_deposit_fixed_amount = 0;
@@ -807,7 +860,10 @@ class EventShow extends Component
         }
         $this->event->update(['event_type' => $type]);
         $this->event->refresh();
-        session()->flash('message', "Tipo de evento actualizado a: {$this->event->event_type_label}");
+        if (!$this->editing_quote_id) {
+            $this->loadSettingsPrices();
+        }
+        session()->flash('message', "Tipo de evento actualizado a: {$this->event->event_type_label} (formularios y tarifas adaptados)");
     }
 
     public function changeBrand($brand)
@@ -3133,18 +3189,75 @@ class EventShow extends Component
 
     public function saveCurrentPricesAsDefault()
     {
-        // Packs Comerciales
-        \App\Models\Setting::set('pack_basic_price', (float)($this->quote_services['pack_basic']['price'] ?? 600));
-        \App\Models\Setting::set('pack_medium_price', (float)($this->quote_services['pack_medium']['price'] ?? 950));
-        \App\Models\Setting::set('pack_premium_price', (float)($this->quote_services['pack_premium']['price'] ?? 1350));
+        $evType = $this->event ? $this->event->event_type_clean : 'boda';
+        $evLabel = $this->event ? $this->event->event_type_label : 'Boda';
 
-        // Servicios Musicales
-        \App\Models\Setting::set('price_ceremony', (float)($this->quote_services['ceremony']['price'] ?? 180));
-        \App\Models\Setting::set('price_cocktail', (float)($this->quote_services['cocktail']['price'] ?? 150));
-        \App\Models\Setting::set('price_restaurant', (float)($this->quote_services['restaurant']['price'] ?? 150));
-        \App\Models\Setting::set('price_dj', (float)($this->quote_services['dj_custom']['price'] ?? 150));
-        \App\Models\Setting::set('price_extra_hours', (float)($this->quote_services['extra_hours']['price'] ?? 120));
-        \App\Models\Setting::set('price_karaoke', (float)($this->quote_services['karaoke']['price'] ?? 80));
+        // Packs Comerciales (guardados específicamente para este tipo de evento)
+        $pbPriceVal = (float)($this->quote_services['pack_basic']['price'] ?? 600);
+        $pmPriceVal = (float)($this->quote_services['pack_medium']['price'] ?? 950);
+        $ppPriceVal = (float)($this->quote_services['pack_premium']['price'] ?? 1350);
+
+        \App\Models\Setting::set("pack_basic_price_{$evType}", $pbPriceVal);
+        \App\Models\Setting::set("pack_medium_price_{$evType}", $pmPriceVal);
+        \App\Models\Setting::set("pack_premium_price_{$evType}", $ppPriceVal);
+
+        // Servicios Musicales (precios y textos por tipo de evento)
+        $cerPriceVal = (float)($this->quote_services['ceremony']['price'] ?? 180);
+        $cockPriceVal = (float)($this->quote_services['cocktail']['price'] ?? 150);
+        $restPriceVal = (float)($this->quote_services['restaurant']['price'] ?? 150);
+        $djPriceVal = (float)($this->quote_services['dj_custom']['price'] ?? 150);
+        $ehPriceVal = (float)($this->quote_services['extra_hours']['price'] ?? 120);
+        $karPriceVal = (float)($this->quote_services['karaoke']['price'] ?? 80);
+
+        \App\Models\Setting::set("price_ceremony_{$evType}", $cerPriceVal);
+        \App\Models\Setting::set("price_cocktail_{$evType}", $cockPriceVal);
+        \App\Models\Setting::set("price_restaurant_{$evType}", $restPriceVal);
+        \App\Models\Setting::set("price_dj_{$evType}", $djPriceVal);
+        \App\Models\Setting::set("price_extra_hours_{$evType}", $ehPriceVal);
+        \App\Models\Setting::set("price_karaoke_{$evType}", $karPriceVal);
+
+        if (!empty($this->quote_services['ceremony']['name'])) {
+            \App\Models\Setting::set("service_ceremony_name_{$evType}", $this->quote_services['ceremony']['name']);
+        }
+        if (!empty($this->quote_services['ceremony']['desc'])) {
+            \App\Models\Setting::set("service_ceremony_desc_{$evType}", $this->quote_services['ceremony']['desc']);
+        }
+        if (!empty($this->quote_services['cocktail']['name'])) {
+            \App\Models\Setting::set("service_cocktail_name_{$evType}", $this->quote_services['cocktail']['name']);
+        }
+        if (!empty($this->quote_services['cocktail']['desc'])) {
+            \App\Models\Setting::set("service_cocktail_desc_{$evType}", $this->quote_services['cocktail']['desc']);
+        }
+        if (!empty($this->quote_services['restaurant']['name'])) {
+            \App\Models\Setting::set("service_restaurant_name_{$evType}", $this->quote_services['restaurant']['name']);
+        }
+        if (!empty($this->quote_services['restaurant']['desc'])) {
+            \App\Models\Setting::set("service_restaurant_desc_{$evType}", $this->quote_services['restaurant']['desc']);
+        }
+        if (!empty($this->quote_services['dj_custom']['name'])) {
+            \App\Models\Setting::set("service_dj_name_{$evType}", $this->quote_services['dj_custom']['name']);
+        }
+        if (!empty($this->quote_services['dj_custom']['desc'])) {
+            \App\Models\Setting::set("service_dj_desc_{$evType}", $this->quote_services['dj_custom']['desc']);
+        }
+
+        // Guardar también condiciones de señal por tipo de evento
+        \App\Models\Setting::set("deposit_type_{$evType}", $this->quote_deposit_type);
+        \App\Models\Setting::set("deposit_percentage_{$evType}", (float)$this->quote_deposit_percentage);
+        \App\Models\Setting::set("deposit_fixed_amount_{$evType}", (float)$this->quote_deposit_fixed_amount);
+
+        // Si es boda, sincronizar también las claves base generales
+        if ($evType === 'boda') {
+            \App\Models\Setting::set('pack_basic_price', $pbPriceVal);
+            \App\Models\Setting::set('pack_medium_price', $pmPriceVal);
+            \App\Models\Setting::set('pack_premium_price', $ppPriceVal);
+            \App\Models\Setting::set('price_ceremony', $cerPriceVal);
+            \App\Models\Setting::set('price_cocktail', $cockPriceVal);
+            \App\Models\Setting::set('price_restaurant', $restPriceVal);
+            \App\Models\Setting::set('price_dj', $djPriceVal);
+            \App\Models\Setting::set('price_extra_hours', $ehPriceVal);
+            \App\Models\Setting::set('price_karaoke', $karPriceVal);
+        }
 
         // Proveedor activo por defecto y tarifas SOLO para el proveedor seleccionado
         $providers = \App\Models\Setting::getPhotoboothProviders();
@@ -3231,7 +3344,7 @@ class EventShow extends Component
         \App\Models\Setting::set('price_photo_album', (float)($this->quote_services['photo_album']['price'] ?? 150));
         \App\Models\Setting::set('price_photo_full_pack', (float)($this->quote_services['photo_full_pack']['price'] ?? 800));
 
-        session()->flash('quote_message', '💾 ¡Todos los precios y textos actuales se han guardado como predeterminados para este proveedor y futuros presupuestos!');
+        session()->flash('quote_message', "💾 ¡Precios y textos actuales guardados como predeterminados para eventos de tipo «{$evLabel}» y proveedor seleccionado!");
     }
 
     public function syncPackEffectsAdmin()
@@ -3297,6 +3410,21 @@ class EventShow extends Component
             $this->quote_services['restaurant']['selected'] = true;
             $this->quote_services['pack_medium']['selected'] = true;
             $this->quote_services['photo_full_pack']['selected'] = true;
+            $this->syncPackEffectsAdmin();
+        } elseif ($packKey === 'event_sound_dj') {
+            // Sonorización de Evento/Acto + 2h DJ Baile
+            $this->quote_services['ceremony']['selected'] = true;
+            $this->quote_services['dj_custom']['selected'] = true;
+            $this->quote_services['dj_custom']['quantity'] = 2;
+            $this->syncPackEffectsAdmin();
+        } elseif ($packKey === 'event_sound_only') {
+            // Solo Sonorización de Evento / Acto / Escenario
+            $this->quote_services['ceremony']['selected'] = true;
+            $this->syncPackEffectsAdmin();
+        } elseif ($packKey === 'event_meal_dj') {
+            // Ambientación Comida/Cena + Pack Esencial DJ (4h)
+            $this->quote_services['restaurant']['selected'] = true;
+            $this->quote_services['pack_basic']['selected'] = true;
             $this->syncPackEffectsAdmin();
         } elseif ($packKey === 'clear') {
             foreach ($this->quote_services as $k => $v) {
@@ -3551,13 +3679,21 @@ class EventShow extends Component
         if (!empty($this->quote_services['cocktail']['selected'])) {
             $qty = (int)($this->quote_services['cocktail']['quantity'] ?: 1);
             $p = (float)($this->quote_services['cocktail']['price'] ?: 0);
-            $items[] = ['service_name' => 'Música en el Cóctel', 'description' => $this->quote_services['cocktail']['desc'], 'price' => $p, 'quantity' => $qty];
+            $cocktailTitle = trim((string)($this->quote_services['cocktail']['name'] ?? ''));
+            if ($cocktailTitle === '') {
+                $cocktailTitle = ($this->event && !$this->event->is_wedding) ? 'Ambientación Recepción / Aperitivo' : 'Música en el Cóctel';
+            }
+            $items[] = ['service_name' => $cocktailTitle, 'description' => $this->quote_services['cocktail']['desc'], 'price' => $p, 'quantity' => $qty];
             $total += ($p * $qty);
         }
         if (!empty($this->quote_services['restaurant']['selected'])) {
             $qty = (int)($this->quote_services['restaurant']['quantity'] ?: 1);
             $p = (float)($this->quote_services['restaurant']['price'] ?: 0);
-            $items[] = ['service_name' => 'Sonorización Banquete y Regalos', 'description' => $this->quote_services['restaurant']['desc'], 'price' => $p, 'quantity' => $qty];
+            $restTitle = trim((string)($this->quote_services['restaurant']['name'] ?? ''));
+            if ($restTitle === '' || ($this->event && !$this->event->is_wedding && $restTitle === 'Regalos & Banquete')) {
+                $restTitle = ($this->event && !$this->event->is_wedding) ? 'Ambientación Comida / Cena & Momentos Especiales' : 'Sonorización Banquete y Regalos';
+            }
+            $items[] = ['service_name' => $restTitle, 'description' => $this->quote_services['restaurant']['desc'], 'price' => $p, 'quantity' => $qty];
             $total += ($p * $qty);
         }
 
@@ -3568,9 +3704,12 @@ class EventShow extends Component
             $packInfo = \App\Models\Setting::getCocktailRestaurantPackInfo($cPrice, $rPrice);
             if (!empty($packInfo['enabled']) && $packInfo['discount_amount'] > 0) {
                 $discountAmt = (float)$packInfo['discount_amount'];
+                $discountLabel = ($this->event && !$this->event->is_wedding)
+                    ? 'Descuento Especial Pack Recepción + Comida/Cena'
+                    : 'Descuento Especial Pack Cóctel + Banquete';
                 $items[] = [
-                    'service_name' => 'Descuento Especial Pack Cóctel + Banquete',
-                    'description' => 'Tarifa combinada promocional por contratación conjunta de Cóctel y Banquete (' . round($packInfo['discount_percentage']) . '% dto.)',
+                    'service_name' => $discountLabel,
+                    'description' => 'Tarifa combinada promocional por contratación conjunta (' . round($packInfo['discount_percentage']) . '% dto.)',
                     'price' => -$discountAmt,
                     'quantity' => 1
                 ];
@@ -3584,7 +3723,8 @@ class EventShow extends Component
             if ($djDesc === '' || $djDesc === 'Horas de DJ en directo.') {
                 $djDesc = 'Actuación DJ en directo con repertorio a medida (ampliable durante el evento)';
             }
-            $items[] = ['service_name' => 'Baile DJ (' . $qty . ' Horas)', 'description' => $djDesc, 'price' => $p, 'quantity' => $qty];
+            $djBaseTitle = ($this->event && !$this->event->is_wedding) ? 'Sesión DJ Fiesta / Baile' : 'Baile DJ';
+            $items[] = ['service_name' => $djBaseTitle . ' (' . $qty . ' ' . ($qty === 1 ? 'Hora' : 'Horas') . ')', 'description' => $djDesc, 'price' => $p, 'quantity' => $qty];
             $total += ($p * $qty);
         }
         
@@ -3925,7 +4065,8 @@ class EventShow extends Component
                 $this->selected_pack_type = 'premium';
             } elseif (
                 (str_contains($name, 'ceremonia') && !str_contains($name, 'foto')) ||
-                (str_contains($name, 'sonorizaci') && !str_contains($name, 'banquete') && !str_contains($name, 'regalos')) ||
+                (str_contains($name, 'sonorizaci') && !str_contains($name, 'banquete') && !str_contains($name, 'regalos') && !str_contains($name, 'comida') && !str_contains($name, 'cena')) ||
+                str_contains($name, 'recibimiento') ||
                 str_contains($name, 'acto protocolario') ||
                 str_contains($name, 'escenario')
             ) {
@@ -3936,14 +4077,22 @@ class EventShow extends Component
                 if (!empty($item->description)) {
                     $this->quote_services['ceremony']['desc'] = $item->description;
                 }
-            } elseif (str_contains($name, 'cóctel') || str_contains($name, 'coctel')) {
+            } elseif (str_contains($name, 'cóctel') || str_contains($name, 'coctel') || str_contains($name, 'aperitivo') || str_contains($name, 'networking')) {
                 $this->quote_services['cocktail']['selected'] = true;
+                $this->quote_services['cocktail']['name'] = $item->service_name ?: ($item->concept ?: $this->quote_services['cocktail']['name']);
                 $this->quote_services['cocktail']['quantity'] = (int)($item->quantity ?: 1);
                 $this->quote_services['cocktail']['price'] = (float)$item->price;
-            } elseif (str_contains($name, 'banquete') || str_contains($name, 'regalos') || (str_contains($name, 'restaurante') && !str_contains($name, 'foto'))) {
+                if (!empty($item->description)) {
+                    $this->quote_services['cocktail']['desc'] = $item->description;
+                }
+            } elseif (str_contains($name, 'banquete') || str_contains($name, 'regalos') || str_contains($name, 'ambientación comida') || str_contains($name, 'ambientacion comida') || (str_contains($name, 'restaurante') && !str_contains($name, 'foto'))) {
                 $this->quote_services['restaurant']['selected'] = true;
+                $this->quote_services['restaurant']['name'] = $item->service_name ?: ($item->concept ?: $this->quote_services['restaurant']['name']);
                 $this->quote_services['restaurant']['quantity'] = (int)($item->quantity ?: 1);
                 $this->quote_services['restaurant']['price'] = (float)$item->price;
+                if (!empty($item->description)) {
+                    $this->quote_services['restaurant']['desc'] = $item->description;
+                }
             } elseif (str_contains($name, 'baile dj') || str_contains($name, 'dj baile') || (str_contains($name, 'dj') && !str_contains($name, 'pack'))) {
                 $this->quote_services['dj_custom']['selected'] = true;
                 $this->quote_services['dj_custom']['quantity'] = (int)($item->quantity ?: 1);

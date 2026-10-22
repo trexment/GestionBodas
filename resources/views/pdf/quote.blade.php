@@ -640,12 +640,41 @@
         $companyEmail = $brand['email'] ?: \App\Models\Setting::get('company_email', 'info@nunezandson.com');
         $logoPath = $brand['logo_path'];
 
-        // Configuración dinámica del Dossier
-        $dDefaults = \App\Services\DossierTemplateService::getDefaults();
-        $dossierCoverTitle = \App\Models\Setting::get('dossier_cover_title', $dDefaults['dossier_cover_title']);
-        $dossierPage2Subtitle = \App\Models\Setting::get('dossier_page2_subtitle', $dDefaults['dossier_page2_subtitle']);
-        $dossierPage2Title = \App\Models\Setting::get('dossier_page2_title', $dDefaults['dossier_page2_title']);
-        $dossierIntroText = \App\Models\Setting::get('dossier_intro_text', $dDefaults['dossier_intro_text']);
+        // Configuración dinámica del Dossier adaptada al Tipo de Evento
+        $evType = $event->event_type_clean;
+        $isWedding = $event->is_wedding;
+        $presets = \App\Services\DossierTemplateService::presets();
+        $dDefaults = $isWedding
+            ? \App\Services\DossierTemplateService::getDefaults()
+            : ($presets['fiestas_empresa']['values'] ?? \App\Services\DossierTemplateService::getDefaults());
+
+        $hasWeddingWords = function (?string $txt): bool {
+            if (empty($txt)) return false;
+            $low = mb_strtolower($txt);
+            return str_contains($low, 'boda') || str_contains($low, 'novio') || str_contains($low, 'nupcial') || str_contains($low, 'enlace') || str_contains($low, 'pareja');
+        };
+
+        $getDossierText = function (string $key, ?string $customFallback = null) use ($isWedding, $dDefaults, $hasWeddingWords): string {
+            $fallback = $customFallback ?? ($dDefaults[$key] ?? '');
+            $stored = \App\Models\Setting::get($key, $fallback);
+            if (!$isWedding && $hasWeddingWords($stored)) {
+                return $fallback;
+            }
+            return (string)$stored;
+        };
+
+        $defaultCoverByEvent = match ($evType) {
+            'boda' => 'Propuesta para vuestra boda',
+            'empresa' => 'Propuesta para vuestro evento corporativo',
+            'comunion' => 'Propuesta para vuestra comunión',
+            'cumpleanos' => 'Propuesta para vuestra celebración',
+            default => 'Propuesta para vuestro evento',
+        };
+
+        $dossierCoverTitle = $getDossierText('dossier_cover_title', $defaultCoverByEvent);
+        $dossierPage2Subtitle = $getDossierText('dossier_page2_subtitle');
+        $dossierPage2Title = $getDossierText('dossier_page2_title');
+        $dossierIntroText = $getDossierText('dossier_intro_text');
         
         // Cargar fotos de montajes y equipamiento (1 a 4 fotos)
         $dossierPhotos = [];
@@ -654,8 +683,11 @@
             $defaultTitle = $dDefaults["dossier_block{$i}_title"] ?? '';
             $defaultDesc = $dDefaults["dossier_block{$i}_desc"] ?? '';
             
-            $title = \App\Models\Setting::get("dossier_photo{$i}_title", \App\Models\Setting::get("dossier_block{$i}_title", $defaultTitle));
-            $desc = \App\Models\Setting::get("dossier_photo{$i}_desc", \App\Models\Setting::get("dossier_block{$i}_desc", $defaultDesc));
+            $rawTitle = \App\Models\Setting::get("dossier_photo{$i}_title", \App\Models\Setting::get("dossier_block{$i}_title", $defaultTitle));
+            $rawDesc = \App\Models\Setting::get("dossier_photo{$i}_desc", \App\Models\Setting::get("dossier_block{$i}_desc", $defaultDesc));
+
+            $title = (!$isWedding && $hasWeddingWords($rawTitle)) ? $defaultTitle : $rawTitle;
+            $desc = (!$isWedding && $hasWeddingWords($rawDesc)) ? $defaultDesc : $rawDesc;
 
             $imgPath = null;
             if (!empty($img)) {
@@ -694,30 +726,38 @@
         }
 
         // Textos de Cómo trabajamos y condiciones
-        $dossierWorkTitle = \App\Models\Setting::get('dossier_work_title', $dDefaults['dossier_work_title']);
-        $dossierWorkItem1 = \App\Models\Setting::get('dossier_work_item1', $dDefaults['dossier_work_item1']);
-        $dossierWorkItem2 = \App\Models\Setting::get('dossier_work_item2', $dDefaults['dossier_work_item2']);
-        $dossierWorkItem3 = \App\Models\Setting::get('dossier_work_item3', $dDefaults['dossier_work_item3']);
+        $dossierWorkTitle = $getDossierText('dossier_work_title');
+        $dossierWorkItem1 = $getDossierText('dossier_work_item1');
+        $dossierWorkItem2 = $getDossierText('dossier_work_item2');
+        $dossierWorkItem3 = $getDossierText('dossier_work_item3');
         
-        $dossierExtraHoursTitle = \App\Models\Setting::get('dossier_extra_hours_title', $dDefaults['dossier_extra_hours_title']);
-        $dossierExtraHoursDesc = \App\Models\Setting::get('dossier_extra_hours_desc', $dDefaults['dossier_extra_hours_desc']);
-        $dossierMusicCustomTitle = \App\Models\Setting::get('dossier_music_custom_title', $dDefaults['dossier_music_custom_title']);
-        $dossierMusicCustomDesc = \App\Models\Setting::get('dossier_music_custom_desc', $dDefaults['dossier_music_custom_desc']);
+        $dossierExtraHoursTitle = $getDossierText('dossier_extra_hours_title');
+        $dossierExtraHoursDesc = $getDossierText('dossier_extra_hours_desc');
+        $dossierMusicCustomTitle = $getDossierText('dossier_music_custom_title');
+        $dossierMusicCustomDesc = $getDossierText('dossier_music_custom_desc');
 
-        // Pack settings
+        // Pack settings (específicos por tipo de evento con fallback al general)
+        $getEvPrice = function (string $key, float $default) use ($evType): float {
+            $val = \App\Models\Setting::get("{$key}_{$evType}");
+            if ($val !== null && $val !== '') {
+                return (float)$val;
+            }
+            return (float)\App\Models\Setting::get($key, $default);
+        };
+
         $packBasicName = \App\Models\Setting::get('pack_basic_name', 'Pack Esencial');
-        $packBasicPrice = (float)\App\Models\Setting::get('pack_basic_price', 600);
-        $packBasicHours = (int)\App\Models\Setting::get('pack_basic_hours', 4);
+        $packBasicPrice = $getEvPrice('pack_basic_price', 600);
+        $packBasicHours = (int)\App\Models\Setting::get("pack_basic_hours_{$evType}", \App\Models\Setting::get('pack_basic_hours', 4));
         
         $packMediumName = \App\Models\Setting::get('pack_medium_name', 'Pack Signature');
-        $packMediumPrice = (float)\App\Models\Setting::get('pack_medium_price', 950);
-        $packMediumHours = (int)\App\Models\Setting::get('pack_medium_hours', 5);
+        $packMediumPrice = $getEvPrice('pack_medium_price', 950);
+        $packMediumHours = (int)\App\Models\Setting::get("pack_medium_hours_{$evType}", \App\Models\Setting::get('pack_medium_hours', 5));
 
         $packPremiumName = \App\Models\Setting::get('pack_premium_name', 'Pack Deluxe Show');
-        $packPremiumPrice = (float)\App\Models\Setting::get('pack_premium_price', 1350);
-        $packPremiumHours = (int)\App\Models\Setting::get('pack_premium_hours', 6);
+        $packPremiumPrice = $getEvPrice('pack_premium_price', 1350);
+        $packPremiumHours = (int)\App\Models\Setting::get("pack_premium_hours_{$evType}", \App\Models\Setting::get('pack_premium_hours', 6));
 
-        $extraHourPrice = (float)\App\Models\Setting::get('price_extra_hours', 120);
+        $extraHourPrice = $getEvPrice('price_extra_hours', 120);
 
         // Formatted Date (del evento)
         $carbonDate = $event->event_date ? \Carbon\Carbon::parse($event->event_date)->locale('es') : null;
@@ -1536,7 +1576,7 @@
                             </div>
                             <div class="quote-validity-text">
                                 Propuesta emitida el <strong>{{ $issueDateShort }}</strong> y válida hasta el <strong>{{ $expiresDateFormatted }}</strong> ({{ $validityDays }} días naturales).
-                                <span style="color: #78350f;">Pasada esta fecha, la reserva provisional se libera en el calendario para otras parejas y las tarifas quedan sujetas a revisión.</span>
+                                <span style="color: #78350f;">Pasada esta fecha, la reserva provisional se libera en el calendario para {{ $event->is_wedding ? 'otras parejas' : 'otros clientes' }} y las tarifas quedan sujetas a revisión.</span>
                             </div>
                         </td>
                         <td style="width: 28%; text-align: right; vertical-align: middle;">
