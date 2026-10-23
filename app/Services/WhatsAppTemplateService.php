@@ -1006,7 +1006,7 @@ class WhatsAppTemplateService
         $location = $event->location ?: 'Sin ubicación fija';
         $clientName = $event->client ? $event->client->name : 'Cliente';
         $clientPhone = $event->client ? $event->client->phone : 'Sin teléfono';
-        $boothUrl = route('staff.live', $event->token);
+        $boothUrl = route('staff.live', $event->staff_token);
 
         $venueInfo = '';
         if (!empty($event->venue_contact_name) || !empty($event->venue_contact_phone)) {

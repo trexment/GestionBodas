@@ -67,20 +67,60 @@ class Event extends Model
             if (empty($event->token)) {
                 $event->token = Str::random(32);
             }
+            // Tokens separados: invitados (QR peticiones) y personal (Modo Cabina)
+            if (empty($event->attributes['guest_token'] ?? null)) {
+                $event->attributes['guest_token'] = Str::random(32);
+            }
+            if (empty($event->attributes['staff_token'] ?? null)) {
+                $event->attributes['staff_token'] = Str::random(40);
+            }
         });
     }
 
     public function getTokenAttribute($value)
     {
+        return $this->ensureTokenValue('token', $value, 32);
+    }
+
+    /**
+     * Token público de invitados: solo da acceso al portal de peticiones en vivo (QR).
+     */
+    public function getGuestTokenAttribute($value)
+    {
+        return $this->ensureTokenValue('guest_token', $value, 32);
+    }
+
+    /**
+     * Token del personal: da acceso al Modo Cabina DJ (/live) sin iniciar sesión.
+     */
+    public function getStaffTokenAttribute($value)
+    {
+        return $this->ensureTokenValue('staff_token', $value, 40);
+    }
+
+    protected function ensureTokenValue(string $column, $value, int $length): string
+    {
         if (empty($value)) {
-            $newToken = Str::random(32);
+            $newToken = Str::random($length);
             if ($this->exists) {
-                $this->attributes['token'] = $newToken;
+                $this->attributes[$column] = $newToken;
                 $this->saveQuietly();
             }
             return $newToken;
         }
         return $value;
+    }
+
+    /**
+     * Comprueba si el token recibido da acceso de cliente o de personal al evento.
+     */
+    public function matchesClientOrStaffToken(?string $provided): bool
+    {
+        if (empty($provided)) {
+            return false;
+        }
+        return hash_equals((string) $this->token, $provided)
+            || hash_equals((string) $this->staff_token, $provided);
     }
 
     public function client()

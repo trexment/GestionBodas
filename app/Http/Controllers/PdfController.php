@@ -38,13 +38,14 @@ class PdfController extends Controller
             }
         }
 
-        // 2. Secret Token Authentication (Guest signature portal or Live DJ Mode token)
-        $providedToken = request()->query('token') ?: request()->header('X-Live-Token') ?: session('live_event_token');
-        if ($providedToken) {
-            if ($contractToken && $contractToken === $providedToken) {
+        // 2. Secret Token Authentication (client portal token, contract token or Live DJ Mode staff token).
+        // The guest QR token (guest_token) is intentionally NOT accepted here.
+        $providedToken = (string) (request()->query('token') ?: request()->header('X-Live-Token') ?: session('live_event_token'));
+        if ($providedToken !== '') {
+            if ($contractToken && hash_equals((string) $contractToken, $providedToken)) {
                 return;
             }
-            if ($event && $event->token && $event->token === $providedToken) {
+            if ($event && $event->matchesClientOrStaffToken($providedToken)) {
                 return;
             }
             if ($event && $event->contracts()->where('token', $providedToken)->exists()) {

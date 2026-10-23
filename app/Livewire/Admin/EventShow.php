@@ -1246,7 +1246,7 @@ class EventShow extends Component
     public function updatedSelectedClientId($value)
     {
         if (!empty($value)) {
-            $c = User::find($value);
+            $c = User::where('role', 'client')->find($value);
             if ($c) {
                 $this->client_edit_name = $c->name;
                 $this->client_edit_phone = $c->phone;
@@ -1309,7 +1309,8 @@ class EventShow extends Component
 
         if (!empty($this->selected_client_id)) {
             // Existing client selected or editing current client
-            $client = User::findOrFail($this->selected_client_id);
+            // Solo se pueden editar/vincular usuarios con rol cliente (evita tomar cuentas de staff/admin)
+            $client = User::where('role', 'client')->findOrFail($this->selected_client_id);
 
             $this->validate([
                 'client_edit_name' => 'required|string|max:255',
@@ -1472,16 +1473,16 @@ class EventShow extends Component
 
     public function updateEquipmentQuantity($pivotId, $amount)
     {
-        $item = DB::table('event_equipment')->where('id', $pivotId)->first();
+        $item = DB::table('event_equipment')->where('event_id', $this->event->id)->where('id', $pivotId)->first();
         if ($item) {
             $newQty = $item->quantity + $amount;
             if ($newQty > 0) {
-                DB::table('event_equipment')->where('id', $pivotId)->update([
+                DB::table('event_equipment')->where('event_id', $this->event->id)->where('id', $pivotId)->update([
                     'quantity' => $newQty,
                     'updated_at' => now(),
                 ]);
             } else {
-                DB::table('event_equipment')->where('id', $pivotId)->delete();
+                DB::table('event_equipment')->where('event_id', $this->event->id)->where('id', $pivotId)->delete();
             }
             $this->event->load('equipment');
         }
@@ -1489,7 +1490,7 @@ class EventShow extends Component
 
     public function removeEquipment($pivotId)
     {
-        DB::table('event_equipment')->where('id', $pivotId)->delete();
+        DB::table('event_equipment')->where('event_id', $this->event->id)->where('id', $pivotId)->delete();
         $this->event->load('equipment');
         session()->flash('equipment_message', 'Material eliminado del evento.');
     }
@@ -1530,7 +1531,7 @@ class EventShow extends Component
         ]);
 
         if ($songId) {
-            $song = EventMusicRequest::findOrFail($songId);
+            $song = $this->event->musicRequests()->findOrFail($songId);
             $this->editingSongId = $song->id;
             $this->req_category = $song->category;
             $this->req_moment = $song->moment;
@@ -1568,7 +1569,7 @@ class EventShow extends Component
         $this->existing_audio_file = null;
         $this->req_audio_file = null;
         if ($this->editingSongId) {
-            EventMusicRequest::where('id', $this->editingSongId)->update(['audio_file' => null]);
+            EventMusicRequest::where('event_id', $this->event->id)->where('id', $this->editingSongId)->update(['audio_file' => null]);
             $this->event->load('musicRequests');
         }
         session()->flash('music_modal_message', '🗑️ Archivo de audio eliminado. Ahora se reproducirá mediante Spotify / Apple Music / YouTube.');
@@ -1653,7 +1654,7 @@ class EventShow extends Component
 
     public function autoResolveSongAudio($songId)
     {
-        $song = EventMusicRequest::findOrFail($songId);
+        $song = $this->event->musicRequests()->findOrFail($songId);
         $meta = \App\Services\MusicSearchService::resolveTrackMetadata($song->title, $song->artist ?? '');
         $updates = [];
         if (!empty($meta['spotify_url']) && empty($song->spotify_url)) {
@@ -1784,7 +1785,7 @@ class EventShow extends Component
         $finalStatus = $this->req_status ?: 'pending';
 
         if ($this->editingSongId) {
-            $song = EventMusicRequest::findOrFail($this->editingSongId);
+            $song = $this->event->musicRequests()->findOrFail($this->editingSongId);
             $song->update([
                 'category' => $this->req_category,
                 'moment' => $this->req_moment,
@@ -1834,7 +1835,7 @@ class EventShow extends Component
 
     public function toggleSongStatus($songId)
     {
-        $song = EventMusicRequest::findOrFail($songId);
+        $song = $this->event->musicRequests()->findOrFail($songId);
         $nextStatus = match($song->status) {
             'pending' => 'ready',
             'ready' => 'played',
@@ -1847,7 +1848,7 @@ class EventShow extends Component
 
     public function deleteSongRequest($songId)
     {
-        $song = EventMusicRequest::findOrFail($songId);
+        $song = $this->event->musicRequests()->findOrFail($songId);
         if ($song->audio_file) {
             Storage::disk('public')->delete($song->audio_file);
         }
@@ -1858,7 +1859,7 @@ class EventShow extends Component
 
     public function moveSongOrder($songId, $direction)
     {
-        $song = EventMusicRequest::findOrFail($songId);
+        $song = $this->event->musicRequests()->findOrFail($songId);
         if ($direction === 'up') {
             $prev = EventMusicRequest::where('event_id', $this->event->id)
                 ->where('order', '<', $song->order)
@@ -4136,7 +4137,7 @@ class EventShow extends Component
 
     public function loadQuoteIntoCalculator($quoteId)
     {
-        $quote = \App\Models\Quote::with('items')->findOrFail($quoteId);
+        $quote = $this->event->quotes()->with('items')->findOrFail($quoteId);
         $this->editing_quote_id = $quote->id;
         
         // Cargar configuración de señal
@@ -4436,7 +4437,7 @@ class EventShow extends Component
 
     public function startEditContractNumber($contractId)
     {
-        $contract = Contract::find($contractId);
+        $contract = $this->event->contracts()->find($contractId);
         if ($contract && $contract->event_id == $this->event->id) {
             $this->editing_contract_id = $contract->id;
             $this->editing_contract_number = $contract->contract_number;
@@ -4451,7 +4452,7 @@ class EventShow extends Component
 
     public function saveContractNumber($contractId)
     {
-        $contract = Contract::find($contractId);
+        $contract = $this->event->contracts()->find($contractId);
         if ($contract && $contract->event_id == $this->event->id) {
             $val = trim((string)$this->editing_contract_number);
             $contract->update([
@@ -4466,7 +4467,7 @@ class EventShow extends Component
 
     public function deleteContract($contractId)
     {
-        $contract = Contract::find($contractId);
+        $contract = $this->event->contracts()->find($contractId);
         if ($contract && $contract->event_id == $this->event->id) {
             $contract->delete();
             $this->event->load('contracts');
@@ -4476,7 +4477,7 @@ class EventShow extends Component
 
     public function signContract($contractId)
     {
-        $contract = Contract::find($contractId);
+        $contract = $this->event->contracts()->find($contractId);
         if ($contract) {
             $contract->update([
                 'status' => 'signed',

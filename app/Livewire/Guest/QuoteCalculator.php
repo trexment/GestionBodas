@@ -647,6 +647,14 @@ class QuoteCalculator extends Component
 
     public function submitRequest()
     {
+        // Las acciones Livewire van por /livewire/update y no pasan por el throttle de la ruta GET
+        $throttleKey = 'quote_calc_submit_' . request()->ip();
+        if (\Illuminate\Support\Facades\RateLimiter::tooManyAttempts($throttleKey, 3)) {
+            $seconds = \Illuminate\Support\Facades\RateLimiter::availableIn($throttleKey);
+            $this->addError('client_email', "Has enviado varias solicitudes seguidas. Inténtalo de nuevo en {$seconds} segundos.");
+            return;
+        }
+
         $this->validate([
             'client_name' => 'required|string|max:255',
             'client_email' => 'required|email|max:255',
@@ -657,6 +665,8 @@ class QuoteCalculator extends Component
             'needs_prior_setup' => 'nullable|boolean',
             'client_notes' => 'nullable|string|max:3000'
         ]);
+
+        \Illuminate\Support\Facades\RateLimiter::hit($throttleKey, 600);
 
         $catalog = $this->getPriceCatalog();
         $totalEstimated = 0;
@@ -810,11 +820,16 @@ class QuoteCalculator extends Component
             $totalEstimated = max(0, $totalEstimated - $packInfo['discount_amount']);
         }
 
-        // 2. Create or Find Client (matching by email, last 9 digits of phone, or name to link with existing IMAP leads)
+        // 2. Create or Find Client (matching by email or last 9 digits of phone to link with existing IMAP leads).
+        // Seguridad: solo se enlaza con usuarios de rol cliente y nunca solo por nombre (formulario público).
         $client = null;
         $cleanEmail = strtolower(trim((string)$this->client_email));
         if (!empty($cleanEmail)) {
-            $client = User::where('email', $cleanEmail)->first();
+            $client = User::where('role', 'client')->where('email', $cleanEmail)->first();
+            if (!$client && User::where('email', $cleanEmail)->exists()) {
+                // El email pertenece a una cuenta de personal: no enlazar ni reutilizar
+                $cleanEmail = '';
+            }
         }
         if (!$client && !empty($this->client_phone)) {
             $digits = preg_replace('/\D/', '', (string)$this->client_phone);
@@ -826,9 +841,6 @@ class QuoteCalculator extends Component
                           ->orWhere('phone', $digits);
                     })->first();
             }
-        }
-        if (!$client && !empty($this->client_name)) {
-            $client = User::where('role', 'client')->where('name', trim($this->client_name))->first();
         }
 
         if ($client) {
@@ -847,7 +859,7 @@ class QuoteCalculator extends Component
         } else {
             $client = User::create([
                 'name' => $this->client_name,
-                'email' => $cleanEmail ?: ('lead_' . time() . '@eventosmusicales.local'),
+                'email' => $cleanEmail ?: ('lead_' . time() . '_' . Str::lower(Str::random(6)) . '@eventosmusicales.local'),
                 'password' => bcrypt(Str::random(16)),
                 'role' => 'client',
                 'phone' => $this->client_phone,

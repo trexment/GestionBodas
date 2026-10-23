@@ -151,7 +151,7 @@ class MusicManager extends Component
             'spotify_url' => $spotifyUrl,
             'apple_music_url' => $appleUrl,
             'youtube_url' => $youtubeUrl,
-            'audio_file' => $previewUrl ?: null,
+            'audio_file' => \App\Services\RemoteAudioUrlGuard::sanitizeInput($previewUrl) ?: null,
             'status' => 'pending',
             'order' => $maxOrder + 1,
         ]);

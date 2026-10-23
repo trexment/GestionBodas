@@ -6,6 +6,7 @@ use Livewire\Component;
 use App\Models\Event;
 use App\Models\EventMusicRequest;
 use App\Services\MusicSearchService;
+use App\Services\RemoteAudioUrlGuard;
 
 class DjBoothMode extends Component
 {
@@ -77,10 +78,11 @@ class DjBoothMode extends Component
     {
         if ($token) {
             $this->token = $token;
-            $this->event = Event::with(['client', 'dj', 'assistant', 'musicRequests', 'contracts', 'quotes', 'invoices'])->where('token', $token)->firstOrFail();
+            $this->event = Event::with(['client', 'dj', 'assistant', 'musicRequests', 'contracts', 'quotes', 'invoices'])->where('staff_token', $token)->firstOrFail();
             session(['live_event_token' => $token]);
         } else {
             $this->event = $event instanceof Event ? $event : Event::findOrFail($event);
+            $this->authorizeStaffForEvent($this->event);
             $this->event->load(['client', 'dj', 'assistant', 'musicRequests', 'contracts', 'quotes', 'invoices']);
         }
 
@@ -90,6 +92,31 @@ class DjBoothMode extends Component
         $playing = $this->event->musicRequests->where('status', 'playing')->first();
         if ($playing) {
             $this->currentlyPlayingId = $playing->id;
+        }
+    }
+
+    /**
+     * Sin token, solo el admin o el personal asignado al evento puede abrir su Modo Cabina.
+     */
+    protected function authorizeStaffForEvent(Event $event): void
+    {
+        $user = auth()->user();
+        if (!$user) {
+            abort(403);
+        }
+        if ($user->role === 'admin') {
+            return;
+        }
+
+        $isAssignedAssistant = false;
+        try {
+            if (\Illuminate\Support\Facades\Schema::hasTable('event_assistants')) {
+                $isAssignedAssistant = $event->assistants()->where('users.id', $user->id)->exists();
+            }
+        } catch (\Throwable $e) {}
+
+        if ($event->dj_id != $user->id && $event->assistant_id != $user->id && !$isAssignedAssistant) {
+            abort(403, 'Acceso denegado: No estás asignado a este evento.');
         }
     }
 
@@ -247,7 +274,7 @@ class DjBoothMode extends Component
             'spotify_url' => $this->new_spotify_url,
             'apple_music_url' => $this->new_apple_music_url,
             'youtube_url' => $this->new_youtube_url,
-            'audio_file' => $this->new_audio_file,
+            'audio_file' => RemoteAudioUrlGuard::sanitizeInput($this->new_audio_file) ?: null,
             'order' => $maxOrder + 1,
             'status' => 'pending',
         ]);
@@ -560,7 +587,7 @@ class DjBoothMode extends Component
             'spotify_url' => $spotifyUrl,
             'apple_music_url' => $appleUrl,
             'youtube_url' => $youtubeUrl,
-            'audio_file' => $previewUrl ?: null,
+            'audio_file' => RemoteAudioUrlGuard::sanitizeInput($previewUrl) ?: null,
             'status' => 'pending',
             'order' => $maxOrder + 1,
         ]);

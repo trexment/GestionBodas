@@ -12,6 +12,8 @@ use Illuminate\Support\Facades\Schema;
 
 class QuoteResponse extends Component
 {
+    use \App\Livewire\Traits\ThrottlesGuestActions;
+
     public string $token;
     public ?Event $event = null;
     public ?Quote $quote = null;
@@ -97,6 +99,10 @@ class QuoteResponse extends Component
     public function acceptQuoteOnline(): void
     {
         if (!$this->quote || !$this->event) {
+            return;
+        }
+
+        if ($this->throttleGuestAction('quote_response', 5, 600)) {
             return;
         }
 
@@ -197,6 +203,11 @@ class QuoteResponse extends Component
     public function rejectQuoteOnline(): void
     {
         if (!$this->quote || !$this->event) {
+            return;
+        }
+
+        if ($wait = $this->throttleGuestAction('quote_response', 5, 600)) {
+            $this->addError('rejection_reason', "Demasiados intentos. Inténtalo de nuevo en {$wait} segundos.");
             return;
         }
 

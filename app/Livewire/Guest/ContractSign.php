@@ -9,12 +9,14 @@ use App\Services\ContractTemplateService;
 use App\Services\DocumentValidationService;
 use App\Services\PostalCodeService;
 use App\Livewire\Traits\HandlesDniValidation;
+use App\Livewire\Traits\ThrottlesGuestActions;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
 
 class ContractSign extends Component
 {
     use HandlesDniValidation;
+    use ThrottlesGuestActions;
 
     public $token;
     public $contract;
@@ -239,7 +241,14 @@ class ContractSign extends Component
 
     public function signContract()
     {
-        if ($this->isSigned) {
+        // isSigned es una propiedad pública manipulable desde el navegador: se comprueba también en BD
+        if ($this->isSigned || $this->contract->fresh()?->status === 'signed') {
+            $this->isSigned = true;
+            return;
+        }
+
+        if ($wait = $this->throttleGuestAction('sign_contract', 10, 600)) {
+            $this->addError('client_dni', "Demasiados intentos de firma. Inténtalo de nuevo en {$wait} segundos.");
             return;
         }
 

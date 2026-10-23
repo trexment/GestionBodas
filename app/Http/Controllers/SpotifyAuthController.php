@@ -14,6 +14,8 @@ class SpotifyAuthController extends Controller
      */
     public function connect()
     {
+        abort_unless(auth()->user()->role === 'admin', 403);
+
         $url = SpotifyService::getAuthorizationUrl();
         if (!$url) {
             return redirect()->route('admin.settings')
@@ -28,6 +30,13 @@ class SpotifyAuthController extends Controller
      */
     public function callback(Request $request)
     {
+        abort_unless(auth()->user()->role === 'admin', 403);
+
+        if (!SpotifyService::consumeOAuthState($request->query('state'))) {
+            return redirect()->route('admin.settings')
+                ->with('error', 'La respuesta de Spotify no es válida o ha caducado. Vuelve a pulsar "Conectar".');
+        }
+
         if ($request->has('error')) {
             return redirect()->route('admin.settings')
                 ->with('error', 'Autorización cancelada o denegada por Spotify: ' . $request->get('error'));
@@ -55,9 +64,16 @@ class SpotifyAuthController extends Controller
      */
     public function disconnect()
     {
+        abort_unless(auth()->user()->role === 'admin', 403);
+
         SpotifyService::disconnect();
         return redirect()->route('admin.settings')
             ->with('message', 'Cuenta de Spotify desconectada correctamente.');
+    }
+
+    protected static function isStaffUser(): bool
+    {
+        return auth()->check() && in_array(auth()->user()->role, ['admin', 'dj', 'assistant'], true);
     }
 
     /**
@@ -65,11 +81,12 @@ class SpotifyAuthController extends Controller
      */
     public function getToken()
     {
-        if (!auth()->check()) {
+        // Only staff (logged in or via the Live DJ Mode staff token) may obtain the admin's Spotify access token
+        if (!self::isStaffUser()) {
             $sessionToken = session('live_event_token');
             $queryToken = request()->query('token') ?: request()->header('X-Live-Token');
-            $valid = ($sessionToken && \App\Models\Event::where('token', $sessionToken)->exists())
-                  || ($queryToken && \App\Models\Event::where('token', $queryToken)->exists());
+            $valid = ($sessionToken && \App\Models\Event::where('staff_token', $sessionToken)->exists())
+                  || ($queryToken && \App\Models\Event::where('staff_token', $queryToken)->exists());
             if (!$valid) {
                 return response()->json([
                     'success' => false,
@@ -299,12 +316,12 @@ class SpotifyAuthController extends Controller
      */
     public function downloadAudio(\App\Models\EventMusicRequest $musicRequest)
     {
-        // Verify authorization: Staff authenticated or client/guest with matching event token
-        if (!auth()->check()) {
-            $sessionToken = session('live_event_token');
-            $queryToken = request()->query('token') ?: request()->header('X-Live-Token');
+        // Verify authorization: Staff authenticated or client/staff with matching event token
+        if (!self::isStaffUser()) {
+            $sessionToken = (string) session('live_event_token');
+            $queryToken = (string) (request()->query('token') ?: request()->header('X-Live-Token'));
             $event = $musicRequest->event;
-            $valid = $event && (($sessionToken && $event->token === $sessionToken) || ($queryToken && $event->token === $queryToken));
+            $valid = $event && ($event->matchesClientOrStaffToken($sessionToken) || $event->matchesClientOrStaffToken($queryToken));
             if (!$valid) {
                 abort(403, 'Acceso denegado: Se requiere autenticación o token de evento válido.');
             }
@@ -324,6 +341,9 @@ class SpotifyAuthController extends Controller
 
         if (empty($musicRequest->audio_file)) {
             $fallbackUrl = $musicRequest->youtube_url ?: ("https://www.youtube.com/results?search_query=" . urlencode($musicRequest->title . ' ' . $musicRequest->artist));
+            if (!\App\Services\RemoteAudioUrlGuard::isSafeToRedirect($fallbackUrl)) {
+                $fallbackUrl = "https://www.youtube.com/results?search_query=" . urlencode($musicRequest->title . ' ' . $musicRequest->artist);
+            }
             return redirect()->away($fallbackUrl);
         }
 
@@ -346,8 +366,19 @@ class SpotifyAuthController extends Controller
         // 3. Remote URL stream proxy
         $streamUrl = $musicRequest->audio_url ?: $audioFile;
 
+        if (!\App\Services\RemoteAudioUrlGuard::isSafeToRedirect($streamUrl)) {
+            abort(404);
+        }
+
+        // Anti-SSRF: el servidor solo descarga de proveedores de audio conocidos con IP pública.
+        // Cualquier otra URL se abre directamente en el navegador del usuario.
+        if (!\App\Services\RemoteAudioUrlGuard::isSafeToFetch($streamUrl)) {
+            return redirect()->away($streamUrl);
+        }
+
         try {
             $response = \Illuminate\Support\Facades\Http::timeout(30)
+                ->withoutRedirecting()
                 ->withHeaders([
                     'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
                 ])

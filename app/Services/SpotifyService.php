@@ -37,9 +37,27 @@ class SpotifyService
             'redirect_uri' => $redirectUri,
             'scope' => implode(' ', $scopes),
             'show_dialog' => 'true',
+            // Anti-CSRF: el callback solo se acepta si devuelve este mismo valor
+            'state' => self::issueOAuthState(),
         ];
 
         return 'https://accounts.spotify.com/authorize?' . http_build_query($params);
+    }
+
+    protected static function issueOAuthState(): string
+    {
+        $state = \Illuminate\Support\Str::random(40);
+        session(['spotify_oauth_state' => $state]);
+        return $state;
+    }
+
+    /**
+     * Valida (y consume) el parámetro state devuelto por Spotify.
+     */
+    public static function consumeOAuthState(?string $state): bool
+    {
+        $expected = session()->pull('spotify_oauth_state');
+        return !empty($expected) && !empty($state) && hash_equals((string) $expected, (string) $state);
     }
 
     /**

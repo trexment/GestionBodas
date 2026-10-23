@@ -1620,12 +1620,26 @@
                 <p class="text-xs text-gray-500 mt-1 max-w-sm mx-auto">Coloca este QR en las mesas, barra o cabina para que los invitados pidan y voten canciones desde sus móviles.</p>
 
                 <div class="my-6 p-4 bg-gray-50 rounded-2xl border border-gray-100 inline-block shadow-inner">
-                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data={{ urlencode(route('guest.requests', $event->token)) }}&margin=10" alt="QR Peticiones" class="w-52 h-52 mx-auto rounded-xl shadow-md">
+                    {{-- QR generado en el navegador: el enlace con token no se envía a servicios de terceros --}}
+                    <div wire:ignore
+                         x-data="{ url: @js(route('guest.requests', $event->guest_token)) }"
+                         x-init="
+                            const draw = () => { $refs.qr.innerHTML = ''; new QRCode($refs.qr, { text: url, width: 192, height: 192, correctLevel: QRCode.CorrectLevel.M }); };
+                            if (window.QRCode) { draw(); } else {
+                                const s = document.createElement('script');
+                                s.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+                                s.onload = draw;
+                                document.head.appendChild(s);
+                            }
+                         "
+                         class="w-52 h-52 mx-auto rounded-xl shadow-md bg-white p-2 flex items-center justify-center">
+                        <div x-ref="qr" role="img" aria-label="QR Peticiones"></div>
+                    </div>
                 </div>
 
                 <div class="space-y-3">
                     <div class="flex items-center gap-2">
-                        <input type="text" readonly value="{{ route('guest.requests', $event->token) }}" class="flex-1 border-gray-300 rounded-xl text-xs bg-gray-50 px-3 py-2 select-all focus:ring-indigo-500" id="qrLinkInput">
+                        <input type="text" readonly value="{{ route('guest.requests', $event->guest_token) }}" class="flex-1 border-gray-300 rounded-xl text-xs bg-gray-50 px-3 py-2 select-all focus:ring-indigo-500" id="qrLinkInput">
                         <button type="button" @click="
                             const inp = document.getElementById('qrLinkInput');
                             inp.select();
@@ -1644,7 +1658,7 @@
                     </div>
 
                     <div class="flex gap-2 justify-center">
-                        <a href="{{ route('guest.requests', $event->token) }}" target="_blank" class="flex-1 bg-gradient-to-r from-pink-600 to-indigo-600 hover:from-pink-700 hover:to-indigo-700 text-white font-bold py-2.5 px-4 rounded-xl text-xs shadow-md transition">
+                        <a href="{{ route('guest.requests', $event->guest_token) }}" target="_blank" class="flex-1 bg-gradient-to-r from-pink-600 to-indigo-600 hover:from-pink-700 hover:to-indigo-700 text-white font-bold py-2.5 px-4 rounded-xl text-xs shadow-md transition">
                             🚀 Abrir Portal Invitados
                         </a>
                         <button type="button" @click="openQrModal = false" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-2.5 px-4 rounded-xl text-xs transition">

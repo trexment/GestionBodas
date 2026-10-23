@@ -103,7 +103,6 @@ Route::get('/manual/pdf', function () {
 })->name('manual.pdf');
 
 // Spotify & Apple Music & Full Audio Streaming API Endpoints
-Route::get('/spotify/callback', [SpotifyAuthController::class, 'callback'])->name('spotify.callback');
 Route::get('/api/spotify/token', [SpotifyAuthController::class, 'getToken'])->name('spotify.token');
 Route::get('/api/apple-music/token', [SpotifyAuthController::class, 'getAppleMusicToken'])->name('apple-music.token');
 Route::get('/api/music/youtube-id', [SpotifyAuthController::class, 'getYoutubeVideoId'])->name('music.youtube-id');
@@ -133,6 +132,7 @@ Route::middleware('auth')->group(function () {
     Route::middleware('is_admin')->group(function () {
         // Spotify Admin Management
         Route::get('/spotify/connect', [SpotifyAuthController::class, 'connect'])->name('spotify.connect');
+        Route::get('/spotify/callback', [SpotifyAuthController::class, 'callback'])->name('spotify.callback');
         Route::post('/spotify/disconnect', [SpotifyAuthController::class, 'disconnect'])->name('spotify.disconnect');
 
         // Alias without prefix

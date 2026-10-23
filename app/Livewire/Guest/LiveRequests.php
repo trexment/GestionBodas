@@ -23,7 +23,7 @@ class LiveRequests extends Component
     public function mount($token)
     {
         $this->token = $token;
-        $this->event = Event::where('token', $token)->firstOrFail();
+        $this->event = Event::where('guest_token', $token)->firstOrFail();
     }
 
     public function selectSong($title, $artist = '')
