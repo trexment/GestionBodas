@@ -263,8 +263,10 @@ class Settings extends Component
     public $whatsapp_instance_javnx = 'whatsapp_principal';
     public $whatsapp_instance_leugim = 'mago_leugim';
     public $whatsapp_webhook_token = '';
+    public $admin_notification_phones = '+34 622 63 47 90, +34 674 37 89 93';
     public $whatsappStatuses = [];
     public $whatsappStatus = null;
+    public $whatsappAdminTestReport = null;
     public $whatsappQrBase64 = null;
     public $whatsappQrInstance = null;
     public $whatsappQrPerson = null;
@@ -548,6 +550,7 @@ class Settings extends Component
         $this->whatsapp_instance_javnx = $this->whatsapp_instance_fran;
         $this->whatsapp_instance_leugim = Setting::get('whatsapp_instance_leugim', 'mago_leugim');
         $this->whatsapp_webhook_token = Setting::get('whatsapp_webhook_token', '');
+        $this->admin_notification_phones = Setting::get('admin_notification_phones', '+34 622 63 47 90, +34 674 37 89 93');
     }
 
     public function loadPreset($presetKey)
@@ -1055,6 +1058,7 @@ class Settings extends Component
         Setting::set('whatsapp_instance_javnx', trim($this->whatsapp_instance_fran));
         Setting::set('whatsapp_instance_leugim', trim($this->whatsapp_instance_leugim));
         Setting::set('whatsapp_webhook_token', trim($this->whatsapp_webhook_token));
+        Setting::set('admin_notification_phones', trim((string)$this->admin_notification_phones));
 
         $this->spotifyUser = SpotifyService::getUserDetails();
         session()->flash('message', '¡Configuración y Dossier guardados correctamente!');
@@ -1073,6 +1077,26 @@ class Settings extends Component
         Setting::set('whatsapp_instance_javnx', trim($this->whatsapp_instance_fran));
         Setting::set('whatsapp_instance_leugim', trim($this->whatsapp_instance_leugim));
         Setting::set('whatsapp_webhook_token', trim($this->whatsapp_webhook_token));
+        Setting::set('admin_notification_phones', trim((string)$this->admin_notification_phones));
+    }
+
+    public function testAdminWhatsAppNotification(string $brand = 'javnx')
+    {
+        $this->saveWhatsAppSettingsQuietly();
+
+        $brandLabel = $brand === 'javnx' ? 'JAVNX DJ' : 'NÚÑEZ & SON';
+        $testMsg = "🧪 *PRUEBA DE AVISO AUTOMÁTICO ({$brandLabel})*\n\n"
+            . "✅ El sistema de avisos de formularios y presupuestos para *{$brandLabel}* está operativo.\n"
+            . "⏰ Hora: " . now()->format('d/m/Y H:i:s');
+
+        $report = \App\Services\EvolutionWhatsAppService::notifyAdmins($testMsg, $brand);
+        $this->whatsappAdminTestReport = $report;
+
+        if (($report['sent_count'] ?? 0) > 0) {
+            session()->flash('whatsapp_success', "✅ Prueba enviada ({$brandLabel}): {$report['sent_count']} destinatario(s) notificado(s). Revisa el desglose debajo.");
+        } else {
+            session()->flash('whatsapp_error', "⚠️ No se pudo enviar el aviso de prueba ({$brandLabel}). Revisa que el Gateway esté activo y al menos una instancia esté en estado 'open'.");
+        }
     }
 
     public function testWhatsAppGateway(?string $key = null)

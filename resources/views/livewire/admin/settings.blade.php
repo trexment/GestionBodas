@@ -2577,11 +2577,65 @@ MAIL_FROM_NAME="{{ $company_name }}"</pre>
                     </div>
                 </div>
 
-                <div class="pt-2 border-t border-gray-100">
-                    <label class="block text-xs font-bold text-gray-700 mb-1">Token Secreto de Webhook (Opcional)</label>
-                    <input type="text" wire:model="whatsapp_webhook_token" placeholder="token_secreto_para_validar_peticiones" class="w-full border-gray-300 rounded-xl shadow-xs text-xs font-mono">
-                    <span class="text-[10px] text-gray-400 mt-1 block">Si lo configuras, se verificará en la cabecera <code>x-webhook-token</code> al recibir mensajes.</span>
+                <div class="pt-2 border-t border-gray-100 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Teléfonos para Avisos de Nuevos Formularios y Presupuestos (Fran y Miguel) *</label>
+                        <input type="text" wire:model="admin_notification_phones" placeholder="+34 622 63 47 90, +34 674 37 89 93" class="w-full border-gray-300 rounded-xl shadow-xs text-xs font-mono">
+                        <span class="text-[10px] text-gray-500 mt-1 block">Números separados por coma que recibirán el aviso de WhatsApp cuando entre un lead en JAVNX DJ o Núñez &amp; Son.</span>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Token Secreto de Webhook (Opcional)</label>
+                        <input type="text" wire:model="whatsapp_webhook_token" placeholder="token_secreto_para_validar_peticiones" class="w-full border-gray-300 rounded-xl shadow-xs text-xs font-mono">
+                        <span class="text-[10px] text-gray-400 mt-1 block">Si lo configuras, se verificará en la cabecera <code>x-webhook-token</code> al recibir mensajes.</span>
+                    </div>
                 </div>
+
+                <!-- Botones de Prueba de Avisos a Administradores (Javnx y Núñez & Son) -->
+                <div class="pt-3 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                        <span class="text-xs font-extrabold text-gray-800 block">🧪 Probar Envío de Avisos por WhatsApp (Fran y Miguel)</span>
+                        <span class="text-[11px] text-gray-500">Envía un aviso de prueba real y muestra por qué instancia ha salido cada mensaje.</span>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button type="button" wire:click="testAdminWhatsAppNotification('javnx')" wire:loading.attr="disabled" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3.5 py-2 rounded-xl text-xs transition cursor-pointer inline-flex items-center gap-1.5 shadow-xs">
+                            <span wire:loading.remove wire:target="testAdminWhatsAppNotification('javnx')">🎧 Probar Aviso JAVNX DJ</span>
+                            <span wire:loading wire:target="testAdminWhatsAppNotification('javnx')">Enviando...</span>
+                        </button>
+                        <button type="button" wire:click="testAdminWhatsAppNotification('nunez_and_son')" wire:loading.attr="disabled" class="bg-amber-600 hover:bg-amber-700 text-white font-bold px-3.5 py-2 rounded-xl text-xs transition cursor-pointer inline-flex items-center gap-1.5 shadow-xs">
+                            <span wire:loading.remove wire:target="testAdminWhatsAppNotification('nunez_and_son')">👑 Probar Aviso Núñez &amp; Son</span>
+                            <span wire:loading wire:target="testAdminWhatsAppNotification('nunez_and_son')">Enviando...</span>
+                        </button>
+                    </div>
+                </div>
+
+                @if($whatsappAdminTestReport)
+                    <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2 text-xs">
+                        <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+                            <span class="font-black text-slate-900">📋 Diagnóstico de Envío ({{ strtoupper($whatsappAdminTestReport['brand'] ?? '') }})</span>
+                            <span class="text-[11px] font-mono text-slate-600">Instancias activas ('open'): {{ !empty($whatsappAdminTestReport['open_instances']) ? implode(', ', array_keys($whatsappAdminTestReport['open_instances'])) : 'Ninguna detectada' }}</span>
+                        </div>
+                        <div class="space-y-1.5">
+                            @foreach(($whatsappAdminTestReport['recipients'] ?? []) as $phoneKey => $rec)
+                                <div class="p-2.5 rounded-lg border flex flex-col sm:flex-row sm:items-center justify-between gap-2 {{ !empty($rec['success']) ? 'bg-emerald-50 border-emerald-200 text-emerald-950' : 'bg-rose-50 border-rose-200 text-rose-950' }}">
+                                    <div class="flex items-center gap-2">
+                                        <span>{{ !empty($rec['success']) ? '✅' : '❌' }}</span>
+                                        <span class="font-mono font-bold">+{{ $rec['phone'] }} {{ str_ends_with($rec['phone'], '622634790') ? '(Fran)' : (str_ends_with($rec['phone'], '674378993') ? '(Miguel)' : '') }}</span>
+                                    </div>
+                                    <div class="text-[11px]">
+                                        @if(!empty($rec['success']))
+                                            Enviado desde: <code class="font-bold">{{ $rec['instance_used'] }}</code>
+                                            @if(!empty($rec['self_message']))
+                                                <span class="ml-1 px-2 py-0.5 rounded bg-amber-100 text-amber-900 font-bold" title="Cuando una instancia envía a su propio número, entra en 'Mensajes contigo mismo (Tú)' sin sonido push. Si vinculas también el QR de Miguel, a Fran le entrará desde el número de Miguel con notificación sonora.">⚠️ Auto-mensaje (chat 'Tú')</span>
+                                            @endif
+                                        @else
+                                            <span class="text-rose-700 font-semibold">{{ $rec['error'] ?? 'Fallo de envío' }}</span>
+                                        @endif
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
             </div>
 
             <!-- Explicación de Conexión de 3 Teléfonos Simultáneos -->

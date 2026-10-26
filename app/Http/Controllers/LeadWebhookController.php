@@ -16,6 +16,26 @@ use Illuminate\Support\Str;
 class LeadWebhookController extends Controller
 {
     /**
+     * Cabeceras CORS para permitir envíos directos desde javnxdj.com y nunezandson.com
+     */
+    private function corsHeaders(): array
+    {
+        return [
+            'Access-Control-Allow-Origin' => '*',
+            'Access-Control-Allow-Methods' => 'POST, GET, OPTIONS',
+            'Access-Control-Allow-Headers' => 'Content-Type, Accept, X-Requested-With, X-API-Key, Origin, Authorization',
+        ];
+    }
+
+    /**
+     * Respuesta preflight CORS: OPTIONS /api/leads
+     */
+    public function options(): JsonResponse
+    {
+        return response()->json(['status' => 'ok'], 200, $this->corsHeaders());
+    }
+
+    /**
      * Endpoint API para recibir leads directamente desde formularios web externos
      * (WordPress, Elementor, Contact Form 7, Webflow o scripts personalizados).
      *
@@ -31,24 +51,41 @@ class LeadWebhookController extends Controller
                 return response()->json([
                     'success' => false,
                     'message' => 'No autorizado: API Key inválida o no proporcionada.'
-                ], 401);
+                ], 401, $this->corsHeaders());
             }
         }
 
-        // 2. Extraer y normalizar campos recibidos
-        $name = trim($request->input('name') ?: $request->input('nombre') ?: 'Contacto Web');
-        $email = trim($request->input('email') ?: $request->input('correo') ?: '');
-        $phone = trim($request->input('phone') ?: $request->input('telefono') ?: $request->input('movil') ?: '');
-        $dateRaw = trim($request->input('date') ?: $request->input('fecha') ?: '');
-        $location = trim($request->input('location') ?: $request->input('lugar') ?: $request->input('finca') ?: 'Por definir');
-        $typeRaw = trim(mb_strtolower($request->input('event_type') ?: $request->input('tipo') ?: 'boda'));
-        $message = trim($request->input('message') ?: $request->input('mensaje') ?: $request->input('observaciones') ?: '');
-        $brandRaw = trim(strtolower($request->input('brand') ?: ''));
+        // 2. Extraer y normalizar campos recibidos (decodificando entidades HTML como &amp;)
+        $rawName = trim((string)($request->input('name') ?: $request->input('nombre') ?: 'Contacto Web'));
+        $name = html_entity_decode($rawName, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $email = trim((string)($request->input('email') ?: $request->input('correo') ?: ''));
+        $phone = trim((string)($request->input('phone') ?: $request->input('telefono') ?: $request->input('movil') ?: ''));
+        $dateRaw = trim((string)($request->input('date') ?: $request->input('fecha') ?: ''));
+        $rawLocation = trim((string)($request->input('location') ?: $request->input('lugar') ?: $request->input('finca') ?: 'Por definir'));
+        $location = html_entity_decode($rawLocation, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $typeRaw = trim(mb_strtolower((string)($request->input('event_type') ?: $request->input('tipo') ?: 'boda')));
+        $rawMessage = trim((string)($request->input('message') ?: $request->input('mensaje') ?: $request->input('observaciones') ?: ''));
+        $message = html_entity_decode($rawMessage, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $brandRaw = trim(strtolower((string)($request->input('brand') ?: '')));
+        $isTest = filter_var($request->input('is_test', false), FILTER_VALIDATE_BOOLEAN)
+            || str_contains(mb_strtoupper($name), '[TEST]')
+            || str_contains(mb_strtoupper($message), '[TEST]');
 
-        // 3. Determinar marca
-        $brandKey = in_array($brandRaw, ['nunez_and_son', 'javnx', 'mago_leugim'])
-            ? $brandRaw
-            : Setting::getDetectedBrand();
+        // 3. Determinar marca (también por Origin/Referer si no viene explícita)
+        if (in_array($brandRaw, ['nunez_and_son', 'javnx', 'mago_leugim'], true)) {
+            $brandKey = $brandRaw;
+        } elseif (in_array($brandRaw, ['nunez', 'nunezandson'], true)) {
+            $brandKey = 'nunez_and_son';
+        } else {
+            $originHeader = strtolower((string)($request->header('Origin') ?: $request->header('Referer') ?: ''));
+            if (str_contains($originHeader, 'nunez')) {
+                $brandKey = 'nunez_and_son';
+            } elseif (str_contains($originHeader, 'javnx')) {
+                $brandKey = 'javnx';
+            } else {
+                $brandKey = Setting::getDetectedBrand();
+            }
+        }
 
         // 4. Normalizar Tipo de Evento
         $eventType = 'boda';
@@ -140,7 +177,7 @@ class LeadWebhookController extends Controller
             ]);
         }
 
-        // 8. Crear Evento
+        // 8. Crear Evento (con deduplicación de 90 segundos si enviar.php y el navegador envían a la vez, salvo en modo test)
         $typeLabel = match($eventType) {
             'empresa' => 'Evento Empresa',
             'cumpleanos' => 'Cumpleaños',
@@ -149,6 +186,26 @@ class LeadWebhookController extends Controller
             default => 'Boda',
         };
         $eventName = "{$typeLabel} - {$name}";
+
+        if (!$isTest && $client) {
+            $recentDuplicate = Event::where('client_id', $client->id)
+                ->where('brand', $brandKey)
+                ->where('created_at', '>=', now()->subSeconds(90))
+                ->latest('id')
+                ->first();
+
+            if ($recentDuplicate) {
+                return response()->json([
+                    'success' => true,
+                    'deduplicated' => true,
+                    'message' => 'Lead ya registrado hace unos segundos.',
+                    'event_id' => $recentDuplicate->id,
+                    'event_name' => $recentDuplicate->name,
+                    'brand' => $brandKey,
+                ], 200, $this->corsHeaders());
+            }
+        }
+
         $defaultDj = User::whereIn('role', ['admin', 'dj'])->orderBy('id')->first();
 
         $notesContent = "🌐 LEAD RECIBIDO VÍA WEB FORMULARIO (" . strtoupper($brandKey) . ")\n"
@@ -212,18 +269,26 @@ class LeadWebhookController extends Controller
             Log::warning("No se pudo enviar email de notificación para el nuevo lead web (Evento #{$event->id}): " . $e->getMessage());
         }
 
+        $whatsappReport = null;
         try {
             if (\App\Services\EvolutionWhatsAppService::isEnabled()) {
                 $leadDateStr = $eventDate ? Carbon::parse($eventDate)->format('d/m/Y') : 'Por definir';
-                $waLeadAlert = "📥 *¡NUEVO LEAD ENTRANTE!*\n\n"
+                $brandDisplayName = match($brandKey) {
+                    'javnx' => 'JAVNX DJ',
+                    'mago_leugim' => 'MAGO LEUGIM',
+                    default => 'NÚÑEZ & SON',
+                };
+                $shortMsg = $message ? mb_substr(preg_replace('/\s+/', ' ', $message), 0, 220) : '';
+                $waLeadAlert = ($isTest ? "🧪 *[PRUEBA] " : "📥 *") . "¡NUEVO LEAD ENTRANTE ({$brandDisplayName})!*\n\n"
                     . "👤 *Contacto:* {$name}\n"
                     . "📞 *Teléfono:* " . ($cleanPhone ?: 'No indicado') . "\n"
+                    . ($email ? "✉️ *Email:* {$email}\n" : "")
                     . "📅 *Fecha Evento:* {$leadDateStr}\n"
                     . "📍 *Lugar:* " . ($location ?: 'Por definir') . "\n"
-                    . "🏷️ *Origen:* Webhook Web / Elementor\n"
-                    . "🏢 *Marca:* " . strtoupper($brandKey) . "\n\n"
+                    . ($shortMsg ? "💬 *Mensaje:* {$shortMsg}\n" : "")
+                    . "🏢 *Marca:* {$brandDisplayName}\n\n"
                     . "🔗 *Ficha:* " . url("/admin/events/{$event->id}");
-                \App\Services\EvolutionWhatsAppService::notifyAdmins($waLeadAlert, $brandKey);
+                $whatsappReport = \App\Services\EvolutionWhatsAppService::notifyAdmins($waLeadAlert, $brandKey);
             }
         } catch (\Throwable $e) {
             Log::warning("No se pudo enviar alerta WhatsApp para nuevo lead web (Evento #{$event->id}): " . $e->getMessage());
@@ -235,6 +300,7 @@ class LeadWebhookController extends Controller
             'event_id' => $event->id,
             'event_name' => $event->name,
             'brand' => $brandKey,
-        ], 201);
+            'whatsapp_report' => $whatsappReport,
+        ], 201, $this->corsHeaders());
     }
 }

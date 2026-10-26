@@ -109,7 +109,8 @@ Route::get('/api/music/youtube-id', [SpotifyAuthController::class, 'getYoutubeVi
 Route::get('/api/music/resolve-track', [SpotifyAuthController::class, 'resolveTrack'])->name('music.resolve-track');
 Route::get('/api/drive-stream/{fileId}', [SpotifyAuthController::class, 'streamGoogleDriveAudio'])->name('api.drive.stream');
 Route::get('/music-requests/{musicRequest}/download', [SpotifyAuthController::class, 'downloadAudio'])->name('admin.music.download');
-// External Web Leads API / Webhook Endpoint (Rate limited to 30 requests/min)
+// External Web Leads API / Webhook Endpoint (Rate limited to 30 requests/min + CORS Preflight)
+Route::options('/api/leads', [\App\Http\Controllers\LeadWebhookController::class, 'options'])->name('api.leads.options');
 Route::post('/api/leads', [\App\Http\Controllers\LeadWebhookController::class, 'store'])->middleware('throttle:30,1')->name('api.leads.store');
 // Evolution API / WhatsApp Webhook Endpoint (Soporta /api/whatsapp/webhook y /api/whatsapp/webhook/messages-upsert)
 Route::post('/api/whatsapp/webhook/{event?}', [\App\Http\Controllers\WhatsAppWebhookController::class, 'handle'])

@@ -137,6 +137,30 @@ class EvolutionWhatsAppService
 
             $json = $response->json();
             $isSuccess = $response->successful() && !empty($json['key']['id']);
+
+            // Fallback automático: si la instancia de la marca (ej. whatsapp_miguel en Núñez & Son) no está conectada,
+            // reintentar con la instancia principal activa (whatsapp_principal de Fran)
+            if (!$isSuccess) {
+                $fallbackInstance = Setting::get('whatsapp_instance_fran', Setting::get('whatsapp_instance_javnx', 'whatsapp_principal'));
+                if (!empty($fallbackInstance) && $fallbackInstance !== $instance) {
+                    $fallbackEndpoint = "{$baseUrl}/message/sendText/{$fallbackInstance}";
+                    $fallbackRes = Http::withHeaders([
+                        'apikey' => $apiKey,
+                        'Content-Type' => 'application/json',
+                    ])->timeout(10)->post($fallbackEndpoint, [
+                        'number' => $cleanPhone,
+                        'text' => $text,
+                    ]);
+                    $fallbackJson = $fallbackRes->json();
+                    if ($fallbackRes->successful() && !empty($fallbackJson['key']['id'])) {
+                        $response = $fallbackRes;
+                        $json = $fallbackJson;
+                        $isSuccess = true;
+                        $instance = $fallbackInstance;
+                    }
+                }
+            }
+
             $externalId = $json['key']['id'] ?? ($json['id'] ?? null);
 
             $msgRecord = null;
@@ -494,37 +518,139 @@ class EvolutionWhatsAppService
 
     /**
      * Envía una notificación interna por WhatsApp a los números de los socios / administradores (Fran y su hermano).
+     * Devuelve un resumen del envío para diagnóstico y modo test.
      */
-    public static function notifyAdmins(string $text, ?string $brand = null): void
+    public static function notifyAdmins(string $text, ?string $brand = null): array
     {
+        $report = [
+            'enabled' => self::isEnabled(),
+            'brand' => $brand ?: Setting::getDetectedBrand(),
+            'preferred_instance' => self::getInstanceName($brand),
+            'open_instances' => [],
+            'recipients' => [],
+            'sent_count' => 0,
+        ];
+
         if (!self::isEnabled()) {
-            return;
+            Log::info('EvolutionWhatsAppService::notifyAdmins omitido: gateway desactivado o sin credenciales.');
+            return $report;
         }
 
         $phones = Setting::getAdminNotificationPhones($brand);
         $baseUrl = self::getBaseUrl();
         $apiKey = self::getApiKey();
-        $instance = self::getInstanceName($brand);
+        $preferredInstance = self::getInstanceName($brand);
+
+        // 1. Descubrir qué instancias están realmente conectadas ('open') y qué número propietario (owner) tiene cada una
+        $openInstances = []; // [instanceName => cleanOwnerPhone]
+        try {
+            $fetchRes = Http::withHeaders(['apikey' => $apiKey])->timeout(5)->get("{$baseUrl}/instance/fetchInstances");
+            if ($fetchRes->successful() && is_array($fetchRes->json())) {
+                foreach ($fetchRes->json() as $inst) {
+                    $instName = $inst['name'] ?? ($inst['instance']['instanceName'] ?? null);
+                    $state = $inst['connectionStatus'] ?? ($inst['instance']['state'] ?? ($inst['instance']['status'] ?? null));
+                    if (!empty($instName) && $state === 'open') {
+                        $ownerJid = $inst['ownerJid'] ?? ($inst['instance']['owner'] ?? ($inst['owner'] ?? null));
+                        $ownerDigits = $ownerJid ? preg_replace('/@.*$/', '', (string)$ownerJid) : '';
+                        $cleanOwner = $ownerDigits ? WhatsAppTemplateService::cleanPhone($ownerDigits) : '';
+                        $openInstances[$instName] = $cleanOwner;
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            Log::warning('EvolutionWhatsAppService::notifyAdmins error consultando fetchInstances: ' . $e->getMessage());
+        }
+
+        $report['open_instances'] = $openInstances;
+
+        // Lista ordenada de instancias candidatas a intentar (primero las 'open', luego las configuradas como respaldo)
+        $configuredInstances = array_values(array_unique(array_filter([
+            $preferredInstance,
+            Setting::get('whatsapp_instance_fran', Setting::get('whatsapp_instance_javnx', 'whatsapp_principal')),
+            Setting::get('whatsapp_instance_miguel', Setting::get('whatsapp_instance_nunez', 'whatsapp_miguel')),
+            Setting::get('whatsapp_instance_ezequiel', 'whatsapp_ezequiel'),
+            'whatsapp_principal',
+            'whatsapp_miguel',
+        ])));
 
         foreach ($phones as $phone) {
-            try {
-                $cleanPhone = WhatsAppTemplateService::cleanPhone((string)$phone);
-                if (empty($cleanPhone)) {
-                    continue;
-                }
-
-                $endpoint = "{$baseUrl}/message/sendText/{$instance}";
-                Http::withHeaders([
-                    'apikey' => $apiKey,
-                    'Content-Type' => 'application/json',
-                ])->timeout(6)->post($endpoint, [
-                    'number' => $cleanPhone,
-                    'text' => $text,
-                ]);
-            } catch (\Throwable $e) {
-                Log::warning("Error enviando alerta WhatsApp a socio/admin ({$phone}): " . $e->getMessage());
+            $cleanPhone = WhatsAppTemplateService::cleanPhone((string)$phone);
+            if (empty($cleanPhone)) {
+                continue;
             }
+
+            // Construir el orden óptimo de instancias para este destinatario:
+            // - Si hay una instancia 'open' cuyo propietario NO es el propio destinatario, usarla primero
+            //   para evitar auto-mensajes (fromMe: true) que WhatsApp silencia sin notificación push.
+            // - A continuación, la instancia preferida de la marca si está 'open'.
+            // - A continuación, cualquier otra instancia 'open' (ej. whatsapp_principal como fallback para Núñez & Son).
+            // - Por último, las instancias configuradas por si fetchInstances no devolvió estado.
+            $candidateInstances = [];
+
+            foreach ($openInstances as $instName => $ownerPhone) {
+                if (!empty($ownerPhone) && $ownerPhone !== $cleanPhone) {
+                    $candidateInstances[] = $instName;
+                }
+            }
+            if (isset($openInstances[$preferredInstance]) && !in_array($preferredInstance, $candidateInstances, true)) {
+                $candidateInstances[] = $preferredInstance;
+            }
+            foreach (array_keys($openInstances) as $instName) {
+                if (!in_array($instName, $candidateInstances, true)) {
+                    $candidateInstances[] = $instName;
+                }
+            }
+            foreach ($configuredInstances as $instName) {
+                if (!in_array($instName, $candidateInstances, true)) {
+                    $candidateInstances[] = $instName;
+                }
+            }
+
+            $sentToThisPhone = false;
+            $usedInstance = null;
+            $lastError = null;
+            $isSelfMessage = false;
+
+            foreach ($candidateInstances as $instToTry) {
+                try {
+                    $ownerOfInst = $openInstances[$instToTry] ?? '';
+                    $sendingToSelf = (!empty($ownerOfInst) && $ownerOfInst === $cleanPhone);
+
+                    $endpoint = "{$baseUrl}/message/sendText/{$instToTry}";
+                    $res = Http::withHeaders([
+                        'apikey' => $apiKey,
+                        'Content-Type' => 'application/json',
+                    ])->timeout(6)->post($endpoint, [
+                        'number' => $cleanPhone,
+                        'text' => $text,
+                    ]);
+
+                    $json = $res->json();
+                    if ($res->successful() && (!empty($json['key']['id']) || !empty($json['status']) || !empty($json['message']))) {
+                        $sentToThisPhone = true;
+                        $usedInstance = $instToTry;
+                        $isSelfMessage = $sendingToSelf;
+                        $report['sent_count']++;
+                        break;
+                    }
+
+                    $lastError = "HTTP {$res->status()} en {$instToTry}: " . substr($res->body(), 0, 180);
+                } catch (\Throwable $e) {
+                    $lastError = "Excepción en {$instToTry}: " . $e->getMessage();
+                    Log::warning("Error enviando alerta WhatsApp a socio/admin ({$cleanPhone}) vía {$instToTry}: " . $e->getMessage());
+                }
+            }
+
+            $report['recipients'][$cleanPhone] = [
+                'phone' => $cleanPhone,
+                'success' => $sentToThisPhone,
+                'instance_used' => $usedInstance,
+                'self_message' => $isSelfMessage,
+                'error' => $sentToThisPhone ? null : $lastError,
+            ];
         }
+
+        return $report;
     }
 
     /**

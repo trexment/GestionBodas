@@ -445,7 +445,22 @@ class Setting extends Model
     {
         $phones = [];
 
-        // 1. Teléfonos de usuarios registrados con rol admin
+        // 0. Lista personalizada en ajustes (si el usuario la define en Ajustes -> WhatsApp)
+        $customAdminPhones = (string) self::get('admin_notification_phones', '');
+        if (!empty(trim($customAdminPhones))) {
+            $parts = preg_split('/[,;\r\n]+/', $customAdminPhones, -1, PREG_SPLIT_NO_EMPTY);
+            if (is_array($parts)) {
+                foreach ($parts as $part) {
+                    $phones[] = trim($part);
+                }
+            }
+        }
+
+        // 1. Garantizar que el número principal de Fran (+34 622 63 47 90) y el de Miguel (+34 674 37 89 93) estén siempre incluidos primero
+        $phones[] = '+34 622 63 47 90';
+        $phones[] = '+34 674 37 89 93';
+
+        // 2. Teléfonos de usuarios registrados con rol admin
         try {
             $adminUsers = \App\Models\User::where('role', 'admin')
                 ->whereNotNull('phone')
@@ -459,7 +474,7 @@ class Setting extends Model
             }
         } catch (\Throwable $e) {}
 
-        // 2. Teléfonos configurados en los ajustes de marcas
+        // 3. Teléfonos configurados en los ajustes de marcas
         $brandInfo = self::getBrandInfo($brandKey);
         if (!empty($brandInfo['phone'])) {
             $phones[] = $brandInfo['phone'];
@@ -468,7 +483,7 @@ class Setting extends Model
             $phones[] = $brandInfo['phone_2'];
         }
 
-        // 3. Teléfonos globales de la empresa
+        // 4. Teléfonos globales de la empresa
         $companyPhone1 = self::fixLegacyTypoPhone(self::get('company_phone'), 'company_phone');
         $companyPhone2 = self::fixLegacyTypoPhone(self::get('company_phone_2'), 'company_phone_2');
         if (!empty($companyPhone1)) {
@@ -477,10 +492,6 @@ class Setting extends Model
         if (!empty($companyPhone2)) {
             $phones[] = $companyPhone2;
         }
-
-        // 4. Fallbacks por defecto para Fran y su hermano/socio
-        $phones[] = '+34 622 63 47 90';
-        $phones[] = '+34 674 37 89 93';
 
         $validPhones = [];
         foreach ($phones as $p) {
