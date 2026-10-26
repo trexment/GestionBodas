@@ -4210,8 +4210,32 @@ class EventShow extends Component
         foreach ($quote->items as $item) {
             $name = mb_strtolower($item->service_name ?: $item->concept ?: '');
             
-            // IMPORTANTE: Comprobar primero si es una línea de descuento para que NO coincida con 'cóctel' ni 'banquete'
+            // IMPORTANTE: Comprobar primero si es una línea de descuento o de efectos (humo/chispas incluidas en pack)
+            // para que NO coincidan por nombre con 'cóctel', 'banquete' ni 'pack signature / pack deluxe'
             if (str_contains($name, 'descuento') || (float)$item->price < 0) {
+                continue;
+            } elseif (str_contains($name, 'máquina de humo') || str_contains($name, 'maquina de humo') || str_contains($name, 'humo')) {
+                $this->quote_services['smoke_machine']['selected'] = true;
+                $this->quote_services['smoke_machine']['quantity'] = (int)($item->quantity ?: 1);
+                $this->quote_services['smoke_machine']['price'] = (float)$item->price;
+                $this->quote_services['smoke_machine']['included'] = ((float)$item->price == 0 || str_contains($name, 'incluido'));
+                continue;
+            } elseif (str_contains($name, 'fuego frío') || str_contains($name, 'fuego frio') || str_contains($name, 'chispas frías') || str_contains($name, 'chispas frias') || str_contains($name, 'cold sparks')) {
+                if (!empty($this->quote_services['cold_sparks']['selected'])) {
+                    $this->quote_services['cold_sparks']['quantity'] += (int)($item->quantity ?: 1);
+                    if ((float)$item->price > 0) {
+                        $this->quote_services['cold_sparks']['price'] = (float)$item->price;
+                    }
+                } else {
+                    $this->quote_services['cold_sparks']['selected'] = true;
+                    $this->quote_services['cold_sparks']['quantity'] = (int)($item->quantity ?: 1);
+                    if ((float)$item->price > 0) {
+                        $this->quote_services['cold_sparks']['price'] = (float)$item->price;
+                    } else {
+                        $this->quote_services['cold_sparks']['price'] = (float)\App\Models\Setting::get('price_effects_sparks', 60);
+                    }
+                    $this->quote_services['cold_sparks']['included'] = ((float)$item->price == 0 || str_contains($name, 'incluido'));
+                }
                 continue;
             }
 
