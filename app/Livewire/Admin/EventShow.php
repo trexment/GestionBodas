@@ -346,6 +346,15 @@ class EventShow extends Component
         }
         $this->loadSettingsPrices();
 
+        // Si el evento ya tiene un presupuesto (por ejemplo, enviado por el cliente desde /presupuesto),
+        // cargar automáticamente sus opciones (Ceremonia, Cóctel, Banquete, Pack DJ, etc.) en el configurador
+        $latestQuote = $this->event->quotes ? $this->event->quotes->sortByDesc('id')->first() : null;
+        if ($latestQuote) {
+            try {
+                $this->loadQuoteIntoCalculator($latestQuote->id, false);
+            } catch (\Throwable $e) {}
+        }
+
         $this->invoice_type = 'factura';
         $this->invoice_tax_rate = 21.00;
         $this->invoice_issue_date = now()->format('Y-m-d');
@@ -4150,7 +4159,7 @@ class EventShow extends Component
         session()->flash('quote_message', 'Propuesta Comercial #' . $quote->id . ' actualizada correctamente (Total: ' . number_format($finalTotal, 2, ',', '.') . ' € | Señal: ' . number_format($signal, 2, ',', '.') . ' €).');
     }
 
-    public function loadQuoteIntoCalculator($quoteId)
+    public function loadQuoteIntoCalculator($quoteId, bool $flash = true)
     {
         $quote = $this->event->quotes()->with('items')->findOrFail($quoteId);
         $this->editing_quote_id = $quote->id;
@@ -4263,7 +4272,7 @@ class EventShow extends Component
                 if (!empty($item->description)) {
                     $this->quote_services['dj_custom']['desc'] = $item->description;
                 }
-            } elseif (str_contains($name, 'hora extra') || str_contains($name, 'horas extra')) {
+            } elseif (str_contains($name, 'hora extra') || str_contains($name, 'horas extra') || str_contains($name, 'horas adicionales') || str_contains($name, 'hora adicional')) {
                 $this->quote_services['extra_hours']['quantity'] = (int)($item->quantity ?: 1);
                 $this->quote_services['extra_hours']['price'] = (float)$item->price;
             } elseif (str_contains($name, 'pack completo foto') || str_contains($name, 'completo fotografía') || str_contains($name, 'completo fotografia')) {
@@ -4391,7 +4400,9 @@ class EventShow extends Component
             ];
         }
 
-        session()->flash('quote_message', 'Propuesta #' . $quote->id . ' cargada en el configurador. Puedes realizar cambios y pulsar "Guardar Cambios" o "Guardar como Nueva Versión".');
+        if ($flash) {
+            session()->flash('quote_message', 'Propuesta #' . $quote->id . ' cargada en el configurador. Puedes realizar cambios y pulsar "Guardar Cambios" o "Guardar como Nueva Versión".');
+        }
     }
 
     public function cancelQuoteEditing()

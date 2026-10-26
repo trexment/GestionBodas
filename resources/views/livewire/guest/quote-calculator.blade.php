@@ -454,12 +454,12 @@
                             <div class="mt-3 pt-3 border-t border-indigo-500/20 grid grid-cols-1 sm:grid-cols-2 gap-2.5" wire:click.stop>
                                 <div>
                                     <label class="block text-[11px] font-semibold text-slate-300 mb-1">¿Qué servicio o montaje necesitas? *</label>
-                                    <input type="text" wire:model.blur="custom_service_name" placeholder="{{ $currentType['custom_service_placeholder'] ?? 'Ej: Sonorización extra / Iluminación especial...' }}"
+                                    <input type="text" wire:model.live.debounce.300ms="custom_service_name" placeholder="{{ $currentType['custom_service_placeholder'] ?? 'Ej: Sonorización extra / Iluminación especial...' }}"
                                            class="w-full bg-slate-900/80 border border-indigo-500/40 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500">
                                 </div>
                                 <div>
                                     <label class="block text-[11px] font-semibold text-slate-300 mb-1">Detalles rápidos (opcional)</label>
-                                    <input type="text" wire:model.blur="custom_service_description" placeholder="{{ $currentType['custom_service_desc_placeholder'] ?? 'Ej: Detalles del servicio adicional...' }}"
+                                    <input type="text" wire:model.live.debounce.300ms="custom_service_description" placeholder="{{ $currentType['custom_service_desc_placeholder'] ?? 'Ej: Detalles del servicio adicional...' }}"
                                            class="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500">
                                 </div>
                             </div>
@@ -482,7 +482,7 @@
                             <!-- Name -->
                             <div>
                                 <label class="block text-xs font-semibold text-slate-300 mb-1">{{ $currentType['name_label'] }}</label>
-                                <input type="text" wire:model.blur="client_name" placeholder="{{ $currentType['name_placeholder'] }}"
+                                <input type="text" wire:model.live.debounce.300ms="client_name" placeholder="{{ $currentType['name_placeholder'] }}"
                                        class="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition">
                                 @error('client_name') <span class="text-rose-400 text-xs mt-1 block">{{ $message }}</span> @enderror
                             </div>
@@ -491,13 +491,13 @@
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                                 <div>
                                     <label class="block text-xs font-semibold text-slate-300 mb-1">Teléfono / WhatsApp *</label>
-                                    <input type="tel" wire:model.blur="client_phone" placeholder="600 000 000"
+                                    <input type="tel" wire:model.live.debounce.300ms="client_phone" placeholder="600 000 000"
                                            class="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition">
                                     @error('client_phone') <span class="text-rose-400 text-xs mt-1 block">{{ $message }}</span> @enderror
                                 </div>
                                 <div>
                                     <label class="block text-xs font-semibold text-slate-300 mb-1">Email *</label>
-                                    <input type="email" wire:model.blur="client_email" placeholder="email@ejemplo.com"
+                                    <input type="email" wire:model.live.debounce.300ms="client_email" placeholder="email@ejemplo.com"
                                            class="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition">
                                     @error('client_email') <span class="text-rose-400 text-xs mt-1 block">{{ $message }}</span> @enderror
                                 </div>
@@ -507,13 +507,13 @@
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                                 <div>
                                     <label class="block text-xs font-semibold text-slate-300 mb-1">Fecha del evento *</label>
-                                    <input type="date" wire:model.blur="event_date"
+                                    <input type="date" wire:model.live="event_date"
                                            class="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition [color-scheme:dark]">
                                     @error('event_date') <span class="text-rose-400 text-xs mt-1 block">{{ $message }}</span> @enderror
                                 </div>
                                 <div>
                                     <label class="block text-xs font-semibold text-slate-300 mb-1">{{ $currentType['location_label'] ?? 'Lugar / Recinto / Localidad *' }}</label>
-                                    <input type="text" wire:model.blur="event_location" placeholder="{{ $currentType['location_placeholder'] ?? 'Finca, Restaurante, Hotel...' }}"
+                                    <input type="text" wire:model.live.debounce.300ms="event_location" placeholder="{{ $currentType['location_placeholder'] ?? 'Finca, Restaurante, Hotel...' }}"
                                            class="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition">
                                     @error('event_location') <span class="text-rose-400 text-xs mt-1 block">{{ $message }}</span> @enderror
                                 </div>
@@ -525,7 +525,7 @@
                                     @if(!empty($currentType['show_schedule_box']))
                                         <div>
                                             <label class="block text-xs font-bold text-indigo-200 mb-1">{{ $currentType['schedule_label'] ?? '⏰ Horario aproximado o tramo del evento (opcional)' }}</label>
-                                            <input type="text" wire:model.blur="event_schedule" placeholder="{{ $currentType['schedule_placeholder'] ?? 'Ej: De 17:00 a 20:30h / Tarde...' }}"
+                                            <input type="text" wire:model.live.debounce.300ms="event_schedule" placeholder="{{ $currentType['schedule_placeholder'] ?? 'Ej: De 17:00 a 20:30h / Tarde...' }}"
                                                    class="w-full bg-slate-950/80 border border-slate-700 rounded-xl px-3 py-1.5 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition">
                                         </div>
                                     @endif
@@ -554,7 +554,7 @@
                                 <p class="text-[11px] text-slate-300 mb-2 leading-snug">
                                     {{ $currentType['notes_help'] ?? 'Cuéntanos cualquier detalle, horario o idea especial para tu evento:' }}
                                 </p>
-                                <textarea wire:model.blur="client_notes" rows="4"
+                                <textarea wire:model.live.debounce.300ms="client_notes" rows="4"
                                           placeholder="{{ $currentType['notes_placeholder'] ?? 'Escribe aquí cualquier detalle o comentario...' }}"
                                           class="w-full bg-slate-900/90 border border-indigo-500/40 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition resize-y"></textarea>
                                 @error('client_notes') <span class="text-rose-400 text-xs mt-1 block">{{ $message }}</span> @enderror

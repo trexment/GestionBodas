@@ -646,8 +646,14 @@ class WhatsAppTemplateService
     public static function getQuoteCalculatorUrl(?Event $event = null): string
     {
         try {
+            if ($event && !empty($event->token)) {
+                return url('/presupuesto?evento=' . rawurlencode($event->token));
+            }
             return url('/presupuesto');
         } catch (\Throwable $e) {
+            if ($event && !empty($event->token)) {
+                return 'https://app.nunezandson.com/presupuesto?evento=' . rawurlencode($event->token);
+            }
             return 'https://app.nunezandson.com/presupuesto';
         }
     }

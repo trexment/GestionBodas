@@ -5,12 +5,14 @@ namespace App\Livewire\Guest;
 use Livewire\Component;
 use App\Models\User;
 use App\Models\Event;
+use App\Models\Quote;
 use App\Models\Setting;
 use Illuminate\Support\Str;
 
 class QuoteCalculator extends Component
 {
     // Contact Info
+    public $event_token = '';
     public $client_name = '';
     public $client_email = '';
     public $client_phone = '';
@@ -282,6 +284,38 @@ class QuoteCalculator extends Component
         $initialType = request()->get('tipo', 'boda');
         $types = self::getEventTypes();
         $this->event_type = isset($types[$initialType]) ? $initialType : 'boda';
+
+        $tokenParam = trim((string) (request()->query('evento') ?: request()->query('token') ?: ''));
+        if ($tokenParam !== '') {
+            $linkedEvent = Event::with('client')->where('token', $tokenParam)->first();
+            if ($linkedEvent) {
+                $this->event_token = $linkedEvent->token;
+                $evTypeClean = $linkedEvent->event_type_clean ?? 'boda';
+                if (isset($types[$evTypeClean])) {
+                    $this->event_type = $evTypeClean;
+                }
+                if ($linkedEvent->client) {
+                    $this->client_name = $linkedEvent->client->name ?: '';
+                    $this->client_phone = $linkedEvent->client->phone ?: ($linkedEvent->partner_phone ?: '');
+                    $rawMail = (string) ($linkedEvent->client->email ?? '');
+                    if ($rawMail !== '' && !str_ends_with($rawMail, '.local') && !str_starts_with($rawMail, 'sin-email-')) {
+                        $this->client_email = $rawMail;
+                    } elseif (!empty($linkedEvent->partner_email)) {
+                        $this->client_email = $linkedEvent->partner_email;
+                    }
+                } else {
+                    $this->client_name = $linkedEvent->partner_name ?: '';
+                    $this->client_phone = $linkedEvent->partner_phone ?: '';
+                    $this->client_email = $linkedEvent->partner_email ?: '';
+                }
+                if ($linkedEvent->event_date) {
+                    $this->event_date = \Carbon\Carbon::parse($linkedEvent->event_date)->format('Y-m-d');
+                }
+                if (!empty($linkedEvent->location) && $linkedEvent->location !== 'Por definir') {
+                    $this->event_location = $linkedEvent->location;
+                }
+            }
+        }
 
         $this->services = [
             'ceremony' => [
@@ -1041,35 +1075,85 @@ class QuoteCalculator extends Component
         if ($this->needs_prior_setup) {
             $quoteClientNotesParts[] = "🔧 Requiere montaje previo / ensayo";
         }
-        $quoteClientNotes = implode("\n", $quoteClientNotesParts);
+        if (!empty($requestedServicesList)) {
+            $quoteClientNotesParts[] = "📌 Servicios marcados en /presupuesto:\n" . implode("\n", $requestedServicesList);
+        }
+        $quoteClientNotes = implode("\n\n", $quoteClientNotesParts);
 
-        $fullNotes = "SOLICITUD DE PRESUPUESTO ONLINE (/presupuesto) [" . now()->format('d/m/Y H:i') . "]:\n"
+        $stampNow = now()->format('d/m/Y H:i');
+        $fullNotes = "SOLICITUD DE PRESUPUESTO ONLINE (/presupuesto) [{$stampNow}]:\n"
                    . "Tipo de Evento: " . $typeConfig['name'] . "\n"
                    . ($cleanClientNotes !== '' ? "\n📝 NOTAS Y EXPLICACIÓN DEL CLIENTE:\n" . $cleanClientNotes . "\n\n" : "")
                    . $scheduleAndSetupNotes
                    . "Servicios Solicitados:\n"
                    . implode("\n", $requestedServicesList);
 
-        // 4. Reutilizar evento existente del cliente si ya entró como Lead (para no duplicarlo) o crear uno nuevo
-        $event = Event::where('client_id', $client->id)
-            ->where(function ($q) {
-                if (!empty($this->event_date)) {
-                    $q->whereDate('event_date', $this->event_date)
-                      ->orWhereIn('status', ['no_response', 'draft']);
-                } else {
-                    $q->whereIn('status', ['no_response', 'draft']);
-                }
-            })
-            ->latest()
-            ->first();
+        // 4. Localizar evento existente (por token, por cliente, por teléfono/email de pareja o por fecha+nombre) para no perder ni desincronizar datos
+        $event = null;
+        if (!empty($this->event_token)) {
+            $event = Event::where('token', $this->event_token)->first();
+        }
+
+        if (!$event) {
+            $event = Event::where('client_id', $client->id)
+                ->where(function ($q) {
+                    if (!empty($this->event_date)) {
+                        $q->whereDate('event_date', $this->event_date)
+                          ->orWhereNotIn('status', ['cancelled', 'rejected', 'completed']);
+                    } else {
+                        $q->whereNotIn('status', ['cancelled', 'rejected', 'completed']);
+                    }
+                })
+                ->latest()
+                ->first();
+        }
+
+        $digitsPhone = preg_replace('/\D/', '', (string) $this->client_phone);
+        $last9Phone = strlen($digitsPhone) >= 9 ? substr($digitsPhone, -9) : '';
+
+        if (!$event && $last9Phone !== '') {
+            $event = Event::where(function ($q) use ($last9Phone) {
+                    $q->where('partner_phone', 'LIKE', "%{$last9Phone}%")
+                      ->orWhereHas('client', function ($cq) use ($last9Phone) {
+                          $cq->where('phone', 'LIKE', "%{$last9Phone}%");
+                      });
+                })
+                ->whereNotIn('status', ['cancelled', 'completed'])
+                ->latest()
+                ->first();
+        }
+
+        if (!$event && !empty($cleanEmail)) {
+            $event = Event::where(function ($q) use ($cleanEmail) {
+                    $q->where('partner_email', $cleanEmail)
+                      ->orWhereHas('client', function ($cq) use ($cleanEmail) {
+                          $cq->where('email', $cleanEmail);
+                      });
+                })
+                ->whereNotIn('status', ['cancelled', 'completed'])
+                ->latest()
+                ->first();
+        }
 
         if ($event) {
-            $event->update([
+            $eventUpdates = [
                 'event_date' => $this->event_date ?: $event->event_date,
                 'location' => (!empty($this->event_location) && $this->event_location !== 'Por definir') ? $this->event_location : $event->location,
                 'notes' => $fullNotes . ($event->notes ? "\n\n========================================\n" . $event->notes : ''),
-            ]);
+            ];
+            if (!$event->client_id && $client) {
+                $eventUpdates['client_id'] = $client->id;
+            }
+            if ($cleanClientNotes !== '' || $cleanSchedule !== '') {
+                $schedBlock = trim(($cleanSchedule !== '' ? "Horario: {$cleanSchedule}. " : '') . $cleanClientNotes);
+                $existingSched = trim((string) $event->schedule_notes);
+                if ($schedBlock !== '' && !str_contains($existingSched, $schedBlock)) {
+                    $eventUpdates['schedule_notes'] = $existingSched !== '' ? ($schedBlock . "\n" . $existingSched) : $schedBlock;
+                }
+            }
+            $event->update($eventUpdates);
         } else {
+            $initialSchedNotes = trim(($cleanSchedule !== '' ? "Horario: {$cleanSchedule}. " : '') . $cleanClientNotes);
             $event = Event::create([
                 'name' => $eventTitle,
                 'brand' => Setting::getDetectedBrand(),
@@ -1080,7 +1164,43 @@ class QuoteCalculator extends Component
                 'client_id' => $client->id,
                 'token' => Str::random(32),
                 'notes' => $fullNotes,
+                'schedule_notes' => $initialSchedNotes !== '' ? $initialSchedNotes : null,
             ]);
+        }
+
+        // 4b. Guardar SIEMPRE las opciones seleccionadas (Ceremonia, Cóctel, Banquete, DJ, etc.) y las Notas del cliente en el DOSSIER del evento
+        try {
+            $formattedDate = $this->event_date ? \Carbon\Carbon::parse($this->event_date)->format('d/m/Y') : 'Por definir';
+            $dossierBlock = "### 📋 Solicitud Recibida desde /presupuesto ({$stampNow})\n"
+                . "**Cliente:** {$this->client_name} (" . ($this->client_phone ?: 'Sin tel.') . ")\n"
+                . "**Tipo de Evento:** {$typeConfig['name']} | **Fecha:** {$formattedDate} | **Lugar:** {$this->event_location}\n\n"
+                . "**✅ Servicios y Opciones Marcadas por el Cliente:**\n"
+                . implode("\n", $requestedServicesList) . "\n";
+
+            if ($cleanSchedule !== '') {
+                $dossierBlock .= "\n**⏰ Horario Indicado:** {$cleanSchedule}\n";
+            }
+            if ($this->needs_prior_setup) {
+                $dossierBlock .= "**🔧 Montaje Especial:** Requiere montaje el día anterior / ensayo previo / varios días\n";
+            }
+            if ($cleanClientNotes !== '') {
+                $dossierBlock .= "\n**📝 Notas, Horarios y Especificaciones del Cliente:**\n{$cleanClientNotes}\n";
+            }
+            $dossierBlock .= "\n---\n\n";
+
+            $existingDossier = $event->dossiers()->first();
+            if ($existingDossier) {
+                $currentContent = trim((string) $existingDossier->content);
+                $existingDossier->update([
+                    'content' => $currentContent !== '' ? ($dossierBlock . $currentContent) : trim($dossierBlock),
+                ]);
+            } else {
+                $event->dossiers()->create([
+                    'content' => trim($dossierBlock),
+                ]);
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Error guardando dossier desde QuoteCalculator: ' . $e->getMessage());
         }
 
         // Localizar automáticamente el teléfono del restaurante / bodega / finca si se ha indicado lugar
