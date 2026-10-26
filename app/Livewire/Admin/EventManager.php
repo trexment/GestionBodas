@@ -421,6 +421,7 @@ class EventManager extends Component
     public $confirmingFollowupEventName = '';
     public $confirmingFollowupClientName = '';
     public $confirmingFollowupDays = 0;
+    public $confirmingFollowupStatus = 'no_response';
     public $confirmingFollowupSelectedKey = 'dia3_dudas';
     public $confirmingFollowupOptions = [];
     public $confirmingFollowupUrl = '';
@@ -438,7 +439,8 @@ class EventManager extends Component
         $this->confirmingFollowupEventId = $event->id;
         $this->confirmingFollowupEventName = $event->name;
         $this->confirmingFollowupClientName = $event->client ? $event->client->name : ($event->partner_name ?: 'Cliente');
-        $this->confirmingFollowupDays = $event->days_without_response;
+        $this->confirmingFollowupStatus = $event->status ?: 'no_response';
+        $this->confirmingFollowupDays = $event->status === 'on_hold' ? $event->days_on_hold : $event->days_without_response;
         $this->confirmingFollowupEmail = $event->client_contact_email ?: '';
         $this->confirmingFollowupHasPhone = !empty($event->client_contact_phone);
 
@@ -519,13 +521,40 @@ class EventManager extends Component
 
         $event = Event::find($this->confirmingFollowupEventId);
         if ($event) {
-            $newEntry = "[" . now()->format('d/m/Y H:i') . "] 🎉 El cliente ha respondido al seguimiento. Estado cambiado a " . ucfirst($newStatus) . " por " . auth()->user()->name . ".";
-            $event->update([
-                'status' => in_array($newStatus, ['draft', 'confirmed']) ? $newStatus : 'draft',
-                'no_response_at' => null,
-                'notes' => Event::prependNote($event->notes, $newEntry),
-            ]);
-            session()->flash('message', "¡Genial! {$event->name} se ha marcado como " . ($newStatus === 'confirmed' ? 'Confirmado' : 'Borrador') . ".");
+            $validStatus = in_array($newStatus, ['draft', 'confirmed', 'on_hold'], true) ? $newStatus : 'draft';
+            if ($validStatus === 'on_hold') {
+                $newEntry = "[" . now()->format('d/m/Y H:i') . "] ⏸️ El cliente indicó que se pondrá en contacto más adelante. Estado cambiado a En Espera por " . auth()->user()->name . ".";
+                $updateData = [
+                    'status' => 'on_hold',
+                    'no_response_at' => now(),
+                    'notes' => Event::prependNote($event->notes, $newEntry),
+                ];
+            } else {
+                $newEntry = "[" . now()->format('d/m/Y H:i') . "] 🎉 El cliente ha respondido al seguimiento. Estado cambiado a " . ucfirst($validStatus) . " por " . auth()->user()->name . ".";
+                $updateData = [
+                    'status' => $validStatus,
+                    'no_response_at' => null,
+                    'notes' => Event::prependNote($event->notes, $newEntry),
+                ];
+            }
+
+            try {
+                $event->update($updateData);
+            } catch (\Illuminate\Database\QueryException $e) {
+                if (str_contains($e->getMessage(), 'Data truncated') || str_contains($e->getMessage(), '1265')) {
+                    \Illuminate\Support\Facades\DB::statement("ALTER TABLE `events` MODIFY COLUMN `status` VARCHAR(50) NOT NULL DEFAULT 'draft'");
+                    $event->update($updateData);
+                } else {
+                    throw $e;
+                }
+            }
+
+            $statusMsg = match($validStatus) {
+                'confirmed' => 'Confirmado',
+                'on_hold' => 'En Espera (En Pausa, sin alerta de sin respuesta)',
+                default => 'Borrador',
+            };
+            session()->flash('message', "¡Actualizado! {$event->name} se ha marcado como {$statusMsg}.");
         }
 
         $this->confirmingFollowupEventId = null;
@@ -535,6 +564,34 @@ class EventManager extends Component
     public function cancelFollowup()
     {
         $this->confirmingFollowupEventId = null;
+    }
+
+    public function putEventOnHold(int $eventId)
+    {
+        $event = Event::find($eventId);
+        if (!$event) return;
+
+        $userName = auth()->user()?->name ?? 'Sistema';
+        $newEntry = "[" . now()->format('d/m/Y H:i') . "] ⏸️ Evento puesto En Espera por {$userName} (el cliente indicó que se pondrá en contacto). Contador de días en pausa iniciado.";
+        $updateData = [
+            'status' => 'on_hold',
+            'no_response_at' => now(),
+            'notes' => Event::prependNote($event->notes, $newEntry),
+        ];
+
+        try {
+            $event->update($updateData);
+        } catch (\Illuminate\Database\QueryException $e) {
+            if (str_contains($e->getMessage(), 'Data truncated') || str_contains($e->getMessage(), '1265')) {
+                \Illuminate\Support\Facades\DB::statement("ALTER TABLE `events` MODIFY COLUMN `status` VARCHAR(50) NOT NULL DEFAULT 'draft'");
+                $event->update($updateData);
+            } else {
+                throw $e;
+            }
+        }
+
+        $this->loadEvents();
+        session()->flash('message', "⏸️ «{$event->name}» puesto En Espera (En Pausa). Ya no saldrá como sin respuesta; contará los días en pausa y avisará a los 30 días.");
     }
 
     public function render()
@@ -573,6 +630,7 @@ class EventManager extends Component
             'all' => $visiblePool->count(),
             'total_all' => $allEvents->count(),
             'no_response' => $allEvents->where('status', 'no_response')->count(),
+            'on_hold' => $allEvents->where('status', 'on_hold')->count(),
             'draft' => $allEvents->where('status', 'draft')->count(),
             'confirmed' => $allEvents->where('status', 'confirmed')->count(),
             'completed' => $allEvents->where('status', 'completed')->count(),
@@ -582,6 +640,10 @@ class EventManager extends Component
 
         $urgentNoResponseCount = $allEvents->where('status', 'no_response')->filter(function($ev) {
             return $ev->days_without_response >= 2;
+        })->count();
+
+        $expiredOnHoldCount = $allEvents->where('status', 'on_hold')->filter(function($ev) {
+            return $ev->days_on_hold >= 30;
         })->count();
 
         if ($this->status_filter === 'all') {
@@ -598,6 +660,7 @@ class EventManager extends Component
             'events' => $filteredEvents,
             'statusCounts' => $statusCounts,
             'urgentNoResponseCount' => $urgentNoResponseCount,
+            'expiredOnHoldCount' => $expiredOnHoldCount,
         ])->layout('components.layouts.app', ['header' => 'Gestión de Eventos']);
     }
 }

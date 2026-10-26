@@ -204,6 +204,7 @@ class Event extends Model
         return match($st) {
             'draft' => 'Borrador / Pendiente',
             'no_response' => 'Sin Respuesta',
+            'on_hold' => 'En Espera',
             'confirmed' => 'Confirmado',
             'completed' => 'Completado',
             'rejected' => 'Rechazado',
@@ -221,6 +222,7 @@ class Event extends Model
         return match($st) {
             'draft' => 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950/60 dark:text-amber-300',
             'no_response' => 'bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-950/60 dark:text-purple-300',
+            'on_hold' => 'bg-cyan-100 text-cyan-800 border-cyan-300 dark:bg-cyan-950/60 dark:text-cyan-300',
             'confirmed' => 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300',
             'completed' => 'bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-950/60 dark:text-blue-300',
             'rejected' => 'bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-800 dark:text-slate-300',
@@ -238,6 +240,7 @@ class Event extends Model
         return match($st) {
             'draft' => '📝',
             'no_response' => '⏳',
+            'on_hold' => '⏸️',
             'confirmed' => '🟢',
             'completed' => '🔵',
             'rejected' => '❌',
@@ -258,6 +261,55 @@ class Event extends Model
             ? \Carbon\Carbon::parse($this->attributes['no_response_at']) 
             : ($this->updated_at ?? now());
         return (int) $date->diffInDays(now());
+    }
+
+    /**
+     * Días transcurridos en estado "En Espera / En Pausa" (on_hold)
+     */
+    public function getDaysOnHoldAttribute(): int
+    {
+        if (($this->attributes['status'] ?? '') !== 'on_hold') {
+            return 0;
+        }
+        $date = !empty($this->attributes['no_response_at'])
+            ? \Carbon\Carbon::parse($this->attributes['no_response_at'])
+            : ($this->updated_at ?? now());
+        return (int) $date->diffInDays(now());
+    }
+
+    /**
+     * Etiqueta humana del tiempo en pausa ("En Espera")
+     */
+    public function getOnHoldTimeLabelAttribute(): string
+    {
+        $days = $this->days_on_hold;
+        if ($days <= 0) {
+            return 'En pausa hoy';
+        }
+        if ($days === 1) {
+            return '1 día en pausa';
+        }
+        return "{$days} días en pausa";
+    }
+
+    /**
+     * Indica si lleva 30 días o más en espera (vencimiento del plazo del presupuesto)
+     */
+    public function getIsOnHoldExpiredAttribute(): bool
+    {
+        return ($this->attributes['status'] ?? '') === 'on_hold' && $this->days_on_hold >= 30;
+    }
+
+    /**
+     * Enlace directo de WhatsApp con el aviso de fin de plazo de presupuesto (+30 días en pausa)
+     */
+    public function getOnHoldExpiredWhatsappUrlAttribute(): string
+    {
+        if (empty($this->client_contact_phone)) {
+            return '';
+        }
+        $data = \App\Services\WhatsAppTemplateService::followupReminder($this, 'fin_plazo_presupuesto');
+        return $data['url'] ?? '';
     }
 
     /**

@@ -226,6 +226,8 @@ class WhatsAppTemplateService
                 "Consulta sobre vuestra fecha ({$eventDate}) - {$companyName}",
             'psicologia_inversa', 'cierre_expediente' =>
                 "Cierre de consulta por ahora - {$eventName} ({$companyName})",
+            'fin_plazo_presupuesto' =>
+                "Fin de validez del presupuesto para {$eventName} ({$eventDate}) - {$companyName}",
             'presupuesto', 'objecion_precio', 'seguimiento_no', 'presupuesto_no', 'followup_budget' =>
                 "Ajuste de propuesta a vuestro presupuesto - {$eventName} ({$companyName})",
             'no_es_nuestro_cliente' =>
@@ -414,6 +416,10 @@ class WhatsAppTemplateService
             'psicologia_inversa' => [
                 'label' => '🔒 Cierre de Expediente',
                 'default' => "¡Hola {nombre}! Como no tengo noticias, doy por cerrada la consulta por ahora. Si más adelante necesitáis DJ, aquí estaré. ¡Un saludo! {firma}",
+            ],
+            'fin_plazo_presupuesto' => [
+                'label' => '⌛ Fin de Plazo de Presupuesto (+30 días en pausa)',
+                'default' => "¡Hola {nombre}! Soy {firma}, de {empresa}. Como han pasado más de 30 días desde que dejamos vuestra consulta en pausa para {vuestro_evento} del {fecha}, os escribimos para informaros de que finaliza el plazo de validez del presupuesto enviado. Si más adelante decidís retomar la contratación y la fecha sigue disponible, tendréis que solicitar un nuevo presupuesto para contratar con las tarifas del momento. ¡Un saludo! {firma}",
             ],
             'presupuesto' => [
                 'label' => '💰 Objeción Precio (Adaptar)',
@@ -706,6 +712,14 @@ class WhatsAppTemplateService
     }
 
     /**
+     * Fin de plazo de validez del presupuesto (+30 días en espera/pausa).
+     */
+    public static function finPlazoPresupuesto(Event $event, ?string $senderBrand = null): string
+    {
+        return self::renderTemplateByKey('fin_plazo_presupuesto', $event, $senderBrand);
+    }
+
+    /**
      * DUDAS (Día 3).
      */
     public static function seguimientoDia3Dudas(Event $event, ?string $senderBrand = null): string
@@ -742,6 +756,10 @@ class WhatsAppTemplateService
      */
     public static function getRecommendedFollowupKey(Event $event): string
     {
+        if (($event->status ?? '') === 'on_hold') {
+            return 'fin_plazo_presupuesto';
+        }
+
         $hasQuotes = $event->relationLoaded('quotes') ? $event->quotes->isNotEmpty() : $event->quotes()->exists();
         $days = $event->days_without_response;
 
@@ -840,6 +858,14 @@ class WhatsAppTemplateService
                 'icon' => '🔒',
                 'description' => 'Da por cerrada la consulta por ahora quedando a disposición si más adelante necesitan DJ.',
                 'text' => self::seguimientoPsicologiaInversa($event, $senderBrand),
+            ],
+            'fin_plazo_presupuesto' => [
+                'key' => 'fin_plazo_presupuesto',
+                'title' => 'Fin Plazo Presupuesto (+30d)',
+                'stage' => '+30d Pausa',
+                'icon' => '⌛',
+                'description' => 'Avisa de que finaliza el plazo de 30 días del presupuesto en espera y que si desean contratar más adelante deberán solicitar uno nuevo con las tarifas vigentes.',
+                'text' => self::finPlazoPresupuesto($event, $senderBrand),
             ],
             'presupuesto' => [
                 'key' => 'presupuesto',
@@ -948,6 +974,7 @@ class WhatsAppTemplateService
             'dia3_dudas' => self::seguimientoDia3Dudas($event),
             'dia7_escasez' => self::seguimientoDia7Escasez($event),
             'psicologia_inversa' => self::seguimientoPsicologiaInversa($event),
+            'fin_plazo_presupuesto' => self::finPlazoPresupuesto($event),
             'presupuesto' => self::seguimientoPresupuestoNo($event),
             'no_es_nuestro_cliente' => self::descartePosicionamientoPrecio($event),
             'fotomaton_360' => self::infoFotomatonY360($event),
@@ -961,6 +988,7 @@ class WhatsAppTemplateService
             'dia3_dudas' => 'Día 2-3: Dudas & Flexibilidad',
             'dia7_escasez' => 'Día 5-7: Cierre por Escasez (Prioridad 24h)',
             'psicologia_inversa' => 'Psicología Inversa / Cierre de Expediente',
+            'fin_plazo_presupuesto' => 'Fin de Plazo de Presupuesto (+30 días en pausa)',
             'presupuesto' => 'Reactivación por Presupuesto (Técnica del NO)',
             'no_es_nuestro_cliente' => 'Descarte por Posicionamiento ("No eres nuestro perfil de cliente")',
             'fotomaton_360' => 'Info & Precios: Fotomatón, Plataforma 360º y Pack Dúo',
@@ -974,6 +1002,7 @@ class WhatsAppTemplateService
             'dia3_dudas' => '💡',
             'dia7_escasez' => '⚡',
             'psicologia_inversa' => '🚪',
+            'fin_plazo_presupuesto' => '⌛',
             'presupuesto' => '💶',
             'no_es_nuestro_cliente' => '👑',
             'fotomaton_360' => '📸',

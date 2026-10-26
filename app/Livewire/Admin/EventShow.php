@@ -679,20 +679,25 @@ class EventShow extends Component
 
         $updateData = ['status' => $status];
         if (\Illuminate\Support\Facades\Schema::hasColumn('events', 'no_response_at')) {
-            $updateData['no_response_at'] = ($status === 'no_response') ? now() : null;
+            $updateData['no_response_at'] = in_array($status, ['no_response', 'on_hold'], true) ? now() : null;
+        }
+        if ($status === 'on_hold') {
+            $userName = auth()->user()?->name ?? 'Sistema';
+            $pauseNote = "[" . now()->format('d/m/Y H:i') . "] ⏸️ Evento puesto En Espera por {$userName} (el cliente indicó que se pondrá en contacto). Contador de días en pausa iniciado.";
+            $updateData['notes'] = \App\Models\Event::prependNote($this->event->notes, $pauseNote);
         }
 
         try {
             $this->event->update($updateData);
         } catch (\Illuminate\Database\QueryException $e) {
-            // Auto-heal if MySQL table still has the legacy ENUM column without 'no_response'
+            // Auto-heal if MySQL table still has the legacy ENUM column without 'no_response' / 'on_hold'
             if (str_contains($e->getMessage(), 'Data truncated') || str_contains($e->getMessage(), '1265')) {
                 try {
                     \Illuminate\Support\Facades\DB::statement("ALTER TABLE `events` MODIFY COLUMN `status` VARCHAR(50) NOT NULL DEFAULT 'draft'");
                     if (!\Illuminate\Support\Facades\Schema::hasColumn('events', 'no_response_at')) {
                         \Illuminate\Support\Facades\DB::statement("ALTER TABLE `events` ADD COLUMN `no_response_at` TIMESTAMP NULL AFTER `status`");
                     }
-                    if ($status === 'no_response') {
+                    if (in_array($status, ['no_response', 'on_hold'], true)) {
                         $updateData['no_response_at'] = now();
                     }
                     $this->event->update($updateData);
@@ -705,9 +710,12 @@ class EventShow extends Component
         }
 
         $this->event->refresh();
+        $this->event_notes = $this->event->notes;
 
         if ($status === 'no_response') {
             session()->flash('message', '⏳ Estado actualizado a: Sin Respuesta. Se ha activado el recordatorio de seguimiento.');
+        } elseif ($status === 'on_hold') {
+            session()->flash('message', '⏸️ Estado actualizado a: En Espera (En Pausa). Se mostrarán los días en pausa sin alerta de sin respuesta y te avisará si supera los 30 días de validez del presupuesto.');
         } else {
             session()->flash('message', 'Estado del evento actualizado a: ' . ($this->event->status_label ?? ucfirst($status)));
         }
@@ -2578,6 +2586,10 @@ class EventShow extends Component
                 case 'psicologia_inversa':
                     $text = \App\Services\WhatsAppTemplateService::seguimientoPsicologiaInversa($this->event, $sender);
                     $title = 'Psicología Inversa';
+                    break;
+                case 'fin_plazo_presupuesto':
+                    $text = \App\Services\WhatsAppTemplateService::finPlazoPresupuesto($this->event, $sender);
+                    $title = 'Fin de Plazo de Presupuesto (+30d)';
                     break;
                 case 'cuestionario':
                     $text = \App\Services\WhatsAppTemplateService::cuestionario($this->event, $sender);
@@ -4569,7 +4581,7 @@ class EventShow extends Component
             'event_edit_location' => 'required|string|max:255',
             'event_edit_type' => 'required|string|in:boda,video,empresa,cumpleanos,comunion,otro',
             'event_edit_brand' => 'required|string|in:nunez_and_son,javnx,mago_leugim',
-            'event_edit_status' => 'required|in:draft,no_response,confirmed,completed,rejected,cancelled',
+            'event_edit_status' => 'required|in:draft,no_response,on_hold,confirmed,completed,rejected,cancelled',
             'event_edit_notes' => 'nullable|string',
         ]);
 
@@ -4587,7 +4599,13 @@ class EventShow extends Component
         ];
 
         if (\Illuminate\Support\Facades\Schema::hasColumn('events', 'no_response_at')) {
-            $updateData['no_response_at'] = ($this->event_edit_status === 'no_response') ? now() : null;
+            if (in_array($this->event_edit_status, ['no_response', 'on_hold'], true)) {
+                $updateData['no_response_at'] = ($this->event->status === $this->event_edit_status && !empty($this->event->no_response_at))
+                    ? $this->event->no_response_at
+                    : now();
+            } else {
+                $updateData['no_response_at'] = null;
+            }
         }
 
         try {
@@ -4599,7 +4617,7 @@ class EventShow extends Component
                     if (!\Illuminate\Support\Facades\Schema::hasColumn('events', 'no_response_at')) {
                         \Illuminate\Support\Facades\DB::statement("ALTER TABLE `events` ADD COLUMN `no_response_at` TIMESTAMP NULL AFTER `status`");
                     }
-                    if ($this->event_edit_status === 'no_response') {
+                    if (in_array($this->event_edit_status, ['no_response', 'on_hold'], true)) {
                         $updateData['no_response_at'] = now();
                     }
                     $this->event->update($updateData);

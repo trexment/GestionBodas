@@ -58,6 +58,25 @@
         </div>
     @endif
 
+    <!-- ALERTA GLOBAL DE EVENTOS EN ESPERA CON MÁS DE 30 DÍAS (FIN DE PLAZO DE PRESUPUESTO) -->
+    @if(($expiredOnHoldCount ?? 0) > 0)
+        <div class="bg-gradient-to-r from-amber-50 via-orange-50 to-rose-50 dark:from-amber-950/40 dark:via-orange-950/40 dark:to-slate-900 border border-amber-300 dark:border-amber-700 p-4 mb-5 rounded-2xl shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+                <span class="text-2xl p-2 bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300 rounded-xl shrink-0">⌛</span>
+                <div>
+                    <h4 class="text-xs sm:text-sm font-extrabold text-amber-950 dark:text-amber-200 flex items-center gap-2">
+                        <span>Tienes {{ $expiredOnHoldCount }} {{ $expiredOnHoldCount === 1 ? 'evento en espera con más de 30 días en pausa' : 'eventos en espera con más de 30 días en pausa' }}</span>
+                        <span class="text-[10px] bg-amber-600 text-white font-black px-2 py-0.5 rounded-full uppercase tracking-wider">Plazo 30d cumplido</span>
+                    </h4>
+                    <p class="text-[11px] text-amber-800 dark:text-amber-300 mt-0.5">Envíales el aviso de finalización del plazo del presupuesto por si más adelante desean solicitar uno nuevo con las tarifas vigentes.</p>
+                </div>
+            </div>
+            <button type="button" wire:click="setStatusFilter('on_hold')" class="w-full sm:w-auto bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-4 py-2 rounded-xl shadow-xs whitespace-nowrap transition cursor-pointer">
+                Ver En Espera (+30d) →
+            </button>
+        </div>
+    @endif
+
     <!-- FILTROS RÁPIDOS POR ESTADO + INTERRUPTORES (SWITCHES) PARA OCULTAR/MOSTRAR COMPLETADOS Y CANCELADOS -->
     <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3 mb-4 w-full">
         <div class="flex items-center gap-1.5 overflow-x-auto scrollbar-none pb-1">
@@ -67,6 +86,13 @@
             <button type="button" wire:click="setStatusFilter('no_response')" class="px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer flex items-center gap-1.5 {{ $status_filter === 'no_response' ? 'bg-purple-600 text-white shadow-xs' : 'bg-purple-50 dark:bg-purple-950/40 text-purple-800 dark:text-purple-300 hover:bg-purple-100 border border-purple-200 dark:border-purple-800' }}">
                 <span>⏳ Sin Respuesta</span>
                 <span class="px-1.5 py-0.2 rounded-full text-[10px] {{ ($statusCounts['no_response'] ?? 0) > 0 ? 'bg-purple-200 dark:bg-purple-800 text-purple-900 dark:text-white font-black' : 'opacity-60' }}">{{ $statusCounts['no_response'] ?? 0 }}</span>
+            </button>
+            <button type="button" wire:click="setStatusFilter('on_hold')" class="px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer flex items-center gap-1.5 {{ $status_filter === 'on_hold' ? 'bg-cyan-600 text-white shadow-xs' : 'bg-cyan-50 dark:bg-cyan-950/40 text-cyan-800 dark:text-cyan-300 hover:bg-cyan-100 border border-cyan-200 dark:border-cyan-800' }}">
+                <span>⏸️ En Espera</span>
+                <span class="px-1.5 py-0.2 rounded-full text-[10px] {{ ($statusCounts['on_hold'] ?? 0) > 0 ? 'bg-cyan-200 dark:bg-cyan-800 text-cyan-900 dark:text-white font-black' : 'opacity-60' }}">{{ $statusCounts['on_hold'] ?? 0 }}</span>
+                @if(($expiredOnHoldCount ?? 0) > 0)
+                    <span class="px-1.5 py-0.2 rounded-full text-[9px] bg-amber-500 text-white font-black" title="Con más de 30 días en pausa">+30d: {{ $expiredOnHoldCount }}</span>
+                @endif
             </button>
             <button type="button" wire:click="setStatusFilter('confirmed')" class="px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer {{ $status_filter === 'confirmed' ? 'bg-emerald-600 text-white shadow-xs' : 'bg-white dark:bg-slate-800 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-50 border border-gray-200 dark:border-slate-700' }}">
                 🟢 Confirmados ({{ $statusCounts['confirmed'] ?? 0 }})
@@ -151,11 +177,14 @@
                 </div>
 
                 @if($event->status === 'no_response')
-                    <div class="flex items-center justify-between gap-2 bg-purple-50/80 dark:bg-purple-950/40 px-2.5 py-1.5 rounded-xl border border-purple-200 dark:border-purple-800/60">
+                    <div class="flex flex-wrap items-center justify-between gap-2 bg-purple-50/80 dark:bg-purple-950/40 px-2.5 py-1.5 rounded-xl border border-purple-200 dark:border-purple-800/60">
                         <span class="text-[11px] font-semibold {{ $event->no_response_urgency_level === 'critical' ? 'text-rose-600 font-bold' : ($event->no_response_urgency_level === 'warning' ? 'text-amber-600 font-bold' : 'text-purple-700 dark:text-purple-300') }}">
                             ⏳ {{ $event->no_response_time_label }}
                         </span>
                         <div class="flex items-center gap-1 shrink-0">
+                            <button type="button" wire:click="putEventOnHold({{ $event->id }})" class="bg-cyan-600 hover:bg-cyan-700 text-white font-bold text-[10px] py-1 px-2 rounded-lg shadow-2xs transition inline-flex items-center gap-1 shrink-0 cursor-pointer" title="Pasar a En Espera (el cliente dijo que ya avisará)">
+                                ⏸️ En Espera
+                            </button>
                             @if($event->no_response_whatsapp_url)
                                 <button type="button" onclick="window.open('{{ $event->no_response_whatsapp_url }}', '_blank')" wire:click="promptFollowup({{ $event->id }})" class="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-[11px] py-1 px-2.5 rounded-lg shadow-2xs transition inline-flex items-center gap-1 shrink-0 cursor-pointer">
                                     💬 Recordar
@@ -163,6 +192,26 @@
                             @else
                                 <button type="button" wire:click="promptFollowup({{ $event->id }})" class="bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-[11px] py-1 px-2.5 rounded-lg shadow-2xs transition inline-flex items-center gap-1 shrink-0 cursor-pointer">
                                     📧 Recordar Email
+                                </button>
+                            @endif
+                        </div>
+                    </div>
+                @elseif($event->status === 'on_hold')
+                    <div class="flex flex-wrap items-center justify-between gap-2 {{ $event->is_on_hold_expired ? 'bg-amber-50/90 dark:bg-amber-950/40 border-amber-300 dark:border-amber-800' : 'bg-cyan-50/80 dark:bg-cyan-950/40 border-cyan-200 dark:border-cyan-800/60' }} px-2.5 py-1.5 rounded-xl border">
+                        <span class="text-[11px] font-bold {{ $event->is_on_hold_expired ? 'text-amber-800 dark:text-amber-300' : 'text-cyan-800 dark:text-cyan-300' }}">
+                            ⏸️ {{ $event->on_hold_time_label }}
+                            @if($event->is_on_hold_expired)
+                                <span class="ml-1 text-[10px] bg-amber-600 text-white px-1.5 py-0.2 rounded font-black uppercase">Fin plazo 30d</span>
+                            @endif
+                        </span>
+                        <div class="flex items-center gap-1 shrink-0">
+                            @if($event->on_hold_expired_whatsapp_url)
+                                <button type="button" onclick="window.open('{{ $event->on_hold_expired_whatsapp_url }}', '_blank')" wire:click="promptFollowup({{ $event->id }}, 'fin_plazo_presupuesto')" class="{{ $event->is_on_hold_expired ? 'bg-amber-600 hover:bg-amber-700 text-white' : 'bg-cyan-100 hover:bg-cyan-200 text-cyan-800 dark:bg-cyan-900/60 dark:text-cyan-200' }} font-extrabold text-[11px] py-1 px-2.5 rounded-lg shadow-2xs transition inline-flex items-center gap-1 shrink-0 cursor-pointer">
+                                    ⌛ {{ $event->is_on_hold_expired ? 'Aviso Fin Plazo (30d)' : 'Aviso Fin Plazo' }}
+                                </button>
+                            @else
+                                <button type="button" wire:click="promptFollowup({{ $event->id }}, 'fin_plazo_presupuesto')" class="{{ $event->is_on_hold_expired ? 'bg-amber-600 hover:bg-amber-700 text-white' : 'bg-cyan-100 hover:bg-cyan-200 text-cyan-800 dark:bg-cyan-900/60 dark:text-cyan-200' }} font-extrabold text-[11px] py-1 px-2.5 rounded-lg shadow-2xs transition inline-flex items-center gap-1 shrink-0 cursor-pointer">
+                                    📧 {{ $event->is_on_hold_expired ? 'Email Fin Plazo (30d)' : 'Email Fin Plazo' }}
                                 </button>
                             @endif
                         </div>
@@ -344,6 +393,33 @@
                                         @else
                                             <button type="button" wire:click="promptFollowup({{ $event->id }})" class="inline-flex items-center gap-0.5 text-[10px] bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 border border-indigo-300 dark:border-indigo-800 px-1.5 py-0.5 rounded font-bold transition cursor-pointer" title="Enviar seguimiento táctico por Email">
                                                 📧 Recordar Email
+                                            </button>
+                                        @endif
+                                        <button type="button" wire:click="putEventOnHold({{ $event->id }})" class="inline-flex items-center gap-0.5 text-[10px] bg-cyan-50 hover:bg-cyan-100 dark:bg-cyan-950/60 dark:hover:bg-cyan-900/60 text-cyan-700 dark:text-cyan-300 border border-cyan-300 dark:border-cyan-800 px-1.5 py-0.5 rounded font-bold transition cursor-pointer" title="Pasar a En Espera (el cliente dijo que ya se pondrá en contacto)">
+                                            ⏸️ En Espera
+                                        </button>
+                                    </div>
+                                @elseif($event->status === 'on_hold')
+                                    <div class="mt-1 flex flex-wrap items-center gap-1">
+                                        <span class="text-[10px] font-bold {{ $event->is_on_hold_expired ? 'text-amber-700 dark:text-amber-300' : 'text-cyan-700 dark:text-cyan-300' }}">
+                                            {{ $event->on_hold_time_label }}
+                                        </span>
+                                        @if($event->is_on_hold_expired)
+                                            <span class="text-[9px] bg-amber-600 text-white font-black px-1.5 py-0.2 rounded uppercase" title="Han pasado más de 30 días en pausa: vence la validez del presupuesto">
+                                                +30d · Fin plazo
+                                            </span>
+                                            @if($event->on_hold_expired_whatsapp_url)
+                                                <button type="button" onclick="window.open('{{ $event->on_hold_expired_whatsapp_url }}', '_blank')" wire:click="promptFollowup({{ $event->id }}, 'fin_plazo_presupuesto')" class="inline-flex items-center gap-0.5 text-[10px] bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-200 border border-amber-400 dark:border-amber-700 px-1.5 py-0.5 rounded font-extrabold transition cursor-pointer" title="Enviar mensaje de fin de plazo del presupuesto (+30 días)">
+                                                    ⌛ Aviso Fin Plazo
+                                                </button>
+                                            @else
+                                                <button type="button" wire:click="promptFollowup({{ $event->id }}, 'fin_plazo_presupuesto')" class="inline-flex items-center gap-0.5 text-[10px] bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-200 border border-amber-400 dark:border-amber-700 px-1.5 py-0.5 rounded font-extrabold transition cursor-pointer" title="Enviar por Email aviso de fin de plazo del presupuesto (+30 días)">
+                                                    📧 Aviso Fin Plazo
+                                                </button>
+                                            @endif
+                                        @else
+                                            <button type="button" wire:click="promptFollowup({{ $event->id }}, 'fin_plazo_presupuesto')" class="inline-flex items-center gap-0.5 text-[10px] bg-slate-100 hover:bg-cyan-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 px-1.5 py-0.5 rounded font-semibold transition cursor-pointer" title="Ver o enviar aviso de fin de plazo de presupuesto (30 días)">
+                                                ⌛ Aviso 30d
                                             </button>
                                         @endif
                                     </div>
@@ -714,9 +790,15 @@
                             </p>
                         </div>
                     </div>
-                    <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300">
-                        {{ $confirmingFollowupDays <= 0 ? 'Puesto hoy' : ($confirmingFollowupDays === 1 ? '1 día sin respuesta' : "{$confirmingFollowupDays} días sin respuesta") }}
-                    </span>
+                    @if(($confirmingFollowupStatus ?? 'no_response') === 'on_hold')
+                        <span class="text-xs font-bold px-2.5 py-1 rounded-full {{ $confirmingFollowupDays >= 30 ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300' : 'bg-cyan-100 text-cyan-800 dark:bg-cyan-950/60 dark:text-cyan-300' }}">
+                            ⏸️ {{ $confirmingFollowupDays <= 0 ? 'En pausa hoy' : ($confirmingFollowupDays === 1 ? '1 día en pausa' : "{$confirmingFollowupDays} días en pausa") }}
+                        </span>
+                    @else
+                        <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300">
+                            {{ $confirmingFollowupDays <= 0 ? 'Puesto hoy' : ($confirmingFollowupDays === 1 ? '1 día sin respuesta' : "{$confirmingFollowupDays} días sin respuesta") }}
+                        </span>
+                    @endif
                 </div>
 
                 <!-- Selector de Plantilla Madrigal -->
@@ -810,7 +892,10 @@
                         <span class="text-[10px] opacity-80">(Poner contador a 0 hoy)</span>
                     </button>
 
-                    <div class="grid grid-cols-2 gap-2">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <button type="button" wire:click="markAsResponded('on_hold')" class="py-2 px-3 bg-cyan-50 hover:bg-cyan-100 dark:bg-cyan-950/60 text-cyan-800 dark:text-cyan-300 font-bold text-xs rounded-xl border border-cyan-300 dark:border-cyan-800 transition flex items-center justify-center gap-1 cursor-pointer" title="El cliente dijo que ya avisará: quita la alerta de sin respuesta y cuenta los días en pausa">
+                            <span>⏸️ En Espera (Ya avisarán)</span>
+                        </button>
                         <button type="button" wire:click="markAsResponded('draft')" class="py-2 px-3 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 font-bold text-xs rounded-xl border border-indigo-200 dark:border-indigo-800 transition flex items-center justify-center gap-1 cursor-pointer" title="Marcar como atendido y pasar a borrador">
                             <span>📝 ¡Ha respondido!</span>
                         </button>
