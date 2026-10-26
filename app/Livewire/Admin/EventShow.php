@@ -341,6 +341,9 @@ class EventShow extends Component
         $this->schedule_notes = $this->event->schedule_notes;
         
         $dossier = $this->event->dossiers()->first();
+        if ($dossier) {
+            $this->dossier_content = $dossier->content;
+        }
         $this->loadSettingsPrices();
 
         $this->invoice_type = 'factura';

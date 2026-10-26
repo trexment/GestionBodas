@@ -40,6 +40,19 @@ class QuoteCalculator extends Component
                 'hero_subtitle' => 'Selecciona las fases de vuestra boda para recibir una propuesta personalizada con el mejor sonido e iluminación profesional.',
                 'name_label' => 'Nombre de los Novios / Pareja *',
                 'name_placeholder' => 'Ej: Carlos & Laura',
+                'location_label' => 'Finca, Bodega, Hotel o Localidad *',
+                'location_placeholder' => 'Ej: Bodegas Franco-Españolas, Finca, Hotel...',
+                'form_title' => 'Datos y Detalles de vuestra Boda',
+                'form_subtitle' => 'Rellena vuestros datos para enviarte la propuesta personalizada de vuestra boda sin compromiso.',
+                'show_schedule_box' => false,
+                'show_prior_setup' => false,
+                'notes_label' => 'Notas o detalles de vuestra boda (opcional)',
+                'notes_help' => '¿Queréis indicarnos si es boda de mañana o de tarde, número aproximado de invitados o alguna petición especial?',
+                'notes_placeholder' => 'Ej: Boda de tarde en finca, seremos unos 140 invitados y nos gustaría sonorizar la ceremonia civil en el jardín, el cóctel y la fiesta...',
+                'custom_service_title' => '¿Necesitas sonorizar otro rincón, hora loca u otro extra especial?',
+                'custom_service_subtitle' => 'Sonorización de segundo espacio, iluminación arquitectónica, sorpresas, música especial...',
+                'custom_service_placeholder' => 'Ej: Sonorización de rincón especial / Hora loca / Iluminación extra...',
+                'custom_service_desc_placeholder' => 'Ej: Microfonía extra para sorpresa de amigos durante el banquete...',
                 'ceremony_name' => 'Ceremonia Civil / Religiosa',
                 'ceremony_icon' => '💍',
                 'ceremony_desc' => 'Sonorización profesional, microfonía inalámbrica y música de momentos clave (entradas, anillos, firmas y salida).',
@@ -63,6 +76,23 @@ class QuoteCalculator extends Component
                 'hero_subtitle' => 'Microfonía para ponencias, música ambiente para cóctel/cena y DJ para celebraciones de equipo o aniversarios.',
                 'name_label' => 'Empresa / Persona de Contacto *',
                 'name_placeholder' => 'Ej: Innova Tech S.L. / Roberto Pérez',
+                'location_label' => 'Hotel, Palacio de Congresos, Bodega o Lugar *',
+                'location_placeholder' => 'Ej: Riojaforum, Bodega, Hotel, Sede empresa...',
+                'form_title' => 'Datos, Horarios y Notas del Evento',
+                'form_subtitle' => 'Indícanos los datos de contacto y cualquier horario o requisito técnico del evento corporativo.',
+                'show_schedule_box' => true,
+                'schedule_label' => '⏰ Horario aproximado del evento corporativo (opcional)',
+                'schedule_placeholder' => 'Ej: Ponencias de 18:00 a 19:30h, cóctel a las 20:00h y fiesta posterior...',
+                'show_prior_setup' => true,
+                'prior_setup_label' => 'Necesitamos montaje previo, pruebas técnicas de sonido o varios días',
+                'prior_setup_sublabel' => '(ej. congresos, pruebas de sonido con ponentes, montaje antes de apertura, etc.)',
+                'notes_label' => 'Notas técnicas, escaleta o detalles del evento',
+                'notes_help' => 'Indícanos el aforo aproximado, necesidades de microfonía (mano/solapa), horarios o cualquier detalle:',
+                'notes_placeholder' => 'Ej: Cena anual de empresa para 120 personas. Necesitamos 2 micrófonos inalámbricos para discursos y entrega de premios, y luego 3 horas de DJ...',
+                'custom_service_title' => '¿Necesitas sonorización técnica a medida, microfonía extra u otro servicio?',
+                'custom_service_subtitle' => 'Sonorización multizona, microfonía para ponencias, iluminación corporativa, pruebas previas...',
+                'custom_service_placeholder' => 'Ej: Microfonía para mesa redonda / Iluminación corporativa...',
+                'custom_service_desc_placeholder' => 'Ej: Montaje a las 16:00h y prueba de sonido previa...',
                 'ceremony_name' => 'Sonorización Presentación / Ponencias',
                 'ceremony_icon' => '🎙️',
                 'ceremony_desc' => 'Microfonía inalámbrica de mano/solapa, atril, megafonía y música de apoyo corporativa.',
@@ -86,6 +116,21 @@ class QuoteCalculator extends Component
                 'hero_subtitle' => 'Música a medida para sorprender al homenajeado, animación, karaoke y los mejores temas de vuestras épocas favoritas.',
                 'name_label' => 'Nombre del Homenajeado / Organizador *',
                 'name_placeholder' => 'Ej: 40 Cumpleaños de David / María',
+                'location_label' => 'Restaurante, Finca, Sala o Localidad *',
+                'location_placeholder' => 'Ej: Finca privada, Restaurante, Bodega, Hotel...',
+                'form_title' => 'Datos y Detalles de la Fiesta',
+                'form_subtitle' => 'Rellena tus datos y cuéntanos cómo quieres celebrar el cumpleaños o fiesta privada.',
+                'show_schedule_box' => true,
+                'schedule_label' => '⏰ Horario aproximado de la fiesta (opcional)',
+                'schedule_placeholder' => 'Ej: Tardeo de 18:00 a 23:00h / Cena y fiesta de noche...',
+                'show_prior_setup' => false,
+                'notes_label' => 'Notas, estilo musical o detalles de la fiesta (opcional)',
+                'notes_help' => '¿Es una fiesta sorpresa, qué estilos o épocas musicales os gustan más o qué tenéis pensado?',
+                'notes_placeholder' => 'Ej: Es un 40 cumpleaños sorpresa para unos 70 amigos. Queremos música de los 90/2000s, pop-rock español y éxitos actuales para bailar...',
+                'custom_service_title' => '¿Necesitas un montaje especial, microfonía para sorpresas u otro extra?',
+                'custom_service_subtitle' => 'Sonido para proyección de vídeo sorpresa, iluminación extra, espectáculo de magia...',
+                'custom_service_placeholder' => 'Ej: Sonido para vídeo sorpresa / Show de magia / Iluminación extra...',
+                'custom_service_desc_placeholder' => 'Ej: Micrófono inalámbrico para palabras de los amigos...',
                 'ceremony_name' => 'Sonorización Sorpresa / Discursos',
                 'ceremony_icon' => '🎬',
                 'ceremony_desc' => 'Microfonía y música de apoyo para proyección de vídeos, dedicatorias o sorpresas especiales.',
@@ -108,6 +153,21 @@ class QuoteCalculator extends Component
                 'hero_subtitle' => 'Sonido profesional y música divertida para que disfruten tanto los peques como los mayores.',
                 'name_label' => 'Nombre del Niño/a o Familia *',
                 'name_placeholder' => 'Ej: Comunión de Mateo / Familia Gómez',
+                'location_label' => 'Restaurante, Finca, Hotel o Localidad *',
+                'location_placeholder' => 'Ej: Restaurante, Finca, Hotel, Logroño...',
+                'form_title' => 'Datos y Detalles de la Celebración',
+                'form_subtitle' => 'Rellena tus datos y cuéntanos los detalles de la comunión o celebración familiar.',
+                'show_schedule_box' => true,
+                'schedule_label' => '⏰ Horario aproximado de la celebración (opcional)',
+                'schedule_placeholder' => 'Ej: Comida a las 14:30h y fiesta por la tarde de 17:30 a 20:30h...',
+                'show_prior_setup' => false,
+                'notes_label' => 'Notas o detalles de la comunión (opcional)',
+                'notes_help' => 'Cuéntanos cuántos niños y adultos seréis aprox., horarios previstos o cualquier idea especial:',
+                'notes_placeholder' => 'Ej: Es la comunión de Mateo, seremos unos 50 invitados (15 niños) y buscamos música y animación después de la comida en el restaurante...',
+                'custom_service_title' => '¿Necesitas espectáculo de magia, animación infantil u otro extra?',
+                'custom_service_subtitle' => 'Show de magia familiar, juegos musicales, rincón dulce, sonorización extra...',
+                'custom_service_placeholder' => 'Ej: Espectáculo de Magia Familiar / Animación infantil...',
+                'custom_service_desc_placeholder' => 'Ej: Para unos 15 niños después del banquete...',
                 'ceremony_name' => 'Sonorización Especial / Entrada',
                 'ceremony_icon' => '🌟',
                 'ceremony_desc' => 'Música especial para la entrada triunfal del protagonista y microfonía para palabras familiares.',
@@ -131,6 +191,23 @@ class QuoteCalculator extends Component
                 'hero_subtitle' => 'Sonorización para festivales escolares, AMPAs, ayuntamientos, fiestas o actos especiales a medida.',
                 'name_label' => 'Nombre del Evento / Colegio / Contacto *',
                 'name_placeholder' => 'Ej: AMPA Colegio San Fernando / Asociación Cultural',
+                'location_label' => 'Lugar / Recinto / Colegio / Localidad *',
+                'location_placeholder' => 'Ej: Frontón municipal, Polideportivo, Colegio, Plaza...',
+                'form_title' => 'Datos, Horarios y Notas del Evento',
+                'form_subtitle' => 'Rellena tus datos y cuéntanos cualquier horario, ensayo previo o necesidad especial.',
+                'show_schedule_box' => true,
+                'schedule_label' => '⏰ Horario aproximado o tramo del evento (opcional)',
+                'schedule_placeholder' => 'Ej: De 17:00 a 20:30h / Mañana y tarde...',
+                'show_prior_setup' => true,
+                'prior_setup_label' => 'Necesitamos montaje el día anterior, ensayo previo o varios días',
+                'prior_setup_sublabel' => '(ej. festivales de colegio, pruebas de sonido previas, fiestas de varios días, etc.)',
+                'notes_label' => 'Notas, horarios o explicación de tu evento',
+                'notes_help' => '¿Tu evento tiene necesidades especiales, horarios concretos, ensayos o quieres pegarnos directamente tu consulta? Escríbelo aquí con total libertad:',
+                'notes_placeholder' => 'Ej: Somos el AMPA del colegio y necesitamos sonido y DJ para el festival en el frontón municipal. Sería ir el día anterior a montar y hacer el ensayo general, y al día siguiente el festival de 17:30 a 20:30h...',
+                'custom_service_title' => '¿Necesitas un montaje especial, sonorización a medida u otro extra?',
+                'custom_service_subtitle' => 'Festivales escolares, sonorización de pabellones/frontones, iluminación extra, ensayos...',
+                'custom_service_placeholder' => 'Ej: Sonorización Festival Navidad / Escenario exterior...',
+                'custom_service_desc_placeholder' => 'Ej: Montaje el día anterior + ensayo con niños...',
                 'ceremony_name' => 'Sonorización Acto / Festival / Escenario',
                 'ceremony_icon' => '📢',
                 'ceremony_desc' => 'Equipo de sonido profesional, microfonía y control técnico para actuaciones, festivales o actos.',
@@ -190,6 +267,13 @@ class QuoteCalculator extends Component
             $this->services['dj']['name'] = $typeConfig['dj_name'];
             $this->services['dj']['description'] = $typeConfig['dj_desc'];
             $this->services['dj']['icon'] = $typeConfig['dj_icon'] ?? '💃';
+        }
+
+        if (empty($typeConfig['show_prior_setup'])) {
+            $this->needs_prior_setup = false;
+        }
+        if (empty($typeConfig['show_schedule_box'])) {
+            $this->event_schedule = '';
         }
     }
 
@@ -936,20 +1020,35 @@ class QuoteCalculator extends Component
         $typeConfig = self::getEventTypes()[$this->event_type] ?? self::getEventTypes()['boda'];
         $eventTitle = $typeConfig['prefix'] . $this->client_name;
 
+        $cleanClientNotes = trim((string)$this->client_notes);
+        $cleanSchedule = trim((string)$this->event_schedule);
+
         $scheduleAndSetupNotes = "";
-        if (!empty(trim((string)$this->event_schedule))) {
-            $scheduleAndSetupNotes .= "Horario / Tramo del Evento: " . trim((string)$this->event_schedule) . "\n";
+        if ($cleanSchedule !== '') {
+            $scheduleAndSetupNotes .= "⏰ Horario / Tramo del Evento: " . $cleanSchedule . "\n";
         }
         if ($this->needs_prior_setup) {
-            $scheduleAndSetupNotes .= "Montaje Especial: SÍ (Requiere montaje el día anterior / ensayo previo / varios días)\n";
+            $scheduleAndSetupNotes .= "🔧 Montaje Especial: SÍ (Requiere montaje el día anterior / ensayo previo / varios días)\n";
         }
 
-        $fullNotes = "SOLICITUD DE PRESUPUESTO ONLINE (/presupuesto):\n"
+        $quoteClientNotesParts = [];
+        if ($cleanClientNotes !== '') {
+            $quoteClientNotesParts[] = $cleanClientNotes;
+        }
+        if ($cleanSchedule !== '') {
+            $quoteClientNotesParts[] = "⏰ Horario indicado: {$cleanSchedule}";
+        }
+        if ($this->needs_prior_setup) {
+            $quoteClientNotesParts[] = "🔧 Requiere montaje previo / ensayo";
+        }
+        $quoteClientNotes = implode("\n", $quoteClientNotesParts);
+
+        $fullNotes = "SOLICITUD DE PRESUPUESTO ONLINE (/presupuesto) [" . now()->format('d/m/Y H:i') . "]:\n"
                    . "Tipo de Evento: " . $typeConfig['name'] . "\n"
+                   . ($cleanClientNotes !== '' ? "\n📝 NOTAS Y EXPLICACIÓN DEL CLIENTE:\n" . $cleanClientNotes . "\n\n" : "")
                    . $scheduleAndSetupNotes
-                   . "\nServicios Solicitados:\n"
-                   . implode("\n", $requestedServicesList)
-                   . (!empty(trim((string)$this->client_notes)) ? "\n\n📝 NOTAS Y EXPLICACIÓN DEL CLIENTE:\n" . trim((string)$this->client_notes) : "");
+                   . "Servicios Solicitados:\n"
+                   . implode("\n", $requestedServicesList);
 
         // 4. Reutilizar evento existente del cliente si ya entró como Lead (para no duplicarlo) o crear uno nuevo
         $event = Event::where('client_id', $client->id)
@@ -968,7 +1067,7 @@ class QuoteCalculator extends Component
             $event->update([
                 'event_date' => $this->event_date ?: $event->event_date,
                 'location' => (!empty($this->event_location) && $this->event_location !== 'Por definir') ? $this->event_location : $event->location,
-                'notes' => ($event->notes ? $event->notes . "\n\n========================================\n" : '') . $fullNotes,
+                'notes' => $fullNotes . ($event->notes ? "\n\n========================================\n" . $event->notes : ''),
             ]);
         } else {
             $event = Event::create([
@@ -989,12 +1088,38 @@ class QuoteCalculator extends Component
             \App\Services\VenueLookupService::autoPopulateEventVenuePhone($event);
         } catch (\Throwable $e) {}
 
-        // 5. Create Quote Draft for Admin
+        // 5. Create Quote Draft for Admin (incluyendo las notas del cliente)
+        Quote::EnsureQuoteResponseColumns();
         $quote = $event->quotes()->create([
             'brand' => $event->brand ?: Setting::getDetectedBrand(),
             'amount' => $totalEstimated,
             'status' => 'pending',
+            'client_notes' => $quoteClientNotes !== '' ? $quoteClientNotes : null,
         ]);
+
+        // Registrar también en la Conversación Registrada del evento para que quede visible en el historial
+        try {
+            if (\Illuminate\Support\Facades\Schema::hasTable('whatsapp_messages')) {
+                $chatBody = "📋 *Solicitud desde Calculador de Presupuesto (/solicitar-presupuesto)*\n"
+                    . "🎉 *Tipo:* {$typeConfig['name']}\n"
+                    . "📍 *Lugar:* {$this->event_location}\n"
+                    . ($cleanSchedule !== '' ? "⏰ *Horario:* {$cleanSchedule}\n" : "")
+                    . ($this->needs_prior_setup ? "🔧 *Montaje previo / ensayo:* Sí\n" : "")
+                    . ($cleanClientNotes !== '' ? "\n📝 *Notas del cliente:*\n{$cleanClientNotes}\n" : "")
+                    . "\n*Servicios seleccionados:*\n" . implode("\n", $requestedServicesList);
+
+                \App\Models\WhatsappMessage::create([
+                    'event_id' => $event->id,
+                    'user_id' => null,
+                    'phone' => preg_replace('/\D/', '', (string)$this->client_phone) ?: $this->client_email,
+                    'sender_name' => $this->client_name,
+                    'direction' => 'inbound',
+                    'message' => $chatBody,
+                    'status' => 'received',
+                    'payload' => ['channel' => 'web_quote_calculator', 'quote_id' => $quote->id],
+                ]);
+            }
+        } catch (\Throwable $e) {}
 
         // 6. Create Quote Items
         foreach ($this->services as $key => $service) {

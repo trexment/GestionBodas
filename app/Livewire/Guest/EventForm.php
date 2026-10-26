@@ -134,7 +134,7 @@ class EventForm extends Component
 
         // 10. Comentarios desde el dossier
         $dossier = $this->event->dossiers()->first();
-        if ($dossier && preg_match('/\*\*Comentarios:\*\*\s*(.*?)(\n---|\n\*\*|$)/s', $dossier->content, $matches)) {
+        if ($dossier && preg_match('/\*\*Comentarios(?: & Observaciones)?:\*\*\s*(.*?)(\n---|\n\*\*|$)/s', $dossier->content, $matches)) {
             $this->comments = trim($matches[1]);
         }
     }
@@ -423,6 +423,19 @@ class EventForm extends Component
             $this->event->dossiers()->create([
                 'content' => $dossierContent
             ]);
+        }
+
+        // Guardar también los comentarios/notas del cuestionario en events.notes para que aparezcan en las Notas del Evento
+        $cleanComments = trim((string) $this->comments);
+        if ($cleanComments !== '') {
+            $existingNotes = trim((string) $this->event->notes);
+            if (!str_contains($existingNotes, $cleanComments)) {
+                $stamp = now()->format('d/m/Y H:i');
+                $noteBlock = "📝 [Cuestionario Musical {$stamp}] Comentarios del cliente:\n{$cleanComments}";
+                $this->event->update([
+                    'notes' => $existingNotes !== '' ? ($noteBlock . "\n\n---\n\n" . $existingNotes) : $noteBlock,
+                ]);
+            }
         }
 
         $this->totalSavedSongs = $this->event->musicRequests()->count();

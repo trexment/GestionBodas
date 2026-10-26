@@ -1827,6 +1827,43 @@
                             </div>
                         </div>
 
+                        <!-- Visualizador / Editor principal de Notas del Cliente y del Evento (ARRIBA PARA VERLO DE INMEDIATO) -->
+                        <div class="p-3.5 bg-amber-50/60 dark:bg-slate-950 rounded-xl border border-amber-200 dark:border-slate-800 shadow-2xs space-y-2.5">
+                            <div class="flex flex-wrap items-center justify-between gap-2">
+                                <label class="block text-xs font-extrabold text-amber-950 dark:text-amber-300 flex items-center gap-1.5">
+                                    <span>📝</span> Notas del Cliente y Requisitos Generales del Evento
+                                </label>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-[10px] font-semibold text-amber-800/80 dark:text-slate-400">
+                                        📌 Las notas del formulario web y acuerdos aparecen aquí arriba
+                                    </span>
+                                    <button type="button" wire:click="saveEventNotes" class="bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1 rounded-lg text-[11px] font-bold shadow-2xs transition cursor-pointer">
+                                        💾 Guardar
+                                    </button>
+                                </div>
+                            </div>
+                            @if(in_array($event->status, ['rejected', 'cancelled']) && $event->cancellation_reason_display)
+                                <div class="p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 flex items-center justify-between gap-2 text-xs">
+                                    <div class="text-rose-900 dark:text-rose-200 font-bold">
+                                        <span>{{ $event->status === 'rejected' ? '❌ Motivo de rechazo:' : '🔴 Motivo de cancelación:' }}</span>
+                                        <span class="font-extrabold ml-1">{{ $event->cancellation_reason_display }}</span>
+                                    </div>
+                                    <button type="button" wire:click="openCancellationModal('{{ $event->status }}')" class="text-[11px] font-bold text-rose-700 dark:text-rose-300 hover:underline shrink-0 cursor-pointer">
+                                        ✏️ Cambiar
+                                    </button>
+                                </div>
+                            @endif
+                            <textarea wire:model="event_notes" rows="6" class="w-full text-xs font-mono bg-white dark:bg-slate-900 border border-amber-300 dark:border-slate-700 rounded-xl p-3 focus:ring-indigo-500 focus:border-indigo-500 text-slate-900 dark:text-white leading-relaxed placeholder-slate-400 dark:placeholder-slate-500" placeholder="Aquí aparecen las notas que escribe el cliente al pedir presupuesto o rellenar el formulario, además de tus notas internas y servicios solicitados..."></textarea>
+
+                            <!-- Pegar fragmento o nota rápida arriba -->
+                            <div class="pt-1 border-t border-amber-200/70 dark:border-slate-800 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                                <input type="text" wire:model="whatsapp_chat_input" wire:keydown.enter="applyWhatsappTextToNotes" class="flex-1 text-xs border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500" placeholder="➕ Escribe o pega una nota rápida para añadirla arriba con fecha..." />
+                                <button type="button" wire:click="applyWhatsappTextToNotes" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer shrink-0">
+                                    <span>⬆️</span> Añadir arriba en Notas
+                                </button>
+                            </div>
+                        </div>
+
                         <!-- Selector de Remitente de WhatsApp / Email (Miguel, Fran, Ezequiel) -->
                         <div class="p-2.5 bg-slate-100 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 shadow-2xs flex flex-wrap items-center justify-between gap-2">
                             <div class="flex items-center gap-1.5 text-xs font-bold text-slate-700 dark:text-slate-200">
@@ -2200,48 +2237,6 @@
                                     </div>
                                 </div>
                             </div>
-                        </div>
-
-                        <!-- Pegar texto de chat a las notas generales -->
-                        <div class="bg-white dark:bg-slate-950 p-3.5 rounded-xl border border-emerald-200 dark:border-slate-800 shadow-xs space-y-2">
-                            <div class="flex items-center justify-between gap-2">
-                                <label class="block text-xs font-bold text-emerald-900 dark:text-emerald-300">
-                                    📥 Pegar fragmento o nota rápida
-                                </label>
-                                <span class="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
-                                    ⬆️ Se inserta arriba del todo
-                                </span>
-                            </div>
-                            <textarea wire:model="whatsapp_chat_input" rows="2" class="w-full text-xs border border-slate-300 dark:border-slate-700 rounded-lg p-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500" placeholder="Escribe o pega aquí cualquier nota o acuerdo para colocarlo al principio de las notas..."></textarea>
-                            <div class="flex justify-end">
-                                <button type="button" wire:click="applyWhatsappTextToNotes" class="bg-emerald-50 dark:bg-emerald-950/80 hover:bg-emerald-100 dark:hover:bg-emerald-900 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer">
-                                    <span>⬆️</span> Añadir arriba en las Notas del Evento
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Visualizador / Editor completo de notas -->
-                        <div>
-                            <div class="flex items-center justify-between gap-2 mb-1">
-                                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">
-                                    📝 Notas y Requisitos Generales del Evento
-                                </label>
-                                <span class="text-[10px] font-semibold text-slate-500 dark:text-slate-400">
-                                    📌 Las últimas notas aparecen primero (arriba)
-                                </span>
-                            </div>
-                            @if(in_array($event->status, ['rejected', 'cancelled']) && $event->cancellation_reason_display)
-                                <div class="mb-2 p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 flex items-center justify-between gap-2 text-xs">
-                                    <div class="text-rose-900 dark:text-rose-200 font-bold">
-                                        <span>{{ $event->status === 'rejected' ? '❌ Motivo de rechazo:' : '🔴 Motivo de cancelación:' }}</span>
-                                        <span class="font-extrabold ml-1">{{ $event->cancellation_reason_display }}</span>
-                                    </div>
-                                    <button type="button" wire:click="openCancellationModal('{{ $event->status }}')" class="text-[11px] font-bold text-rose-700 dark:text-rose-300 hover:underline shrink-0 cursor-pointer">
-                                        ✏️ Cambiar
-                                    </button>
-                                </div>
-                            @endif
-                            <textarea wire:model="event_notes" rows="6" class="w-full text-xs font-mono bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl p-3 focus:ring-indigo-500 focus:border-indigo-500 text-slate-900 dark:text-white leading-relaxed placeholder-slate-400 dark:placeholder-slate-500" placeholder="Notas internas, servicios acordados, peticiones especiales..."></textarea>
                         </div>
                     </div>
 
@@ -3385,6 +3380,26 @@
                     <div class="bg-emerald-50 border-l-4 border-emerald-500 text-emerald-800 p-3 rounded-xl text-xs font-bold shadow-xs">
                         ✓ {{ session('quote_message') }}
                     </div> 
+                @endif
+
+                @if(!empty(trim((string) $event_notes)))
+                    <div x-data="{ openClientNotes: true }" class="bg-amber-50/80 dark:bg-slate-900 border border-amber-300 dark:border-amber-800/70 rounded-2xl p-3.5 shadow-2xs">
+                        <div class="flex flex-wrap items-center justify-between gap-2 cursor-pointer" @click="openClientNotes = !openClientNotes">
+                            <div class="flex items-center gap-2 text-xs font-extrabold text-amber-950 dark:text-amber-300">
+                                <span>📝</span>
+                                <span>Notas del Cliente y Solicitud del Evento</span>
+                                <span class="text-[10px] font-semibold bg-amber-200/70 dark:bg-amber-950 text-amber-900 dark:text-amber-200 px-2 py-0.5 rounded-full">
+                                    Ver lo que pidió el cliente
+                                </span>
+                            </div>
+                            <button type="button" class="text-[11px] font-bold text-amber-800 dark:text-amber-300 hover:underline">
+                                <span x-text="openClientNotes ? '▲ Ocultar notas' : '▼ Mostrar notas'"></span>
+                            </button>
+                        </div>
+                        <div x-show="openClientNotes" x-transition class="mt-2.5 pt-2.5 border-t border-amber-200/80 dark:border-slate-800">
+                            <div class="text-xs font-mono text-slate-800 dark:text-slate-200 whitespace-pre-line max-h-44 overflow-y-auto bg-white/90 dark:bg-slate-950 p-3 rounded-xl border border-amber-200 dark:border-slate-800">{{ $event_notes }}</div>
+                        </div>
+                    </div>
                 @endif
                 
                 <!-- BARRA SUPERIOR COMPACTA: PACKS RÁPIDOS (1-CLIC) + GUARDAR TARIFAS POR TIPO DE EVENTO -->
@@ -4833,9 +4848,9 @@
                                                     </div>
                                                 @endif
 
-                                                @if($quote->status === 'accepted' && $quote->client_notes)
-                                                    <div class="mt-2 p-2.5 rounded-lg bg-emerald-100/80 border border-emerald-300 text-xs text-emerald-900">
-                                                        <strong>💬 Comentario del cliente al aceptar:</strong> {{ $quote->client_notes }}
+                                                @if(!empty($quote->client_notes))
+                                                    <div class="mt-2 p-2.5 rounded-lg {{ $quote->status === 'accepted' ? 'bg-emerald-100/80 border border-emerald-300 text-emerald-900' : 'bg-amber-50 border border-amber-300 text-amber-950' }} text-xs whitespace-pre-line">
+                                                        <strong>💬 {{ $quote->status === 'accepted' ? 'Comentario / Notas del cliente:' : 'Notas del cliente en la solicitud:' }}</strong> {{ $quote->client_notes }}
                                                     </div>
                                                 @endif
 

@@ -427,7 +427,7 @@
                         </div>
                     @endforeach
 
-                    <!-- Bloque Especial: Otro Servicio / Montaje Día Anterior / Evento a Medida -->
+                    <!-- Bloque Especial: Otro Servicio / Montaje Especial / Evento a Medida -->
                     <div class="p-3.5 rounded-2xl border transition-all select-none {{ $custom_service_selected ? 'bg-indigo-950/60 border-indigo-500/60 shadow-lg ring-1 ring-indigo-500/50' : 'bg-slate-900/40 border-slate-800/80 hover:border-slate-600' }}">
                         <div class="flex items-center justify-between gap-3 cursor-pointer" wire:click="$toggle('custom_service_selected')">
                             <div class="flex items-center gap-2.5 min-w-0">
@@ -436,10 +436,10 @@
                                 </div>
                                 <div class="min-w-0">
                                     <h3 class="font-bold text-xs sm:text-sm {{ $custom_service_selected ? 'text-white' : 'text-slate-200' }}">
-                                        ¿Necesitas un montaje especial, sonorización a medida u otro extra?
+                                        {{ $currentType['custom_service_title'] ?? '¿Necesitas un montaje especial, sonorización a medida u otro extra?' }}
                                     </h3>
                                     <p class="text-[11px] text-slate-400 truncate">
-                                        Festivales escolares, sonorización de pabellones/frontones, iluminación extra, ensayos...
+                                        {{ $currentType['custom_service_subtitle'] ?? 'Sonorización adicional, iluminación extra, necesidades especiales...' }}
                                     </p>
                                 </div>
                             </div>
@@ -454,12 +454,12 @@
                             <div class="mt-3 pt-3 border-t border-indigo-500/20 grid grid-cols-1 sm:grid-cols-2 gap-2.5" wire:click.stop>
                                 <div>
                                     <label class="block text-[11px] font-semibold text-slate-300 mb-1">¿Qué servicio o montaje necesitas? *</label>
-                                    <input type="text" wire:model.defer="custom_service_name" placeholder="Ej: Sonorización Festival Navidad / Humo bajo..."
+                                    <input type="text" wire:model.blur="custom_service_name" placeholder="{{ $currentType['custom_service_placeholder'] ?? 'Ej: Sonorización extra / Iluminación especial...' }}"
                                            class="w-full bg-slate-900/80 border border-indigo-500/40 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500">
                                 </div>
                                 <div>
                                     <label class="block text-[11px] font-semibold text-slate-300 mb-1">Detalles rápidos (opcional)</label>
-                                    <input type="text" wire:model.defer="custom_service_description" placeholder="Ej: Montaje el día anterior + ensayo con niños..."
+                                    <input type="text" wire:model.blur="custom_service_description" placeholder="{{ $currentType['custom_service_desc_placeholder'] ?? 'Ej: Detalles del servicio adicional...' }}"
                                            class="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500">
                                 </div>
                             </div>
@@ -472,17 +472,17 @@
                     <div class="bg-slate-800/75 backdrop-blur-xl border border-slate-700/80 rounded-3xl p-5 sm:p-6 shadow-2xl sticky top-4">
                         <h2 class="text-base sm:text-lg font-bold text-white flex items-center gap-2 mb-1">
                             <span class="w-6 h-6 rounded-lg bg-indigo-500/20 border border-indigo-500/40 text-indigo-300 text-xs flex items-center justify-center font-black">2</span>
-                            <span>Datos, Horarios y Notas del Evento</span>
+                            <span>{{ $currentType['form_title'] ?? 'Datos y Detalles del Evento' }}</span>
                         </h2>
                         <p class="text-xs text-slate-400 mb-4">
-                            Rellena tus datos y cuéntanos cualquier horario, ensayo previo o necesidad especial.
+                            {{ $currentType['form_subtitle'] ?? 'Rellena tus datos para recibir tu presupuesto personalizado.' }}
                         </p>
 
                         <form wire:submit.prevent="submitRequest" class="space-y-3.5">
                             <!-- Name -->
                             <div>
                                 <label class="block text-xs font-semibold text-slate-300 mb-1">{{ $currentType['name_label'] }}</label>
-                                <input type="text" wire:model.defer="client_name" placeholder="{{ $currentType['name_placeholder'] }}"
+                                <input type="text" wire:model.blur="client_name" placeholder="{{ $currentType['name_placeholder'] }}"
                                        class="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition">
                                 @error('client_name') <span class="text-rose-400 text-xs mt-1 block">{{ $message }}</span> @enderror
                             </div>
@@ -491,13 +491,13 @@
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                                 <div>
                                     <label class="block text-xs font-semibold text-slate-300 mb-1">Teléfono / WhatsApp *</label>
-                                    <input type="tel" wire:model.defer="client_phone" placeholder="600 000 000"
+                                    <input type="tel" wire:model.blur="client_phone" placeholder="600 000 000"
                                            class="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition">
                                     @error('client_phone') <span class="text-rose-400 text-xs mt-1 block">{{ $message }}</span> @enderror
                                 </div>
                                 <div>
                                     <label class="block text-xs font-semibold text-slate-300 mb-1">Email *</label>
-                                    <input type="email" wire:model.defer="client_email" placeholder="email@ejemplo.com"
+                                    <input type="email" wire:model.blur="client_email" placeholder="email@ejemplo.com"
                                            class="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition">
                                     @error('client_email') <span class="text-rose-400 text-xs mt-1 block">{{ $message }}</span> @enderror
                                 </div>
@@ -507,49 +507,55 @@
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                                 <div>
                                     <label class="block text-xs font-semibold text-slate-300 mb-1">Fecha del evento *</label>
-                                    <input type="date" wire:model.defer="event_date"
+                                    <input type="date" wire:model.blur="event_date"
                                            class="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition [color-scheme:dark]">
                                     @error('event_date') <span class="text-rose-400 text-xs mt-1 block">{{ $message }}</span> @enderror
                                 </div>
                                 <div>
-                                    <label class="block text-xs font-semibold text-slate-300 mb-1">Lugar / Recinto / Localidad *</label>
-                                    <input type="text" wire:model.defer="event_location" placeholder="Finca, Frontón, Colegio, Hotel..."
+                                    <label class="block text-xs font-semibold text-slate-300 mb-1">{{ $currentType['location_label'] ?? 'Lugar / Recinto / Localidad *' }}</label>
+                                    <input type="text" wire:model.blur="event_location" placeholder="{{ $currentType['location_placeholder'] ?? 'Finca, Restaurante, Hotel...' }}"
                                            class="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition">
                                     @error('event_location') <span class="text-rose-400 text-xs mt-1 block">{{ $message }}</span> @enderror
                                 </div>
                             </div>
 
-                            <!-- Horario Aproximado + Check Montaje Día Anterior / Ensayo -->
-                            <div class="p-3 rounded-2xl bg-slate-900/70 border border-indigo-500/30 space-y-2.5">
-                                <div>
-                                    <label class="block text-xs font-bold text-indigo-200 mb-1">⏰ Horario aproximado o tramo del evento (opcional)</label>
-                                    <input type="text" wire:model.defer="event_schedule" placeholder="Ej: De 17:00 a 20:30h / Boda de tarde / Mañana y tarde..."
-                                           class="w-full bg-slate-950/80 border border-slate-700 rounded-xl px-3 py-1.5 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition">
-                                </div>
+                            <!-- Horario Aproximado + Check Montaje Día Anterior / Ensayo (Solo cuando aplica según tipo de evento, NO en bodas) -->
+                            @if(!empty($currentType['show_schedule_box']) || !empty($currentType['show_prior_setup']))
+                                <div class="p-3 rounded-2xl bg-slate-900/70 border border-indigo-500/30 space-y-2.5">
+                                    @if(!empty($currentType['show_schedule_box']))
+                                        <div>
+                                            <label class="block text-xs font-bold text-indigo-200 mb-1">{{ $currentType['schedule_label'] ?? '⏰ Horario aproximado o tramo del evento (opcional)' }}</label>
+                                            <input type="text" wire:model.blur="event_schedule" placeholder="{{ $currentType['schedule_placeholder'] ?? 'Ej: De 17:00 a 20:30h / Tarde...' }}"
+                                                   class="w-full bg-slate-950/80 border border-slate-700 rounded-xl px-3 py-1.5 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition">
+                                        </div>
+                                    @endif
 
-                                <label class="flex items-start gap-2.5 pt-1 cursor-pointer select-none group">
-                                    <input type="checkbox" wire:model.defer="needs_prior_setup"
-                                           class="mt-0.5 w-4 h-4 rounded border-slate-600 bg-slate-900 text-indigo-600 focus:ring-indigo-500 cursor-pointer">
-                                    <span class="text-xs text-slate-300 group-hover:text-white leading-snug">
-                                        🔧 <strong class="text-amber-300">Necesitamos montaje el día anterior, ensayo previo o varios días</strong> (ej. festivales de colegio, pruebas de sonido previas, etc.)
-                                    </span>
-                                </label>
-                            </div>
+                                    @if(!empty($currentType['show_prior_setup']))
+                                        <label class="flex items-start gap-2.5 pt-1 cursor-pointer select-none group">
+                                            <input type="checkbox" wire:model.live="needs_prior_setup"
+                                                   class="mt-0.5 w-4 h-4 rounded border-slate-600 bg-slate-900 text-indigo-600 focus:ring-indigo-500 cursor-pointer">
+                                            <span class="text-xs text-slate-300 group-hover:text-white leading-snug">
+                                                🔧 <strong class="text-amber-300">{{ $currentType['prior_setup_label'] ?? 'Necesitamos montaje el día anterior, ensayo previo o varios días' }}</strong> {{ $currentType['prior_setup_sublabel'] ?? '(ej. festivales de colegio, pruebas de sonido previas, etc.)' }}
+                                            </span>
+                                        </label>
+                                    @endif
+                                </div>
+                            @endif
 
                             <!-- Highlighted Notes / Free Explanation Section -->
                             <div class="p-3.5 rounded-2xl bg-indigo-950/30 border border-indigo-500/40">
                                 <div class="flex items-center justify-between mb-1">
                                     <label class="block text-xs font-extrabold text-amber-300 flex items-center gap-1.5">
                                         <span>📝</span>
-                                        <span>Notas, horarios o explicación de tu evento</span>
+                                        <span>{{ $currentType['notes_label'] ?? 'Notas o detalles de tu evento (opcional)' }}</span>
                                     </label>
                                     <span class="text-[10px] text-indigo-300 font-semibold">Espacio libre</span>
                                 </div>
                                 <p class="text-[11px] text-slate-300 mb-2 leading-snug">
-                                    ¿Tu evento tiene necesidades especiales, horarios concretos, ensayos o quieres pegarnos directamente tu consulta? Escríbelo aquí con total libertad:
+                                    {{ $currentType['notes_help'] ?? 'Cuéntanos cualquier detalle, horario o idea especial para tu evento:' }}
                                 </p>
-                                <textarea wire:model.defer="client_notes" rows="4"
-                                          placeholder="Ej: Somos el AMPA del colegio y necesitamos sonido y DJ para el festival en el frontón municipal. Sería ir el día anterior a montar y hacer el ensayo general, y al día siguiente el festival de 17:30 a 20:30h..."
+                                <textarea wire:model.blur="client_notes" rows="4"
+                                          placeholder="{{ $currentType['notes_placeholder'] ?? 'Escribe aquí cualquier detalle o comentario...' }}"
                                           class="w-full bg-slate-900/90 border border-indigo-500/40 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition resize-y"></textarea>
                                 @error('client_notes') <span class="text-rose-400 text-xs mt-1 block">{{ $message }}</span> @enderror
                             </div>
