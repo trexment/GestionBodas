@@ -912,693 +912,599 @@
     </div>
     @endif
 
-    <!-- Modal WhatsApp Hub -->
-    <div x-show="openWhatsappHub" style="display: none;" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" @click="openWhatsappHub = false"></div>
-            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-            <div class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
-                <div class="bg-emerald-700 px-6 py-4 flex items-center justify-between text-white">
-                    <div class="flex items-center gap-2">
-                        <span class="text-2xl">💬</span>
-                        <div>
-                            <h3 class="font-bold text-lg leading-tight">Centro de Mensajes WhatsApp</h3>
-                            <p class="text-xs text-emerald-200">{{ $event->name }} &bull; Plantillas rápidas de 1-Clic</p>
+    <!-- Modal WhatsApp Hub Optimizado (Pestañas por Fase + Tarjetas Compactas 2 Columnas) -->
+    <div x-show="openWhatsappHub" style="display: none;" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true"
+         x-data="{
+            hubTab: '{{ $event->status === 'no_response' ? 'followup' : (in_array($event->status, ['confirmed', 'completed']) ? 'booking' : ($latestQuote ? 'quote' : 'contact')) }}'
+         }">
+        <div class="flex items-center justify-center min-h-screen p-3 sm:p-4 text-center">
+            <div class="fixed inset-0 bg-slate-950/75 backdrop-blur-xs transition-opacity" @click="openWhatsappHub = false"></div>
+            <div class="relative bg-white dark:bg-slate-900 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all w-full max-w-4xl border border-slate-200 dark:border-slate-800">
+                <!-- Cabecera Compacta con Selector de Remitente Integrado -->
+                <div class="bg-gradient-to-r from-emerald-700 to-teal-700 px-4 py-3 flex flex-wrap items-center justify-between gap-2 text-white">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                        <span class="text-xl">💬</span>
+                        <div class="truncate">
+                            <h3 class="font-extrabold text-sm sm:text-base leading-tight truncate">Centro de Mensajes WhatsApp</h3>
+                            <p class="text-[11px] text-emerald-100 truncate">{{ $event->name }} &bull; {{ $event->event_type_label }}</p>
                         </div>
                     </div>
-                    <button type="button" @click="openWhatsappHub = false" class="text-emerald-200 hover:text-white text-2xl font-bold leading-none">&times;</button>
+
+                    <div class="flex items-center gap-2 ml-auto">
+                        <!-- Selector de Remitente Integrado -->
+                        <div class="inline-flex items-center rounded-xl bg-slate-950/60 p-0.5 border border-emerald-500/40 text-[11px]">
+                            <button type="button" wire:click="$set('whatsapp_sender_brand', 'miguel')" class="px-2.5 py-1 rounded-lg font-bold transition cursor-pointer {{ $whatsapp_sender_brand === 'miguel' ? 'bg-indigo-600 text-white shadow-xs' : 'text-emerald-100 hover:text-white' }}">
+                                👑 Miguel
+                            </button>
+                            <button type="button" wire:click="$set('whatsapp_sender_brand', 'fran')" class="px-2.5 py-1 rounded-lg font-bold transition cursor-pointer {{ $whatsapp_sender_brand === 'fran' ? 'bg-fuchsia-600 text-white shadow-xs' : 'text-emerald-100 hover:text-white' }}">
+                                🎧 Fran
+                            </button>
+                            <button type="button" wire:click="$set('whatsapp_sender_brand', 'ezequiel')" class="px-2.5 py-1 rounded-lg font-bold transition cursor-pointer {{ $whatsapp_sender_brand === 'ezequiel' ? 'bg-teal-600 text-white shadow-xs' : 'text-emerald-100 hover:text-white' }}">
+                                👥 Ezequiel
+                            </button>
+                        </div>
+                        <button type="button" @click="openWhatsappHub = false" class="text-emerald-100 hover:text-white text-2xl font-bold leading-none px-1.5 cursor-pointer">&times;</button>
+                    </div>
                 </div>
 
-                <!-- Barra de selección de remitente en el Hub -->
-                <div class="bg-emerald-950/90 text-white px-6 py-2.5 flex flex-wrap items-center justify-between gap-2 border-b border-emerald-800">
-                    <span class="text-xs font-bold text-emerald-200 flex items-center gap-1.5">
-                        <span>📲</span> Enviar mensajes desde el número de WhatsApp de:
-                    </span>
-                    <div class="inline-flex rounded-xl bg-slate-900/90 p-1 border border-emerald-700/50">
-                        <button type="button" wire:click="$set('whatsapp_sender_brand', 'miguel')" class="px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer {{ $whatsapp_sender_brand === 'miguel' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-300 hover:text-white' }}">
-                            👑 Miguel (Núñez & Son)
-                        </button>
-                        <button type="button" wire:click="$set('whatsapp_sender_brand', 'fran')" class="px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer {{ $whatsapp_sender_brand === 'fran' ? 'bg-fuchsia-600 text-white shadow-sm' : 'text-slate-300 hover:text-white' }}">
-                            🎧 Fran (JAVNX DJ)
-                        </button>
-                        <button type="button" wire:click="$set('whatsapp_sender_brand', 'ezequiel')" class="px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer {{ $whatsapp_sender_brand === 'ezequiel' ? 'bg-teal-600 text-white shadow-sm' : 'text-slate-300 hover:text-white' }}">
-                            👥 Ezequiel
-                        </button>
-                    </div>
+                <!-- Barra de Pestañas por Etapa (Sin Scroll Eterno) -->
+                <div class="bg-slate-100 dark:bg-slate-950 px-3 py-2 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center gap-1.5">
+                    <button type="button" @click="hubTab = 'contact'"
+                            :class="hubTab === 'contact' ? 'bg-emerald-600 text-white shadow-xs' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-200/70 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800'"
+                            class="px-3 py-1.5 rounded-xl text-xs font-extrabold transition cursor-pointer inline-flex items-center gap-1.5">
+                        <span>🟢</span> <span>1. Toma de Contacto & Charla</span>
+                    </button>
+                    <button type="button" @click="hubTab = 'quote'"
+                            :class="hubTab === 'quote' ? 'bg-purple-600 text-white shadow-xs' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-200/70 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800'"
+                            class="px-3 py-1.5 rounded-xl text-xs font-extrabold transition cursor-pointer inline-flex items-center gap-1.5">
+                        <span>📑</span> <span>2. Propuesta, Dossier & Señal</span>
+                    </button>
+                    <button type="button" @click="hubTab = 'followup'"
+                            :class="hubTab === 'followup' ? 'bg-rose-600 text-white shadow-xs' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-200/70 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800'"
+                            class="px-3 py-1.5 rounded-xl text-xs font-extrabold transition cursor-pointer inline-flex items-center gap-1.5">
+                        <span>🔥</span> <span>3. Si No Responden (Técnica NO)</span>
+                        @if($event->status === 'no_response')
+                            <span class="w-2 h-2 rounded-full bg-amber-300 animate-ping"></span>
+                        @endif
+                    </button>
+                    <button type="button" @click="hubTab = 'booking'"
+                            :class="hubTab === 'booking' ? 'bg-indigo-600 text-white shadow-xs' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-200/70 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800'"
+                            class="px-3 py-1.5 rounded-xl text-xs font-extrabold transition cursor-pointer inline-flex items-center gap-1.5">
+                        <span>📜</span> <span>4. Contrato, Música & Staff</span>
+                    </button>
+                    <button type="button" @click="hubTab = 'all'"
+                            :class="hubTab === 'all' ? 'bg-slate-700 text-white shadow-xs' : 'bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 hover:bg-slate-200/70 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800'"
+                            class="ml-auto px-2.5 py-1.5 rounded-xl text-[11px] font-bold transition cursor-pointer">
+                        Ver todas
+                    </button>
                 </div>
 
-                <div class="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
-                    <!-- ============================================================== -->
-                    <!-- SECCIÓN 1: APERTURA & PRIMERA TOMA DE CONTACTO                 -->
-                    <!-- ============================================================== -->
-                    <div class="pb-1">
-                        <div class="flex items-center gap-2 mb-1">
-                            <span class="text-xs font-black uppercase tracking-wider text-emerald-700 flex items-center gap-1.5">
-                                <span>🟢</span> 1. Primera Toma de Contacto (Respuesta Inmediata)
-                            </span>
-                            <div class="h-px bg-emerald-200 flex-1"></div>
-                        </div>
-                        <p class="text-[11px] text-gray-500">
-                            Responde en los primeros minutos tras recibir el contacto. Confirma disponibilidad en agenda y rompe el hielo con cercanía antes de enviar tarifas en frío.
-                        </p>
-                    </div>
-
-                    <!-- 1.1 Disponibilidad en Agenda -->
-                    <div x-data="{ showText: false, copied: false }" class="p-4 rounded-xl border border-emerald-200 bg-emerald-50/30 hover:bg-emerald-50/60 transition space-y-2.5">
-                        <div class="flex items-start justify-between gap-4">
-                            <div>
-                                <h4 class="font-bold text-gray-900 text-sm flex items-center gap-2">
-                                    <span>📅 Confirmación de Fecha Libre & Saludo Cálido</span>
-                                    <span class="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">Lead In ⚡</span>
-                                </h4>
-                                <p class="text-xs text-gray-600 mt-1">
-                                    Felicita a la pareja, confirma que la fecha está disponible en el calendario e invita a contar qué tienen en mente sin presionar.
-                                </p>
-                            </div>
-                            <div class="flex items-center gap-1.5 shrink-0">
-                                <button type="button" @click="showText = !showText" class="bg-white hover:bg-emerald-100 text-emerald-800 font-bold text-xs px-2.5 py-2 rounded-xl border border-emerald-300 transition" :title="showText ? 'Ocultar mensaje' : 'Ver mensaje completo'">
-                                    <span x-text="showText ? '👁️ Ocultar' : '👁️ Ver'"></span>
-                                </button>
-                                @if($gatewayActive)
-                                    <button type="button" wire:click="sendDirectTemplate('disponibilidad')" wire:loading.attr="disabled" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition cursor-pointer">
-                                        <span wire:loading.remove wire:target="sendDirectTemplate('disponibilidad')">🚀 Enviar por API</span>
-                                        <span wire:loading wire:target="sendDirectTemplate('disponibilidad')">⏳</span>
-                                    </button>
-                                @else
-                                    <a href="{{ $contactDispoWaUrl }}" target="_blank" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition">
-                                        💬 Enviar
-                                    </a>
-                                @endif
-                            </div>
-                        </div>
-
-                        <div x-show="showText" class="bg-white p-3.5 rounded-xl border border-emerald-200 text-xs text-gray-700 space-y-2" style="display: none;">
-                            <div class="font-mono text-[11px] leading-relaxed whitespace-pre-line bg-gray-50 p-2.5 rounded-lg border border-gray-100 text-gray-800">{{ $contactDispoMsg }}</div>
-                            <div class="flex items-center justify-between pt-1">
-                                <span class="text-[11px] text-gray-500">Envía directo o copia para personalizar.</span>
-                                <button type="button" 
-                                    @click="navigator.clipboard.writeText(@js($contactDispoMsg)); copied = true; setTimeout(() => copied = false, 2500)"
-                                    class="text-xs font-bold px-3 py-1.5 rounded-lg border transition inline-flex items-center gap-1.5 cursor-pointer"
-                                    :class="copied ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-emerald-200'">
-                                    <span x-text="copied ? '✅ ¡Copiado al portapapeles!' : '📋 Copiar Texto'"></span>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 1.2 Filtro Finca & Estilo de Fiesta -->
-                    <div x-data="{ showText: false, copied: false }" class="p-4 rounded-xl border border-teal-200 bg-teal-50/30 hover:bg-teal-50/60 transition space-y-2.5">
-                        <div class="flex items-start justify-between gap-4">
-                            <div>
-                                <h4 class="font-bold text-gray-900 text-sm flex items-center gap-2">
-                                    <span>🏰 Filtro Finca, Espacio & Música</span>
-                                    <span class="text-[10px] bg-teal-100 text-teal-800 font-bold px-2 py-0.5 rounded-full">Descubrimiento</span>
-                                </h4>
-                                <p class="text-xs text-gray-600 mt-1">
-                                    Pregunta si tienen el lugar cerrado y si buscan música para todo el evento o solo barra libre, para afinar la propuesta.
-                                </p>
-                            </div>
-                            <div class="flex items-center gap-1.5 shrink-0">
-                                <button type="button" @click="showText = !showText" class="bg-white hover:bg-teal-100 text-teal-800 font-bold text-xs px-2.5 py-2 rounded-xl border border-teal-300 transition" :title="showText ? 'Ocultar mensaje' : 'Ver mensaje completo'">
-                                    <span x-text="showText ? '👁️ Ocultar' : '👁️ Ver'"></span>
-                                </button>
-                                @if($gatewayActive)
-                                    <button type="button" wire:click="sendDirectTemplate('filtro_finca')" wire:loading.attr="disabled" class="bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition cursor-pointer">
-                                        <span wire:loading.remove wire:target="sendDirectTemplate('filtro_finca')">🚀 Enviar por API</span>
-                                        <span wire:loading wire:target="sendDirectTemplate('filtro_finca')">⏳</span>
-                                    </button>
-                                @else
-                                    <a href="{{ $contactFincaWaUrl }}" target="_blank" class="bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition">
-                                        💬 Enviar
-                                    </a>
-                                @endif
-                            </div>
-                        </div>
-
-                        <div x-show="showText" class="bg-white p-3.5 rounded-xl border border-teal-200 text-xs text-gray-700 space-y-2" style="display: none;">
-                            <div class="font-mono text-[11px] leading-relaxed whitespace-pre-line bg-gray-50 p-2.5 rounded-lg border border-gray-100 text-gray-800">{{ $contactFincaMsg }}</div>
-                            <div class="flex items-center justify-between pt-1">
-                                <span class="text-[11px] text-gray-500">Ideal si la pareja contactó desde bodas.net o instagram.</span>
-                                <button type="button" 
-                                    @click="navigator.clipboard.writeText(@js($contactFincaMsg)); copied = true; setTimeout(() => copied = false, 2500)"
-                                    class="text-xs font-bold px-3 py-1.5 rounded-lg border transition inline-flex items-center gap-1.5 cursor-pointer"
-                                    :class="copied ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-teal-50 text-teal-700 hover:bg-teal-100 border-teal-200'">
-                                    <span x-text="copied ? '✅ ¡Copiado al portapapeles!' : '📋 Copiar Texto'"></span>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+                <!-- Cuerpo Compacto en Grid de 2 Columnas -->
+                <div class="p-4 max-h-[70vh] overflow-y-auto space-y-3">
 
                     <!-- ============================================================== -->
-                    <!-- SECCIÓN 2: CONVERSACIÓN EN CURSO & VIDEOLLAMADA               -->
+                    <!-- PESTAÑA 1: APERTURA, CONTACTO & VIDEOLLAMADA                   -->
                     <!-- ============================================================== -->
-                    <div class="pt-2 pb-1">
-                        <div class="flex items-center gap-2 mb-1">
-                            <span class="text-xs font-black uppercase tracking-wider text-blue-700 flex items-center gap-1.5">
-                                <span>💬</span> 2. Conversación en Curso & Videollamada
-                            </span>
-                            <div class="h-px bg-blue-200 flex-1"></div>
+                    <div x-show="hubTab === 'contact' || hubTab === 'all'" class="space-y-2.5">
+                        <div class="flex items-center gap-2">
+                            <span class="text-[11px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400">🟢 1. Primera Toma de Contacto & Conexión</span>
+                            <div class="h-px bg-emerald-200 dark:bg-emerald-900/60 flex-1"></div>
                         </div>
-                        <p class="text-[11px] text-gray-500">
-                            Mantén el contacto vivo y propón una breve charla de 10 min para poner cara, conocer sus gustos musicales y generar conexión real.
-                        </p>
-                    </div>
 
-                    <!-- 2.1 Seguimiento de conversación en curso -->
-                    <div x-data="{ showText: false, copied: false }" class="p-4 rounded-xl border border-blue-200 bg-blue-50/30 hover:bg-blue-50/60 transition space-y-2.5">
-                        <div class="flex items-start justify-between gap-4">
-                            <div>
-                                <h4 class="font-bold text-gray-900 text-sm flex items-center gap-2">
-                                    <span>💭 Retomar Conversación (Toque Ligero)</span>
-                                    <span class="text-[10px] bg-blue-100 text-blue-800 font-bold px-2 py-0.5 rounded-full">Sin Presión</span>
-                                </h4>
-                                <p class="text-xs text-gray-600 mt-1">
-                                    Pregunta cómo van con los preparativos y si surgió alguna duda con lo que estuvisteis hablando, de forma tranquila y cercana.
-                                </p>
-                            </div>
-                            <div class="flex items-center gap-1.5 shrink-0">
-                                <button type="button" @click="showText = !showText" class="bg-white hover:bg-blue-100 text-blue-800 font-bold text-xs px-2.5 py-2 rounded-xl border border-blue-300 transition" :title="showText ? 'Ocultar mensaje' : 'Ver mensaje completo'">
-                                    <span x-text="showText ? '👁️ Ocultar' : '👁️ Ver'"></span>
-                                </button>
-                                @if($gatewayActive)
-                                    <button type="button" wire:click="sendDirectTemplate('conversacion_suave')" wire:loading.attr="disabled" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition cursor-pointer">
-                                        <span wire:loading.remove wire:target="sendDirectTemplate('conversacion_suave')">🚀 Enviar por API</span>
-                                        <span wire:loading wire:target="sendDirectTemplate('conversacion_suave')">⏳</span>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                            <!-- 1.1 Disponibilidad en Agenda -->
+                            <div x-data="{ showText: false, copied: false }" class="p-3 rounded-xl border border-emerald-200 dark:border-emerald-800/70 bg-emerald-50/30 dark:bg-emerald-950/20 flex flex-col justify-between gap-2">
+                                <div class="flex items-start justify-between gap-2">
+                                    <div class="min-w-0">
+                                        <div class="flex items-center gap-1.5 flex-wrap">
+                                            <h4 class="font-bold text-gray-900 dark:text-white text-xs">📅 Fecha Libre & Saludo Cálido</h4>
+                                            <span class="text-[9px] bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 font-bold px-1.5 py-0.5 rounded-full">Lead In ⚡</span>
+                                        </div>
+                                        <p class="text-[11px] text-gray-600 dark:text-slate-400 mt-0.5 leading-snug">
+                                            Confirma disponibilidad en calendario y rompe el hielo sin presionar.
+                                        </p>
+                                    </div>
+                                    <div class="flex items-center gap-1 shrink-0">
+                                        <button type="button" @click="showText = !showText" class="bg-white dark:bg-slate-800 hover:bg-emerald-100 text-emerald-700 dark:text-emerald-300 font-bold text-[11px] px-2 py-1.5 rounded-lg border border-emerald-300 dark:border-emerald-700 transition cursor-pointer" title="Ver o copiar texto">
+                                            <span x-text="showText ? '▲' : '👁️'"></span>
+                                        </button>
+                                        @if($gatewayActive)
+                                            <button type="button" wire:click="sendDirectTemplate('disponibilidad')" wire:loading.attr="disabled" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] px-2.5 py-1.5 rounded-lg shadow-2xs inline-flex items-center gap-1 whitespace-nowrap transition cursor-pointer">
+                                                <span wire:loading.remove wire:target="sendDirectTemplate('disponibilidad')">🚀 Enviar</span>
+                                                <span wire:loading wire:target="sendDirectTemplate('disponibilidad')">⏳</span>
+                                            </button>
+                                        @else
+                                            <a href="{{ $contactDispoWaUrl }}" target="_blank" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] px-2.5 py-1.5 rounded-lg shadow-2xs inline-flex items-center gap-1 whitespace-nowrap transition">💬 Enviar</a>
+                                        @endif
+                                    </div>
+                                </div>
+                                <div x-show="showText" style="display: none;" class="bg-white dark:bg-slate-950 p-2.5 rounded-lg border border-emerald-200 dark:border-emerald-900 text-[11px] space-y-1.5">
+                                    <div class="font-mono text-[10px] leading-relaxed whitespace-pre-line text-gray-800 dark:text-slate-200 max-h-32 overflow-y-auto">{{ $contactDispoMsg }}</div>
+                                    <button type="button" @click="navigator.clipboard.writeText(@js($contactDispoMsg)); copied = true; setTimeout(() => copied = false, 2000)" class="w-full text-[10px] font-bold py-1 rounded border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 cursor-pointer">
+                                        <span x-text="copied ? '✅ ¡Copiado!' : '📋 Copiar texto'"></span>
                                     </button>
-                                @else
-                                    <a href="{{ $followupChatWaUrl }}" target="_blank" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition">
-                                        💬 Enviar
-                                    </a>
-                                @endif
+                                </div>
                             </div>
-                        </div>
 
-                        <div x-show="showText" class="bg-white p-3.5 rounded-xl border border-blue-200 text-xs text-gray-700 space-y-2" style="display: none;">
-                            <div class="font-mono text-[11px] leading-relaxed whitespace-pre-line bg-gray-50 p-2.5 rounded-lg border border-gray-100 text-gray-800">{{ $followupChatMsg }}</div>
-                            <div class="flex items-center justify-between pt-1">
-                                <span class="text-[11px] text-gray-500">Mantiene el vínculo sin sonar invasivo.</span>
-                                <button type="button" 
-                                    @click="navigator.clipboard.writeText(@js($followupChatMsg)); copied = true; setTimeout(() => copied = false, 2500)"
-                                    class="text-xs font-bold px-3 py-1.5 rounded-lg border transition inline-flex items-center gap-1.5 cursor-pointer"
-                                    :class="copied ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-200'">
-                                    <span x-text="copied ? '✅ ¡Copiado al portapapeles!' : '📋 Copiar Texto'"></span>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 2.2 Propuesta de llamada / videollamada 10 min -->
-                    <div x-data="{ showText: false, copied: false }" class="p-4 rounded-xl border border-indigo-200 bg-indigo-50/30 hover:bg-indigo-50/60 transition space-y-2.5">
-                        <div class="flex items-start justify-between gap-4">
-                            <div>
-                                <h4 class="font-bold text-gray-900 text-sm flex items-center gap-2">
-                                    <span>💻 Propuesta de Charla / Videollamada (10-15 min)</span>
-                                    <span class="text-[10px] bg-indigo-100 text-indigo-800 font-extrabold px-2 py-0.5 rounded-full">Multiplica Cierres ⭐</span>
-                                </h4>
-                                <p class="text-xs text-gray-600 mt-1">
-                                    Propone una llamada de 10 min antes de mandar el presupuesto para entender qué música quieren y evitar malentendidos por WhatsApp.
-                                </p>
-                            </div>
-                            <div class="flex items-center gap-1.5 shrink-0">
-                                <button type="button" @click="showText = !showText" class="bg-white hover:bg-indigo-100 text-indigo-800 font-bold text-xs px-2.5 py-2 rounded-xl border border-indigo-300 transition" :title="showText ? 'Ocultar mensaje' : 'Ver mensaje completo'">
-                                    <span x-text="showText ? '👁️ Ocultar' : '👁️ Ver'"></span>
-                                </button>
-                                @if($gatewayActive)
-                                    <button type="button" wire:click="sendDirectTemplate('propuesta_llamada')" wire:loading.attr="disabled" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition cursor-pointer">
-                                        <span wire:loading.remove wire:target="sendDirectTemplate('propuesta_llamada')">🚀 Enviar por API</span>
-                                        <span wire:loading wire:target="sendDirectTemplate('propuesta_llamada')">⏳</span>
+                            <!-- 1.2 Filtro Espacio & Música -->
+                            <div x-data="{ showText: false, copied: false }" class="p-3 rounded-xl border border-teal-200 dark:border-teal-800/70 bg-teal-50/30 dark:bg-teal-950/20 flex flex-col justify-between gap-2">
+                                <div class="flex items-start justify-between gap-2">
+                                    <div class="min-w-0">
+                                        <div class="flex items-center gap-1.5 flex-wrap">
+                                            <h4 class="font-bold text-gray-900 dark:text-white text-xs">🏰 {{ $event->is_wedding ? 'Filtro Finca, Espacio & Música' : 'Filtro Lugar, Horario & Formato' }}</h4>
+                                            <span class="text-[9px] bg-teal-100 dark:bg-teal-900/60 text-teal-800 dark:text-teal-300 font-bold px-1.5 py-0.5 rounded-full">Descubrimiento</span>
+                                        </div>
+                                        <p class="text-[11px] text-gray-600 dark:text-slate-400 mt-0.5 leading-snug">
+                                            {{ $event->is_wedding ? 'Pregunta si tienen finca cerrada y qué fases buscan sonorizar.' : 'Pregunta qué idea de evento, música o espectáculo tienen en mente.' }}
+                                        </p>
+                                    </div>
+                                    <div class="flex items-center gap-1 shrink-0">
+                                        <button type="button" @click="showText = !showText" class="bg-white dark:bg-slate-800 hover:bg-teal-100 text-teal-700 dark:text-teal-300 font-bold text-[11px] px-2 py-1.5 rounded-lg border border-teal-300 dark:border-teal-700 transition cursor-pointer" title="Ver o copiar texto">
+                                            <span x-text="showText ? '▲' : '👁️'"></span>
+                                        </button>
+                                        @if($gatewayActive)
+                                            <button type="button" wire:click="sendDirectTemplate('filtro_finca')" wire:loading.attr="disabled" class="bg-teal-600 hover:bg-teal-500 text-white font-bold text-[11px] px-2.5 py-1.5 rounded-lg shadow-2xs inline-flex items-center gap-1 whitespace-nowrap transition cursor-pointer">
+                                                <span wire:loading.remove wire:target="sendDirectTemplate('filtro_finca')">🚀 Enviar</span>
+                                                <span wire:loading wire:target="sendDirectTemplate('filtro_finca')">⏳</span>
+                                            </button>
+                                        @else
+                                            <a href="{{ $contactFincaWaUrl }}" target="_blank" class="bg-teal-600 hover:bg-teal-500 text-white font-bold text-[11px] px-2.5 py-1.5 rounded-lg shadow-2xs inline-flex items-center gap-1 whitespace-nowrap transition">💬 Enviar</a>
+                                        @endif
+                                    </div>
+                                </div>
+                                <div x-show="showText" style="display: none;" class="bg-white dark:bg-slate-950 p-2.5 rounded-lg border border-teal-200 dark:border-teal-900 text-[11px] space-y-1.5">
+                                    <div class="font-mono text-[10px] leading-relaxed whitespace-pre-line text-gray-800 dark:text-slate-200 max-h-32 overflow-y-auto">{{ $contactFincaMsg }}</div>
+                                    <button type="button" @click="navigator.clipboard.writeText(@js($contactFincaMsg)); copied = true; setTimeout(() => copied = false, 2000)" class="w-full text-[10px] font-bold py-1 rounded border border-teal-200 dark:border-teal-800 bg-teal-50 dark:bg-teal-950/50 text-teal-700 dark:text-teal-300 cursor-pointer">
+                                        <span x-text="copied ? '✅ ¡Copiado!' : '📋 Copiar texto'"></span>
                                     </button>
-                                @else
-                                    <a href="{{ $propuestaLlamadaWaUrl }}" target="_blank" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition">
-                                        💬 Enviar
-                                    </a>
-                                @endif
+                                </div>
                             </div>
-                        </div>
 
-                        <div x-show="showText" class="bg-white p-3.5 rounded-xl border border-indigo-200 text-xs text-gray-700 space-y-2" style="display: none;">
-                            <div class="font-mono text-[11px] leading-relaxed whitespace-pre-line bg-gray-50 p-2.5 rounded-lg border border-gray-100 text-gray-800">{{ $propuestaLlamadaMsg }}</div>
-                            <div class="flex items-center justify-between pt-1">
-                                <span class="text-[11px] text-gray-500">Clave del método Madrigal: conectar antes de enviar precios.</span>
-                                <button type="button" 
-                                    @click="navigator.clipboard.writeText(@js($propuestaLlamadaMsg)); copied = true; setTimeout(() => copied = false, 2500)"
-                                    class="text-xs font-bold px-3 py-1.5 rounded-lg border transition inline-flex items-center gap-1.5 cursor-pointer"
-                                    :class="copied ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border-indigo-200'">
-                                    <span x-text="copied ? '✅ ¡Copiado al portapapeles!' : '📋 Copiar Texto'"></span>
-                                </button>
+                            <!-- 2.1 Retomar Conversación -->
+                            <div x-data="{ showText: false, copied: false }" class="p-3 rounded-xl border border-blue-200 dark:border-blue-800/70 bg-blue-50/30 dark:bg-blue-950/20 flex flex-col justify-between gap-2">
+                                <div class="flex items-start justify-between gap-2">
+                                    <div class="min-w-0">
+                                        <div class="flex items-center gap-1.5 flex-wrap">
+                                            <h4 class="font-bold text-gray-900 dark:text-white text-xs">💭 Retomar Conversación (Toque Ligero)</h4>
+                                            <span class="text-[9px] bg-blue-100 dark:bg-blue-900/60 text-blue-800 dark:text-blue-300 font-bold px-1.5 py-0.5 rounded-full">Sin Presión</span>
+                                        </div>
+                                        <p class="text-[11px] text-gray-600 dark:text-slate-400 mt-0.5 leading-snug">
+                                            Pregunta cómo van los preparativos y si surgió alguna duda.
+                                        </p>
+                                    </div>
+                                    <div class="flex items-center gap-1 shrink-0">
+                                        <button type="button" @click="showText = !showText" class="bg-white dark:bg-slate-800 hover:bg-blue-100 text-blue-700 dark:text-blue-300 font-bold text-[11px] px-2 py-1.5 rounded-lg border border-blue-300 dark:border-blue-700 transition cursor-pointer" title="Ver o copiar texto">
+                                            <span x-text="showText ? '▲' : '👁️'"></span>
+                                        </button>
+                                        @if($gatewayActive)
+                                            <button type="button" wire:click="sendDirectTemplate('conversacion_suave')" wire:loading.attr="disabled" class="bg-blue-600 hover:bg-blue-500 text-white font-bold text-[11px] px-2.5 py-1.5 rounded-lg shadow-2xs inline-flex items-center gap-1 whitespace-nowrap transition cursor-pointer">
+                                                <span wire:loading.remove wire:target="sendDirectTemplate('conversacion_suave')">🚀 Enviar</span>
+                                                <span wire:loading wire:target="sendDirectTemplate('conversacion_suave')">⏳</span>
+                                            </button>
+                                        @else
+                                            <a href="{{ $followupChatWaUrl }}" target="_blank" class="bg-blue-600 hover:bg-blue-500 text-white font-bold text-[11px] px-2.5 py-1.5 rounded-lg shadow-2xs inline-flex items-center gap-1 whitespace-nowrap transition">💬 Enviar</a>
+                                        @endif
+                                    </div>
+                                </div>
+                                <div x-show="showText" style="display: none;" class="bg-white dark:bg-slate-950 p-2.5 rounded-lg border border-blue-200 dark:border-blue-900 text-[11px] space-y-1.5">
+                                    <div class="font-mono text-[10px] leading-relaxed whitespace-pre-line text-gray-800 dark:text-slate-200 max-h-32 overflow-y-auto">{{ $followupChatMsg }}</div>
+                                    <button type="button" @click="navigator.clipboard.writeText(@js($followupChatMsg)); copied = true; setTimeout(() => copied = false, 2000)" class="w-full text-[10px] font-bold py-1 rounded border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 cursor-pointer">
+                                        <span x-text="copied ? '✅ ¡Copiado!' : '📋 Copiar texto'"></span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- 2.2 Propuesta de llamada 10 min -->
+                            <div x-data="{ showText: false, copied: false }" class="p-3 rounded-xl border border-indigo-200 dark:border-indigo-800/70 bg-indigo-50/30 dark:bg-indigo-950/20 flex flex-col justify-between gap-2">
+                                <div class="flex items-start justify-between gap-2">
+                                    <div class="min-w-0">
+                                        <div class="flex items-center gap-1.5 flex-wrap">
+                                            <h4 class="font-bold text-gray-900 dark:text-white text-xs">💻 Charla / Llamada Rápida (10 min)</h4>
+                                            <span class="text-[9px] bg-indigo-100 dark:bg-indigo-900/60 text-indigo-800 dark:text-indigo-300 font-extrabold px-1.5 py-0.5 rounded-full">Cierres ⭐</span>
+                                        </div>
+                                        <p class="text-[11px] text-gray-600 dark:text-slate-400 mt-0.5 leading-snug">
+                                            Hablar 10 min por teléfono para afinar la propuesta sin malentendidos.
+                                        </p>
+                                    </div>
+                                    <div class="flex items-center gap-1 shrink-0">
+                                        <button type="button" @click="showText = !showText" class="bg-white dark:bg-slate-800 hover:bg-indigo-100 text-indigo-700 dark:text-indigo-300 font-bold text-[11px] px-2 py-1.5 rounded-lg border border-indigo-300 dark:border-indigo-700 transition cursor-pointer" title="Ver o copiar texto">
+                                            <span x-text="showText ? '▲' : '👁️'"></span>
+                                        </button>
+                                        @if($gatewayActive)
+                                            <button type="button" wire:click="sendDirectTemplate('propuesta_llamada')" wire:loading.attr="disabled" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[11px] px-2.5 py-1.5 rounded-lg shadow-2xs inline-flex items-center gap-1 whitespace-nowrap transition cursor-pointer">
+                                                <span wire:loading.remove wire:target="sendDirectTemplate('propuesta_llamada')">🚀 Enviar</span>
+                                                <span wire:loading wire:target="sendDirectTemplate('propuesta_llamada')">⏳</span>
+                                            </button>
+                                        @else
+                                            <a href="{{ $propuestaLlamadaWaUrl }}" target="_blank" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[11px] px-2.5 py-1.5 rounded-lg shadow-2xs inline-flex items-center gap-1 whitespace-nowrap transition">💬 Enviar</a>
+                                        @endif
+                                    </div>
+                                </div>
+                                <div x-show="showText" style="display: none;" class="bg-white dark:bg-slate-950 p-2.5 rounded-lg border border-indigo-200 dark:border-indigo-900 text-[11px] space-y-1.5">
+                                    <div class="font-mono text-[10px] leading-relaxed whitespace-pre-line text-gray-800 dark:text-slate-200 max-h-32 overflow-y-auto">{{ $propuestaLlamadaMsg }}</div>
+                                    <button type="button" @click="navigator.clipboard.writeText(@js($propuestaLlamadaMsg)); copied = true; setTimeout(() => copied = false, 2000)" class="w-full text-[10px] font-bold py-1 rounded border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 cursor-pointer">
+                                        <span x-text="copied ? '✅ ¡Copiado!' : '📋 Copiar texto'"></span>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
 
                     <!-- ============================================================== -->
-                    <!-- SECCIÓN 3: PRESENTACIÓN, DOSSIER & RESERVA                     -->
+                    <!-- PESTAÑA 2: PROPUESTA, DOSSIER & RESERVA                        -->
                     <!-- ============================================================== -->
-                    <div class="pt-2 pb-1">
-                        <div class="flex items-center gap-2 mb-1">
-                            <span class="text-xs font-black uppercase tracking-wider text-purple-700 flex items-center gap-1.5">
-                                <span>📑</span> 3. Presentación de Propuesta & Dossier
-                            </span>
-                            <div class="h-px bg-purple-200 flex-1"></div>
+                    <div x-show="hubTab === 'quote' || hubTab === 'all'" class="space-y-2.5">
+                        <div class="flex items-center gap-2">
+                            <span class="text-[11px] font-black uppercase tracking-wider text-purple-600 dark:text-purple-400">📑 2. Presentación de Propuesta, Dossier & Señal</span>
+                            <div class="h-px bg-purple-200 dark:bg-purple-900/60 flex-1"></div>
                         </div>
-                        <p class="text-[11px] text-gray-500">
-                            Envía el PDF unificado con fotos de montajes y el presupuesto mascadito al final. Ofrece bloqueo provisional de fecha sin compromiso.
-                        </p>
-                    </div>
 
-                    <!-- 3.1 Envío de Dossier + Presupuesto unificado -->
-                    <div x-data="{ showText: false, copied: false }" class="p-4 rounded-xl border border-purple-200 bg-purple-50/30 hover:bg-purple-50/60 transition space-y-2.5">
-                        <div class="flex items-start justify-between gap-4">
-                            <div>
-                                <h4 class="font-bold text-gray-900 text-sm flex items-center gap-2">
-                                    <span>📑 Enviar Dossier con Presupuesto Mascadito (PDF)</span>
-                                    <span class="text-[10px] bg-purple-100 text-purple-800 font-extrabold px-2 py-0.5 rounded-full">Recomendado ⭐</span>
-                                </h4>
-                                <p class="text-xs text-gray-600 mt-1">
-                                    Acompaña el documento PDF del dossier. Resalta las fotos de montajes, el presupuesto cerrado al final y el bloqueo de fecha garantizado.
-                                </p>
-                            </div>
-                            <div class="flex items-center gap-1.5 shrink-0">
-                                <button type="button" @click="showText = !showText" class="bg-white hover:bg-purple-100 text-purple-800 font-bold text-xs px-2.5 py-2 rounded-xl border border-purple-300 transition" :title="showText ? 'Ocultar mensaje' : 'Ver mensaje completo'">
-                                    <span x-text="showText ? '👁️ Ocultar' : '👁️ Ver'"></span>
-                                </button>
-                                @if($gatewayActive)
-                                    <button type="button" wire:click="sendDirectTemplate('envio_dossier')" wire:loading.attr="disabled" class="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition cursor-pointer">
-                                        <span wire:loading.remove wire:target="sendDirectTemplate('envio_dossier')">🚀 Enviar por API</span>
-                                        <span wire:loading wire:target="sendDirectTemplate('envio_dossier')">⏳</span>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                            <!-- 3.1 Envío de Dossier + Presupuesto -->
+                            <div x-data="{ showText: false, copied: false }" class="p-3 rounded-xl border border-purple-200 dark:border-purple-800/70 bg-purple-50/30 dark:bg-purple-950/20 flex flex-col justify-between gap-2">
+                                <div class="flex items-start justify-between gap-2">
+                                    <div class="min-w-0">
+                                        <div class="flex items-center gap-1.5 flex-wrap">
+                                            <h4 class="font-bold text-gray-900 dark:text-white text-xs">📑 Enviar Dossier & Presupuesto (PDF)</h4>
+                                            <span class="text-[9px] bg-purple-100 dark:bg-purple-900/60 text-purple-800 dark:text-purple-300 font-extrabold px-1.5 py-0.5 rounded-full">Recomendado ⭐</span>
+                                        </div>
+                                        <p class="text-[11px] text-gray-600 dark:text-slate-400 mt-0.5 leading-snug">
+                                            Enlace al Dossier PDF interactivo con montajes y presupuesto al final.
+                                        </p>
+                                    </div>
+                                    <div class="flex items-center gap-1 shrink-0">
+                                        <button type="button" @click="showText = !showText" class="bg-white dark:bg-slate-800 hover:bg-purple-100 text-purple-700 dark:text-purple-300 font-bold text-[11px] px-2 py-1.5 rounded-lg border border-purple-300 dark:border-purple-700 transition cursor-pointer" title="Ver o copiar texto">
+                                            <span x-text="showText ? '▲' : '👁️'"></span>
+                                        </button>
+                                        @if($gatewayActive)
+                                            <button type="button" wire:click="sendDirectTemplate('envio_dossier')" wire:loading.attr="disabled" class="bg-purple-600 hover:bg-purple-500 text-white font-bold text-[11px] px-2.5 py-1.5 rounded-lg shadow-2xs inline-flex items-center gap-1 whitespace-nowrap transition cursor-pointer">
+                                                <span wire:loading.remove wire:target="sendDirectTemplate('envio_dossier')">🚀 Enviar</span>
+                                                <span wire:loading wire:target="sendDirectTemplate('envio_dossier')">⏳</span>
+                                            </button>
+                                        @else
+                                            <a href="{{ $envioDossierWaUrl }}" target="_blank" class="bg-purple-600 hover:bg-purple-500 text-white font-bold text-[11px] px-2.5 py-1.5 rounded-lg shadow-2xs inline-flex items-center gap-1 whitespace-nowrap transition">💬 Enviar</a>
+                                        @endif
+                                    </div>
+                                </div>
+                                <div x-show="showText" style="display: none;" class="bg-white dark:bg-slate-950 p-2.5 rounded-lg border border-purple-200 dark:border-purple-900 text-[11px] space-y-1.5">
+                                    <div class="font-mono text-[10px] leading-relaxed whitespace-pre-line text-gray-800 dark:text-slate-200 max-h-32 overflow-y-auto">{{ $envioDossierMsg }}</div>
+                                    <button type="button" @click="navigator.clipboard.writeText(@js($envioDossierMsg)); copied = true; setTimeout(() => copied = false, 2000)" class="w-full text-[10px] font-bold py-1 rounded border border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 cursor-pointer">
+                                        <span x-text="copied ? '✅ ¡Copiado!' : '📋 Copiar texto'"></span>
                                     </button>
-                                @else
-                                    <a href="{{ $envioDossierWaUrl }}" target="_blank" class="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition">
-                                        💬 Enviar
-                                    </a>
-                                @endif
+                                </div>
                             </div>
-                        </div>
 
-                        <div x-show="showText" class="bg-white p-3.5 rounded-xl border border-purple-200 text-xs text-gray-700 space-y-2" style="display: none;">
-                            <div class="font-mono text-[11px] leading-relaxed whitespace-pre-line bg-gray-50 p-2.5 rounded-lg border border-gray-100 text-gray-800">{{ $envioDossierMsg }}</div>
-                            <div class="flex items-center justify-between pt-1">
-                                <span class="text-[11px] text-gray-500">Recuerda adjuntar el archivo PDF en el chat.</span>
-                                <button type="button" 
-                                    @click="navigator.clipboard.writeText(@js($envioDossierMsg)); copied = true; setTimeout(() => copied = false, 2500)"
-                                    class="text-xs font-bold px-3 py-1.5 rounded-lg border transition inline-flex items-center gap-1.5 cursor-pointer"
-                                    :class="copied ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-purple-50 text-purple-700 hover:bg-purple-100 border-purple-200'">
-                                    <span x-text="copied ? '✅ ¡Copiado al portapapeles!' : '📋 Copiar Texto'"></span>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 3.2 Seguimiento post-presupuesto (A los 2-3 días) -->
-                    <div x-data="{ showText: false, copied: false }" class="p-4 rounded-xl border border-amber-200 bg-amber-50/30 hover:bg-amber-50/60 transition space-y-2.5">
-                        <div class="flex items-start justify-between gap-4">
-                            <div>
-                                <h4 class="font-bold text-gray-900 text-sm flex items-center gap-2">
-                                    <span>⏳ Seguimiento a los 2-3 Días (¿Pudisteis verlo?)</span>
-                                    <span class="text-[10px] bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded-full">Paso Clave</span>
-                                </h4>
-                                <p class="text-xs text-gray-600 mt-1">
-                                    Toque ligero a los pocos días de enviar la propuesta: <em>"¿Pudisteis verlo? Si tenéis alguna duda os llamo 5 minutos..."</em>.
-                                </p>
-                            </div>
-                            <div class="flex items-center gap-1.5 shrink-0">
-                                <button type="button" @click="showText = !showText" class="bg-white hover:bg-amber-100 text-amber-800 font-bold text-xs px-2.5 py-2 rounded-xl border border-amber-300 transition" :title="showText ? 'Ocultar mensaje' : 'Ver mensaje completo'">
-                                    <span x-text="showText ? '👁️ Ocultar' : '👁️ Ver'"></span>
-                                </button>
-                                @if($gatewayActive)
-                                    <button type="button" wire:click="sendDirectTemplate('post_presupuesto')" wire:loading.attr="disabled" class="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition cursor-pointer">
-                                        <span wire:loading.remove wire:target="sendDirectTemplate('post_presupuesto')">🚀 Enviar por API</span>
-                                        <span wire:loading wire:target="sendDirectTemplate('post_presupuesto')">⏳</span>
+                            <!-- 3.2 Seguimiento a los 2-3 días -->
+                            <div x-data="{ showText: false, copied: false }" class="p-3 rounded-xl border border-amber-200 dark:border-amber-800/70 bg-amber-50/30 dark:bg-amber-950/20 flex flex-col justify-between gap-2">
+                                <div class="flex items-start justify-between gap-2">
+                                    <div class="min-w-0">
+                                        <div class="flex items-center gap-1.5 flex-wrap">
+                                            <h4 class="font-bold text-gray-900 dark:text-white text-xs">⏳ Seguimiento 2-3 Días (¿Lo visteis?)</h4>
+                                            <span class="text-[9px] bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-300 font-bold px-1.5 py-0.5 rounded-full">Paso Clave</span>
+                                        </div>
+                                        <p class="text-[11px] text-gray-600 dark:text-slate-400 mt-0.5 leading-snug">
+                                            Toque cercano tras enviar propuesta para resolver dudas.
+                                        </p>
+                                    </div>
+                                    <div class="flex items-center gap-1 shrink-0">
+                                        <button type="button" @click="showText = !showText" class="bg-white dark:bg-slate-800 hover:bg-amber-100 text-amber-700 dark:text-amber-300 font-bold text-[11px] px-2 py-1.5 rounded-lg border border-amber-300 dark:border-amber-700 transition cursor-pointer" title="Ver o copiar texto">
+                                            <span x-text="showText ? '▲' : '👁️'"></span>
+                                        </button>
+                                        @if($gatewayActive)
+                                            <button type="button" wire:click="sendDirectTemplate('post_presupuesto')" wire:loading.attr="disabled" class="bg-amber-600 hover:bg-amber-500 text-white font-bold text-[11px] px-2.5 py-1.5 rounded-lg shadow-2xs inline-flex items-center gap-1 whitespace-nowrap transition cursor-pointer">
+                                                <span wire:loading.remove wire:target="sendDirectTemplate('post_presupuesto')">🚀 Enviar</span>
+                                                <span wire:loading wire:target="sendDirectTemplate('post_presupuesto')">⏳</span>
+                                            </button>
+                                        @else
+                                            <a href="{{ $followupPostQuoteWaUrl }}" target="_blank" class="bg-amber-600 hover:bg-amber-500 text-white font-bold text-[11px] px-2.5 py-1.5 rounded-lg shadow-2xs inline-flex items-center gap-1 whitespace-nowrap transition">💬 Enviar</a>
+                                        @endif
+                                    </div>
+                                </div>
+                                <div x-show="showText" style="display: none;" class="bg-white dark:bg-slate-950 p-2.5 rounded-lg border border-amber-200 dark:border-amber-900 text-[11px] space-y-1.5">
+                                    <div class="font-mono text-[10px] leading-relaxed whitespace-pre-line text-gray-800 dark:text-slate-200 max-h-32 overflow-y-auto">{{ $followupPostQuoteMsg }}</div>
+                                    <button type="button" @click="navigator.clipboard.writeText(@js($followupPostQuoteMsg)); copied = true; setTimeout(() => copied = false, 2000)" class="w-full text-[10px] font-bold py-1 rounded border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 cursor-pointer">
+                                        <span x-text="copied ? '✅ ¡Copiado!' : '📋 Copiar texto'"></span>
                                     </button>
-                                @else
-                                    <a href="{{ $followupPostQuoteWaUrl }}" target="_blank" class="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition">
-                                        💬 Enviar
-                                    </a>
-                                @endif
+                                </div>
                             </div>
-                        </div>
 
-                        <div x-show="showText" class="bg-white p-3.5 rounded-xl border border-amber-200 text-xs text-gray-700 space-y-2" style="display: none;">
-                            <div class="font-mono text-[11px] leading-relaxed whitespace-pre-line bg-gray-50 p-2.5 rounded-lg border border-gray-100 text-gray-800">{{ $followupPostQuoteMsg }}</div>
-                            <div class="flex items-center justify-between pt-1">
-                                <span class="text-[11px] text-gray-500">Ideal enviar 48-72 horas después de la propuesta.</span>
-                                <button type="button" 
-                                    @click="navigator.clipboard.writeText(@js($followupPostQuoteMsg)); copied = true; setTimeout(() => copied = false, 2500)"
-                                    class="text-xs font-bold px-3 py-1.5 rounded-lg border transition inline-flex items-center gap-1.5 cursor-pointer"
-                                    :class="copied ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-amber-50 text-amber-700 hover:bg-amber-100 border-amber-200'">
-                                    <span x-text="copied ? '✅ ¡Copiado al portapapeles!' : '📋 Copiar Texto'"></span>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 3.3 Resumen de Presupuesto & Desglose en texto -->
-                    <div class="p-4 rounded-xl border border-gray-200 hover:border-emerald-300 bg-gray-50 hover:bg-emerald-50/40 transition">
-                        <div class="flex items-start justify-between gap-4">
-                            <div>
-                                <h4 class="font-bold text-gray-900 text-sm flex items-center gap-2">
-                                    <span>📋 Enviar Resumen Rápido por Texto (Desglose)</span>
-                                    <span class="text-[10px] bg-gray-200 text-gray-800 font-bold px-2 py-0.5 rounded-full">Texto Plano</span>
-                                </h4>
-                                <p class="text-xs text-gray-500 mt-1">
-                                    @if($latestQuote)
-                                        Envía el desglose de importes en texto directo (Total: <strong>{{ number_format($quoteAmount, 2) }} €</strong> | Señal: <strong>{{ number_format($signalAmount, 2) }} €</strong> - {{ $signalLabel }}).
-                                    @else
-                                        <span class="text-amber-600">Genera primero una propuesta en la pestaña de Presupuestos.</span>
-                                    @endif
-                                </p>
-                            </div>
-                            @if($latestQuote)
-                                @if($gatewayActive)
-                                    <button type="button" wire:click="sendDirectTemplate('quote_propuesta')" wire:loading.attr="disabled" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition cursor-pointer">
-                                        <span wire:loading.remove wire:target="sendDirectTemplate('quote_propuesta')">🚀 Enviar por API</span>
-                                        <span wire:loading wire:target="sendDirectTemplate('quote_propuesta')">⏳</span>
-                                    </button>
-                                @else
-                                    <a href="{{ $quotePropuestaWaUrl }}" target="_blank" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition">
-                                        💬 Enviar
-                                    </a>
-                                @endif
-                            @else
-                                <button disabled class="bg-gray-300 text-gray-500 font-bold text-xs px-3.5 py-2 rounded-xl cursor-not-allowed">Sin propuesta</button>
-                            @endif
-                        </div>
-                    </div>
-
-                    <!-- 3.4 Solicitar Señal de Reserva -->
-                    <div class="p-4 rounded-xl border border-gray-200 hover:border-emerald-300 bg-gray-50 hover:bg-emerald-50/40 transition">
-                        <div class="flex items-start justify-between gap-4">
-                            <div>
-                                <h4 class="font-bold text-gray-900 text-sm flex items-center gap-2">
-                                    <span>💶 Solicitar Señal de Reserva ({{ $signalLabel }})</span>
-                                    <span class="text-[10px] bg-blue-100 text-blue-800 font-bold px-2 py-0.5 rounded-full">Reserva</span>
-                                </h4>
-                                <p class="text-xs text-gray-500 mt-1">
-                                    Solicita el abono de la reserva (<strong>{{ number_format($signalAmount, 2) }} €</strong>) con datos bancarios y Bizum.
-                                </p>
-                            </div>
-                            @if($latestQuote)
-                                @if($gatewayActive)
-                                    <button type="button" wire:click="sendDirectTemplate('signal')" wire:loading.attr="disabled" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition cursor-pointer">
-                                        <span wire:loading.remove wire:target="sendDirectTemplate('signal')">🚀 Enviar por API</span>
-                                        <span wire:loading wire:target="sendDirectTemplate('signal')">⏳</span>
-                                    </button>
-                                @else
-                                    <a href="{{ $signalWaUrl }}" target="_blank" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition">
-                                        💬 Enviar
-                                    </a>
-                                @endif
-                            @else
-                                <button disabled class="bg-gray-300 text-gray-500 font-bold text-xs px-3.5 py-2 rounded-xl cursor-not-allowed">Sin propuesta</button>
-                            @endif
-                        </div>
-                    </div>
-
-                    <!-- SECCIÓN: ESTRATEGIA DE SEGUIMIENTO (SI NO RESPONDEN) -->
-                    <div class="pt-2 pb-1">
-                        <div class="flex items-center gap-2 mb-1.5">
-                            <span class="text-xs font-black uppercase tracking-wider text-rose-600 flex items-center gap-1.5">
-                                <span>🔥</span> Si no responden (Psicología Inversa & Técnica del NO)
-                            </span>
-                            <div class="h-px bg-rose-200 flex-1"></div>
-                        </div>
-                        <p class="text-[11px] text-gray-500">
-                            Respuestas tácticas para reactivar parejas o clientes que no contestan tras enviarles presupuesto, <strong>para no ser pesado ni parecer desesperado</strong>. Aplican el principio de autonomía de la pregunta del "NO" (Chris Voss) y el cierre de expediente con psicología inversa.
-                        </p>
-                    </div>
-
-                    <!-- Seguimiento 1: Técnica del NO (¿Descartáis la fecha?) -->
-                    <div x-data="{ showText: false, copied: false }" class="p-4 rounded-xl border border-rose-200 bg-rose-50/40 hover:bg-rose-50/70 transition space-y-2.5">
-                        <div class="flex items-start justify-between gap-4">
-                            <div>
-                                <h4 class="font-bold text-gray-900 text-sm flex items-center gap-2">
-                                    <span>🎯 ¿Descartáis la fecha? (Técnica del "NO")</span>
-                                    <span class="text-[10px] bg-rose-100 text-rose-800 font-extrabold px-2 py-0.5 rounded-full">Recomendado ⭐</span>
-                                </h4>
-                                <p class="text-xs text-gray-600 mt-1">
-                                    Pregunta directa: <em>"¿Habéis decidido descartar la opción...?"</em>. Activa la urgencia y el deseo de decir <strong>"¡No, no lo descartamos!"</strong> para no perder el día ante otra consulta, sin presionar.
-                                </p>
-                            </div>
-                            <div class="flex items-center gap-1.5 shrink-0">
-                                <button type="button" @click="showText = !showText" class="bg-white hover:bg-rose-100 text-rose-700 font-bold text-xs px-2.5 py-2 rounded-xl border border-rose-300 transition" :title="showText ? 'Ocultar mensaje' : 'Ver mensaje completo'">
-                                    <span x-text="showText ? '👁️ Ocultar' : '👁️ Ver'"></span>
-                                </button>
-                                @if($gatewayActive)
-                                    <button type="button" wire:click="sendDirectTemplate('tecnica_no')" wire:loading.attr="disabled" class="bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition cursor-pointer">
-                                        <span wire:loading.remove wire:target="sendDirectTemplate('tecnica_no')">🚀 Enviar por API</span>
-                                        <span wire:loading wire:target="sendDirectTemplate('tecnica_no')">⏳</span>
-                                    </button>
-                                @else
-                                    <a href="{{ $followupNoWaUrl }}" target="_blank" class="bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition">
-                                        💬 Enviar
-                                    </a>
-                                @endif
-                            </div>
-                        </div>
-
-                        <!-- Panel desplegable con el texto y botón de copiar -->
-                        <div x-show="showText" class="bg-white p-3.5 rounded-xl border border-rose-200 text-xs text-gray-700 space-y-2" style="display: none;">
-                            <div class="font-mono text-[11px] leading-relaxed whitespace-pre-line bg-gray-50 p-2.5 rounded-lg border border-gray-100 text-gray-800">{{ $followupNoMsg }}</div>
-                            <div class="flex items-center justify-between pt-1">
-                                <span class="text-[11px] text-gray-500">Puedes enviar directamente o copiar para adaptar.</span>
-                                <button type="button" 
-                                    @click="navigator.clipboard.writeText(@js($followupNoMsg)); copied = true; setTimeout(() => copied = false, 2500)"
-                                    class="text-xs font-bold px-3 py-1.5 rounded-lg border transition inline-flex items-center gap-1.5 cursor-pointer"
-                                    :class="copied ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-rose-50 text-rose-700 hover:bg-rose-100 border-rose-200'">
-                                    <span x-text="copied ? '✅ ¡Copiado al portapapeles!' : '📋 Copiar Texto'"></span>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Seguimiento 2: Psicología Inversa & Cierre de Expediente (Para no ser pesado) -->
-                    <div x-data="{ showText: false, copied: false }" class="p-4 rounded-xl border border-amber-200 bg-amber-50/40 hover:bg-amber-50/70 transition space-y-2.5">
-                        <div class="flex items-start justify-between gap-4">
-                            <div>
-                                <h4 class="font-bold text-gray-900 text-sm flex items-center gap-2">
-                                    <span>🧠 Cierre de Expediente (Psicología Inversa)</span>
-                                    <span class="text-[10px] bg-amber-100 text-amber-800 font-extrabold px-2 py-0.5 rounded-full">Para no ser pesado ⚡</span>
-                                </h4>
-                                <p class="text-xs text-gray-600 mt-1">
-                                    Asume educadamente que han elegido otra alternativa: <em>"Para no ser pesados, cierro vuestro expediente..."</em>. Elimina la culpa social y provoca el instinto de responder para no perder la fecha definitivamente.
-                                </p>
-                            </div>
-                            <div class="flex items-center gap-1.5 shrink-0">
-                                <button type="button" @click="showText = !showText" class="bg-white hover:bg-amber-100 text-amber-800 font-bold text-xs px-2.5 py-2 rounded-xl border border-amber-300 transition" :title="showText ? 'Ocultar mensaje' : 'Ver mensaje completo'">
-                                    <span x-text="showText ? '👁️ Ocultar' : '👁️ Ver'"></span>
-                                </button>
-                                @if($gatewayActive)
-                                    <button type="button" wire:click="sendDirectTemplate('psicologia_inversa')" wire:loading.attr="disabled" class="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition cursor-pointer">
-                                        <span wire:loading.remove wire:target="sendDirectTemplate('psicologia_inversa')">🚀 Enviar por API</span>
-                                        <span wire:loading wire:target="sendDirectTemplate('psicologia_inversa')">⏳</span>
-                                    </button>
-                                @else
-                                    <a href="{{ $followupReverseWaUrl }}" target="_blank" class="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition">
-                                        💬 Enviar
-                                    </a>
-                                @endif
-                            </div>
-                        </div>
-
-                        <!-- Panel desplegable con el texto y botón de copiar -->
-                        <div x-show="showText" class="bg-white p-3.5 rounded-xl border border-amber-200 text-xs text-gray-700 space-y-2" style="display: none;">
-                            <div class="font-mono text-[11px] leading-relaxed whitespace-pre-line bg-gray-50 p-2.5 rounded-lg border border-gray-100 text-gray-800">{{ $followupReverseMsg }}</div>
-                            <div class="flex items-center justify-between pt-1">
-                                <span class="text-[11px] text-gray-500">Eficacia probada en clientes fríos o silenciosos.</span>
-                                <button type="button" 
-                                    @click="navigator.clipboard.writeText(@js($followupReverseMsg)); copied = true; setTimeout(() => copied = false, 2500)"
-                                    class="text-xs font-bold px-3 py-1.5 rounded-lg border transition inline-flex items-center gap-1.5 cursor-pointer"
-                                    :class="copied ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-amber-50 text-amber-800 hover:bg-amber-100 border-amber-200'">
-                                    <span x-text="copied ? '✅ ¡Copiado al portapapeles!' : '📋 Copiar Texto'"></span>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Seguimiento 3: ¿Descarte por Presupuesto? (Negociación abierta) -->
-                    <div x-data="{ showText: false, copied: false }" class="p-4 rounded-xl border border-indigo-200 bg-indigo-50/40 hover:bg-indigo-50/70 transition space-y-2.5">
-                        <div class="flex items-start justify-between gap-4">
-                            <div>
-                                <h4 class="font-bold text-gray-900 text-sm flex items-center gap-2">
-                                    <span>💡 ¿Descartado por Presupuesto? (Adaptar Pack)</span>
-                                    <span class="text-[10px] bg-indigo-100 text-indigo-800 font-extrabold px-2 py-0.5 rounded-full">Objeción de Precio</span>
-                                </h4>
-                                <p class="text-xs text-gray-600 mt-1">
-                                    Pregunta si la duda era el importe y ofrece ajustar el equipamiento o pack a su presupuesto real antes de liberar la fecha en el calendario.
-                                </p>
-                            </div>
-                            <div class="flex items-center gap-1.5 shrink-0">
-                                <button type="button" @click="showText = !showText" class="bg-white hover:bg-indigo-100 text-indigo-700 font-bold text-xs px-2.5 py-2 rounded-xl border border-indigo-300 transition" :title="showText ? 'Ocultar mensaje' : 'Ver mensaje completo'">
-                                    <span x-text="showText ? '👁️ Ocultar' : '👁️ Ver'"></span>
-                                </button>
-                                @if($gatewayActive)
-                                    <button type="button" wire:click="sendDirectTemplate('followup_budget')" wire:loading.attr="disabled" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition cursor-pointer">
-                                        <span wire:loading.remove wire:target="sendDirectTemplate('followup_budget')">🚀 Enviar por API</span>
-                                        <span wire:loading wire:target="sendDirectTemplate('followup_budget')">⏳</span>
-                                    </button>
-                                @else
-                                    <a href="{{ $followupBudgetWaUrl }}" target="_blank" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition">
-                                        💬 Enviar
-                                    </a>
-                                @endif
-                            </div>
-                        </div>
-
-                        <!-- Panel desplegable con el texto y botón de copiar -->
-                        <div x-show="showText" class="bg-white p-3.5 rounded-xl border border-indigo-200 text-xs text-gray-700 space-y-2" style="display: none;">
-                            <div class="font-mono text-[11px] leading-relaxed whitespace-pre-line bg-gray-50 p-2.5 rounded-lg border border-gray-100 text-gray-800">{{ $followupBudgetMsg }}</div>
-                            <div class="flex items-center justify-between pt-1">
-                                <span class="text-[11px] text-gray-500">Abre la puerta a renegociar sin perder la venta.</span>
-                                <button type="button" 
-                                    @click="navigator.clipboard.writeText(@js($followupBudgetMsg)); copied = true; setTimeout(() => copied = false, 2500)"
-                                    class="text-xs font-bold px-3 py-1.5 rounded-lg border transition inline-flex items-center gap-1.5 cursor-pointer"
-                                    :class="copied ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border-indigo-200'">
-                                    <span x-text="copied ? '✅ ¡Copiado al portapapeles!' : '📋 Copiar Texto'"></span>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Separador a opciones de formalización -->
-                    <div class="pt-2 pb-1">
-                        <div class="flex items-center gap-2 mb-1">
-                            <span class="text-xs font-black uppercase tracking-wider text-gray-400 flex items-center gap-1.5">
-                                <span>📜</span> Formalización & Planificación
-                            </span>
-                            <div class="h-px bg-gray-200 flex-1"></div>
-                        </div>
-                    </div>
-
-                    <!-- Opción 3: Firma de Contrato Online -->
-                    <div class="p-4 rounded-xl border border-gray-200 hover:border-emerald-300 bg-gray-50 hover:bg-emerald-50/40 transition">
-                        <div class="flex items-start justify-between gap-4">
-                            <div>
-                                <h4 class="font-bold text-gray-900 text-sm flex items-center gap-2">
-                                    <span>✍️ Enlace de Firma de Contrato Digital</span>
-                                    <span class="text-[10px] bg-purple-100 text-purple-700 font-bold px-2 py-0.5 rounded-full">Clientes</span>
-                                </h4>
-                                <p class="text-xs text-gray-500 mt-1">
-                                    @if($firstContract)
-                                        Enlace interactivo para que el cliente revise las cláusulas y firme online desde su móvil o PC.
-                                    @else
-                                        <span class="text-amber-600">Aún no has generado ningún contrato para este evento.</span>
-                                    @endif
-                                </p>
-                            </div>
-                            @if($firstContract)
-                                @if($gatewayActive)
-                                    <button type="button" wire:click="sendDirectTemplate('contrato')" wire:loading.attr="disabled" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition cursor-pointer">
-                                        <span wire:loading.remove wire:target="sendDirectTemplate('contrato')">🚀 Enviar por API</span>
-                                        <span wire:loading wire:target="sendDirectTemplate('contrato')">⏳</span>
-                                    </button>
-                                @else
-                                    <a href="{{ $contractWaUrl }}" target="_blank" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition">
-                                        💬 Enviar
-                                    </a>
-                                @endif
-                            @else
-                                <button disabled class="bg-gray-300 text-gray-500 font-bold text-xs px-3.5 py-2 rounded-xl cursor-not-allowed">Sin contrato</button>
-                            @endif
-                        </div>
-                    </div>
-
-                    <!-- Opción 4: Cuestionario Musical -->
-                    <div class="p-4 rounded-xl border border-gray-200 hover:border-emerald-300 bg-gray-50 hover:bg-emerald-50/40 transition">
-                        <div class="flex items-start justify-between gap-4">
-                            <div>
-                                <h4 class="font-bold text-gray-900 text-sm flex items-center gap-2">
-                                    <span>🎵 Cuestionario Musical & Dossier</span>
-                                    <span class="text-[10px] bg-indigo-100 text-indigo-700 font-bold px-2 py-0.5 rounded-full">Clientes</span>
-                                </h4>
-                                <p class="text-xs text-gray-500 mt-1">Envía a los novios su enlace personalizado para completar momentos clave y canciones.</p>
-                            </div>
-                            @if($gatewayActive)
-                                <button type="button" wire:click="sendDirectTemplate('cuestionario')" wire:loading.attr="disabled" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition cursor-pointer">
-                                    <span wire:loading.remove wire:target="sendDirectTemplate('cuestionario')">🚀 Enviar por API</span>
-                                    <span wire:loading wire:target="sendDirectTemplate('cuestionario')">⏳</span>
-                                </button>
-                            @else
-                                <a href="{{ $cuestionarioWaUrl }}" target="_blank" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition">
-                                    💬 Enviar
-                                </a>
-                            @endif
-                        </div>
-                    </div>
-
-                    <!-- Opción 5: Liquidación Restante -->
-                    <div class="p-4 rounded-xl border border-gray-200 hover:border-emerald-300 bg-gray-50 hover:bg-emerald-50/40 transition">
-                        <div class="flex items-start justify-between gap-4">
-                            <div>
-                                <h4 class="font-bold text-gray-900 text-sm flex items-center gap-2">
-                                    <span>💰 Recordatorio de Pago / Liquidación Restante</span>
-                                    <span class="text-[10px] bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded-full">Clientes</span>
-                                </h4>
-                                <p class="text-xs text-gray-500 mt-1">Recordatorio del pago del importe pendiente (<strong>{{ number_format($remainingAmount, 2) }} €</strong>) antes o el día del evento.</p>
-                            </div>
-                            @if($gatewayActive)
-                                <button type="button" wire:click="sendDirectTemplate('liquidacion')" wire:loading.attr="disabled" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition cursor-pointer">
-                                    <span wire:loading.remove wire:target="sendDirectTemplate('liquidacion')">🚀 Enviar por API</span>
-                                    <span wire:loading wire:target="sendDirectTemplate('liquidacion')">⏳</span>
-                                </button>
-                            @else
-                                <a href="{{ $liquidacionWaUrl }}" target="_blank" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs inline-flex items-center gap-1.5 whitespace-nowrap transition">
-                                    💬 Enviar
-                                </a>
-                            @endif
-                        </div>
-                    </div>
-
-                    <!-- Separador a opciones de Staff -->
-                    <div class="pt-2 pb-1">
-                        <div class="flex items-center gap-2 mb-1">
-                            <span class="text-xs font-black uppercase tracking-wider text-gray-400 flex items-center gap-1.5">
-                                <span>🎧</span> Coordinación del Staff Técnico
-                            </span>
-                            <div class="h-px bg-gray-200 flex-1"></div>
-                        </div>
-                    </div>
-
-                    <!-- Opción 6: Hoja de Ruta para DJ y Asistente -->
-                    <div class="p-4 rounded-xl border border-gray-200 hover:border-emerald-300 bg-gray-50 hover:bg-emerald-50/40 transition">
-                        <div class="flex items-start justify-between gap-4">
-                            <div>
-                                <h4 class="font-bold text-gray-900 text-sm flex items-center gap-2">
-                                    <span>🎧 Hoja de Ruta Técnica & Horarios</span>
-                                    <span class="text-[10px] bg-blue-100 text-blue-700 font-bold px-2 py-0.5 rounded-full">Staff DJ / Asistente</span>
-                                </h4>
-                                <p class="text-xs text-gray-500 mt-1">Resumen completo del montaje, localización, horarios y enlace al Modo Cabina en vivo.</p>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                @if($event->dj)
+                            <!-- 3.3 Resumen en Texto Plano -->
+                            <div class="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 flex items-start justify-between gap-2">
+                                <div class="min-w-0">
+                                    <div class="flex items-center gap-1.5 flex-wrap">
+                                        <h4 class="font-bold text-gray-900 dark:text-white text-xs">📋 Resumen Desglosado en Texto</h4>
+                                        <span class="text-[9px] bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold px-1.5 py-0.5 rounded-full">Texto Plano</span>
+                                    </div>
+                                    <p class="text-[11px] text-gray-500 dark:text-slate-400 mt-0.5 leading-snug">
+                                        @if($latestQuote)
+                                            Total: <strong>{{ number_format($quoteAmount, 2, ',', '.') }} €</strong> | Señal: <strong>{{ number_format($signalAmount, 2, ',', '.') }} €</strong>
+                                        @else
+                                            <span class="text-amber-600">Genera primero un presupuesto.</span>
+                                        @endif
+                                    </p>
+                                </div>
+                                @if($latestQuote)
                                     @if($gatewayActive)
-                                        <button type="button" wire:click="sendDirectTemplate('hoja_ruta', 'dj')" wire:loading.attr="disabled" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-3 py-2 rounded-xl shadow-xs inline-flex items-center gap-1 whitespace-nowrap transition cursor-pointer">
-                                            <span wire:loading.remove wire:target="sendDirectTemplate('hoja_ruta', 'dj')">🎧 DJ (API)</span>
-                                            <span wire:loading wire:target="sendDirectTemplate('hoja_ruta', 'dj')">⏳</span>
+                                        <button type="button" wire:click="sendDirectTemplate('quote_propuesta')" wire:loading.attr="disabled" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] px-2.5 py-1.5 rounded-lg shadow-2xs inline-flex items-center gap-1 whitespace-nowrap transition cursor-pointer shrink-0">
+                                            <span wire:loading.remove wire:target="sendDirectTemplate('quote_propuesta')">🚀 Enviar</span>
+                                            <span wire:loading wire:target="sendDirectTemplate('quote_propuesta')">⏳</span>
                                         </button>
                                     @else
-                                        <a href="{{ $djWaUrl }}" target="_blank" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-3 py-2 rounded-xl shadow-xs inline-flex items-center gap-1 whitespace-nowrap transition">
-                                            🎧 DJ
-                                        </a>
+                                        <a href="{{ $quotePropuestaWaUrl }}" target="_blank" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] px-2.5 py-1.5 rounded-lg shadow-2xs inline-flex items-center gap-1 whitespace-nowrap transition shrink-0">💬 Enviar</a>
                                     @endif
+                                @else
+                                    <button disabled class="bg-slate-200 dark:bg-slate-800 text-slate-400 font-bold text-[10px] px-2.5 py-1.5 rounded-lg cursor-not-allowed shrink-0">Sin presupuesto</button>
                                 @endif
-                                @if($event->assistant)
+                            </div>
+
+                            <!-- 3.4 Solicitar Señal de Reserva -->
+                            <div class="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 flex items-start justify-between gap-2">
+                                <div class="min-w-0">
+                                    <div class="flex items-center gap-1.5 flex-wrap">
+                                        <h4 class="font-bold text-gray-900 dark:text-white text-xs">💶 Solicitar Señal ({{ $signalLabel }})</h4>
+                                        <span class="text-[9px] bg-blue-100 dark:bg-blue-900/60 text-blue-800 dark:text-blue-300 font-bold px-1.5 py-0.5 rounded-full">IBAN / Bizum</span>
+                                    </div>
+                                    <p class="text-[11px] text-gray-500 dark:text-slate-400 mt-0.5 leading-snug">
+                                        Datos de transferencia y Bizum por <strong>{{ number_format($signalAmount, 2, ',', '.') }} €</strong>.
+                                    </p>
+                                </div>
+                                @if($latestQuote)
                                     @if($gatewayActive)
-                                        <button type="button" wire:click="sendDirectTemplate('hoja_ruta', 'assistant')" wire:loading.attr="disabled" class="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-3 py-2 rounded-xl shadow-xs inline-flex items-center gap-1 whitespace-nowrap transition cursor-pointer">
-                                            <span wire:loading.remove wire:target="sendDirectTemplate('hoja_ruta', 'assistant')">👷‍♂️ Asistente (API)</span>
-                                            <span wire:loading wire:target="sendDirectTemplate('hoja_ruta', 'assistant')">⏳</span>
+                                        <button type="button" wire:click="sendDirectTemplate('signal')" wire:loading.attr="disabled" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] px-2.5 py-1.5 rounded-lg shadow-2xs inline-flex items-center gap-1 whitespace-nowrap transition cursor-pointer shrink-0">
+                                            <span wire:loading.remove wire:target="sendDirectTemplate('signal')">🚀 Enviar</span>
+                                            <span wire:loading wire:target="sendDirectTemplate('signal')">⏳</span>
                                         </button>
                                     @else
-                                        <a href="{{ $astWaUrl }}" target="_blank" class="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-3 py-2 rounded-xl shadow-xs inline-flex items-center gap-1 whitespace-nowrap transition">
-                                            👷‍♂️ Asistente
-                                        </a>
+                                        <a href="{{ $signalWaUrl }}" target="_blank" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] px-2.5 py-1.5 rounded-lg shadow-2xs inline-flex items-center gap-1 whitespace-nowrap transition shrink-0">💬 Enviar</a>
                                     @endif
+                                @else
+                                    <button disabled class="bg-slate-200 dark:bg-slate-800 text-slate-400 font-bold text-[10px] px-2.5 py-1.5 rounded-lg cursor-not-allowed shrink-0">Sin presupuesto</button>
                                 @endif
                             </div>
                         </div>
                     </div>
+
+                    <!-- ============================================================== -->
+                    <!-- PESTAÑA 3: SI NO RESPONDEN (TÉCNICA DEL NO & PSICOLOGÍA INVERSA)-->
+                    <!-- ============================================================== -->
+                    <div x-show="hubTab === 'followup' || hubTab === 'all'" class="space-y-2.5">
+                        <div class="flex items-center gap-2">
+                            <span class="text-[11px] font-black uppercase tracking-wider text-rose-600 dark:text-rose-400">🔥 3. Si No Responden (Técnica del "NO" & Psicología Inversa)</span>
+                            <div class="h-px bg-rose-200 dark:bg-rose-900/60 flex-1"></div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                            <!-- Técnica del NO -->
+                            <div x-data="{ showText: false, copied: false }" class="p-3 rounded-xl border border-rose-200 dark:border-rose-800/70 bg-rose-50/30 dark:bg-rose-950/20 flex flex-col justify-between gap-2">
+                                <div class="flex items-start justify-between gap-2">
+                                    <div class="min-w-0">
+                                        <div class="flex items-center gap-1.5 flex-wrap">
+                                            <h4 class="font-bold text-gray-900 dark:text-white text-xs">🎯 ¿Descartáis la fecha? (Técnica "NO")</h4>
+                                            <span class="text-[9px] bg-rose-100 dark:bg-rose-900/60 text-rose-800 dark:text-rose-300 font-extrabold px-1.5 py-0.5 rounded-full">Recomendado ⭐</span>
+                                        </div>
+                                        <p class="text-[11px] text-gray-600 dark:text-slate-400 mt-0.5 leading-snug">
+                                            Activa la respuesta rápida («¡No lo descartamos!») sin presionar.
+                                        </p>
+                                    </div>
+                                    <div class="flex items-center gap-1 shrink-0">
+                                        <button type="button" @click="showText = !showText" class="bg-white dark:bg-slate-800 hover:bg-rose-100 text-rose-700 dark:text-rose-300 font-bold text-[11px] px-2 py-1.5 rounded-lg border border-rose-300 dark:border-rose-700 transition cursor-pointer">
+                                            <span x-text="showText ? '▲' : '👁️'"></span>
+                                        </button>
+                                        @if($gatewayActive)
+                                            <button type="button" wire:click="sendDirectTemplate('tecnica_no')" wire:loading.attr="disabled" class="bg-rose-600 hover:bg-rose-500 text-white font-bold text-[11px] px-2.5 py-1.5 rounded-lg shadow-2xs inline-flex items-center gap-1 whitespace-nowrap transition cursor-pointer">
+                                                <span wire:loading.remove wire:target="sendDirectTemplate('tecnica_no')">🚀 Enviar</span>
+                                                <span wire:loading wire:target="sendDirectTemplate('tecnica_no')">⏳</span>
+                                            </button>
+                                        @else
+                                            <a href="{{ $followupNoWaUrl }}" target="_blank" class="bg-rose-600 hover:bg-rose-500 text-white font-bold text-[11px] px-2.5 py-1.5 rounded-lg shadow-2xs inline-flex items-center gap-1 whitespace-nowrap transition">💬 Enviar</a>
+                                        @endif
+                                    </div>
+                                </div>
+                                <div x-show="showText" style="display: none;" class="bg-white dark:bg-slate-950 p-2.5 rounded-lg border border-rose-200 dark:border-rose-900 text-[11px] space-y-1.5">
+                                    <div class="font-mono text-[10px] leading-relaxed whitespace-pre-line text-gray-800 dark:text-slate-200 max-h-32 overflow-y-auto">{{ $followupNoMsg }}</div>
+                                    <button type="button" @click="navigator.clipboard.writeText(@js($followupNoMsg)); copied = true; setTimeout(() => copied = false, 2000)" class="w-full text-[10px] font-bold py-1 rounded border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 cursor-pointer">
+                                        <span x-text="copied ? '✅ ¡Copiado!' : '📋 Copiar texto'"></span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Psicología Inversa -->
+                            <div x-data="{ showText: false, copied: false }" class="p-3 rounded-xl border border-amber-200 dark:border-amber-800/70 bg-amber-50/30 dark:bg-amber-950/20 flex flex-col justify-between gap-2">
+                                <div class="flex items-start justify-between gap-2">
+                                    <div class="min-w-0">
+                                        <div class="flex items-center gap-1.5 flex-wrap">
+                                            <h4 class="font-bold text-gray-900 dark:text-white text-xs">🧠 Cierre de Expediente (Psicología Inversa)</h4>
+                                            <span class="text-[9px] bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-300 font-extrabold px-1.5 py-0.5 rounded-full">Sin ser pesado ⚡</span>
+                                        </div>
+                                        <p class="text-[11px] text-gray-600 dark:text-slate-400 mt-0.5 leading-snug">
+                                            Cierra consulta con elegancia; provoca respuesta si aún les interesa.
+                                        </p>
+                                    </div>
+                                    <div class="flex items-center gap-1 shrink-0">
+                                        <button type="button" @click="showText = !showText" class="bg-white dark:bg-slate-800 hover:bg-amber-100 text-amber-700 dark:text-amber-300 font-bold text-[11px] px-2 py-1.5 rounded-lg border border-amber-300 dark:border-amber-700 transition cursor-pointer">
+                                            <span x-text="showText ? '▲' : '👁️'"></span>
+                                        </button>
+                                        @if($gatewayActive)
+                                            <button type="button" wire:click="sendDirectTemplate('psicologia_inversa')" wire:loading.attr="disabled" class="bg-amber-600 hover:bg-amber-500 text-white font-bold text-[11px] px-2.5 py-1.5 rounded-lg shadow-2xs inline-flex items-center gap-1 whitespace-nowrap transition cursor-pointer">
+                                                <span wire:loading.remove wire:target="sendDirectTemplate('psicologia_inversa')">🚀 Enviar</span>
+                                                <span wire:loading wire:target="sendDirectTemplate('psicologia_inversa')">⏳</span>
+                                            </button>
+                                        @else
+                                            <a href="{{ $followupReverseWaUrl }}" target="_blank" class="bg-amber-600 hover:bg-amber-500 text-white font-bold text-[11px] px-2.5 py-1.5 rounded-lg shadow-2xs inline-flex items-center gap-1 whitespace-nowrap transition">💬 Enviar</a>
+                                        @endif
+                                    </div>
+                                </div>
+                                <div x-show="showText" style="display: none;" class="bg-white dark:bg-slate-950 p-2.5 rounded-lg border border-amber-200 dark:border-amber-900 text-[11px] space-y-1.5">
+                                    <div class="font-mono text-[10px] leading-relaxed whitespace-pre-line text-gray-800 dark:text-slate-200 max-h-32 overflow-y-auto">{{ $followupReverseMsg }}</div>
+                                    <button type="button" @click="navigator.clipboard.writeText(@js($followupReverseMsg)); copied = true; setTimeout(() => copied = false, 2000)" class="w-full text-[10px] font-bold py-1 rounded border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 cursor-pointer">
+                                        <span x-text="copied ? '✅ ¡Copiado!' : '📋 Copiar texto'"></span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Objeción de Precio -->
+                            <div x-data="{ showText: false, copied: false }" class="p-3 rounded-xl border border-indigo-200 dark:border-indigo-800/70 bg-indigo-50/30 dark:bg-indigo-950/20 flex flex-col justify-between gap-2 md:col-span-2">
+                                <div class="flex items-start justify-between gap-2">
+                                    <div class="min-w-0">
+                                        <div class="flex items-center gap-1.5 flex-wrap">
+                                            <h4 class="font-bold text-gray-900 dark:text-white text-xs">💡 ¿Duda por Presupuesto? (Adaptar Pack / Horas)</h4>
+                                            <span class="text-[9px] bg-indigo-100 dark:bg-indigo-900/60 text-indigo-800 dark:text-indigo-300 font-extrabold px-1.5 py-0.5 rounded-full">Objeción Precio</span>
+                                        </div>
+                                        <p class="text-[11px] text-gray-600 dark:text-slate-400 mt-0.5 leading-snug">
+                                            Ofrece ajustar servicios u horas para encajar en su presupuesto sin perder calidad.
+                                        </p>
+                                    </div>
+                                    <div class="flex items-center gap-1 shrink-0">
+                                        <button type="button" @click="showText = !showText" class="bg-white dark:bg-slate-800 hover:bg-indigo-100 text-indigo-700 dark:text-indigo-300 font-bold text-[11px] px-2 py-1.5 rounded-lg border border-indigo-300 dark:border-indigo-700 transition cursor-pointer">
+                                            <span x-text="showText ? '▲' : '👁️'"></span>
+                                        </button>
+                                        @if($gatewayActive)
+                                            <button type="button" wire:click="sendDirectTemplate('followup_budget')" wire:loading.attr="disabled" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[11px] px-2.5 py-1.5 rounded-lg shadow-2xs inline-flex items-center gap-1 whitespace-nowrap transition cursor-pointer">
+                                                <span wire:loading.remove wire:target="sendDirectTemplate('followup_budget')">🚀 Enviar</span>
+                                                <span wire:loading wire:target="sendDirectTemplate('followup_budget')">⏳</span>
+                                            </button>
+                                        @else
+                                            <a href="{{ $followupBudgetWaUrl }}" target="_blank" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[11px] px-2.5 py-1.5 rounded-lg shadow-2xs inline-flex items-center gap-1 whitespace-nowrap transition">💬 Enviar</a>
+                                        @endif
+                                    </div>
+                                </div>
+                                <div x-show="showText" style="display: none;" class="bg-white dark:bg-slate-950 p-2.5 rounded-lg border border-indigo-200 dark:border-indigo-900 text-[11px] space-y-1.5">
+                                    <div class="font-mono text-[10px] leading-relaxed whitespace-pre-line text-gray-800 dark:text-slate-200 max-h-32 overflow-y-auto">{{ $followupBudgetMsg }}</div>
+                                    <button type="button" @click="navigator.clipboard.writeText(@js($followupBudgetMsg)); copied = true; setTimeout(() => copied = false, 2000)" class="w-full text-[10px] font-bold py-1 rounded border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 cursor-pointer">
+                                        <span x-text="copied ? '✅ ¡Copiado!' : '📋 Copiar texto'"></span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ============================================================== -->
+                    <!-- PESTAÑA 4: CONTRATO, CUESTIONARIO MUSICAL, LIQUIDACIÓN Y STAFF -->
+                    <!-- ============================================================== -->
+                    <div x-show="hubTab === 'booking' || hubTab === 'all'" class="space-y-2.5">
+                        <div class="flex items-center gap-2">
+                            <span class="text-[11px] font-black uppercase tracking-wider text-indigo-600 dark:text-indigo-400">📜 4. Formalización, Música & Coordinación Staff</span>
+                            <div class="h-px bg-indigo-200 dark:bg-indigo-900/60 flex-1"></div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                            <!-- Firma de Contrato Online -->
+                            <div class="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 flex items-start justify-between gap-2">
+                                <div class="min-w-0">
+                                    <div class="flex items-center gap-1.5 flex-wrap">
+                                        <h4 class="font-bold text-gray-900 dark:text-white text-xs">✍️ Firma de Contrato Digital</h4>
+                                        <span class="text-[9px] bg-purple-100 dark:bg-purple-900/60 text-purple-700 dark:text-purple-300 font-bold px-1.5 py-0.5 rounded-full">Clientes</span>
+                                    </div>
+                                    <p class="text-[11px] text-gray-500 dark:text-slate-400 mt-0.5 leading-snug">
+                                        @if($firstContract)
+                                            Enlace directo para revisar cláusulas y firmar online.
+                                        @else
+                                            <span class="text-amber-600">Genera primero el contrato.</span>
+                                        @endif
+                                    </p>
+                                </div>
+                                @if($firstContract)
+                                    @if($gatewayActive)
+                                        <button type="button" wire:click="sendDirectTemplate('contrato')" wire:loading.attr="disabled" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] px-2.5 py-1.5 rounded-lg shadow-2xs inline-flex items-center gap-1 whitespace-nowrap transition cursor-pointer shrink-0">
+                                            <span wire:loading.remove wire:target="sendDirectTemplate('contrato')">🚀 Enviar</span>
+                                            <span wire:loading wire:target="sendDirectTemplate('contrato')">⏳</span>
+                                        </button>
+                                    @else
+                                        <a href="{{ $contractWaUrl }}" target="_blank" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] px-2.5 py-1.5 rounded-lg shadow-2xs inline-flex items-center gap-1 whitespace-nowrap transition shrink-0">💬 Enviar</a>
+                                    @endif
+                                @else
+                                    <button disabled class="bg-slate-200 dark:bg-slate-800 text-slate-400 font-bold text-[10px] px-2.5 py-1.5 rounded-lg cursor-not-allowed shrink-0">Sin contrato</button>
+                                @endif
+                            </div>
+
+                            <!-- Cuestionario Musical -->
+                            <div class="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 flex items-start justify-between gap-2">
+                                <div class="min-w-0">
+                                    <div class="flex items-center gap-1.5 flex-wrap">
+                                        <h4 class="font-bold text-gray-900 dark:text-white text-xs">🎵 Cuestionario Musical & Escaleta</h4>
+                                        <span class="text-[9px] bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 font-bold px-1.5 py-0.5 rounded-full">Clientes</span>
+                                    </div>
+                                    <p class="text-[11px] text-gray-500 dark:text-slate-400 mt-0.5 leading-snug">
+                                        Enlace personalizado para que anoten sus canciones y momentos.
+                                    </p>
+                                </div>
+                                @if($gatewayActive)
+                                    <button type="button" wire:click="sendDirectTemplate('cuestionario')" wire:loading.attr="disabled" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] px-2.5 py-1.5 rounded-lg shadow-2xs inline-flex items-center gap-1 whitespace-nowrap transition cursor-pointer shrink-0">
+                                        <span wire:loading.remove wire:target="sendDirectTemplate('cuestionario')">🚀 Enviar</span>
+                                        <span wire:loading wire:target="sendDirectTemplate('cuestionario')">⏳</span>
+                                    </button>
+                                @else
+                                    <a href="{{ $cuestionarioWaUrl }}" target="_blank" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] px-2.5 py-1.5 rounded-lg shadow-2xs inline-flex items-center gap-1 whitespace-nowrap transition shrink-0">💬 Enviar</a>
+                                @endif
+                            </div>
+
+                            <!-- Liquidación Restante -->
+                            <div class="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 flex items-start justify-between gap-2">
+                                <div class="min-w-0">
+                                    <div class="flex items-center gap-1.5 flex-wrap">
+                                        <h4 class="font-bold text-gray-900 dark:text-white text-xs">💰 Recordatorio Liquidación Restante</h4>
+                                        <span class="text-[9px] bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-300 font-bold px-1.5 py-0.5 rounded-full">{{ number_format($remainingAmount, 2, ',', '.') }} €</span>
+                                    </div>
+                                    <p class="text-[11px] text-gray-500 dark:text-slate-400 mt-0.5 leading-snug">
+                                        Recordatorio del importe pendiente antes o el día del evento.
+                                    </p>
+                                </div>
+                                @if($gatewayActive)
+                                    <button type="button" wire:click="sendDirectTemplate('liquidacion')" wire:loading.attr="disabled" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] px-2.5 py-1.5 rounded-lg shadow-2xs inline-flex items-center gap-1 whitespace-nowrap transition cursor-pointer shrink-0">
+                                        <span wire:loading.remove wire:target="sendDirectTemplate('liquidacion')">🚀 Enviar</span>
+                                        <span wire:loading wire:target="sendDirectTemplate('liquidacion')">⏳</span>
+                                    </button>
+                                @else
+                                    <a href="{{ $liquidacionWaUrl }}" target="_blank" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] px-2.5 py-1.5 rounded-lg shadow-2xs inline-flex items-center gap-1 whitespace-nowrap transition shrink-0">💬 Enviar</a>
+                                @endif
+                            </div>
+
+                            <!-- Hoja de Ruta DJ / Asistente -->
+                            <div class="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 flex items-start justify-between gap-2">
+                                <div class="min-w-0">
+                                    <div class="flex items-center gap-1.5 flex-wrap">
+                                        <h4 class="font-bold text-gray-900 dark:text-white text-xs">🎧 Hoja de Ruta Técnica & Horarios</h4>
+                                        <span class="text-[9px] bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 font-bold px-1.5 py-0.5 rounded-full">Staff</span>
+                                    </div>
+                                    <p class="text-[11px] text-gray-500 dark:text-slate-400 mt-0.5 leading-snug">
+                                        Resumen de montaje, ubicación y enlace a Cabina en vivo.
+                                    </p>
+                                </div>
+                                <div class="flex items-center gap-1 shrink-0">
+                                    @if($event->dj)
+                                        @if($gatewayActive)
+                                            <button type="button" wire:click="sendDirectTemplate('hoja_ruta', 'dj')" wire:loading.attr="disabled" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[11px] px-2.5 py-1.5 rounded-lg shadow-2xs inline-flex items-center gap-1 whitespace-nowrap transition cursor-pointer">
+                                                <span wire:loading.remove wire:target="sendDirectTemplate('hoja_ruta', 'dj')">🎧 DJ</span>
+                                                <span wire:loading wire:target="sendDirectTemplate('hoja_ruta', 'dj')">⏳</span>
+                                            </button>
+                                        @else
+                                            <a href="{{ $djWaUrl }}" target="_blank" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[11px] px-2.5 py-1.5 rounded-lg shadow-2xs inline-flex items-center gap-1 whitespace-nowrap transition">🎧 DJ</a>
+                                        @endif
+                                    @endif
+                                    @if($event->assistant)
+                                        @if($gatewayActive)
+                                            <button type="button" wire:click="sendDirectTemplate('hoja_ruta', 'assistant')" wire:loading.attr="disabled" class="bg-amber-600 hover:bg-amber-500 text-white font-bold text-[11px] px-2.5 py-1.5 rounded-lg shadow-2xs inline-flex items-center gap-1 whitespace-nowrap transition cursor-pointer">
+                                                <span wire:loading.remove wire:target="sendDirectTemplate('hoja_ruta', 'assistant')">👷‍♂️ Asist.</span>
+                                                <span wire:loading wire:target="sendDirectTemplate('hoja_ruta', 'assistant')">⏳</span>
+                                            </button>
+                                        @else
+                                            <a href="{{ $astWaUrl }}" target="_blank" class="bg-amber-600 hover:bg-amber-500 text-white font-bold text-[11px] px-2.5 py-1.5 rounded-lg shadow-2xs inline-flex items-center gap-1 whitespace-nowrap transition">👷‍♂️ Asist.</a>
+                                        @endif
+                                    @endif
+                                    @if(!$event->dj && !$event->assistant)
+                                        <span class="text-[10px] text-slate-400 italic">Sin staff</span>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
 
-                <div class="bg-gray-50 px-6 py-3 border-t border-gray-100 text-right">
-                    <button type="button" @click="openWhatsappHub = false" class="bg-white hover:bg-gray-100 text-gray-700 font-bold text-xs px-4 py-2 border border-gray-300 rounded-xl transition">
+                <!-- Pie Compacto -->
+                <div class="bg-slate-50 dark:bg-slate-950 px-4 py-2.5 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between text-[11px] text-slate-500">
+                    <span>💡 Pulsa <strong>👁️</strong> en cualquier plantilla para previsualizar o copiar el texto antes de enviarlo.</span>
+                    <button type="button" @click="openWhatsappHub = false" class="bg-white dark:bg-slate-800 hover:bg-slate-100 text-slate-700 dark:text-slate-200 font-bold text-xs px-4 py-1.5 border border-slate-300 dark:border-slate-700 rounded-xl transition cursor-pointer">
                         Cerrar
                     </button>
                 </div>
