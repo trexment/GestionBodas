@@ -288,6 +288,13 @@ class EventShow extends Component
         $this->event = $event->load($relations);
 
         try {
+            if (\App\Services\EvolutionWhatsAppService::purgePollutedMessagesForEvent($this->event) > 0) {
+                $this->event->refresh();
+                $this->event->load($relations);
+            }
+        } catch (\Throwable $e) {}
+
+        try {
             if (\App\Services\ImapLeadFetcherService::repairMisParsedLeadDates($this->event) > 0) {
                 $this->event->refresh();
             }

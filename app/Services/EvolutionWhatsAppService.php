@@ -663,6 +663,197 @@ class EvolutionWhatsAppService
     }
 
     /**
+     * Devuelve los teléfonos nacionales (9 dígitos) de los administradores/socios para evitar cruzar sus chats internos con los de clientes.
+     */
+    public static function getAdminNationalPhones(): array
+    {
+        $rawPhones = array_merge(
+            ['622634790', '674378993', '644685054'],
+            Setting::getAdminNotificationPhones('javnx'),
+            Setting::getAdminNotificationPhones('nunez_and_son')
+        );
+        $nationals = [];
+        foreach ($rawPhones as $p) {
+            $digits = preg_replace('/\D/', '', (string) $p);
+            if (strlen($digits) >= 9) {
+                $nationals[] = substr($digits, -9);
+            }
+        }
+        return array_values(array_unique($nationals));
+    }
+
+    /**
+     * Detecta si un texto corresponde a una alerta interna del sistema enviada a los administradores (y no a una conversación con el cliente).
+     */
+    public static function isInternalSystemAlertMessage(?string $text): bool
+    {
+        $t = trim((string) $text);
+        if ($t === '') {
+            return false;
+        }
+        $internalMarkers = [
+            '*PRUEBA DE AVISO AUTOMÁTICO',
+            '*¡NUEVA CONSULTA / LEAD RECIBIDO!*',
+            '*¡NUEVO LEAD',
+            '*¡NUEVA SOLICITUD DE PRESUPUESTO!*',
+            '*¡NUEVO MENSAJE DE CLIENTE!*',
+            '*¡PRESUPUESTO ACEPTADO ONLINE!*',
+            '*PRESUPUESTO RECHAZADO ONLINE*',
+            'El sistema de avisos de formularios y presupuestos para',
+            '🔗 *Ver ficha y responder:*',
+        ];
+        foreach ($internalMarkers as $marker) {
+            if (str_contains($t, $marker)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Valida que un JID (o su JID alternativo) pueda pertenecer realmente al teléfono del cliente y nunca al chat de otro número ni de un socio/admin.
+     */
+    public static function isJidAllowedForClient(
+        ?string $jid,
+        string $clientNational,
+        array $adminNationals = [],
+        ?string $altJid = null
+    ): bool {
+        $jid = trim((string) $jid);
+        $altJid = trim((string) $altJid);
+
+        if ($jid === '' || !str_contains($jid, '@') || str_contains($jid, '@g.us') || str_contains($jid, '@broadcast')) {
+            return false;
+        }
+
+        $isClientAlsoAdmin = in_array($clientNational, $adminNationals, true);
+
+        // Si el JID principal es un número de teléfono (@s.whatsapp.net o @c.us), los últimos 9 dígitos DEBEN coincidir exactamente con el teléfono del cliente
+        if (str_ends_with($jid, '@s.whatsapp.net') || str_ends_with($jid, '@c.us')) {
+            $jidDigits = preg_replace('/\D/', '', explode('@', $jid)[0]);
+            $jidNat = strlen($jidDigits) >= 9 ? substr($jidDigits, -9) : $jidDigits;
+            return $jidNat !== '' && $jidNat === $clientNational;
+        }
+
+        // Si viene un JID alternativo con número de teléfono (@s.whatsapp.net o @c.us), debe coincidir con el cliente
+        if ($altJid !== '' && (str_ends_with($altJid, '@s.whatsapp.net') || str_ends_with($altJid, '@c.us'))) {
+            $altDigits = preg_replace('/\D/', '', explode('@', $altJid)[0]);
+            $altNat = strlen($altDigits) >= 9 ? substr($altDigits, -9) : $altDigits;
+            if ($altNat !== '' && $altNat !== $clientNational) {
+                return false;
+            }
+        }
+
+        // Si el cliente no es un admin, bloquear cualquier JID que contenga el teléfono de un admin
+        if (!$isClientAlsoAdmin) {
+            foreach ($adminNationals as $admNat) {
+                if ($admNat !== '' && (str_contains($jid, $admNat) || ($altJid !== '' && str_contains($altJid, $admNat)))) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Limpia automáticamente de un evento cualquier mensaje contaminado procedente de alertas internas o de otros números/chats (ej. DjEze / socios).
+     */
+    public static function purgePollutedMessagesForEvent(Event $event, ?string $overridePhone = null): int
+    {
+        try {
+            $rawPhone = $overridePhone ?: ($event->client ? ($event->client->phone ?: $event->partner_phone) : $event->partner_phone);
+            $cleanPhone = WhatsAppTemplateService::cleanPhone((string) $rawPhone);
+            $clientNational = strlen($cleanPhone) >= 9 ? substr($cleanPhone, -9) : $cleanPhone;
+            $adminNationals = self::getAdminNationalPhones();
+            $isClientAdmin = $clientNational !== '' && in_array($clientNational, $adminNationals, true);
+
+            $messages = WhatsAppMessage::where('event_id', $event->id)->get();
+            if ($messages->isEmpty()) {
+                return 0;
+            }
+
+            $pollutedJids = [];
+            $staffSenderNames = ['djeze', 'ezequiel', 'javnx', 'javnx dj'];
+
+            // 1ª pasada: detectar JIDs (incluyendo @lid) que hayan enviado/recibido alertas internas o pertenezcan a otro número o a DjEze
+            foreach ($messages as $m) {
+                $p = is_array($m->payload) ? $m->payload : [];
+                $k = $p['key'] ?? ($p['data']['key'] ?? []);
+                $rJid = trim((string) ($k['remoteJid'] ?? ($p['remoteJid'] ?? '')));
+                $rJidAlt = trim((string) ($k['remoteJidAlt'] ?? ($p['remoteJidAlt'] ?? ($k['senderPn'] ?? ($p['senderPn'] ?? '')))));
+                $pushName = mb_strtolower(trim((string) ($p['pushName'] ?? ($m->sender_name ?? ''))));
+
+                $isPollutedMsg = false;
+
+                if (self::isInternalSystemAlertMessage($m->message)) {
+                    $isPollutedMsg = true;
+                } elseif (!$isClientAdmin && in_array($pushName, $staffSenderNames, true)) {
+                    $isPollutedMsg = true;
+                } elseif ($clientNational !== '' && $rJid !== '' && !self::isJidAllowedForClient($rJid, $clientNational, $adminNationals, $rJidAlt)) {
+                    $isPollutedMsg = true;
+                }
+
+                if ($isPollutedMsg) {
+                    if ($rJid !== '') {
+                        $pollutedJids[$rJid] = true;
+                    }
+                    if ($rJidAlt !== '') {
+                        $pollutedJids[$rJidAlt] = true;
+                    }
+                }
+            }
+
+            // 2ª pasada: eliminar todos los mensajes contaminados o que pertenezcan a los JIDs/LIDs contaminados
+            $idsToDelete = [];
+            foreach ($messages as $m) {
+                $p = is_array($m->payload) ? $m->payload : [];
+                $k = $p['key'] ?? ($p['data']['key'] ?? []);
+                $rJid = trim((string) ($k['remoteJid'] ?? ($p['remoteJid'] ?? '')));
+                $rJidAlt = trim((string) ($k['remoteJidAlt'] ?? ($p['remoteJidAlt'] ?? ($k['senderPn'] ?? ($p['senderPn'] ?? '')))));
+                $pushName = mb_strtolower(trim((string) ($p['pushName'] ?? ($m->sender_name ?? ''))));
+
+                $shouldDelete = false;
+
+                if (self::isInternalSystemAlertMessage($m->message)) {
+                    $shouldDelete = true;
+                } elseif (!$isClientAdmin && $m->direction === 'inbound' && in_array($pushName, $staffSenderNames, true)) {
+                    $shouldDelete = true;
+                } elseif ($rJid !== '' && isset($pollutedJids[$rJid])) {
+                    $shouldDelete = true;
+                } elseif ($rJidAlt !== '' && isset($pollutedJids[$rJidAlt])) {
+                    $shouldDelete = true;
+                } elseif ($clientNational !== '' && $rJid !== '' && !self::isJidAllowedForClient($rJid, $clientNational, $adminNationals, $rJidAlt)) {
+                    $shouldDelete = true;
+                }
+
+                if ($shouldDelete) {
+                    $idsToDelete[] = $m->id;
+                }
+            }
+
+            if (!empty($idsToDelete)) {
+                WhatsAppMessage::whereIn('id', $idsToDelete)->delete();
+
+                // Limpiar también de las notas del evento cualquier línea automática insertada por mensajes contaminados (ej. [WhatsApp de DjEze] o PRUEBA DE AVISO)
+                if (!empty($event->notes) && (str_contains($event->notes, 'DjEze') || str_contains($event->notes, 'PRUEBA DE AVISO AUTOMÁTICO'))) {
+                    $lines = preg_split('/\r\n|\r|\n/', (string) $event->notes);
+                    $cleanLines = array_filter($lines, function ($line) {
+                        return !str_contains($line, '[WhatsApp de DjEze]')
+                            && !str_contains($line, 'PRUEBA DE AVISO AUTOMÁTICO');
+                    });
+                    $event->update(['notes' => implode("\n", $cleanLines)]);
+                }
+            }
+
+            return count($idsToDelete);
+        } catch (\Throwable $e) {
+            Log::warning('Error en purgePollutedMessagesForEvent: ' . $e->getMessage());
+            return 0;
+        }
+    }
+
+    /**
      * Busca la conversación previa con un número de teléfono en Evolution API (y en la BD local)
      * e importa todos los mensajes anteriores y respuestas entrantes (incluyendo chats con @lid de Meta/Instagram)
      * dentro del evento indicado.
@@ -684,9 +875,13 @@ class EvolutionWhatsAppService
         }
 
         $national = strlen($cleanPhone) > 9 ? substr($cleanPhone, -9) : $cleanPhone;
+        $adminNationals = self::getAdminNationalPhones();
         $importedCount = 0;
         $newInboundMessages = [];
         $clientName = $event->client ? $event->client->name : ($event->partner_name ?: 'Cliente');
+
+        // 0. Limpiar primero cualquier mensaje contaminado que se hubiera colado anteriormente en el evento
+        self::purgePollutedMessagesForEvent($event, $cleanPhone);
 
         // 1. Vincular/copiar posibles mensajes previos que ya existieran en la BD local con ese teléfono
         try {
@@ -702,6 +897,9 @@ class EvolutionWhatsAppService
                 ->get();
 
             foreach ($localMessages as $localMsg) {
+                if (self::isInternalSystemAlertMessage($localMsg->message)) {
+                    continue;
+                }
                 if (is_null($localMsg->event_id)) {
                     $localMsg->update(['event_id' => $event->id]);
                     $importedCount++;
@@ -794,11 +992,12 @@ class EvolutionWhatsAppService
         $knownExternalIds = [];
         $knownOutboundSnippets = [];
         try {
-            $existingEventMsgs = WhatsAppMessage::where('event_id', $event->id)
-                ->orWhere('phone', 'LIKE', "%{$national}%")
-                ->get();
+            $existingEventMsgs = WhatsAppMessage::where('event_id', $event->id)->get();
 
             foreach ($existingEventMsgs as $em) {
+                if (self::isInternalSystemAlertMessage($em->message)) {
+                    continue;
+                }
                 if (!empty($em->external_id)) {
                     $cleanExtId = explode('_ev', (string)$em->external_id)[0];
                     if (!empty($cleanExtId)) {
@@ -813,13 +1012,19 @@ class EvolutionWhatsAppService
                 }
                 if (is_array($em->payload)) {
                     $pKey = $em->payload['key'] ?? ($em->payload['data']['key'] ?? []);
+                    $altCandidate = $pKey['remoteJidAlt'] ?? ($em->payload['remoteJidAlt'] ?? null);
                     foreach ([
                         $pKey['remoteJid'] ?? null,
-                        $pKey['remoteJidAlt'] ?? null,
+                        $altCandidate,
                         $em->payload['remoteJid'] ?? null,
                         $em->payload['data']['remoteJid'] ?? null,
                     ] as $possibleJid) {
-                        if (!empty($possibleJid) && is_string($possibleJid) && str_contains($possibleJid, '@') && !in_array($possibleJid, $candidateJids)) {
+                        if (
+                            !empty($possibleJid)
+                            && is_string($possibleJid)
+                            && self::isJidAllowedForClient($possibleJid, $national, $adminNationals, is_string($altCandidate) ? $altCandidate : null)
+                            && !in_array($possibleJid, $candidateJids, true)
+                        ) {
                             $candidateJids[] = $possibleJid;
                         }
                     }
@@ -830,7 +1035,7 @@ class EvolutionWhatsAppService
         // Preparar variantes del nombre del cliente/pareja para localizar chats @lid (ej. "* Alvaro y ana" -> "alvaro y ana")
         $cleanClientSearchName = trim((string)preg_replace('/[^\p{L}\p{N}\s]/u', ' ', mb_strtolower($clientName)));
         $cleanClientSearchName = trim((string)preg_replace('/\s+/', ' ', $cleanClientSearchName));
-        if (in_array($cleanClientSearchName, ['cliente', 'novios', 'pareja', 'evento', 'boda', 'sin nombre']) || mb_strlen($cleanClientSearchName) < 4) {
+        if (in_array($cleanClientSearchName, ['cliente', 'novios', 'pareja', 'evento', 'boda', 'sin nombre', 'fran', 'miguel', 'ezequiel', 'djeze']) || mb_strlen($cleanClientSearchName) < 4) {
             $cleanClientSearchName = '';
         }
 
@@ -853,7 +1058,12 @@ class EvolutionWhatsAppService
                         if (!is_array($numItem)) continue;
                         foreach (['jid', 'lid', 'remoteJid', 'id'] as $f) {
                             $val = $numItem[$f] ?? null;
-                            if (!empty($val) && is_string($val) && str_contains($val, '@') && !in_array($val, $trustedJids)) {
+                            if (
+                                !empty($val)
+                                && is_string($val)
+                                && self::isJidAllowedForClient($val, $national, $adminNationals)
+                                && !in_array($val, $trustedJids, true)
+                            ) {
                                 $trustedJids[] = $val;
                             }
                         }
@@ -861,7 +1071,7 @@ class EvolutionWhatsAppService
                 }
             } catch (\Throwable $e) {}
 
-            // 2b. Buscar en /chat/findChats y /chat/findContacts cualquier chat o contacto que contenga el teléfono o el nombre exacto del cliente (descubre @lid)
+            // 2b. Buscar en /chat/findChats y /chat/findContacts cualquier chat o contacto cuyo JID/teléfono (NUNCA lastMessage) coincida con el cliente
             foreach (['/chat/findChats/', '/chat/findContacts/'] as $endpointPrefix) {
                 try {
                     $listRes = Http::withHeaders([
@@ -876,29 +1086,41 @@ class EvolutionWhatsAppService
                         }
                         foreach ($items as $item) {
                             if (!is_array($item)) continue;
-                            $rawJson = json_encode($item, JSON_UNESCAPED_UNICODE) ?: '';
+
+                            // Comprobar SOLO los campos de identidad del contacto/chat (nunca lastMessage, que puede contener alertas de leads con otros números)
+                            $jidFieldsToInspect = [
+                                (string)($item['remoteJid'] ?? ''),
+                                (string)($item['id'] ?? ''),
+                                (string)($item['jid'] ?? ''),
+                                (string)($item['lid'] ?? ''),
+                                (string)($item['remoteJidAlt'] ?? ''),
+                                (string)($item['number'] ?? ''),
+                            ];
+                            $identityString = implode(' ', $jidFieldsToInspect);
+
                             $itemName = mb_strtolower(trim((string)($item['name'] ?? ($item['pushName'] ?? ($item['verifiedName'] ?? '')))));
                             $cleanItemName = trim((string)preg_replace('/\s+/', ' ', (string)preg_replace('/[^\p{L}\p{N}\s]/u', ' ', $itemName)));
 
-                            $matchesPhone = str_contains($rawJson, $national);
-                            $matchesExtId = false;
-                            foreach (array_keys($knownExternalIds) as $extId) {
-                                if (str_contains($rawJson, $extId)) {
-                                    $matchesExtId = true;
-                                    break;
-                                }
+                            if (in_array($cleanItemName, ['djeze', 'ezequiel', 'fran', 'miguel', 'javnx', 'javnx dj'], true)) {
+                                continue;
                             }
+
+                            $matchesPhone = str_contains($identityString, $national);
                             $matchesName = !empty($cleanClientSearchName)
                                 && !empty($cleanItemName)
                                 && ($cleanItemName === $cleanClientSearchName || (mb_strlen($cleanClientSearchName) >= 6 && str_contains($cleanItemName, $cleanClientSearchName)));
 
-                            if ($matchesPhone || $matchesExtId || $matchesName) {
+                            if ($matchesPhone || $matchesName) {
+                                $altItemJid = (string)($item['remoteJidAlt'] ?? '');
                                 foreach (['remoteJid', 'id', 'jid', 'lid', 'remoteJidAlt'] as $jidField) {
                                     $cJid = $item[$jidField] ?? null;
-                                    if (!empty($cJid) && is_string($cJid) && str_contains($cJid, '@') && !str_contains($cJid, '@g.us') && !str_contains($cJid, '@broadcast')) {
-                                        if (!in_array($cJid, $trustedJids)) {
-                                            $trustedJids[] = $cJid;
-                                        }
+                                    if (
+                                        !empty($cJid)
+                                        && is_string($cJid)
+                                        && self::isJidAllowedForClient($cJid, $national, $adminNationals, $altItemJid)
+                                        && !in_array($cJid, $trustedJids, true)
+                                    ) {
+                                        $trustedJids[] = $cJid;
                                     }
                                 }
                             }
@@ -915,38 +1137,64 @@ class EvolutionWhatsAppService
                     ], 20);
                     foreach ($extRecords as $rMsg) {
                         if (!is_array($rMsg)) continue;
+                        $rText = self::extractTextFromEvolutionMessage($rMsg);
+                        if (self::isInternalSystemAlertMessage($rText)) continue;
+
                         $rJid = $rMsg['key']['remoteJid'] ?? ($rMsg['remoteJid'] ?? null);
-                        if (!empty($rJid) && is_string($rJid) && str_contains($rJid, '@') && !in_array($rJid, $trustedJids)) {
+                        $rJidAlt = $rMsg['key']['remoteJidAlt'] ?? ($rMsg['remoteJidAlt'] ?? null);
+                        if (
+                            !empty($rJid)
+                            && is_string($rJid)
+                            && self::isJidAllowedForClient($rJid, $national, $adminNationals, is_string($rJidAlt) ? $rJidAlt : null)
+                            && !in_array($rJid, $trustedJids, true)
+                        ) {
                             $trustedJids[] = $rJid;
                         }
-                        $collectedRawMessages[] = $rMsg;
+                        if (!empty($rJid) && self::isJidAllowedForClient((string)$rJid, $national, $adminNationals, is_string($rJidAlt) ? $rJidAlt : null)) {
+                            $collectedRawMessages[] = $rMsg;
+                        }
                     }
                 } catch (\Throwable $e) {}
             }
 
-            // 2d. Escanear los últimos 200 mensajes recientes de la instancia (sin filtro restrictivo de remoteJid)
-            // Esto permite descubrir conversaciones @lid donde el número viene en remoteJidAlt/senderPn, o donde enviamos un saludo al cliente
+            // 2d. Escanear los últimos 200 mensajes recientes de la instancia para descubrir conversaciones @lid del cliente
+            // IMPORTANTE: nunca buscar el teléfono dentro del texto del mensaje ($rText), solo en los campos JID/senderPn de la cabecera
             try {
                 $recentRecords = self::fetchEvolutionMessages($baseUrl, $apiKey, $instance, [], 200);
                 foreach ($recentRecords as $rMsg) {
                     if (!is_array($rMsg)) continue;
                     $rKey = $rMsg['key'] ?? [];
                     $rJid = (string)($rKey['remoteJid'] ?? ($rMsg['remoteJid'] ?? ''));
-                    if (empty($rJid) || str_contains($rJid, '@g.us') || str_contains($rJid, '@broadcast')) {
+                    $rJidAlt = (string)($rKey['remoteJidAlt'] ?? ($rMsg['remoteJidAlt'] ?? ($rKey['senderPn'] ?? ($rMsg['senderPn'] ?? ''))));
+
+                    if (!self::isJidAllowedForClient($rJid, $national, $adminNationals, $rJidAlt)) {
                         continue;
                     }
 
-                    $rJson = json_encode($rMsg, JSON_UNESCAPED_UNICODE) ?: '';
-                    $rId = (string)($rKey['id'] ?? ($rMsg['id'] ?? ''));
                     $rText = self::extractTextFromEvolutionMessage($rMsg);
+                    if (self::isInternalSystemAlertMessage($rText)) {
+                        continue;
+                    }
+
+                    $rId = (string)($rKey['id'] ?? ($rMsg['id'] ?? ''));
                     $rFromMe = (bool)($rKey['fromMe'] ?? ($rMsg['fromMe'] ?? false));
                     $rPushName = mb_strtolower(trim((string)($rMsg['pushName'] ?? '')));
                     $cleanPushName = trim((string)preg_replace('/\s+/', ' ', (string)preg_replace('/[^\p{L}\p{N}\s]/u', ' ', $rPushName)));
 
+                    if (in_array($cleanPushName, ['djeze', 'ezequiel', 'fran', 'miguel', 'javnx', 'javnx dj'], true)) {
+                        continue;
+                    }
+
                     $matchedThisMsg = false;
 
-                    // Coincidencia 1: El JSON del mensaje contiene los 9 dígitos del teléfono (en remoteJid, remoteJidAlt, senderPn, participant, etc.)
-                    if (str_contains($rJson, $national)) {
+                    // Coincidencia 1: Los campos de cabecera JID (remoteJid, remoteJidAlt, senderPn, participant) contienen los 9 dígitos del cliente
+                    $headerIdentity = implode(' ', [
+                        $rJid,
+                        $rJidAlt,
+                        (string)($rKey['participant'] ?? ''),
+                        (string)($rMsg['participant'] ?? ''),
+                    ]);
+                    if (str_contains($headerIdentity, $national)) {
                         $matchedThisMsg = true;
                     }
 
@@ -978,7 +1226,7 @@ class EvolutionWhatsAppService
                         }
                     }
 
-                    if ($matchedThisMsg && !in_array($rJid, $trustedJids)) {
+                    if ($matchedThisMsg && !in_array($rJid, $trustedJids, true)) {
                         $trustedJids[] = $rJid;
                     }
                 }
@@ -989,7 +1237,10 @@ class EvolutionWhatsAppService
                     $rKey = $rMsg['key'] ?? [];
                     $rJid = (string)($rKey['remoteJid'] ?? ($rMsg['remoteJid'] ?? ''));
                     $rJidAlt = (string)($rKey['remoteJidAlt'] ?? ($rMsg['remoteJidAlt'] ?? ''));
-                    if (in_array($rJid, $trustedJids, true) || (!empty($rJidAlt) && in_array($rJidAlt, $trustedJids, true)) || str_contains($rJid, $national) || str_contains($rJidAlt, $national)) {
+                    if (
+                        self::isJidAllowedForClient($rJid, $national, $adminNationals, $rJidAlt)
+                        && (in_array($rJid, $trustedJids, true) || (!empty($rJidAlt) && in_array($rJidAlt, $trustedJids, true)) || str_contains($rJid, $national) || str_contains($rJidAlt, $national))
+                    ) {
                         $collectedRawMessages[] = $rMsg;
                     }
                 }
@@ -1039,18 +1290,19 @@ class EvolutionWhatsAppService
                     continue;
                 }
 
-                // Verificar que pertenece a un JID confiable de este cliente (incluye su @lid) o contiene su teléfono
-                $isTrustedJid = in_array($remoteJid, $trustedJids, true)
+                // Verificar que pertenece a un JID confiable de este cliente (incluye su @lid) o contiene su teléfono, y que no es un teléfono de admin
+                $isTrustedJid = (in_array($remoteJid, $trustedJids, true)
                     || (!empty($remoteJidAlt) && in_array($remoteJidAlt, $trustedJids, true))
                     || str_contains($remoteJid, $national)
-                    || str_contains($remoteJidAlt, $national);
+                    || str_contains($remoteJidAlt, $national))
+                    && self::isJidAllowedForClient($remoteJid, $national, $adminNationals, $remoteJidAlt);
 
                 if (!$isTrustedJid) {
                     continue;
                 }
 
                 $text = self::extractTextFromEvolutionMessage($rawMsg);
-                if (empty(trim($text))) {
+                if (empty(trim($text)) || self::isInternalSystemAlertMessage($text)) {
                     continue;
                 }
 
@@ -1058,6 +1310,12 @@ class EvolutionWhatsAppService
                 $direction = $fromMe ? 'outbound' : 'inbound';
                 $externalId = $key['id'] ?? ($rawMsg['id'] ?? null);
                 $pushName = $rawMsg['pushName'] ?? null;
+                if (!$fromMe && !empty($pushName) && !in_array($national, $adminNationals, true)) {
+                    $lowerPush = mb_strtolower(trim((string)$pushName));
+                    if (in_array($lowerPush, ['djeze', 'dj eze', 'ezequiel', 'javnx', 'fran', 'miguel'], true)) {
+                        continue;
+                    }
+                }
                 $senderName = $fromMe
                     ? 'Nosotros'
                     : ((!empty($pushName) && !in_array(mb_strtolower($pushName), ['voce', 'você', 'tú', 'tu', 'you'])) ? $pushName : $clientName);
