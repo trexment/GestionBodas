@@ -563,15 +563,20 @@ class EvolutionWhatsAppService
 
         $report['open_instances'] = $openInstances;
 
-        // Lista ordenada de instancias candidatas a intentar (primero las 'open', luego las configuradas como respaldo)
-        $configuredInstances = array_values(array_unique(array_filter([
+        // Lista ordenada por prioridad: primero la instancia de la marca, luego whatsapp_principal (Fran) y whatsapp_miguel (Miguel).
+        // whatsapp_ezequiel se deja únicamente como último respaldo si las principales estuvieran desconectadas.
+        $primaryInstances = array_values(array_unique(array_filter([
             $preferredInstance,
             Setting::get('whatsapp_instance_fran', Setting::get('whatsapp_instance_javnx', 'whatsapp_principal')),
             Setting::get('whatsapp_instance_miguel', Setting::get('whatsapp_instance_nunez', 'whatsapp_miguel')),
-            Setting::get('whatsapp_instance_ezequiel', 'whatsapp_ezequiel'),
             'whatsapp_principal',
             'whatsapp_miguel',
         ])));
+
+        $configuredInstances = array_values(array_unique(array_filter(array_merge(
+            $primaryInstances,
+            [Setting::get('whatsapp_instance_ezequiel', 'whatsapp_ezequiel'), 'whatsapp_ezequiel']
+        ))));
 
         foreach ($phones as $phone) {
             $cleanPhone = WhatsAppTemplateService::cleanPhone((string)$phone);
@@ -580,20 +585,24 @@ class EvolutionWhatsAppService
             }
 
             // Construir el orden óptimo de instancias para este destinatario:
-            // - Si hay una instancia 'open' cuyo propietario NO es el propio destinatario, usarla primero
-            //   para evitar auto-mensajes (fromMe: true) que WhatsApp silencia sin notificación push.
-            // - A continuación, la instancia preferida de la marca si está 'open'.
-            // - A continuación, cualquier otra instancia 'open' (ej. whatsapp_principal como fallback para Núñez & Son).
-            // - Por último, las instancias configuradas por si fetchInstances no devolvió estado.
+            // 1º: Instancias principales ('open') de Fran/Miguel donde el propietario NO sea el mismo destinatario
+            // 2º: Instancia preferida o principal ('open') de Fran/Miguel (ej. whatsapp_principal)
+            // 3º: Cualquier otra instancia 'open' (ej. whatsapp_ezequiel solo como respaldo si las principales fallan)
+            // 4º: Instancias configuradas por orden de prioridad
             $candidateInstances = [];
 
-            foreach ($openInstances as $instName => $ownerPhone) {
-                if (!empty($ownerPhone) && $ownerPhone !== $cleanPhone) {
-                    $candidateInstances[] = $instName;
+            foreach ($primaryInstances as $instName) {
+                if (isset($openInstances[$instName])) {
+                    $ownerPhone = $openInstances[$instName];
+                    if (!empty($ownerPhone) && $ownerPhone !== $cleanPhone && !in_array($instName, $candidateInstances, true)) {
+                        $candidateInstances[] = $instName;
+                    }
                 }
             }
-            if (isset($openInstances[$preferredInstance]) && !in_array($preferredInstance, $candidateInstances, true)) {
-                $candidateInstances[] = $preferredInstance;
+            foreach ($primaryInstances as $instName) {
+                if (isset($openInstances[$instName]) && !in_array($instName, $candidateInstances, true)) {
+                    $candidateInstances[] = $instName;
+                }
             }
             foreach (array_keys($openInstances) as $instName) {
                 if (!in_array($instName, $candidateInstances, true)) {
