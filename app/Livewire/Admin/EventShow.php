@@ -4162,6 +4162,7 @@ class EventShow extends Component
             $quote->items()->create($item);
         }
 
+        $this->editing_quote_id = null;
         $this->event->load('quotes.items');
         session()->flash('quote_message', 'Propuesta Comercial #' . $quote->id . ' actualizada correctamente (Total: ' . number_format($finalTotal, 2, ',', '.') . ' € | Señal: ' . number_format($signal, 2, ',', '.') . ' €).');
     }
@@ -4169,7 +4170,7 @@ class EventShow extends Component
     public function loadQuoteIntoCalculator($quoteId, bool $flash = true)
     {
         $quote = $this->event->quotes()->with('items')->findOrFail($quoteId);
-        $this->editing_quote_id = $quote->id;
+        $this->editing_quote_id = $flash ? $quote->id : null;
         
         // Cargar configuración de señal
         $this->quote_deposit_type = $quote->deposit_type ?: 'percentage';
