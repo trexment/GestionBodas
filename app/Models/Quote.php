@@ -301,4 +301,139 @@ class Quote extends Model
         $date = $this->created_at ?: now();
         return $date->locale('es')->isoFormat('D [de] MMMM [de] YYYY');
     }
+
+    /**
+     * Repara automáticamente presupuestos donde la línea de Cóctel fue sobrescrita por
+     * "Descuento Especial Pack Cóctel + Banquete" generando un doble descuento (-44€ y -11,20€).
+     */
+    public static function repairCorruptedPackDiscounts(self $quote): bool
+    {
+        try {
+            $items = $quote->relationLoaded('items') ? $quote->items : $quote->items()->orderBy('id')->get();
+            if ($items->count() < 2) {
+                return false;
+            }
+
+            $discountItems = $items->filter(function ($item) {
+                $name = mb_strtolower((string)($item->service_name ?: $item->concept ?: ''));
+                return str_contains($name, 'descuento') || (float)$item->price < 0;
+            })->values();
+
+            if ($discountItems->count() < 2) {
+                return false;
+            }
+
+            $hasPositiveCocktail = $items->contains(function ($item) {
+                $name = mb_strtolower((string)($item->service_name ?: $item->concept ?: ''));
+                return (float)$item->price > 0
+                    && !str_contains($name, 'descuento')
+                    && (str_contains($name, 'cóctel') || str_contains($name, 'coctel') || str_contains($name, 'aperitivo') || str_contains($name, 'recepción') || str_contains($name, 'recepcion'));
+            });
+
+            if ($hasPositiveCocktail) {
+                return false;
+            }
+
+            $banquetItem = $items->first(function ($item) {
+                $name = mb_strtolower((string)($item->service_name ?: $item->concept ?: ''));
+                return (float)$item->price > 0
+                    && !str_contains($name, 'descuento')
+                    && (str_contains($name, 'banquete') || str_contains($name, 'regalos') || str_contains($name, 'comida') || str_contains($name, 'cena') || str_contains($name, 'restaurante'));
+            });
+
+            $banquetPrice = $banquetItem ? (float)$banquetItem->price : 100.0;
+            $firstDiscount = $discountItems->first();
+            $secondDiscount = $discountItems->get(1);
+
+            $pct = (float)Setting::get('pack_cocktail_restaurant_discount', 20);
+            if ($pct <= 0) {
+                $pct = 20.0;
+            }
+
+            $firstAbs = abs((float)$firstDiscount->price);
+            $restoredCocktailPrice = 0.0;
+            if ($firstAbs > 0) {
+                $combinedOriginal = round($firstAbs / ($pct / 100), 2);
+                $restoredCocktailPrice = round($combinedOriginal - $banquetPrice, 2);
+            }
+            if ($restoredCocktailPrice <= 0) {
+                $evType = ($quote->event && $quote->event->event_type_clean) ? $quote->event->event_type_clean : 'boda';
+                $byType = Setting::get("price_cocktail_{$evType}");
+                $restoredCocktailPrice = ($byType !== null && $byType !== '') ? (float)$byType : (float)Setting::get('price_cocktail', 120);
+            }
+
+            $isWedding = !$quote->event || $quote->event->is_wedding;
+            $firstDiscount->update([
+                'service_name' => $isWedding ? 'Cóctel de Bienvenida' : 'Ambientación Recepción / Aperitivo',
+                'description' => $isWedding
+                    ? 'Música ambiente seleccionada y equipo de sonido independiente para la zona del cóctel.'
+                    : 'Música ambiente durante la recepción o aperitivo del evento.',
+                'price' => $restoredCocktailPrice,
+                'quantity' => 1,
+            ]);
+
+            $trueDiscountAmount = round(($restoredCocktailPrice + $banquetPrice) * ($pct / 100), 2);
+            $secondDiscount->update([
+                'service_name' => $isWedding
+                    ? 'Descuento Especial Pack Cóctel + Banquete'
+                    : 'Descuento Especial Pack Recepción + Comida/Cena',
+                'description' => 'Tarifa combinada promocional por contratación conjunta (' . round($pct) . '% dto.)',
+                'price' => -$trueDiscountAmount,
+                'quantity' => 1,
+            ]);
+
+            // Si hubiera un tercer descuento duplicado, eliminarlo
+            if ($discountItems->count() > 2) {
+                foreach ($discountItems->slice(2) as $extraDisc) {
+                    $extraDisc->delete();
+                }
+            }
+
+            // Recalcular totales de la propuesta
+            $freshItems = $quote->items()->get();
+            $grossSum = 0.0;
+            foreach ($freshItems as $fItem) {
+                $grossSum += ((float)$fItem->price * (int)($fItem->quantity ?: 1));
+            }
+            $grossSum = max(0, round($grossSum, 2));
+
+            $taxType = $quote->tax_type ?: 'included';
+            $taxRate = (float)($quote->tax_rate ?: 21.00);
+            if ($taxType === 'excluded') {
+                $subtotal = $grossSum;
+                $taxAmount = round(($subtotal * $taxRate) / 100, 2);
+                $finalTotal = round($subtotal + $taxAmount, 2);
+            } elseif ($taxType === 'none') {
+                $subtotal = $grossSum;
+                $taxAmount = 0.0;
+                $finalTotal = $grossSum;
+            } else {
+                $finalTotal = $grossSum;
+                $subtotal = round($finalTotal / (1 + ($taxRate / 100)), 2);
+                $taxAmount = round($finalTotal - $subtotal, 2);
+            }
+
+            $depType = $quote->deposit_type ?: 'percentage';
+            if ($depType === 'none') {
+                $signal = 0.0;
+            } elseif ($depType === 'fixed') {
+                $signal = min((float)($quote->deposit_amount ?: 200), $finalTotal);
+            } else {
+                $depPct = (float)($quote->deposit_percentage ?: 40);
+                $signal = round(($finalTotal * $depPct) / 100, 2);
+            }
+
+            $quote->update([
+                'amount' => $finalTotal,
+                'subtotal_amount' => $subtotal,
+                'tax_amount' => $taxAmount,
+                'deposit_amount' => $signal,
+            ]);
+
+            $quote->load('items');
+            return true;
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
 }

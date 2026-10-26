@@ -98,6 +98,7 @@ class PdfController extends Controller
         $this->authorizePdfAccess($quote->event);
 
         $quote->load(['event.client', 'items']);
+        \App\Models\Quote::repairCorruptedPackDiscounts($quote);
 
         $isSinglePage = request()->boolean('single') || request('mode') === 'single';
 

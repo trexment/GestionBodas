@@ -37,6 +37,18 @@ class QuoteResponse extends Component
             abort(404, 'Propuesta no encontrada o enlace no válido.');
         }
 
+        if ($this->event->quotes && $this->event->quotes->isNotEmpty()) {
+            $repairedAny = false;
+            foreach ($this->event->quotes as $evQuote) {
+                if (Quote::repairCorruptedPackDiscounts($evQuote)) {
+                    $repairedAny = true;
+                }
+            }
+            if ($repairedAny) {
+                $this->event->load('quotes.items');
+            }
+        }
+
         $requestedQuoteId = request()->query('quote');
         if ($requestedQuoteId) {
             $this->quote = $this->event->quotes->firstWhere('id', (int) $requestedQuoteId);

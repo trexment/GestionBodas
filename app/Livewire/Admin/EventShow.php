@@ -354,7 +354,18 @@ class EventShow extends Component
         $this->loadSettingsPrices();
 
         // Si el evento ya tiene un presupuesto (por ejemplo, enviado por el cliente desde /presupuesto),
-        // cargar automáticamente sus opciones (Ceremonia, Cóctel, Banquete, Pack DJ, etc.) en el configurador
+        // reparar posibles descuentos duplicados y cargar sus opciones en el configurador
+        if ($this->event->quotes && $this->event->quotes->isNotEmpty()) {
+            $repairedAnyQuote = false;
+            foreach ($this->event->quotes as $evQuote) {
+                if (\App\Models\Quote::repairCorruptedPackDiscounts($evQuote)) {
+                    $repairedAnyQuote = true;
+                }
+            }
+            if ($repairedAnyQuote) {
+                $this->event->load('quotes.items');
+            }
+        }
         $latestQuote = $this->event->quotes ? $this->event->quotes->sortByDesc('id')->first() : null;
         if ($latestQuote) {
             try {
@@ -4199,6 +4210,11 @@ class EventShow extends Component
         foreach ($quote->items as $item) {
             $name = mb_strtolower($item->service_name ?: $item->concept ?: '');
             
+            // IMPORTANTE: Comprobar primero si es una línea de descuento para que NO coincida con 'cóctel' ni 'banquete'
+            if (str_contains($name, 'descuento') || (float)$item->price < 0) {
+                continue;
+            }
+
             if (str_contains($name, 'pack básico') || str_contains($name, 'pack basico') || str_contains($name, 'pack esencial') || str_contains($name, 'esencial') || str_contains($name, 'pack clásico') || str_contains($name, 'pack clasico')) {
                 $this->quote_services['pack_basic']['selected'] = true;
                 $this->quote_services['pack_basic']['price'] = (float)$item->price;
