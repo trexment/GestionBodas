@@ -17,74 +17,73 @@
             max-width: 600px;
             margin: 25px auto;
             background: #ffffff;
-            border-radius: 16px;
+            border-radius: 12px;
             overflow: hidden;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-            border: 1px solid #e2e8f0;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            border: 1px solid #e4e4e7;
         }
         .header {
-            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            background-color: #18181b;
             color: #ffffff;
-            padding: 35px 25px;
-            text-align: center;
+            padding: 32px 28px;
+            border-bottom: 2px solid #eab308;
         }
         .header h1 {
             margin: 0;
             font-size: 22px;
-            font-weight: 800;
+            font-weight: 700;
             color: #ffffff;
         }
         .header p {
             margin: 6px 0 0;
             color: #eab308;
-            font-size: 13px;
-            font-weight: 700;
+            font-size: 11px;
+            font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 1.5px;
         }
         .content {
-            padding: 30px 25px;
+            padding: 30px 28px;
         }
         .greeting {
-            font-size: 17px;
-            font-weight: 800;
-            color: #0f172a;
+            font-size: 16px;
+            font-weight: 700;
+            color: #18181b;
             margin-bottom: 12px;
         }
         .lead {
             font-size: 14px;
-            color: #475569;
+            color: #3f3f46;
             margin-bottom: 22px;
             line-height: 1.6;
         }
         .highlight-badge {
             display: inline-block;
-            background-color: #ecfdf5;
-            color: #047857;
-            border: 1px solid #a7f3d0;
+            background-color: #f4f4f5;
+            color: #18181b;
+            border: 1px solid #d4d4d8;
             padding: 4px 10px;
-            border-radius: 9999px;
+            border-radius: 6px;
             font-size: 11px;
-            font-weight: 800;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
             margin-bottom: 14px;
         }
         .event-card {
-            background-color: #f8fafc;
-            border-radius: 12px;
-            padding: 18px 20px;
-            margin-bottom: 25px;
-            border-left: 4px solid #eab308;
-            border: 1px solid #e2e8f0;
-            border-left-width: 4px;
-            border-left-color: #eab308;
+            background-color: #fafafa;
+            border-radius: 8px;
+            padding: 16px 20px;
+            margin-bottom: 24px;
+            border: 1px solid #e4e4e7;
         }
         .event-card-item {
             font-size: 13px;
             margin: 6px 0;
-            color: #334155;
+            color: #27272a;
         }
         .event-card-item strong {
-            color: #0f172a;
+            color: #18181b;
         }
         .items-table {
             width: 100%;
@@ -95,87 +94,89 @@
         .items-table th {
             text-align: left;
             padding: 10px 12px;
-            background-color: #f8fafc;
-            color: #64748b;
+            background-color: #fafafa;
+            color: #52525b;
             font-size: 11px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            border-bottom: 2px solid #e2e8f0;
+            border-bottom: 2px solid #18181b;
         }
         .items-table td {
             padding: 12px;
-            border-bottom: 1px solid #f1f5f9;
-            color: #1e293b;
+            border-bottom: 1px solid #f4f4f5;
+            color: #18181b;
         }
         .item-name {
-            font-weight: 700;
-            color: #0f172a;
+            font-weight: 600;
+            color: #18181b;
         }
         .item-desc {
             font-size: 11px;
-            color: #64748b;
+            color: #71717a;
             margin-top: 2px;
         }
         .total-box {
-            background: linear-gradient(135deg, #fefce8 0%, #fef08a 100%);
-            border: 1px solid #fde047;
-            border-radius: 12px;
+            background-color: #fafafa;
+            border: 1px solid #e4e4e7;
+            border-top: 2px solid #18181b;
+            border-radius: 8px;
             padding: 20px;
             text-align: center;
-            margin-bottom: 25px;
+            margin-bottom: 24px;
         }
         .total-label {
-            font-size: 12px;
-            color: #854d0e;
+            font-size: 11px;
+            color: #52525b;
             text-transform: uppercase;
-            font-weight: 800;
-            letter-spacing: 0.5px;
+            font-weight: 700;
+            letter-spacing: 1px;
         }
         .total-amount {
-            font-size: 26px;
-            color: #713f12;
-            font-weight: 900;
+            font-size: 24px;
+            color: #18181b;
+            font-weight: 800;
             margin: 4px 0 0;
         }
         .info-step {
-            background-color: #f1f5f9;
-            border-radius: 12px;
+            background-color: #fafafa;
+            border: 1px solid #e4e4e7;
+            border-radius: 8px;
             padding: 16px;
-            margin-bottom: 25px;
+            margin-bottom: 24px;
             font-size: 13px;
-            color: #334155;
+            color: #3f3f46;
         }
         .info-step strong {
-            color: #0f172a;
+            color: #18181b;
             display: block;
             margin-bottom: 4px;
         }
         .contact-box {
             background-color: #ffffff;
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
+            border: 1px solid #e4e4e7;
+            border-radius: 8px;
             padding: 18px;
             text-align: center;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
         }
         .contact-box h4 {
             margin: 0 0 8px 0;
-            font-size: 14px;
-            color: #0f172a;
+            font-size: 13px;
+            color: #18181b;
         }
         .contact-phone {
             font-size: 14px;
-            font-weight: 800;
-            color: #4f46e5;
+            font-weight: 700;
+            color: #18181b;
             margin: 4px 0;
         }
         .footer {
-            background-color: #f8fafc;
-            padding: 20px 25px;
+            background-color: #fafafa;
+            padding: 18px 25px;
             text-align: center;
             font-size: 11px;
-            color: #64748b;
-            border-top: 1px solid #e2e8f0;
+            color: #71717a;
+            border-top: 1px solid #e4e4e7;
         }
     </style>
 </head>
@@ -183,22 +184,22 @@
     <div class="container">
         <!-- CABECERA -->
         <div class="header">
+            <p>{{ $brand['subtitle'] ?: 'Producción Musical, Sonido e Iluminación' }}</p>
             <h1>{{ $companyName }}</h1>
-            <p>{{ $brand['subtitle'] ?: 'DJ, Sonido & Producción de Eventos' }}</p>
         </div>
 
         <!-- CONTENIDO PRINCIPAL -->
         <div class="content">
             <div class="highlight-badge">
-                ✅ Solicitud Registrada con Éxito
+                Solicitud Registrada
             </div>
 
             <div class="greeting">
-                ¡Hola, {{ $event->client ? $event->client->name : 'Hola' }}!
+                Estimado/a {{ $event->client ? $event->client->name : 'cliente' }},
             </div>
 
             <div class="lead">
-                Muchas gracias por ponerte en contacto con nosotros. Hemos recibido correctamente tu solicitud de presupuesto y estamos revisando los detalles y la disponibilidad para la fecha de tu evento.
+                Muchas gracias por contactar con nosotros. Hemos registrado vuestra solicitud de presupuesto y estamos verificando la disponibilidad técnica para la fecha indicada.
             </div>
 
             <!-- FICHA DEL EVENTO -->
@@ -210,7 +211,7 @@
                     <strong>Fecha:</strong> {{ $event->event_date ? \Carbon\Carbon::parse($event->event_date)->locale('es')->isoFormat('dddd, D [de] MMMM [de] YYYY') : 'Por definir' }}
                 </div>
                 <div class="event-card-item">
-                    <strong>Lugar / Espacio:</strong> {{ $event->location ?: 'A convenir' }}
+                    <strong>Ubicación:</strong> {{ $event->location ?: 'A convenir' }}
                 </div>
                 @if($event->start_time)
                     <div class="event-card-item">
@@ -220,15 +221,15 @@
             </div>
 
             <!-- SERVICIOS SOLICITADOS -->
-            <h3 style="font-size: 14px; font-weight: 800; color: #0f172a; margin-bottom: 10px;">
-                📋 Resumen de Servicios Solicitados:
+            <h3 style="font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #18181b; margin-bottom: 10px;">
+                Detalle de Servicios Solicitados
             </h3>
 
             <table class="items-table">
                 <thead>
                     <tr>
                         <th>Concepto / Servicio</th>
-                        <th style="text-align: center; width: 60px;">Cant.</th>
+                        <th style="text-align: center; width: 60px;">Uds.</th>
                         <th style="text-align: right; width: 90px;">Importe</th>
                     </tr>
                 </thead>
@@ -240,21 +241,21 @@
                         @endphp
                         <tr>
                             <td>
-                                <div class="item-name" style="{{ $isDiscount ? 'color: #059669;' : '' }}">
-                                    @if($isDiscount) 🎁 @else • @endif {{ $item->service_name }}
+                                <div class="item-name">
+                                    &bull; {{ $item->service_name }}
                                 </div>
                                 @if(!empty($item->description))
                                     <div class="item-desc">{{ $item->description }}</div>
                                 @endif
                             </td>
-                            <td style="text-align: center; color: #64748b; font-weight: bold;">
+                            <td style="text-align: center; color: #52525b; font-weight: bold;">
                                 {{ $item->quantity ?: 1 }}
                             </td>
-                            <td style="text-align: right; font-weight: 800; {{ $isDiscount ? 'color: #059669;' : '' }}">
+                            <td style="text-align: right; font-weight: 700; color: #18181b;">
                                 @if($isDiscount)
                                     -{{ number_format(abs($itemPrice), 2, ',', '.') }} €
                                 @elseif($itemPrice == 0 && (str_contains(mb_strtolower($item->service_name), 'consultar') || str_contains(mb_strtolower($item->service_name), 'extra')))
-                                    <span style="color: #d97706; font-size: 11px;">A consultar</span>
+                                    <span style="color: #52525b; font-size: 11px;">A consultar</span>
                                 @else
                                     {{ number_format($itemPrice, 2, ',', '.') }} €
                                 @endif
@@ -266,30 +267,30 @@
 
             <!-- TOTAL ESTIMADO -->
             <div class="total-box">
-                <div class="total-label">Presupuesto Estimado</div>
+                <div class="total-label">Importe Total Estimado</div>
                 <div class="total-amount">{{ number_format($quote->amount, 2, ',', '.') }} €</div>
-                <p style="margin: 4px 0 0; font-size: 11px; color: #a16207;">
-                    IVA y desplazamiento incluidos según condiciones indicadas en la propuesta formal.
+                <p style="margin: 6px 0 0; font-size: 11px; color: #52525b;">
+                    Desplazamiento, montaje e impuestos según condiciones de la propuesta formal.
                 </p>
             </div>
 
             <!-- PRÓXIMOS PASOS -->
             <div class="info-step">
-                <strong>¿Cuáles son los siguientes pasos?</strong>
-                Nuestro equipo comprobará la agenda de fechas y se pondrá en contacto contigo muy pronto (vía WhatsApp, teléfono o email) para resolver cualquier duda, ajustar detalles a vuestra medida y formalizar la reserva.
+                <strong>Siguientes pasos</strong>
+                Nuestro equipo revisará la solicitud y se pondrá en contacto con vosotros a la mayor brevedad para resolver cualquier consulta, ajustar la configuración técnica y remitir el dossier definitivo.
             </div>
 
             <!-- CONTACTO DIRECTO -->
             <div class="contact-box">
-                <h4>¿Tienes alguna duda urgente o necesitas consultarnos algo ya?</h4>
+                <h4>Contacto Directo</h4>
                 @if(!empty($brand['phone']))
-                    <div class="contact-phone">📞 {{ $brand['phone'] }}</div>
+                    <div class="contact-phone">Tel. / WhatsApp: {{ $brand['phone'] }}</div>
                 @endif
                 @if(!empty($brand['phone_2']))
-                    <div class="contact-phone">📞 {{ $brand['phone_2'] }}</div>
+                    <div class="contact-phone">Tel.: {{ $brand['phone_2'] }}</div>
                 @endif
                 @if(!empty($brand['email']))
-                    <div style="font-size: 12px; color: #64748b; margin-top: 4px;">✉️ {{ $brand['email'] }}</div>
+                    <div style="font-size: 12px; color: #52525b; margin-top: 4px;">Email: {{ $brand['email'] }}</div>
                 @endif
             </div>
 

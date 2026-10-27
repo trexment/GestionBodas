@@ -1,409 +1,432 @@
-<div class="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8 font-sans">
-
-    <!-- CABECERA DE MARCA Y EVENTO -->
-    <div class="text-center mb-8">
-        <div class="w-16 h-16 bg-gradient-to-tr from-indigo-600 to-purple-600 rounded-3xl mx-auto flex items-center justify-center text-white text-3xl shadow-xl shadow-indigo-500/30 mb-4">
-            📑
-        </div>
-        <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 text-xs font-extrabold uppercase tracking-wider mb-2">
-            {{ $brand['name'] ?? 'Núñez & Son' }} &bull; Propuesta Oficial
-        </div>
-        <h1 class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
-            {{ $event->name }}
-        </h1>
-        <p class="text-sm text-slate-600 dark:text-slate-400 mt-1.5 flex items-center justify-center gap-2 flex-wrap">
-            @if($event->event_date)
-                <span>📅 <strong>{{ \Carbon\Carbon::parse($event->event_date)->locale('es')->isoFormat('D [de] MMMM [de] YYYY') }}</strong></span>
-            @endif
-            @if($event->location)
-                <span>&bull; 📍 <strong>{{ $event->location }}</strong></span>
-            @endif
-        </p>
-    </div>
+<div class="max-w-4xl mx-auto py-8 sm:py-12 px-4 sm:px-6 lg:px-8 font-sans antialiased">
 
     @if(session()->has('quote_response_success'))
-        <div class="mb-6 p-4 rounded-2xl bg-emerald-600 text-white font-bold text-sm shadow-lg flex items-center gap-3">
-            <span class="text-2xl">🎉</span>
-            <span>{{ session('quote_response_success') }}</span>
+        <div class="mb-6 p-4 rounded-xl bg-zinc-900 dark:bg-zinc-800 border border-amber-500/40 text-white text-sm flex items-center gap-3 shadow-sm">
+            <svg class="w-5 h-5 text-amber-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+            <span class="font-medium">{{ session('quote_response_success') }}</span>
         </div>
     @endif
 
     @if(session()->has('quote_response_rejected'))
-        <div class="mb-6 p-4 rounded-2xl bg-slate-800 text-white font-bold text-sm shadow-lg flex items-center gap-3">
-            <span class="text-2xl">📝</span>
-            <span>{{ session('quote_response_rejected') }}</span>
+        <div class="mb-6 p-4 rounded-xl bg-zinc-900 dark:bg-zinc-800 border border-zinc-700 text-zinc-200 text-sm flex items-center gap-3 shadow-sm">
+            <svg class="w-5 h-5 text-zinc-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+            <span class="font-medium">{{ session('quote_response_rejected') }}</span>
         </div>
     @endif
 
     @if(!$quote)
-        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 text-center shadow-sm">
-            <div class="text-4xl mb-3">⏳</div>
-            <h2 class="text-lg font-bold text-slate-900 dark:text-white">Propuesta en preparación</h2>
-            <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                Actualmente estamos preparando vuestro presupuesto personalizado. En cuanto esté listo podréis consultarlo y descargarlo desde este mismo enlace.
+        <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-10 text-center shadow-sm">
+            <svg class="w-10 h-10 text-zinc-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <h2 class="text-lg font-semibold text-zinc-900 dark:text-white">Propuesta en elaboración</h2>
+            <p class="text-sm text-zinc-500 dark:text-zinc-400 mt-1 max-w-md mx-auto">
+                Estamos ultimando los detalles técnicos y económicos de vuestra propuesta. En cuanto esté disponible podréis consultarla y descargar el dossier desde este enlace.
             </p>
         </div>
     @else
 
-        <!-- SELECTOR DE VERSIONES SI HAY MÁS DE UN PRESUPUESTO -->
+        <!-- SELECTOR DE VERSIONES SI EXISTE MÁS DE UNA PROPUESTA -->
         @if($event->quotes->count() > 1)
-            <div class="mb-6 flex items-center justify-center gap-2 flex-wrap">
-                <span class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mr-1">Versiones disponibles:</span>
-                @foreach($event->quotes->sortByDesc('id') as $qItem)
-                    <button type="button"
-                        wire:click="selectQuote({{ $qItem->id }})"
-                        class="px-3.5 py-1.5 rounded-xl text-xs font-extrabold border transition cursor-pointer {{ $quote->id === $qItem->id ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-indigo-400' }}">
-                        Propuesta #{{ $qItem->id }} ({{ number_format((float)$qItem->amount, 0, ',', '.') }} €)
-                        @if($qItem->status === 'accepted') ✅ @elseif($qItem->status === 'rejected') ❌ @endif
-                    </button>
-                @endforeach
-            </div>
-        @endif
-
-        <!-- BARRA PRINCIPAL: DESCARGAR DOSSIER PDF COMPLETO -->
-        <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-3xl p-5 sm:p-6 shadow-xl mb-6 border border-indigo-500/30 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div class="flex items-center gap-4 text-center sm:text-left">
-                <div class="w-12 h-12 rounded-2xl bg-indigo-500/20 border border-indigo-400/40 flex items-center justify-center text-2xl shrink-0 mx-auto sm:mx-0">
-                    📄
-                </div>
-                <div>
-                    <span class="text-[11px] font-extrabold uppercase tracking-widest text-amber-400 block">Dossier Comercial & Presupuesto Oficial</span>
-                    <h2 class="text-base sm:text-lg font-black text-white">Propuesta #{{ $quote->id }} &bull; {{ number_format((float)$quote->amount, 2, ',', '.') }} €</h2>
-                    <p class="text-xs text-slate-300 mt-0.5">
-                        Emitida el {{ $quote->created_at_formatted }} &bull; Válida hasta el <strong>{{ $quote->expires_at_formatted }}</strong>
-                    </p>
-                </div>
-            </div>
-            <a href="{{ route('pdf.quote', ['quote' => $quote->id, 'token' => $event->token]) }}"
-               target="_blank"
-               class="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black px-5 py-3 rounded-2xl text-xs sm:text-sm shadow-lg shadow-amber-500/20 transition shrink-0">
-                <span>⬇️</span>
-                <span>Descargar Dossier en PDF</span>
-            </a>
-        </div>
-
-        <!-- ESTADO ACTUAL SI YA HA SIDO ACEPTADO O RECHAZADO -->
-        @if($quote->status === 'accepted' && $actionMode === 'view')
-            <div class="bg-emerald-50 dark:bg-emerald-950/40 border-2 border-emerald-500 rounded-3xl p-6 sm:p-8 text-center shadow-lg mb-8">
-                <div class="w-14 h-14 bg-emerald-100 dark:bg-emerald-900/60 text-emerald-600 dark:text-emerald-300 rounded-2xl mx-auto flex items-center justify-center text-3xl mb-3">
-                    ✅
-                </div>
-                <h2 class="text-xl font-black text-emerald-900 dark:text-emerald-200">
-                    ¡Presupuesto Aceptado!
-                </h2>
-                <p class="text-xs sm:text-sm text-emerald-800 dark:text-emerald-300 mt-1 max-w-lg mx-auto">
-                    Habéis aceptado esta propuesta comercial{{ $quote->responded_at ? ' el ' . $quote->responded_at->format('d/m/Y \a \l\a\s H:i') : '' }}. El estado de vuestro evento ha quedado actualizado como <strong>Confirmado</strong>.
-                </p>
-
-                @if($quote->client_notes)
-                    <div class="mt-4 max-w-md mx-auto bg-white dark:bg-slate-900 p-3.5 rounded-2xl border border-emerald-200 dark:border-emerald-800 text-xs text-slate-700 dark:text-slate-300 text-left">
-                        <span class="font-bold text-emerald-700 dark:text-emerald-400 block mb-0.5">💬 Vuestro comentario:</span>
-                        {{ $quote->client_notes }}
-                    </div>
-                @endif
-
-                @if($quote->signal_amount > 0 && ($companyIban || $companyBizum))
-                    <div class="mt-5 max-w-lg mx-auto bg-white dark:bg-slate-900 p-4 rounded-2xl border border-emerald-300 dark:border-emerald-800 text-left space-y-2">
-                        <div class="text-xs font-extrabold uppercase tracking-wider text-emerald-800 dark:text-emerald-300">
-                            📌 Datos para abonar la señal de reserva ({{ number_format($quote->signal_amount, 2, ',', '.') }} €):
-                        </div>
-                        @if(in_array('transfer', $quote->active_payment_methods) && $companyIban)
-                            <div class="text-xs text-slate-700 dark:text-slate-300">
-                                🏦 <strong>Transferencia Bancaria (IBAN):</strong>
-                                <span class="font-mono font-bold text-slate-900 dark:text-white select-all block sm:inline mt-0.5">{{ $companyIban }}</span>
-                            </div>
-                        @endif
-                        @if(in_array('bizum', $quote->active_payment_methods) && $companyBizum)
-                            <div class="text-xs text-slate-700 dark:text-slate-300">
-                                📱 <strong>Bizum:</strong>
-                                <span class="font-mono font-bold text-slate-900 dark:text-white select-all">{{ $companyBizum }}</span>
-                            </div>
-                        @endif
-                        <div class="text-[11px] text-slate-500 dark:text-slate-400">
-                            Concepto: <strong>{{ $event->name }}</strong>
-                        </div>
-                    </div>
-                @endif
-
-                <div class="mt-5 flex items-center justify-center gap-3 flex-wrap">
-                    <a href="{{ route('pdf.quote', ['quote' => $quote->id, 'token' => $event->token]) }}" target="_blank" class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-5 py-2.5 rounded-xl text-xs shadow-sm transition">
-                        <span>📄</span> Descargar Dossier PDF
-                    </a>
-                    <button type="button" wire:click="openRejectBox" class="text-xs text-slate-500 hover:text-rose-600 dark:text-slate-400 underline cursor-pointer">
-                        ¿Necesitas cancelar o rechazar la propuesta?
-                    </button>
-                </div>
-            </div>
-        @elseif($quote->status === 'rejected' && $actionMode === 'view')
-            <div class="bg-rose-50 dark:bg-rose-950/30 border-2 border-rose-400 dark:border-rose-700 rounded-3xl p-6 sm:p-8 text-center shadow-md mb-8">
-                <div class="w-14 h-14 bg-rose-100 dark:bg-rose-900/60 text-rose-600 dark:text-rose-300 rounded-2xl mx-auto flex items-center justify-center text-3xl mb-3">
-                    ❌
-                </div>
-                <h2 class="text-xl font-black text-rose-900 dark:text-rose-200">
-                    Propuesta Rechazada
-                </h2>
-                <p class="text-xs sm:text-sm text-rose-800 dark:text-rose-300 mt-1 max-w-lg mx-auto">
-                    Esta propuesta figura como rechazada{{ $quote->responded_at ? ' el ' . $quote->responded_at->format('d/m/Y \a \l\a\s H:i') : '' }}.
-                </p>
-                @if($quote->rejection_reason)
-                    <div class="mt-4 max-w-md mx-auto bg-white dark:bg-slate-900 p-3.5 rounded-2xl border border-rose-200 dark:border-rose-800 text-xs text-slate-700 dark:text-slate-300 text-left">
-                        <span class="font-bold text-rose-700 dark:text-rose-400 block mb-0.5">📝 Motivo indicado:</span>
-                        {{ $quote->rejection_reason }}
-                    </div>
-                @endif
-                <div class="mt-5">
-                    <button type="button" wire:click="openAcceptBox" class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-5 py-2.5 rounded-xl text-xs shadow-sm transition cursor-pointer">
-                        <span>✅</span> ¿Habéis cambiado de opinión? Aceptar Propuesta
-                    </button>
+            <div class="mb-5 flex items-center justify-between gap-2 flex-wrap bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-2.5">
+                <span class="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Revisiones de la propuesta:</span>
+                <div class="flex items-center gap-2 flex-wrap">
+                    @foreach($event->quotes->sortByDesc('id') as $qItem)
+                        <button type="button"
+                            wire:click="selectQuote({{ $qItem->id }})"
+                            class="px-3 py-1.5 rounded-lg text-xs font-semibold border transition cursor-pointer {{ $quote->id === $qItem->id ? 'bg-zinc-900 dark:bg-amber-500 text-white dark:text-zinc-950 border-zinc-900 dark:border-amber-500' : 'bg-zinc-50 dark:bg-zinc-800/70 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700 hover:border-zinc-400' }}">
+                            Ref. #{{ str_pad($qItem->id, 4, '0', STR_PAD_LEFT) }} ({{ number_format((float)$qItem->amount, 0, ',', '.') }} €)
+                            @if($qItem->status === 'accepted') &bull; Confirmada @endif
+                        </button>
+                    @endforeach
                 </div>
             </div>
         @endif
 
-        <!-- DESGLOSE DETALLADO DEL PRESUPUESTO -->
-        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm overflow-hidden mb-8">
-            <div class="p-5 sm:p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between flex-wrap gap-2">
-                <div>
-                    <h3 class="text-base sm:text-lg font-black text-slate-900 dark:text-white">
-                        📋 Desglose de Servicios Incluidos
-                    </h3>
-                    <p class="text-xs text-slate-500 dark:text-slate-400">
-                        Detalle de equipamiento, cobertura musical y extras seleccionados para vuestro evento
-                    </p>
-                </div>
-                <span class="text-xs font-bold px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
-                    {{ $quote->tax_label }}
-                </span>
-            </div>
+        <!-- DOCUMENTO EJECUTIVO ÚNICO -->
+        <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-lg overflow-hidden">
 
-            <div class="divide-y divide-slate-100 dark:divide-slate-800">
-                @foreach($quote->items as $item)
-                    @php
-                        $lineTotal = (float)$item->price * (int)($item->quantity ?: 1);
-                        $isDiscount = $lineTotal < 0;
-                        $isIncluded = $lineTotal == 0 && !str_contains(mb_strtolower($item->service_name ?? ''), 'consultar');
-                    @endphp
-                    <div class="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 {{ $isDiscount ? 'bg-emerald-50/50 dark:bg-emerald-950/20' : '' }}">
-                        <div class="space-y-1 pr-2">
-                            <div class="flex items-center gap-2 flex-wrap">
-                                <span class="font-extrabold text-sm {{ $isDiscount ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-900 dark:text-white' }}">
-                                    {{ $item->service_name ?: $item->concept }}
+            <!-- CABECERA FORMAL DEL DOCUMENTO -->
+            <div class="bg-zinc-900 dark:bg-zinc-950 text-white px-6 py-7 sm:px-10 sm:py-8 border-b border-amber-500/30">
+                <div class="flex flex-col md:flex-row md:items-start justify-between gap-6">
+                    <div>
+                        <div class="text-[11px] font-semibold uppercase tracking-[0.2em] text-amber-400/90 mb-1.5">
+                            {{ $brand['name'] ?? 'Núñez & Son' }} &bull; Propuesta Económica y de Producción
+                        </div>
+                        <h1 class="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+                            {{ $event->name }}
+                        </h1>
+
+                        <div class="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1.5 text-xs text-zinc-300">
+                            @if($event->event_date)
+                                <span class="inline-flex items-center gap-1.5">
+                                    <svg class="w-4 h-4 text-amber-400/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                    </svg>
+                                    <span>{{ \Carbon\Carbon::parse($event->event_date)->locale('es')->isoFormat('D [de] MMMM [de] YYYY') }}</span>
                                 </span>
-                                @if(($item->quantity ?? 1) > 1)
-                                    <span class="text-[11px] font-bold px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300">
-                                        x{{ $item->quantity }}
+                            @endif
+                            @if($event->location)
+                                <span class="inline-flex items-center gap-1.5">
+                                    <svg class="w-4 h-4 text-amber-400/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                    </svg>
+                                    <span>{{ $event->location }}</span>
+                                </span>
+                            @endif
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row md:flex-col items-start sm:items-center md:items-end justify-between gap-3 pt-4 md:pt-0 border-t md:border-t-0 border-zinc-800 shrink-0">
+                        <div class="md:text-right">
+                            <div class="text-xs font-medium text-zinc-400">
+                                Referencia <span class="text-white font-semibold">#PRE-{{ str_pad($quote->id, 5, '0', STR_PAD_LEFT) }}</span>
+                            </div>
+                            <div class="text-[11px] text-zinc-400 mt-0.5">
+                                Emitida el {{ $quote->created_at_formatted }} &bull; Validez: <strong class="text-zinc-200">{{ $quote->expires_at_formatted }}</strong>
+                            </div>
+                        </div>
+
+                        <a href="{{ route('pdf.quote', ['quote' => $quote->id, 'token' => $event->token]) }}"
+                           target="_blank"
+                           class="inline-flex items-center gap-2 bg-amber-500 hover:bg-amber-400 text-zinc-950 font-semibold px-4 py-2.5 rounded-lg text-xs transition shadow-sm">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            <span>Descargar Dossier PDF</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ESTADO DE LA PROPUESTA SI YA FUE RESPONDIDA -->
+            @if($quote->status === 'accepted' && $actionMode === 'view')
+                <div class="bg-zinc-50 dark:bg-zinc-800/50 border-b border-zinc-200 dark:border-zinc-800 px-6 py-5 sm:px-10">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div class="flex items-start gap-3.5">
+                            <div class="w-9 h-9 rounded-lg bg-zinc-900 dark:bg-amber-500 text-white dark:text-zinc-950 flex items-center justify-center shrink-0 mt-0.5">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <h2 class="text-sm font-bold text-zinc-900 dark:text-white uppercase tracking-wider">
+                                        Propuesta Aceptada y Confirmada
+                                    </h2>
+                                    @if($quote->responded_at)
+                                        <span class="text-xs text-zinc-500 dark:text-zinc-400">
+                                            ({{ $quote->responded_at->format('d/m/Y H:i') }})
+                                        </span>
+                                    @endif
+                                </div>
+                                <p class="text-xs text-zinc-600 dark:text-zinc-300 mt-1">
+                                    Esta propuesta ha sido confirmada. El evento figura reservado en firme en nuestra planificación.
+                                </p>
+                                @if($quote->client_notes)
+                                    <p class="text-xs text-zinc-600 dark:text-zinc-400 mt-2 italic">
+                                        Observaciones registradas: "{{ $quote->client_notes }}"
+                                    </p>
+                                @endif
+                            </div>
+                        </div>
+                        <button type="button" wire:click="openRejectBox" class="text-xs text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 underline shrink-0 cursor-pointer self-start sm:self-center">
+                            Modificar estado de la propuesta
+                        </button>
+                    </div>
+
+                    @if($quote->signal_amount > 0 && ($companyIban || $companyBizum))
+                        <div class="mt-4 pt-4 border-t border-zinc-200 dark:border-zinc-700/80 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                            <div>
+                                <span class="text-zinc-500 dark:text-zinc-400 block text-[11px] uppercase tracking-wider font-semibold">Señal de Reserva</span>
+                                <strong class="text-zinc-900 dark:text-white text-sm">{{ number_format($quote->signal_amount, 2, ',', '.') }} €</strong>
+                                <span class="text-zinc-500 dark:text-zinc-400 text-[11px] block">Concepto: {{ $event->name }}</span>
+                            </div>
+                            @if(in_array('transfer', $quote->active_payment_methods) && $companyIban)
+                                <div>
+                                    <span class="text-zinc-500 dark:text-zinc-400 block text-[11px] uppercase tracking-wider font-semibold">Transferencia Bancaria (IBAN)</span>
+                                    <span class="font-mono font-semibold text-zinc-900 dark:text-white select-all">{{ $companyIban }}</span>
+                                </div>
+                            @endif
+                            @if(in_array('bizum', $quote->active_payment_methods) && $companyBizum)
+                                <div>
+                                    <span class="text-zinc-500 dark:text-zinc-400 block text-[11px] uppercase tracking-wider font-semibold">Bizum Autorizado</span>
+                                    <span class="font-mono font-semibold text-zinc-900 dark:text-white select-all">{{ $companyBizum }}</span>
+                                </div>
+                            @endif
+                        </div>
+                    @endif
+                </div>
+            @elseif($quote->status === 'rejected' && $actionMode === 'view')
+                <div class="bg-zinc-50 dark:bg-zinc-800/50 border-b border-zinc-200 dark:border-zinc-800 px-6 py-5 sm:px-10">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span class="inline-block w-2 h-2 rounded-full bg-zinc-400"></span>
+                                <h2 class="text-sm font-bold text-zinc-900 dark:text-white uppercase tracking-wider">
+                                    Propuesta Desestimada
+                                </h2>
+                                @if($quote->responded_at)
+                                    <span class="text-xs text-zinc-500 dark:text-zinc-400">
+                                        ({{ $quote->responded_at->format('d/m/Y H:i') }})
                                     </span>
                                 @endif
                             </div>
-                            @if($item->description)
-                                <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                                    {{ $item->description }}
+                            @if($quote->rejection_reason)
+                                <p class="text-xs text-zinc-600 dark:text-zinc-400 mt-1">
+                                    Motivo registrado: {{ $quote->rejection_reason }}
                                 </p>
                             @endif
                         </div>
-                        <div class="sm:text-right shrink-0">
-                            @if($isDiscount)
-                                <span class="text-sm font-black text-emerald-600 dark:text-emerald-400">
-                                    {{ number_format($lineTotal, 2, ',', '.') }} €
-                                </span>
-                            @elseif($lineTotal == 0)
-                                <span class="text-xs font-extrabold uppercase px-2.5 py-1 rounded-lg bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300">
-                                    {{ str_contains(mb_strtolower($item->service_name ?? ''), 'consultar') ? 'A consultar' : 'Incluido' }}
-                                </span>
-                            @else
-                                <span class="text-sm sm:text-base font-black text-slate-900 dark:text-white">
-                                    {{ number_format($lineTotal, 2, ',', '.') }} €
-                                </span>
-                            @endif
-                        </div>
-                    </div>
-                @endforeach
-            </div>
-
-            @if(!empty($quote->admin_notes))
-                <div class="px-5 py-4 bg-amber-50/80 dark:bg-amber-950/30 border-t border-amber-200 dark:border-amber-800/60">
-                    <div class="flex items-start gap-2.5">
-                        <span class="text-base leading-none mt-0.5">📝</span>
-                        <div class="text-xs text-amber-950 dark:text-amber-200 leading-relaxed">
-                            <strong class="font-black uppercase tracking-wider text-[11px] text-amber-900 dark:text-amber-300 block mb-1">Notas y Condiciones Especiales de la Propuesta:</strong>
-                            <p class="whitespace-pre-line font-medium">{{ $quote->admin_notes }}</p>
-                        </div>
-                    </div>
-                </div>
-            @endif
-
-            <!-- TOTALES Y CONDICIONES DE RESERVA -->
-            <div class="bg-slate-50 dark:bg-slate-950/60 p-5 sm:p-6 border-t border-slate-200 dark:border-slate-800">
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
-                    <div>
-                        <span class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block">Importe Total Presupuesto</span>
-                        <span class="text-[11px] text-slate-500 dark:text-slate-400">{{ $quote->tax_label }}</span>
-                    </div>
-                    <div class="text-2xl sm:text-3xl font-black text-indigo-600 dark:text-indigo-400">
-                        {{ number_format((float)$quote->amount, 2, ',', '.') }} €
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 text-xs">
-                    <div class="bg-white dark:bg-slate-900 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800">
-                        <span class="text-slate-500 dark:text-slate-400 font-semibold block">1️⃣ Señal de Reserva para bloquear fecha:</span>
-                        <strong class="text-sm text-slate-900 dark:text-white mt-0.5 block">
-                            {{ $quote->signal_amount > 0 ? number_format($quote->signal_amount, 2, ',', '.') . ' € (' . $quote->signal_label . ')' : 'Sin señal previa (0,00 €)' }}
-                        </strong>
-                    </div>
-                    <div class="bg-white dark:bg-slate-900 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800">
-                        <span class="text-slate-500 dark:text-slate-400 font-semibold block">2️⃣ Restante a abonar en el evento:</span>
-                        <strong class="text-sm text-slate-900 dark:text-white mt-0.5 block">
-                            {{ number_format($quote->remaining_amount, 2, ',', '.') }} €
-                        </strong>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- PANEL DE DECISIÓN DEL CLIENTE: ACEPTAR O RECHAZAR PRESUPUESTO -->
-        <div class="bg-white dark:bg-slate-900 border-2 border-indigo-500/40 dark:border-indigo-500/30 rounded-3xl p-6 sm:p-8 shadow-xl">
-            <div class="text-center max-w-xl mx-auto mb-6">
-                <span class="text-[11px] font-extrabold uppercase tracking-widest text-indigo-600 dark:text-indigo-400 block mb-1">
-                    Respuesta Online Directa
-                </span>
-                <h3 class="text-lg sm:text-xl font-black text-slate-900 dark:text-white">
-                    ¿Qué os parece nuestra propuesta para {{ $event->name }}?
-                </h3>
-                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                    Podéis aceptar el presupuesto directamente desde aquí para confirmar vuestra fecha o indicarnos si preferís rechazarlo.
-                </p>
-            </div>
-
-            @if($actionMode === 'view')
-                <div class="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 max-w-lg mx-auto">
-                    <button type="button"
-                            wire:click="openAcceptBox"
-                            class="w-full sm:flex-1 inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-black py-3.5 px-6 rounded-2xl text-sm shadow-lg shadow-emerald-600/25 transition cursor-pointer">
-                        <span>✅</span>
-                        <span>Aceptar Presupuesto</span>
-                    </button>
-
-                    <button type="button"
-                            wire:click="openRejectBox"
-                            class="w-full sm:flex-1 inline-flex items-center justify-center gap-2 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/50 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 border border-rose-300 dark:border-rose-800 font-bold py-3.5 px-6 rounded-2xl text-sm transition cursor-pointer">
-                        <span>❌</span>
-                        <span>Rechazar Presupuesto</span>
-                    </button>
-                </div>
-            @endif
-
-            <!-- FORMULARIO DE CONFIRMACIÓN DE ACEPTACIÓN -->
-            @if($actionMode === 'accept_box')
-                <div class="max-w-lg mx-auto bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-300 dark:border-emerald-800 rounded-2xl p-5 space-y-4">
-                    <div class="flex items-center gap-2.5">
-                        <span class="text-2xl">🎉</span>
-                        <div>
-                            <h4 class="text-sm font-black text-emerald-950 dark:text-emerald-200">
-                                Confirmar Aceptación de la Propuesta #{{ $quote->id }}
-                            </h4>
-                            <p class="text-xs text-emerald-800 dark:text-emerald-300">
-                                Importe total: <strong>{{ number_format((float)$quote->amount, 2, ',', '.') }} €</strong> ({{ $quote->tax_label }})
-                            </p>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                            Comentario u observación opcional (ej. dudas, horario, etc.):
-                        </label>
-                        <textarea wire:model="client_notes"
-                                  rows="2"
-                                  placeholder="Opcional: ¡Todo genial! Contad con nosotros..."
-                                  class="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3.5 py-2 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"></textarea>
-                    </div>
-
-                    <div class="flex flex-col sm:flex-row items-center gap-2.5 pt-1">
-                        <button type="button"
-                                wire:click="acceptQuoteOnline"
-                                wire:loading.attr="disabled"
-                                class="w-full sm:flex-1 inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-black py-3 px-5 rounded-xl text-xs sm:text-sm shadow-md transition cursor-pointer">
-                            <span wire:loading.remove wire:target="acceptQuoteOnline">✅ Confirmar y Aceptar Ahora</span>
-                            <span wire:loading wire:target="acceptQuoteOnline">⏳ Confirmando...</span>
-                        </button>
-                        <button type="button"
-                                wire:click="cancelAction"
-                                class="w-full sm:w-auto px-4 py-3 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition cursor-pointer">
-                            Volver
+                        <button type="button" wire:click="openAcceptBox" class="inline-flex items-center gap-2 bg-zinc-900 dark:bg-amber-500 hover:bg-zinc-800 dark:hover:bg-amber-400 text-white dark:text-zinc-950 font-semibold px-4 py-2 rounded-lg text-xs transition cursor-pointer shrink-0">
+                            Reactivar y Aceptar Propuesta
                         </button>
                     </div>
                 </div>
             @endif
 
-            <!-- FORMULARIO DE RECHAZO CON MOTIVO OBLIGATORIO -->
-            @if($actionMode === 'reject_box')
-                <div class="max-w-lg mx-auto bg-rose-50/70 dark:bg-rose-950/30 border-2 border-rose-300 dark:border-rose-800 rounded-2xl p-5 space-y-4">
-                    <div class="flex items-start gap-2.5">
-                        <span class="text-2xl">❌</span>
+            <!-- DESGLOSE DE SERVICIOS EN FORMATO TABLA EJECUTIVA -->
+            <div class="px-6 py-6 sm:px-10 sm:py-8">
+                <div class="flex items-center justify-between pb-3 border-b-2 border-zinc-900 dark:border-zinc-700">
+                    <h3 class="text-xs font-bold uppercase tracking-widest text-zinc-900 dark:text-zinc-200">
+                        Detalle de Servicios y Producción Técnica
+                    </h3>
+                    <span class="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                        Importe ({{ $quote->tax_label }})
+                    </span>
+                </div>
+
+                <div class="divide-y divide-zinc-200 dark:divide-zinc-800">
+                    @foreach($quote->items as $item)
+                        @php
+                            $lineTotal = (float)$item->price * (int)($item->quantity ?: 1);
+                            $isDiscount = $lineTotal < 0;
+                        @endphp
+                        <div class="py-4 flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                            <div class="space-y-1 pr-4">
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <span class="font-semibold text-sm {{ $isDiscount ? 'text-zinc-700 dark:text-amber-400' : 'text-zinc-900 dark:text-white' }}">
+                                        {{ $item->service_name ?: $item->concept }}
+                                    </span>
+                                    @if(($item->quantity ?? 1) > 1)
+                                        <span class="text-[11px] font-medium px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300">
+                                            {{ $item->quantity }} uds.
+                                        </span>
+                                    @endif
+                                </div>
+                                @if($item->description)
+                                    <p class="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed max-w-2xl">
+                                        {{ $item->description }}
+                                    </p>
+                                @endif
+                            </div>
+                            <div class="sm:text-right shrink-0 pt-0.5">
+                                @if($isDiscount)
+                                    <span class="text-sm font-semibold text-zinc-700 dark:text-amber-400">
+                                        {{ number_format($lineTotal, 2, ',', '.') }} €
+                                    </span>
+                                @elseif($lineTotal == 0)
+                                    <span class="text-xs font-semibold uppercase tracking-wider px-2.5 py-1 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300">
+                                        {{ str_contains(mb_strtolower($item->service_name ?? ''), 'consultar') ? 'A consultar' : 'Incluido' }}
+                                    </span>
+                                @else
+                                    <span class="text-sm sm:text-base font-semibold text-zinc-900 dark:text-white tabular-nums">
+                                        {{ number_format($lineTotal, 2, ',', '.') }} €
+                                    </span>
+                                @endif
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+
+                @if(!empty($quote->admin_notes))
+                    <div class="mt-6 p-4 sm:p-5 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-800">
+                        <div class="text-[11px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-1.5">
+                            Observaciones y Condiciones Particulares
+                        </div>
+                        <p class="text-xs text-zinc-700 dark:text-zinc-300 whitespace-pre-line leading-relaxed">{{ $quote->admin_notes }}</p>
+                    </div>
+                @endif
+
+                <!-- RESUMEN ECONÓMICO Y CONDICIONES DE RESERVA -->
+                <div class="mt-6 pt-6 border-t-2 border-zinc-900 dark:border-zinc-700">
+                    <div class="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2">
                         <div>
-                            <h4 class="text-sm font-black text-rose-950 dark:text-rose-200">
-                                Rechazar Propuesta #{{ $quote->id }}
-                            </h4>
-                            <p class="text-xs text-rose-800 dark:text-rose-300">
-                                Para poder tramitar el rechazo y liberar la fecha en nuestra agenda, <strong>es obligatorio indicar el motivo</strong>.
-                            </p>
+                            <span class="text-xs font-bold uppercase tracking-widest text-zinc-900 dark:text-zinc-200 block">
+                                Importe Total del Presupuesto
+                            </span>
+                            <span class="text-xs text-zinc-500 dark:text-zinc-400">
+                                {{ $quote->tax_label }} &bull; Desplazamiento, montaje y desmontaje incluidos
+                            </span>
+                        </div>
+                        <div class="text-2xl sm:text-3xl font-bold text-zinc-900 dark:text-white tabular-nums">
+                            {{ number_format((float)$quote->amount, 2, ',', '.') }} €
                         </div>
                     </div>
 
-                    <!-- Botones rápidos de motivo -->
-                    <div>
-                        <span class="block text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-2">
-                            Selecciona un motivo rápido o escríbelo debajo:
-                        </span>
-                        <div class="flex flex-wrap gap-1.5">
-                            @php
-                                $quickReasons = [
-                                    'Se nos va de presupuesto',
-                                    'Ya hemos contratado otra opción',
-                                    'Queremos adaptar o quitar algún servicio del presupuesto',
-                                    'Cambio de fecha o planes del evento',
-                                ];
-                            @endphp
-                            @foreach($quickReasons as $qReason)
+                    <div class="mt-5 pt-4 border-t border-zinc-200 dark:border-zinc-800 grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                        <div class="flex items-center justify-between sm:justify-start sm:gap-3">
+                            <span class="text-zinc-500 dark:text-zinc-400">Señal de reserva para bloqueo de fecha:</span>
+                            <strong class="text-zinc-900 dark:text-white font-semibold">
+                                {{ $quote->signal_amount > 0 ? number_format($quote->signal_amount, 2, ',', '.') . ' € (' . $quote->signal_label . ')' : 'Sin señal previa (0,00 €)' }}
+                            </strong>
+                        </div>
+                        <div class="flex items-center justify-between sm:justify-end sm:gap-3">
+                            <span class="text-zinc-500 dark:text-zinc-400">Importe restante a liquidar en el evento:</span>
+                            <strong class="text-zinc-900 dark:text-white font-semibold">
+                                {{ number_format($quote->remaining_amount, 2, ',', '.') }} €
+                            </strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PIE DE FORMALIZACIÓN / RESPUESTA ONLINE -->
+            @if($quote->status !== 'accepted' || $actionMode !== 'view')
+                <div class="bg-zinc-50 dark:bg-zinc-950/70 border-t border-zinc-200 dark:border-zinc-800 px-6 py-6 sm:px-10 sm:py-8">
+                    @if($actionMode === 'view')
+                        <div class="flex flex-col md:flex-row md:items-center justify-between gap-5">
+                            <div>
+                                <h3 class="text-sm font-bold text-zinc-900 dark:text-white uppercase tracking-wider">
+                                    Formalización de la Propuesta
+                                </h3>
+                                <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-1 max-w-xl">
+                                    Podéis confirmar directamente esta propuesta para bloquear vuestra fecha o indicarnos si deseáis realizar alguna modificación.
+                                </p>
+                            </div>
+
+                            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
                                 <button type="button"
-                                        wire:click="pickRejectionTag('{{ $qReason }}')"
-                                        class="text-[11px] font-bold px-3 py-1.5 rounded-xl border transition cursor-pointer {{ $rejection_reason === $qReason ? 'bg-rose-600 text-white border-rose-600' : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700 hover:border-rose-400' }}">
-                                    {{ $qReason }}
+                                        wire:click="openAcceptBox"
+                                        class="inline-flex items-center justify-center gap-2 bg-zinc-900 hover:bg-zinc-800 dark:bg-amber-500 dark:hover:bg-amber-400 text-white dark:text-zinc-950 font-semibold py-3 px-6 rounded-xl text-xs sm:text-sm transition cursor-pointer shadow-sm">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                    </svg>
+                                    <span>Aceptar Propuesta</span>
                                 </button>
-                            @endforeach
+
+                                <button type="button"
+                                        wire:click="openRejectBox"
+                                        class="inline-flex items-center justify-center gap-2 bg-white hover:bg-zinc-100 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-300 dark:border-zinc-700 font-medium py-3 px-5 rounded-xl text-xs sm:text-sm transition cursor-pointer">
+                                    <span>Declinar o solicitar cambios</span>
+                                </button>
+                            </div>
                         </div>
-                    </div>
+                    @endif
 
-                    <div>
-                        <label class="block text-xs font-extrabold text-rose-900 dark:text-rose-200 mb-1">
-                            Motivo del rechazo <span class="text-rose-600">* (Obligatorio)</span>
-                        </label>
-                        <textarea wire:model.live="rejection_reason"
-                                  rows="3"
-                                  placeholder="Indícanos por favor el motivo por el que rechazas el presupuesto (ej. se nos escapa de presupuesto, ya tenemos DJ, queríamos menos horas...)"
-                                  class="w-full rounded-xl border {{ $errors->has('rejection_reason') ? 'border-rose-600 ring-2 ring-rose-500/30' : 'border-slate-300 dark:border-slate-700' }} bg-white dark:bg-slate-900 px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-rose-500 focus:outline-none"></textarea>
-                        @error('rejection_reason')
-                            <p class="mt-1.5 text-xs font-bold text-rose-600 dark:text-rose-400 flex items-center gap-1">
-                                <span>⚠️</span> {{ $message }}
-                            </p>
-                        @enderror
-                    </div>
+                    <!-- FORMULARIO DE CONFIRMACIÓN DE ACEPTACIÓN -->
+                    @if($actionMode === 'accept_box')
+                        <div class="max-w-xl mx-auto space-y-4">
+                            <div class="border-b border-zinc-200 dark:border-zinc-800 pb-3">
+                                <h4 class="text-sm font-bold text-zinc-900 dark:text-white uppercase tracking-wider">
+                                    Confirmar Aceptación &bull; Propuesta #PRE-{{ str_pad($quote->id, 5, '0', STR_PAD_LEFT) }}
+                                </h4>
+                                <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                                    Importe total: <strong class="text-zinc-900 dark:text-white">{{ number_format((float)$quote->amount, 2, ',', '.') }} €</strong> ({{ $quote->tax_label }})
+                                </p>
+                            </div>
 
-                    <div class="flex flex-col sm:flex-row items-center gap-2.5 pt-1">
-                        <button type="button"
-                                wire:click="rejectQuoteOnline"
-                                wire:loading.attr="disabled"
-                                class="w-full sm:flex-1 inline-flex items-center justify-center gap-2 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white font-black py-3 px-5 rounded-xl text-xs sm:text-sm shadow-md transition cursor-pointer">
-                            <span wire:loading.remove wire:target="rejectQuoteOnline">❌ Confirmar Rechazo con este Motivo</span>
-                            <span wire:loading wire:target="rejectQuoteOnline">⏳ Procesando...</span>
-                        </button>
-                        <button type="button"
-                                wire:click="cancelAction"
-                                class="w-full sm:w-auto px-4 py-3 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition cursor-pointer">
-                            Cancelar
-                        </button>
-                    </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5">
+                                    Observaciones o indicaciones adicionales (opcional):
+                                </label>
+                                <textarea wire:model="client_notes"
+                                          rows="2"
+                                          placeholder="Podéis indicar cualquier comentario sobre horarios o detalles del evento..."
+                                          class="w-full rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3.5 py-2.5 text-xs text-zinc-900 dark:text-white focus:ring-2 focus:ring-zinc-900 dark:focus:ring-amber-500 focus:outline-none"></textarea>
+                            </div>
+
+                            <div class="flex flex-col sm:flex-row items-center gap-3 pt-1">
+                                <button type="button"
+                                        wire:click="acceptQuoteOnline"
+                                        wire:loading.attr="disabled"
+                                        class="w-full sm:flex-1 inline-flex items-center justify-center gap-2 bg-zinc-900 hover:bg-zinc-800 dark:bg-amber-500 dark:hover:bg-amber-400 text-white dark:text-zinc-950 font-semibold py-3 px-5 rounded-xl text-xs sm:text-sm transition cursor-pointer">
+                                    <span wire:loading.remove wire:target="acceptQuoteOnline">Confirmar Aceptación</span>
+                                    <span wire:loading wire:target="acceptQuoteOnline">Procesando confirmación...</span>
+                                </button>
+                                <button type="button"
+                                        wire:click="cancelAction"
+                                        class="w-full sm:w-auto px-5 py-3 rounded-xl text-xs font-semibold text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200/70 dark:hover:bg-zinc-800 transition cursor-pointer">
+                                    Volver
+                                </button>
+                            </div>
+                        </div>
+                    @endif
+
+                    <!-- FORMULARIO PARA DECLINAR O SOLICITAR CAMBIOS (ESTÉTICA NEUTRA, SIN ROJO) -->
+                    @if($actionMode === 'reject_box')
+                        <div class="max-w-xl mx-auto space-y-4">
+                            <div class="border-b border-zinc-200 dark:border-zinc-800 pb-3">
+                                <h4 class="text-sm font-bold text-zinc-900 dark:text-white uppercase tracking-wider">
+                                    Declinar Propuesta o Solicitar Modificación
+                                </h4>
+                                <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                                    Por favor, indicadnos el motivo para actualizar el estado de la reserva o preparar una revisión ajustada a vuestras necesidades.
+                                </p>
+                            </div>
+
+                            <div>
+                                <span class="block text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-2">
+                                    Opciones frecuentes:
+                                </span>
+                                <div class="flex flex-wrap gap-2">
+                                    @php
+                                        $quickReasons = [
+                                            'Queremos adaptar o quitar algún servicio del presupuesto',
+                                            'Se nos va de presupuesto',
+                                            'Ya hemos contratado otra opción',
+                                            'Cambio de fecha o planes del evento',
+                                        ];
+                                    @endphp
+                                    @foreach($quickReasons as $qReason)
+                                        <button type="button"
+                                                wire:click="pickRejectionTag('{{ $qReason }}')"
+                                                class="text-xs font-medium px-3 py-1.5 rounded-lg border transition cursor-pointer {{ $rejection_reason === $qReason ? 'bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 border-zinc-900 dark:border-zinc-100' : 'bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 border-zinc-300 dark:border-zinc-700 hover:border-zinc-500' }}">
+                                            {{ $qReason }}
+                                        </button>
+                                    @endforeach
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5">
+                                    Motivo o comentarios <span class="text-zinc-400 font-normal">(requerido)</span>
+                                </label>
+                                <textarea wire:model.live="rejection_reason"
+                                          rows="3"
+                                          placeholder="Indicadnos el motivo o los ajustes que necesitaríais en la propuesta..."
+                                          class="w-full rounded-xl border {{ $errors->has('rejection_reason') ? 'border-amber-500 ring-1 ring-amber-500/30' : 'border-zinc-300 dark:border-zinc-700' }} bg-white dark:bg-zinc-900 px-3.5 py-2.5 text-xs text-zinc-900 dark:text-white focus:ring-2 focus:ring-zinc-900 dark:focus:ring-amber-500 focus:outline-none"></textarea>
+                                @error('rejection_reason')
+                                    <p class="mt-1.5 text-xs font-medium text-amber-600 dark:text-amber-400">
+                                        {{ $message }}
+                                    </p>
+                                @enderror
+                            </div>
+
+                            <div class="flex flex-col sm:flex-row items-center gap-3 pt-1">
+                                <button type="button"
+                                        wire:click="rejectQuoteOnline"
+                                        wire:loading.attr="disabled"
+                                        class="w-full sm:flex-1 inline-flex items-center justify-center gap-2 bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-950 font-semibold py-3 px-5 rounded-xl text-xs sm:text-sm transition cursor-pointer">
+                                    <span wire:loading.remove wire:target="rejectQuoteOnline">Enviar Respuesta</span>
+                                    <span wire:loading wire:target="rejectQuoteOnline">Procesando...</span>
+                                </button>
+                                <button type="button"
+                                        wire:click="cancelAction"
+                                        class="w-full sm:w-auto px-5 py-3 rounded-xl text-xs font-semibold text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200/70 dark:hover:bg-zinc-800 transition cursor-pointer">
+                                    Cancelar
+                                </button>
+                            </div>
+                        </div>
+                    @endif
                 </div>
             @endif
+
         </div>
 
     @endif

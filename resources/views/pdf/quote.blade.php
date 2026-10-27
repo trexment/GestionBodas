@@ -346,7 +346,7 @@
             margin-top: 1px;
         }
         .quote-item-discount {
-            color: #16a34a;
+            color: #334155;
             font-weight: 700;
         }
 
@@ -354,24 +354,22 @@
         .quote-total-banner {
             background-color: #0b1329;
             color: #ffffff;
-            border-radius: 8px;
-            padding: 8px 14px;
-            margin-bottom: 5px;
-            border: 1px solid #eab308;
-        }
-        /* AVISO DESTACADO DE VALIDEZ Y CADUCIDAD DE OFERTA */
-        .quote-validity-banner {
-            background-color: #fffbeb;
-            border: 1px solid #fde68a;
-            border-left: 4px solid #f59e0b;
             border-radius: 6px;
-            padding: 4px 10px;
-            margin-bottom: 6px;
+            padding: 10px 16px;
+            margin-bottom: 8px;
+            border: 1px solid #334155;
+        }
+        /* BLOQUE DE VALIDEZ DE OFERTA (ESTÉTICA EJECUTIVA NEUTRA) */
+        .quote-validity-banner {
+            background-color: #f8fafc;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            padding: 6px 12px;
+            margin-bottom: 8px;
         }
         .quote-validity-banner.expired {
-            background-color: #fef2f2;
-            border: 1px solid #fecaca;
-            border-left: 4px solid #ef4444;
+            background-color: #f8fafc;
+            border: 1px solid #94a3b8;
         }
         .quote-validity-table {
             width: 100%;
@@ -380,36 +378,36 @@
         .quote-validity-title {
             font-size: 6.8pt;
             font-weight: 800;
-            color: #92400e;
+            color: #0f172a;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
         .quote-validity-banner.expired .quote-validity-title {
-            color: #991b1b;
+            color: #0f172a;
         }
         .quote-validity-text {
-            font-size: 6.2pt;
-            color: #b45309;
-            line-height: 1.25;
+            font-size: 6.4pt;
+            color: #475569;
+            line-height: 1.3;
             margin-top: 1px;
         }
         .quote-validity-banner.expired .quote-validity-text {
-            color: #b91c1c;
+            color: #475569;
         }
         .quote-validity-badge {
             display: inline-block;
-            background-color: #f59e0b;
+            background-color: #0f172a;
             color: #ffffff;
-            font-weight: 800;
+            font-weight: 700;
             font-size: 6.5pt;
-            padding: 2.5px 6px;
+            padding: 3px 8px;
             border-radius: 4px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
             white-space: nowrap;
         }
         .quote-validity-banner.expired .quote-validity-badge {
-            background-color: #ef4444;
+            background-color: #334155;
         }
         .quote-total-table {
             width: 100%;
@@ -1525,13 +1523,13 @@
                             <tr>
                                 <td>
                                     <div class="quote-item-title {{ $isDiscount ? 'quote-item-discount' : '' }}">
-                                        @if($isDiscount) [DESCUENTO] @else &bull; @endif {{ $cleanPdf($itemTitle) }}
+                                        &bull; {{ $cleanPdf($itemTitle) }}
                                     </div>
                                     @if(!empty($cleanItemDesc))
                                         <div class="quote-item-desc">{{ $cleanItemDesc }}</div>
                                     @endif
                                     @if($upgrade3hBanner)
-                                        <div style="margin-top: 3px; background-color: #fffbeb; border: 1px solid #fcd34d; border-left: 3px solid #d97706; border-radius: 4px; padding: 2.5px 7px; font-size: 6.5pt; color: #92400e; font-weight: 700;">
+                                        <div style="margin-top: 3px; background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 4px; padding: 2.5px 7px; font-size: 6.4pt; color: #334155; font-weight: 600;">
                                             {{ $upgrade3hBanner }}
                                         </div>
                                     @endif
@@ -1543,9 +1541,9 @@
                                     @if($isDiscount)
                                         -{{ number_format(abs($itemTotalPrice), 2, ',', '.') }} €
                                     @elseif($itemTotalPrice == 0 && (str_contains(mb_strtolower($itemTitle), 'incluido') || str_contains(mb_strtolower($itemDesc ?? ''), 'incluido')))
-                                        <span style="font-size: 7.5pt; color: #059669; font-weight: 800;">INCLUIDO (0,00 €)</span>
+                                        <span style="font-size: 7pt; color: #334155; font-weight: 700;">INCLUIDO</span>
                                     @elseif($itemTotalPrice == 0 && (str_contains(mb_strtolower($itemTitle), 'consultar') || str_contains(mb_strtolower($itemTitle), 'extra')))
-                                        <span style="font-size: 7pt; color: #d97706; font-weight: 700;">A consultar</span>
+                                        <span style="font-size: 7pt; color: #475569; font-weight: 700;">A consultar</span>
                                     @else
                                         {{ number_format($itemTotalPrice, 2, ',', '.') }} €
                                     @endif
@@ -1563,9 +1561,9 @@
             </div>
 
             @if(!empty($quote->admin_notes))
-                <div style="margin-bottom: 6px; background-color: #fffbeb; border: 1px solid #fcd34d; border-left: 3.5px solid #d97706; border-radius: 6px; padding: 6px 10px;">
-                    <div style="font-size: 6.5pt; text-transform: uppercase; letter-spacing: 0.8px; color: #92400e; font-weight: 800; margin-bottom: 2px;">&bull; NOTAS Y CONDICIONES ESPECIALES DE LA PROPUESTA</div>
-                    <div style="font-size: 7.5pt; color: #451a03; line-height: 1.35; font-weight: 600;">{!! nl2br(e($cleanPdf($quote->admin_notes))) !!}</div>
+                <div style="margin-bottom: 8px; background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 7px 12px;">
+                    <div style="font-size: 6.5pt; text-transform: uppercase; letter-spacing: 0.8px; color: #334155; font-weight: 800; margin-bottom: 2px;">OBSERVACIONES Y CONDICIONES PARTICULARES</div>
+                    <div style="font-size: 7.4pt; color: #1e293b; line-height: 1.35;">{!! nl2br(e($cleanPdf($quote->admin_notes))) !!}</div>
                 </div>
             @endif
 
@@ -1574,88 +1572,53 @@
                 <table class="quote-total-table">
                     <tr>
                         <td style="width: 55%;" class="quote-signal-box">
-                            <div style="font-size: 6.5pt; text-transform: uppercase; letter-spacing: 1px; color: #93c5fd; font-weight: 700; margin-bottom: 2px;">CONDICIONES DE PAGO Y RESERVA</div>
+                            <div style="font-size: 6.5pt; text-transform: uppercase; letter-spacing: 1px; color: #cbd5e1; font-weight: 700; margin-bottom: 2px;">CONDICIONES ECONÓMICAS Y DE RESERVA</div>
                             @if($quote->signal_amount > 0)
-                                <div>• Señal para Bloquear Fecha: <strong>{{ number_format($quote->signal_amount, 2, ',', '.') }} €</strong> <span style="font-size: 6.5pt; opacity: 0.85;">({{ $quote->signal_label }})</span></div>
-                                <div style="margin-top: 2px;">• Restante: <strong>{{ number_format(max(0, $quote->amount - $quote->signal_amount), 2, ',', '.') }} €</strong> <span style="font-size: 6.5pt; opacity: 0.85;">(a liquidar al finalizar el evento)</span></div>
+                                <div>&bull; Señal de Reserva: <strong>{{ number_format($quote->signal_amount, 2, ',', '.') }} €</strong> <span style="font-size: 6.5pt; opacity: 0.85;">({{ $quote->signal_label }})</span></div>
+                                <div style="margin-top: 2px;">&bull; Importe Restante: <strong>{{ number_format(max(0, $quote->amount - $quote->signal_amount), 2, ',', '.') }} €</strong> <span style="font-size: 6.5pt; opacity: 0.85;">(a liquidar en el evento)</span></div>
                             @else
-                                <div>• Pago Íntegro: <strong>{{ number_format($quote->amount, 2, ',', '.') }} €</strong> <span style="font-size: 6.5pt; opacity: 0.85;">(el día del evento)</span></div>
-                                <div style="margin-top: 2px; color: #bbf7d0;">• <strong>Sin señal previa</strong> de reserva (0,00 €)</div>
+                                <div>&bull; Importe Total: <strong>{{ number_format($quote->amount, 2, ',', '.') }} €</strong> <span style="font-size: 6.5pt; opacity: 0.85;">(a liquidar en el evento)</span></div>
+                                <div style="margin-top: 2px; color: #e2e8f0;">&bull; Reserva sin señal anticipada (0,00 €)</div>
                             @endif
                         </td>
                         <td style="width: 45%; text-align: right;">
-                            <div class="quote-total-label">PRECIO FINAL (CON TODO)</div>
+                            <div class="quote-total-label">IMPORTE TOTAL DEL PRESUPUESTO</div>
                             <div class="quote-total-amount">{{ number_format($quote->amount, 2, ',', '.') }} <span>€</span></div>
-                            <div style="font-size: 6pt; color: #94a3b8; margin-top: 1px;">IVA incluido &bull; Desplazamiento y montaje incluidos</div>
+                            <div style="font-size: 6pt; color: #94a3b8; margin-top: 1px;">{{ $quote->tax_label }} &bull; Desplazamiento y montaje incluidos</div>
                         </td>
                     </tr>
                 </table>
             </div>
 
-            <!-- 4. CÓMO RESERVAR LA FECHA (MÉTODOS DE PAGO) -->
-            <div class="payment-methods-box">
-                <div class="payment-methods-title">&#10003; CÓMO RESERVAR Y BLOQUEAR LA FECHA EN FIRME:</div>
-                <table class="payment-methods-table">
-                    <tr>
-                        <td style="width: 50%;">
-                            @if(!empty($companyBizum))
-                                <div><span style="display: inline-block; background-color: #059669; color: #ffffff; font-size: 5.5pt; font-weight: 800; padding: 1px 4px; border-radius: 3px; margin-right: 3px;">BIZUM</span> <strong>Bizum:</strong> {{ $companyBizum }}</div>
-                                <div style="font-size: 6.2pt; color: #64748b;">Concepto: <em>{{ $event->name }}</em></div>
-                            @endif
-                        </td>
-                        <td style="width: 50%;">
-                            @if(!empty($companyIban))
-                                <div><span style="display: inline-block; background-color: #1e3a8a; color: #ffffff; font-size: 5.5pt; font-weight: 800; padding: 1px 4px; border-radius: 3px; margin-right: 3px;">IBAN</span> <strong>Transferencia Bancaria (IBAN):</strong></div>
-                                <div style="font-family: monospace; font-size: 6.5pt; font-weight: bold; color: #0f172a;">{{ $companyIban }}</div>
-                                <div style="font-size: 6.2pt; color: #64748b;">Concepto: <em>{{ $event->name }}</em></div>
-                            @endif
-                        </td>
-                    </tr>
-                </table>
-            </div>
-
-            <!-- 5. PLAZO DE VALIDEZ Y CADUCIDAD DE OFERTA -->
-            <div class="quote-validity-banner {{ $isQuoteExpired ? 'expired' : '' }}">
-                <table class="quote-validity-table">
-                    <tr>
-                        <td style="width: 72%; vertical-align: middle;">
-                            <div class="quote-validity-title">
-                                &bull; PLAZO DE VALIDEZ DE ESTA OFERTA
-                            </div>
-                            <div class="quote-validity-text">
-                                Propuesta emitida el <strong>{{ $issueDateShort }}</strong> y válida hasta el <strong>{{ $expiresDateFormatted }}</strong> ({{ $validityDays }} días naturales).
-                                <span style="color: #78350f;">Pasada esta fecha, la reserva provisional se libera en el calendario para {{ $event->is_wedding ? 'otras parejas' : 'otros clientes' }} y las tarifas quedan sujetas a revisión.</span>
-                            </div>
-                        </td>
-                        <td style="width: 28%; text-align: right; vertical-align: middle;">
-                            <div class="quote-validity-badge">
-                                VÁLIDO HASTA: {{ $expiresDateShort }}
-                            </div>
-                        </td>
-                    </tr>
-                </table>
-            </div>
-
-            <!-- 6. PASOS PARA FORMALIZAR -->
-            <div style="margin-top: 6px; margin-bottom: 6px; background-color: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 8px; padding: 7px 10px; text-align: center;">
+            <!-- 4. BLOQUE UNIFICADO DE FORMALIZACIÓN, PAGO Y VALIDEZ -->
+            <div style="background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 9px 12px; margin-bottom: 8px;">
                 <table style="width: 100%; border-collapse: collapse;">
                     <tr>
-                        <td style="width: 33.3%; text-align: center; vertical-align: middle; border-right: 1px dashed #cbd5e1; padding: 0 6px;">
-                            @if($quote->signal_amount > 0)
-                                <div style="font-weight: 800; color: #1e3a8a; font-size: 7.5pt;">1. Señal de Reserva</div>
-                                <div style="font-size: 6.5pt; color: #64748b; line-height: 1.25; margin-top: 1px;">Abona {{ number_format($quote->signal_amount, 2, ',', '.') }}€ por Bizum o Transferencia.</div>
-                            @else
-                                <div style="font-weight: 800; color: #1e3a8a; font-size: 7.5pt;">1. Confirmación</div>
-                                <div style="font-size: 6.5pt; color: #64748b; line-height: 1.25; margin-top: 1px;">Confirmación de fecha sin requerir señal anticipada.</div>
+                        <td style="width: 52%; vertical-align: top; border-right: 1px solid #cbd5e1; padding-right: 10px;">
+                            <div style="font-size: 6.6pt; font-weight: 800; color: #0f172a; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">
+                                DATOS BANCARIOS PARA RESERVA DE FECHA
+                            </div>
+                            @if(!empty($companyIban))
+                                <div style="font-size: 6.6pt; color: #334155; margin-bottom: 3px;">
+                                    <strong>Transferencia (IBAN):</strong> <span style="font-family: monospace; font-weight: bold; color: #0f172a;">{{ $companyIban }}</span>
+                                </div>
                             @endif
+                            @if(!empty($companyBizum))
+                                <div style="font-size: 6.6pt; color: #334155; margin-bottom: 3px;">
+                                    <strong>Bizum:</strong> <span style="font-family: monospace; font-weight: bold; color: #0f172a;">{{ $companyBizum }}</span>
+                                </div>
+                            @endif
+                            <div style="font-size: 6.2pt; color: #64748b;">
+                                Concepto de pago: <strong>{{ $event->name }}</strong>
+                            </div>
                         </td>
-                        <td style="width: 33.3%; text-align: center; vertical-align: middle; border-right: 1px dashed #cbd5e1; padding: 0 6px;">
-                            <div style="font-weight: 800; color: #1e3a8a; font-size: 7.5pt;">2. Firma Digital</div>
-                            <div style="font-size: 6.5pt; color: #64748b; line-height: 1.25; margin-top: 1px;">Firma tu contrato oficial en 1 clic desde tu móvil con plena validez.</div>
-                        </td>
-                        <td style="width: 33.3%; text-align: center; vertical-align: middle; padding: 0 6px;">
-                            <div style="font-weight: 800; color: #1e3a8a; font-size: 7.5pt;">3. Portal de Música</div>
-                            <div style="font-size: 6.5pt; color: #64748b; line-height: 1.25; margin-top: 1px;">Indica momentos especiales, canciones clave y canciones prohibidas.</div>
+                        <td style="width: 48%; vertical-align: top; padding-left: 10px;">
+                            <div style="font-size: 6.6pt; font-weight: 800; color: #0f172a; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">
+                                VIGENCIA Y FORMALIZACIÓN ({{ $expiresDateShort }})
+                            </div>
+                            <div style="font-size: 6.3pt; color: #475569; line-height: 1.35;">
+                                Propuesta emitida el <strong>{{ $issueDateShort }}</strong> con validez hasta el <strong>{{ $expiresDateFormatted }}</strong> ({{ $validityDays }} días naturales). Tras la confirmación se formaliza mediante contrato digital y acceso al área de planificación musical.
+                            </div>
                         </td>
                     </tr>
                 </table>

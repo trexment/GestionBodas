@@ -17,52 +17,56 @@
             max-width: 600px;
             margin: 25px auto;
             background: #ffffff;
-            border-radius: 16px;
+            border-radius: 12px;
             overflow: hidden;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            border: 1px solid #e2e8f0;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            border: 1px solid #e4e4e7;
         }
         .header {
-            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            background-color: #18181b;
             color: #ffffff;
-            padding: 35px 25px;
-            text-align: center;
+            padding: 32px 28px;
+            border-bottom: 2px solid #eab308;
         }
         .header h1 {
             margin: 0;
-            font-size: 24px;
-            font-weight: 800;
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: -0.3px;
         }
         .header p {
             margin: 6px 0 0;
-            opacity: 0.9;
-            font-size: 14px;
+            color: #eab308;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
         }
         .content {
-            padding: 30px 25px;
+            padding: 30px 28px;
         }
         .greeting {
             font-size: 16px;
             font-weight: 700;
-            color: #0f172a;
+            color: #18181b;
             margin-bottom: 12px;
         }
         .lead {
             font-size: 14px;
-            color: #475569;
+            color: #3f3f46;
             margin-bottom: 22px;
         }
         .event-card {
-            background-color: #f1f5f9;
-            border-radius: 12px;
+            background-color: #fafafa;
+            border-radius: 8px;
             padding: 16px 20px;
-            margin-bottom: 25px;
-            border-left: 4px solid #4f46e5;
+            margin-bottom: 24px;
+            border: 1px solid #e4e4e7;
         }
         .event-card-item {
             font-size: 13px;
             margin: 4px 0;
-            color: #334155;
+            color: #27272a;
         }
         .items-table {
             width: 100%;
@@ -73,112 +77,110 @@
         .items-table th {
             text-align: left;
             padding: 10px 12px;
-            background-color: #f8fafc;
-            color: #64748b;
+            background-color: #fafafa;
+            color: #52525b;
             font-size: 11px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            border-bottom: 2px solid #e2e8f0;
+            border-bottom: 2px solid #18181b;
         }
         .items-table td {
             padding: 12px;
-            border-bottom: 1px solid #f1f5f9;
-            color: #1e293b;
+            border-bottom: 1px solid #f4f4f5;
+            color: #18181b;
         }
         .item-name {
-            font-weight: 700;
-            color: #0f172a;
+            font-weight: 600;
+            color: #18181b;
         }
         .item-desc {
             font-size: 11px;
-            color: #64748b;
+            color: #71717a;
             margin-top: 2px;
         }
         .total-box {
-            background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
-            border: 1px solid #c7d2fe;
-            border-radius: 12px;
+            background-color: #fafafa;
+            border: 1px solid #e4e4e7;
+            border-top: 2px solid #18181b;
+            border-radius: 8px;
             padding: 18px;
-            margin: 25px 0;
+            margin: 24px 0;
         }
         .total-row {
             display: flex;
             justify-content: space-between;
-            font-size: 14px;
+            font-size: 13px;
             margin-bottom: 6px;
-            color: #3730a3;
+            color: #3f3f46;
         }
         .total-row.final {
             font-size: 18px;
-            font-weight: 800;
-            color: #312e81;
-            border-top: 2px solid #c7d2fe;
-            padding-top: 8px;
-            margin-top: 8px;
+            font-weight: 700;
+            color: #18181b;
             margin-bottom: 0;
         }
         .btn-wrapper {
             text-align: center;
-            margin: 30px 0 10px;
+            margin: 28px 0 12px;
         }
         .btn {
             display: inline-block;
-            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            background-color: #18181b;
             color: #ffffff !important;
             text-decoration: none;
-            padding: 14px 32px;
-            border-radius: 12px;
-            font-weight: 700;
-            font-size: 14px;
-            box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.3);
+            padding: 14px 28px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 13px;
+            letter-spacing: 0.3px;
         }
         .contact-box {
-            margin-top: 30px;
+            margin-top: 26px;
             padding: 16px;
-            background-color: #f8fafc;
-            border-radius: 12px;
+            background-color: #fafafa;
+            border-radius: 8px;
             font-size: 12px;
-            color: #64748b;
+            color: #52525b;
             text-align: center;
-            border: 1px dashed #cbd5e1;
+            border: 1px solid #e4e4e7;
         }
         .footer {
-            background-color: #f1f5f9;
-            padding: 20px;
+            background-color: #fafafa;
+            padding: 18px;
             text-align: center;
-            font-size: 12px;
-            color: #64748b;
-            border-top: 1px solid #e2e8f0;
+            font-size: 11px;
+            color: #71717a;
+            border-top: 1px solid #e4e4e7;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
+            <p>Propuesta Económica y de Producción</p>
             <h1>{{ $companyName }}</h1>
-            <p>Propuesta de Servicios & Presupuesto</p>
         </div>
 
         <div class="content">
             <div class="greeting">
-                ¡Hola {{ $event->client ? $event->client->name : 'estimado/a cliente' }}!
+                Estimado/a {{ $event->client ? $event->client->name : 'cliente' }},
             </div>
             <p class="lead">
-                Te enviamos la propuesta de presupuesto detallada para tu celebración. Adjunto a este correo encontrarás el documento oficial en formato PDF.
+                Adjuntamos la propuesta económica detallada para vuestro evento, junto con el dossier completo en formato PDF adjunto a este correo.
             </p>
 
             <div class="event-card">
-                <div class="event-card-item"><strong>📅 Fecha del Evento:</strong> {{ $event->event_date ? \Carbon\Carbon::parse($event->event_date)->format('d/m/Y') : 'Por determinar' }}</div>
-                <div class="event-card-item"><strong>📍 Lugar / Finca:</strong> {{ $event->location ?: 'A determinar' }}</div>
-                <div class="event-card-item"><strong>📋 Referencia de Propuesta:</strong> #{{ $quote->id }}</div>
+                <div class="event-card-item"><strong>Fecha del Evento:</strong> {{ $event->event_date ? \Carbon\Carbon::parse($event->event_date)->format('d/m/Y') : 'Por determinar' }}</div>
+                <div class="event-card-item"><strong>Ubicación:</strong> {{ $event->location ?: 'A determinar' }}</div>
+                <div class="event-card-item"><strong>Referencia:</strong> #PRE-{{ str_pad($quote->id, 5, '0', STR_PAD_LEFT) }}</div>
             </div>
 
             <table class="items-table">
                 <thead>
                     <tr>
                         <th>Concepto / Servicio</th>
-                        <th style="text-align: center; width: 60px;">Cant.</th>
-                        <th style="text-align: right; width: 90px;">Total</th>
+                        <th style="text-align: center; width: 60px;">Uds.</th>
+                        <th style="text-align: right; width: 90px;">Importe</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -193,9 +195,9 @@
                             <td style="text-align: center; font-weight: 600;">
                                 {{ $item->quantity ?: 1 }}
                             </td>
-                            <td style="text-align: right; font-weight: 700; color: {{ $item->total < 0 ? '#15803d' : '#0f172a' }};">
+                            <td style="text-align: right; font-weight: 700; color: #18181b;">
                                 @if($item->price == 0 && (str_contains(strtolower($item->service_name), 'consultar') || str_contains(strtolower($item->description), 'consultar')))
-                                    <span style="font-size: 11px; color: #d97706;">A consultar</span>
+                                    <span style="font-size: 11px; color: #52525b;">A consultar</span>
                                 @else
                                     {{ number_format($item->total, 2, ',', '.') }} €
                                 @endif
@@ -207,33 +209,33 @@
 
             <div class="total-box">
                 <div class="total-row final">
-                    <span>Total Presupuesto:</span>
+                    <span>Importe Total del Presupuesto:</span>
                     <span>{{ number_format($quote->amount, 2, ',', '.') }} €</span>
                 </div>
                 @if($quote->deposit_amount > 0)
-                    <div class="total-row" style="margin-top: 6px; font-size: 12px; color: #4338ca;">
-                        <span>Señal de reserva para bloquear fecha:</span>
+                    <div class="total-row" style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #e4e4e7;">
+                        <span>Señal de reserva para bloqueo de fecha:</span>
                         <span style="font-weight: 700;">{{ number_format($quote->deposit_amount, 2, ',', '.') }} €</span>
                     </div>
                 @endif
             </div>
 
-            <div style="background-color: #fffbeb; border: 1px solid #fde68a; border-left: 4px solid #f59e0b; border-radius: 8px; padding: 12px 16px; margin: 18px 0; font-size: 13px; color: #92400e; line-height: 1.45;">
-                <strong>⏳ Validez de la Oferta:</strong> Esta propuesta y la reserva provisional de vuestra fecha tienen una validez de <strong>{{ $quote->validity_days }} días naturales</strong> (hasta el <strong>{{ $quote->expires_at ? $quote->expires_at->format('d/m/Y') : '' }}</strong>). Pasada dicha fecha, las tarifas y la disponibilidad de calendario quedan sujetas a revisión.
-            </div>
+            <p style="font-size: 12px; color: #52525b; line-height: 1.5; margin: 16px 0;">
+                <strong>Vigencia de la propuesta:</strong> Esta cotización y el bloqueo provisional de la fecha tienen una validez de <strong>{{ $quote->validity_days }} días naturales</strong> (hasta el <strong>{{ $quote->expires_at ? $quote->expires_at->format('d/m/Y') : '' }}</strong>).
+            </p>
 
             <div class="btn-wrapper">
-                <a href="{{ $quotePortalUrl ?? $quote->public_url }}" class="btn" style="background: linear-gradient(135deg, #059669 0%, #10b981 100%); margin-bottom: 10px;">
-                    ✅ Ver Propuesta Online (Aceptar / Rechazar / PDF)
+                <a href="{{ $quotePortalUrl ?? $quote->public_url }}" class="btn">
+                    Consultar y Responder Propuesta Online
                 </a>
                 <br>
-                <a href="{{ $portalUrl }}" style="display: inline-block; margin-top: 8px; font-size: 12px; font-weight: 700; color: #4f46e5; text-decoration: underline;">
-                    ✨ O acceder al cuestionario musical de mi evento
+                <a href="{{ $portalUrl }}" style="display: inline-block; margin-top: 12px; font-size: 12px; font-weight: 600; color: #3f3f46; text-decoration: underline;">
+                    Acceder al área de planificación musical del evento
                 </a>
             </div>
 
             <div class="contact-box">
-                ¿Tienes cualquier duda o quieres realizar algún ajuste? Estamos a tu completa disposición:<br>
+                Para cualquier consulta o ajuste sobre esta propuesta, estamos a vuestra disposición:<br>
                 @if($companyPhone)<strong>Teléfono / WhatsApp:</strong> {{ $companyPhone }} &bull; @endif
                 @if($companyEmail)<strong>Email:</strong> {{ $companyEmail }}@endif
             </div>
