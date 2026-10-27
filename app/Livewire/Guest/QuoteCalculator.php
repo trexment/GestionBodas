@@ -987,6 +987,7 @@ class QuoteCalculator extends Component
 
         // 3. Format notes with requested services
         $requestedServicesList = [];
+        $clientServicesList = [];
         $recommendedPackForExtra = $this->recommended_dj_pack_for_extra_hours;
         $totalPartyHours = $this->total_party_hours;
 
@@ -994,50 +995,60 @@ class QuoteCalculator extends Component
             if ($service['selected']) {
                 if ($key === 'dj' && $djPack) {
                     $requestedServicesList[] = "• " . $service['name'] . " (" . $djPack['requested_hours'] . "h) ➔ " . $djPack['badge'];
+                    $clientServicesList[] = $service['name'] . " (" . $djPack['requested_hours'] . " horas — " . ($djPack['base_name'] ?? 'Configuración DJ') . ")";
                 } elseif ($key === 'smoke_machine') {
                     if (!empty($service['included'])) {
-                        $requestedServicesList[] = "• " . $service['name'] . " (✅ Incluido en " . ($djPack['base_name'] ?? 'Pack') . ")";
+                        $requestedServicesList[] = "• " . $service['name'] . " (Incluido en " . ($djPack['base_name'] ?? 'Pack') . ")";
+                        $clientServicesList[] = $service['name'] . " (Incluido en " . ($djPack['base_name'] ?? 'Pack') . ")";
                     } else {
                         $requestedServicesList[] = "• " . $service['name'] . " (60 €)";
+                        $clientServicesList[] = $service['name'];
                     }
                 } elseif ($key === 'cold_sparks') {
                     $qty = (int)($service['quantity'] ?: 1);
                     $unitPrice = $catalog['cold_sparks'] ?? 60;
                     if (!empty($service['included'])) {
                         $extraQty = max(0, $qty - 2);
-                        $extraText = $extraQty > 0 ? " (2 máq. incluidas en " . ($djPack['base_name'] ?? 'Pack') . " + {$extraQty} extra a {$unitPrice} €/ud)" : " (✅ 2 máq. incluidas en " . ($djPack['base_name'] ?? 'Pack') . ")";
+                        $extraText = $extraQty > 0 ? " (2 máq. incluidas en " . ($djPack['base_name'] ?? 'Pack') . " + {$extraQty} extra a {$unitPrice} €/ud)" : " (2 máq. incluidas en " . ($djPack['base_name'] ?? 'Pack') . ")";
                         $requestedServicesList[] = "• " . $service['name'] . " ({$qty} " . ($qty == 1 ? 'máquina' : 'máquinas') . "){$extraText}";
+                        $clientServicesList[] = $service['name'] . " ({$qty} " . ($qty == 1 ? 'unidad' : 'unidades') . " — 2 incluidas en " . ($djPack['base_name'] ?? 'Pack') . ")";
                     } else {
                         $requestedServicesList[] = "• " . $service['name'] . " ({$qty} " . ($qty == 1 ? 'máquina' : 'máquinas') . " x {$unitPrice} €/ud)";
+                        $clientServicesList[] = $service['name'] . " ({$qty} " . ($qty == 1 ? 'unidad' : 'unidades') . ")";
                     }
                 } elseif ($key === 'extra_hours') {
                     $qty = (int)($service['quantity'] ?: 1);
                     $hoursLabel = $qty === 1 ? '1 hora adicional' : "{$qty} horas adicionales";
                     $totalHoursNote = !empty($this->services['dj']['selected']) ? " ➔ Total baile: {$totalPartyHours}h" : "";
-                    $recNote = $recommendedPackForExtra ? " (💡 Recomendado: {$recommendedPackForExtra['base_name']} que ya cubre {$totalPartyHours}h)" : "";
+                    $recNote = $recommendedPackForExtra ? " (Recomendado: {$recommendedPackForExtra['base_name']} que ya cubre {$totalPartyHours}h)" : "";
                     $requestedServicesList[] = "• " . $service['name'] . " (+{$hoursLabel}{$totalHoursNote}){$recNote}";
+                    $clientServicesList[] = $service['name'] . " (+{$hoursLabel}" . (!empty($this->services['dj']['selected']) ? " · Total: {$totalPartyHours}h" : "") . ")";
                 } elseif (in_array($key, ['pack_duo_360', 'photobooth', 'video_360', 'chocolate_fountain', 'candy_bar', 'waffle_cart'], true)) {
                     if (($key === 'photobooth' || $key === 'video_360') && !empty($this->services['pack_duo_360']['selected'])) {
                         continue;
                     }
                     $resolved = $resolveExternalPriceAndMeta($key, $service);
                     $requestedServicesList[] = "• " . $resolved['note_label'];
+                    $clientServicesList[] = $resolved['item_name'];
                 } else {
                     $qty = (int)($service['quantity'] ?: 1);
                     $qtyText = $qty > 1 ? " ({$qty} uds)" : "";
                     $requestedServicesList[] = "• " . $service['name'] . $qtyText;
+                    $clientServicesList[] = $service['name'] . $qtyText;
                 }
             }
         }
 
         if ($packInfo && !empty($packInfo['enabled']) && $packInfo['discount_amount'] > 0) {
-            $requestedServicesList[] = "• 🎁 Pack Cóctel + Banquete incluido (" . $packInfo['savings_label'] . ")";
+            $requestedServicesList[] = "• Pack Cóctel + Banquete incluido (" . $packInfo['savings_label'] . ")";
+            $clientServicesList[] = "Modalidad conjunta: Pack Cóctel + Banquete";
         }
 
         if ($this->custom_service_selected && !empty(trim($this->custom_service_name))) {
             $customName = trim($this->custom_service_name);
             $customDesc = trim($this->custom_service_description);
-            $requestedServicesList[] = "• ✨ " . $customName . " (A consultar)" . ($customDesc ? " - " . $customDesc : "");
+            $requestedServicesList[] = "• " . $customName . " (A consultar)" . ($customDesc ? " - " . $customDesc : "");
+            $clientServicesList[] = $customName . ($customDesc ? " (" . $customDesc . ")" : "");
         }
 
         if (!empty(trim((string)$this->event_schedule))) {
@@ -1402,18 +1413,34 @@ class QuoteCalculator extends Component
         // A) A los Administradores de la Empresa y de la Marca (tolerante a fallos por destinatario)
         try {
             \App\Services\AppNotificationService::sendMailableToAdmins(
-                fn () => new \App\Mail\NewQuoteRequestAdminMail($event, $quote, $requestedServicesList, $typeConfig),
+                fn () => new \App\Mail\NewQuoteRequestAdminMail(
+                    $event,
+                    $quote,
+                    $requestedServicesList,
+                    $typeConfig,
+                    $cleanClientNotes,
+                    $cleanSchedule,
+                    (bool)$this->needs_prior_setup
+                ),
                 $notifyBrand
             );
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::warning('No se pudo enviar el email de aviso a administradores: ' . $e->getMessage());
         }
 
-        // B) Al Cliente (Confirmación de recepción con mensaje personalizado y desglose)
+        // B) Al Cliente (Confirmación de recepción con servicios seleccionados y observaciones, SIN precios)
         try {
             if ($client && !empty($client->email) && filter_var($client->email, FILTER_VALIDATE_EMAIL)) {
                 \Illuminate\Support\Facades\Mail::to($client->email)
-                    ->send(new \App\Mail\QuoteRequestConfirmationClientMail($event, $quote, $requestedServicesList, $typeConfig));
+                    ->send(new \App\Mail\QuoteRequestConfirmationClientMail(
+                        $event,
+                        $quote,
+                        $clientServicesList,
+                        $typeConfig,
+                        $cleanClientNotes,
+                        $cleanSchedule,
+                        (bool)$this->needs_prior_setup
+                    ));
             }
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::warning('No se pudo enviar el email de confirmación al cliente: ' . $e->getMessage());

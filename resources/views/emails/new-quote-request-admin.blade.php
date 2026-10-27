@@ -193,9 +193,26 @@
                     <span class="info-label">Lugar / Finca:</span>
                     <span class="info-val">{{ $event->location ?: 'No especificado' }}</span>
                 </div>
+                @if(!empty($eventSchedule))
+                    <div class="info-row">
+                        <span class="info-label">Horario / Turno:</span>
+                        <span class="info-val">{{ $eventSchedule }}</span>
+                    </div>
+                @endif
+                @if(!empty($needsPriorSetup))
+                    <div class="info-row">
+                        <span class="info-label">Montaje Previo:</span>
+                        <span class="info-val" style="color: #b45309;">Sí (Día anterior o fuera de horario)</span>
+                    </div>
+                @endif
             </div>
 
-            <div class="section-title">🎵 Fases y Servicios Solicitados</div>
+            @if(!empty($clientNotes))
+                <div class="section-title">💬 Observaciones Escritas por el Cliente</div>
+                <div class="notes-box" style="font-size: 13px; font-weight: 600; border-left: 4px solid #f59e0b;">{{ $clientNotes }}</div>
+            @endif
+
+            <div class="section-title">🎵 Fases y Servicios Seleccionados</div>
             <ul class="service-list">
                 @foreach($requestedServices as $servText)
                     <li>{{ $servText }}</li>
@@ -203,12 +220,12 @@
             </ul>
 
             <div class="total-box">
-                <div class="total-label">Estimación Estimada Inicial (Propuesta #{{ $quote->id }})</div>
+                <div class="total-label">Estimación Interna Inicial (Propuesta #{{ $quote->id }})</div>
                 <div class="total-amount">{{ number_format($quote->amount, 2, ',', '.') }} €</div>
             </div>
 
             @if(!empty($event->notes))
-                <div class="section-title">📝 Observaciones del Formulario</div>
+                <div class="section-title">📋 Dossier Completo Registrado</div>
                 <div class="notes-box">{{ $event->notes }}</div>
             @endif
 

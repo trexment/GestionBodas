@@ -213,66 +213,74 @@
                 <div class="event-card-item">
                     <strong>Ubicación:</strong> {{ $event->location ?: 'A convenir' }}
                 </div>
-                @if($event->start_time)
+                @if(!empty($eventSchedule))
+                    <div class="event-card-item">
+                        <strong>Horario / turno indicado:</strong> {{ $eventSchedule }}
+                    </div>
+                @elseif($event->start_time)
                     <div class="event-card-item">
                         <strong>Horario aproximado:</strong> {{ $event->start_time }} {{ $event->end_time ? 'a ' . $event->end_time : '' }}
                     </div>
                 @endif
+                @if(!empty($needsPriorSetup))
+                    <div class="event-card-item">
+                        <strong>Montaje / prueba previa:</strong> Solicitado montaje el día anterior o fuera del horario habitual
+                    </div>
+                @endif
             </div>
 
-            <!-- SERVICIOS SOLICITADOS -->
+            <!-- SERVICIOS SOLICITADOS (SIN PRECIOS) -->
             <h3 style="font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #18181b; margin-bottom: 10px;">
-                Detalle de Servicios Solicitados
+                Resumen de Opciones y Servicios Seleccionados
             </h3>
 
             <table class="items-table">
                 <thead>
                     <tr>
-                        <th>Concepto / Servicio</th>
-                        <th style="text-align: center; width: 60px;">Uds.</th>
-                        <th style="text-align: right; width: 90px;">Importe</th>
+                        <th>Concepto / Servicio Solicitado</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach($quote->items as $item)
-                        @php
-                            $itemPrice = (float)($item->total ?: ($item->price * ($item->quantity ?: 1)));
-                            $isDiscount = $itemPrice < 0;
-                        @endphp
-                        <tr>
-                            <td>
-                                <div class="item-name">
-                                    &bull; {{ $item->service_name }}
-                                </div>
-                                @if(!empty($item->description))
-                                    <div class="item-desc">{{ $item->description }}</div>
-                                @endif
-                            </td>
-                            <td style="text-align: center; color: #52525b; font-weight: bold;">
-                                {{ $item->quantity ?: 1 }}
-                            </td>
-                            <td style="text-align: right; font-weight: 700; color: #18181b;">
-                                @if($isDiscount)
-                                    -{{ number_format(abs($itemPrice), 2, ',', '.') }} €
-                                @elseif($itemPrice == 0 && (str_contains(mb_strtolower($item->service_name), 'consultar') || str_contains(mb_strtolower($item->service_name), 'extra')))
-                                    <span style="color: #52525b; font-size: 11px;">A consultar</span>
-                                @else
-                                    {{ number_format($itemPrice, 2, ',', '.') }} €
-                                @endif
-                            </td>
-                        </tr>
-                    @endforeach
+                    @if(!empty($requestedServices))
+                        @foreach($requestedServices as $servText)
+                            <tr>
+                                <td>
+                                    <div class="item-name">&bull; {{ $servText }}</div>
+                                </td>
+                            </tr>
+                        @endforeach
+                    @else
+                        @foreach($quote->items as $item)
+                            @php
+                                $itemPrice = (float)($item->total ?: ($item->price * ($item->quantity ?: 1)));
+                            @endphp
+                            @if($itemPrice >= 0)
+                                <tr>
+                                    <td>
+                                        <div class="item-name">
+                                            &bull; {{ $item->service_name }}
+                                            @if(($item->quantity ?? 1) > 1)
+                                                ({{ $item->quantity }} uds.)
+                                            @endif
+                                        </div>
+                                        @if(!empty($item->description))
+                                            <div class="item-desc">{{ $item->description }}</div>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @endif
+                        @endforeach
+                    @endif
                 </tbody>
             </table>
 
-            <!-- TOTAL ESTIMADO -->
-            <div class="total-box">
-                <div class="total-label">Importe Total Estimado</div>
-                <div class="total-amount">{{ number_format($quote->amount, 2, ',', '.') }} €</div>
-                <p style="margin: 6px 0 0; font-size: 11px; color: #52525b;">
-                    Desplazamiento, montaje e impuestos según condiciones de la propuesta formal.
-                </p>
-            </div>
+            <!-- OBSERVACIONES DEL CLIENTE -->
+            @if(!empty($clientNotes))
+                <h3 style="font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #18181b; margin-bottom: 10px;">
+                    Tus Observaciones e Indicaciones
+                </h3>
+                <div style="background-color: #fafafa; border: 1px solid #e4e4e7; border-left: 3px solid #eab308; border-radius: 6px; padding: 14px 16px; margin-bottom: 24px; font-size: 13px; color: #27272a; white-space: pre-line;">{{ $clientNotes }}</div>
+            @endif
 
             <!-- PRÓXIMOS PASOS -->
             <div class="info-step">

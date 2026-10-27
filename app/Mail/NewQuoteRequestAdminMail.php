@@ -21,14 +21,29 @@ class NewQuoteRequestAdminMail extends Mailable
     public array $typeConfig;
     public string $companyName;
     public string $adminUrl;
+    public string $clientNotes;
+    public string $eventSchedule;
+    public bool $needsPriorSetup;
 
-    public function __construct(Event $event, Quote $quote, array $requestedServices, array $typeConfig)
-    {
+    public function __construct(
+        Event $event,
+        Quote $quote,
+        array $requestedServices,
+        array $typeConfig,
+        string $clientNotes = '',
+        string $eventSchedule = '',
+        bool $needsPriorSetup = false
+    ) {
         $this->event = $event;
         $this->quote = $quote;
         $this->requestedServices = $requestedServices;
         $this->typeConfig = $typeConfig;
-        $this->companyName = Setting::get('company_name', config('app.name', 'Eventos Musicales'));
+        $this->clientNotes = $clientNotes;
+        $this->eventSchedule = $eventSchedule;
+        $this->needsPriorSetup = $needsPriorSetup;
+        $brandKey = $event->brand_clean ?? 'nunez_and_son';
+        $brandInfo = Setting::getBrandInfo($brandKey);
+        $this->companyName = $brandInfo['name'] ?: Setting::get('company_name', config('app.name', 'Eventos Musicales'));
         $this->adminUrl = route('admin.events.show', $event->id);
     }
 

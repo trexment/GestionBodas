@@ -21,13 +21,26 @@ class QuoteRequestConfirmationClientMail extends Mailable
     public array $typeConfig;
     public array $brand;
     public string $companyName;
+    public string $clientNotes;
+    public string $eventSchedule;
+    public bool $needsPriorSetup;
 
-    public function __construct(Event $event, Quote $quote, array $requestedServices, array $typeConfig)
-    {
+    public function __construct(
+        Event $event,
+        Quote $quote,
+        array $requestedServices,
+        array $typeConfig,
+        string $clientNotes = '',
+        string $eventSchedule = '',
+        bool $needsPriorSetup = false
+    ) {
         $this->event = $event;
         $this->quote = $quote;
         $this->requestedServices = $requestedServices;
         $this->typeConfig = $typeConfig;
+        $this->clientNotes = $clientNotes;
+        $this->eventSchedule = $eventSchedule;
+        $this->needsPriorSetup = $needsPriorSetup;
         $brandKey = $event->brand_clean ?? 'nunez_and_son';
         $this->brand = Setting::getBrandInfo($brandKey);
         $this->companyName = $this->brand['name'] ?: Setting::get('company_name', config('app.name', 'Eventos Musicales'));
@@ -35,11 +48,10 @@ class QuoteRequestConfirmationClientMail extends Mailable
 
     public function envelope(): Envelope
     {
-        $clientName = $this->event->client ? $this->event->client->name : 'Hola';
         $typeName = $this->typeConfig['name'] ?? 'tu evento';
 
         return new Envelope(
-            subject: "✨ ¡Hemos recibido tu solicitud de presupuesto para {$typeName}! - {$this->companyName}",
+            subject: "Solicitud de presupuesto recibida ({$typeName}) - {$this->companyName}",
         );
     }
 
