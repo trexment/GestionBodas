@@ -2577,11 +2577,16 @@ MAIL_FROM_NAME="{{ $company_name }}"</pre>
                     </div>
                 </div>
 
-                <div class="pt-2 border-t border-gray-100 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="pt-2 border-t border-gray-100 grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
-                        <label class="block text-xs font-bold text-gray-700 mb-1">Teléfonos para Avisos de Nuevos Formularios y Presupuestos (Fran y Miguel) *</label>
-                        <input type="text" wire:model="admin_notification_phones" placeholder="+34 622 63 47 90, +34 674 37 89 93" class="w-full border-gray-300 rounded-xl shadow-xs text-xs font-mono">
-                        <span class="text-[10px] text-gray-500 mt-1 block">Números separados por coma que recibirán el aviso de WhatsApp cuando entre un lead en JAVNX DJ o Núñez &amp; Son.</span>
+                        <label class="block text-xs font-bold text-indigo-900 mb-1">🎧 Avisos de JAVNX DJ (javnxdj.com) *</label>
+                        <input type="text" wire:model="admin_notification_phones_javnx" placeholder="+34 622 63 47 90" class="w-full border-indigo-300 rounded-xl shadow-xs text-xs font-mono">
+                        <span class="text-[10px] text-gray-500 mt-1 block">Solo estos números reciben avisos de leads, presupuestos y respuestas de <strong>javnxdj.com</strong> (solo Fran).</span>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-amber-900 mb-1">👑 Avisos de Núñez &amp; Son (nunezandson.com) *</label>
+                        <input type="text" wire:model="admin_notification_phones_nunez" placeholder="+34 622 63 47 90, +34 674 37 89 93" class="w-full border-amber-300 rounded-xl shadow-xs text-xs font-mono">
+                        <span class="text-[10px] text-gray-500 mt-1 block">Números separados por coma que reciben avisos de <strong>nunezandson.com</strong> (Fran y Miguel).</span>
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-gray-700 mb-1">Token Secreto de Webhook (Opcional)</label>

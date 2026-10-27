@@ -370,48 +370,65 @@ class Setting extends Model
     }
 
     /**
-     * Devuelve la lista de correos electrónicos de los administradores de la empresa y de la marca.
+     * Devuelve la lista de correos electrónicos de los administradores según la marca.
      */
     public static function getAdminNotificationEmails(?string $brandKey = null): array
     {
+        if (empty($brandKey)) {
+            $brandKey = self::getDetectedBrand();
+        }
+
         $emails = [];
 
-        // 1. Emails de los usuarios administradores registrados en la plataforma
-        try {
-            $adminUserEmails = \App\Models\User::where('role', 'admin')
-                ->whereNotNull('email')
-                ->pluck('email')
-                ->toArray();
-            $emails = array_merge($emails, $adminUserEmails);
-        } catch (\Throwable $e) {
-            // Ignorar en caso de error
-        }
-
-        // 2. Lista personalizada opcional en ajustes (separada por comas, punto y coma o saltos de línea)
-        $customAdminEmails = (string) self::get('admin_notification_emails', '');
-        if (!empty(trim($customAdminEmails))) {
-            $parts = preg_split('/[\s,;]+/', $customAdminEmails, -1, PREG_SPLIT_NO_EMPTY);
-            if (is_array($parts)) {
-                $emails = array_merge($emails, $parts);
+        if ($brandKey === 'javnx') {
+            $brandInfo = self::getBrandInfo('javnx');
+            if (!empty($brandInfo['email'])) {
+                $emails[] = $brandInfo['email'];
             }
-        }
-
-        // 3. Email de la marca específica y de las marcas principales de los socios
-        $brandInfo = self::getBrandInfo($brandKey);
-        if (!empty($brandInfo['email'])) {
-            $emails[] = $brandInfo['email'];
-        }
-
-        foreach (['brand_nunez_email', 'brand_javnx_email', 'imap_nunez_email', 'imap_javnx_email', 'company_email'] as $settingKey) {
-            $val = self::get($settingKey);
-            if (!empty($val)) {
-                $emails[] = $val;
+            foreach (['brand_javnx_email', 'imap_javnx_email'] as $settingKey) {
+                $val = self::get($settingKey);
+                if (!empty($val)) {
+                    $emails[] = $val;
+                }
             }
-        }
+        } else {
+            // 1. Emails de los usuarios administradores registrados en la plataforma
+            try {
+                $adminUserEmails = \App\Models\User::where('role', 'admin')
+                    ->whereNotNull('email')
+                    ->pluck('email')
+                    ->toArray();
+                $emails = array_merge($emails, $adminUserEmails);
+            } catch (\Throwable $e) {
+                // Ignorar en caso de error
+            }
 
-        $mailFrom = config('mail.from.address');
-        if (!empty($mailFrom)) {
-            $emails[] = $mailFrom;
+            // 2. Lista personalizada opcional en ajustes
+            $customAdminEmails = (string) self::get('admin_notification_emails', '');
+            if (!empty(trim($customAdminEmails))) {
+                $parts = preg_split('/[\s,;]+/', $customAdminEmails, -1, PREG_SPLIT_NO_EMPTY);
+                if (is_array($parts)) {
+                    $emails = array_merge($emails, $parts);
+                }
+            }
+
+            // 3. Email de la marca específica y de las marcas principales de los socios
+            $brandInfo = self::getBrandInfo($brandKey);
+            if (!empty($brandInfo['email'])) {
+                $emails[] = $brandInfo['email'];
+            }
+
+            foreach (['brand_nunez_email', 'imap_nunez_email', 'company_email'] as $settingKey) {
+                $val = self::get($settingKey);
+                if (!empty($val)) {
+                    $emails[] = $val;
+                }
+            }
+
+            $mailFrom = config('mail.from.address');
+            if (!empty($mailFrom)) {
+                $emails[] = $mailFrom;
+            }
         }
 
         // Normalizar, limpiar y eliminar duplicados y dominios dummy/inválidos
@@ -439,58 +456,49 @@ class Setting extends Model
     }
 
     /**
-     * Devuelve los teléfonos de los administradores (Fran y su hermano) para notificaciones y alertas por WhatsApp.
+     * Devuelve los teléfonos de los administradores para notificaciones y alertas por WhatsApp según la marca:
+     * - En 'javnx' (javnxdj.com): SOLO avisa a los teléfonos configurados en admin_notification_phones_javnx (por defecto únicamente Fran: +34 622 63 47 90).
+     * - En 'nunez_and_son' (nunezandson.com): avisa a los teléfonos configurados en admin_notification_phones_nunez (por defecto Fran y Miguel: +34 622 63 47 90, +34 674 37 89 93).
      */
     public static function getAdminNotificationPhones(?string $brandKey = null): array
     {
+        if (empty($brandKey)) {
+            $brandKey = self::getDetectedBrand();
+        }
+
         $phones = [];
 
-        // 0. Lista personalizada en ajustes (si el usuario la define en Ajustes -> WhatsApp)
-        $customAdminPhones = (string) self::get('admin_notification_phones', '');
-        if (!empty(trim($customAdminPhones))) {
-            $parts = preg_split('/[,;\r\n]+/', $customAdminPhones, -1, PREG_SPLIT_NO_EMPTY);
+        if ($brandKey === 'javnx') {
+            $javnxPhonesRaw = trim((string) self::get('admin_notification_phones_javnx', ''));
+            if ($javnxPhonesRaw === '') {
+                $javnxPhonesRaw = '+34 622 63 47 90';
+            }
+            $parts = preg_split('/[,;\r\n]+/', $javnxPhonesRaw, -1, PREG_SPLIT_NO_EMPTY);
             if (is_array($parts)) {
                 foreach ($parts as $part) {
                     $phones[] = trim($part);
                 }
             }
-        }
-
-        // 1. Garantizar que el número principal de Fran (+34 622 63 47 90) y el de Miguel (+34 674 37 89 93) estén siempre incluidos primero
-        $phones[] = '+34 622 63 47 90';
-        $phones[] = '+34 674 37 89 93';
-
-        // 2. Teléfonos de usuarios registrados con rol admin
-        try {
-            $adminUsers = \App\Models\User::where('role', 'admin')
-                ->whereNotNull('phone')
-                ->get();
-            foreach ($adminUsers as $adminUser) {
-                $fixedUserPhone = self::fixLegacyTypoPhone($adminUser->phone);
-                if ($fixedUserPhone !== (string)$adminUser->phone) {
-                    $adminUser->update(['phone' => $fixedUserPhone]);
-                }
-                $phones[] = $fixedUserPhone;
+            if (empty($phones)) {
+                $phones[] = '+34 622 63 47 90';
             }
-        } catch (\Throwable $e) {}
-
-        // 3. Teléfonos configurados en los ajustes de marcas
-        $brandInfo = self::getBrandInfo($brandKey);
-        if (!empty($brandInfo['phone'])) {
-            $phones[] = $brandInfo['phone'];
-        }
-        if (!empty($brandInfo['phone_2'])) {
-            $phones[] = $brandInfo['phone_2'];
-        }
-
-        // 4. Teléfonos globales de la empresa
-        $companyPhone1 = self::fixLegacyTypoPhone(self::get('company_phone'), 'company_phone');
-        $companyPhone2 = self::fixLegacyTypoPhone(self::get('company_phone_2'), 'company_phone_2');
-        if (!empty($companyPhone1)) {
-            $phones[] = $companyPhone1;
-        }
-        if (!empty($companyPhone2)) {
-            $phones[] = $companyPhone2;
+        } else {
+            $nunezPhonesRaw = trim((string) self::get('admin_notification_phones_nunez', ''));
+            if ($nunezPhonesRaw === '') {
+                // Fallback a la clave antigua admin_notification_phones o por defecto Fran + Miguel (sin meter automáticamente a Ezequiel desde users)
+                $legacyPhonesRaw = trim((string) self::get('admin_notification_phones', ''));
+                $nunezPhonesRaw = $legacyPhonesRaw !== '' ? $legacyPhonesRaw : '+34 622 63 47 90, +34 674 37 89 93';
+            }
+            $parts = preg_split('/[,;\r\n]+/', $nunezPhonesRaw, -1, PREG_SPLIT_NO_EMPTY);
+            if (is_array($parts)) {
+                foreach ($parts as $part) {
+                    $phones[] = trim($part);
+                }
+            }
+            if (empty($phones)) {
+                $phones[] = '+34 622 63 47 90';
+                $phones[] = '+34 674 37 89 93';
+            }
         }
 
         $validPhones = [];

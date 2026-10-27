@@ -1394,12 +1394,15 @@ class QuoteCalculator extends Component
             ]);
         }
 
+        $detectedBrand = Setting::getDetectedBrand();
+        $notifyBrand = ($detectedBrand === 'javnx' || $event->brand_clean === 'javnx') ? 'javnx' : $event->brand_clean;
+
         // 7. Enviar notificaciones por email:
         // A) A los Administradores de la Empresa y de la Marca (tolerante a fallos por destinatario)
         try {
             \App\Services\AppNotificationService::sendMailableToAdmins(
                 fn () => new \App\Mail\NewQuoteRequestAdminMail($event, $quote, $requestedServicesList, $typeConfig),
-                $event->brand_clean
+                $notifyBrand
             );
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::warning('No se pudo enviar el email de aviso a administradores: ' . $e->getMessage());
@@ -1423,7 +1426,7 @@ class QuoteCalculator extends Component
                 "{$event->name} • Total est.: " . number_format((float)$quote->total_amount, 2, ',', '.') . " €",
                 url("/admin/events/{$event->id}"),
                 $event->id,
-                $event->brand_clean
+                $notifyBrand
             );
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::warning('No se pudo registrar notificación en App de presupuesto: ' . $e->getMessage());
@@ -1449,7 +1452,7 @@ class QuoteCalculator extends Component
                     . $waExtra
                     . "💰 *Total estimado:* " . number_format((float)$quote->total_amount, 2, ',', '.') . " €\n\n"
                     . "🔗 *Ficha:* " . url("/admin/events/{$event->id}");
-                \App\Services\EvolutionWhatsAppService::notifyAdmins($waAlert, $event->brand_clean);
+                \App\Services\EvolutionWhatsAppService::notifyAdmins($waAlert, $notifyBrand);
             }
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::warning('No se pudo enviar alerta WhatsApp a socios de presupuesto: ' . $e->getMessage());

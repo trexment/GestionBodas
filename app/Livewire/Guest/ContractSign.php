@@ -337,7 +337,10 @@ class ContractSign extends Component
         }
 
         // Notificación interna en tiempo real (Campana)
-        $brandKey = $this->event ? ($this->event->brand_clean ?? 'nunez_and_son') : 'nunez_and_son';
+        $detectedBrand = \App\Models\Setting::getDetectedBrand();
+        $brandKey = ($detectedBrand === 'javnx' || ($this->event && $this->event->brand_clean === 'javnx'))
+            ? 'javnx'
+            : ($this->event ? ($this->event->brand_clean ?? 'nunez_and_son') : 'nunez_and_son');
         try {
             if ($this->event) {
                 \App\Services\AppNotificationService::push(

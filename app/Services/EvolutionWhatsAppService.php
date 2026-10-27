@@ -536,10 +536,11 @@ class EvolutionWhatsAppService
             return $report;
         }
 
-        $phones = Setting::getAdminNotificationPhones($brand);
+        $effectiveBrand = $brand ?: Setting::getDetectedBrand();
+        $phones = Setting::getAdminNotificationPhones($effectiveBrand);
         $baseUrl = self::getBaseUrl();
         $apiKey = self::getApiKey();
-        $preferredInstance = self::getInstanceName($brand);
+        $preferredInstance = self::getInstanceName($effectiveBrand);
 
         // 1. Descubrir qué instancias están realmente conectadas ('open') y qué número propietario (owner) tiene cada una
         $openInstances = []; // [instanceName => cleanOwnerPhone]
@@ -563,20 +564,28 @@ class EvolutionWhatsAppService
 
         $report['open_instances'] = $openInstances;
 
-        // Lista ordenada por prioridad: primero la instancia de la marca, luego whatsapp_principal (Fran) y whatsapp_miguel (Miguel).
-        // whatsapp_ezequiel se deja únicamente como último respaldo si las principales estuvieran desconectadas.
-        $primaryInstances = array_values(array_unique(array_filter([
-            $preferredInstance,
-            Setting::get('whatsapp_instance_fran', Setting::get('whatsapp_instance_javnx', 'whatsapp_principal')),
-            Setting::get('whatsapp_instance_miguel', Setting::get('whatsapp_instance_nunez', 'whatsapp_miguel')),
-            'whatsapp_principal',
-            'whatsapp_miguel',
-        ])));
-
-        $configuredInstances = array_values(array_unique(array_filter(array_merge(
-            $primaryInstances,
-            [Setting::get('whatsapp_instance_ezequiel', 'whatsapp_ezequiel'), 'whatsapp_ezequiel']
-        ))));
+        if ($effectiveBrand === 'javnx') {
+            // En JAVNX DJ solo debe salir por la instancia de Fran (whatsapp_principal) para no ensuciar los chats de Miguel ni Ezequiel
+            $primaryInstances = array_values(array_unique(array_filter([
+                $preferredInstance,
+                Setting::get('whatsapp_instance_fran', Setting::get('whatsapp_instance_javnx', 'whatsapp_principal')),
+                'whatsapp_principal',
+            ])));
+            $configuredInstances = $primaryInstances;
+        } else {
+            // En Núñez & Son se priorizan las instancias de Fran y Miguel (dejando Ezequiel solo como último respaldo si las principales estuvieran caídas)
+            $primaryInstances = array_values(array_unique(array_filter([
+                $preferredInstance,
+                Setting::get('whatsapp_instance_fran', Setting::get('whatsapp_instance_javnx', 'whatsapp_principal')),
+                Setting::get('whatsapp_instance_miguel', Setting::get('whatsapp_instance_nunez', 'whatsapp_miguel')),
+                'whatsapp_principal',
+                'whatsapp_miguel',
+            ])));
+            $configuredInstances = array_values(array_unique(array_filter(array_merge(
+                $primaryInstances,
+                [Setting::get('whatsapp_instance_ezequiel', 'whatsapp_ezequiel'), 'whatsapp_ezequiel']
+            ))));
+        }
 
         foreach ($phones as $phone) {
             $cleanPhone = WhatsAppTemplateService::cleanPhone((string)$phone);
@@ -584,34 +593,37 @@ class EvolutionWhatsAppService
                 continue;
             }
 
-            // Construir el orden óptimo de instancias para este destinatario:
-            // 1º: Instancias principales ('open') de Fran/Miguel donde el propietario NO sea el mismo destinatario
-            // 2º: Instancia preferida o principal ('open') de Fran/Miguel (ej. whatsapp_principal)
-            // 3º: Cualquier otra instancia 'open' (ej. whatsapp_ezequiel solo como respaldo si las principales fallan)
-            // 4º: Instancias configuradas por orden de prioridad
             $candidateInstances = [];
 
-            foreach ($primaryInstances as $instName) {
-                if (isset($openInstances[$instName])) {
-                    $ownerPhone = $openInstances[$instName];
-                    if (!empty($ownerPhone) && $ownerPhone !== $cleanPhone && !in_array($instName, $candidateInstances, true)) {
+            if ($effectiveBrand === 'javnx') {
+                foreach ($primaryInstances as $instName) {
+                    if (isset($openInstances[$instName]) && !in_array($instName, $candidateInstances, true)) {
                         $candidateInstances[] = $instName;
                     }
                 }
-            }
-            foreach ($primaryInstances as $instName) {
-                if (isset($openInstances[$instName]) && !in_array($instName, $candidateInstances, true)) {
-                    $candidateInstances[] = $instName;
+                foreach ($configuredInstances as $instName) {
+                    if (!in_array($instName, $candidateInstances, true)) {
+                        $candidateInstances[] = $instName;
+                    }
                 }
-            }
-            foreach (array_keys($openInstances) as $instName) {
-                if (!in_array($instName, $candidateInstances, true)) {
-                    $candidateInstances[] = $instName;
+            } else {
+                foreach ($primaryInstances as $instName) {
+                    if (isset($openInstances[$instName])) {
+                        $ownerPhone = $openInstances[$instName];
+                        if (!empty($ownerPhone) && $ownerPhone !== $cleanPhone && !in_array($instName, $candidateInstances, true)) {
+                            $candidateInstances[] = $instName;
+                        }
+                    }
                 }
-            }
-            foreach ($configuredInstances as $instName) {
-                if (!in_array($instName, $candidateInstances, true)) {
-                    $candidateInstances[] = $instName;
+                foreach ($primaryInstances as $instName) {
+                    if (isset($openInstances[$instName]) && !in_array($instName, $candidateInstances, true)) {
+                        $candidateInstances[] = $instName;
+                    }
+                }
+                foreach ($configuredInstances as $instName) {
+                    if (!in_array($instName, $candidateInstances, true)) {
+                        $candidateInstances[] = $instName;
+                    }
                 }
             }
 

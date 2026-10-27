@@ -455,7 +455,10 @@ class EventForm extends Component
             'Comentarios / Notas' => $this->comments,
         ];
 
-        $brandKey = $this->event->brand_clean ?? 'nunez_and_son';
+        $detectedBrand = \App\Models\Setting::getDetectedBrand();
+        $brandKey = ($detectedBrand === 'javnx' || $this->event->brand_clean === 'javnx')
+            ? 'javnx'
+            : ($this->event->brand_clean ?? 'nunez_and_son');
         $clientName = $this->event->client ? $this->event->client->name : 'Cliente';
         $eventUrl = route('admin.events.show', $this->event->id);
 

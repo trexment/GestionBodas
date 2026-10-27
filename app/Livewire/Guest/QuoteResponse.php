@@ -169,6 +169,10 @@ class QuoteResponse extends Component
         } catch (\Throwable $e) {
         }
 
+        $effectiveBrand = (($this->quote && $this->quote->brand_clean === 'javnx') || $this->event->brand_clean === 'javnx' || Setting::getDetectedBrand() === 'javnx')
+            ? 'javnx'
+            : $this->event->brand_clean;
+
         // Notificación por Email a todos los Administradores (y DJ asignado)
         try {
             $djEmail = ($this->event->dj && !empty($this->event->dj->email)) ? $this->event->dj->email : null;
@@ -189,7 +193,7 @@ class QuoteResponse extends Component
                 ],
                 $eventUrl,
                 'Ver Evento y Presupuesto en el Panel',
-                $this->event->brand_clean,
+                $effectiveBrand,
                 '#059669',
                 $djEmail
             );
@@ -205,7 +209,7 @@ class QuoteResponse extends Component
                 . ($notesClean ? "💬 *Nota:* {$notesClean}\n" : '')
                 . "\nEl estado del evento se ha actualizado automáticamente a *Confirmado*.\n"
                 . "🔗 *Ficha:* {$eventUrl}";
-            EvolutionWhatsAppService::notifyAdmins($waAlert, $this->event->brand_clean);
+            EvolutionWhatsAppService::notifyAdmins($waAlert, $effectiveBrand);
         } catch (\Throwable $e) {
         }
 
@@ -278,6 +282,10 @@ class QuoteResponse extends Component
         } catch (\Throwable $e) {
         }
 
+        $effectiveBrand = (($this->quote && $this->quote->brand_clean === 'javnx') || $this->event->brand_clean === 'javnx' || Setting::getDetectedBrand() === 'javnx')
+            ? 'javnx'
+            : $this->event->brand_clean;
+
         // Notificación por Email a todos los Administradores (y DJ asignado)
         try {
             $djEmail = ($this->event->dj && !empty($this->event->dj->email)) ? $this->event->dj->email : null;
@@ -297,7 +305,7 @@ class QuoteResponse extends Component
                 ],
                 $eventUrl,
                 'Abrir Ficha del Evento para Seguimiento / Ajuste',
-                $this->event->brand_clean,
+                $effectiveBrand,
                 '#e11d48',
                 $djEmail
             );
@@ -313,7 +321,7 @@ class QuoteResponse extends Component
                 . "📝 *Motivo indicado:* {$reasonClean}\n\n"
                 . "El estado del evento se ha actualizado a *Rechazado*.\n"
                 . "🔗 *Ficha:* {$eventUrl}";
-            EvolutionWhatsAppService::notifyAdmins($waAlert, $this->event->brand_clean);
+            EvolutionWhatsAppService::notifyAdmins($waAlert, $effectiveBrand);
         } catch (\Throwable $e) {
         }
 
