@@ -1290,6 +1290,20 @@
         <!-- PESTAÑA: CONFIGURACIÓN DE DOSSIER Y PROPUESTAS COMERCIALES -->
         <div class="{{ $activeTab === 'dossier' ? 'block' : 'hidden' }} space-y-6">
             
+            <!-- BANNER DE ACCESO DIRECTO AL NUEVO GENERADOR DE DOSSIER GENERAL DE TARIFAS -->
+            <div class="bg-gradient-to-r from-slate-900 via-slate-900 to-amber-950/80 text-white rounded-2xl p-5 shadow-md border border-amber-500/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div class="space-y-1">
+                    <div class="inline-flex items-center gap-2 text-[11px] font-black uppercase tracking-wider text-amber-400">
+                        <span>📘</span> Nuevo Generador Oficial (8 a 10 páginas)
+                    </div>
+                    <h3 class="text-base font-black text-white">Dossier General de Tarifas (Igual para todas las parejas)</h3>
+                    <p class="text-xs text-slate-300">Gestiona el dossier general de tarifas con checklist de validación (Portada, Quiénes somos, Nuestro trabajo, Cómo trabajamos, 3 Packs en página central con IVA incluido, Extras cerrados, Opiniones y Cómo reservar), vista de videollamada y envío por WhatsApp. <em>(Esta pestaña de abajo se mantiene para las propuestas personalizadas por boda).</em></p>
+                </div>
+                <a href="{{ route('admin.tariff-dossier') }}" class="px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs rounded-xl shadow-lg transition shrink-0 text-center">
+                    Abrir Generador de Dossier de Tarifas &rarr;
+                </a>
+            </div>
+
             <!-- HEADER DE SECCIÓN CON PRESETS & BOTÓN GUARDAR -->
             <div class="bg-white shadow-sm rounded-xl border border-gray-200 p-6 space-y-4">
                 <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-gray-100 pb-4">

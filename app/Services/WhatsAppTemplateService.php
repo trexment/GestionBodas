@@ -399,7 +399,7 @@ class WhatsAppTemplateService
             ],
             'dossier' => [
                 'label' => '📑 Envío Dossier',
-                'default' => "¡Hola {nombre}! Os adjunto el dossier con nuestros trabajos y servicios: {enlace_dossier}. Si queréis, lo miramos juntos y vemos cuál encaja mejor con vuestra boda. ¡Un saludo! {firma}",
+                'default' => "¡Hola {nombre}! Os dejo nuestro dossier de tarifas 2027 para que lo veáis con calma: {enlace_dossier}. Si os apetece, hacemos una videollamada de 10-15 minutos y os lo explico. ¡Un saludo! {firma}",
             ],
             'dia3_dudas' => [
                 'label' => '💡 Dudas (Día 3)',
@@ -506,6 +506,9 @@ class WhatsAppTemplateService
             ? $activeQuote->public_url
             : (($event && $event->token) ? route('guest.quote.view', $event->token) : $presupuestoCalcUrl);
         $presupuestoUrl = $activeQuote ? $onlineUrl : $presupuestoCalcUrl;
+        $generalDossierBrand = $isJavnx ? 'javnx' : 'nunez_and_son';
+        $generalDossierUrl = url("/dossier-tarifas/{$generalDossierBrand}.pdf");
+        $dossierUrl = $activeQuote ? $onlineUrl : $generalDossierUrl;
         $formUrl = ($event && $event->token) ? route('guest.form', $event->token) : '';
         $signUrl = ($event && $event->token) ? route('guest.contract', $event->token) : '';
 
@@ -576,7 +579,8 @@ class WhatsAppTemplateService
             '{fecha_limite_pago}' => $deadlineFormatted,
             '{enlace}' => $presupuestoUrl,
             '{enlace_presupuesto}' => $presupuestoUrl,
-            '{enlace_dossier}' => $onlineUrl,
+            '{enlace_dossier}' => $dossierUrl,
+            '{enlace_dossier_tarifas}' => $generalDossierUrl,
             '{enlace_cuestionario}' => $formUrl,
             '{enlace_contrato}' => $signUrl,
         ];

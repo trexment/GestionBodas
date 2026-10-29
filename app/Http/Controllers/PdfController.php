@@ -8,6 +8,7 @@ use App\Models\Contract;
 use App\Models\Event;
 use App\Models\Setting;
 use App\Services\ContractTemplateService;
+use App\Services\GeneralTariffDossierService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 
@@ -192,5 +193,71 @@ class PdfController extends Controller
 
         $pdf = Pdf::loadView('pdf.dj-session-history', $data);
         return $pdf->download('tracklist_sesion_' . \Illuminate\Support\Str::slug($event->name) . '.pdf');
+    }
+
+    /**
+     * Descarga o muestra en línea el Dossier General de Tarifas (8 a 10 páginas, igual para todas las parejas).
+     * Distinto del presupuesto personalizado por boda.
+     */
+    public function downloadTariffDossier(Request $request, ?string $brand = null)
+    {
+        $config = GeneralTariffDossierService::getConfig();
+
+        $requestedBrand = $brand ?: $request->query('brand');
+        if ($requestedBrand && in_array($requestedBrand, ['nunez_and_son', 'javnx'], true)) {
+            $config['brand'] = $requestedBrand;
+        }
+
+        // Si un administrador solicita la generación desde el panel y no se pasa ?force=1,
+        // verificamos el checklist obligatorio antes de exportar.
+        if (auth()->check() && auth()->user()->role === 'admin' && !$request->boolean('force')) {
+            $validation = GeneralTariffDossierService::validateConfig($config);
+            if (!$validation['can_generate']) {
+                return redirect()
+                    ->route('admin.tariff-dossier')
+                    ->with('error', '⚠️ No se puede generar el PDF hasta corregir los puntos pendientes del checklist.');
+            }
+        }
+
+        $plan = GeneralTariffDossierService::buildPagesPlan($config);
+        $brandInfo = Setting::getBrandInfo($config['brand'] ?? 'nunez_and_son');
+
+        $year = preg_replace('/[^0-9A-Za-z_-]/', '', (string) ($config['tariff_year'] ?? '2027')) ?: '2027';
+        $brandSlug = ($config['brand'] ?? 'nunez_and_son') === 'javnx' ? 'JAVNX_DJ' : 'Nunez_and_Son';
+        $filename = "Dossier_Tarifas_{$year}_{$brandSlug}.pdf";
+
+        $pdf = Pdf::loadView('pdf.tariff-dossier', [
+            'config' => $config,
+            'plan' => $plan,
+            'brandInfo' => $brandInfo,
+        ])->setPaper('a4', 'portrait');
+
+        if ($request->boolean('download')) {
+            return $pdf->download($filename);
+        }
+
+        return $pdf->stream($filename);
+    }
+
+    /**
+     * Vista de presentación a pantalla completa ("Compartir en videollamada") del Dossier General de Tarifas.
+     */
+    public function viewTariffDossierPresentation(Request $request, ?string $brand = null)
+    {
+        $config = GeneralTariffDossierService::getConfig();
+
+        $requestedBrand = $brand ?: $request->query('brand');
+        if ($requestedBrand && in_array($requestedBrand, ['nunez_and_son', 'javnx'], true)) {
+            $config['brand'] = $requestedBrand;
+        }
+
+        $plan = GeneralTariffDossierService::buildPagesPlan($config);
+        $brandInfo = Setting::getBrandInfo($config['brand'] ?? 'nunez_and_son');
+
+        return view('pdf.tariff-dossier-presentation', [
+            'config' => $config,
+            'plan' => $plan,
+            'brandInfo' => $brandInfo,
+        ]);
     }
 }

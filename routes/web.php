@@ -12,6 +12,7 @@ use App\Livewire\Admin\MusicManager;
 use App\Livewire\Admin\Settings;
 use App\Livewire\Admin\DjBoothMode;
 use App\Livewire\Admin\AnalyticsManager;
+use App\Livewire\Admin\TariffDossierManager;
 use App\Livewire\Guest\EventForm;
 use App\Livewire\Guest\ContractSign;
 use App\Livewire\Guest\LiveRequests;
@@ -73,6 +74,14 @@ Route::get('/calendar/feed/{token}.ics', [CalendarFeedController::class, 'feed']
 
 // Public Quote Calculator - Rate limited to 20 requests/min
 Route::get('/presupuesto', \App\Livewire\Guest\QuoteCalculator::class)->middleware('throttle:20,1')->name('guest.quote');
+
+// Public General Tariff Dossier PDF (igual para todas las parejas, distinto del presupuesto por boda)
+Route::get('/dossier-tarifas/{brand?}.pdf', [PdfController::class, 'downloadTariffDossier'])
+    ->where('brand', 'nunez_and_son|javnx')
+    ->name('public.tariff-dossier.pdf');
+Route::get('/dossier-tarifas/presentacion/{brand?}', [PdfController::class, 'viewTariffDossierPresentation'])
+    ->where('brand', 'nunez_and_son|javnx')
+    ->name('public.tariff-dossier.presentation');
 
 // Manual Oficial de Uso (Web Interactiva & Descarga PDF)
 Route::get('/manual', function () {
@@ -158,6 +167,9 @@ Route::middleware('auth')->group(function () {
             Route::get('/users', UserManager::class)->name('users');
             Route::get('/music', MusicManager::class)->name('music');
             Route::get('/inventory', \App\Livewire\Admin\InventoryManager::class)->name('inventory');
+            Route::get('/tariff-dossier', TariffDossierManager::class)->name('tariff-dossier');
+            Route::get('/tariff-dossier/pdf', [PdfController::class, 'downloadTariffDossier'])->name('tariff-dossier.pdf');
+            Route::get('/tariff-dossier/presentation', [PdfController::class, 'viewTariffDossierPresentation'])->name('tariff-dossier.presentation');
             Route::get('/settings', Settings::class)->name('settings');
             Route::get('/analytics', AnalyticsManager::class)->name('analytics');
 

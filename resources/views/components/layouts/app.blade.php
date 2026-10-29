@@ -686,6 +686,12 @@
                 </a>
 
                 @if(Auth::check() && Auth::user()->role === 'admin')
+                <!-- 7.5. DOSSIER GENERAL DE TARIFAS -->
+                <a href="{{ route('admin.tariff-dossier') }}" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition {{ request()->routeIs('admin.tariff-dossier') ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/30' : 'text-slate-300 hover:text-white hover:bg-slate-800/80' }}">
+                    <span class="text-base">📘</span>
+                    <span>Dossier de Tarifas</span>
+                </a>
+
                 <!-- 8. CONFIGURACIÓN & INTEGRACIONES -->
                 <a href="{{ route('admin.settings') }}" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition {{ request()->routeIs('admin.settings') ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30' : 'text-slate-300 hover:text-white hover:bg-slate-800/80' }}">
                     <span class="text-base">⚙️</span>
