@@ -5523,7 +5523,7 @@
                                 $reminderText = \App\Services\WhatsAppTemplateService::meetingReminder($meeting);
                                 $reminderUrl = \App\Services\WhatsAppTemplateService::buildUrl($clientPhone, $reminderText);
                             @endphp
-                            <div class="bg-white dark:bg-slate-900 border {{ $meeting->status === 'completed' ? 'border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/20' : ($meeting->status === 'cancelled' ? 'border-rose-200 dark:border-rose-900/40 opacity-70' : 'border-slate-200 dark:border-slate-800') }} rounded-2xl p-5 shadow-xs flex flex-col justify-between transition hover:shadow-md">
+                            <div wire:key="meeting-card-{{ $meeting->id }}" class="bg-white dark:bg-slate-900 border {{ $meeting->status === 'completed' ? 'border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/20' : ($meeting->status === 'cancelled' ? 'border-rose-200 dark:border-rose-900/40 opacity-70' : 'border-slate-200 dark:border-slate-800') }} rounded-2xl p-5 shadow-xs flex flex-col justify-between transition hover:shadow-md">
                                 <div>
                                     <!-- Header Card -->
                                     <div class="flex items-start justify-between gap-3 mb-3">

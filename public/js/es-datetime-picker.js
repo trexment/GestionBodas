@@ -12,34 +12,35 @@
     const WEEKDAYS_ES = ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá', 'Do'];
 
     // 1. Inyectar estilos globales para ocultar el formato inglés nativo (mm/dd/yyyy y AM/PM)
+    // Se aplica directamente a cualquier input[type="date"] e input[type="time"] sin mutar sus clases DOM.
     const style = document.createElement('style');
     style.id = 'es-datetime-picker-styles';
     style.textContent = `
-        input[type="date"].es-dt-enhanced,
-        input[type="time"].es-dt-enhanced {
+        input[type="date"],
+        input[type="time"] {
             position: relative;
             cursor: pointer !important;
             background-repeat: no-repeat !important;
             background-position: left center, right 10px center !important;
         }
-        input[type="date"].es-dt-enhanced::-webkit-datetime-edit,
-        input[type="date"].es-dt-enhanced::-webkit-datetime-edit-fields-wrapper,
-        input[type="date"].es-dt-enhanced::-webkit-datetime-edit-text,
-        input[type="date"].es-dt-enhanced::-webkit-datetime-edit-month-field,
-        input[type="date"].es-dt-enhanced::-webkit-datetime-edit-day-field,
-        input[type="date"].es-dt-enhanced::-webkit-datetime-edit-year-field,
-        input[type="time"].es-dt-enhanced::-webkit-datetime-edit,
-        input[type="time"].es-dt-enhanced::-webkit-datetime-edit-fields-wrapper,
-        input[type="time"].es-dt-enhanced::-webkit-datetime-edit-text,
-        input[type="time"].es-dt-enhanced::-webkit-datetime-edit-hour-field,
-        input[type="time"].es-dt-enhanced::-webkit-datetime-edit-minute-field,
-        input[type="time"].es-dt-enhanced::-webkit-datetime-edit-ampm-field {
+        input[type="date"]::-webkit-datetime-edit,
+        input[type="date"]::-webkit-datetime-edit-fields-wrapper,
+        input[type="date"]::-webkit-datetime-edit-text,
+        input[type="date"]::-webkit-datetime-edit-month-field,
+        input[type="date"]::-webkit-datetime-edit-day-field,
+        input[type="date"]::-webkit-datetime-edit-year-field,
+        input[type="time"]::-webkit-datetime-edit,
+        input[type="time"]::-webkit-datetime-edit-fields-wrapper,
+        input[type="time"]::-webkit-datetime-edit-text,
+        input[type="time"]::-webkit-datetime-edit-hour-field,
+        input[type="time"]::-webkit-datetime-edit-minute-field,
+        input[type="time"]::-webkit-datetime-edit-ampm-field {
             color: transparent !important;
             opacity: 0 !important;
             -webkit-text-fill-color: transparent !important;
         }
-        input[type="date"].es-dt-enhanced::-webkit-calendar-picker-indicator,
-        input[type="time"].es-dt-enhanced::-webkit-calendar-picker-indicator {
+        input[type="date"]::-webkit-calendar-picker-indicator,
+        input[type="time"]::-webkit-calendar-picker-indicator {
             opacity: 0 !important;
             pointer-events: none !important;
             width: 0 !important;
@@ -130,24 +131,29 @@
         const type = input.getAttribute('type');
         if (type !== 'date' && type !== 'time') return;
 
-        input.classList.add('es-dt-enhanced');
-
         const rawVal = input.value || '';
+        const isDark = document.documentElement.classList.contains('dark');
+        const cacheKey = `${type}|${rawVal}|${isDark ? '1' : '0'}`;
+        if (input._esLastCacheKey === cacheKey && input.style.backgroundImage) {
+            return;
+        }
+        input._esLastCacheKey = cacheKey;
+
         const isDate = type === 'date';
         const displayStr = isDate ? formatIsoToEsDate(rawVal) : normalizeTime24(rawVal);
         const placeholderStr = isDate ? 'dd/mm/aaaa' : 'hh:mm (24h)';
         const textToDraw = displayStr || placeholderStr;
 
         const cs = window.getComputedStyle(input);
-        const isDark = document.documentElement.classList.contains('dark') ||
+        const darkBg = isDark ||
             (cs.backgroundColor && cs.backgroundColor !== 'rgba(0, 0, 0, 0)' && !cs.backgroundColor.includes('255, 255, 255') && !cs.backgroundColor.includes('248, 250, 252'));
 
         let textColor = displayStr
-            ? (cs.color && cs.color !== 'rgba(0, 0, 0, 0)' && cs.color !== 'transparent' ? cs.color : (isDark ? '#f8fafc' : '#0f172a'))
-            : (isDark ? '#64748b' : '#94a3b8');
+            ? (cs.color && cs.color !== 'rgba(0, 0, 0, 0)' && cs.color !== 'transparent' ? cs.color : (darkBg ? '#f8fafc' : '#0f172a'))
+            : (darkBg ? '#64748b' : '#94a3b8');
 
         if (textColor === 'rgba(0, 0, 0, 0)' || textColor === 'transparent') {
-            textColor = isDark ? '#f8fafc' : '#0f172a';
+            textColor = darkBg ? '#f8fafc' : '#0f172a';
         }
 
         const fontSize = cs.fontSize || '13px';
@@ -155,15 +161,15 @@
         const padLeft = parseInt(cs.paddingLeft, 10) || 12;
 
         const textSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="220" height="36"><text x="${padLeft}" y="22.5" fill="${escapeXml(textColor)}" font-family="Plus Jakarta Sans, system-ui, sans-serif" font-size="${escapeXml(fontSize)}" font-weight="${escapeXml(fontWeight)}">${escapeXml(textToDraw)}</text></svg>`;
-        const iconColor = isDark ? '#94a3b8' : '#64748b';
+        const iconColor = darkBg ? '#94a3b8' : '#64748b';
         const iconSvg = isDate
             ? `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${iconColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`
             : `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${iconColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
 
         const bgValue = `url("data:image/svg+xml;utf8,${encodeURIComponent(textSvg)}"), url("data:image/svg+xml;utf8,${encodeURIComponent(iconSvg)}")`;
-        if (input.dataset.esLastBg !== bgValue) {
+        if (input._esLastBg !== bgValue) {
             input.style.backgroundImage = bgValue;
-            input.dataset.esLastBg = bgValue;
+            input._esLastBg = bgValue;
         }
     }
 
@@ -172,8 +178,8 @@
             ? root.querySelectorAll('input[type="date"], input[type="time"]')
             : [];
         inputs.forEach(input => {
-            if (!input.dataset.esBound) {
-                input.dataset.esBound = '1';
+            if (!input._esBound) {
+                input._esBound = true;
                 // Interceptar showPicker nativo para que nunca salga el calendario en inglés ni AM/PM
                 try {
                     input.showPicker = function () {
@@ -638,31 +644,45 @@
         }
     });
 
-    // Inicializar al cargar el DOM y en cada actualización de Livewire / mutación del DOM
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => enhanceAllInputs());
-    } else {
-        enhanceAllInputs();
+    // Inicializar al cargar el DOM y en cada actualización de Livewire de forma debounced (sin bloquear el hilo principal)
+    let enhanceScheduled = false;
+    function scheduleEnhance() {
+        if (enhanceScheduled) return;
+        enhanceScheduled = true;
+        requestAnimationFrame(() => {
+            enhanceScheduled = false;
+            enhanceAllInputs();
+        });
     }
 
-    const observer = new MutationObserver(() => {
-        enhanceAllInputs();
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => scheduleEnhance());
+    } else {
+        scheduleEnhance();
+    }
+
+    const observer = new MutationObserver((mutations) => {
+        for (let i = 0; i < mutations.length; i++) {
+            if (mutations[i].addedNodes && mutations[i].addedNodes.length > 0) {
+                scheduleEnhance();
+                break;
+            }
+        }
     });
-    observer.observe(document.documentElement, {
-        childList: true,
-        subtree: true,
-        attributes: true,
-        attributeFilter: ['class', 'value']
-    });
+    if (document.body) {
+        observer.observe(document.body, { childList: true, subtree: true });
+    } else {
+        document.addEventListener('DOMContentLoaded', () => {
+            if (document.body) observer.observe(document.body, { childList: true, subtree: true });
+        });
+    }
 
     document.addEventListener('livewire:init', () => {
         if (window.Livewire && typeof window.Livewire.hook === 'function') {
-            window.Livewire.hook('morph.updated', () => {
-                setTimeout(() => enhanceAllInputs(), 10);
-            });
             window.Livewire.hook('commit', ({ succeed }) => {
                 succeed(() => {
-                    setTimeout(() => enhanceAllInputs(), 15);
+                    scheduleEnhance();
+                    setTimeout(() => scheduleEnhance(), 50);
                 });
             });
         }
