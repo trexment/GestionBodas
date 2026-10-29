@@ -47,8 +47,8 @@ class ContractTemplateService
             '{{ cronograma_completo }}' => 'Desglose completo de horarios de las fases del evento',
             '{{ importe }}' => 'Importe total acordado con €',
             '{{ importe_total }}' => 'Importe total acordado con €',
-            '{{ importe_senal }}' => 'Importe del 40% de señal de reserva con €',
-            '{{ importe_restante }}' => 'Importe del 60% restante con €',
+            '{{ importe_senal }}' => 'Importe de la señal de reserva con € (gradual del 25% al 50% según antelación)',
+            '{{ importe_restante }}' => 'Importe restante a abonar en el evento con €',
             '{{ servicios_contratados }}' => 'Listado y desglose de servicios contratados (DJ, Fotografía, Cóctel, etc.)',
             '{{ clausula_manutencion }}' => 'Cláusula de manutención / menú de personal del equipo (cóctel, banquete y larga duración)',
             '{{ clausula_comida }}' => 'Alias de la cláusula de manutención y menú de personal',
@@ -182,7 +182,7 @@ TEXT
                     $signalAmount = min((float)Setting::get('deposit_fixed_amount', 200), $amount);
                     $signalLabel = number_format($signalAmount, 2, ',', '.') . ' €';
                 } else {
-                    $pct = (float)Setting::get('deposit_percentage', 40);
+                    $pct = \App\Models\Quote::calculateGradualDepositPercentage($event?->event_date);
                     $signalAmount = round(($amount * $pct) / 100, 2);
                     $signalLabel = rtrim(rtrim(number_format($pct, 2, ',', '.'), '0'), ',') . '% (' . number_format($signalAmount, 2, ',', '.') . ' €)';
                 }

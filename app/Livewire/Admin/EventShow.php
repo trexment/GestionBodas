@@ -583,19 +583,20 @@ class EventShow extends Component
         $this->quote_services['photo_album']['price'] = (float)\App\Models\Setting::get('price_photo_album', 150);
         $this->quote_services['photo_full_pack']['price'] = (float)\App\Models\Setting::get('price_photo_full_pack', 800);
 
-        // Condiciones de Señal (por defecto según tipo de evento o configuración guardada para ese tipo)
+        // Condiciones de Señal (automática y gradual del 25% al 50% según antelación hasta la fecha del evento)
+        $gradualPct = \App\Models\Quote::calculateGradualDepositPercentage($this->event?->event_date);
         $savedDepTypeByEv = \App\Models\Setting::get("deposit_type_{$evType}");
-        if ($savedDepTypeByEv !== null && $savedDepTypeByEv !== '') {
-            $this->quote_deposit_type = $savedDepTypeByEv;
-            $this->quote_deposit_percentage = (float)\App\Models\Setting::get("deposit_percentage_{$evType}", \App\Models\Setting::get('deposit_percentage', 40));
-            $this->quote_deposit_fixed_amount = (float)\App\Models\Setting::get("deposit_fixed_amount_{$evType}", \App\Models\Setting::get('deposit_fixed_amount', 200));
-        } elseif ($this->event && in_array($evType, ['fiesta', 'otro'], true)) {
+        if ($this->event && in_array($evType, ['fiesta', 'otro'], true) && ($savedDepTypeByEv === null || $savedDepTypeByEv === '' || $savedDepTypeByEv === 'none')) {
             $this->quote_deposit_type = 'none';
             $this->quote_deposit_percentage = 0;
             $this->quote_deposit_fixed_amount = 0;
+        } elseif ($savedDepTypeByEv === 'fixed') {
+            $this->quote_deposit_type = 'fixed';
+            $this->quote_deposit_percentage = $gradualPct;
+            $this->quote_deposit_fixed_amount = (float)\App\Models\Setting::get("deposit_fixed_amount_{$evType}", \App\Models\Setting::get('deposit_fixed_amount', 200));
         } else {
-            $this->quote_deposit_type = \App\Models\Setting::get('deposit_type', 'percentage');
-            $this->quote_deposit_percentage = (float)\App\Models\Setting::get('deposit_percentage', 40);
+            $this->quote_deposit_type = 'percentage';
+            $this->quote_deposit_percentage = $gradualPct;
             $this->quote_deposit_fixed_amount = (float)\App\Models\Setting::get('deposit_fixed_amount', 200);
         }
 
@@ -4178,18 +4179,24 @@ class EventShow extends Component
         session()->flash('quote_message', 'Propuesta Comercial #' . $quote->id . ' actualizada correctamente (Total: ' . number_format($finalTotal, 2, ',', '.') . ' € | Señal: ' . number_format($signal, 2, ',', '.') . ' €).');
     }
 
+    public function applyGradualDeposit()
+    {
+        $this->quote_deposit_type = 'percentage';
+        $this->quote_deposit_percentage = \App\Models\Quote::calculateGradualDepositPercentage($this->event?->event_date);
+    }
+
     public function loadQuoteIntoCalculator($quoteId, bool $flash = true)
     {
         $quote = $this->event->quotes()->with('items')->findOrFail($quoteId);
         $this->editing_quote_id = $flash ? $quote->id : null;
         
-        // Cargar configuración de señal
+        // Cargar configuración de señal (si no tiene porcentaje explícito, calcula gradualmente del 25% al 50% según fecha del evento)
         $this->quote_deposit_type = $quote->deposit_type ?: 'percentage';
         if ($this->quote_deposit_type === 'none') {
             $this->quote_deposit_percentage = 0;
             $this->quote_deposit_fixed_amount = 0;
         } elseif ($this->quote_deposit_type === 'percentage') {
-            $this->quote_deposit_percentage = (float)($quote->deposit_percentage ?: 40);
+            $this->quote_deposit_percentage = (float)($quote->deposit_percentage ?: \App\Models\Quote::calculateGradualDepositPercentage($this->event?->event_date, $quote->created_at));
         } else {
             $this->quote_deposit_fixed_amount = (float)($quote->deposit_amount ?: 200);
         }
@@ -4692,6 +4699,10 @@ class EventShow extends Component
         }
 
         $this->event->refresh();
+
+        if ($this->quote_deposit_type === 'percentage') {
+            $this->quote_deposit_percentage = \App\Models\Quote::calculateGradualDepositPercentage($this->event->event_date);
+        }
 
         // Si cambió el restaurante/finca o aún no tenía teléfono, buscar su teléfono automáticamente en la web
         if (mb_strtolower($previousLocation) !== mb_strtolower($newLocation) || empty(trim((string)$this->event->venue_contact_phone))) {

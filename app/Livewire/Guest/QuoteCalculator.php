@@ -1220,13 +1220,25 @@ class QuoteCalculator extends Component
             \App\Services\VenueLookupService::autoPopulateEventVenuePhone($event);
         } catch (\Throwable $e) {}
 
-        // 5. Create Quote Draft for Admin (incluyendo las notas del cliente)
+        // 5. Create Quote Draft for Admin (incluyendo las notas del cliente y señal gradual automática según antelación)
         Quote::EnsureQuoteResponseColumns();
+        $evTypeClean = $event->event_type_clean;
+        $autoDepositType = in_array($evTypeClean, ['fiesta', 'otro'], true) ? 'none' : 'percentage';
+        $autoDepositPct = $autoDepositType === 'percentage'
+            ? Quote::calculateGradualDepositPercentage($event->event_date)
+            : 0.0;
+        $autoDepositAmt = $autoDepositType === 'percentage'
+            ? round(($totalEstimated * $autoDepositPct) / 100, 2)
+            : 0.0;
+
         $quote = $event->quotes()->create([
             'brand' => $event->brand ?: Setting::getDetectedBrand(),
             'amount' => $totalEstimated,
             'status' => 'pending',
             'client_notes' => $quoteClientNotes !== '' ? $quoteClientNotes : null,
+            'deposit_type' => $autoDepositType,
+            'deposit_percentage' => $autoDepositPct,
+            'deposit_amount' => $autoDepositAmt,
         ]);
 
         // Registrar también en la Conversación Registrada del evento para que quede visible en el historial

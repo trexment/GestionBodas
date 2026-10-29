@@ -94,6 +94,92 @@ class Quote extends Model
     }
 
     /**
+     * Calcula el porcentaje de señal de reserva de forma automática y gradual
+     * según el tiempo de antelación hasta la fecha del evento:
+     * - Hasta 3 meses de antelación: 50%
+     * - ~4 meses: 45%
+     * - ~5 a 6 meses: 40%
+     * - ~7 meses: 35%
+     * - ~8 a 9 meses: 30%
+     * - 10 meses o más (ej. de Octubre a Agosto del año siguiente): 25%
+     */
+    public static function calculateGradualDepositPercentage($eventDate = null, $referenceDate = null): float
+    {
+        if (empty($eventDate)) {
+            return (float) Setting::get('deposit_percentage', 40);
+        }
+
+        try {
+            $ref = $referenceDate
+                ? \Carbon\Carbon::parse($referenceDate)->startOfDay()
+                : now()->startOfDay();
+            $target = \Carbon\Carbon::parse($eventDate)->startOfDay();
+            $days = max(0, (int) $ref->diffInDays($target, false));
+            $months = $days / 30.4375;
+
+            if ($months <= 3.2) {
+                return 50.0;
+            }
+            if ($months <= 4.5) {
+                return 45.0;
+            }
+            if ($months <= 6.2) {
+                return 40.0;
+            }
+            if ($months <= 7.8) {
+                return 35.0;
+            }
+            if ($months <= 9.3) {
+                return 30.0;
+            }
+
+            return 25.0;
+        } catch (\Throwable $e) {
+            return (float) Setting::get('deposit_percentage', 40);
+        }
+    }
+
+    /**
+     * Devuelve información detallada del cálculo gradual de señal (porcentaje y meses de antelación)
+     */
+    public static function getGradualDepositInfo($eventDate = null, $referenceDate = null): array
+    {
+        $pct = self::calculateGradualDepositPercentage($eventDate, $referenceDate);
+        if (empty($eventDate)) {
+            return [
+                'percentage' => $pct,
+                'months' => null,
+                'days' => null,
+                'label' => "Automático ({$pct}%)",
+            ];
+        }
+
+        try {
+            $ref = $referenceDate
+                ? \Carbon\Carbon::parse($referenceDate)->startOfDay()
+                : now()->startOfDay();
+            $target = \Carbon\Carbon::parse($eventDate)->startOfDay();
+            $days = max(0, (int) $ref->diffInDays($target, false));
+            $months = (int) round($days / 30.4375);
+            $monthsLabel = $months <= 1 ? '1 mes' : "{$months} meses";
+
+            return [
+                'percentage' => $pct,
+                'months' => $months,
+                'days' => $days,
+                'label' => "Antelación ~{$monthsLabel} → {$pct}%",
+            ];
+        } catch (\Throwable $e) {
+            return [
+                'percentage' => $pct,
+                'months' => null,
+                'days' => null,
+                'label' => "Automático ({$pct}%)",
+            ];
+        }
+    }
+
+    /**
      * Devuelve el importe de la señal de reserva calculada
      */
     public function getSignalAmountAttribute(): float
@@ -103,15 +189,10 @@ class Quote extends Model
             return 0.0;
         }
 
-        // 2. Si se definió un importe fijo explícito (incluso si es 0)
-        if ($this->attributes['deposit_amount'] !== null) {
+        // 2. Si está configurado como importe fijo explícito
+        if ($this->deposit_type === 'fixed' && $this->attributes['deposit_amount'] !== null) {
             $amt = (float)$this->attributes['deposit_amount'];
-            if ($amt <= 0.0 && ($this->deposit_type === 'fixed' || $this->deposit_type === 'none')) {
-                return 0.0;
-            }
-            if ($amt > 0) {
-                return min($amt, (float)$this->amount);
-            }
+            return $amt > 0 ? min($amt, (float)$this->amount) : 0.0;
         }
 
         // 3. Si se definió un porcentaje explícito (incluso si es 0%)
@@ -125,19 +206,30 @@ class Quote extends Model
             }
         }
 
-        // 4. Si el evento es de tipo fiesta y no se indicó señal, por defecto es 0 €
+        // 4. Si se definió un importe fijo explícito sin porcentaje
+        if ($this->attributes['deposit_amount'] !== null) {
+            $amt = (float)$this->attributes['deposit_amount'];
+            if ($amt <= 0.0 && ($this->deposit_type === 'fixed' || $this->deposit_type === 'none')) {
+                return 0.0;
+            }
+            if ($amt > 0) {
+                return min($amt, (float)$this->amount);
+            }
+        }
+
+        // 5. Si el evento es de tipo fiesta y no se indicó señal, por defecto es 0 €
         if ($this->event && $this->event->event_type_clean === 'fiesta') {
             return 0.0;
         }
 
-        // 5. Fallback a Ajustes generales
+        // 6. Fallback: cálculo automático y gradual según antelación hasta la fecha del evento (25% a 50%)
         $type = Setting::get('deposit_type', 'percentage');
         if ($type === 'fixed') {
             $fixed = (float)Setting::get('deposit_fixed_amount', 200);
             return min($fixed, (float)$this->amount);
         }
 
-        $pct = (float)Setting::get('deposit_percentage', 40);
+        $pct = self::calculateGradualDepositPercentage($this->event?->event_date, $this->created_at);
         return round(((float)$this->amount * $pct) / 100, 2);
     }
 
@@ -150,7 +242,7 @@ class Quote extends Model
     }
 
     /**
-     * Devuelve la etiqueta descriptiva de la señal (ej: "40% (280,00 €)", "200,00 €" o "Sin señal (0,00 €)")
+     * Devuelve la etiqueta descriptiva de la señal (ej: "25% (250,00 €)", "50% (500,00 €)" o "Sin señal (0,00 €)")
      */
     public function getSignalLabelAttribute(): string
     {
@@ -163,7 +255,9 @@ class Quote extends Model
             return number_format($this->signal_amount, 2, ',', '.') . ' €';
         }
 
-        $pct = $this->deposit_percentage !== null ? (float)$this->deposit_percentage : (float)Setting::get('deposit_percentage', 40);
+        $pct = $this->deposit_percentage !== null
+            ? (float)$this->deposit_percentage
+            : self::calculateGradualDepositPercentage($this->event?->event_date, $this->created_at);
         return rtrim(rtrim(number_format($pct, 2, ',', '.'), '0'), ',') . '% (' . number_format($this->signal_amount, 2, ',', '.') . ' €)';
     }
 
@@ -419,7 +513,7 @@ class Quote extends Model
             } elseif ($depType === 'fixed') {
                 $signal = min((float)($quote->deposit_amount ?: 200), $finalTotal);
             } else {
-                $depPct = (float)($quote->deposit_percentage ?: 40);
+                $depPct = (float)($quote->deposit_percentage ?: self::calculateGradualDepositPercentage($quote->event?->event_date, $quote->created_at));
                 $signal = round(($finalTotal * $depPct) / 100, 2);
             }
 

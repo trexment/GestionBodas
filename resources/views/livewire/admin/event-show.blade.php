@@ -33,7 +33,7 @@
             $signalAmount = min((float)\App\Models\Setting::get('deposit_fixed_amount', 200), $quoteAmount);
             $signalLabel = number_format($signalAmount, 2, ',', '.') . ' €';
         } else {
-            $pct = (float)\App\Models\Setting::get('deposit_percentage', 40);
+            $pct = \App\Models\Quote::calculateGradualDepositPercentage($event->event_date);
             $signalAmount = round(($quoteAmount * $pct) / 100, 2);
             $signalLabel = rtrim(rtrim(number_format($pct, 2, ',', '.'), '0'), ',') . '% (' . number_format($signalAmount, 2, ',', '.') . ' €)';
         }
@@ -3944,7 +3944,15 @@
                                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <!-- Señal -->
                                     <div>
-                                        <label class="block text-[10px] font-black uppercase text-indigo-900 mb-1">💶 Señal de Reserva</label>
+                                        @php
+                                            $gradualDepInfo = \App\Models\Quote::getGradualDepositInfo($event->event_date);
+                                        @endphp
+                                        <div class="flex items-center justify-between gap-2 mb-1">
+                                            <label class="block text-[10px] font-black uppercase text-indigo-900">💶 Señal de Reserva</label>
+                                            <button type="button" wire:click="applyGradualDeposit" title="Aplicar porcentaje gradual automático según tiempo restante hasta el evento (25% a +10 meses hasta 50% a ≤3 meses)" class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold transition cursor-pointer {{ ($quote_deposit_type === 'percentage' && (float)$quote_deposit_percentage == (float)$gradualDepInfo['percentage']) ? 'bg-indigo-100 text-indigo-800 border border-indigo-200' : 'bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100' }}">
+                                                ⚡ {{ $gradualDepInfo['label'] }}
+                                            </button>
+                                        </div>
                                         <div class="flex items-center gap-1">
                                             <button type="button" wire:click="$set('quote_deposit_type', 'none')" class="px-2 py-1 rounded-lg border text-[11px] font-bold transition cursor-pointer {{ $quote_deposit_type === 'none' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100' }}">
                                                 🚫 0€

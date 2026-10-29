@@ -518,7 +518,7 @@ class WhatsAppTemplateService
             if ($depType === 'fixed') {
                 $signalAmount = (float)Setting::get('deposit_fixed_amount', 200);
             } else {
-                $pct = (float)Setting::get('deposit_percentage', 40);
+                $pct = \App\Models\Quote::calculateGradualDepositPercentage($event?->event_date);
                 $signalAmount = $quoteAmount > 0 ? round(($quoteAmount * $pct) / 100, 2) : 200;
             }
         }
@@ -1198,7 +1198,7 @@ class WhatsAppTemplateService
                     $signalAmount = min((float)Setting::get('deposit_fixed_amount', 200), $quoteAmount);
                     $signalLabel = number_format($signalAmount, 2, ',', '.') . ' €';
                 } else {
-                    $pct = (float)Setting::get('deposit_percentage', 40);
+                    $pct = \App\Models\Quote::calculateGradualDepositPercentage($event->event_date);
                     $signalAmount = round(($quoteAmount * $pct) / 100, 2);
                     $signalLabel = rtrim(rtrim(number_format($pct, 2, ',', '.'), '0'), ',') . '% (' . number_format($signalAmount, 2, ',', '.') . ' €)';
                 }
@@ -1260,7 +1260,7 @@ class WhatsAppTemplateService
             if ($depType === 'fixed') {
                 $signalAmount = min((float)Setting::get('deposit_fixed_amount', 200), $quoteAmount);
             } else {
-                $pct = (float)Setting::get('deposit_percentage', 40);
+                $pct = \App\Models\Quote::calculateGradualDepositPercentage($event->event_date);
                 $signalAmount = round(($quoteAmount * $pct) / 100, 2);
             }
         }
