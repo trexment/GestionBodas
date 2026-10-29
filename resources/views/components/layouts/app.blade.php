@@ -1011,6 +1011,8 @@
     <script src="/js/offline-audio-cache.js"></script>
     <!-- DNI / NIE / CIF VALIDATOR & AUTO-COMPLETER -->
     <script src="/js/dni-validator.js"></script>
+    <!-- SPANISH DATE (dd/mm/yyyy, Monday-first) & 24H TIME PICKER -->
+    <script src="/js/es-datetime-picker.js?v=1"></script>
 
     @livewireScripts
     <script>
