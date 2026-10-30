@@ -337,6 +337,27 @@ class QrPosterPdfService
     {
         $extracted = self::extractCoupleDefaults((string) $event->name);
         $isWedding = (bool) ($event->is_wedding || $extracted['is_couple']);
+
+        // Si el título solo tenía un nombre (ej. "Boda - Miguel" autogenerado desde un lead)
+        // pero la ficha del evento ya tiene rellenado partner_name (y/o client->name), combinar ambos nombres de pila.
+        if (!$extracted['is_couple'] && $isWedding && !empty(trim((string) $event->partner_name))) {
+            $rawFirst = trim($extracted['names']);
+            if ($rawFirst === '' || preg_match('/^(?:boda|nuestra\s+boda|evento|enlace)$/iu', $rawFirst)) {
+                $rawFirst = trim((string) ($event->client?->name ?? ''));
+            }
+            $p1 = self::shortGivenName($rawFirst);
+            $p2 = self::shortGivenName((string) $event->partner_name);
+            if ($p1 !== '' && $p2 !== '' && mb_strtolower($p1, 'UTF-8') !== mb_strtolower($p2, 'UTF-8')) {
+                $i1 = self::firstLetterUpper($p1);
+                $i2 = self::firstLetterUpper($p2);
+                $extracted = [
+                    'names' => $p1 . ' & ' . $p2,
+                    'initials' => ($i1 !== '' && $i2 !== '') ? ($i1 . '&' . $i2) : ($i1 ?: $i2),
+                    'is_couple' => true,
+                ];
+            }
+        }
+
         $presets = self::presetPhrases();
         $presetKey = $isWedding ? 'directa' : 'evento';
         $preset = $presets[$presetKey];
@@ -401,11 +422,21 @@ class QrPosterPdfService
             return ['names' => 'Nuestra Boda', 'initials' => '', 'is_couple' => false];
         }
 
-        $clean = (string) preg_replace('/\s+(?:[-–—|]|\().*$/u', '', $clean);
-        $stripped = (string) preg_replace('/^(?:la\s+)?(?:boda|enlace|celebraci[oó]n|fiesta|evento)\s+(?:de\s+)?/iu', '', trim($clean));
-        $stripped = trim($stripped);
+        // 1. Quitar PRIMERO prefijos de tipo de evento con o sin guion/dos puntos ("Boda - Miguel", "Boda de Ana y Luis", "Cumpleaños - Marta", etc.)
+        $afterPrefix = (string) preg_replace(
+            '/^(?:la\s+)?(?:boda|enlace|celebraci[oó]n|cumplea[ñn]os|comuni[oó]n|bautizo|evento(?:\s+de\s+empresa|\s+empresa)?|fiesta|vide[oó]grafo)\s*(?:[-–—:|]+\s*(?:de\s+)?|\s+de\s+|\s+)/iu',
+            '',
+            $clean
+        );
+        $afterPrefix = trim($afterPrefix);
+        if ($afterPrefix === '') {
+            $afterPrefix = $clean;
+        }
+
+        // 2. Quitar DESPUÉS sufijos de finca/lugar tras guion o paréntesis ("Miguel y Ana - Finca El Olivar", "Miguel y Ana (Hacienda X)")
+        $stripped = trim((string) preg_replace('/\s+(?:[-–—|]|\().*$/u', '', $afterPrefix));
         if ($stripped === '') {
-            $stripped = $clean;
+            $stripped = $afterPrefix;
         }
 
         if (preg_match('/^([^\d&+\/]{2,28}?)\s+(?:y|e|&|\+|\/)\s+([^\d&+\/]{2,28})$/iu', $stripped, $m)) {
@@ -436,11 +467,50 @@ class QrPosterPdfService
             }
         }
 
+        $formattedSingle = self::titleCaseName($stripped);
         return [
-            'names' => $stripped,
-            'initials' => self::firstLetterUpper($stripped),
+            'names' => $formattedSingle,
+            'initials' => self::firstLetterUpper($formattedSingle),
             'is_couple' => false,
         ];
+    }
+
+    /**
+     * Extrae el nombre de pila (respetando nombres compuestos habituales en España como "María José" o "Juan Carlos")
+     * para combinar limpiamente cliente + pareja cuando la ficha tiene apellidos completos.
+     */
+    private static function shortGivenName(string $fullName): string
+    {
+        $clean = trim((string) preg_replace('/\s+/', ' ', $fullName));
+        if ($clean === '') {
+            return '';
+        }
+        $parts = explode(' ', $clean);
+        if (count($parts) === 1) {
+            return self::titleCaseName($parts[0]);
+        }
+
+        $w1 = mb_strtolower($parts[0], 'UTF-8');
+        $w2 = mb_strtolower($parts[1], 'UTF-8');
+        $compoundSeconds = [
+            'maría', 'maria', 'josé', 'jose', 'luis', 'carlos', 'ángel', 'angel',
+            'ángeles', 'angeles', 'carmen', 'jesús', 'jesus', 'antonio', 'manuel',
+            'miguel', 'belén', 'belen', 'pilar', 'mar', 'sol', 'cruz', 'paz', 'rocío', 'rocio',
+        ];
+
+        if (in_array($w1, ['mª', 'ma', 'm.', 'j.'], true) || in_array($w2, $compoundSeconds, true)) {
+            return self::titleCaseName($parts[0] . ' ' . $parts[1]);
+        }
+
+        if (in_array($w2, ['de', 'del'], true) && isset($parts[2])) {
+            $w3 = mb_strtolower($parts[2], 'UTF-8');
+            if ($w3 === 'la' && isset($parts[3])) {
+                return self::titleCaseName($parts[0] . ' ' . $parts[1] . ' ' . $parts[2] . ' ' . $parts[3]);
+            }
+            return self::titleCaseName($parts[0] . ' ' . $parts[1] . ' ' . $parts[2]);
+        }
+
+        return self::titleCaseName($parts[0]);
     }
 
     public static function formatSpanishDate(?string $ymd): string
