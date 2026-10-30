@@ -308,6 +308,9 @@ class TariffDossierManager extends Component
 
     public function render()
     {
+        $this->syncConfigFromTextHelpers();
+        $report = GeneralTariffDossierService::validateConfig($this->config);
+
         $recentEvents = Event::with('client')
             ->whereNotIn('status', ['cancelled', 'rejected'])
             ->latest()
@@ -315,8 +318,10 @@ class TariffDossierManager extends Component
             ->get();
 
         return view('livewire.admin.tariff-dossier-manager', [
-            'report' => $this->validation_report,
+            'report' => $report,
             'recentEvents' => $recentEvents,
+        ])->layout('components.layouts.app', [
+            'header' => 'Dossier General de Tarifas',
         ]);
     }
 }

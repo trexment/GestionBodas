@@ -938,6 +938,7 @@ class GeneralTariffDossierService
 
         return [
             'can_export' => $allBlockingPassed,
+            'can_generate' => $allBlockingPassed,
             'checks' => $checks,
             'blocking_errors' => $blockingErrors,
             'plan' => $plan,
@@ -1007,8 +1008,14 @@ class GeneralTariffDossierService
         $cleanName = trim((string) $clientName);
         $year = trim((string) ($config['tariff_year'] ?? '2027')) ?: '2027';
         $firma = trim((string) $senderName) ?: 'Fran';
-        $brand = $config['brand'] ?? 'nunez_and_son';
-        $pdfUrl = route('public.tariff-dossier.pdf', ['brand' => $brand]);
+        $brand = in_array(($config['brand'] ?? 'nunez_and_son'), ['nunez_and_son', 'javnx'], true)
+            ? $config['brand']
+            : 'nunez_and_son';
+        try {
+            $pdfUrl = route('public.tariff-dossier.pdf', ['brand' => $brand]);
+        } catch (\Throwable $e) {
+            $pdfUrl = url("/dossier-tarifas/{$brand}.pdf");
+        }
 
         $msg = str_replace(
             ['{nombre}', '{anio}', '{año}', '{firma}', '{enlace_dossier}', '{enlace}'],

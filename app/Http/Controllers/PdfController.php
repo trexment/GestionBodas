@@ -212,7 +212,7 @@ class PdfController extends Controller
         // verificamos el checklist obligatorio antes de exportar.
         if (auth()->check() && auth()->user()->role === 'admin' && !$request->boolean('force')) {
             $validation = GeneralTariffDossierService::validateConfig($config);
-            if (!$validation['can_generate']) {
+            if (empty($validation['can_export'])) {
                 return redirect()
                     ->route('admin.tariff-dossier')
                     ->with('error', '⚠️ No se puede generar el PDF hasta corregir los puntos pendientes del checklist.');

@@ -76,9 +76,11 @@ Route::get('/calendar/feed/{token}.ics', [CalendarFeedController::class, 'feed']
 Route::get('/presupuesto', \App\Livewire\Guest\QuoteCalculator::class)->middleware('throttle:20,1')->name('guest.quote');
 
 // Public General Tariff Dossier PDF (igual para todas las parejas, distinto del presupuesto por boda)
-Route::get('/dossier-tarifas/{brand?}.pdf', [PdfController::class, 'downloadTariffDossier'])
+Route::get('/dossier-tarifas/{brand}.pdf', [PdfController::class, 'downloadTariffDossier'])
     ->where('brand', 'nunez_and_son|javnx')
     ->name('public.tariff-dossier.pdf');
+Route::get('/dossier-tarifas.pdf', [PdfController::class, 'downloadTariffDossier'])
+    ->name('public.tariff-dossier.default.pdf');
 Route::get('/dossier-tarifas/presentacion/{brand?}', [PdfController::class, 'viewTariffDossierPresentation'])
     ->where('brand', 'nunez_and_son|javnx')
     ->name('public.tariff-dossier.presentation');
