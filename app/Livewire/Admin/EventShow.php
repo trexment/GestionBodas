@@ -243,6 +243,7 @@ class EventShow extends Component
     public bool $photoQrShareDriveAlbum = false;
     public bool $photoQrAllowVideos = false;
     public ?array $photoQrLiveStats = null;
+    public int $photoQrPosterKey = 0;
 
     public function boot()
     {
@@ -5268,6 +5269,18 @@ class EventShow extends Component
         } elseif ($flash && empty($res['success'])) {
             session()->flash('photo_qr_error', $res['message'] ?? 'No se pudo consultar el estado del álbum.');
         }
+    }
+
+    public function resetPhotoQrPosterCustomization(): void
+    {
+        if (!$this->event) {
+            return;
+        }
+
+        \App\Services\QrPosterPdfService::resetCustomizationForEvent($this->event);
+        $this->event->refresh();
+        $this->photoQrPosterKey++;
+        session()->flash('photo_qr_message', 'Diseño del cartel restaurado con los nombres y fecha actuales del evento.');
     }
 
     public function render()
