@@ -41,34 +41,8 @@ class GeneralTariffDossierService
             // 3. NUESTRO TRABAJO (Galería de 6 a 9 fotos, cada una de una boda distinta con permiso)
             'gallery_photos' => self::getDefaultGallerySlots(),
 
-            // 4. CÓMO TRABAJAMOS (Paso a paso con plazos concretos; por defecto plazos 2, 3 y 4 vacíos para rellenar)
-            'work_steps' => [
-                [
-                    'title' => 'Reserva de la fecha',
-                    'description' => 'Con la firma del contrato y el abono de la señal queda bloqueada vuestra fecha en exclusiva.',
-                    'timeframe' => 'Con el contrato y la señal',
-                ],
-                [
-                    'title' => 'Reunión previa de personalización (videollamada; presencial si se necesita)',
-                    'description' => 'Definimos juntos las canciones de cada momento, vuestros gustos musicales y las canciones que no queréis que suenen.',
-                    'timeframe' => '',
-                ],
-                [
-                    'title' => 'Coordinación directa con el local para montaje y condiciones técnicas',
-                    'description' => 'Hablamos con el responsable de la finca o restaurante para cuadrar horarios de acceso, tomas de corriente y sonido.',
-                    'timeframe' => '',
-                ],
-                [
-                    'title' => 'El día de la boda: montaje y música en los momentos contratados',
-                    'description' => 'Instalación completa, prueba de sonido antes de la llegada de invitados y sesión musical en cada fase contratada.',
-                    'timeframe' => '',
-                ],
-                [
-                    'title' => 'Pago del resto',
-                    'description' => 'Liquidación del importe pendiente una vez descontada la señal de reserva.',
-                    'timeframe' => 'El día del evento o antes',
-                ],
-            ],
+            // 4. CÓMO TRABAJAMOS (Paso a paso empezando por el valor para la pareja y dejando la reserva en el paso 3)
+            'work_steps' => self::getRecommendedSevenWorkSteps(),
 
             // 5. PACKS Y PRECIO (Página central, exactamente 3 packs, el del medio destacado)
             'prices_include_vat' => true,
@@ -193,6 +167,89 @@ class GeneralTariffDossierService
     }
 
     /**
+     * Devuelve los 7 pasos recomendados para "Cómo trabajamos" (empezando por lo que gana la pareja y dejando la reserva en el paso 3)
+     */
+    public static function getRecommendedSevenWorkSteps(): array
+    {
+        return [
+            [
+                'title' => 'Consulta y disponibilidad',
+                'description' => 'Nos contáis fecha, lugar e invitados y os confirmamos si tenemos el día libre.',
+                'timeframe' => 'En menos de 24 h',
+            ],
+            [
+                'title' => 'Propuesta a medida',
+                'description' => 'Os enviamos el dossier con los packs adaptados a vuestra boda y al local.',
+                'timeframe' => 'En 24–48 h tras la consulta',
+            ],
+            [
+                'title' => 'Reserva de la fecha',
+                'description' => 'Con el contrato y la señal del 40 %, la fecha queda bloqueada solo para vosotros.',
+                'timeframe' => 'Cuando lo decidáis',
+            ],
+            [
+                'title' => 'Reunión de personalización',
+                'description' => 'Por videollamada (o presencial si lo preferís), elegimos juntos la música de cada momento.',
+                'timeframe' => '1–2 meses antes de la boda',
+            ],
+            [
+                'title' => 'Coordinación con el local',
+                'description' => 'Hablamos directamente con la finca o el restaurante sobre montaje, horarios y condiciones técnicas. Vosotros no tenéis que gestionar nada.',
+                'timeframe' => '2–3 semanas antes',
+            ],
+            [
+                'title' => 'El día de la boda',
+                'description' => 'Montaje completo y prueba de sonido antes de que lleguen los invitados.',
+                'timeframe' => 'Llegada 2 h antes del primer servicio',
+            ],
+            [
+                'title' => 'Pago del resto',
+                'description' => 'El 60 % restante, por transferencia, Bizum o efectivo.',
+                'timeframe' => 'El día del evento o antes',
+            ],
+        ];
+    }
+
+    /**
+     * Devuelve la versión compacta (uniendo Consulta y propuesta en el paso 1)
+     */
+    public static function getRecommendedCompactWorkSteps(): array
+    {
+        return [
+            [
+                'title' => 'Consulta y propuesta',
+                'description' => 'Nos contáis fecha, lugar e invitados, os confirmamos si tenemos el día libre y os enviamos los packs adaptados a vuestra boda y al local.',
+                'timeframe' => 'En 24–48 h',
+            ],
+            [
+                'title' => 'Reserva de la fecha',
+                'description' => 'Con el contrato y la señal del 40 %, la fecha queda bloqueada solo para vosotros.',
+                'timeframe' => 'Cuando lo decidáis',
+            ],
+            [
+                'title' => 'Reunión de personalización',
+                'description' => 'Por videollamada (o presencial si lo preferís), elegimos juntos la música de cada momento.',
+                'timeframe' => '1–2 meses antes de la boda',
+            ],
+            [
+                'title' => 'Coordinación con el local',
+                'description' => 'Hablamos directamente con la finca o el restaurante sobre montaje, horarios y condiciones técnicas. Vosotros no tenéis que gestionar nada.',
+                'timeframe' => '2–3 semanas antes',
+            ],
+            [
+                'title' => 'El día de la boda',
+                'description' => 'Montaje completo y prueba de sonido antes de que lleguen los invitados.',
+                'timeframe' => 'Llegada 2 h antes del primer servicio',
+            ],
+            [
+                'title' => 'Pago del resto',
+                'description' => 'El 60 % restante, por transferencia, Bizum o efectivo.',
+                'timeframe' => 'El día del evento o antes',
+            ],
+        ];
+    }
+
+    /**
      * Genera las ranuras iniciales de galería aprovechando fotos reales existentes si las hay
      */
     public static function getDefaultGallerySlots(): array
@@ -271,6 +328,17 @@ class GeneralTariffDossierService
 
         if (!isset($merged['work_steps']) || !is_array($merged['work_steps']) || empty($merged['work_steps'])) {
             $merged['work_steps'] = $defaults['work_steps'];
+        } else {
+            // Si aún conserva la plantilla antigua de 5 pasos donde el Paso 1 era el pago ("Reserva de la fecha") y títulos largos que se cortaban, actualizar a la nueva estructura de 7 pasos
+            $firstTitle = trim((string) ($merged['work_steps'][0]['title'] ?? ''));
+            $secondTitle = trim((string) ($merged['work_steps'][1]['title'] ?? ''));
+            if (
+                count($merged['work_steps']) === 5
+                && $firstTitle === 'Reserva de la fecha'
+                && str_starts_with($secondTitle, 'Reunión previa de personalización')
+            ) {
+                $merged['work_steps'] = self::getRecommendedSevenWorkSteps();
+            }
         }
 
         if (!isset($merged['extras']) || !is_array($merged['extras'])) {

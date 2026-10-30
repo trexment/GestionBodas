@@ -407,37 +407,46 @@
             </div>
 
             <div class="page-body">
-                <p style="margin: 0 0 6mm 0; font-size: 10pt; color: #334155;">
-                    Seguimos un proceso claro y con plazos definidos para que sepáis en todo momento qué ocurre desde que reserváis la fecha hasta el día de la boda:
+                @php
+                    $validSteps = array_values(array_filter(
+                        $config['work_steps'] ?? [],
+                        fn($s) => !empty(trim((string) ($s['title'] ?? '')))
+                    ));
+                    $isDenseSteps = count($validSteps) > 5;
+                @endphp
+                <p style="margin: 0 0 {{ $isDenseSteps ? '3.5mm' : '6mm' }} 0; font-size: {{ $isDenseSteps ? '9.5pt' : '10pt' }}; color: #334155;">
+                    Seguimos un proceso claro y con plazos definidos desde vuestra primera consulta hasta el día de la boda:
                 </p>
 
-                @foreach(($config['work_steps'] ?? []) as $idx => $step)
-                    @if(!empty(trim((string) ($step['title'] ?? ''))))
-                        <div style="margin-bottom: 4.5mm; border: 1px solid #cbd5e1; border-left: 4px solid #0f172a; border-radius: 8px; padding: 11px 14px; background-color: #f8fafc;">
-                            <table style="width: 100%; border-collapse: collapse;">
-                                <tr>
-                                    <td style="vertical-align: top; width: 32px;">
-                                        <div style="width: 24px; height: 24px; border-radius: 12px; background-color: #0f172a; color: #facc15; font-weight: 900; font-size: 10pt; text-align: center; line-height: 24px;">
-                                            {{ $idx + 1 }}
+                @foreach($validSteps as $idx => $step)
+                    <div style="margin-bottom: {{ $isDenseSteps ? '2.8mm' : '4.5mm' }}; border: 1px solid #cbd5e1; border-left: 4px solid #0f172a; border-radius: 8px; padding: {{ $isDenseSteps ? '8px 12px' : '11px 14px' }}; background-color: #f8fafc;">
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <tr>
+                                <td style="vertical-align: top; width: 30px;">
+                                    <div style="width: 22px; height: 22px; border-radius: 11px; background-color: #0f172a; color: #facc15; font-weight: 900; font-size: 9.5pt; text-align: center; line-height: 22px;">
+                                        {{ $idx + 1 }}
+                                    </div>
+                                </td>
+                                <td style="vertical-align: top;">
+                                    <table style="width: 100%; border-collapse: collapse;">
+                                        <tr>
+                                            <td style="font-size: {{ $isDenseSteps ? '10.2pt' : '11pt' }}; font-weight: 800; color: #0f172a; padding-bottom: 2px;">
+                                                Paso {{ $idx + 1 }} – {{ $step['title'] }}
+                                            </td>
+                                            <td style="text-align: right; vertical-align: top; white-space: nowrap;">
+                                                <span class="step-badge">Plazo: {{ $step['timeframe'] }}</span>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                    @if(!empty($step['description']))
+                                        <div style="font-size: {{ $isDenseSteps ? '9pt' : '9.5pt' }}; color: #475569; line-height: 1.38;">
+                                            {{ $step['description'] }}
                                         </div>
-                                    </td>
-                                    <td style="vertical-align: top;">
-                                        <div style="font-size: 11pt; font-weight: 800; color: #0f172a; margin-bottom: 3px;">
-                                            {{ $step['title'] }}
-                                        </div>
-                                        @if(!empty($step['description']))
-                                            <div style="font-size: 9.5pt; color: #475569; margin-bottom: 6px;">
-                                                {{ $step['description'] }}
-                                            </div>
-                                        @endif
-                                        <div>
-                                            <span class="step-badge">Plazo: {{ $step['timeframe'] }}</span>
-                                        </div>
-                                    </td>
-                                </tr>
-                            </table>
-                        </div>
-                    @endif
+                                    @endif
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
                 @endforeach
             </div>
 

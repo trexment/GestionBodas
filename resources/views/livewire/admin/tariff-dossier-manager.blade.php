@@ -300,18 +300,26 @@
     <!-- 4. CÓMO TRABAJAMOS (PASO A PASO CON PLAZO CONCRETO OBLIGATORIO)           -->
     <!-- ========================================================================= -->
     <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm space-y-4">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
             <div>
                 <h3 class="text-base font-black text-slate-900 dark:text-white">
                     4. Cómo trabajamos (Paso a paso)
                 </h3>
                 <p class="text-xs text-slate-500 dark:text-slate-400">
-                    Cada paso debe tener un título y un <strong>plazo concreto</strong>. No se generará el PDF si algún paso tiene el plazo vacío.
+                    Empieza por lo que la pareja gana (<strong>disponibilidad y propuesta</strong>) y deja la señal como <strong>paso 3</strong> (el pago unido al valor de bloquear su fecha). Títulos cortos para que no se corten; los detalles van en la explicación.
                 </p>
             </div>
-            <button type="button" wire:click="addWorkStep" class="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold cursor-pointer shrink-0">
-                + Añadir Paso
-            </button>
+            <div class="flex flex-wrap items-center gap-2 shrink-0">
+                <button type="button" wire:click="applySevenWorkStepsPreset" class="px-3 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-800 dark:text-amber-300 text-xs font-extrabold cursor-pointer">
+                    ↺ 7 pasos recomendados
+                </button>
+                <button type="button" wire:click="applyCompactWorkStepsPreset" class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold cursor-pointer">
+                    ↺ Versión compacta («Consulta y propuesta» unidos)
+                </button>
+                <button type="button" wire:click="addWorkStep" class="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold cursor-pointer">
+                    + Añadir Paso
+                </button>
+            </div>
         </div>
 
         <div class="space-y-3">
@@ -319,25 +327,31 @@
                 @php
                     $missingTf = empty(trim((string) ($step['timeframe'] ?? '')));
                 @endphp
-                <div class="p-4 rounded-xl border {{ $missingTf ? 'border-rose-300 bg-rose-50/40 dark:border-rose-800 dark:bg-rose-950/20' : 'border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/50' }} grid grid-cols-1 md:grid-cols-12 gap-3 items-start">
-                    <div class="md:col-span-5">
-                        <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">Paso {{ $sIdx + 1 }} — Título *</label>
-                        <input type="text" wire:model.live="config.work_steps.{{ $sIdx }}.title" class="w-full rounded-lg border-slate-300 dark:border-slate-700 dark:bg-slate-900 dark:text-white text-xs font-bold p-2">
-                    </div>
-                    <div class="md:col-span-4">
-                        <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">Explicación breve</label>
-                        <input type="text" wire:model.live="config.work_steps.{{ $sIdx }}.description" class="w-full rounded-lg border-slate-300 dark:border-slate-700 dark:bg-slate-900 dark:text-white text-xs p-2">
-                    </div>
-                    <div class="md:col-span-3">
-                        <div class="flex items-center justify-between mb-1">
-                            <label class="block text-[11px] font-black {{ $missingTf ? 'text-rose-600 dark:text-rose-400' : 'text-amber-700 dark:text-amber-400' }}">
-                                ⏰ Plazo concreto *
+                <div class="p-4 rounded-xl border {{ $missingTf ? 'border-rose-300 bg-rose-50/40 dark:border-rose-800 dark:bg-rose-950/20' : 'border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/50' }} space-y-2.5">
+                    <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-start">
+                        <div class="md:col-span-7">
+                            <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                Paso {{ $sIdx + 1 }} — Título corto *
                             </label>
-                            @if(count($config['work_steps']) > 1)
-                                <button type="button" wire:click="removeWorkStep({{ $sIdx }})" class="text-[11px] text-rose-600 font-bold cursor-pointer">Quitar</button>
-                            @endif
+                            <input type="text" wire:model.live="config.work_steps.{{ $sIdx }}.title" placeholder="Ej: Consulta y disponibilidad" class="w-full rounded-lg border-slate-300 dark:border-slate-700 dark:bg-slate-900 dark:text-white text-xs font-bold p-2">
                         </div>
-                        <input type="text" wire:model.live="config.work_steps.{{ $sIdx }}.timeframe" placeholder="Ej: 1 mes antes de la boda / 2h antes" class="w-full rounded-lg {{ $missingTf ? 'border-rose-400 ring-1 ring-rose-400' : 'border-slate-300 dark:border-slate-700' }} dark:bg-slate-900 dark:text-white text-xs font-bold p-2">
+                        <div class="md:col-span-5">
+                            <div class="flex items-center justify-between mb-1">
+                                <label class="block text-[11px] font-black {{ $missingTf ? 'text-rose-600 dark:text-rose-400' : 'text-amber-700 dark:text-amber-400' }}">
+                                    ⏰ Plazo concreto (pon solo el que puedas cumplir siempre) *
+                                </label>
+                                @if(count($config['work_steps']) > 1)
+                                    <button type="button" wire:click="removeWorkStep({{ $sIdx }})" class="text-[11px] text-rose-600 font-bold cursor-pointer">Quitar paso</button>
+                                @endif
+                            </div>
+                            <input type="text" wire:model.live="config.work_steps.{{ $sIdx }}.timeframe" placeholder="Ej: En menos de 24 h / Llegada 2 h antes del primer servicio" class="w-full rounded-lg {{ $missingTf ? 'border-rose-400 ring-1 ring-rose-400' : 'border-slate-300 dark:border-slate-700' }} dark:bg-slate-900 dark:text-white text-xs font-bold p-2">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                            Explicación detallada (se muestra completa sin cortarse)
+                        </label>
+                        <textarea wire:model.live="config.work_steps.{{ $sIdx }}.description" rows="2" class="w-full rounded-lg border-slate-300 dark:border-slate-700 dark:bg-slate-900 dark:text-white text-xs p-2 leading-relaxed"></textarea>
                     </div>
                 </div>
             @endforeach

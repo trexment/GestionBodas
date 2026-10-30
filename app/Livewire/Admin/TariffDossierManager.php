@@ -154,6 +154,20 @@ class TariffDossierManager extends Component
         ];
     }
 
+    public function applySevenWorkStepsPreset(): void
+    {
+        $this->config['work_steps'] = GeneralTariffDossierService::getRecommendedSevenWorkSteps();
+        $this->save(false);
+        session()->flash('dossier_saved', '✅ Aplicada la estructura recomendada de 7 pasos (Consulta y disponibilidad → Propuesta → Reserva con señal en el paso 3).');
+    }
+
+    public function applyCompactWorkStepsPreset(): void
+    {
+        $this->config['work_steps'] = GeneralTariffDossierService::getRecommendedCompactWorkSteps();
+        $this->save(false);
+        session()->flash('dossier_saved', '✅ Aplicada la versión compacta uniendo «Consulta y propuesta» en el Paso 1.');
+    }
+
     public function removeWorkStep(int $index): void
     {
         if (count($this->config['work_steps']) <= 1) {
