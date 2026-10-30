@@ -273,16 +273,21 @@
                         </div>
                     @endforeach
 
-                    @if(!$isMagicQuoteBrand && $hasCeremonyOrCocktailOnline && !$hasQrPhotosItemOnline)
+                    @php
+                        $qrFreePromoOnline = \App\Models\Setting::get('photo_qr_free_with_ceremony_cocktail', '1') !== '0';
+                        $hasActiveEventQrOnline = $quote->event ? (\App\Services\FotosEventosQrService::getEventAlbumInfo($quote->event) !== null) : false;
+                        $showFallbackQrGiftOnline = !$isMagicQuoteBrand && !$hasQrPhotosItemOnline && ($hasActiveEventQrOnline || ($qrFreePromoOnline && $hasCeremonyOrCocktailOnline));
+                    @endphp
+                    @if($showFallbackQrGiftOnline)
                         <div class="py-4 flex flex-col sm:flex-row sm:items-start justify-between gap-3 bg-emerald-50/60 dark:bg-emerald-950/20 -mx-4 px-4 rounded-xl">
                             <div class="space-y-1 pr-4">
                                 <div class="flex items-center gap-2 flex-wrap">
                                     <span class="font-semibold text-sm text-emerald-800 dark:text-emerald-300">
-                                        ★ Álbum de Fotos QR para Invitados (Incluido de regalo con Ceremonia / Cóctel)
+                                        ★ {{ ($qrFreePromoOnline && $hasCeremonyOrCocktailOnline) ? 'Álbum de Fotos QR para Invitados (Incluido de regalo con Ceremonia / Cóctel)' : 'Álbum de Fotos QR para Invitados + Carteles PDF (Incluido de regalo)' }}
                                     </span>
                                 </div>
                                 <p class="text-xs text-emerald-700 dark:text-emerald-400/90 leading-relaxed max-w-2xl">
-                                    Código QR personalizado para que todos los invitados suban y descarguen en calidad original las fotos que hagan con su móvil durante el evento, sin instalar ninguna app.
+                                    Código QR personalizado y carteles PDF listos para imprimir para que todos los invitados suban y descarguen en calidad original las fotos que hagan con su móvil durante el evento, sin instalar ninguna app.
                                 </p>
                             </div>
                             <div class="sm:text-right shrink-0 pt-0.5">

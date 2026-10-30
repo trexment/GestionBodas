@@ -370,6 +370,14 @@ class QuoteCalculator extends Component
                 'name' => 'Sistema de Karaoke', 
                 'description' => 'Repertorio audiovisual interactivo y microfonía inalámbrica adicional.'
             ],
+            'photo_qr' => [
+                'selected' => false,
+                'quantity' => 1,
+                'icon' => 'QR',
+                'name' => 'Álbum de Fotos QR para Invitados + Carteles PDF',
+                'description' => 'Código QR personalizado con las iniciales y carteles PDF listos para imprimir para que todos los invitados suban y descarguen las fotos desde su móvil sin instalar apps.',
+                'included' => false,
+            ],
             'extra_hours' => [
                 'selected' => false, 
                 'quantity' => 1, 
@@ -445,6 +453,7 @@ class QuoteCalculator extends Component
             'smoke_machine' => (float) Setting::get('price_effects_smoke', 60),
             'cold_sparks' => (float) Setting::get('price_effects_sparks', 60),
             'karaoke' => (float) Setting::get('price_karaoke', 80),
+            'photo_qr' => (float) Setting::get('price_photo_qr', 60),
             'extra_hours' => (float) Setting::get('price_extra_hours', 120),
             'photobooth' => (float) Setting::get('price_photobooth', 380),
         ];
@@ -522,8 +531,12 @@ class QuoteCalculator extends Component
 
         $this->services[$key]['selected'] = !$this->services[$key]['selected'];
 
-        if ($key === 'smoke_machine' || $key === 'cold_sparks') {
+        if ($key === 'smoke_machine' || $key === 'cold_sparks' || $key === 'photo_qr') {
             $this->services[$key]['manually_toggled'] = true;
+        }
+
+        if ($key === 'ceremony' || $key === 'cocktail') {
+            $this->syncPhotoQrGift();
         }
 
         if ($key === 'pack_duo_360') {
@@ -762,6 +775,28 @@ class QuoteCalculator extends Component
                 $this->services['cold_sparks']['quantity'] = 2;
             }
         }
+
+        $this->syncPhotoQrGift();
+    }
+
+    public function syncPhotoQrGift(): void
+    {
+        if (!isset($this->services['photo_qr'])) {
+            return;
+        }
+
+        $freeWithCerCock = Setting::get('photo_qr_free_with_ceremony_cocktail', '1') !== '0';
+        $hasCerOrCock = !empty($this->services['ceremony']['selected']) || !empty($this->services['cocktail']['selected']);
+
+        if ($freeWithCerCock && $hasCerOrCock) {
+            $this->services['photo_qr']['included'] = true;
+            $this->services['photo_qr']['selected'] = true;
+        } else {
+            $this->services['photo_qr']['included'] = false;
+            if (empty($this->services['photo_qr']['manually_toggled'])) {
+                $this->services['photo_qr']['selected'] = false;
+            }
+        }
     }
 
     public function submitRequest()
@@ -910,6 +945,10 @@ class QuoteCalculator extends Component
                     if (empty($service['included'])) {
                         $totalEstimated += ($catalog['smoke_machine'] ?? 60);
                     }
+                } elseif ($key === 'photo_qr') {
+                    if (empty($service['included'])) {
+                        $totalEstimated += ($catalog['photo_qr'] ?? 60);
+                    }
                 } elseif ($key === 'cold_sparks') {
                     $qty = (int)($service['quantity'] ?: 1);
                     $unitPrice = $catalog['cold_sparks'] ?? 60;
@@ -1002,6 +1041,15 @@ class QuoteCalculator extends Component
                         $clientServicesList[] = $service['name'] . " (Incluido en " . ($djPack['base_name'] ?? 'Pack') . ")";
                     } else {
                         $requestedServicesList[] = "• " . $service['name'] . " (60 €)";
+                        $clientServicesList[] = $service['name'];
+                    }
+                } elseif ($key === 'photo_qr') {
+                    if (!empty($service['included'])) {
+                        $requestedServicesList[] = "• " . $service['name'] . " (Incluido de regalo con Ceremonia / Cóctel - 0 €)";
+                        $clientServicesList[] = $service['name'] . " (Incluido de regalo con Ceremonia / Cóctel)";
+                    } else {
+                        $qrP = number_format((float)($catalog['photo_qr'] ?? 60), 0, ',', '.');
+                        $requestedServicesList[] = "• " . $service['name'] . " ({$qrP} €)";
                         $clientServicesList[] = $service['name'];
                     }
                 } elseif ($key === 'cold_sparks') {
@@ -1294,6 +1342,18 @@ class QuoteCalculator extends Component
                     $quote->items()->create([
                         'service_name' => $isIncluded ? 'Máquina de Humo (Incluido en ' . ($djPack['base_name'] ?? 'Pack') . ')' : 'Máquina de Humo (Efecto pista)',
                         'description' => $isIncluded ? 'Efecto de máquina de humo para ambientar la pista de baile (incluido en el pack contratado).' : $service['description'],
+                        'quantity' => 1,
+                        'price' => $p,
+                        'total' => $p,
+                    ]);
+                } elseif ($key === 'photo_qr') {
+                    $isIncluded = !empty($service['included']);
+                    $p = $isIncluded ? 0 : ($catalog['photo_qr'] ?? 60);
+                    $quote->items()->create([
+                        'service_name' => $isIncluded
+                            ? 'Álbum de Fotos QR para Invitados (Incluido de regalo con Ceremonia / Cóctel)'
+                            : 'Álbum de Fotos QR para Invitados + Carteles PDF',
+                        'description' => $service['description'],
                         'quantity' => 1,
                         'price' => $p,
                         'total' => $p,

@@ -716,6 +716,23 @@
                         <input type="number" step="0.01" wire:model="price_effects_sparks" required class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm font-bold">
                         <span class="text-[10px] text-gray-500 mt-1 block">Tarifa por máquina (ej: 2 máquinas = 120 €). En Pack Deluxe Show se incluye espectáculo de 2 máquinas (0 €).</span>
                     </div>
+
+                    <div class="p-3.5 bg-emerald-50/70 rounded-xl border border-emerald-200 sm:col-span-2 md:col-span-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div class="flex-1 min-w-0">
+                            <label class="block text-xs font-bold text-emerald-950 mb-0.5">📸 Álbum de Fotos QR para Invitados + Carteles PDF (€)</label>
+                            <span class="text-[11px] text-emerald-800/90 block">Tarifa base cuando se contrate como extra suelto o cuando decidas dejar de incluirlo gratis.</span>
+                            <label class="inline-flex items-center gap-2 mt-2 cursor-pointer select-none">
+                                <input type="checkbox" wire:model.live="photo_qr_free_with_ceremony_cocktail" class="rounded text-emerald-600 focus:ring-emerald-500 h-4 w-4">
+                                <span class="text-xs font-bold text-emerald-900">🎁 Incluir de regalo (0 €) automáticamente al contratar Ceremonia o Cóctel</span>
+                            </label>
+                        </div>
+                        <div class="w-full sm:w-40 shrink-0">
+                            <div class="relative">
+                                <input type="number" step="0.01" min="0" wire:model="price_photo_qr" required class="w-full border-emerald-300 rounded-lg shadow-sm focus:ring-emerald-500 focus:border-emerald-500 text-sm font-bold text-emerald-900 pr-7 bg-white">
+                                <span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-emerald-700">€</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- PACK COMBINADO CÓCTEL + BANQUETE -->

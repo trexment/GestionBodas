@@ -128,6 +128,8 @@ class Settings extends Component
     public $waffle_cart_desc;
     public $price_effects_smoke;
     public $price_effects_sparks;
+    public $price_photo_qr = 60;
+    public $photo_qr_free_with_ceremony_cocktail = true;
     public $pack_cocktail_restaurant_enabled = true;
     public $pack_cocktail_restaurant_discount_type = 'percentage'; // 'percentage' | 'fixed_price'
     public $pack_cocktail_restaurant_discount_percentage = 25;
@@ -454,6 +456,8 @@ class Settings extends Component
             Setting::set('price_effects_sparks', 60);
         }
         $this->price_effects_sparks = (float)Setting::get('price_effects_sparks', 60);
+        $this->price_photo_qr = (float)Setting::get('price_photo_qr', 60);
+        $this->photo_qr_free_with_ceremony_cocktail = Setting::get('photo_qr_free_with_ceremony_cocktail', '1') !== '0';
 
         // Pack Cóctel + Banquete
         $this->pack_cocktail_restaurant_enabled = (bool)Setting::get('pack_cocktail_restaurant_enabled', true);
@@ -803,6 +807,7 @@ class Settings extends Component
             'price_extra_hours' => 'required|numeric',
             'price_effects_smoke' => 'required|numeric',
             'price_effects_sparks' => 'required|numeric',
+            'price_photo_qr' => 'required|numeric|min:0',
 
             'price_photo_ceremony' => 'required|numeric',
             'price_photo_restaurant' => 'required|numeric',
@@ -937,6 +942,8 @@ class Settings extends Component
 
         Setting::set('price_effects_smoke', $this->price_effects_smoke);
         Setting::set('price_effects_sparks', $this->price_effects_sparks);
+        Setting::set('price_photo_qr', (float)$this->price_photo_qr);
+        Setting::set('photo_qr_free_with_ceremony_cocktail', $this->photo_qr_free_with_ceremony_cocktail ? '1' : '0');
 
         // Pack Cóctel + Banquete
         Setting::set('pack_cocktail_restaurant_enabled', $this->pack_cocktail_restaurant_enabled ? '1' : '0');

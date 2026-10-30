@@ -1314,9 +1314,11 @@
                                 Continuación del evento tras el espectáculo con sesión musical / DJ por horas, equipo de sonido profesional e iluminación rítmica LED (Desde <strong>{{ number_format($djCustomPrice, 0, ',', '.') }}€/hora</strong>).
                             @else
                                 {{ $event->is_wedding ? 'Equipos independientes a batería o corriente, microfonía inalámbrica para oficiante y lecturas, y música de ambientación elegante y fluida.' : 'Equipos de sonido profesionales independientes, microfonía inalámbrica para intervenciones o actuaciones y música de ambientación adaptada.' }}
-                                <div style="margin-top: 3px; color: #065f46; font-weight: 700;">
-                                    &#9733; REGALO INCLUIDO (0 €): Álbum de Fotos QR para que los invitados suban y descarguen sus fotos en calidad original.
-                                </div>
+                                @if(\App\Models\Setting::get('photo_qr_free_with_ceremony_cocktail', '1') !== '0')
+                                    <div style="margin-top: 3px; color: #065f46; font-weight: 700;">
+                                        &#9733; REGALO INCLUIDO (0 €): Álbum de Fotos QR para que los invitados suban y descarguen sus fotos en calidad original.
+                                    </div>
+                                @endif
                             @endif
                         </div>
                     </td>
@@ -1586,14 +1588,19 @@
                                 </td>
                             </tr>
                         @endforelse
-                        @if(!$isMagicBrand && $hasCeremonyOrCocktailInQuote && !$hasQrPhotosItemInQuote)
+                        @php
+                            $qrFreePromoPdf = \App\Models\Setting::get('photo_qr_free_with_ceremony_cocktail', '1') !== '0';
+                            $hasActiveEventQrPdf = \App\Services\FotosEventosQrService::getEventAlbumInfo($event) !== null;
+                            $showFallbackQrGiftPdf = !$isMagicBrand && !$hasQrPhotosItemInQuote && ($hasActiveEventQrPdf || ($qrFreePromoPdf && $hasCeremonyOrCocktailInQuote));
+                        @endphp
+                        @if($showFallbackQrGiftPdf)
                             <tr style="background-color: #f0fdf4;">
                                 <td>
                                     <div class="quote-item-title" style="color: #065f46;">
-                                        &#9733; Álbum de Fotos QR para Invitados (Incluido de regalo con Ceremonia / Cóctel)
+                                        &#9733; {{ ($qrFreePromoPdf && $hasCeremonyOrCocktailInQuote) ? 'Álbum de Fotos QR para Invitados (Incluido de regalo con Ceremonia / Cóctel)' : 'Álbum de Fotos QR para Invitados + Carteles PDF (Incluido de regalo)' }}
                                     </div>
                                     <div class="quote-item-desc" style="color: #047857;">
-                                        Código QR personalizado para que todos los invitados suban y descarguen en calidad original las fotos que hagan con su móvil durante el evento, sin instalar ninguna app.
+                                        Código QR personalizado y carteles PDF listos para imprimir para que todos los invitados suban y descarguen en calidad original las fotos que hagan con su móvil durante el evento, sin instalar ninguna app.
                                     </div>
                                 </td>
                                 <td style="text-align: center; color: #065f46; font-weight: 700;">

@@ -9,9 +9,9 @@
             'keys' => ['ceremony', 'cocktail', 'restaurant', 'dj'],
         ],
         [
-            'title' => '2. Efectos Especiales y Ampliación de Horario',
-            'subtitle' => 'Efectos escénicos de pista, karaoke y horas adicionales',
-            'keys' => ['smoke_machine', 'cold_sparks', 'karaoke', 'extra_hours'],
+            'title' => '2. Efectos Especiales, Fotos QR y Ampliación de Horario',
+            'subtitle' => 'Efectos escénicos de pista, álbum colaborativo QR, karaoke y horas adicionales',
+            'keys' => ['smoke_machine', 'cold_sparks', 'photo_qr', 'karaoke', 'extra_hours'],
         ],
         [
             'title' => '3. Fotomatón, Plataforma 360º y Estaciones Dulces',
@@ -211,6 +211,10 @@
                                                                 <span class="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-zinc-800 text-amber-400 border border-amber-500/30">
                                                                     INCLUIDO EN PACK
                                                                 </span>
+                                                            @elseif($key === 'photo_qr' && !empty($service['included']))
+                                                                <span class="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-emerald-950/80 text-emerald-400 border border-emerald-500/40">
+                                                                    REGALO INCLUIDO (0 €)
+                                                                </span>
                                                             @elseif($key === 'cold_sparks' && !empty($service['included']))
                                                                 <span class="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-zinc-800 text-amber-400 border border-amber-500/30">
                                                                     2 MÁQ. EN PACK
@@ -239,6 +243,8 @@
                                                         @else
                                                             @if($key === 'smoke_machine')
                                                                 <span class="text-[10px] text-zinc-400 font-medium">Incluido desde 5h DJ</span>
+                                                            @elseif($key === 'photo_qr' && \App\Models\Setting::get('photo_qr_free_with_ceremony_cocktail', '1') !== '0')
+                                                                <span class="text-[10px] text-emerald-400 font-medium">Gratis con Ceremonia/Cóctel</span>
                                                             @elseif($key === 'cold_sparks')
                                                                 <span class="text-[10px] text-zinc-400 font-medium">2 incl. en Pack Deluxe</span>
                                                             @elseif($key === 'pack_duo_360')

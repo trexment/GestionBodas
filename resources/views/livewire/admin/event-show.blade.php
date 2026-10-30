@@ -2638,6 +2638,29 @@
                                 </button>
                             </div>
 
+                            @php
+                                $dossierQrInfo = \App\Services\FotosEventosQrService::getEventAlbumInfo($event);
+                            @endphp
+                            @if($dossierQrInfo)
+                                <div class="p-3 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/70 rounded-xl flex flex-wrap items-center justify-between gap-2">
+                                    <div class="flex items-center gap-2 min-w-0">
+                                        <span class="text-base">📸</span>
+                                        <div class="min-w-0">
+                                            <span class="block text-xs font-extrabold text-emerald-950 dark:text-emerald-200 truncate">Álbum de Fotos QR activado para este evento</span>
+                                            <span class="block text-[10px] text-emerald-800 dark:text-emerald-400 truncate">Recordatorio staff: llevar / verificar carteles QR impresos si aplica</span>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-1.5 shrink-0">
+                                        <a href="{{ route('admin.events.photo-qr-poster.pdf', $event->id) }}" target="_blank" class="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-900 border border-emerald-300 dark:border-emerald-700 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100 text-[11px] font-bold transition">
+                                            🖨️ Cartel PDF
+                                        </a>
+                                        <button type="button" wire:click="openPhotoQrModal" class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold transition cursor-pointer">
+                                            ⚙️ Gestionar QR
+                                        </button>
+                                    </div>
+                                </div>
+                            @endif
+
                             <div>
                                 <textarea wire:model="dossier_content" rows="12" class="w-full text-xs font-mono bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl p-3 focus:ring-indigo-500 focus:border-indigo-500 text-slate-900 dark:text-white leading-relaxed placeholder-slate-400 dark:placeholder-slate-500" placeholder="Escribe aquí los horarios previstos, accesos a finca, ubicación de tomas de corriente, setup de sonido e iluminación, contactos de metres..."></textarea>
                             </div>
@@ -4301,6 +4324,46 @@
                                                 <span class="text-[11px] text-gray-600">€</span>
                                             </div>
                                         </div>
+                                    </div>
+
+                                    <!-- 5. Álbum Colaborativo de Fotos QR + Carteles PDF (con opción Regalo 0 € o Precio) -->
+                                    @php
+                                        $quoteQrActiveOnEvent = \App\Services\FotosEventosQrService::getEventAlbumInfo($event) !== null;
+                                        $isPhotoQrSelected = !empty($quote_services['photo_qr']['selected']);
+                                        $isPhotoQrIncluded = !empty($quote_services['photo_qr']['included']);
+                                    @endphp
+                                    <div class="p-2.5 rounded-lg border {{ $isPhotoQrSelected ? ($isPhotoQrIncluded ? 'border-emerald-300 bg-emerald-50/60' : 'border-indigo-300 bg-indigo-50/30') : 'border-emerald-200/70 bg-emerald-50/20 hover:bg-emerald-50/40' }} space-y-1.5 transition">
+                                        <div class="flex flex-wrap items-center justify-between gap-2">
+                                            <label class="flex items-center cursor-pointer flex-1 gap-2 min-w-[180px]">
+                                                <input type="checkbox" wire:model.live="quote_services.photo_qr.selected" class="rounded text-emerald-600 focus:ring-emerald-500 h-4 w-4 shrink-0">
+                                                <div class="min-w-0">
+                                                    <div class="flex items-center gap-1.5 flex-wrap">
+                                                        <span class="text-xs font-bold text-gray-800">📸 Álbum de Fotos QR + Carteles PDF</span>
+                                                        @if($quoteQrActiveOnEvent)
+                                                            <span class="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300">✓ QR activado</span>
+                                                        @endif
+                                                    </div>
+                                                    <span class="block text-[10px] text-gray-500 truncate">
+                                                        {{ $isPhotoQrIncluded ? 'Se muestra como INCLUIDO DE REGALO (0 €) en el dossier/presupuesto' : 'QR con iniciales + carteles imprimibles (puedes regalarlo a 0 € o ponerle precio)' }}
+                                                    </span>
+                                                </div>
+                                            </label>
+                                            <div class="flex items-center gap-1.5 shrink-0">
+                                                <label class="inline-flex items-center gap-1 px-2 py-1 rounded-md border text-[10px] font-extrabold cursor-pointer select-none transition {{ $isPhotoQrIncluded ? 'bg-emerald-600 text-white border-emerald-600 shadow-2xs' : 'bg-white text-emerald-800 border-emerald-300 hover:bg-emerald-50' }}" title="Marcar como Regalo Incluido (0 €) o desmarcar para cobrar la tarifa indicada">
+                                                    <input type="checkbox" wire:model.live="quote_services.photo_qr.included" class="sr-only">
+                                                    <span>🎁 {{ $isPhotoQrIncluded ? 'Regalo (0 €)' : '0 €' }}</span>
+                                                </label>
+                                                <div class="flex items-center gap-0.5 {{ $isPhotoQrIncluded ? 'opacity-45' : '' }}">
+                                                    <input type="number" step="0.01" min="0" wire:model.live="quote_services.photo_qr.price" class="w-14 border rounded p-1 text-xs text-right font-bold bg-white" title="Precio del servicio cuando NO está marcado como Regalo (0 €)">
+                                                    <span class="text-[11px] text-gray-600">€</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        @if($isPhotoQrSelected)
+                                            <div class="pt-1 border-t {{ $isPhotoQrIncluded ? 'border-emerald-200/80' : 'border-indigo-100' }}">
+                                                <textarea rows="2" wire:model.live.debounce.400ms="quote_services.photo_qr.desc" placeholder="Descripción que verá el cliente en la propuesta PDF y online..." class="w-full text-[11px] {{ $isPhotoQrIncluded ? 'border-emerald-200' : 'border-indigo-200' }} rounded-lg p-1.5 bg-white text-gray-700 leading-snug"></textarea>
+                                            </div>
+                                        @endif
                                     </div>
                                 </div>
                             </div>

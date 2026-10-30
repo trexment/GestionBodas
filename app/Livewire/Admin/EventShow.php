@@ -147,6 +147,7 @@ class EventShow extends Component
         'photo_album' => ['selected' => false, 'quantity' => 1, 'price' => 150, 'desc' => 'Maquetación álbum digital profesional (sin imprimir).'],
         'photo_full_pack' => ['selected' => false, 'quantity' => 1, 'price' => 800, 'desc' => 'Fotografía Completa: Ceremonia, Restaurante, Fiesta, Álbum digital maquetado, fotos en alta calidad sin marcas de agua.'],
         'karaoke' => ['selected' => false, 'quantity' => 1, 'price' => 80, 'desc' => 'Karaoke interactivo para invitados.'],
+        'photo_qr' => ['selected' => false, 'name' => 'Álbum de Fotos QR para Invitados + Carteles PDF', 'quantity' => 1, 'price' => 60, 'included' => false, 'auto_gift' => false, 'desc' => 'Código QR personalizado con las iniciales de los novios y carteles PDF listos para imprimir (A4 y tarjetas de mesa) para que los invitados suban y descarguen en calidad original las fotos que hagan con su móvil, sin instalar ninguna app.'],
         'photobooth' => ['selected' => false, 'hours' => 2, 'quantity' => 1, 'price_2h' => 350, 'price_3h' => 420, 'price' => 350, 'desc' => 'Cámara réflex profesional Canon 1200, impresora de alta calidad (imprime en 10s) y ordenador táctil con efecto espejo. Incluye fotos ilimitadas, 2 copias de cada foto (invitados + libro de firmas personalizado de imprenta con foto), formato 10x15 o tiras (5x15), marco personalizado (nombre, fecha y temática), atrezzo divertido, photocall a elegir (8 fondos), animador de FotomatonCheese, USB con todas las fotos y subida a redes sociales. (Requiere enchufe cerca y espacio de 2m x 2m).'],
         'video_360' => ['selected' => false, 'hours' => 2, 'quantity' => 1, 'price_2h' => 390, 'price_3h' => 490, 'price' => 390, 'desc' => 'Plataforma de 100cm (capacidad 4-5 personas por vídeo) con cámara GoPro. Incluye vídeos 360 ilimitados grabados con slow motion y boomerang (~20 seg), marco personalizado, canción a elegir, atrezzo divertido, bolsa de confeti, 1 o 2 animadores de FotomatonCheese y transporte incluido hasta 50 km. (Montaje 45 min aprox., requiere enchufe cerca y espacio de 2m x 2m).'],
         'pack_duo_360' => ['selected' => false, 'hours' => 3, 'quantity' => 1, 'price_2h' => 690, 'price_3h' => 850, 'price' => 850, 'desc' => 'Pack Dúo Todo Incluido (Fotomatón fotos impresas ilimitadas + Plataforma 360º vídeos slow motion/boomerang ilimitados): 2 copias por foto, libro de firmas personalizado de imprenta, USB, marcos y música personalizados, atrezzo completo, photocall, confeti, animadores FotomatonCheese y transporte incluido hasta 50 km.'],
@@ -448,6 +449,7 @@ class EventShow extends Component
         $this->quote_services['restaurant']['price'] = $getPrice('price_restaurant', 150);
         $this->quote_services['dj_custom']['price'] = $getPrice('price_dj', 150);
         $this->quote_services['karaoke']['price'] = $getPrice('price_karaoke', 80);
+        $this->quote_services['photo_qr']['price'] = $getPrice('price_photo_qr', 60);
 
         if ($evType === 'boda') {
             $defCerName = 'Ceremonia Civil / Religiosa';
@@ -2919,6 +2921,27 @@ class EventShow extends Component
 
     public function updatedQuoteServices($value, $key)
     {
+        if ($key === 'ceremony.selected' || $key === 'cocktail.selected') {
+            $this->syncPhotoQrGiftAdmin();
+            return;
+        }
+
+        if ($key === 'photo_qr.included') {
+            $this->quote_services['photo_qr']['auto_gift'] = false;
+            if ($value) {
+                $this->quote_services['photo_qr']['selected'] = true;
+            }
+            return;
+        }
+
+        if ($key === 'photo_qr.selected') {
+            $this->quote_services['photo_qr']['auto_gift'] = false;
+            if (!$value) {
+                $this->quote_services['photo_qr']['included'] = false;
+            }
+            return;
+        }
+
         if (str_starts_with($key, 'pack_duo_360.selected')) {
             if ($value) {
                 $this->quote_services['photobooth']['selected'] = false;
@@ -3291,6 +3314,7 @@ class EventShow extends Component
         $djPriceVal = (float)($this->quote_services['dj_custom']['price'] ?? 150);
         $ehPriceVal = (float)($this->quote_services['extra_hours']['price'] ?? 120);
         $karPriceVal = (float)($this->quote_services['karaoke']['price'] ?? 80);
+        $qrPriceVal = (float)($this->quote_services['photo_qr']['price'] ?? 60);
 
         \App\Models\Setting::set("price_ceremony_{$evType}", $cerPriceVal);
         \App\Models\Setting::set("price_cocktail_{$evType}", $cockPriceVal);
@@ -3298,6 +3322,7 @@ class EventShow extends Component
         \App\Models\Setting::set("price_dj_{$evType}", $djPriceVal);
         \App\Models\Setting::set("price_extra_hours_{$evType}", $ehPriceVal);
         \App\Models\Setting::set("price_karaoke_{$evType}", $karPriceVal);
+        \App\Models\Setting::set("price_photo_qr_{$evType}", $qrPriceVal);
 
         if (!empty($this->quote_services['ceremony']['name'])) {
             \App\Models\Setting::set("service_ceremony_name_{$evType}", $this->quote_services['ceremony']['name']);
@@ -3361,6 +3386,7 @@ class EventShow extends Component
             \App\Models\Setting::set('price_dj', $djPriceVal);
             \App\Models\Setting::set('price_extra_hours', $ehPriceVal);
             \App\Models\Setting::set('price_karaoke', $karPriceVal);
+            \App\Models\Setting::set('price_photo_qr', $qrPriceVal);
         }
 
         // Proveedor activo por defecto y tarifas SOLO para el proveedor seleccionado
@@ -3481,6 +3507,31 @@ class EventShow extends Component
             $this->quote_services['smoke_machine']['included'] = false;
             $this->quote_services['cold_sparks']['included'] = false;
         }
+
+        $this->syncPhotoQrGiftAdmin();
+    }
+
+    public function syncPhotoQrGiftAdmin(): void
+    {
+        if (!isset($this->quote_services['photo_qr'])) {
+            return;
+        }
+
+        $isMagic = ($this->event?->brand_clean ?? '') === 'mago_leugim';
+        $freeWithCerCock = \App\Models\Setting::get('photo_qr_free_with_ceremony_cocktail', '1') !== '0';
+        $hasCerOrCock = !empty($this->quote_services['ceremony']['selected']) || !empty($this->quote_services['cocktail']['selected']);
+
+        if (!$isMagic && $freeWithCerCock && $hasCerOrCock) {
+            $this->quote_services['photo_qr']['selected'] = true;
+            $this->quote_services['photo_qr']['included'] = true;
+            $this->quote_services['photo_qr']['auto_gift'] = true;
+        } else {
+            if (!empty($this->quote_services['photo_qr']['auto_gift'])) {
+                $this->quote_services['photo_qr']['selected'] = false;
+                $this->quote_services['photo_qr']['included'] = false;
+                $this->quote_services['photo_qr']['auto_gift'] = false;
+            }
+        }
     }
 
     public function selectPack($packKey)
@@ -3563,6 +3614,8 @@ class EventShow extends Component
             }
             $this->quote_services['smoke_machine']['included'] = false;
             $this->quote_services['cold_sparks']['included'] = false;
+            $this->quote_services['photo_qr']['included'] = false;
+            $this->quote_services['photo_qr']['auto_gift'] = false;
             $this->quote_services['extra_hours']['quantity'] = 0;
             $this->custom_extras = [
                 ['name' => '', 'price' => 0, 'desc' => '', 'consult' => false]
@@ -3656,9 +3709,12 @@ class EventShow extends Component
             }
         }
 
-        // Karaoke, Fotomatón, Plataforma 360º, Pack Dúo y Fuente de Chocolate
+        // Karaoke, Álbum Fotos QR, Fotomatón, Plataforma 360º, Pack Dúo y Fuente de Chocolate
         if (!empty($this->quote_services['karaoke']['selected'])) {
             $total += (float)$this->quote_services['karaoke']['price'] * (int)($this->quote_services['karaoke']['quantity'] ?: 1);
+        }
+        if (!empty($this->quote_services['photo_qr']['selected']) && empty($this->quote_services['photo_qr']['included'])) {
+            $total += (float)$this->quote_services['photo_qr']['price'] * (int)($this->quote_services['photo_qr']['quantity'] ?: 1);
         }
         if (!empty($this->quote_services['pack_duo_360']['selected'])) {
             $total += (float)$this->quote_services['pack_duo_360']['price'] * (int)($this->quote_services['pack_duo_360']['quantity'] ?: 1);
@@ -3845,17 +3901,27 @@ class EventShow extends Component
             $total += ($p * $qty);
         }
 
-        // Regalo incluido (0 €) al contratar desde Ceremonia o Cóctel (marcas DJ / Bodas)
-        if (
-            ($this->event?->brand_clean ?? '') !== 'mago_leugim' &&
-            (!empty($this->quote_services['ceremony']['selected']) || !empty($this->quote_services['cocktail']['selected']))
-        ) {
+        // Álbum de Fotos QR para Invitados + Carteles PDF (0 € si está marcado de regalo/incluido, o con su tarifa correspondiente)
+        if (!empty($this->quote_services['photo_qr']['selected'])) {
+            $isQrFree = !empty($this->quote_services['photo_qr']['included']) || (float)($this->quote_services['photo_qr']['price'] ?? 0) <= 0;
+            $hasCerOrCock = !empty($this->quote_services['ceremony']['selected']) || !empty($this->quote_services['cocktail']['selected']);
+            $qrQty = (int)($this->quote_services['photo_qr']['quantity'] ?: 1);
+            $qrPrice = $isQrFree ? 0 : (float)($this->quote_services['photo_qr']['price'] ?: 0);
+            $qrTitle = $isQrFree
+                ? ($hasCerOrCock
+                    ? 'Álbum de Fotos QR para Invitados (Incluido de regalo con Ceremonia / Cóctel)'
+                    : 'Álbum de Fotos QR para Invitados + Carteles PDF (Incluido de regalo)')
+                : (trim((string)($this->quote_services['photo_qr']['name'] ?? '')) ?: 'Álbum de Fotos QR para Invitados + Carteles PDF');
+            $qrDesc = trim((string)($this->quote_services['photo_qr']['desc'] ?? ''))
+                ?: 'Código QR personalizado con las iniciales de los novios y carteles PDF listos para imprimir (A4 y tarjetas de mesa) para que los invitados suban y descarguen en calidad original las fotos que hagan con su móvil, sin instalar ninguna app.';
+
             $items[] = [
-                'service_name' => 'Álbum de Fotos QR para Invitados (Incluido de regalo con Ceremonia / Cóctel)',
-                'description' => 'Código QR personalizado para que todos los invitados suban y descarguen en calidad original las fotos que hagan con su móvil durante el evento, sin instalar ninguna app.',
-                'price' => 0,
-                'quantity' => 1,
+                'service_name' => $qrTitle,
+                'description' => $qrDesc,
+                'price' => $qrPrice,
+                'quantity' => $qrQty,
             ];
+            $total += ($qrPrice * $qrQty);
         }
         if (!empty($this->quote_services['restaurant']['selected'])) {
             $qty = (int)($this->quote_services['restaurant']['quantity'] ?: 1);
@@ -4241,11 +4307,28 @@ class EventShow extends Component
             // para que NO coincidan por nombre con 'cóctel', 'banquete' ni 'pack signature / pack deluxe'
             if (
                 str_contains($name, 'descuento') ||
-                (float)$item->price < 0 ||
+                (float)$item->price < 0
+            ) {
+                continue;
+            } elseif (
                 str_contains($name, 'fotos qr') ||
                 str_contains($name, 'álbum colaborativo') ||
                 str_contains($name, 'album colaborativo')
             ) {
+                $isQrIncluded = ((float)$item->price == 0 || str_contains($name, 'incluido'));
+                $this->quote_services['photo_qr']['selected'] = true;
+                $this->quote_services['photo_qr']['quantity'] = (int)($item->quantity ?: 1);
+                $this->quote_services['photo_qr']['included'] = $isQrIncluded;
+                $this->quote_services['photo_qr']['auto_gift'] = false;
+                if ((float)$item->price > 0) {
+                    $this->quote_services['photo_qr']['price'] = (float)$item->price;
+                } else {
+                    $evT = $this->event ? $this->event->event_type_clean : 'boda';
+                    $this->quote_services['photo_qr']['price'] = (float)\App\Models\Setting::get("price_photo_qr_{$evT}", \App\Models\Setting::get('price_photo_qr', 60));
+                }
+                if (!empty($item->description)) {
+                    $this->quote_services['photo_qr']['desc'] = $item->description;
+                }
                 continue;
             } elseif (str_contains($name, 'máquina de humo') || str_contains($name, 'maquina de humo') || str_contains($name, 'humo')) {
                 $this->quote_services['smoke_machine']['selected'] = true;
