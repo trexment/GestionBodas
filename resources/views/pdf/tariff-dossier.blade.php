@@ -550,9 +550,10 @@
                     </tr>
                 </table>
 
-                <!-- Nota inferior de garantía de precios cerrados -->
-                <div style="margin-top: 6mm; padding: 10px 14px; background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; text-align: center; font-size: 9pt; color: #334155;">
-                    <strong>Precios finales cerrados con IVA incluido.</strong> Sin costes ocultos de desplazamiento en nuestra zona habitual ni recargos sorpresa.
+                <!-- Nota inferior de garantía de precios cerrados y adaptación al espacio -->
+                <div style="margin-top: 5mm; padding: 9px 14px; background-color: #f8fafc; border: 1px solid #cbd5e1; border-left: 4px solid #d4af37; border-radius: 8px; font-size: 8.8pt; color: #334155; line-height: 1.4;">
+                    <strong>* Montaje de iluminación y sonido adaptado a cada espacio:</strong> El equipamiento indicado en cada pack es orientativo; dimensionamos siempre la iluminación y el sonido según el tamaño y características del salón o finca para que luzca impecable.<br>
+                    <strong>Precios finales cerrados con IVA incluido:</strong> Sin costes ocultos de desplazamiento en nuestra zona habitual ni recargos sorpresa.
                 </div>
             </div>
 

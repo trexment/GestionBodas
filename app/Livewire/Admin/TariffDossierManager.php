@@ -169,6 +169,27 @@ class TariffDossierManager extends Component
         session()->flash('dossier_saved', '✅ Aplicada la versión compacta uniendo «Consulta y propuesta» en el Paso 1.');
     }
 
+    public function applyOrientativeLightingToPacks(): void
+    {
+        $this->syncConfigFromTextHelpers();
+        $defaults = GeneralTariffDossierService::getDefaults();
+        $this->config['packs_section_note'] = $defaults['packs_section_note'];
+
+        if (isset($this->config['packs'][0]['includes']) && is_array($this->config['packs'][0]['includes'])) {
+            foreach ($this->config['packs'][0]['includes'] as &$line) {
+                if (str_contains((string) $line, 'focos LED') || str_contains((string) $line, 'Iluminación')) {
+                    $line = 'Iluminación de pista con focos LED, barras y efectos dinámicos (montaje orientativo adaptado al espacio)';
+                }
+                if (str_contains((string) $line, 'altavoces') || str_contains((string) $line, 'Sonido profesional')) {
+                    $line = 'Sonido profesional de alta definición dimensionado al salón o espacio (orientativo hasta 120 inv.)';
+                }
+            }
+        }
+        $this->syncTextHelpersFromConfig();
+        $this->save(false);
+        session()->flash('dossier_saved', '✅ Aplicada la descripción de iluminación y sonido orientativos según el espacio en los packs.');
+    }
+
     public function removeWorkStep(int $index): void
     {
         if (count($this->config['work_steps']) <= 1) {

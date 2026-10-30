@@ -47,60 +47,8 @@ class GeneralTariffDossierService
             // 5. PACKS Y PRECIO (Página central, exactamente 3 packs, el del medio destacado)
             'prices_include_vat' => true,
             'vat_rate' => 21,
-            'packs_section_note' => 'Todos nuestros packs incluyen transporte, montaje, desmontaje, prueba de sonido previa y reunión de personalización musical.',
-            'packs' => [
-                [
-                    'key' => 'esencial',
-                    'name' => 'Pack Esencial',
-                    'subtitle' => '4 horas de sesión DJ con sonido profesional estéreo e iluminación LED de pista',
-                    'hours' => 4,
-                    'price_input' => 600,
-                    'featured' => false,
-                    'badge' => '',
-                    'includes' => [
-                        '4 horas de sesión DJ en directo durante la fiesta / barra libre',
-                        '2 altavoces autoamplificados de alta definición (hasta 120 invitados)',
-                        '1 cabina DJ con frontal elegante e integración limpia en el salón',
-                        '2 barras / trípodes con 4 focos LED rítmicos para ambientación de pista',
-                        '2 micrófonos inalámbricos de mano para discursos o brindis',
-                        '1 reunión previa de personalización musical y acceso al portal de canciones',
-                    ],
-                ],
-                [
-                    'key' => 'signature',
-                    'name' => 'Pack Signature',
-                    'subtitle' => '5 horas de sesión DJ con refuerzo de subgraves, cabina retroiluminada y puente de iluminación',
-                    'hours' => 5,
-                    'price_input' => 950,
-                    'featured' => true,
-                    'badge' => 'El más elegido',
-                    'includes' => [
-                        '5 horas de sesión DJ en directo durante la fiesta / barra libre',
-                        '4 cajas acústicas (2 satélites + 2 subgraves de 18" para máxima pegada en pista)',
-                        '1 cabina DJ retroiluminada + puente/estructura con cabezas móviles y barras LED',
-                        '1 máquina de humo ambiental para realzar los haces de iluminación en pista',
-                        '2 micrófonos inalámbricos profesionales de largo alcance',
-                        '1 reunión previa de personalización musical y coordinación directa con la finca',
-                    ],
-                ],
-                [
-                    'key' => 'deluxe',
-                    'name' => 'Pack Deluxe Show',
-                    'subtitle' => '6 horas de sesión DJ con montaje de gran formato, show de iluminación avanzada y fuego frío',
-                    'hours' => 6,
-                    'price_input' => 1350,
-                    'featured' => false,
-                    'badge' => 'Cobertura total',
-                    'includes' => [
-                        '6 horas de sesión DJ en directo durante la fiesta / barra libre',
-                        'Sistema de sonido de gran formato con doble subgrave de alta potencia (hasta 300 invitados)',
-                        'Show de iluminación completo con 4 cabezas móviles robóticas, barras LED y efectos DMX',
-                        '2 máquinas de fuego frío / chispas frías incluidas para el baile nupcial o momento clave',
-                        '1 máquina de humo + 2 micrófonos inalámbricos profesionales',
-                        '1 reunión previa de personalización musical y coordinación técnica integral',
-                    ],
-                ],
-            ],
+            'packs_section_note' => 'Todos nuestros packs incluyen transporte, montaje, desmontaje, prueba de sonido previa y reunión de personalización. La configuración de iluminación y sonido indicada en cada pack es orientativa y se adapta siempre a las dimensiones y características de cada finca o salón para lograr un montaje equilibrado y vistoso.',
+            'packs' => self::getRecommendedPacks(),
 
             // 6. EXTRAS (Precio cerrado; si está vacío o "a consultar" se omite y avisa)
             'qr_photos_gift_enabled' => true,
@@ -163,6 +111,66 @@ class GeneralTariffDossierService
 
             // Plantilla WhatsApp
             'whatsapp_template' => '¡Hola {nombre}! Os dejo nuestro dossier de tarifas {anio} para que lo veáis con calma. Si os apetece, hacemos una videollamada de 10-15 minutos y os lo explico. ¡Un saludo! {firma}',
+        ];
+    }
+
+    /**
+     * Devuelve los 3 packs recomendados con iluminación y sonido orientativos según el espacio
+     */
+    public static function getRecommendedPacks(): array
+    {
+        return [
+            [
+                'key' => 'esencial',
+                'name' => 'Pack Esencial',
+                'subtitle' => '4 horas de sesión DJ con sonido profesional e iluminación de pista adaptada al espacio',
+                'hours' => 4,
+                'price_input' => 600,
+                'featured' => false,
+                'badge' => '',
+                'includes' => [
+                    '4 horas de sesión DJ en directo durante la fiesta / barra libre',
+                    'Sonido profesional de alta definición dimensionado al salón o espacio (orientativo hasta 120 inv.)',
+                    '1 cabina DJ con frontal elegante e integración limpia en el salón',
+                    'Iluminación de pista con focos LED, barras y efectos dinámicos (montaje orientativo según el local)',
+                    '2 micrófonos inalámbricos de mano para discursos o brindis',
+                    '1 reunión previa de personalización musical y acceso al portal de canciones',
+                ],
+            ],
+            [
+                'key' => 'signature',
+                'name' => 'Pack Signature',
+                'subtitle' => '5 horas de sesión DJ con refuerzo de subgraves, cabina retroiluminada y puente de iluminación',
+                'hours' => 5,
+                'price_input' => 950,
+                'featured' => true,
+                'badge' => 'El más elegido',
+                'includes' => [
+                    '5 horas de sesión DJ en directo durante la fiesta / barra libre',
+                    '4 cajas acústicas (2 satélites + 2 subgraves de 18" para máxima pegada en pista)',
+                    '1 cabina DJ retroiluminada + puente/estructura con cabezas móviles y barras LED (adaptado al salón)',
+                    '1 máquina de humo ambiental para realzar los haces de iluminación en pista',
+                    '2 micrófonos inalámbricos profesionales de largo alcance',
+                    '1 reunión previa de personalización musical y coordinación directa con la finca',
+                ],
+            ],
+            [
+                'key' => 'deluxe',
+                'name' => 'Pack Deluxe Show',
+                'subtitle' => '6 horas de sesión DJ con montaje de gran formato, show de iluminación avanzada y fuego frío',
+                'hours' => 6,
+                'price_input' => 1350,
+                'featured' => false,
+                'badge' => 'Cobertura total',
+                'includes' => [
+                    '6 horas de sesión DJ en directo durante la fiesta / barra libre',
+                    'Sistema de sonido de gran formato con doble subgrave de alta potencia (hasta 300 invitados)',
+                    'Show de iluminación completo con cabezas móviles robóticas, barras LED y efectos DMX (según recinto)',
+                    '2 máquinas de fuego frío / chispas frías incluidas para el baile nupcial o momento clave',
+                    '1 máquina de humo + 2 micrófonos inalámbricos profesionales',
+                    '1 reunión previa de personalización musical y coordinación técnica integral',
+                ],
+            ],
         ];
     }
 
@@ -319,7 +327,25 @@ class GeneralTariffDossierService
                 if ($i === 1 && empty(trim((string) ($p['badge'] ?? '')))) {
                     $p['badge'] = 'El más elegido';
                 }
+                // Si el Pack Esencial aún tiene la frase antigua de "2 barras / trípodes con 4 focos LED rítmicos", actualizarla a la descripción orientativa
+                if (!empty($p['includes']) && is_array($p['includes'])) {
+                    foreach ($p['includes'] as &$incLine) {
+                        if (str_contains((string) $incLine, '2 barras / trípodes con 4 focos LED')) {
+                            $incLine = 'Iluminación de pista con focos LED, barras y efectos dinámicos (montaje orientativo según el local)';
+                        }
+                        if (str_contains((string) $incLine, '2 altavoces autoamplificados de alta definición')) {
+                            $incLine = 'Sonido profesional de alta definición dimensionado al salón o espacio (orientativo hasta 120 inv.)';
+                        }
+                    }
+                }
             }
+        }
+
+        if (
+            empty(trim((string) ($merged['packs_section_note'] ?? '')))
+            || trim((string) $merged['packs_section_note']) === 'Todos nuestros packs incluyen transporte, montaje, desmontaje, prueba de sonido previa y reunión de personalización musical.'
+        ) {
+            $merged['packs_section_note'] = $defaults['packs_section_note'];
         }
 
         if (!isset($merged['gallery_photos']) || !is_array($merged['gallery_photos'])) {

@@ -377,12 +377,24 @@
                 </p>
             </div>
 
-            <label class="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 cursor-pointer">
-                <input type="checkbox" wire:model.live="config.prices_include_vat" class="rounded text-indigo-600">
-                <span class="text-xs font-bold text-slate-800 dark:text-slate-200">
-                    Los precios escritos abajo ya llevan IVA incluido (si lo desmarcas, la app les suma el {{ $config['vat_rate'] ?? 21 }}% de IVA automáticamente)
-                </span>
+            <div class="flex flex-wrap items-center gap-2">
+                <button type="button" wire:click="applyOrientativeLightingToPacks" class="px-3 py-2 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-800 dark:text-amber-300 text-xs font-extrabold cursor-pointer">
+                    💡 Poner iluminación orientativa según el local
+                </button>
+                <label class="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 cursor-pointer">
+                    <input type="checkbox" wire:model.live="config.prices_include_vat" class="rounded text-indigo-600">
+                    <span class="text-xs font-bold text-slate-800 dark:text-slate-200">
+                        Los precios escritos abajo ya llevan IVA incluido (si lo desmarcas, la app les suma el {{ $config['vat_rate'] ?? 21 }}% de IVA automáticamente)
+                    </span>
+                </label>
+            </div>
+        </div>
+
+        <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
+            <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Nota visible en la página de Packs (aclaración de que la iluminación y el equipo son orientativos y se adaptan a cada salón/finca)
             </label>
+            <textarea wire:model.live="config.packs_section_note" rows="2" class="w-full rounded-lg border-slate-300 dark:border-slate-700 dark:bg-slate-900 dark:text-white text-xs p-2 leading-relaxed"></textarea>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
