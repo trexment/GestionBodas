@@ -448,21 +448,29 @@
     </div>
 
     <!-- ========================================================================= -->
-    <!-- 6. EXTRAS (PRECIO CERRADO; SI ESTÁ VACÍO SE OMITE Y AVISA)                -->
+    <!-- 6. EXTRAS (TOMADOS DE PRESUPUESTOS; SI ESTÁ VACÍO SE OMITE Y AVISA)       -->
     <!-- ========================================================================= -->
     <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm space-y-4">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
             <div>
                 <h3 class="text-base font-black text-slate-900 dark:text-white">
-                    6. Extras (Solo precios cerrados)
+                    6. Extras (Sincronizados con precios de Presupuestos)
                 </h3>
                 <p class="text-xs text-slate-500 dark:text-slate-400">
-                    Cualquier extra con el precio vacío o «a consultar» <strong>no aparece en el PDF</strong> y el sistema avisa automáticamente.
+                    Toma las tarifas almacenadas en Ajustes de Presupuestos (incluyendo tramos por horas de Fotomatón/360 y opciones de Mesa Dulce según mesas y contenidos). Si dejas un precio vacío se omite del PDF.
                 </p>
             </div>
-            <button type="button" wire:click="addExtra" class="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold cursor-pointer shrink-0">
-                + Añadir Extra
-            </button>
+            <div class="flex flex-wrap items-center gap-2 shrink-0">
+                <button type="button" wire:click="syncExtrasFromStoredQuotes('logrono')" class="px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-extrabold cursor-pointer">
+                    🔄 Sincronizar de Presupuestos (Logroño)
+                </button>
+                <button type="button" wire:click="syncExtrasFromStoredQuotes('vitoria')" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 text-xs font-bold cursor-pointer">
+                    🔄 Sincronizar (Vitoria / Álava)
+                </button>
+                <button type="button" wire:click="addExtra" class="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold cursor-pointer">
+                    + Añadir Extra
+                </button>
+            </div>
         </div>
 
         @if(!empty($report['plan']['omitted_extras']))
@@ -512,12 +520,19 @@
                         <input type="text" wire:model.live="config.extras.{{ $eIdx }}.description" placeholder="Descripción breve de qué incluye" class="w-full rounded-lg border-slate-300 dark:border-slate-700 dark:bg-slate-900 dark:text-white text-xs p-2">
                     </div>
                     <div class="md:col-span-3 flex items-center gap-2">
-                        <input type="text" wire:model.live="config.extras.{{ $eIdx }}.price" placeholder="Precio € (vacío = omitir)" class="w-full rounded-lg border-slate-300 dark:border-slate-700 dark:bg-slate-900 dark:text-white text-xs font-black p-2 text-right">
+                        <input type="text" wire:model.live="config.extras.{{ $eIdx }}.price" placeholder="Ej: 120 o 350 € (2 h) / 420 € (3 h)" class="w-full rounded-lg border-slate-300 dark:border-slate-700 dark:bg-slate-900 dark:text-white text-xs font-black p-2 text-right">
                         <span class="text-xs font-bold text-slate-500">€</span>
                         <button type="button" wire:click="removeExtra({{ $eIdx }})" class="text-rose-600 text-xs font-bold px-2 cursor-pointer">✕</button>
                     </div>
                 </div>
             @endforeach
+        </div>
+
+        <div class="pt-2 border-t border-slate-100 dark:border-slate-800">
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Nota aclaratoria al pie de los Extras (horas de Fotomatón/360 y mesas/contenidos de Mesa Dulce)
+            </label>
+            <textarea wire:model.live="config.extras_section_note" rows="2" class="w-full rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white text-xs p-2.5 leading-relaxed"></textarea>
         </div>
     </div>
 

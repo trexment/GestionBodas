@@ -605,31 +605,40 @@
                 @endif
 
                 @foreach(($page['extras'] ?? []) as $extra)
-                    <div style="margin-bottom: 4.5mm; border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px 16px; background-color: #f8fafc;">
+                    @php
+                        $priceText = $extra['price_display'] ?? (number_format((float) $extra['final_price'], 0, ',', '.') . ' €');
+                        $isLongPrice = mb_strlen($priceText) > 10;
+                    @endphp
+                    <div style="margin-bottom: 4mm; border: 1px solid #cbd5e1; border-radius: 8px; padding: 11px 15px; background-color: #f8fafc;">
                         <table style="width: 100%; border-collapse: collapse;">
                             <tr>
                                 <td style="vertical-align: middle; padding-right: 12px;">
-                                    <div style="font-size: 11.5pt; font-weight: 800; color: #0f172a; margin-bottom: 3px;">
+                                    <div style="font-size: 11pt; font-weight: 800; color: #0f172a; margin-bottom: 3px;">
                                         {{ $extra['name'] }}
                                     </div>
                                     @if(!empty($extra['description']))
-                                        <div style="font-size: 9.2pt; color: #475569; line-height: 1.4;">
+                                        <div style="font-size: 9pt; color: #475569; line-height: 1.38;">
                                             {{ $extra['description'] }}
                                         </div>
                                     @endif
                                 </td>
-                                <td style="vertical-align: middle; text-align: right; width: 125px; white-space: nowrap;">
-                                    <div style="font-size: 15pt; font-weight: 900; color: #0f172a;">
-                                        {{ number_format((float) $extra['final_price'], 0, ',', '.') }} €
+                                <td style="vertical-align: middle; text-align: right; width: {{ $isLongPrice ? '170px' : '125px' }};">
+                                    <div style="font-size: {{ $isLongPrice ? '11.5pt' : '14.5pt' }}; font-weight: 900; color: #0f172a; line-height: 1.2;">
+                                        {{ $priceText }}
                                     </div>
-                                    <span class="vat-badge">IVA incluido</span>
+                                    <span class="vat-badge">IVA incluido{{ !empty($extra['is_orientative']) ? ' · Orientativo' : '' }}</span>
                                 </td>
                             </tr>
                         </table>
                     </div>
                 @endforeach
 
-                <div class="gold-accent-card" style="margin-top: 6mm;">
+                <div style="margin-top: 4mm; padding: 9px 14px; background-color: #f8fafc; border: 1px solid #cbd5e1; border-left: 4px solid #d4af37; border-radius: 8px; font-size: 8.6pt; color: #334155; line-height: 1.4;">
+                    <strong>* Tarifas orientativas según horas, mesas y contenidos:</strong>
+                    {{ !empty(trim((string) ($config['extras_section_note'] ?? ''))) ? $config['extras_section_note'] : 'Los importes de Fotomatón y Plataforma 360º son orientativos según el número de horas contratadas (2 h, 3 h o más) y la localidad del evento. El precio de la Mesa Dulce / Fuente de Chocolate varía según el número de fuentes o mesas, duración del servicio y contenidos seleccionados.' }}
+                </div>
+
+                <div class="gold-accent-card" style="margin-top: 4mm;">
                     <div style="font-size: 9pt; font-weight: 800; color: #d4af37; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;">
                         ¿Necesitáis añadir horas extra el mismo día de la boda?
                     </div>

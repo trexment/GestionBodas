@@ -50,47 +50,12 @@ class GeneralTariffDossierService
             'packs_section_note' => 'Todos nuestros packs incluyen transporte, montaje, desmontaje, prueba de sonido previa y reunión de personalización. La configuración de iluminación y sonido indicada en cada pack es orientativa y se adapta siempre a las dimensiones y características de cada finca o salón para lograr un montaje equilibrado y vistoso.',
             'packs' => self::getRecommendedPacks(),
 
-            // 6. EXTRAS (Precio cerrado; si está vacío o "a consultar" se omite y avisa)
+            // 6. EXTRAS (Precio cerrado u orientativo por horas/mesas tomado de los ajustes de presupuestos; si está vacío o "a consultar" se omite y avisa)
             'qr_photos_gift_enabled' => true,
             'qr_photos_gift_title' => 'REGALO INCLUIDO al contratar Ceremonia o Cóctel: Álbum de Fotos QR para Invitados',
             'qr_photos_gift_text' => 'Colocamos un código QR personalizado para que todos los invitados suban y descarguen en calidad original las fotos que hagan con su móvil durante la ceremonia, el cóctel y la fiesta, directo a vuestro álbum privado sin instalar ninguna app.',
-            'extras' => [
-                [
-                    'name' => 'Hora extra de fiesta / DJ',
-                    'description' => 'Ampliación de 1 hora adicional de sesión DJ, sonido e iluminación sobre el pack contratado.',
-                    'price' => '120',
-                ],
-                [
-                    'name' => 'Karaoke para invitados',
-                    'description' => 'Proyección de letras, micrófonos inalámbricos y catálogo de canciones para cantar durante la fiesta.',
-                    'price' => '80',
-                ],
-                [
-                    'name' => 'Sonorización y música en Ceremonia',
-                    'description' => 'Equipo de sonido independiente para la ceremonia (civil o exterior), música a medida y 2 micrófonos inalámbricos para lecturas.',
-                    'price' => '180',
-                ],
-                [
-                    'name' => 'Cóctel + banquete (música de entrada y momento de regalos)',
-                    'description' => 'Ambientación musical en el cóctel de bienvenida, música de fondo en comida/cena y sonorización de entradas, brindis y entregas de regalos.',
-                    'price' => '150',
-                ],
-                [
-                    'name' => 'Fotomatón',
-                    'description' => 'Servicio de fotomatón con copias impresas, atrezzo y álbum de firmas.',
-                    'price' => '',
-                ],
-                [
-                    'name' => 'Plataforma 360',
-                    'description' => 'Plataforma de vídeo 360º slow-motion con atrezzo e iluminación.',
-                    'price' => '',
-                ],
-                [
-                    'name' => 'Mesa dulce',
-                    'description' => 'Mesa dulce decorada / fuente de chocolate para la recena o barra libre.',
-                    'price' => '',
-                ],
-            ],
+            'extras_section_note' => 'Los importes de Fotomatón y Plataforma 360º son orientativos según el número de horas contratadas (2 h, 3 h o más) y la localidad del evento. El precio de la Mesa Dulce / Fuente de Chocolate varía según el número de fuentes o mesas, duración del servicio y contenidos seleccionados.',
+            'extras' => self::getRecommendedExtras(),
 
             // 7. OPINIONES (4 o 5 reseñas reales y cortas; si hay < 2 con permiso se omite la página; nunca generar reseñas de ejemplo)
             'google_reviews_url' => 'https://g.page/r/nunezandson/review',
@@ -115,21 +80,96 @@ class GeneralTariffDossierService
     }
 
     /**
-     * Devuelve los 3 packs recomendados con iluminación y sonido orientativos según el espacio
+     * Devuelve los extras recomendados tomando directamente los precios almacenados en los Ajustes de Presupuestos (Setting)
+     */
+    public static function getRecommendedExtras(?string $providerKey = null): array
+    {
+        $extraHourPrice = (int) round((float) Setting::get('price_extra_hours', 120));
+        $karaokePrice = (int) round((float) Setting::get('price_karaoke', 80));
+        $ceremonyPrice = (int) round((float) Setting::get('price_ceremony', 180));
+        $cocktailPrice = (int) round((float) Setting::get('price_cocktail', 150));
+
+        $provKey = $providerKey ?: (string) Setting::get('default_photobooth_provider', 'logrono');
+        $pbProv = Setting::getPhotobooth360Config($provKey);
+        $pbVitoria = Setting::getPhotobooth360Config('vitoria');
+
+        $pb2h = (int) round((float) ($pbProv['photobooth_2h'] ?? 350));
+        $pb3h = (int) round((float) ($pbProv['photobooth_3h'] ?? 420));
+        $pbExtra = (int) round((float) ($pbProv['photobooth_extra_hour'] ?? 60));
+
+        $v360_2h = (int) round((float) ($pbProv['video_360_2h'] ?? 390));
+        $v360_3h = (int) round((float) ($pbProv['video_360_3h'] ?? 490));
+        $v360Extra = (int) round((float) ($pbProv['video_360_extra_hour'] ?? 60));
+
+        $chocProv = !empty($pbProv['chocolate_fountain_1_2h']) ? $pbProv : $pbVitoria;
+        $choc1_2h = (int) round((float) ($chocProv['chocolate_fountain_1_2h'] ?? 420));
+        $choc1_3h = (int) round((float) ($chocProv['chocolate_fountain_1_3h'] ?? 520));
+        $choc2_2h = (int) round((float) ($chocProv['chocolate_fountain_2_2h'] ?? 490));
+        $choc2_3h = (int) round((float) ($chocProv['chocolate_fountain_2_3h'] ?? 590));
+        $candyPrice = (int) round((float) ($chocProv['candy_bar_price'] ?? 420));
+
+        return [
+            [
+                'name' => 'Hora extra de fiesta / DJ',
+                'description' => 'Ampliación de 1 hora adicional de sesión DJ, sonido e iluminación sobre el pack contratado.',
+                'price' => (string) $extraHourPrice,
+            ],
+            [
+                'name' => 'Karaoke para invitados',
+                'description' => 'Proyección de letras, micrófonos inalámbricos y catálogo de canciones para cantar durante la fiesta.',
+                'price' => (string) $karaokePrice,
+            ],
+            [
+                'name' => 'Sonorización y música en Ceremonia',
+                'description' => 'Equipo de sonido independiente para la ceremonia (civil o exterior), música a medida y 2 micrófonos inalámbricos para lecturas.',
+                'price' => (string) $ceremonyPrice,
+            ],
+            [
+                'name' => 'Cóctel + banquete (música de entrada y momento de regalos)',
+                'description' => 'Ambientación musical en el cóctel de bienvenida, música de fondo en comida/cena y sonorización de entradas, brindis y entregas de regalos.',
+                'price' => (string) $cocktailPrice,
+            ],
+            [
+                'name' => 'Fotomatón (según horas contratadas)',
+                'description' => "Servicio de fotomatón con copias impresas ilimitadas, álbum de firmas, atrezzo, USB y animador. Precio orientativo según horas necesarias (2 h: {$pb2h} € · 3 h: {$pb3h} € · hora adicional: +{$pbExtra} €) y localidad.",
+                'price' => "{$pb2h} € (2 h) / {$pb3h} € (3 h)",
+            ],
+            [
+                'name' => 'Plataforma 360 (según horas contratadas)',
+                'description' => "Plataforma de vídeo 360º slow-motion y boomerang ilimitados con atrezzo, confeti, iluminación y animador. Precio orientativo según horas de servicio (2 h: {$v360_2h} € · 3 h: {$v360_3h} € · hora adicional: +{$v360Extra} €) y localidad.",
+                'price' => "{$v360_2h} € (2 h) / {$v360_3h} € (3 h)",
+            ],
+            [
+                'name' => 'Mesa dulce y fuente de chocolate (según mesas y contenidos)',
+                'description' => "Mesa dulce decorada con frutas, bollería, chocolatinas y chuches (o mesa de solo chuches: {$candyPrice} €). Precio orientativo según número de mesas/fuentes, horas y contenidos elegidos (1 fuente: {$choc1_2h} € 2h / {$choc1_3h} € 3h · 2 fuentes: {$choc2_2h} € 2h / {$choc2_3h} € 3h).",
+                'price' => "{$choc1_2h} € – {$choc2_3h} €",
+            ],
+        ];
+    }
+
+    /**
+     * Devuelve los 3 packs recomendados con iluminación y sonido orientativos según el espacio y precios de Ajustes
      */
     public static function getRecommendedPacks(): array
     {
+        $basicPrice = (int) round((float) Setting::get('pack_basic_price', 600));
+        $basicHours = (int) Setting::get('pack_basic_hours', 4);
+        $mediumPrice = (int) round((float) Setting::get('pack_medium_price', 950));
+        $mediumHours = (int) Setting::get('pack_medium_hours', 5);
+        $premiumPrice = (int) round((float) Setting::get('pack_premium_price', 1350));
+        $premiumHours = (int) Setting::get('pack_premium_hours', 6);
+
         return [
             [
                 'key' => 'esencial',
-                'name' => 'Pack Esencial',
-                'subtitle' => '4 horas de sesión DJ con sonido profesional e iluminación de pista adaptada al espacio',
-                'hours' => 4,
-                'price_input' => 600,
+                'name' => Setting::get('pack_basic_name', 'Pack Esencial'),
+                'subtitle' => "{$basicHours} horas de sesión DJ con sonido profesional e iluminación de pista adaptada al espacio",
+                'hours' => $basicHours,
+                'price_input' => $basicPrice,
                 'featured' => false,
                 'badge' => '',
                 'includes' => [
-                    '4 horas de sesión DJ en directo durante la fiesta / barra libre',
+                    "{$basicHours} horas de sesión DJ en directo durante la fiesta / barra libre",
                     'Sonido profesional de alta definición dimensionado al salón o espacio (orientativo hasta 120 inv.)',
                     '1 cabina DJ con frontal elegante e integración limpia en el salón',
                     'Iluminación de pista con focos LED, barras y efectos dinámicos (montaje orientativo según el local)',
@@ -139,14 +179,14 @@ class GeneralTariffDossierService
             ],
             [
                 'key' => 'signature',
-                'name' => 'Pack Signature',
-                'subtitle' => '5 horas de sesión DJ con refuerzo de subgraves, cabina retroiluminada y puente de iluminación',
-                'hours' => 5,
-                'price_input' => 950,
+                'name' => Setting::get('pack_medium_name', 'Pack Signature'),
+                'subtitle' => "{$mediumHours} horas de sesión DJ con refuerzo de subgraves, cabina retroiluminada y puente de iluminación",
+                'hours' => $mediumHours,
+                'price_input' => $mediumPrice,
                 'featured' => true,
                 'badge' => 'El más elegido',
                 'includes' => [
-                    '5 horas de sesión DJ en directo durante la fiesta / barra libre',
+                    "{$mediumHours} horas de sesión DJ en directo durante la fiesta / barra libre",
                     '4 cajas acústicas (2 satélites + 2 subgraves de 18" para máxima pegada en pista)',
                     '1 cabina DJ retroiluminada + puente/estructura con cabezas móviles y barras LED (adaptado al salón)',
                     '1 máquina de humo ambiental para realzar los haces de iluminación en pista',
@@ -156,14 +196,14 @@ class GeneralTariffDossierService
             ],
             [
                 'key' => 'deluxe',
-                'name' => 'Pack Deluxe Show',
-                'subtitle' => '6 horas de sesión DJ con montaje de gran formato, show de iluminación avanzada y fuego frío',
-                'hours' => 6,
-                'price_input' => 1350,
+                'name' => Setting::get('pack_premium_name', 'Pack Deluxe Show'),
+                'subtitle' => "{$premiumHours} horas de sesión DJ con montaje de gran formato, show de iluminación avanzada y fuego frío",
+                'hours' => $premiumHours,
+                'price_input' => $premiumPrice,
                 'featured' => false,
                 'badge' => 'Cobertura total',
                 'includes' => [
-                    '6 horas de sesión DJ en directo durante la fiesta / barra libre',
+                    "{$premiumHours} horas de sesión DJ en directo durante la fiesta / barra libre",
                     'Sistema de sonido de gran formato con doble subgrave de alta potencia (hasta 300 invitados)',
                     'Show de iluminación completo con cabezas móviles robóticas, barras LED y efectos DMX (según recinto)',
                     '2 máquinas de fuego frío / chispas frías incluidas para el baile nupcial o momento clave',
@@ -369,6 +409,32 @@ class GeneralTariffDossierService
 
         if (!isset($merged['extras']) || !is_array($merged['extras'])) {
             $merged['extras'] = $defaults['extras'];
+        } else {
+            $recommendedExtras = self::getRecommendedExtras();
+            foreach ($merged['extras'] as &$ex) {
+                $exNameLower = mb_strtolower(trim((string) ($ex['name'] ?? '')));
+                $exDesc = trim((string) ($ex['description'] ?? ''));
+                $exPrice = trim((string) ($ex['price'] ?? ''));
+
+                if (str_contains($exNameLower, 'fotomatón') || str_contains($exNameLower, 'fotomaton')) {
+                    if ($exPrice === '' || $exPrice === '380' || $exDesc === 'Servicio de fotomatón con copias impresas, atrezzo y álbum de firmas.') {
+                        $ex = $recommendedExtras[4] ?? $ex;
+                    }
+                } elseif (str_contains($exNameLower, '360')) {
+                    if ($exPrice === '' || $exDesc === 'Plataforma de vídeo 360º slow-motion con atrezzo e iluminación.') {
+                        $ex = $recommendedExtras[5] ?? $ex;
+                    }
+                } elseif (str_contains($exNameLower, 'mesa dulce') || str_contains($exNameLower, 'fuente de chocolate')) {
+                    if ($exPrice === '' || $exDesc === 'Mesa dulce decorada / fuente de chocolate para la recena o barra libre.') {
+                        $ex = $recommendedExtras[6] ?? $ex;
+                    }
+                }
+            }
+            unset($ex);
+        }
+
+        if (empty(trim((string) ($merged['extras_section_note'] ?? '')))) {
+            $merged['extras_section_note'] = $defaults['extras_section_note'];
         }
 
         if (!isset($merged['reviews']) || !is_array($merged['reviews'])) {
@@ -579,7 +645,7 @@ class GeneralTariffDossierService
     }
 
     /**
-     * Filtra los extras con precio cerrado y devuelve tanto los incluidos como los omitidos
+     * Filtra los extras con precio cerrado u orientativo por tramos y devuelve tanto los incluidos como los omitidos
      */
     public static function getProcessedExtras(array $config): array
     {
@@ -595,6 +661,7 @@ class GeneralTariffDossierService
             }
             $rawPrice = trim((string) ($extra['price'] ?? ''));
             $lowerPrice = mb_strtolower($rawPrice);
+            $desc = trim((string) ($extra['description'] ?? ''));
 
             if (
                 $rawPrice === '' ||
@@ -607,16 +674,64 @@ class GeneralTariffDossierService
                 continue;
             }
 
-            $finalPrice = self::computeFinalPriceWithVat($rawPrice, $pricesIncludeVat, $vatRate);
-            if ($finalPrice <= 0) {
-                $omitted[] = $name;
-                continue;
+            // Comprobar si es un importe único (ej. "120", "180 €") o una tarifa por tramos/horas (ej. "430 € (2 h) / 480 € (3 h)", "420 € – 590 €")
+            $cleanSingle = str_replace(['€', ' '], '', $rawPrice);
+            $isSingleNumeric = (bool) preg_match('/^\d+(?:[.,]\d+)?$/', $cleanSingle);
+
+            if ($isSingleNumeric) {
+                $finalPrice = self::computeFinalPriceWithVat($rawPrice, $pricesIncludeVat, $vatRate);
+                if ($finalPrice <= 0) {
+                    $omitted[] = $name;
+                    continue;
+                }
+                $priceDisplay = number_format($finalPrice, 0, ',', '.') . ' €';
+            } else {
+                // Extraer el primer importe numérico mayor de 10 para validación y aplicar IVA a los importes en € si procede
+                preg_match_all('/\d+(?:[.,]\d+)?/', $rawPrice, $matches);
+                $firstAmount = 0.0;
+                foreach (($matches[0] ?? []) as $m) {
+                    $v = (float) str_replace(',', '.', $m);
+                    if ($v >= 10) {
+                        $firstAmount = $v;
+                        break;
+                    }
+                }
+                if ($firstAmount <= 0 && !empty($matches[0])) {
+                    $firstAmount = (float) str_replace(',', '.', $matches[0][0]);
+                }
+                if ($firstAmount <= 0) {
+                    $omitted[] = $name;
+                    continue;
+                }
+
+                $finalPrice = self::computeFinalPriceWithVat($firstAmount, $pricesIncludeVat, $vatRate);
+
+                if (!$pricesIncludeVat) {
+                    $priceDisplay = preg_replace_callback('/(\d+(?:[.,]\d+)?)(\s*€)/u', function ($m) use ($vatRate) {
+                        $val = self::computeFinalPriceWithVat($m[1], false, $vatRate);
+                        return number_format($val, 0, ',', '.') . ' €';
+                    }, $rawPrice);
+                } else {
+                    $priceDisplay = str_contains($rawPrice, '€') ? $rawPrice : ($rawPrice . ' €');
+                }
             }
+
+            $combinedLower = mb_strtolower($name . ' ' . $desc . ' ' . $rawPrice);
+            $isOrientative = !$isSingleNumeric
+                || str_contains($combinedLower, 'orientativ')
+                || str_contains($combinedLower, 'según')
+                || str_contains($combinedLower, 'segun')
+                || str_contains($combinedLower, 'fotomat')
+                || str_contains($combinedLower, '360')
+                || str_contains($combinedLower, 'mesa dulce')
+                || str_contains($combinedLower, 'chocolate');
 
             $included[] = [
                 'name' => $name,
-                'description' => trim((string) ($extra['description'] ?? '')),
+                'description' => $desc,
                 'final_price' => $finalPrice,
+                'price_display' => $priceDisplay,
+                'is_orientative' => $isOrientative,
             ];
         }
 

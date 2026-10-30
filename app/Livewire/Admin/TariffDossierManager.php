@@ -207,6 +207,15 @@ class TariffDossierManager extends Component
         ];
     }
 
+    public function syncExtrasFromStoredQuotes(?string $providerKey = null): void
+    {
+        $this->config['extras'] = GeneralTariffDossierService::getRecommendedExtras($providerKey);
+        $this->config['extras_section_note'] = GeneralTariffDossierService::getDefaults()['extras_section_note'];
+        $this->save(false);
+        $zoneLabel = $providerKey === 'vitoria' ? 'Vitoria / Álava' : 'Logroño / La Rioja';
+        session()->flash('dossier_saved', "✅ Precios y descripciones orientativas de Extras sincronizados desde los Ajustes de Presupuestos ({$zoneLabel}).");
+    }
+
     public function removeExtra(int $index): void
     {
         if (isset($this->config['extras'][$index])) {

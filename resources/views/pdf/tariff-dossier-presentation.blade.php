@@ -353,19 +353,27 @@
 
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 @foreach(($page['extras'] ?? []) as $extra)
+                                    @php
+                                        $priceText = $extra['price_display'] ?? (number_format((float) $extra['final_price'], 0, ',', '.') . ' €');
+                                    @endphp
                                     <div class="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 flex items-center justify-between gap-4">
                                         <div>
                                             <div class="text-base font-extrabold text-white">{{ $extra['name'] }}</div>
                                             @if(!empty($extra['description']))
-                                                <div class="text-xs text-slate-400 mt-1">{{ $extra['description'] }}</div>
+                                                <div class="text-xs text-slate-400 mt-1 leading-relaxed">{{ $extra['description'] }}</div>
                                             @endif
                                         </div>
-                                        <div class="text-right shrink-0">
-                                            <div class="text-xl font-black text-amber-400">{{ number_format((float) $extra['final_price'], 0, ',', '.') }} €</div>
-                                            <span class="text-[10px] font-bold text-emerald-400 uppercase">IVA incluido</span>
+                                        <div class="text-right shrink-0 max-w-[180px]">
+                                            <div class="text-lg sm:text-xl font-black text-amber-400 leading-tight">{{ $priceText }}</div>
+                                            <span class="text-[10px] font-bold text-emerald-400 uppercase">IVA incluido{{ !empty($extra['is_orientative']) ? ' · Orientativo' : '' }}</span>
                                         </div>
                                     </div>
                                 @endforeach
+                            </div>
+
+                            <div class="p-4 rounded-2xl bg-slate-950/90 border border-slate-800 border-l-4 border-l-amber-400 text-xs sm:text-sm text-slate-300 leading-relaxed">
+                                <strong class="text-amber-400">* Tarifas orientativas según horas, mesas y contenidos:</strong>
+                                {{ !empty(trim((string) ($config['extras_section_note'] ?? ''))) ? $config['extras_section_note'] : 'Los importes de Fotomatón y Plataforma 360º son orientativos según el número de horas contratadas (2 h, 3 h o más) y la localidad del evento. El precio de la Mesa Dulce / Fuente de Chocolate varía según el número de fuentes o mesas, duración del servicio y contenidos seleccionados.' }}
                             </div>
                         </div>
 
