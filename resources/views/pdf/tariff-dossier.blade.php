@@ -366,7 +366,7 @@
                         @foreach($chunks as $pair)
                             <tr>
                                 @foreach($pair as $photo)
-                                    <td style="width: 50%; vertical-align: top; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden; background-color: #0f172a; padding: 0;">
+                                    <td @if(count($pair) === 1) colspan="2" @endif style="width: {{ count($pair) === 1 ? '100%' : '50%' }}; vertical-align: top; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden; background-color: #0f172a; padding: 0;">
                                         @if(!empty($photo['pdf_path']) && file_exists($photo['pdf_path']))
                                             <img src="{{ $photo['pdf_path'] }}" style="width: 100%; height: {{ $rowHeight }}; object-fit: cover; display: block;">
                                         @endif
@@ -381,9 +381,6 @@
                                         </div>
                                     </td>
                                 @endforeach
-                                @if(count($pair) === 1)
-                                    <td style="width: 50%;"></td>
-                                @endif
                             </tr>
                         @endforeach
                     </table>

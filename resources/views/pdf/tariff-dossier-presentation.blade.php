@@ -88,10 +88,10 @@
     </header>
 
     <!-- ÁREA DE DIAPOSITIVAS -->
-    <main class="flex-1 flex items-center justify-center p-4 sm:p-8">
-        <div class="w-full max-w-6xl bg-slate-900 border-2 border-amber-500/40 rounded-3xl shadow-2xl overflow-hidden min-h-[76vh] flex flex-col justify-between">
+    <main class="flex-1 flex items-start justify-center p-4 sm:p-8">
+        <div class="w-full max-w-6xl bg-slate-900 border-2 border-amber-500/40 rounded-3xl shadow-2xl overflow-hidden flex flex-col">
             @foreach($plan['pages'] as $page)
-                <div x-show="current === {{ $page['page_number'] }}" x-cloak class="flex-1 flex flex-col justify-between p-6 sm:p-12">
+                <div x-show="current === {{ $page['page_number'] }}" x-cloak class="flex flex-col p-6 sm:p-10">
                     @if($page['type'] === 'cover')
                         <div class="space-y-6">
                             <div class="flex items-center justify-between border-b border-amber-500/30 pb-4">
@@ -156,28 +156,89 @@
                         </div>
 
                     @elseif($page['type'] === 'gallery')
+                        @php
+                            $pagePhotos = $page['photos'] ?? [];
+                            $pCount = count($pagePhotos);
+                        @endphp
                         <div class="space-y-5">
                             <div class="border-b border-amber-500/30 pb-3 flex items-center justify-between">
                                 <div>
                                     <span class="text-xs font-extrabold uppercase tracking-widest text-amber-400">Bodas Reales Verificadas</span>
                                     <h2 class="text-2xl sm:text-3xl font-black text-white">{{ $page['title'] }}</h2>
                                 </div>
+                                @if(!empty($page['subtitle']))
+                                    <span class="hidden sm:inline-block text-xs text-slate-400 font-semibold">{{ $page['subtitle'] }}</span>
+                                @endif
                             </div>
 
-                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                                @foreach(($page['photos'] ?? []) as $photo)
-                                    <div class="rounded-2xl overflow-hidden border border-slate-700 bg-slate-950 flex flex-col justify-between">
-                                        <img src="{{ $photo['public_url'] }}" class="w-full h-56 object-cover">
-                                        <div class="p-3.5">
-                                            <div class="text-sm font-black text-amber-400">{{ $photo['wedding_name'] }}</div>
-                                            <div class="text-xs text-slate-400 mt-0.5">
-                                                {{ \App\Services\GeneralTariffDossierService::formatSpanishDate($photo['wedding_date']) }}
-                                                @if(!empty($photo['caption'])) &bull; {{ $photo['caption'] }} @endif
+                            @if($pCount === 4)
+                                <!-- 4 fotos: Cuadrícula 2x2 simétrica con fotos grandes -->
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                                    @foreach($pagePhotos as $photo)
+                                        <div class="rounded-2xl overflow-hidden border border-slate-700 bg-slate-950 flex flex-col justify-between shadow-lg">
+                                            <img src="{{ $photo['public_url'] }}" class="w-full h-64 sm:h-72 object-cover">
+                                            <div class="p-4 flex items-center justify-between gap-2">
+                                                <div class="text-sm sm:text-base font-black text-amber-400">{{ $photo['wedding_name'] }}</div>
+                                                <div class="text-xs text-slate-400 shrink-0">
+                                                    {{ \App\Services\GeneralTariffDossierService::formatSpanishDate($photo['wedding_date']) }}
+                                                    @if(!empty($photo['caption'])) &bull; {{ $photo['caption'] }} @endif
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                @endforeach
-                            </div>
+                                    @endforeach
+                                </div>
+                            @elseif($pCount === 3)
+                                <!-- 3 fotos: 1 foto panorámica grande arriba + 2 fotos grandes debajo en 2 columnas (sin huecos vacíos) -->
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                                    @foreach($pagePhotos as $idxP => $photo)
+                                        <div class="{{ $idxP === 0 ? 'sm:col-span-2' : '' }} rounded-2xl overflow-hidden border border-slate-700 bg-slate-950 flex flex-col justify-between shadow-lg">
+                                            <img src="{{ $photo['public_url'] }}" class="w-full {{ $idxP === 0 ? 'h-72 sm:h-80' : 'h-64 sm:h-72' }} object-cover">
+                                            <div class="p-4 flex items-center justify-between gap-2">
+                                                <div class="text-sm sm:text-base font-black text-amber-400">{{ $photo['wedding_name'] }}</div>
+                                                <div class="text-xs text-slate-400 shrink-0">
+                                                    {{ \App\Services\GeneralTariffDossierService::formatSpanishDate($photo['wedding_date']) }}
+                                                    @if(!empty($photo['caption'])) &bull; {{ $photo['caption'] }} @endif
+                                                </div>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @elseif($pCount <= 2)
+                                <!-- 1 o 2 fotos: Formato grande a doble columna -->
+                                <div class="grid grid-cols-1 {{ $pCount === 2 ? 'sm:grid-cols-2' : '' }} gap-5">
+                                    @foreach($pagePhotos as $photo)
+                                        <div class="rounded-2xl overflow-hidden border border-slate-700 bg-slate-950 flex flex-col justify-between shadow-lg">
+                                            <img src="{{ $photo['public_url'] }}" class="w-full h-80 sm:h-96 object-cover">
+                                            <div class="p-4 flex items-center justify-between gap-2">
+                                                <div class="text-base font-black text-amber-400">{{ $photo['wedding_name'] }}</div>
+                                                <div class="text-xs text-slate-400 shrink-0">
+                                                    {{ \App\Services\GeneralTariffDossierService::formatSpanishDate($photo['wedding_date']) }}
+                                                    @if(!empty($photo['caption'])) &bull; {{ $photo['caption'] }} @endif
+                                                </div>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @else
+                                <!-- 5 o 6 fotos: Cuadrícula de 6 columnas donde 3 van arriba (col-span-2) y 2 o 3 abajo ocupando todo el ancho -->
+                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-5">
+                                    @foreach($pagePhotos as $idxP => $photo)
+                                        @php
+                                            $colSpanClass = ($pCount === 5 && $idxP >= 3) ? 'lg:col-span-3' : 'lg:col-span-2';
+                                        @endphp
+                                        <div class="{{ $colSpanClass }} rounded-2xl overflow-hidden border border-slate-700 bg-slate-950 flex flex-col justify-between shadow-lg">
+                                            <img src="{{ $photo['public_url'] }}" class="w-full h-60 sm:h-64 object-cover">
+                                            <div class="p-3.5 flex items-center justify-between gap-2">
+                                                <div class="text-sm font-black text-amber-400">{{ $photo['wedding_name'] }}</div>
+                                                <div class="text-xs text-slate-400 shrink-0">
+                                                    {{ \App\Services\GeneralTariffDossierService::formatSpanishDate($photo['wedding_date']) }}
+                                                    @if(!empty($photo['caption'])) &bull; {{ $photo['caption'] }} @endif
+                                                </div>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @endif
                         </div>
 
                     @elseif($page['type'] === 'how_we_work')
@@ -258,6 +319,11 @@
                                         </div>
                                     </div>
                                 @endforeach
+                            </div>
+
+                            <div class="p-4 rounded-2xl bg-slate-950/90 border border-slate-800 border-l-4 border-l-amber-400 text-xs sm:text-sm text-slate-300 leading-relaxed">
+                                <strong class="text-amber-400">* Montaje de iluminación y sonido adaptado a cada espacio:</strong>
+                                {{ !empty(trim((string) ($config['packs_section_note'] ?? ''))) ? $config['packs_section_note'] : 'El equipamiento indicado en cada pack es orientativo; dimensionamos siempre la iluminación y el sonido según el tamaño y características del salón o finca para que luzca impecable.' }}
                             </div>
                         </div>
 
