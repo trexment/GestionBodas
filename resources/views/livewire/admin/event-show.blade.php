@@ -142,7 +142,17 @@
                 </a>
                 <button type="button" @click="openQrModal = true" class="inline-flex items-center gap-1.5 bg-gradient-to-r from-pink-600 to-indigo-600 hover:from-pink-700 hover:to-indigo-700 text-white font-bold px-3 py-2 rounded-xl text-xs shadow-xs transition cursor-pointer">
                     <span>📱</span>
-                    <span>QR Invitados</span>
+                    <span>QR Música</span>
+                </button>
+                @php
+                    $headerPhotoQrInfo = \App\Services\FotosEventosQrService::getEventAlbumInfo($event);
+                @endphp
+                <button type="button" wire:click="openPhotoQrModal" class="inline-flex items-center gap-1.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-bold px-3 py-2 rounded-xl text-xs shadow-xs transition cursor-pointer">
+                    <span>📸</span>
+                    <span>QR Fotos</span>
+                    @if($headerPhotoQrInfo)
+                        <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 ring-2 ring-white/40" title="Álbum QR activo"></span>
+                    @endif
                 </button>
                 <button type="button" @click="openWhatsappHub = true" class="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3.5 py-2 rounded-xl text-xs shadow-xs transition cursor-pointer">
                     <span>💬</span>
@@ -1701,6 +1711,324 @@
             </div>
         </div>
     </div>
+
+    <!-- Modal Álbum Colaborativo de Fotos QR (FotosEventosQR + Google Drive) -->
+    @if($showPhotoQrModal)
+        @php
+            $photoQrInfo = \App\Services\FotosEventosQrService::getEventAlbumInfo($event);
+            $photoQrConfigured = \App\Services\FotosEventosQrService::isConfigured();
+            $photoQrGiftEligible = \App\Services\FotosEventosQrService::qualifiesForFreeGift($event);
+            $photoQrCount = isset($photoQrLiveStats['photos_count']) ? (int) $photoQrLiveStats['photos_count'] : null;
+            $posterDefaults = \App\Services\QrPosterPdfService::defaultsForEvent($event);
+            $posterPresets = \App\Services\QrPosterPdfService::presetPhrases();
+            $posterBaseRoute = route('pdf.photo-qr-poster', ['event' => $event->id]);
+            $coupleDirectPdfUrl = route('pdf.photo-qr-poster', ['event' => $event->id, 'token' => $event->token]);
+            $photoQrStylizedSvg = ($photoQrInfo && !empty($photoQrInfo['guest_url']))
+                ? \App\Services\QrPosterPdfService::toStylizedSvg($photoQrInfo['guest_url'], [
+                    'initials' => $posterDefaults['initials'],
+                    'style' => 'elegante',
+                ])
+                : '';
+            $photoQrWaText = $photoQrInfo
+                ? ("¡Hola! 👋 Os dejamos vuestro *Álbum Colaborativo de Fotos QR* para *" . $event->name . "*:\n\n📸 *Enlace para subir y ver las fotos (sin instalar apps):*\n" . $photoQrInfo['guest_url'] . "\n\n📄 *Cartel QR en PDF con vuestros nombres listo para imprimir:*\n" . $coupleDirectPdfUrl . (!empty($photoQrInfo['drive_url']) && $photoQrShareDriveAlbum ? "\n\n📁 *Carpeta completa:*\n" . $photoQrInfo['drive_url'] : "") . "\n\n_(Desde vuestro portal musical también podéis personalizar la frase, el estilo o elegir formato de 4 tarjetas por hoja para las mesas)_ ✨")
+                : '';
+            $photoQrWaUrl = ($photoQrInfo && $clientPhone) ? \App\Services\WhatsAppTemplateService::getLink($clientPhone, $photoQrWaText) : '';
+        @endphp
+        <div class="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true">
+            <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                <div class="fixed inset-0 bg-slate-900/75 transition-opacity" wire:click="closePhotoQrModal"></div>
+                <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+                <div class="inline-block align-bottom bg-white dark:bg-slate-900 rounded-3xl text-center overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-xl sm:w-full p-6 border border-slate-200 dark:border-slate-800"
+                     x-data="{
+                        copiedPhotoQr: false,
+                        openPosterCustomizer: false,
+                        pLayout: 'a4',
+                        pStyle: 'elegante',
+                        pNames: @js($posterDefaults['names']),
+                        pInitials: @js($posterDefaults['initials']),
+                        pShowInitials: true,
+                        pKicker: @js($posterDefaults['kicker']),
+                        pFooter: @js($posterDefaults['footer']),
+                        pPreset: @js($posterDefaults['preset']),
+                        pHeadline: @js($posterDefaults['headline']),
+                        pSubtitle: @js($posterDefaults['subtitle']),
+                        presetsMap: @js($posterPresets),
+                        basePdfUrl: @js($posterBaseRoute),
+                        applyPreset() {
+                            if (this.presetsMap[this.pPreset]) {
+                                this.pHeadline = this.presetsMap[this.pPreset].headline;
+                                this.pSubtitle = this.presetsMap[this.pPreset].subtitle;
+                            }
+                        },
+                        posterPdfUrl(download, forcedLayout = null) {
+                            const params = new URLSearchParams({
+                                layout: forcedLayout || this.pLayout,
+                                style: this.pStyle,
+                                names: this.pNames,
+                                initials: this.pInitials,
+                                show_initials: this.pShowInitials ? '1' : '0',
+                                kicker: this.pKicker,
+                                headline: this.pHeadline,
+                                subtitle: this.pSubtitle,
+                                footer: this.pFooter,
+                                download: download ? '1' : '0'
+                            });
+                            return this.basePdfUrl + '?' + params.toString();
+                        }
+                     }">
+                    <div class="w-16 h-16 bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 rounded-2xl mx-auto flex items-center justify-center text-white text-3xl shadow-lg mb-3">
+                        📸
+                    </div>
+
+                    <h3 class="text-xl font-extrabold text-slate-900 dark:text-white">Álbum de Fotos QR para Invitados</h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-md mx-auto">
+                        Los invitados escanean el código QR con su móvil y suben o descargan fotos en calidad original directamente en tu carpeta de Google Drive.
+                    </p>
+
+                    @if($photoQrGiftEligible)
+                        <div class="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-700 text-emerald-800 dark:text-emerald-300 text-[11px] font-extrabold">
+                            <span>🎁</span>
+                            <span>Regalo incluido (0 €) por contratar Ceremonia / Cóctel</span>
+                        </div>
+                    @endif
+
+                    @if(session()->has('photo_qr_message'))
+                        <div class="mt-4 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-300 dark:border-emerald-700 text-emerald-800 dark:text-emerald-200 text-xs font-bold text-left">
+                            ✅ {{ session('photo_qr_message') }}
+                        </div>
+                    @endif
+
+                    @if(session()->has('photo_qr_error'))
+                        <div class="mt-4 p-3 rounded-xl bg-rose-50 dark:bg-rose-950/50 border border-rose-300 dark:border-rose-700 text-rose-800 dark:text-rose-200 text-xs font-bold text-left">
+                            ⚠️ {{ session('photo_qr_error') }}
+                        </div>
+                    @endif
+
+                    @if(!$photoQrConfigured)
+                        <div class="my-6 p-5 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-left space-y-3">
+                            <div class="text-xs font-extrabold text-amber-900 dark:text-amber-300">
+                                ⚙️ Falta vincular la API Key de FotosEventosQR
+                            </div>
+                            <p class="text-xs text-amber-800 dark:text-amber-200/90 leading-relaxed">
+                                Copia la API Key desde <strong>fotos.appinformaticas.com &rarr; Ajustes</strong> y pégala una sola vez en Ajustes del sistema para crear álbumes y carpetas de Google Drive en 1 clic.
+                            </p>
+                            <a href="{{ route('admin.settings', ['tab' => 'music_integrations']) }}" class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2.5 rounded-xl text-xs transition shadow-sm">
+                                🔌 Configurar API Key en Ajustes
+                            </a>
+                        </div>
+                    @elseif(!$photoQrInfo)
+                        <div class="my-5 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-left space-y-3">
+                            <div class="text-xs font-bold text-slate-800 dark:text-slate-200">
+                                Opciones iniciales del álbum para <strong>{{ $event->name }}</strong>:
+                            </div>
+                            <label class="flex items-start gap-2.5 cursor-pointer text-xs text-slate-700 dark:text-slate-300">
+                                <input type="checkbox" wire:model="photoQrShareDriveAlbum" class="mt-0.5 rounded text-indigo-600">
+                                <span>Mostrar botón de carpeta completa de Google Drive (solo lectura) en la galería pública</span>
+                            </label>
+                            <label class="flex items-start gap-2.5 cursor-pointer text-xs text-slate-700 dark:text-slate-300">
+                                <input type="checkbox" wire:model="photoQrAllowVideos" class="mt-0.5 rounded text-indigo-600">
+                                <span>Permitir también subida de vídeos cortos además de fotografías</span>
+                            </label>
+                        </div>
+
+                        <div class="flex flex-col sm:flex-row gap-2 justify-center">
+                            <button
+                                type="button"
+                                wire:click="createOrSyncPhotoQrAlbum"
+                                wire:loading.attr="disabled"
+                                class="flex-1 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-700 hover:to-pink-700 text-white font-extrabold py-3 px-5 rounded-xl text-xs shadow-lg transition cursor-pointer disabled:opacity-50"
+                            >
+                                <span wire:loading.remove wire:target="createOrSyncPhotoQrAlbum">✨ Activar Álbum QR + Carpeta Google Drive</span>
+                                <span wire:loading wire:target="createOrSyncPhotoQrAlbum">Creando evento y carpeta en Drive...</span>
+                            </button>
+                            <button type="button" wire:click="closePhotoQrModal" class="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold py-3 px-4 rounded-xl text-xs transition cursor-pointer">
+                                Cerrar
+                            </button>
+                        </div>
+                    @else
+                        <!-- QR estilizado ya creado y activo -->
+                        <div class="mt-4 mb-2 flex items-center justify-center gap-2 flex-wrap">
+                            <span class="px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 text-indigo-800 dark:text-indigo-300 text-xs font-bold">
+                                📸 {{ $photoQrCount !== null ? ($photoQrCount . ' fotos en Google Drive') : 'Álbum activo en Google Drive' }}
+                            </span>
+                            <button type="button" wire:click="refreshPhotoQrStatus" wire:loading.attr="disabled" class="px-2.5 py-1 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[11px] font-bold transition cursor-pointer">
+                                <span wire:loading.remove wire:target="refreshPhotoQrStatus">🔄 Actualizar</span>
+                                <span wire:loading wire:target="refreshPhotoQrStatus">...</span>
+                            </button>
+                        </div>
+
+                        <div class="my-3 p-3.5 bg-amber-50/60 dark:bg-slate-800 rounded-2xl border-2 border-amber-300/80 dark:border-amber-700/60 inline-block shadow-sm">
+                            <div class="w-48 h-48 mx-auto rounded-xl shadow-xs bg-white p-2 flex items-center justify-center" role="img" aria-label="QR Álbum con iniciales">
+                                {!! $photoQrStylizedSvg !!}
+                            </div>
+                        </div>
+
+                        <div class="space-y-3 text-left">
+                            <div class="flex items-center gap-2">
+                                <input type="text" readonly value="{{ $photoQrInfo['guest_url'] }}" class="flex-1 border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white rounded-xl text-xs bg-slate-50 px-3 py-2 select-all font-mono" id="photoQrLinkInput">
+                                <button type="button" @click="
+                                    const inp = document.getElementById('photoQrLinkInput');
+                                    inp.select();
+                                    inp.setSelectionRange(0, 99999);
+                                    if (navigator.clipboard && window.isSecureContext) {
+                                        navigator.clipboard.writeText(inp.value);
+                                    } else {
+                                        document.execCommand('copy');
+                                    }
+                                    copiedPhotoQr = true;
+                                    setTimeout(() => copiedPhotoQr = false, 2500);
+                                " class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold px-3 py-2 rounded-xl text-xs border border-indigo-200 transition cursor-pointer shrink-0">
+                                    <span x-show="!copiedPhotoQr">📋 Copiar</span>
+                                    <span x-show="copiedPhotoQr" class="text-emerald-600" style="display: none;">✅ ¡Copiado!</span>
+                                </button>
+                            </div>
+
+                            <!-- Bloque Destacado: Descarga Directa y Personalizador de Carteles QR en PDF -->
+                            <div class="rounded-2xl border border-amber-200 dark:border-amber-800/70 bg-gradient-to-br from-amber-50/90 via-orange-50/50 to-white dark:from-amber-950/30 dark:via-slate-900 dark:to-slate-900 p-3.5 space-y-2.5">
+                                <div class="flex items-center justify-between gap-2">
+                                    <div>
+                                        <div class="text-xs font-extrabold text-slate-900 dark:text-white">
+                                            📄 Cartel QR en PDF con Nombres ({{ $posterDefaults['names'] }})
+                                        </div>
+                                        <p class="text-[11px] text-slate-600 dark:text-slate-400">
+                                            Incluye iniciales en el QR, frase llamativa e instrucciones listas para imprimir.
+                                        </p>
+                                    </div>
+                                    <button type="button"
+                                            @click="openPosterCustomizer = !openPosterCustomizer"
+                                            class="px-2.5 py-1.5 rounded-xl text-[11px] font-bold bg-white dark:bg-slate-800 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700 hover:bg-amber-50 transition cursor-pointer shrink-0">
+                                        <span x-text="openPosterCustomizer ? '▲ Ocultar ajustes' : '🎨 Personalizar frase / formato'"></span>
+                                    </button>
+                                </div>
+
+                                <!-- Descarga rápida 1 clic en los 3 formatos A4 -->
+                                <div x-show="!openPosterCustomizer" class="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
+                                    <a :href="posterPdfUrl(true, 'a4')" class="bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold py-2 px-2.5 rounded-xl text-[11px] shadow-xs transition text-center">
+                                        📥 PDF 1×A4 Grande
+                                    </a>
+                                    <a :href="posterPdfUrl(true, '2xa5')" class="bg-white dark:bg-slate-800 hover:bg-amber-50 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 border border-amber-300 dark:border-slate-700 font-bold py-2 px-2.5 rounded-xl text-[11px] transition text-center">
+                                        📥 PDF 2×A5 Marcos
+                                    </a>
+                                    <a :href="posterPdfUrl(true, '4xa6')" class="bg-white dark:bg-slate-800 hover:bg-amber-50 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 border border-amber-300 dark:border-slate-700 font-bold py-2 px-2.5 rounded-xl text-[11px] transition text-center">
+                                        📥 PDF 4×A6 Mesas
+                                    </a>
+                                </div>
+
+                                <!-- Panel desplegable de personalización completa -->
+                                <div x-show="openPosterCustomizer" style="display: none;" class="pt-2 border-t border-amber-200/80 dark:border-slate-800 space-y-2.5">
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                        <div>
+                                            <label class="block text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 mb-0.5">Formato en hoja A4</label>
+                                            <select x-model="pLayout" class="w-full rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white text-xs py-1.5 px-2.5">
+                                                <option value="a4">📄 1 × A4 Cartel Grande (Barra / Entrada)</option>
+                                                <option value="2xa5">🖼️ 2 × A5 en 1 A4 (Marcos medianos)</option>
+                                                <option value="4xa6">🪧 4 × A6 en 1 A4 con guías de corte (Mesas)</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="block text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 mb-0.5">Estilo visual</label>
+                                            <select x-model="pStyle" class="w-full rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white text-xs py-1.5 px-2.5">
+                                                <option value="elegante">✨ Clásico Boda (Dorado & Marfil)</option>
+                                                <option value="minimal">🖤 Minimalista (Blanco & Negro)</option>
+                                                <option value="botanico">🌿 Romántico Salvia & Olivo</option>
+                                                <option value="fiesta">🎉 Fiesta & Barra Libre</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div class="grid grid-cols-3 gap-2">
+                                        <div class="col-span-2">
+                                            <label class="block text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 mb-0.5">Nombres en grande</label>
+                                            <input type="text" x-model="pNames" maxlength="60" class="w-full rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white text-xs py-1.5 px-2.5">
+                                        </div>
+                                        <div>
+                                            <label class="block text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 mb-0.5">Letras centro QR</label>
+                                            <input type="text" x-model="pInitials" maxlength="6" placeholder="Ej: O&M" class="w-full rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white text-xs py-1.5 px-2.5 font-bold text-center">
+                                        </div>
+                                    </div>
+
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <div>
+                                            <label class="block text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 mb-0.5">Encabezado superior</label>
+                                            <input type="text" x-model="pKicker" maxlength="48" class="w-full rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white text-xs py-1.5 px-2.5">
+                                        </div>
+                                        <div>
+                                            <label class="block text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 mb-0.5">Fecha o hashtag al pie</label>
+                                            <input type="text" x-model="pFooter" maxlength="48" class="w-full rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white text-xs py-1.5 px-2.5">
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 mb-0.5">Frase gancho predefinida (o edita debajo)</label>
+                                        <select x-model="pPreset" @change="applyPreset()" class="w-full rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white text-xs py-1.5 px-2.5">
+                                            @foreach($posterPresets as $prKey => $prItem)
+                                                <option value="{{ $prKey }}">{{ $prItem['label'] }}</option>
+                                            @endforeach
+                                            <option value="custom">✍️ Frase personalizada...</option>
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 mb-0.5">Titular llamativo</label>
+                                        <input type="text" x-model="pHeadline" maxlength="95" class="w-full rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white text-xs py-1.5 px-2.5 font-semibold">
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 mb-0.5">Instrucción debajo</label>
+                                        <textarea x-model="pSubtitle" rows="2" maxlength="190" class="w-full rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white text-xs py-1.5 px-2.5"></textarea>
+                                    </div>
+
+                                    <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
+                                        <label class="inline-flex items-center gap-1.5 text-xs text-slate-700 dark:text-slate-300 cursor-pointer">
+                                            <input type="checkbox" x-model="pShowInitials" class="rounded text-amber-600">
+                                            <span>Mostrar iniciales dentro del QR</span>
+                                        </label>
+
+                                        <div class="flex items-center gap-2 ml-auto">
+                                            <a :href="posterPdfUrl(false)" target="_blank" rel="noopener" class="px-3 py-2 rounded-xl text-xs font-bold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 transition">
+                                                👁️ Ver PDF
+                                            </a>
+                                            <a :href="posterPdfUrl(true)" class="px-4 py-2 rounded-xl text-xs font-extrabold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition">
+                                                📥 Descargar PDF
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                <a href="{{ $photoQrInfo['guest_url'] }}" target="_blank" rel="noopener" class="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold py-2.5 px-3 rounded-xl text-xs shadow-sm transition text-center">
+                                    📸 Álbum Invitados
+                                </a>
+
+                                @if(!empty($photoQrInfo['drive_url']))
+                                    <a href="{{ $photoQrInfo['drive_url'] }}" target="_blank" rel="noopener" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-3 rounded-xl text-xs shadow-sm transition text-center">
+                                        📁 Google Drive
+                                    </a>
+                                @endif
+
+                                <a href="{{ $photoQrInfo['admin_url'] }}" target="_blank" rel="noopener" class="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold py-2.5 px-3 rounded-xl text-xs transition text-center">
+                                    ⚙️ FotosEventosQR
+                                </a>
+                            </div>
+
+                            <div class="flex items-center gap-2 pt-1">
+                                @if($photoQrWaUrl)
+                                    <a href="{{ $photoQrWaUrl }}" target="_blank" rel="noopener" class="flex-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold py-2.5 px-4 rounded-xl text-xs transition text-center">
+                                        💬 Enviar Álbum + Cartel PDF por WhatsApp
+                                    </a>
+                                @endif
+                                <button type="button" wire:click="closePhotoQrModal" class="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold py-2.5 px-5 rounded-xl text-xs transition cursor-pointer ml-auto">
+                                    Cerrar
+                                </button>
+                            </div>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+    @endif
 
     <!-- Navegación por pestañas (Adaptable en Varias Líneas / Responsive) -->
     <div class="mb-4 border-b border-gray-200 dark:border-slate-800 -mx-4 px-4 sm:mx-0 sm:px-0">

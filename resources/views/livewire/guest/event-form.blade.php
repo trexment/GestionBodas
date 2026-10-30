@@ -21,6 +21,164 @@
         </p>
     </div>
 
+    @php
+        $guestPhotoQr = \App\Services\FotosEventosQrService::getEventAlbumInfo($event);
+        $guestPosterDefaults = $guestPhotoQr ? \App\Services\QrPosterPdfService::defaultsForEvent($event) : null;
+        $guestPosterPresets = $guestPhotoQr ? \App\Services\QrPosterPdfService::presetPhrases() : [];
+        $guestPosterBaseUrl = $guestPhotoQr ? route('pdf.photo-qr-poster', ['event' => $event->id]) : '';
+    @endphp
+    @if($guestPhotoQr && !empty($guestPhotoQr['guest_url']) && $guestPosterDefaults)
+        <div x-data="{
+                copiedQrLink: false,
+                showPosterPanel: false,
+                gLayout: 'a4',
+                gStyle: 'elegante',
+                gNames: @js($guestPosterDefaults['names']),
+                gInitials: @js($guestPosterDefaults['initials']),
+                gShowInitials: true,
+                gFooter: @js($guestPosterDefaults['footer']),
+                gPreset: @js($guestPosterDefaults['preset']),
+                gHeadline: @js($guestPosterDefaults['headline']),
+                gSubtitle: @js($guestPosterDefaults['subtitle']),
+                presetsMap: @js($guestPosterPresets),
+                basePdfUrl: @js($guestPosterBaseUrl),
+                eventToken: @js($event->token),
+                applyPreset() {
+                    if (this.presetsMap[this.gPreset]) {
+                        this.gHeadline = this.presetsMap[this.gPreset].headline;
+                        this.gSubtitle = this.presetsMap[this.gPreset].subtitle;
+                    }
+                },
+                buildPdfUrl(download) {
+                    const params = new URLSearchParams({
+                        token: this.eventToken,
+                        layout: this.gLayout,
+                        style: this.gStyle,
+                        names: this.gNames,
+                        initials: this.gInitials,
+                        show_initials: this.gShowInitials ? '1' : '0',
+                        headline: this.gHeadline,
+                        subtitle: this.gSubtitle,
+                        footer: this.gFooter,
+                        download: download ? '1' : '0'
+                    });
+                    return this.basePdfUrl + '?' + params.toString();
+                }
+             }"
+             class="mb-6 rounded-2xl border border-emerald-200 dark:border-emerald-800/70 bg-gradient-to-br from-emerald-50 via-teal-50/70 to-indigo-50/60 dark:from-emerald-950/40 dark:via-slate-900 dark:to-indigo-950/30 p-4 sm:p-5 shadow-sm">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5">
+                <div class="flex items-start gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-600 text-white flex items-center justify-center text-lg shadow-md shadow-emerald-500/20 flex-shrink-0">
+                        📸
+                    </div>
+                    <div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <h2 class="text-sm font-extrabold text-slate-900 dark:text-white">Álbum de Fotos QR para Invitados</h2>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-700/60">Incluido</span>
+                        </div>
+                        <p class="text-xs text-slate-600 dark:text-slate-300 mt-0.5 leading-relaxed">
+                            Vuestros invitados pueden subir y ver las fotos desde su móvil sin instalar apps. También podéis descargar aquí vuestros carteles QR en PDF listos para imprimir.
+                        </p>
+                    </div>
+                </div>
+                <div class="flex flex-wrap items-center gap-2 self-end sm:self-center flex-shrink-0">
+                    <button type="button"
+                            @click="showPosterPanel = !showPosterPanel"
+                            class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-extrabold bg-amber-500 hover:bg-amber-600 text-slate-950 shadow-xs transition cursor-pointer">
+                        <span>📄 Cartel PDF para Imprimir</span>
+                    </button>
+                    <button type="button"
+                            @click="navigator.clipboard.writeText(@js($guestPhotoQr['guest_url'])); copiedQrLink = true; setTimeout(() => copiedQrLink = false, 2000)"
+                            class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 shadow-xs transition cursor-pointer">
+                        <span x-text="copiedQrLink ? '¡Copiado!' : 'Copiar enlace'">Copiar enlace</span>
+                    </button>
+                    <a href="{{ $guestPhotoQr['guest_url'] }}" target="_blank" rel="noopener noreferrer"
+                       class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition">
+                        <span>Abrir Álbum</span>
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Personalizador desplegable de Carteles QR en PDF para los novios -->
+            <div x-show="showPosterPanel" style="display: none;" class="mt-4 pt-4 border-t border-emerald-200/80 dark:border-slate-800 space-y-3">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">1. ¿Cómo lo queréis imprimir? (Hoja A4)</label>
+                        <select x-model="gLayout" class="w-full rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white text-xs py-2 px-2.5">
+                            <option value="a4">📄 1 Cartel Grande A4 (Barra libre / Entrada)</option>
+                            <option value="2xa5">🖼️ 2 Marcos Medianos A5 en 1 hoja A4</option>
+                            <option value="4xa6">🪧 4 Tarjetas de Mesa A6 en 1 hoja A4 (Imprimir todas las mesas)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">2. Estilo del diseño</label>
+                        <select x-model="gStyle" class="w-full rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white text-xs py-2 px-2.5">
+                            <option value="elegante">✨ Clásico Boda (Dorado & Marfil)</option>
+                            <option value="minimal">🖤 Minimalista (Blanco & Negro)</option>
+                            <option value="botanico">🌿 Romántico Salvia & Olivo</option>
+                            <option value="fiesta">🎉 Fiesta & Barra Libre</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-3 gap-2.5">
+                    <div class="col-span-2">
+                        <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">Vuestros nombres en el cartel</label>
+                        <input type="text" x-model="gNames" maxlength="60" class="w-full rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white text-xs py-2 px-2.5">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">Iniciales en el QR</label>
+                        <input type="text" x-model="gInitials" maxlength="6" placeholder="Ej: A&L" class="w-full rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white text-xs py-2 px-2.5 font-bold text-center">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">3. Ideas de frases para animar a los invitados (elige una o cámbiala a vuestro gusto)</label>
+                    <select x-model="gPreset" @change="applyPreset()" class="w-full rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white text-xs py-2 px-2.5">
+                        @foreach($guestPosterPresets as $gpKey => $gpItem)
+                            <option value="{{ $gpKey }}">{{ $gpItem['label'] }}</option>
+                        @endforeach
+                        <option value="custom">✍️ Escribir nuestra propia frase...</option>
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">Frase principal</label>
+                        <input type="text" x-model="gHeadline" maxlength="95" class="w-full rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white text-xs py-2 px-2.5 font-semibold">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">Fecha o hashtag al pie</label>
+                        <input type="text" x-model="gFooter" maxlength="48" class="w-full rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white text-xs py-2 px-2.5">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">Explicación debajo de la frase</label>
+                    <textarea x-model="gSubtitle" rows="2" maxlength="190" class="w-full rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white text-xs py-2 px-2.5"></textarea>
+                </div>
+
+                <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
+                    <label class="inline-flex items-center gap-1.5 text-xs text-slate-700 dark:text-slate-300 cursor-pointer">
+                        <input type="checkbox" x-model="gShowInitials" class="rounded text-emerald-600">
+                        <span>Mostrar nuestras iniciales dentro del código QR</span>
+                    </label>
+                    <div class="flex items-center gap-2 ml-auto">
+                        <a :href="buildPdfUrl(false)" target="_blank" rel="noopener noreferrer"
+                           class="px-3 py-2 rounded-xl text-xs font-bold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 transition">
+                            👁️ Ver PDF
+                        </a>
+                        <a :href="buildPdfUrl(true)"
+                           class="px-4 py-2 rounded-xl text-xs font-extrabold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition">
+                            📥 Descargar PDF Listo para Imprimir
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
+
     @if($event->is_dossier_completed)
         <div class="bg-slate-100 dark:bg-slate-900 border-l-4 border-slate-500 text-slate-700 dark:text-slate-300 p-6 rounded-2xl text-center shadow-sm">
             <svg class="w-12 h-12 mx-auto mb-2 text-slate-400 dark:text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>

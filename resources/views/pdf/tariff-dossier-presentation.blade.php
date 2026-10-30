@@ -268,6 +268,23 @@
                                 <h2 class="text-2xl sm:text-3xl font-black text-white">Extras</h2>
                             </div>
 
+                            @if($page['type'] === 'extras' && !empty($config['qr_photos_gift_enabled']))
+                                <div class="p-4 sm:p-5 rounded-2xl bg-emerald-950/60 border-2 border-emerald-500/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                    <div>
+                                        <div class="text-sm sm:text-base font-black text-emerald-300">
+                                            ★ {{ $config['qr_photos_gift_title'] ?? 'REGALO INCLUIDO al contratar Ceremonia o Cóctel: Álbum de Fotos QR para Invitados' }}
+                                        </div>
+                                        <p class="text-xs text-emerald-100/80 mt-1 leading-relaxed">
+                                            {{ $config['qr_photos_gift_text'] ?? 'Colocamos un código QR personalizado para que todos los invitados suban y descarguen en calidad original las fotos que hagan con su móvil durante la ceremonia, el cóctel y la fiesta, directo a vuestro álbum privado sin instalar ninguna app.' }}
+                                        </p>
+                                    </div>
+                                    <div class="sm:text-right shrink-0">
+                                        <div class="text-2xl font-black text-emerald-400">0 €</div>
+                                        <span class="inline-block px-2 py-0.5 rounded bg-emerald-500 text-slate-950 text-[10px] font-black uppercase">Incluido de regalo</span>
+                                    </div>
+                                </div>
+                            @endif
+
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 @foreach(($page['extras'] ?? []) as $extra)
                                     <div class="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 flex items-center justify-between gap-4">

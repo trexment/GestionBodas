@@ -47,6 +47,11 @@ class Event extends Model
         'dj_id',
         'assistant_id',
         'notes',
+        'photo_qr_slug',
+        'photo_qr_url',
+        'photo_qr_drive_url',
+        'photo_qr_poster_url',
+        'photo_qr_created_at',
     ];
 
     protected $casts = [
@@ -57,6 +62,7 @@ class Event extends Model
         'deposit_paid' => 'boolean',
         'deposit_paid_amount' => 'decimal:2',
         'deposit_paid_at' => 'date',
+        'photo_qr_created_at' => 'datetime',
     ];
 
     protected static function boot()

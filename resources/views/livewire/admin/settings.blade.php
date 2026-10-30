@@ -115,7 +115,7 @@
         <button type="button" wire:click="$set('activeTab', 'music_integrations')" 
             class="w-full px-3 py-2.5 rounded-xl text-xs font-bold transition-all duration-150 flex items-center justify-start gap-2 cursor-pointer select-none truncate {{ $activeTab === 'music_integrations' ? 'bg-white dark:bg-pink-600 text-pink-700 dark:text-white shadow-xs ring-1 ring-black/5 dark:ring-white/10' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-800/60' }}">
             <span class="text-base shrink-0">🎵</span>
-            <span class="truncate">Música (Spotify / Apple)</span>
+            <span class="truncate">Música & Fotos QR</span>
         </button>
 
         <button type="button" wire:click="$set('activeTab', 'email_smtp')" 
@@ -2076,6 +2076,83 @@
                     @if(session()->has('drive_sync_error'))
                         <div class="p-3 bg-rose-50 text-rose-800 border border-rose-200 rounded-xl text-xs font-bold flex items-center gap-2">
                             <span>⚠️</span> {{ session('drive_sync_error') }}
+                        </div>
+                    @endif
+                </div>
+            </div>
+
+            <!-- SECCIÓN 4: ÁLBUM DE FOTOS QR PARA INVITADOS (FOTOSEVENTOSQR) -->
+            <div class="bg-white shadow-sm rounded-xl border-2 border-indigo-200 p-6 space-y-5">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-gray-100">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 text-white flex items-center justify-center font-bold text-2xl shadow-sm">
+                            📸
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-black text-gray-900">Álbum de Fotos QR para Invitados (FotosEventosQR)</h3>
+                            <p class="text-xs text-gray-500">Conecta por API tu servicio independiente de subida de fotos a Google Drive para activar en 1 clic el QR de cada evento (incluido de regalo al contratar Ceremonia o Cóctel).</p>
+                        </div>
+                    </div>
+                    <span class="px-3 py-1 rounded-full text-xs font-bold {{ !empty($fotos_qr_api_key) ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-amber-50 text-amber-800 border border-amber-200' }} self-start sm:self-auto">
+                        {{ !empty($fotos_qr_api_key) ? 'API Key Configurada' : 'Pendiente de API Key' }}
+                    </span>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div class="space-y-2">
+                        <label class="block text-xs font-bold text-gray-800">
+                            URL Base de FotosEventosQR
+                        </label>
+                        <input
+                            type="url"
+                            wire:model="fotos_qr_base_url"
+                            placeholder="https://fotos.appinformaticas.com"
+                            class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm font-mono"
+                        >
+                        <p class="text-[11px] text-gray-500">
+                            Dominio público donde tienes desplegado FotosEventosQR (sin barra final).
+                        </p>
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="block text-xs font-bold text-gray-800">
+                            API Key de Integración (<code>X-Api-Key</code>)
+                        </label>
+                        <input
+                            type="password"
+                            wire:model="fotos_qr_api_key"
+                            placeholder="feqr_..."
+                            class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm font-mono"
+                        >
+                        <p class="text-[11px] text-gray-500">
+                            Cópiala desde <strong>FotosEventosQR &rarr; Ajustes &rarr; API para Gestión de Eventos</strong>.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="pt-3 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div class="flex items-center gap-2.5 flex-wrap">
+                        <button
+                            type="button"
+                            wire:click="testFotosQrConnection"
+                            wire:loading.attr="disabled"
+                            class="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs transition flex items-center gap-2 shadow-md shadow-indigo-600/20 disabled:opacity-50 cursor-pointer"
+                        >
+                            <span wire:loading.remove wire:target="testFotosQrConnection">🔌 Guardar y Probar Conexión FotosEventosQR</span>
+                            <span wire:loading wire:target="testFotosQrConnection">Conectando con API...</span>
+                        </button>
+
+                        @if(!empty($fotos_qr_base_url))
+                            <a href="{{ rtrim($fotos_qr_base_url, '/') }}/admin/settings.php" target="_blank" rel="noopener" class="px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition">
+                                ↗ Abrir Panel FotosEventosQR
+                            </a>
+                        @endif
+                    </div>
+
+                    @if($fotosQrConnectionStatus)
+                        <div class="p-3 rounded-xl text-xs font-bold flex items-center gap-2 {{ !empty($fotosQrConnectionStatus['success']) ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-rose-50 text-rose-800 border border-rose-200' }}">
+                            <span>{{ !empty($fotosQrConnectionStatus['success']) ? '✅' : '⚠️' }}</span>
+                            <span>{{ $fotosQrConnectionStatus['message'] }}</span>
                         </div>
                     @endif
                 </div>

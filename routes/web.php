@@ -131,6 +131,7 @@ Route::post('/api/whatsapp/webhook/{event?}', [\App\Http\Controllers\WhatsAppWeb
 Route::get('/events/{event}/music-escaleta/pdf', [PdfController::class, 'downloadMusicEscaleta'])->name('pdf.music-escaleta');
 Route::get('/events/{event}/dj-history/pdf', [PdfController::class, 'downloadDjHistory'])->name('pdf.dj-history');
 Route::get('/events/{event}/packing-list/pdf', [PdfController::class, 'downloadPackingList'])->name('pdf.packing-list');
+Route::get('/events/{event}/photo-qr-poster.pdf', [PdfController::class, 'downloadPhotoQrPoster'])->name('pdf.photo-qr-poster');
 Route::get('/contract/{contract}/pdf', [PdfController::class, 'downloadContract'])->name('pdf.contract');
 Route::get('/invoice/{invoice}/pdf', [PdfController::class, 'downloadInvoice'])->name('pdf.invoice');
 Route::get('/quote/{quote}/pdf', [PdfController::class, 'downloadQuote'])->name('pdf.quote');

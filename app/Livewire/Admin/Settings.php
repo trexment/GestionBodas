@@ -226,6 +226,11 @@ class Settings extends Component
     public $google_drive_library_folder;
     public $driveSyncStatus = null;
 
+    // Integración Álbum FotosEventosQR (fotos.appinformaticas.com)
+    public $fotos_qr_base_url = 'https://fotos.appinformaticas.com';
+    public $fotos_qr_api_key = '';
+    public $fotosQrConnectionStatus = null;
+
     // Diagnóstico de Correo Electrónico (SMTP)
     public $test_email_recipient = '';
     public $smtpTestStatus = null;
@@ -519,6 +524,8 @@ class Settings extends Component
         $this->apple_music_launch_mode = Setting::get('apple_music_launch_mode', 'app');
         $this->google_drive_api_key = Setting::get('google_drive_api_key', '');
         $this->google_drive_library_folder = Setting::get('google_drive_library_folder', '');
+        $this->fotos_qr_base_url = Setting::get('fotos_qr_base_url', \App\Services\FotosEventosQrService::DEFAULT_BASE_URL);
+        $this->fotos_qr_api_key = Setting::get('fotos_qr_api_key', '');
         $this->spotifyUser = SpotifyService::getUserDetails();
         $this->test_email_recipient = $this->company_email ?: 'info@javnxdj.com';
 
@@ -644,6 +651,16 @@ class Settings extends Component
         Setting::set('tidal_client_id', $this->tidal_client_id);
         Setting::set('tidal_client_secret', $this->tidal_client_secret);
         $this->tidalConnectionStatus = MusicSearchService::testTidalConnection();
+    }
+
+    public function testFotosQrConnection()
+    {
+        $cleanUrl = rtrim(trim((string) $this->fotos_qr_base_url), '/') ?: \App\Services\FotosEventosQrService::DEFAULT_BASE_URL;
+        $cleanKey = trim((string) $this->fotos_qr_api_key);
+        $this->fotos_qr_base_url = $cleanUrl;
+        Setting::set('fotos_qr_base_url', $cleanUrl);
+        Setting::set('fotos_qr_api_key', $cleanKey);
+        $this->fotosQrConnectionStatus = \App\Services\FotosEventosQrService::testConnection($cleanUrl, $cleanKey);
     }
 
     public function updatedPhotoboothProviders($value, $key): void
@@ -843,6 +860,8 @@ class Settings extends Component
             'apple_music_launch_mode' => 'required|in:app,web',
             'google_drive_api_key' => 'nullable|string|max:255',
             'google_drive_library_folder' => 'nullable|string|max:500',
+            'fotos_qr_base_url' => 'nullable|string|max:255',
+            'fotos_qr_api_key' => 'nullable|string|max:255',
         ]);
 
         Setting::set('company_name', $this->company_name);
@@ -1008,6 +1027,8 @@ class Settings extends Component
         Setting::set('apple_music_launch_mode', $this->apple_music_launch_mode);
         Setting::set('google_drive_api_key', $this->google_drive_api_key);
         Setting::set('google_drive_library_folder', $this->google_drive_library_folder);
+        Setting::set('fotos_qr_base_url', rtrim(trim((string) $this->fotos_qr_base_url), '/') ?: \App\Services\FotosEventosQrService::DEFAULT_BASE_URL);
+        Setting::set('fotos_qr_api_key', trim((string) $this->fotos_qr_api_key));
 
         // Guardar ajustes IMAP (Correos entrantes / Leads)
         $this->saveImapSettings();
@@ -1260,6 +1281,8 @@ class Settings extends Component
     {
         Setting::set('google_drive_api_key', $this->google_drive_api_key);
         Setting::set('google_drive_library_folder', $this->google_drive_library_folder);
+        Setting::set('fotos_qr_base_url', rtrim(trim((string) $this->fotos_qr_base_url), '/') ?: \App\Services\FotosEventosQrService::DEFAULT_BASE_URL);
+        Setting::set('fotos_qr_api_key', trim((string) $this->fotos_qr_api_key));
 
         $result = \App\Services\CloudMusicStorageService::syncMasterLibraryFromGoogleDrive($this->google_drive_library_folder, $this->google_drive_api_key);
         $this->driveSyncStatus = $result;

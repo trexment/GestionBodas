@@ -1314,6 +1314,9 @@
                                 Continuación del evento tras el espectáculo con sesión musical / DJ por horas, equipo de sonido profesional e iluminación rítmica LED (Desde <strong>{{ number_format($djCustomPrice, 0, ',', '.') }}€/hora</strong>).
                             @else
                                 {{ $event->is_wedding ? 'Equipos independientes a batería o corriente, microfonía inalámbrica para oficiante y lecturas, y música de ambientación elegante y fluida.' : 'Equipos de sonido profesionales independientes, microfonía inalámbrica para intervenciones o actuaciones y música de ambientación adaptada.' }}
+                                <div style="margin-top: 3px; color: #065f46; font-weight: 700;">
+                                    &#9733; REGALO INCLUIDO (0 €): Álbum de Fotos QR para que los invitados suban y descarguen sus fotos en calidad original.
+                                </div>
                             @endif
                         </div>
                     </td>
@@ -1428,6 +1431,10 @@
                         </tr>
                     </thead>
                     <tbody>
+                        @php
+                            $hasCeremonyOrCocktailInQuote = false;
+                            $hasQrPhotosItemInQuote = false;
+                        @endphp
                         @forelse($quote->items as $item)
                             @php
                                 $itemTitle = $item->service_name ?: ($item->concept ?: 'Servicio');
@@ -1452,6 +1459,27 @@
                                 $isVitoriaLoc = str_contains($locLower, 'vitoria') || str_contains($locLower, 'alava') || str_contains($locLower, 'álava') || str_contains($locLower, 'gasteiz') || str_contains($locLower, 'araba');
                                 $pbCfg = $isVitoriaLoc ? $pbProviders['vitoria'] : $pbProviders['logrono'];
                                 $lowerTitle = mb_strtolower($itemTitle);
+                                $isQrGiftRow = $itemTotalPrice == 0 && (str_contains($lowerTitle, 'fotos qr') || str_contains($lowerTitle, 'incluido de regalo'));
+
+                                if (str_contains($lowerTitle, 'fotos qr') || str_contains($lowerTitle, 'álbum colaborativo') || str_contains($lowerTitle, 'album colaborativo')) {
+                                    $hasQrPhotosItemInQuote = true;
+                                } elseif (
+                                    !$isDiscount &&
+                                    !str_contains($lowerTitle, 'descuento') &&
+                                    !str_contains($lowerTitle, 'fotografía') &&
+                                    !str_contains($lowerTitle, 'fotografia') &&
+                                    (
+                                        str_contains($lowerTitle, 'ceremonia') ||
+                                        str_contains($lowerTitle, 'cóctel') ||
+                                        str_contains($lowerTitle, 'coctel') ||
+                                        str_contains($lowerTitle, 'recepción') ||
+                                        str_contains($lowerTitle, 'recepcion') ||
+                                        str_contains($lowerTitle, 'aperitivo')
+                                    )
+                                ) {
+                                    $hasCeremonyOrCocktailInQuote = true;
+                                }
+
                                 $cleanItemDesc = $itemDesc ? $cleanPdf(explode('| 💡 Opción 3 Horas', $itemDesc)[0]) : '';
                                 $upgrade3hBanner = null;
                                 $is2hItem = str_contains($lowerTitle, '2 hora') || str_contains($lowerTitle, '2h');
@@ -1520,13 +1548,13 @@
                                     }
                                 }
                             @endphp
-                            <tr>
+                            <tr style="{{ $isQrGiftRow ? 'background-color: #f0fdf4;' : '' }}">
                                 <td>
-                                    <div class="quote-item-title {{ $isDiscount ? 'quote-item-discount' : '' }}">
-                                        &bull; {{ $cleanPdf($itemTitle) }}
+                                    <div class="quote-item-title {{ $isDiscount ? 'quote-item-discount' : '' }}" style="{{ $isQrGiftRow ? 'color: #065f46;' : '' }}">
+                                        {!! $isQrGiftRow ? '&#9733;' : '&bull;' !!} {{ $cleanPdf($itemTitle) }}
                                     </div>
                                     @if(!empty($cleanItemDesc))
-                                        <div class="quote-item-desc">{{ $cleanItemDesc }}</div>
+                                        <div class="quote-item-desc" style="{{ $isQrGiftRow ? 'color: #047857;' : '' }}">{{ $cleanItemDesc }}</div>
                                     @endif
                                     @if($upgrade3hBanner)
                                         <div style="margin-top: 3px; background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 4px; padding: 2.5px 7px; font-size: 6.4pt; color: #334155; font-weight: 600;">
@@ -1534,12 +1562,14 @@
                                         </div>
                                     @endif
                                 </td>
-                                <td style="text-align: center; color: #64748b; font-weight: 600;">
+                                <td style="text-align: center; color: {{ $isQrGiftRow ? '#065f46' : '#64748b' }}; font-weight: 600;">
                                     {{ $itemQty }}
                                 </td>
                                 <td style="text-align: right; font-weight: 800; font-size: 8.5pt;" class="{{ $isDiscount ? 'quote-item-discount' : '' }}">
                                     @if($isDiscount)
                                         -{{ number_format(abs($itemTotalPrice), 2, ',', '.') }} €
+                                    @elseif($isQrGiftRow)
+                                        <span style="display: inline-block; padding: 1.5px 6px; border-radius: 4px; background-color: #ecfdf5; border: 1px solid #6ee7b7; font-size: 6.8pt; color: #065f46; font-weight: 800;">INCLUIDO (0 €)</span>
                                     @elseif($itemTotalPrice == 0 && (str_contains(mb_strtolower($itemTitle), 'incluido') || str_contains(mb_strtolower($itemDesc ?? ''), 'incluido')))
                                         <span style="font-size: 7pt; color: #334155; font-weight: 700;">INCLUIDO</span>
                                     @elseif($itemTotalPrice == 0 && (str_contains(mb_strtolower($itemTitle), 'consultar') || str_contains(mb_strtolower($itemTitle), 'extra')))
@@ -1556,6 +1586,24 @@
                                 </td>
                             </tr>
                         @endforelse
+                        @if(!$isMagicBrand && $hasCeremonyOrCocktailInQuote && !$hasQrPhotosItemInQuote)
+                            <tr style="background-color: #f0fdf4;">
+                                <td>
+                                    <div class="quote-item-title" style="color: #065f46;">
+                                        &#9733; Álbum de Fotos QR para Invitados (Incluido de regalo con Ceremonia / Cóctel)
+                                    </div>
+                                    <div class="quote-item-desc" style="color: #047857;">
+                                        Código QR personalizado para que todos los invitados suban y descarguen en calidad original las fotos que hagan con su móvil durante el evento, sin instalar ninguna app.
+                                    </div>
+                                </td>
+                                <td style="text-align: center; color: #065f46; font-weight: 700;">
+                                    1
+                                </td>
+                                <td style="text-align: right; font-weight: 800; font-size: 8.5pt;">
+                                    <span style="display: inline-block; padding: 1.5px 6px; border-radius: 4px; background-color: #ecfdf5; border: 1px solid #6ee7b7; font-size: 6.8pt; color: #065f46; font-weight: 800;">INCLUIDO (0 €)</span>
+                                </td>
+                            </tr>
+                        @endif
                     </tbody>
                 </table>
             </div>

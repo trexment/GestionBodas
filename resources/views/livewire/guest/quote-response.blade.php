@@ -201,16 +201,42 @@
                     </span>
                 </div>
 
+                @php
+                    $isMagicQuoteBrand = ($event->brand_clean ?? '') === 'mago_leugim';
+                    $hasCeremonyOrCocktailOnline = false;
+                    $hasQrPhotosItemOnline = false;
+                @endphp
                 <div class="divide-y divide-zinc-200 dark:divide-zinc-800">
                     @foreach($quote->items as $item)
                         @php
                             $lineTotal = (float)$item->price * (int)($item->quantity ?: 1);
                             $isDiscount = $lineTotal < 0;
+                            $onlineItemTitle = (string)($item->service_name ?: $item->concept ?: '');
+                            $onlineLower = mb_strtolower($onlineItemTitle);
+                            $isQrGiftLine = $lineTotal == 0 && (str_contains($onlineLower, 'fotos qr') || str_contains($onlineLower, 'incluido de regalo'));
+                            if (str_contains($onlineLower, 'fotos qr') || str_contains($onlineLower, 'álbum colaborativo') || str_contains($onlineLower, 'album colaborativo')) {
+                                $hasQrPhotosItemOnline = true;
+                            } elseif (
+                                !$isDiscount &&
+                                !str_contains($onlineLower, 'descuento') &&
+                                !str_contains($onlineLower, 'fotografía') &&
+                                !str_contains($onlineLower, 'fotografia') &&
+                                (
+                                    str_contains($onlineLower, 'ceremonia') ||
+                                    str_contains($onlineLower, 'cóctel') ||
+                                    str_contains($onlineLower, 'coctel') ||
+                                    str_contains($onlineLower, 'recepción') ||
+                                    str_contains($onlineLower, 'recepcion') ||
+                                    str_contains($onlineLower, 'aperitivo')
+                                )
+                            ) {
+                                $hasCeremonyOrCocktailOnline = true;
+                            }
                         @endphp
-                        <div class="py-4 flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                        <div class="py-4 flex flex-col sm:flex-row sm:items-start justify-between gap-3 {{ $isQrGiftLine ? 'bg-emerald-50/60 dark:bg-emerald-950/20 -mx-4 px-4 rounded-xl' : '' }}">
                             <div class="space-y-1 pr-4">
                                 <div class="flex items-center gap-2 flex-wrap">
-                                    <span class="font-semibold text-sm {{ $isDiscount ? 'text-zinc-700 dark:text-amber-400' : 'text-zinc-900 dark:text-white' }}">
+                                    <span class="font-semibold text-sm {{ $isDiscount ? 'text-zinc-700 dark:text-amber-400' : ($isQrGiftLine ? 'text-emerald-800 dark:text-emerald-300' : 'text-zinc-900 dark:text-white') }}">
                                         {{ $item->service_name ?: $item->concept }}
                                     </span>
                                     @if(($item->quantity ?? 1) > 1)
@@ -220,7 +246,7 @@
                                     @endif
                                 </div>
                                 @if($item->description)
-                                    <p class="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed max-w-2xl">
+                                    <p class="text-xs {{ $isQrGiftLine ? 'text-emerald-700 dark:text-emerald-400/90' : 'text-zinc-500 dark:text-zinc-400' }} leading-relaxed max-w-2xl">
                                         {{ $item->description }}
                                     </p>
                                 @endif
@@ -229,6 +255,10 @@
                                 @if($isDiscount)
                                     <span class="text-sm font-semibold text-zinc-700 dark:text-amber-400">
                                         {{ number_format($lineTotal, 2, ',', '.') }} €
+                                    </span>
+                                @elseif($isQrGiftLine)
+                                    <span class="text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700">
+                                        Incluido (0 €)
                                     </span>
                                 @elseif($lineTotal == 0)
                                     <span class="text-xs font-semibold uppercase tracking-wider px-2.5 py-1 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300">
@@ -242,6 +272,26 @@
                             </div>
                         </div>
                     @endforeach
+
+                    @if(!$isMagicQuoteBrand && $hasCeremonyOrCocktailOnline && !$hasQrPhotosItemOnline)
+                        <div class="py-4 flex flex-col sm:flex-row sm:items-start justify-between gap-3 bg-emerald-50/60 dark:bg-emerald-950/20 -mx-4 px-4 rounded-xl">
+                            <div class="space-y-1 pr-4">
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <span class="font-semibold text-sm text-emerald-800 dark:text-emerald-300">
+                                        ★ Álbum de Fotos QR para Invitados (Incluido de regalo con Ceremonia / Cóctel)
+                                    </span>
+                                </div>
+                                <p class="text-xs text-emerald-700 dark:text-emerald-400/90 leading-relaxed max-w-2xl">
+                                    Código QR personalizado para que todos los invitados suban y descarguen en calidad original las fotos que hagan con su móvil durante el evento, sin instalar ninguna app.
+                                </p>
+                            </div>
+                            <div class="sm:text-right shrink-0 pt-0.5">
+                                <span class="text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700">
+                                    Incluido (0 €)
+                                </span>
+                            </div>
+                        </div>
+                    @endif
                 </div>
 
                 @if(!empty($quote->admin_notes))

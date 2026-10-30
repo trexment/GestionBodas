@@ -129,6 +129,9 @@ class GeneralTariffDossierService
             ],
 
             // 6. EXTRAS (Precio cerrado; si está vacío o "a consultar" se omite y avisa)
+            'qr_photos_gift_enabled' => true,
+            'qr_photos_gift_title' => 'REGALO INCLUIDO al contratar Ceremonia o Cóctel: Álbum de Fotos QR para Invitados',
+            'qr_photos_gift_text' => 'Colocamos un código QR personalizado para que todos los invitados suban y descarguen en calidad original las fotos que hagan con su móvil durante la ceremonia, el cóctel y la fiesta, directo a vuestro álbum privado sin instalar ninguna app.',
             'extras' => [
                 [
                     'name' => 'Hora extra de fiesta / DJ',
@@ -645,13 +648,15 @@ class GeneralTariffDossierService
             'section_number' => 6,
         ];
 
-        // Si hay más de 6 extras con precio cerrado, añadir segunda página de extras para no apretar márgenes
-        if (count($processedExtras['included']) > 6) {
-            $pages[count($pages) - 1]['extras'] = array_slice($processedExtras['included'], 0, 5);
+        // Si hay muchos extras con precio cerrado, añadir segunda página de extras para no apretar márgenes
+        $maxExtrasFirstPage = !empty($config['qr_photos_gift_enabled']) ? 5 : 6;
+        $splitAtIndex = !empty($config['qr_photos_gift_enabled']) ? 4 : 5;
+        if (count($processedExtras['included']) > $maxExtrasFirstPage) {
+            $pages[count($pages) - 1]['extras'] = array_slice($processedExtras['included'], 0, $splitAtIndex);
             $pages[] = [
                 'type' => 'extras_cont',
                 'title' => '6. Extras (Continuación)',
-                'extras' => array_slice($processedExtras['included'], 5),
+                'extras' => array_slice($processedExtras['included'], $splitAtIndex),
                 'section_number' => 6,
             ];
         }

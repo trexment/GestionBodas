@@ -440,6 +440,34 @@
             </div>
         @endif
 
+        <!-- Regalo Álbum de Fotos QR al contratar Ceremonia o Cóctel -->
+        <div class="p-4 rounded-xl border border-emerald-300 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20 space-y-3">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <label class="inline-flex items-center gap-2.5 cursor-pointer">
+                    <input type="checkbox" wire:model.live="config.qr_photos_gift_enabled" class="rounded text-emerald-600 focus:ring-emerald-500 h-4 w-4">
+                    <span class="text-xs font-black text-emerald-900 dark:text-emerald-300">
+                        🎁 Destacar regalo de Álbum de Fotos QR (0 €) al contratar Ceremonia o Cóctel
+                    </span>
+                </label>
+                <span class="px-2.5 py-0.5 rounded-md bg-emerald-600 text-white text-[10px] font-black uppercase tracking-wider self-start sm:self-auto">
+                    Valor añadido 0 €
+                </span>
+            </div>
+
+            @if(!empty($config['qr_photos_gift_enabled']))
+                <div class="grid grid-cols-1 gap-2.5">
+                    <div>
+                        <label class="block text-[11px] font-bold text-emerald-900 dark:text-emerald-300 mb-0.5">Título del regalo en página Extras</label>
+                        <input type="text" wire:model.live="config.qr_photos_gift_title" class="w-full rounded-lg border-emerald-300 dark:border-emerald-800 dark:bg-slate-900 dark:text-white text-xs font-bold p-2">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-emerald-900 dark:text-emerald-300 mb-0.5">Descripción del regalo</label>
+                        <textarea wire:model.live="config.qr_photos_gift_text" rows="2" class="w-full rounded-lg border-emerald-300 dark:border-emerald-800 dark:bg-slate-900 dark:text-white text-xs p-2"></textarea>
+                    </div>
+                </div>
+            @endif
+        </div>
+
         <div class="space-y-2.5">
             @foreach(($config['extras'] ?? []) as $eIdx => $extra)
                 @php

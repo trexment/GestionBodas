@@ -260,4 +260,74 @@ class PdfController extends Controller
             'brandInfo' => $brandInfo,
         ]);
     }
+
+    /**
+     * Genera y descarga el Cartel / Tarjetas de Mesa en PDF vectorial para el Álbum de Fotos QR del evento,
+     * con iniciales de los novios en el centro del QR, frases llamativas y formatos 1xA4, 2xA5 o 4xA6.
+     */
+    public function downloadPhotoQrPoster(Request $request, Event $event)
+    {
+        $this->authorizePdfAccess($event);
+
+        $albumInfo = \App\Services\FotosEventosQrService::getEventAlbumInfo($event);
+        if (!$albumInfo || empty($albumInfo['guest_url'])) {
+            abort(404, 'Este evento aún no tiene activado el Álbum de Fotos QR.');
+        }
+
+        $defaults = \App\Services\QrPosterPdfService::defaultsForEvent($event);
+        $presets = \App\Services\QrPosterPdfService::presetPhrases();
+        $presetKey = (string) $request->query('preset', $defaults['preset']);
+        $selectedPreset = $presets[$presetKey] ?? $presets[$defaults['preset']];
+
+        $layout = (string) $request->query('layout', 'a4');
+        if (!isset(\App\Services\QrPosterPdfService::layouts()[$layout])) {
+            $layout = 'a4';
+        }
+
+        $style = (string) $request->query('style', 'elegante');
+        if (!isset(\App\Services\QrPosterPdfService::visualStyles()[$style])) {
+            $style = 'elegante';
+        }
+
+        $names = $request->has('names') ? trim((string) $request->query('names')) : $defaults['names'];
+        if ($names === '') {
+            $names = $defaults['names'];
+        }
+
+        $initials = $request->has('initials') ? trim((string) $request->query('initials')) : $defaults['initials'];
+        $showInitials = $request->query('show_initials', '1') !== '0';
+        $kicker = $request->has('kicker') ? trim((string) $request->query('kicker')) : $defaults['kicker'];
+        $headline = ($request->has('headline') && trim((string) $request->query('headline')) !== '')
+            ? trim((string) $request->query('headline'))
+            : $selectedPreset['headline'];
+        $subtitle = $request->has('subtitle')
+            ? trim((string) $request->query('subtitle'))
+            : $selectedPreset['subtitle'];
+        $footer = $request->has('footer') ? trim((string) $request->query('footer')) : $defaults['footer'];
+        $showUrl = $request->query('show_url', '1') !== '0';
+
+        $pdfBytes = \App\Services\QrPosterPdfService::generatePdf($albumInfo['guest_url'], [
+            'layout' => $layout,
+            'style' => $style,
+            'kicker' => $kicker,
+            'names' => $names,
+            'initials' => $initials,
+            'show_initials' => $showInitials,
+            'headline' => $headline,
+            'subtitle' => $subtitle,
+            'footer' => $footer,
+            'show_url' => $showUrl,
+        ]);
+
+        $safeSlug = \Illuminate\Support\Str::slug($names !== '' ? $names : $event->name) ?: ('evento-' . $event->id);
+        $filename = 'Cartel-QR-Fotos-' . $safeSlug . '-' . strtoupper($layout) . '.pdf';
+        $disposition = $request->query('download', '1') === '0' ? 'inline' : 'attachment';
+
+        return response($pdfBytes, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => $disposition . '; filename="' . $filename . '"',
+            'Content-Length' => strlen($pdfBytes),
+            'Cache-Control' => 'private, max-age=0, must-revalidate',
+        ]);
+    }
 }

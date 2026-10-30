@@ -564,9 +564,34 @@
             </div>
 
             <div class="page-body">
-                <p style="margin: 0 0 6mm 0; font-size: 10pt; color: #334155;">
+                <p style="margin: 0 0 5mm 0; font-size: 10pt; color: #334155;">
                     Podéis añadir cualquiera de estos servicios a vuestro pack en el momento de reservar o más adelante al definir los horarios de la boda. Todos los importes son precios finales con <strong>IVA incluido</strong>:
                 </p>
+
+                @if($page['type'] === 'extras' && !empty($config['qr_photos_gift_enabled']))
+                    <div style="margin-bottom: 4.5mm; border: 1.5px solid #10b981; border-left: 5px solid #10b981; border-radius: 8px; padding: 10px 15px; background-color: #ecfdf5;">
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <tr>
+                                <td style="vertical-align: middle; padding-right: 12px;">
+                                    <div style="font-size: 10.5pt; font-weight: 900; color: #065f46; margin-bottom: 3px;">
+                                        &#9733; {{ $config['qr_photos_gift_title'] ?? 'REGALO INCLUIDO al contratar Ceremonia o Cóctel: Álbum de Fotos QR para Invitados' }}
+                                    </div>
+                                    <div style="font-size: 8.8pt; color: #047857; line-height: 1.38;">
+                                        {{ $config['qr_photos_gift_text'] ?? 'Colocamos un código QR personalizado para que todos los invitados suban y descarguen en calidad original las fotos que hagan con su móvil durante la ceremonia, el cóctel y la fiesta, directo a vuestro álbum privado sin instalar ninguna app.' }}
+                                    </div>
+                                </td>
+                                <td style="vertical-align: middle; text-align: right; width: 120px; white-space: nowrap;">
+                                    <div style="font-size: 13.5pt; font-weight: 900; color: #065f46;">
+                                        0 €
+                                    </div>
+                                    <span style="display: inline-block; padding: 2px 7px; border-radius: 4px; background-color: #059669; color: #ffffff; font-size: 7pt; font-weight: 800; text-transform: uppercase;">
+                                        Incluido de regalo
+                                    </span>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                @endif
 
                 @foreach(($page['extras'] ?? []) as $extra)
                     <div style="margin-bottom: 4.5mm; border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px 16px; background-color: #f8fafc;">

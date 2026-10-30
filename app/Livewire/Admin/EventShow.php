@@ -238,6 +238,12 @@ class EventShow extends Component
     public $djHistorySyncRequests = true;
     public $djHistoryFilterQuery = '';
 
+    // Álbum Colaborativo de Fotos QR (FotosEventosQR vía HTTP API)
+    public bool $showPhotoQrModal = false;
+    public bool $photoQrShareDriveAlbum = false;
+    public bool $photoQrAllowVideos = false;
+    public ?array $photoQrLiveStats = null;
+
     public function boot()
     {
         if ($this->event && auth()->check()) {
@@ -3837,6 +3843,19 @@ class EventShow extends Component
             $items[] = ['service_name' => $cocktailTitle, 'description' => $this->quote_services['cocktail']['desc'], 'price' => $p, 'quantity' => $qty];
             $total += ($p * $qty);
         }
+
+        // Regalo incluido (0 €) al contratar desde Ceremonia o Cóctel (marcas DJ / Bodas)
+        if (
+            ($this->event?->brand_clean ?? '') !== 'mago_leugim' &&
+            (!empty($this->quote_services['ceremony']['selected']) || !empty($this->quote_services['cocktail']['selected']))
+        ) {
+            $items[] = [
+                'service_name' => 'Álbum de Fotos QR para Invitados (Incluido de regalo con Ceremonia / Cóctel)',
+                'description' => 'Código QR personalizado para que todos los invitados suban y descarguen en calidad original las fotos que hagan con su móvil durante el evento, sin instalar ninguna app.',
+                'price' => 0,
+                'quantity' => 1,
+            ];
+        }
         if (!empty($this->quote_services['restaurant']['selected'])) {
             $qty = (int)($this->quote_services['restaurant']['quantity'] ?: 1);
             $p = (float)($this->quote_services['restaurant']['price'] ?: 0);
@@ -4219,7 +4238,13 @@ class EventShow extends Component
             
             // IMPORTANTE: Comprobar primero si es una línea de descuento o de efectos (humo/chispas incluidas en pack)
             // para que NO coincidan por nombre con 'cóctel', 'banquete' ni 'pack signature / pack deluxe'
-            if (str_contains($name, 'descuento') || (float)$item->price < 0) {
+            if (
+                str_contains($name, 'descuento') ||
+                (float)$item->price < 0 ||
+                str_contains($name, 'fotos qr') ||
+                str_contains($name, 'álbum colaborativo') ||
+                str_contains($name, 'album colaborativo')
+            ) {
                 continue;
             } elseif (str_contains($name, 'máquina de humo') || str_contains($name, 'maquina de humo') || str_contains($name, 'humo')) {
                 $this->quote_services['smoke_machine']['selected'] = true;
@@ -5179,6 +5204,69 @@ class EventShow extends Component
     {
         if ($this->event) {
             $this->event->load('musicRequests');
+        }
+    }
+
+    // ==================== ÁLBUM DE FOTOS QR (FOTOSEVENTOSQR) ====================
+
+    public function openPhotoQrModal(): void
+    {
+        $this->showPhotoQrModal = true;
+        if ($this->event && \App\Services\FotosEventosQrService::isConfigured()) {
+            $info = \App\Services\FotosEventosQrService::getEventAlbumInfo($this->event);
+            if ($info !== null) {
+                $this->refreshPhotoQrStatus(false);
+            }
+        }
+    }
+
+    public function closePhotoQrModal(): void
+    {
+        $this->showPhotoQrModal = false;
+    }
+
+    public function createOrSyncPhotoQrAlbum(): void
+    {
+        if (!$this->event) {
+            return;
+        }
+
+        $result = \App\Services\FotosEventosQrService::createOrSyncEventAlbum($this->event, [
+            'share_drive_album' => $this->photoQrShareDriveAlbum,
+            'allow_videos' => $this->photoQrAllowVideos,
+        ]);
+
+        $this->event->refresh();
+        $this->showPhotoQrModal = true;
+
+        if (!empty($result['success'])) {
+            $this->photoQrLiveStats = $result['event'] ?? null;
+            $msg = $result['message'];
+            if (!empty($result['warning'])) {
+                $msg .= ' (' . $result['warning'] . ')';
+            }
+            session()->flash('photo_qr_message', $msg);
+        } else {
+            session()->flash('photo_qr_error', $result['message'] ?? 'No se pudo activar el Álbum de Fotos QR.');
+        }
+    }
+
+    public function refreshPhotoQrStatus(bool $flash = true): void
+    {
+        if (!$this->event) {
+            return;
+        }
+
+        $res = \App\Services\FotosEventosQrService::fetchAlbumStatus($this->event);
+        $this->event->refresh();
+
+        if (!empty($res['success']) && !empty($res['found']) && !empty($res['event'])) {
+            $this->photoQrLiveStats = $res['event'];
+            if ($flash) {
+                session()->flash('photo_qr_message', 'Estado del álbum actualizado (' . (int)($res['event']['photos_count'] ?? 0) . ' fotos en Drive).');
+            }
+        } elseif ($flash && empty($res['success'])) {
+            session()->flash('photo_qr_error', $res['message'] ?? 'No se pudo consultar el estado del álbum.');
         }
     }
 
