@@ -270,8 +270,18 @@ class PdfController extends Controller
         $this->authorizePdfAccess($event);
 
         $albumInfo = \App\Services\FotosEventosQrService::getEventAlbumInfo($event);
+        if ((!$albumInfo || empty($albumInfo['guest_url'])) && \App\Services\FotosEventosQrService::isConfigured()) {
+            $syncRes = \App\Services\FotosEventosQrService::createOrSyncEventAlbum($event, [
+                'share_drive_album' => $request->boolean('share_drive_album'),
+                'allow_videos' => $request->boolean('allow_videos'),
+            ]);
+            if (!empty($syncRes['success'])) {
+                $event->refresh();
+                $albumInfo = \App\Services\FotosEventosQrService::getEventAlbumInfo($event);
+            }
+        }
         if (!$albumInfo || empty($albumInfo['guest_url'])) {
-            abort(404, 'Este evento aún no tiene activado el Álbum de Fotos QR.');
+            abort(404, 'No se pudo activar el Álbum de Fotos QR. Verifica que la API Key esté guardada en Ajustes → Música & Fotos QR.');
         }
 
         $defaults = \App\Services\QrPosterPdfService::defaultsForEvent($event);

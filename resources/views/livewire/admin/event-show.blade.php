@@ -1832,19 +1832,29 @@
                             </label>
                         </div>
 
-                        <div class="flex flex-col sm:flex-row gap-2 justify-center">
-                            <button
-                                type="button"
-                                wire:click="createOrSyncPhotoQrAlbum"
-                                wire:loading.attr="disabled"
-                                class="flex-1 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-700 hover:to-pink-700 text-white font-extrabold py-3 px-5 rounded-xl text-xs shadow-lg transition cursor-pointer disabled:opacity-50"
+                        <div class="space-y-2">
+                            <a
+                                :href="basePdfUrl + '?download=1&layout=a4&share_drive_album=' + ($wire.photoQrShareDriveAlbum ? '1' : '0') + '&allow_videos=' + ($wire.photoQrAllowVideos ? '1' : '0')"
+                                @click="setTimeout(() => $wire.refreshPhotoQrStatus(false), 2200); setTimeout(() => $wire.refreshPhotoQrStatus(false), 4500);"
+                                class="w-full inline-flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 via-orange-400 to-amber-500 hover:from-amber-600 hover:to-orange-500 text-slate-950 font-black py-3.5 px-5 rounded-xl text-xs shadow-lg transition cursor-pointer"
                             >
-                                <span wire:loading.remove wire:target="createOrSyncPhotoQrAlbum">✨ Activar Álbum QR + Carpeta Google Drive</span>
-                                <span wire:loading wire:target="createOrSyncPhotoQrAlbum">Creando evento y carpeta en Drive...</span>
-                            </button>
-                            <button type="button" wire:click="closePhotoQrModal" class="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold py-3 px-4 rounded-xl text-xs transition cursor-pointer">
-                                Cerrar
-                            </button>
+                                <span>⚡ 1 Clic: Crear Álbum en Drive + Descargar Cartel PDF</span>
+                            </a>
+
+                            <div class="flex flex-col sm:flex-row gap-2 justify-center">
+                                <button
+                                    type="button"
+                                    wire:click="createOrSyncPhotoQrAlbum"
+                                    wire:loading.attr="disabled"
+                                    class="flex-1 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-700 hover:to-pink-700 text-white font-extrabold py-2.5 px-4 rounded-xl text-xs shadow-md transition cursor-pointer disabled:opacity-50"
+                                >
+                                    <span wire:loading.remove wire:target="createOrSyncPhotoQrAlbum">✨ Activar Álbum y Personalizar Frase / Formato</span>
+                                    <span wire:loading wire:target="createOrSyncPhotoQrAlbum">Creando evento y carpeta en Drive...</span>
+                                </button>
+                                <button type="button" wire:click="closePhotoQrModal" class="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold py-2.5 px-4 rounded-xl text-xs transition cursor-pointer">
+                                    Cerrar
+                                </button>
+                            </div>
                         </div>
                     @else
                         <!-- QR estilizado ya creado y activo -->

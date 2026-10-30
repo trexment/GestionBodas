@@ -918,11 +918,11 @@ class QrPosterPdfService
 
         $out .= self::cmdFillRgb($theme['card_bg']);
         $out .= self::cmdStrokeRgb($theme['outer_border']);
-        $out .= sprintf("%.3f w\n", max(0.55, 1.35 * $s));
+        $out .= sprintf("%.3F w\n", max(0.55, 1.35 * $s));
         $out .= self::cmdRoundedRect($oxMm + $mOuter, $oyMm + $mOuter, $wMm - ($mOuter * 2.0), $hMm - ($mOuter * 2.0), 3.5 * $s, $pageHPt, 'B');
 
         $out .= self::cmdStrokeRgb($theme['inner_border']);
-        $out .= sprintf("%.3f w\n", max(0.35, 0.65 * $s));
+        $out .= sprintf("%.3F w\n", max(0.35, 0.65 * $s));
         $out .= self::cmdRoundedRect($oxMm + $mInner, $oyMm + $mInner, $wMm - ($mInner * 2.0), $hMm - ($mInner * 2.0), 2.2 * $s, $pageHPt, 'S');
 
         $cornerOffset = 17.2 * $s;
@@ -946,7 +946,7 @@ class QrPosterPdfService
 
             $out .= self::cmdFillRgb($theme['accent_soft']);
             $out .= self::cmdStrokeRgb($theme['inner_border']);
-            $out .= sprintf("%.3f w\n", max(0.3, 0.5 * $s));
+            $out .= sprintf("%.3F w\n", max(0.3, 0.5 * $s));
             $out .= self::cmdRoundedRect($cxMm - ($pillWMm / 2.0), $pillYMm, $pillWMm, $pillHMm, 3.7 * $s, $pageHPt, 'B');
 
             $out .= self::cmdFillRgb($theme['accent']);
@@ -974,7 +974,7 @@ class QrPosterPdfService
         $lineHalfMm = 26.0 * $s;
         $gapCenterMm = 4.5 * $s;
         $out .= self::cmdStrokeRgb($theme['outer_border']);
-        $out .= sprintf("%.3f w\n", max(0.35, 0.65 * $s));
+        $out .= sprintf("%.3F w\n", max(0.35, 0.65 * $s));
         $out .= self::cmdLine($cxMm - $lineHalfMm, $dividerYMm, $cxMm - $gapCenterMm, $dividerYMm, $pageHPt);
         $out .= self::cmdLine($cxMm + $gapCenterMm, $dividerYMm, $cxMm + $lineHalfMm, $dividerYMm, $pageHPt);
         $out .= self::cmdFillRgb($theme['outer_border']);
@@ -1011,7 +1011,7 @@ class QrPosterPdfService
 
         $out .= self::cmdFillRgb('#FFFFFF');
         $out .= self::cmdStrokeRgb($theme['outer_border']);
-        $out .= sprintf("%.3f w\n", max(0.65, 1.5 * $s));
+        $out .= sprintf("%.3F w\n", max(0.65, 1.5 * $s));
         $out .= self::cmdRoundedRect($qrFrameXMm, $qrFrameYMm, $qrFrameSizeMm, $qrFrameSizeMm, 6.2 * $s, $pageHPt, 'B');
 
         $scanBadgeText = 'ESCANEA AQUÍ';
@@ -1042,7 +1042,7 @@ class QrPosterPdfService
         $stepsBoxHMm = 13.0 * $s;
         $out .= self::cmdFillRgb($theme['accent_soft']);
         $out .= self::cmdStrokeRgb($theme['inner_border']);
-        $out .= sprintf("%.3f w\n", max(0.3, 0.45 * $s));
+        $out .= sprintf("%.3F w\n", max(0.3, 0.45 * $s));
         $out .= self::cmdRoundedRect($cxMm - ($stepsBoxWMm / 2.0), $stepsYMm, $stepsBoxWMm, $stepsBoxHMm, 3.8 * $s, $pageHPt, 'B');
 
         $stepsText = '1. Abre la cámara de tu móvil · 2. Apunta al QR · 3. Elige y sube tus fotos';
@@ -1133,12 +1133,12 @@ class QrPosterPdfService
 
             $out .= self::cmdFillRgb((string) $theme['accent_soft']);
             $out .= self::cmdStrokeRgb((string) $theme['outer_border']);
-            $out .= sprintf("%.3f w\n", max(0.45, 0.36 * $modMm * self::MM));
+            $out .= sprintf("%.3F w\n", max(0.45, 0.36 * $modMm * self::MM));
             $out .= self::cmdCircle($cxMm, $cyMm, $rRingMm, $pageHPt, 'B');
 
             $out .= self::cmdFillRgb('#FFFFFF');
             $out .= self::cmdStrokeRgb((string) $theme['inner_border']);
-            $out .= sprintf("%.3f w\n", max(0.25, 0.18 * $modMm * self::MM));
+            $out .= sprintf("%.3F w\n", max(0.25, 0.18 * $modMm * self::MM));
             $out .= self::cmdCircle($cxMm, $cyMm, $rInnerMm, $pageHPt, 'B');
 
             $displayInit = mb_strtoupper(trim($initials), 'UTF-8');
@@ -1166,13 +1166,13 @@ class QrPosterPdfService
     private static function cmdFillRgb(string $hex): string
     {
         [$r, $g, $b] = self::hexToRgbFloats($hex);
-        return sprintf("%.4f %.4f %.4f rg\n", $r, $g, $b);
+        return sprintf("%.4F %.4F %.4F rg\n", $r, $g, $b);
     }
 
     private static function cmdStrokeRgb(string $hex): string
     {
         [$r, $g, $b] = self::hexToRgbFloats($hex);
-        return sprintf("%.4f %.4f %.4f RG\n", $r, $g, $b);
+        return sprintf("%.4F %.4F %.4F RG\n", $r, $g, $b);
     }
 
     /** @return array{0:float, 1:float, 2:float} */
@@ -1195,7 +1195,7 @@ class QrPosterPdfService
     private static function cmdLine(float $x1Mm, float $y1Mm, float $x2Mm, float $y2Mm, float $pageHPt): string
     {
         return sprintf(
-            "%.3f %.3f m %.3f %.3f l S\n",
+            "%.3F %.3F m %.3F %.3F l S\n",
             $x1Mm * self::MM,
             $pageHPt - ($y1Mm * self::MM),
             $x2Mm * self::MM,
@@ -1212,7 +1212,7 @@ class QrPosterPdfService
         $r = min($rMm * self::MM, $w / 2.0, $h / 2.0);
 
         if ($r <= 0.05) {
-            return sprintf("%.3f %.3f %.3f %.3f re %s\n", $x, $y, $w, $h, $op);
+            return sprintf("%.3F %.3F %.3F %.3F re %s\n", $x, $y, $w, $h, $op);
         }
 
         $k = $r * self::BEZIER_K;
@@ -1220,7 +1220,7 @@ class QrPosterPdfService
         $yt = $y + $h;
 
         return sprintf(
-            "%.3f %.3f m %.3f %.3f l %.3f %.3f %.3f %.3f %.3f %.3f c %.3f %.3f l %.3f %.3f %.3f %.3f %.3f %.3f c %.3f %.3f l %.3f %.3f %.3f %.3f %.3f %.3f c %.3f %.3f l %.3f %.3f %.3f %.3f %.3f %.3f c h %s\n",
+            "%.3F %.3F m %.3F %.3F l %.3F %.3F %.3F %.3F %.3F %.3F c %.3F %.3F l %.3F %.3F %.3F %.3F %.3F %.3F c %.3F %.3F l %.3F %.3F %.3F %.3F %.3F %.3F c %.3F %.3F l %.3F %.3F %.3F %.3F %.3F %.3F c h %s\n",
             $x + $r, $y,
             $xr - $r, $y,
             $xr - $r + $k, $y, $xr, $y + $r - $k, $xr, $y + $r,
@@ -1242,7 +1242,7 @@ class QrPosterPdfService
         $k = $r * self::BEZIER_K;
 
         return sprintf(
-            "%.3f %.3f m %.3f %.3f %.3f %.3f %.3f %.3f c %.3f %.3f %.3f %.3f %.3f %.3f c %.3f %.3f %.3f %.3f %.3f %.3f c %.3f %.3f %.3f %.3f %.3f %.3f c h %s\n",
+            "%.3F %.3F m %.3F %.3F %.3F %.3F %.3F %.3F c %.3F %.3F %.3F %.3F %.3F %.3F c %.3F %.3F %.3F %.3F %.3F %.3F c %.3F %.3F %.3F %.3F %.3F %.3F c h %s\n",
             $cx, $cy + $r,
             $cx + $k, $cy + $r, $cx + $r, $cy + $k, $cx + $r, $cy,
             $cx + $r, $cy - $k, $cx + $k, $cy - $r, $cx, $cy - $r,
@@ -1260,7 +1260,7 @@ class QrPosterPdfService
         $ry = $ryMm * self::MM;
 
         return sprintf(
-            "%.3f %.3f m %.3f %.3f l %.3f %.3f l %.3f %.3f l h %s\n",
+            "%.3F %.3F m %.3F %.3F l %.3F %.3F l %.3F %.3F l h %s\n",
             $cx, $cy + $ry,
             $cx + $rx, $cy,
             $cx, $cy - $ry,
@@ -1280,7 +1280,7 @@ class QrPosterPdfService
         $yPt = $pageHPt - ($baselineYMm * self::MM);
         $encoded = self::escapePdfLiteral(self::utf8ToWinAnsi($clean));
 
-        return sprintf("BT /%s %.3f Tf %.3f %.3f Td (%s) Tj ET\n", $fontRef, $fontSizePt, $xPt, $yPt, $encoded);
+        return sprintf("BT /%s %.3F Tf %.3F %.3F Td (%s) Tj ET\n", $fontRef, $fontSizePt, $xPt, $yPt, $encoded);
     }
 
     /** @return array<int, string> */
@@ -1471,7 +1471,7 @@ class QrPosterPdfService
             1  => '<< /Type /Catalog /Pages 2 0 R >>',
             2  => '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
             3  => sprintf(
-                '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 %.3f %.3f] /Resources << /Font << ' .
+                '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 %.3F %.3F] /Resources << /Font << ' .
                 '/F1 5 0 R /F2 6 0 R /F3 7 0 R /F4 8 0 R /F5 9 0 R /F6 10 0 R /F7 11 0 R ' .
                 '>> >> /Contents 4 0 R >>',
                 $pageWPt,
