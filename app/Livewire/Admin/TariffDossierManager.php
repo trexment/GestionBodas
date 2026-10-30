@@ -104,6 +104,7 @@ class TariffDossierManager extends Component
             $path = GeneralTariffDossierService::processAndCompressImage($this->gallery_uploads[$index], 'galeria_' . ($index + 1));
             if ($path) {
                 $this->config['gallery_photos'][$index]['image_path'] = $path;
+                $this->config['gallery_photos'][$index]['has_permission'] = true;
                 unset($this->gallery_uploads[$index]);
                 $this->save(false);
                 session()->flash('dossier_saved', 'Foto #' . ($index + 1) . ' convertida a .jpg, comprimida y añadida a la galería.');

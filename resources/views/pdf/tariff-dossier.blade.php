@@ -346,8 +346,10 @@
                             @endif
                             <div style="padding: 6px 12px; background-color: #0f172a; color: #ffffff; font-size: 9pt;">
                                 <strong style="color: #facc15;">{{ $photo['wedding_name'] }}</strong>
-                                &nbsp;&bull;&nbsp;
-                                <span style="color: #cbd5e1;">{{ \App\Services\GeneralTariffDossierService::formatSpanishDate($photo['wedding_date']) }}</span>
+                                @if(!empty($photo['wedding_date']))
+                                    &nbsp;&bull;&nbsp;
+                                    <span style="color: #cbd5e1;">{{ \App\Services\GeneralTariffDossierService::formatSpanishDate($photo['wedding_date']) }}</span>
+                                @endif
                                 @if(!empty($photo['caption']))
                                     <span style="color: #94a3b8;"> — {{ $photo['caption'] }}</span>
                                 @endif
@@ -370,10 +372,12 @@
                                         @endif
                                         <div style="padding: 6px 10px; background-color: #0f172a; color: #ffffff; font-size: 8.5pt;">
                                             <div style="font-weight: 800; color: #facc15;">{{ $photo['wedding_name'] }}</div>
-                                            <div style="color: #cbd5e1; font-size: 8pt;">
-                                                Fecha: {{ \App\Services\GeneralTariffDossierService::formatSpanishDate($photo['wedding_date']) }}
-                                                @if(!empty($photo['caption'])) &bull; {{ $photo['caption'] }} @endif
-                                            </div>
+                                            @if(!empty($photo['wedding_date']) || !empty($photo['caption']))
+                                                <div style="color: #cbd5e1; font-size: 8pt;">
+                                                    @if(!empty($photo['wedding_date'])) Fecha: {{ \App\Services\GeneralTariffDossierService::formatSpanishDate($photo['wedding_date']) }} @endif
+                                                    @if(!empty($photo['caption'])) &bull; {{ $photo['caption'] }} @endif
+                                                </div>
+                                            @endif
                                         </div>
                                     </td>
                                 @endforeach

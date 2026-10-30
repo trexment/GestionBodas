@@ -1,28 +1,35 @@
 /**
  * Selector Global de Fecha (dd/mm/yyyy, Lunes primer día) y Hora (24h sin AM/PM) en Español
- * Compatible al 100% con Livewire 3 (mantiene input.value en YYYY-MM-DD y HH:mm sin alterar el DOM de Livewire).
+ * Compatible al 100% con Livewire 3 (mantiene el texto del input siempre visible y sincronizado).
  */
 (function () {
     'use strict';
 
     const MONTHS_ES = [
         'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Deciembre'.replace('Dec', 'Dic')
+        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
     ];
     const WEEKDAYS_ES = ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá', 'Do'];
 
-    // 1. Inyectar estilos globales para ocultar el formato inglés nativo (mm/dd/yyyy y AM/PM)
-    // Se aplica directamente a cualquier input[type="date"] e input[type="time"] sin mutar sus clases DOM.
+    // 1. Estilos globales: mantener el texto de fecha/hora 100% visible siempre,
+    // ocultar únicamente el campo AM/PM en inputs de hora y el icono nativo del navegador.
     const style = document.createElement('style');
     style.id = 'es-datetime-picker-styles';
     style.textContent = `
         input[type="date"],
         input[type="time"] {
             position: relative;
-            cursor: pointer !important;
+            cursor: pointer;
+            padding-right: 32px !important;
             background-repeat: no-repeat !important;
-            background-position: left center, right 10px center !important;
+            background-position: right 10px center !important;
+            background-size: 15px 15px !important;
+            background-image: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='18' rx='2' ry='2'/%3E%3Cline x1='16' y1='2' x2='16' y2='6'/%3E%3Cline x1='8' y1='2' x2='8' y2='6'/%3E%3Cline x1='3' y1='10' x2='21' y2='10'/%3E%3C/svg%3E") !important;
         }
+        input[type="time"] {
+            background-image: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpolyline points='12 6 12 12 16 14'/%3E%3C/svg%3E") !important;
+        }
+        /* Asegurar que el texto interno de fecha y hora sea SIEMPRE visible en modo claro y oscuro */
         input[type="date"]::-webkit-datetime-edit,
         input[type="date"]::-webkit-datetime-edit-fields-wrapper,
         input[type="date"]::-webkit-datetime-edit-text,
@@ -33,38 +40,48 @@
         input[type="time"]::-webkit-datetime-edit-fields-wrapper,
         input[type="time"]::-webkit-datetime-edit-text,
         input[type="time"]::-webkit-datetime-edit-hour-field,
-        input[type="time"]::-webkit-datetime-edit-minute-field,
-        input[type="time"]::-webkit-datetime-edit-ampm-field {
-            color: transparent !important;
-            opacity: 0 !important;
-            -webkit-text-fill-color: transparent !important;
+        input[type="time"]::-webkit-datetime-edit-minute-field {
+            color: inherit !important;
+            opacity: 1 !important;
+            -webkit-text-fill-color: currentColor !important;
         }
+        /* Ocultar únicamente el selector AM/PM en inputs de hora para forzar 24h */
+        input[type="time"]::-webkit-datetime-edit-ampm-field {
+            display: none !important;
+            width: 0 !important;
+            opacity: 0 !important;
+        }
+        /* Ocultar el icono nativo de calendario/reloj del navegador porque usamos nuestro popover en español */
         input[type="date"]::-webkit-calendar-picker-indicator,
         input[type="time"]::-webkit-calendar-picker-indicator {
             opacity: 0 !important;
-            pointer-events: none !important;
-            width: 0 !important;
+            cursor: pointer !important;
+            position: absolute !important;
+            right: 0 !important;
+            top: 0 !important;
+            bottom: 0 !important;
+            width: 34px !important;
+            height: 100% !important;
             margin: 0 !important;
             padding: 0 !important;
         }
         #es-dt-popover {
             position: fixed;
             z-index: 999999;
-            width: 292px;
+            width: 296px;
             border-radius: 14px;
-            box-shadow: 0 20px 35px -5px rgba(0, 0, 0, 0.35), 0 8px 15px -6px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 20px 35px -5px rgba(0, 0, 0, 0.45), 0 8px 15px -6px rgba(0, 0, 0, 0.25);
             font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
             user-select: none;
-            transition: opacity 0.12s ease, transform 0.12s ease;
         }
         #es-dt-popover.es-dt-light {
             background: #ffffff;
-            border: 1px solid #e2e8f0;
+            border: 1px solid #cbd5e1;
             color: #0f172a;
         }
         #es-dt-popover.es-dt-dark {
             background: #0f172a;
-            border: 1px solid #334155;
+            border: 1px solid #475569;
             color: #f8fafc;
         }
         .es-dt-day-btn {
@@ -109,68 +126,30 @@
         return `${m[3]}/${m[2]}/${m[1]}`;
     }
 
+    function parseEsDateToIso(str) {
+        if (!str || typeof str !== 'string') return null;
+        const clean = str.trim();
+        const mEs = clean.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+        if (mEs) {
+            const d = parseInt(mEs[1], 10);
+            const mo = parseInt(mEs[2], 10);
+            const y = parseInt(mEs[3], 10);
+            if (mo >= 1 && mo <= 12 && d >= 1 && d <= 31 && y >= 1970 && y <= 2100) {
+                return `${y}-${String(mo).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+            }
+        }
+        const mIso = clean.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        if (mIso) {
+            return clean;
+        }
+        return null;
+    }
+
     function normalizeTime24(val) {
         if (!val || typeof val !== 'string') return '';
         const m = val.trim().match(/^(\d{1,2}):(\d{2})/);
         if (!m) return '';
         return `${String(m[1]).padStart(2, '0')}:${m[2]}`;
-    }
-
-    function escapeXml(str) {
-        return String(str)
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&apos;');
-    }
-
-    // Actualiza la capa visual SVG en el input manteniendo input.value intacto para Livewire
-    function paintInputDisplay(input) {
-        if (!input || !input.isConnected) return;
-        const type = input.getAttribute('type');
-        if (type !== 'date' && type !== 'time') return;
-
-        const rawVal = input.value || '';
-        const isDark = document.documentElement.classList.contains('dark');
-        const cacheKey = `${type}|${rawVal}|${isDark ? '1' : '0'}`;
-        if (input._esLastCacheKey === cacheKey && input.style.backgroundImage) {
-            return;
-        }
-        input._esLastCacheKey = cacheKey;
-
-        const isDate = type === 'date';
-        const displayStr = isDate ? formatIsoToEsDate(rawVal) : normalizeTime24(rawVal);
-        const placeholderStr = isDate ? 'dd/mm/aaaa' : 'hh:mm (24h)';
-        const textToDraw = displayStr || placeholderStr;
-
-        const cs = window.getComputedStyle(input);
-        const darkBg = isDark ||
-            (cs.backgroundColor && cs.backgroundColor !== 'rgba(0, 0, 0, 0)' && !cs.backgroundColor.includes('255, 255, 255') && !cs.backgroundColor.includes('248, 250, 252'));
-
-        let textColor = displayStr
-            ? (cs.color && cs.color !== 'rgba(0, 0, 0, 0)' && cs.color !== 'transparent' ? cs.color : (darkBg ? '#f8fafc' : '#0f172a'))
-            : (darkBg ? '#64748b' : '#94a3b8');
-
-        if (textColor === 'rgba(0, 0, 0, 0)' || textColor === 'transparent') {
-            textColor = darkBg ? '#f8fafc' : '#0f172a';
-        }
-
-        const fontSize = cs.fontSize || '13px';
-        const fontWeight = cs.fontWeight || '600';
-        const padLeft = parseInt(cs.paddingLeft, 10) || 12;
-
-        const textSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="220" height="36"><text x="${padLeft}" y="22.5" fill="${escapeXml(textColor)}" font-family="Plus Jakarta Sans, system-ui, sans-serif" font-size="${escapeXml(fontSize)}" font-weight="${escapeXml(fontWeight)}">${escapeXml(textToDraw)}</text></svg>`;
-        const iconColor = darkBg ? '#94a3b8' : '#64748b';
-        const iconSvg = isDate
-            ? `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${iconColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`
-            : `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${iconColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
-
-        const bgValue = `url("data:image/svg+xml;utf8,${encodeURIComponent(textSvg)}"), url("data:image/svg+xml;utf8,${encodeURIComponent(iconSvg)}")`;
-        if (input._esLastBg !== bgValue) {
-            input.style.backgroundImage = bgValue;
-            input._esLastBg = bgValue;
-        }
     }
 
     function enhanceAllInputs(root = document) {
@@ -180,14 +159,19 @@
         inputs.forEach(input => {
             if (!input._esBound) {
                 input._esBound = true;
-                // Interceptar showPicker nativo para que nunca salga el calendario en inglés ni AM/PM
+                if (!input.getAttribute('lang')) {
+                    input.setAttribute('lang', 'es-ES');
+                }
+                if (input.getAttribute('type') === 'time' && !input.getAttribute('step')) {
+                    input.setAttribute('step', '60');
+                }
+                // Interceptar showPicker nativo para abrir nuestro selector español con Lunes primero y 24h
                 try {
                     input.showPicker = function () {
                         openPickerForInput(input);
                     };
                 } catch (e) {}
             }
-            paintInputDisplay(input);
         });
     }
 
@@ -199,7 +183,6 @@
         } else {
             input.value = newValue;
         }
-        paintInputDisplay(input);
         input.dispatchEvent(new Event('input', { bubbles: true }));
         input.dispatchEvent(new Event('change', { bubbles: true }));
     }
@@ -229,8 +212,8 @@
     function positionPopover(input) {
         const pop = ensurePopover();
         const rect = input.getBoundingClientRect();
-        const popWidth = 292;
-        const popHeight = 330;
+        const popWidth = 296;
+        const popHeight = 340;
 
         let left = rect.left;
         if (left + popWidth > window.innerWidth - 12) {
@@ -286,10 +269,12 @@
             `;
         }
 
-        // Opciones de año
+        // Opciones de año amplias (desde hace 10 años hasta +6 años para cubrir fotos de bodas pasadas y eventos futuros)
         let yearOptions = '';
         const baseYear = new Date().getFullYear();
-        for (let y = baseYear - 5; y <= baseYear + 6; y++) {
+        const minYear = Math.min(baseYear - 10, viewYear - 2);
+        const maxYear = Math.max(baseYear + 6, viewYear + 2);
+        for (let y = minYear; y <= maxYear; y++) {
             yearOptions += `<option value="${y}" ${y === viewYear ? 'selected' : ''}>${y}</option>`;
         }
 
@@ -322,10 +307,10 @@
                 <!-- Entrada manual dd/mm/yyyy + Botones Hoy / Borrar -->
                 <div style="margin-top:10px;padding-top:10px;border-top:1px solid ${borderCol};display:flex;align-items:center;justify-content:space-between;gap:6px;">
                     <input type="text" data-es-manual-date placeholder="dd/mm/aaaa" value="${formatIsoToEsDate(currentVal)}"
-                        style="width:110px;padding:5px 8px;border-radius:8px;border:1px solid ${borderCol};background:${subtleBg};color:inherit;font-size:12px;font-weight:700;text-align:center;">
-                    <div style="display:flex;gap:6px;">
-                        <button type="button" data-es-clear style="padding:5px 9px;border-radius:8px;font-size:11px;font-weight:700;color:${mutedText};cursor:pointer;">Borrar</button>
-                        <button type="button" data-es-today style="padding:5px 10px;border-radius:8px;font-size:11px;font-weight:800;background:#4f46e5;color:#fff;cursor:pointer;">Hoy</button>
+                        style="width:105px;padding:5px 8px;border-radius:8px;border:1px solid ${borderCol};background:${subtleBg};color:inherit;font-size:12px;font-weight:700;text-align:center;">
+                    <div style="display:flex;gap:5px;">
+                        <button type="button" data-es-clear style="padding:5px 8px;border-radius:8px;font-size:11px;font-weight:700;color:${mutedText};cursor:pointer;">Borrar</button>
+                        <button type="button" data-es-today style="padding:5px 9px;border-radius:8px;font-size:11px;font-weight:800;background:#4f46e5;color:#fff;cursor:pointer;">Hoy</button>
                     </div>
                 </div>
             </div>
@@ -372,17 +357,25 @@
 
         const manualInput = pop.querySelector('[data-es-manual-date]');
         if (manualInput) {
+            const applyManual = () => {
+                const iso = parseEsDateToIso(manualInput.value);
+                if (iso) {
+                    setInputValueAndNotifyLivewire(input, iso);
+                    return true;
+                }
+                return false;
+            };
             manualInput.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') {
                     e.preventDefault();
                     e.stopPropagation();
-                    const m = manualInput.value.trim().match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
-                    if (m) {
-                        const iso = `${m[3]}-${String(m[2]).padStart(2, '0')}-${String(m[1]).padStart(2, '0')}`;
-                        setInputValueAndNotifyLivewire(input, iso);
+                    if (applyManual()) {
                         closePopover();
                     }
                 }
+            });
+            manualInput.addEventListener('change', () => {
+                applyManual();
             });
         }
 
@@ -484,7 +477,6 @@
             </div>
         `;
 
-        // Centrar el scroll en la hora seleccionada
         setTimeout(() => {
             const selectedHourBtn = pop.querySelector('[data-es-hour-col] .es-dt-day-selected');
             if (selectedHourBtn) selectedHourBtn.scrollIntoView({ block: 'center' });
@@ -583,14 +575,13 @@
         positionPopover(input);
     }
 
-    // Interceptar clic / mousedown en cualquier input[type="date"] o input[type="time"]
-    document.addEventListener('mousedown', (e) => {
+    // Abrir nuestro calendario español (Lunes primero) o reloj 24h al hacer clic, permitiendo también escribir con el teclado
+    document.addEventListener('click', (e) => {
         const target = e.target;
         if (target && target.tagName === 'INPUT') {
             const type = target.getAttribute('type');
             if (type === 'date' || type === 'time') {
                 e.preventDefault();
-                target.focus({ preventScroll: true });
                 openPickerForInput(target);
                 return;
             }
@@ -600,35 +591,9 @@
         }
     }, true);
 
-    document.addEventListener('click', (e) => {
-        const target = e.target;
-        if (target && target.tagName === 'INPUT') {
-            const type = target.getAttribute('type');
-            if (type === 'date' || type === 'time') {
-                e.preventDefault();
-                openPickerForInput(target);
-            }
-        }
-    }, true);
-
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && popoverEl && popoverEl.style.display === 'block') {
             closePopover();
-            return;
-        }
-        const target = e.target;
-        if (target && target.tagName === 'INPUT') {
-            const type = target.getAttribute('type');
-            if ((type === 'date' || type === 'time') && (e.key === 'Enter' || e.key === ' ')) {
-                e.preventDefault();
-                openPickerForInput(target);
-            }
-        }
-    }, true);
-
-    document.addEventListener('input', (e) => {
-        if (e.target && e.target.tagName === 'INPUT') {
-            paintInputDisplay(e.target);
         }
     }, true);
 
@@ -644,7 +609,6 @@
         }
     });
 
-    // Inicializar al cargar el DOM y en cada actualización de Livewire de forma debounced (sin bloquear el hilo principal)
     let enhanceScheduled = false;
     function scheduleEnhance() {
         if (enhanceScheduled) return;
@@ -676,15 +640,4 @@
             if (document.body) observer.observe(document.body, { childList: true, subtree: true });
         });
     }
-
-    document.addEventListener('livewire:init', () => {
-        if (window.Livewire && typeof window.Livewire.hook === 'function') {
-            window.Livewire.hook('commit', ({ succeed }) => {
-                succeed(() => {
-                    scheduleEnhance();
-                    setTimeout(() => scheduleEnhance(), 50);
-                });
-            });
-        }
-    });
 })();

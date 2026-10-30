@@ -1018,7 +1018,7 @@
     <!-- DNI / NIE / CIF VALIDATOR & AUTO-COMPLETER -->
     <script src="/js/dni-validator.js"></script>
     <!-- SPANISH DATE (dd/mm/yyyy, Monday-first) & 24H TIME PICKER -->
-    <script src="/js/es-datetime-picker.js?v=2"></script>
+    <script src="/js/es-datetime-picker.js?v=3"></script>
 
     @livewireScripts
     <script>

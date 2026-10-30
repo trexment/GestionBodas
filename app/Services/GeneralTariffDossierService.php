@@ -349,6 +349,10 @@ class GeneralTariffDossierService
             $merged['reviews'] = [];
         }
 
+        if (empty(trim((string) ($merged['valid_until'] ?? '')))) {
+            $merged['valid_until'] = $defaults['valid_until'];
+        }
+
         return $merged;
     }
 
@@ -521,7 +525,7 @@ class GeneralTariffDossierService
     }
 
     /**
-     * Filtra las fotos válidas de la galería (solo con permiso = sí, archivo existente, boda y fecha)
+     * Filtra las fotos válidas de la galería (con imagen subida y permiso = sí; boda y fecha opcionales con valor por defecto limpio)
      */
     public static function getValidGalleryPhotos(array $config): array
     {
@@ -532,12 +536,15 @@ class GeneralTariffDossierService
             $weddingName = trim((string) ($photo['wedding_name'] ?? ''));
             $weddingDate = trim((string) ($photo['wedding_date'] ?? ''));
 
-            if ($hasPerm && $imgPath !== '' && $weddingName !== '' && $weddingDate !== '') {
+            if ($hasPerm && $imgPath !== '') {
                 $pdfPath = self::resolveCompressedJpgPathForPdf($imgPath);
                 if ($pdfPath && file_exists($pdfPath)) {
                     $photo['pdf_path'] = $pdfPath;
                     $photo['public_url'] = asset('storage/' . ltrim($imgPath, '/'));
                     $photo['slot_index'] = $idx;
+                    $photo['raw_wedding_name'] = $weddingName;
+                    $photo['wedding_name'] = $weddingName !== '' ? $weddingName : ('Boda real #' . ($idx + 1));
+                    $photo['wedding_date'] = $weddingDate;
                     $valid[] = $photo;
                 }
             }
@@ -925,15 +932,22 @@ class GeneralTariffDossierService
         $validPhotosCount = count($validPhotos);
         $weddingNamesSeen = [];
         $duplicateWeddings = [];
+        $photosWithoutCustomDetails = 0;
         foreach ($validPhotos as $vp) {
-            $normName = mb_strtolower(trim(preg_replace('/\s+/', ' ', (string) $vp['wedding_name'])));
-            if (isset($weddingNamesSeen[$normName])) {
-                $duplicateWeddings[] = $vp['wedding_name'];
+            $rawName = trim((string) ($vp['raw_wedding_name'] ?? ''));
+            if ($rawName === '' || empty(trim((string) ($vp['wedding_date'] ?? '')))) {
+                $photosWithoutCustomDetails++;
             }
-            $weddingNamesSeen[$normName] = true;
+            if ($rawName !== '') {
+                $normName = mb_strtolower(trim(preg_replace('/\s+/', ' ', $rawName)));
+                if (isset($weddingNamesSeen[$normName])) {
+                    $duplicateWeddings[] = $rawName;
+                }
+                $weddingNamesSeen[$normName] = true;
+            }
         }
         $duplicateWeddings = array_unique($duplicateWeddings);
-        $photosOk = ($validPhotosCount >= 6 && $validPhotosCount <= 9 && empty($duplicateWeddings));
+        $photosOk = ($validPhotosCount >= 6 && empty($duplicateWeddings));
 
         $photoIssues = [];
         if ($validPhotosCount < 6) {
@@ -945,9 +959,10 @@ class GeneralTariffDossierService
         $checks['gallery_photos'] = [
             'ok' => $photosOk,
             'blocking' => true,
+            'warning' => ($photosOk && $photosWithoutCustomDetails > 0),
             'title' => 'Fotos con permiso, de bodas distintas, mínimo 6',
             'detail' => $photosOk
-                ? "{$validPhotosCount} fotos reales verificadas con permiso de la pareja, fecha y de bodas distintas (convertidas a .jpg y comprimidas)."
+                ? ("{$validPhotosCount} fotos reales autorizadas listas para el PDF (convertidas a .jpg y comprimidas)." . ($photosWithoutCustomDetails > 0 ? " (Opcional: puedes escribir el nombre de la boda y la fecha en las {$photosWithoutCustomDetails} fotos que aún no lo tienen para mostrarlo en el pie de foto)." : ''))
                 : 'Aviso en galería: ' . implode(' y ', $photoIssues) . '.',
         ];
 

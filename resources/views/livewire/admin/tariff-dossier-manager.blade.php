@@ -244,14 +244,19 @@
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             @foreach(($config['gallery_photos'] ?? []) as $idx => $photo)
-                <div class="p-4 rounded-2xl border {{ !empty($photo['has_permission']) && !empty($photo['image_path']) && !empty($photo['wedding_name']) && !empty($photo['wedding_date']) ? 'border-emerald-300 bg-emerald-50/20 dark:border-emerald-800/60 dark:bg-slate-800/70' : 'border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/40' }} space-y-3">
+                @php
+                    $isPhotoReady = !empty($photo['has_permission']) && !empty($photo['image_path']);
+                @endphp
+                <div class="p-4 rounded-2xl border {{ $isPhotoReady ? 'border-emerald-300 bg-emerald-50/20 dark:border-emerald-800/60 dark:bg-slate-800/70' : 'border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/40' }} space-y-3">
                     <div class="flex items-center justify-between">
                         <span class="text-xs font-black text-slate-800 dark:text-white">Foto #{{ $idx + 1 }}</span>
                         <div class="flex items-center gap-2">
-                            @if(!empty($photo['has_permission']) && !empty($photo['image_path']) && !empty($photo['wedding_name']) && !empty($photo['wedding_date']))
+                            @if($isPhotoReady)
                                 <span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-extrabold">✓ Válida para PDF</span>
+                            @elseif(empty($photo['image_path']))
+                                <span class="px-2 py-0.5 rounded bg-slate-200 text-slate-700 text-[10px] font-bold">Sin foto</span>
                             @else
-                                <span class="px-2 py-0.5 rounded bg-amber-100 text-amber-800 text-[10px] font-bold">Incompleta / Sin permiso</span>
+                                <span class="px-2 py-0.5 rounded bg-amber-100 text-amber-800 text-[10px] font-bold">Marca permiso pareja</span>
                             @endif
                             @if(count($config['gallery_photos']) > 6)
                                 <button type="button" wire:click="removeGallerySlot({{ $idx }})" class="text-rose-600 text-xs font-bold cursor-pointer">✕</button>
@@ -272,13 +277,13 @@
                     <input type="file" wire:model="gallery_uploads.{{ $idx }}" accept="image/*" class="w-full text-[11px] text-slate-600 dark:text-slate-300 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-[11px] file:font-bold file:bg-indigo-50 file:text-indigo-700 cursor-pointer">
 
                     <div>
-                        <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-0.5">Boda / Evento (debe ser distinta) *</label>
+                        <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-0.5">Boda / Evento (opcional, bodas distintas)</label>
                         <input type="text" wire:model.live="config.gallery_photos.{{ $idx }}.wedding_name" placeholder="Ej: Boda de Marta y Javi (Finca Los Arandinos)" class="w-full rounded-lg border-slate-300 dark:border-slate-700 dark:bg-slate-900 dark:text-white text-xs p-2">
                     </div>
 
                     <div class="grid grid-cols-2 gap-2">
                         <div>
-                            <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-0.5">Fecha *</label>
+                            <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-0.5">Fecha (opcional)</label>
                             <input type="date" wire:model.live="config.gallery_photos.{{ $idx }}.wedding_date" class="w-full rounded-lg border-slate-300 dark:border-slate-700 dark:bg-slate-900 dark:text-white text-xs p-2">
                         </div>
                         <div>
