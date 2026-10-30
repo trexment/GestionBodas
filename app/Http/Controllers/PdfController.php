@@ -287,14 +287,17 @@ class PdfController extends Controller
         $defaults = \App\Services\QrPosterPdfService::defaultsForEvent($event);
         $presets = \App\Services\QrPosterPdfService::presetPhrases();
         $presetKey = (string) $request->query('preset', $defaults['preset']);
-        $selectedPreset = $presets[$presetKey] ?? $presets[$defaults['preset']];
+        if ($presetKey !== 'custom' && !isset($presets[$presetKey])) {
+            $presetKey = 'custom';
+        }
+        $selectedPreset = $presets[$presetKey] ?? null;
 
-        $layout = (string) $request->query('layout', 'a4');
+        $layout = (string) $request->query('layout', $defaults['layout']);
         if (!isset(\App\Services\QrPosterPdfService::layouts()[$layout])) {
             $layout = 'a4';
         }
 
-        $style = (string) $request->query('style', 'elegante');
+        $style = (string) $request->query('style', $defaults['style']);
         if (!isset(\App\Services\QrPosterPdfService::visualStyles()[$style])) {
             $style = 'elegante';
         }
@@ -305,16 +308,47 @@ class PdfController extends Controller
         }
 
         $initials = $request->has('initials') ? trim((string) $request->query('initials')) : $defaults['initials'];
-        $showInitials = $request->query('show_initials', '1') !== '0';
+        $showInitials = $request->has('show_initials')
+            ? ($request->query('show_initials') !== '0')
+            : (bool) $defaults['show_initials'];
         $kicker = $request->has('kicker') ? trim((string) $request->query('kicker')) : $defaults['kicker'];
-        $headline = ($request->has('headline') && trim((string) $request->query('headline')) !== '')
-            ? trim((string) $request->query('headline'))
-            : $selectedPreset['headline'];
-        $subtitle = $request->has('subtitle')
-            ? trim((string) $request->query('subtitle'))
-            : $selectedPreset['subtitle'];
+
+        if ($request->has('headline') && trim((string) $request->query('headline')) !== '') {
+            $headline = trim((string) $request->query('headline'));
+        } elseif ($request->has('preset') && $selectedPreset) {
+            $headline = $selectedPreset['headline'];
+        } else {
+            $headline = $defaults['headline'];
+        }
+
+        if ($request->has('subtitle')) {
+            $subtitle = trim((string) $request->query('subtitle'));
+        } elseif ($request->has('preset') && $selectedPreset) {
+            $subtitle = $selectedPreset['subtitle'];
+        } else {
+            $subtitle = $defaults['subtitle'];
+        }
+
         $footer = $request->has('footer') ? trim((string) $request->query('footer')) : $defaults['footer'];
-        $showUrl = $request->query('show_url', '1') !== '0';
+        $showUrl = $request->has('show_url')
+            ? ($request->query('show_url') !== '0')
+            : (bool) $defaults['show_url'];
+
+        if ($request->boolean('save')) {
+            \App\Services\QrPosterPdfService::saveCustomizationForEvent($event, [
+                'layout' => $layout,
+                'style' => $style,
+                'names' => $names,
+                'initials' => $initials,
+                'show_initials' => $showInitials,
+                'kicker' => $kicker,
+                'footer' => $footer,
+                'preset' => $presetKey,
+                'headline' => $headline,
+                'subtitle' => $subtitle,
+                'show_url' => $showUrl,
+            ], auth()->check() ? 'admin' : 'client');
+        }
 
         $pdfBytes = \App\Services\QrPosterPdfService::generatePdf($albumInfo['guest_url'], [
             'layout' => $layout,

@@ -26,20 +26,23 @@
         $guestPosterDefaults = $guestPhotoQr ? \App\Services\QrPosterPdfService::defaultsForEvent($event) : null;
         $guestPosterPresets = $guestPhotoQr ? \App\Services\QrPosterPdfService::presetPhrases() : [];
         $guestPosterBaseUrl = $guestPhotoQr ? route('pdf.photo-qr-poster', ['event' => $event->id]) : '';
+        $guestPosterDesignerUrl = $guestPhotoQr ? route('guest.photo-qr-designer', ['token' => $event->token]) : '';
     @endphp
     @if($guestPhotoQr && !empty($guestPhotoQr['guest_url']) && $guestPosterDefaults)
         <div x-data="{
                 copiedQrLink: false,
                 showPosterPanel: false,
-                gLayout: 'a4',
-                gStyle: 'elegante',
+                gLayout: @js($guestPosterDefaults['layout']),
+                gStyle: @js($guestPosterDefaults['style']),
                 gNames: @js($guestPosterDefaults['names']),
                 gInitials: @js($guestPosterDefaults['initials']),
-                gShowInitials: true,
+                gShowInitials: @js((bool) $guestPosterDefaults['show_initials']),
+                gKicker: @js($guestPosterDefaults['kicker']),
                 gFooter: @js($guestPosterDefaults['footer']),
                 gPreset: @js($guestPosterDefaults['preset']),
                 gHeadline: @js($guestPosterDefaults['headline']),
                 gSubtitle: @js($guestPosterDefaults['subtitle']),
+                gShowUrl: @js((bool) $guestPosterDefaults['show_url']),
                 presetsMap: @js($guestPosterPresets),
                 basePdfUrl: @js($guestPosterBaseUrl),
                 eventToken: @js($event->token),
@@ -57,9 +60,13 @@
                         names: this.gNames,
                         initials: this.gInitials,
                         show_initials: this.gShowInitials ? '1' : '0',
+                        kicker: this.gKicker,
+                        preset: this.gPreset,
                         headline: this.gHeadline,
                         subtitle: this.gSubtitle,
                         footer: this.gFooter,
+                        show_url: this.gShowUrl ? '1' : '0',
+                        save: '1',
                         download: download ? '1' : '0'
                     });
                     return this.basePdfUrl + '?' + params.toString();
@@ -75,17 +82,24 @@
                         <div class="flex flex-wrap items-center gap-2">
                             <h2 class="text-sm font-extrabold text-slate-900 dark:text-white">Álbum de Fotos QR para Invitados</h2>
                             <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-700/60">Incluido</span>
+                            @if(!empty($guestPosterDefaults['has_saved_custom']))
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300 border border-amber-200 dark:border-amber-700/60">✨ Diseño personalizado</span>
+                            @endif
                         </div>
                         <p class="text-xs text-slate-600 dark:text-slate-300 mt-0.5 leading-relaxed">
-                            Vuestros invitados pueden subir y ver las fotos desde su móvil sin instalar apps. También podéis descargar aquí vuestros carteles QR en PDF listos para imprimir.
+                            Vuestros invitados pueden subir y ver las fotos desde su móvil sin instalar apps. Podéis personalizar la frase, los colores, vuestras iniciales en el QR y descargar el PDF listo para imprimir.
                         </p>
                     </div>
                 </div>
                 <div class="flex flex-wrap items-center gap-2 self-end sm:self-center flex-shrink-0">
+                    <a href="{{ $guestPosterDesignerUrl }}"
+                       class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-extrabold bg-amber-500 hover:bg-amber-600 text-slate-950 shadow-xs transition">
+                        <span>🎨 Personalizar Cartel PDF</span>
+                    </a>
                     <button type="button"
                             @click="showPosterPanel = !showPosterPanel"
-                            class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-extrabold bg-amber-500 hover:bg-amber-600 text-slate-950 shadow-xs transition cursor-pointer">
-                        <span>📄 Cartel PDF para Imprimir</span>
+                            class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 shadow-xs transition cursor-pointer">
+                        <span x-text="showPosterPanel ? '▲ Ocultar rápido' : '⚡ Descarga rápida'">⚡ Descarga rápida</span>
                     </button>
                     <button type="button"
                             @click="navigator.clipboard.writeText(@js($guestPhotoQr['guest_url'])); copiedQrLink = true; setTimeout(() => copiedQrLink = false, 2000)"
@@ -100,8 +114,16 @@
                 </div>
             </div>
 
-            <!-- Personalizador desplegable de Carteles QR en PDF para los novios -->
+            <!-- Personalizador desplegable rápido de Carteles QR en PDF para los novios -->
             <div x-show="showPosterPanel" style="display: none;" class="mt-4 pt-4 border-t border-emerald-200/80 dark:border-slate-800 space-y-3">
+                <div class="flex flex-wrap items-center justify-between gap-2 bg-white/70 dark:bg-slate-900/70 rounded-xl px-3 py-2 border border-emerald-200/70 dark:border-slate-800">
+                    <span class="text-[11px] font-semibold text-slate-600 dark:text-slate-300">
+                        💡 ¿Queréis ver cómo queda el cartel en pantalla mientras cambiáis colores y frases?
+                    </span>
+                    <a href="{{ $guestPosterDesignerUrl }}" class="text-[11px] font-extrabold text-indigo-600 dark:text-indigo-400 hover:underline">
+                        Abrir Diseñador con Vista Previa en Vivo &rarr;
+                    </a>
+                </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                     <div>
                         <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">1. ¿Cómo lo queréis imprimir? (Hoja A4)</label>

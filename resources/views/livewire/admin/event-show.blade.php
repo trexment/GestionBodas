@@ -1723,14 +1723,15 @@
             $posterPresets = \App\Services\QrPosterPdfService::presetPhrases();
             $posterBaseRoute = route('pdf.photo-qr-poster', ['event' => $event->id]);
             $coupleDirectPdfUrl = route('pdf.photo-qr-poster', ['event' => $event->id, 'token' => $event->token]);
+            $clientDesignerUrl = route('guest.photo-qr-designer', ['token' => $event->token]);
             $photoQrStylizedSvg = ($photoQrInfo && !empty($photoQrInfo['guest_url']))
                 ? \App\Services\QrPosterPdfService::toStylizedSvg($photoQrInfo['guest_url'], [
-                    'initials' => $posterDefaults['initials'],
-                    'style' => 'elegante',
+                    'initials' => $posterDefaults['show_initials'] ? $posterDefaults['initials'] : '',
+                    'style' => $posterDefaults['style'],
                 ])
                 : '';
             $photoQrWaText = $photoQrInfo
-                ? ("¡Hola! 👋 Os dejamos vuestro *Álbum Colaborativo de Fotos QR* para *" . $event->name . "*:\n\n📸 *Enlace para subir y ver las fotos (sin instalar apps):*\n" . $photoQrInfo['guest_url'] . "\n\n📄 *Cartel QR en PDF con vuestros nombres listo para imprimir:*\n" . $coupleDirectPdfUrl . (!empty($photoQrInfo['drive_url']) && $photoQrShareDriveAlbum ? "\n\n📁 *Carpeta completa:*\n" . $photoQrInfo['drive_url'] : "") . "\n\n_(Desde vuestro portal musical también podéis personalizar la frase, el estilo o elegir formato de 4 tarjetas por hoja para las mesas)_ ✨")
+                ? ("¡Hola! 👋 Os dejamos vuestro *Álbum Colaborativo de Fotos QR* para *" . $event->name . "*:\n\n📸 *Enlace para que los invitados suban y vean las fotos (sin instalar apps):*\n" . $photoQrInfo['guest_url'] . "\n\n🎨 *Personalizad vuestra frase, colores, tamaño (A4 o tarjetas de mesa) y descargad el Cartel QR en PDF listo para imprimir:*\n" . $clientDesignerUrl . (!empty($photoQrInfo['drive_url']) && $photoQrShareDriveAlbum ? "\n\n📁 *Carpeta completa:*\n" . $photoQrInfo['drive_url'] : ""))
                 : '';
             $photoQrWaUrl = ($photoQrInfo && $clientPhone) ? \App\Services\WhatsAppTemplateService::getLink($clientPhone, $photoQrWaText) : '';
         @endphp
@@ -1742,17 +1743,19 @@
                 <div class="inline-block align-bottom bg-white dark:bg-slate-900 rounded-3xl text-center overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-xl sm:w-full p-6 border border-slate-200 dark:border-slate-800"
                      x-data="{
                         copiedPhotoQr: false,
+                        copiedDesignerLink: false,
                         openPosterCustomizer: false,
-                        pLayout: 'a4',
-                        pStyle: 'elegante',
+                        pLayout: @js($posterDefaults['layout']),
+                        pStyle: @js($posterDefaults['style']),
                         pNames: @js($posterDefaults['names']),
                         pInitials: @js($posterDefaults['initials']),
-                        pShowInitials: true,
+                        pShowInitials: @js((bool) $posterDefaults['show_initials']),
                         pKicker: @js($posterDefaults['kicker']),
                         pFooter: @js($posterDefaults['footer']),
                         pPreset: @js($posterDefaults['preset']),
                         pHeadline: @js($posterDefaults['headline']),
                         pSubtitle: @js($posterDefaults['subtitle']),
+                        pShowUrl: @js((bool) $posterDefaults['show_url']),
                         presetsMap: @js($posterPresets),
                         basePdfUrl: @js($posterBaseRoute),
                         applyPreset() {
@@ -1761,7 +1764,7 @@
                                 this.pSubtitle = this.presetsMap[this.pPreset].subtitle;
                             }
                         },
-                        posterPdfUrl(download, forcedLayout = null) {
+                        posterPdfUrl(download, forcedLayout = null, saveChanges = false) {
                             const params = new URLSearchParams({
                                 layout: forcedLayout || this.pLayout,
                                 style: this.pStyle,
@@ -1769,9 +1772,12 @@
                                 initials: this.pInitials,
                                 show_initials: this.pShowInitials ? '1' : '0',
                                 kicker: this.pKicker,
+                                preset: this.pPreset,
                                 headline: this.pHeadline,
                                 subtitle: this.pSubtitle,
                                 footer: this.pFooter,
+                                show_url: this.pShowUrl ? '1' : '0',
+                                save: saveChanges ? '1' : '0',
                                 download: download ? '1' : '0'
                             });
                             return this.basePdfUrl + '?' + params.toString();
@@ -1898,8 +1904,15 @@
                             <div class="rounded-2xl border border-amber-200 dark:border-amber-800/70 bg-gradient-to-br from-amber-50/90 via-orange-50/50 to-white dark:from-amber-950/30 dark:via-slate-900 dark:to-slate-900 p-3.5 space-y-2.5">
                                 <div class="flex items-center justify-between gap-2">
                                     <div>
-                                        <div class="text-xs font-extrabold text-slate-900 dark:text-white">
-                                            📄 Cartel QR en PDF con Nombres ({{ $posterDefaults['names'] }})
+                                        <div class="flex flex-wrap items-center gap-1.5">
+                                            <span class="text-xs font-extrabold text-slate-900 dark:text-white">
+                                                📄 Cartel QR en PDF con Nombres ({{ $posterDefaults['names'] }})
+                                            </span>
+                                            @if(!empty($posterDefaults['has_saved_custom']))
+                                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300/70 dark:border-emerald-700">
+                                                    {{ ($posterDefaults['updated_by'] ?? '') === 'client' ? '✨ Editado por el cliente' : '✨ Diseño guardado' }}
+                                                </span>
+                                            @endif
                                         </div>
                                         <p class="text-[11px] text-slate-600 dark:text-slate-400">
                                             Incluye iniciales en el QR, frase llamativa e instrucciones listas para imprimir.
@@ -1923,6 +1936,24 @@
                                     <a :href="posterPdfUrl(true, '4xa6')" class="bg-white dark:bg-slate-800 hover:bg-amber-50 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 border border-amber-300 dark:border-slate-700 font-bold py-2 px-2.5 rounded-xl text-[11px] transition text-center">
                                         📥 PDF 4×A6 Mesas
                                     </a>
+                                </div>
+
+                                <!-- Enlace directo al Diseñador Visual para los Novios -->
+                                <div class="pt-2 border-t border-amber-200/70 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
+                                    <div class="text-[11px] text-slate-700 dark:text-slate-300">
+                                        <strong>🎨 Diseñador para el cliente:</strong> puede editar frase, colores y descargar su PDF
+                                    </div>
+                                    <div class="flex items-center gap-1.5 ml-auto">
+                                        <button type="button"
+                                                @click="navigator.clipboard.writeText(@js($clientDesignerUrl)); copiedDesignerLink = true; setTimeout(() => copiedDesignerLink = false, 2300)"
+                                                class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-white dark:bg-slate-800 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-50 transition cursor-pointer">
+                                            <span x-text="copiedDesignerLink ? '✅ ¡Enlace copiado!' : '📋 Copiar enlace cliente'">📋 Copiar enlace cliente</span>
+                                        </button>
+                                        <a href="{{ $clientDesignerUrl }}" target="_blank" rel="noopener"
+                                           class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-indigo-600 hover:bg-indigo-700 text-white transition">
+                                            Abrir &nearr;
+                                        </a>
+                                    </div>
                                 </div>
 
                                 <!-- Panel desplegable de personalización completa -->
@@ -1996,11 +2027,11 @@
                                         </label>
 
                                         <div class="flex items-center gap-2 ml-auto">
-                                            <a :href="posterPdfUrl(false)" target="_blank" rel="noopener" class="px-3 py-2 rounded-xl text-xs font-bold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 transition">
-                                                👁️ Ver PDF
+                                            <a :href="posterPdfUrl(false, null, true)" target="_blank" rel="noopener" class="px-3 py-2 rounded-xl text-xs font-bold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 transition">
+                                                👁️ Guardar y Ver PDF
                                             </a>
-                                            <a :href="posterPdfUrl(true)" class="px-4 py-2 rounded-xl text-xs font-extrabold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition">
-                                                📥 Descargar PDF
+                                            <a :href="posterPdfUrl(true, null, true)" class="px-4 py-2 rounded-xl text-xs font-extrabold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition">
+                                                📥 Guardar y Descargar PDF
                                             </a>
                                         </div>
                                     </div>
@@ -2026,7 +2057,7 @@
                             <div class="flex items-center gap-2 pt-1">
                                 @if($photoQrWaUrl)
                                     <a href="{{ $photoQrWaUrl }}" target="_blank" rel="noopener" class="flex-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold py-2.5 px-4 rounded-xl text-xs transition text-center">
-                                        💬 Enviar Álbum + Cartel PDF por WhatsApp
+                                        💬 Enviar Álbum + Diseñador de Cartel por WhatsApp
                                     </a>
                                 @endif
                                 <button type="button" wire:click="closePhotoQrModal" class="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold py-2.5 px-5 rounded-xl text-xs transition cursor-pointer ml-auto">

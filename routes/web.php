@@ -57,6 +57,9 @@ Route::middleware('guest')->group(function () {
 // Guest Form Public Route (no middleware)
 Route::get('/guest/form/{token}', EventForm::class)->name('guest.form');
 
+// Public Client QR Photo Album Poster Designer (Live Visual Preview + Save + Print PDF)
+Route::get('/cartel-fotos/{token}', \App\Livewire\Guest\PhotoQrDesigner::class)->name('guest.photo-qr-designer');
+
 // Public Online Contract Review & Signature Portal
 Route::get('/contrato/{token}', ContractSign::class)->name('guest.contract');
 

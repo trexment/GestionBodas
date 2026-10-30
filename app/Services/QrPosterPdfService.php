@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Event;
+use App\Models\Setting;
 use Carbon\Carbon;
 use InvalidArgumentException;
 
@@ -199,12 +200,140 @@ class QrPosterPdfService
         ];
     }
 
+    public static function posterSettingKey(Event $event): string
+    {
+        return 'event_photo_qr_poster_' . $event->id;
+    }
+
     /**
-     * Calcula los valores por defecto ideales para un Event de EventosMusicales.
+     * Devuelve la personalización guardada (por el cliente o el admin) para este evento, si existe.
      *
-     * @return array{names:string, initials:string, kicker:string, footer:string, preset:string, headline:string, subtitle:string}
+     * @return ?array<string, mixed>
      */
-    public static function defaultsForEvent(Event $event): array
+    public static function getSavedCustomization(Event $event): ?array
+    {
+        $raw = Setting::get(self::posterSettingKey($event));
+        if (empty($raw)) {
+            return null;
+        }
+        $decoded = is_array($raw) ? $raw : json_decode((string) $raw, true);
+        return is_array($decoded) ? $decoded : null;
+    }
+
+    /**
+     * Guarda la personalización del cartel QR del evento para que tanto el cliente como el administrador
+     * compartan exactamente el mismo diseño guardado.
+     *
+     * @param array<string, mixed> $input
+     * @return array<string, mixed>
+     */
+    public static function saveCustomizationForEvent(Event $event, array $input, string $updatedBy = 'client'): array
+    {
+        $base = self::defaultsForEvent($event, false);
+
+        $layout = (string) ($input['layout'] ?? 'a4');
+        if (!isset(self::layouts()[$layout])) {
+            $layout = 'a4';
+        }
+
+        $style = (string) ($input['style'] ?? 'elegante');
+        if (!isset(self::visualStyles()[$style])) {
+            $style = 'elegante';
+        }
+
+        $presets = self::presetPhrases();
+        $preset = (string) ($input['preset'] ?? $base['preset']);
+        if ($preset !== 'custom' && !isset($presets[$preset])) {
+            $preset = 'custom';
+        }
+
+        $names = mb_substr(trim((string) ($input['names'] ?? $base['names'])), 0, 60);
+        if ($names === '') {
+            $names = $base['names'];
+        }
+
+        $initials = mb_substr(trim((string) ($input['initials'] ?? $base['initials'])), 0, 6);
+        $showInitials = array_key_exists('show_initials', $input)
+            ? filter_var($input['show_initials'], FILTER_VALIDATE_BOOLEAN)
+            : true;
+
+        $kicker = array_key_exists('kicker', $input)
+            ? mb_substr(trim((string) $input['kicker']), 0, 48)
+            : $base['kicker'];
+
+        $headline = mb_substr(trim((string) ($input['headline'] ?? $base['headline'])), 0, 95);
+        if ($headline === '') {
+            $headline = $base['headline'];
+        }
+
+        $subtitle = array_key_exists('subtitle', $input)
+            ? mb_substr(trim((string) $input['subtitle']), 0, 190)
+            : $base['subtitle'];
+
+        $footer = array_key_exists('footer', $input)
+            ? mb_substr(trim((string) $input['footer']), 0, 48)
+            : $base['footer'];
+
+        $showUrl = array_key_exists('show_url', $input)
+            ? filter_var($input['show_url'], FILTER_VALIDATE_BOOLEAN)
+            : true;
+
+        $payload = [
+            'layout' => $layout,
+            'style' => $style,
+            'names' => $names,
+            'initials' => $initials,
+            'show_initials' => $showInitials,
+            'kicker' => $kicker,
+            'footer' => $footer,
+            'preset' => $preset,
+            'headline' => $headline,
+            'subtitle' => $subtitle,
+            'show_url' => $showUrl,
+            'updated_by' => $updatedBy,
+            'updated_at' => now()->toDateTimeString(),
+        ];
+
+        Setting::set(
+            self::posterSettingKey($event),
+            json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
+        );
+
+        return array_merge($payload, ['has_saved_custom' => true]);
+    }
+
+    /**
+     * Restaura los textos y colores originales autodetectados para el evento.
+     *
+     * @return array<string, mixed>
+     */
+    public static function resetCustomizationForEvent(Event $event): array
+    {
+        Setting::where('key', self::posterSettingKey($event))->delete();
+        return self::defaultsForEvent($event, false);
+    }
+
+    /**
+     * Calcula los valores ideales para un Event de EventosMusicales (fusionados con la personalización guardada si existe).
+     *
+     * @return array{
+     *   layout:string,
+     *   style:string,
+     *   names:string,
+     *   initials:string,
+     *   show_initials:bool,
+     *   kicker:string,
+     *   footer:string,
+     *   preset:string,
+     *   headline:string,
+     *   subtitle:string,
+     *   show_url:bool,
+     *   has_saved_custom:bool,
+     *   updated_by:?string,
+     *   updated_at:?string
+     * }
+     */
+    public static function defaultsForEvent(Event $event, bool $includeSaved = true): array
     {
         $extracted = self::extractCoupleDefaults((string) $event->name);
         $isWedding = (bool) ($event->is_wedding || $extracted['is_couple']);
@@ -218,14 +347,47 @@ class QrPosterPdfService
             $footer = self::formatSpanishDate($ymd);
         }
 
-        return [
+        $defaults = [
+            'layout' => 'a4',
+            'style' => 'elegante',
             'names' => $extracted['names'],
             'initials' => $extracted['initials'],
+            'show_initials' => true,
             'kicker' => $isWedding ? 'NUESTRA BODA · ÁLBUM DE FOTOS' : 'ÁLBUM COLABORATIVO DE FOTOS',
             'footer' => $footer,
             'preset' => $presetKey,
             'headline' => $preset['headline'],
             'subtitle' => $preset['subtitle'],
+            'show_url' => true,
+            'has_saved_custom' => false,
+            'updated_by' => null,
+            'updated_at' => null,
+        ];
+
+        if (!$includeSaved) {
+            return $defaults;
+        }
+
+        $saved = self::getSavedCustomization($event);
+        if (!is_array($saved)) {
+            return $defaults;
+        }
+
+        return [
+            'layout' => isset(self::layouts()[(string) ($saved['layout'] ?? '')]) ? (string) $saved['layout'] : $defaults['layout'],
+            'style' => isset(self::visualStyles()[(string) ($saved['style'] ?? '')]) ? (string) $saved['style'] : $defaults['style'],
+            'names' => trim((string) ($saved['names'] ?? '')) !== '' ? trim((string) $saved['names']) : $defaults['names'],
+            'initials' => array_key_exists('initials', $saved) ? trim((string) $saved['initials']) : $defaults['initials'],
+            'show_initials' => array_key_exists('show_initials', $saved) ? (bool) $saved['show_initials'] : true,
+            'kicker' => array_key_exists('kicker', $saved) ? trim((string) $saved['kicker']) : $defaults['kicker'],
+            'footer' => array_key_exists('footer', $saved) ? trim((string) $saved['footer']) : $defaults['footer'],
+            'preset' => trim((string) ($saved['preset'] ?? '')) !== '' ? trim((string) $saved['preset']) : $defaults['preset'],
+            'headline' => trim((string) ($saved['headline'] ?? '')) !== '' ? trim((string) $saved['headline']) : $defaults['headline'],
+            'subtitle' => array_key_exists('subtitle', $saved) ? trim((string) $saved['subtitle']) : $defaults['subtitle'],
+            'show_url' => array_key_exists('show_url', $saved) ? (bool) $saved['show_url'] : true,
+            'has_saved_custom' => true,
+            'updated_by' => isset($saved['updated_by']) ? (string) $saved['updated_by'] : null,
+            'updated_at' => isset($saved['updated_at']) ? (string) $saved['updated_at'] : null,
         ];
     }
 
