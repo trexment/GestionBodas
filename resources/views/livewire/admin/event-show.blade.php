@@ -2651,7 +2651,7 @@
                                         </div>
                                     </div>
                                     <div class="flex items-center gap-1.5 shrink-0">
-                                        <a href="{{ route('admin.events.photo-qr-poster.pdf', $event->id) }}" target="_blank" class="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-900 border border-emerald-300 dark:border-emerald-700 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100 text-[11px] font-bold transition">
+                                        <a href="{{ route('pdf.photo-qr-poster', ['event' => $event->id]) }}" target="_blank" class="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-900 border border-emerald-300 dark:border-emerald-700 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100 text-[11px] font-bold transition">
                                             🖨️ Cartel PDF
                                         </a>
                                         <button type="button" wire:click="openPhotoQrModal" class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold transition cursor-pointer">

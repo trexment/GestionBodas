@@ -185,6 +185,7 @@ Route::middleware('auth')->group(function () {
             Route::get('/invoice/{invoice}/pdf', [PdfController::class, 'downloadInvoice'])->name('invoice.pdf');
             Route::get('/events/{event}/packing-list/pdf', [PdfController::class, 'downloadPackingList'])->name('events.packing_list.pdf');
             Route::get('/events/{event}/music-escaleta/pdf', [PdfController::class, 'downloadMusicEscaleta'])->name('events.music_escaleta.pdf');
+            Route::get('/events/{event}/photo-qr-poster.pdf', [PdfController::class, 'downloadPhotoQrPoster'])->name('events.photo-qr-poster.pdf');
 
             // Real-time App Notifications Polling & Read State (WhatsApp inbound & Email Leads)
             Route::get('/notifications/poll', function (\Illuminate\Http\Request $request) {
