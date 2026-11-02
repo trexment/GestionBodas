@@ -72,13 +72,13 @@
                     return this.basePdfUrl + '?' + params.toString();
                 }
              }"
-             class="mb-6 rounded-2xl border border-emerald-200 dark:border-emerald-800/70 bg-gradient-to-br from-emerald-50 via-teal-50/70 to-indigo-50/60 dark:from-emerald-950/40 dark:via-slate-900 dark:to-indigo-950/30 p-4 sm:p-5 shadow-sm">
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5">
+             class="mb-6 rounded-2xl border border-emerald-200 dark:border-emerald-800/70 bg-gradient-to-br from-emerald-50 via-teal-50/70 to-indigo-50/60 dark:from-emerald-950/40 dark:via-slate-900 dark:to-indigo-950/30 p-4 sm:p-5 shadow-sm overflow-hidden">
+            <div class="flex flex-col gap-3.5">
                 <div class="flex items-start gap-3">
                     <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-600 text-white flex items-center justify-center text-lg shadow-md shadow-emerald-500/20 flex-shrink-0">
                         📸
                     </div>
-                    <div>
+                    <div class="min-w-0 flex-1">
                         <div class="flex flex-wrap items-center gap-2">
                             <h2 class="text-sm font-extrabold text-slate-900 dark:text-white">Álbum de Fotos QR para Invitados</h2>
                             <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-700/60">Incluido</span>
@@ -86,12 +86,12 @@
                                 <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300 border border-amber-200 dark:border-amber-700/60">✨ Diseño personalizado</span>
                             @endif
                         </div>
-                        <p class="text-xs text-slate-600 dark:text-slate-300 mt-0.5 leading-relaxed">
+                        <p class="text-xs text-slate-600 dark:text-slate-300 mt-1 leading-relaxed">
                             Vuestros invitados pueden subir y ver las fotos desde su móvil sin instalar apps. Podéis personalizar la frase, los colores, vuestras iniciales en el QR y descargar el PDF listo para imprimir.
                         </p>
                     </div>
                 </div>
-                <div class="flex flex-wrap items-center gap-2 self-end sm:self-center flex-shrink-0">
+                <div class="flex flex-wrap items-center gap-2 pt-1 border-t border-emerald-200/60 dark:border-slate-800/80">
                     <a href="{{ $guestPosterDesignerUrl }}"
                        class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-extrabold bg-amber-500 hover:bg-amber-600 text-slate-950 shadow-xs transition">
                         <span>🎨 Personalizar Cartel PDF</span>
@@ -107,7 +107,7 @@
                         <span x-text="copiedQrLink ? '¡Copiado!' : 'Copiar enlace'">Copiar enlace</span>
                     </button>
                     <a href="{{ $guestPhotoQr['guest_url'] }}" target="_blank" rel="noopener noreferrer"
-                       class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition">
+                       class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition sm:ml-auto">
                         <span>Abrir Álbum</span>
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
                     </a>
