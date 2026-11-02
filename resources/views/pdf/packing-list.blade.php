@@ -86,14 +86,40 @@
                     @endif
                 </td>
             </tr>
-            @if($event->notes)
+            @if($event->clean_client_request_notes)
             <tr>
                 <td class="info-label">Notas Generales:</td>
-                <td class="info-val" colspan="3" style="color: #b45309;">{{ $event->notes }}</td>
+                <td class="info-val" colspan="3" style="color: #b45309;">{{ $event->clean_client_request_notes }}</td>
             </tr>
             @endif
         </table>
     </div>
+
+    @php
+        $importantPackingAlerts = $event->dossier_and_packing_important_alerts ?? [];
+    @endphp
+    @if(!empty($importantPackingAlerts))
+        <div style="background-color: #fffbeb; border: 2px solid #f59e0b; border-radius: 6px; padding: 10px 14px; margin-bottom: 18px; page-break-inside: avoid;">
+            <div style="font-size: 12px; font-weight: bold; color: #92400e; text-transform: uppercase; margin-bottom: 6px;">
+                ⚠️ IMPORTANTE — PREPARACIÓN, COMPRAS Y MATERIAL ESPECIAL PARA ESTE EVENTO
+            </div>
+            <table style="width: 100%; border-collapse: collapse;">
+                @foreach($importantPackingAlerts as $impAlert)
+                    <tr>
+                        <td style="width: 24px; padding: 3px 4px; vertical-align: middle;">
+                            <span class="box" style="{{ !empty($impAlert['is_done']) ? 'background-color:#10b981;border-color:#059669;' : 'border-color:#d97706;' }}"></span>
+                        </td>
+                        <td style="padding: 3px 4px; font-size: 11px; color: #78350f; font-weight: bold;">
+                            [{{ $impAlert['category_label'] ?? 'Importante' }}] {{ $impAlert['text'] }}
+                            @if(!empty($impAlert['is_done']))
+                                <span style="color: #047857; font-size: 10px;">(LISTO / COMPRADO)</span>
+                            @endif
+                        </td>
+                    </tr>
+                @endforeach
+            </table>
+        </div>
+    @endif
 
     @if($equipmentGrouped->count() > 0)
         @foreach($equipmentGrouped as $category => $items)

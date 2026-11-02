@@ -2085,8 +2085,20 @@
     @endif
 
     <!-- Navegación por pestañas (Adaptable en Varias Líneas / Responsive) -->
+    @php
+        $importantAlertsAll = $event->dossier_and_packing_important_alerts;
+        $pendingImportantCount = collect($importantAlertsAll)->where('is_done', false)->count();
+    @endphp
     <div class="mb-4 border-b border-gray-200 dark:border-slate-800 -mx-4 px-4 sm:mx-0 sm:px-0">
         <ul class="flex flex-wrap -mb-px text-sm font-medium text-center min-w-full gap-y-1">
+            <li class="mr-1.5">
+                <button wire:click="$set('activeTab', 'summary')" class="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-t-lg border-b-2 font-bold text-xs sm:text-sm cursor-pointer {{ $activeTab == 'summary' ? 'border-amber-500 text-amber-600 dark:text-amber-400 dark:border-amber-400 bg-amber-50/50 dark:bg-amber-950/30' : 'border-transparent hover:text-gray-600 dark:hover:text-slate-300 hover:border-gray-300 dark:hover:border-slate-700 text-gray-500 dark:text-slate-400' }}">
+                    <span>📌 Resumen</span>
+                    @if($pendingImportantCount > 0)
+                        <span class="text-[10px] bg-amber-500 text-white px-1.5 py-0.5 rounded-full font-black animate-pulse" title="{{ $pendingImportantCount }} cosa(s) importante(s) pendiente(s)">⚠️ {{ $pendingImportantCount }}</span>
+                    @endif
+                </button>
+            </li>
             <li class="mr-1.5">
                 <button wire:click="$set('activeTab', 'dossier')" class="inline-block px-3.5 py-2.5 rounded-t-lg border-b-2 font-bold text-xs sm:text-sm cursor-pointer {{ $activeTab == 'dossier' ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400 dark:border-indigo-400 bg-indigo-50/40 dark:bg-indigo-950/30' : 'border-transparent hover:text-gray-600 dark:hover:text-slate-300 hover:border-gray-300 dark:hover:border-slate-700 text-gray-500 dark:text-slate-400' }}">
                     📋 Dossier y Seguimiento
@@ -2138,6 +2150,566 @@
 
     <!-- Contenido Pestañas -->
     <div class="bg-white shadow sm:rounded-lg p-4 sm:p-5">
+
+        {{-- PESTAÑA RESUMEN ÁGIL DEL EVENTO --}}
+        @if($activeTab == 'summary')
+            @php
+                $summaryQuote = $event->quotes
+                    ? ($event->quotes->where('status', 'accepted')->sortByDesc('id')->first() ?: $event->quotes->sortByDesc('id')->first())
+                    : null;
+                $summaryContract = $event->contracts ? $event->contracts->sortByDesc('id')->first() : null;
+                $importantList = $event->important_items;
+                $meetingsWithNotes = $event->meetings
+                    ? $event->meetings->filter(fn($m) => !empty(trim((string)$m->notes)) || !empty(trim((string)$m->summary)))
+                    : collect();
+                $daysUntilEvent = $event->event_date ? (int) now()->startOfDay()->diffInDays(\Carbon\Carbon::parse($event->event_date)->startOfDay(), false) : null;
+            @endphp
+
+            <div class="space-y-5">
+                @if (session()->has('important_message'))
+                    <div class="bg-emerald-50 dark:bg-emerald-950/40 border-l-4 border-emerald-500 text-emerald-800 dark:text-emerald-200 p-3.5 rounded-xl text-xs font-bold shadow-xs">
+                        {{ session('important_message') }}
+                    </div>
+                @endif
+
+                <!-- Cabecera rápida del Resumen -->
+                <div class="flex flex-wrap items-center justify-between gap-3 p-4 rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white border border-indigo-500/30 shadow-md">
+                    <div class="flex items-center gap-3">
+                        <span class="text-2xl p-2.5 bg-amber-500/20 border border-amber-400/40 rounded-xl">📌</span>
+                        <div>
+                            <h3 class="text-sm sm:text-base font-black tracking-tight flex flex-wrap items-center gap-2">
+                                <span>Resumen Ejecutivo y Preparación del Evento</span>
+                                @if($daysUntilEvent !== null)
+                                    @if($daysUntilEvent > 0)
+                                        <span class="text-[11px] px-2.5 py-0.5 rounded-full bg-indigo-500/30 border border-indigo-400/40 text-indigo-200 font-bold">
+                                            ⏳ Faltan {{ $daysUntilEvent }} días ({{ \Carbon\Carbon::parse($event->event_date)->format('d/m/Y') }})
+                                        </span>
+                                    @elseif($daysUntilEvent === 0)
+                                        <span class="text-[11px] px-2.5 py-0.5 rounded-full bg-emerald-500 text-white font-black">
+                                            🎉 ¡Es HOY!
+                                        </span>
+                                    @endif
+                                @endif
+                            </h3>
+                            <p class="text-xs text-slate-300 mt-0.5">
+                                Todo lo que han contratado los novios, lo hablado en citas y las compras o material importante que no puede faltar en la furgoneta.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button type="button" wire:click="$set('activeTab', 'dossier')" class="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold border border-white/15 transition cursor-pointer">
+                            📋 Ir a Dossier y WhatsApp
+                        </button>
+                        <button type="button" wire:click="$set('activeTab', 'equipment')" class="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black transition cursor-pointer">
+                            📦 Ir a Material / Carga
+                        </button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+
+                    <!-- COLUMNA IZQUIERDA (6 cols): LO QUE HA PEDIDO / CONTRATADO + DATOS CLAVE -->
+                    <div class="lg:col-span-6 space-y-5">
+
+                        <!-- TARJETA 1: LO CONTRATADO / PRESUPUESTO RESUMIDO -->
+                        <div class="rounded-2xl border border-indigo-200 dark:border-indigo-900/60 bg-indigo-50/30 dark:bg-slate-900/90 overflow-hidden shadow-xs">
+                            <div class="px-4 py-3.5 bg-indigo-600/10 dark:bg-indigo-950/60 border-b border-indigo-200/70 dark:border-indigo-900/60 flex flex-wrap items-center justify-between gap-2">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-lg">💶</span>
+                                    <div>
+                                        <h4 class="text-sm font-black text-slate-900 dark:text-white leading-tight">
+                                            Lo que ha pedido / Servicios en Presupuesto
+                                        </h4>
+                                        <p class="text-[11px] text-slate-500 dark:text-slate-400">
+                                            Resumen directo sin tener que entrar al configurador de presupuestos
+                                        </p>
+                                    </div>
+                                </div>
+                                @if(Auth::check() && Auth::user()->role === 'admin')
+                                    <button type="button" wire:click="$set('activeTab', 'quotes')" class="text-xs font-bold text-indigo-600 dark:text-indigo-300 bg-white dark:bg-slate-800 hover:bg-indigo-50 px-3 py-1.5 rounded-xl border border-indigo-200 dark:border-indigo-800 transition cursor-pointer">
+                                        Editar Presupuesto →
+                                    </button>
+                                @endif
+                            </div>
+
+                            <div class="p-4 space-y-4">
+                                @if($summaryQuote)
+                                    <!-- Estado y Resumen Económico Rápido -->
+                                    <div class="flex flex-wrap items-center justify-between gap-2 p-3 rounded-xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+                                        <div class="flex flex-wrap items-center gap-2">
+                                            @if($summaryQuote->status === 'accepted')
+                                                <span class="px-2.5 py-1 rounded-lg bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 text-xs font-black">
+                                                    ✅ CONTRATADO / ACEPTADO
+                                                </span>
+                                            @elseif($summaryQuote->status === 'rejected')
+                                                <span class="px-2.5 py-1 rounded-lg bg-rose-100 dark:bg-rose-950 text-rose-800 dark:text-rose-300 text-xs font-black">
+                                                    ❌ RECHAZADO
+                                                </span>
+                                            @else
+                                                <span class="px-2.5 py-1 rounded-lg bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 text-xs font-black">
+                                                    📨 PROPUESTA ACTIVA (Pendiente confirmar)
+                                                </span>
+                                            @endif
+                                            <span class="text-xs text-slate-500 dark:text-slate-400 font-semibold">
+                                                Presupuesto #{{ $summaryQuote->id }}
+                                            </span>
+                                        </div>
+                                        @if(Auth::check() && Auth::user()->role === 'admin')
+                                            <div class="text-right">
+                                                <span class="text-[10px] uppercase font-bold text-slate-400 block">Total Presupuesto</span>
+                                                <span class="text-lg font-black text-emerald-600 dark:text-emerald-400">{{ number_format((float)$summaryQuote->amount, 2) }} €</span>
+                                            </div>
+                                        @endif
+                                    </div>
+
+                                    <!-- Desglose de Servicios Incluidos -->
+                                    <div>
+                                        <div class="text-[11px] font-black uppercase tracking-wider text-indigo-700 dark:text-indigo-300 mb-2 flex items-center justify-between">
+                                            <span>✨ Servicios y Extras Incluidos ({{ $summaryQuote->items->count() }})</span>
+                                            @if($event->dance_duration_hours)
+                                                <span class="px-2 py-0.5 rounded bg-indigo-100 dark:bg-indigo-950 text-indigo-800 dark:text-indigo-300 text-[10px] font-bold">
+                                                    🎧 Baile: {{ $event->dance_duration_hours }}h
+                                                </span>
+                                            @endif
+                                        </div>
+
+                                        @if($summaryQuote->items && $summaryQuote->items->isNotEmpty())
+                                            <div class="divide-y divide-slate-200/70 dark:divide-slate-800 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 overflow-hidden">
+                                                @foreach($summaryQuote->items as $qItem)
+                                                    @php
+                                                        $isDiscountItem = (float)$qItem->unit_price < 0 || str_contains(mb_strtolower((string)$qItem->service_name), 'descuento');
+                                                    @endphp
+                                                    <div class="p-3 flex items-start justify-between gap-3 {{ $isDiscountItem ? 'bg-emerald-50/40 dark:bg-emerald-950/20' : '' }}">
+                                                        <div class="min-w-0 flex-1">
+                                                            <div class="flex items-center gap-1.5 flex-wrap">
+                                                                <span class="text-xs font-extrabold {{ $isDiscountItem ? 'text-emerald-700 dark:text-emerald-300' : 'text-slate-900 dark:text-white' }}">
+                                                                    {{ $isDiscountItem ? '🎁' : '✔️' }} {{ $qItem->service_name }}
+                                                                </span>
+                                                                @if((int)$qItem->quantity > 1)
+                                                                    <span class="px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900/70 text-indigo-800 dark:text-indigo-200 text-[10px] font-black">
+                                                                        x{{ $qItem->quantity }}
+                                                                    </span>
+                                                                @endif
+                                                            </div>
+                                                            @if(!empty($qItem->description))
+                                                                <p class="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5 leading-snug">
+                                                                    {{ $qItem->description }}
+                                                                </p>
+                                                            @endif
+                                                        </div>
+                                                        @if(Auth::check() && Auth::user()->role === 'admin')
+                                                            <div class="text-right shrink-0">
+                                                                @if((float)$qItem->total_price == 0)
+                                                                    <span class="px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 text-[10px] font-black">
+                                                                        INCLUIDO
+                                                                    </span>
+                                                                @else
+                                                                    <span class="text-xs font-black {{ $isDiscountItem ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-800 dark:text-slate-200' }}">
+                                                                        {{ number_format((float)$qItem->total_price, 2) }} €
+                                                                    </span>
+                                                                @endif
+                                                            </div>
+                                                        @endif
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        @else
+                                            <p class="text-xs text-slate-500 italic p-3 bg-white dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800">
+                                                El presupuesto #{{ $summaryQuote->id }} no tiene líneas detalladas guardadas.
+                                            </p>
+                                        @endif
+                                    </div>
+
+                                    @if(Auth::check() && Auth::user()->role === 'admin')
+                                        <!-- Estado de Señal, Restante y Contrato -->
+                                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
+                                            <div class="p-2.5 rounded-xl border {{ $event->deposit_paid ? 'bg-emerald-50/70 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800' : 'bg-amber-50/70 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800' }}">
+                                                <span class="text-[10px] font-bold uppercase block {{ $event->deposit_paid ? 'text-emerald-700 dark:text-emerald-300' : 'text-amber-700 dark:text-amber-300' }}">
+                                                    {{ $event->deposit_paid ? '✅ Señal Pagada' : '⏳ Señal Pendiente' }}
+                                                </span>
+                                                <span class="text-sm font-black text-slate-900 dark:text-white">
+                                                    {{ number_format((float)($event->deposit_paid ? $event->deposit_amount : $summaryQuote->signal_amount), 2) }} €
+                                                </span>
+                                            </div>
+                                            <div class="p-2.5 rounded-xl border bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800">
+                                                <span class="text-[10px] font-bold uppercase text-slate-400 block">💶 Restante Evento</span>
+                                                <span class="text-sm font-black text-slate-900 dark:text-white">
+                                                    {{ number_format(max(0, (float)$summaryQuote->amount - (float)($event->deposit_paid ? $event->deposit_amount : $summaryQuote->signal_amount)), 2) }} €
+                                                </span>
+                                            </div>
+                                            <div class="p-2.5 rounded-xl border bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800">
+                                                <span class="text-[10px] font-bold uppercase text-slate-400 block">✍️ Contrato</span>
+                                                @if($summaryContract && $summaryContract->status === 'signed')
+                                                    <span class="text-xs font-black text-emerald-600 dark:text-emerald-400">✅ Firmado</span>
+                                                @elseif($summaryContract)
+                                                    <span class="text-xs font-bold text-amber-600 dark:text-amber-400">⏳ Enviado / Sin firmar</span>
+                                                @else
+                                                    <span class="text-xs font-semibold text-slate-400">No generado</span>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    @endif
+
+                                    @if(!empty($summaryQuote->admin_notes) || !empty($summaryQuote->client_notes))
+                                        <div class="p-3 rounded-xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/70 space-y-1.5">
+                                            @if(!empty($summaryQuote->admin_notes))
+                                                <div>
+                                                    <span class="text-[10px] font-black uppercase text-amber-800 dark:text-amber-300 block">📌 Condiciones / Notas del Presupuesto:</span>
+                                                    <p class="text-xs text-slate-800 dark:text-slate-200 whitespace-pre-line">{{ $summaryQuote->admin_notes }}</p>
+                                                </div>
+                                            @endif
+                                            @if(!empty($summaryQuote->client_notes))
+                                                <div>
+                                                    <span class="text-[10px] font-black uppercase text-indigo-800 dark:text-indigo-300 block">💬 Comentario del Cliente al solicitar presupuesto:</span>
+                                                    <p class="text-xs text-slate-800 dark:text-slate-200 whitespace-pre-line">{{ $summaryQuote->client_notes }}</p>
+                                                </div>
+                                            @endif
+                                        </div>
+                                    @endif
+                                @else
+                                    <div class="p-5 text-center bg-white dark:bg-slate-950 rounded-xl border border-dashed border-slate-300 dark:border-slate-800">
+                                        <p class="text-xs font-bold text-slate-700 dark:text-slate-300">Todavía no hay ningún presupuesto guardado para este evento.</p>
+                                        @if(Auth::check() && Auth::user()->role === 'admin')
+                                            <button type="button" wire:click="$set('activeTab', 'quotes')" class="mt-2.5 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition cursor-pointer">
+                                                ➕ Configurar Presupuesto Ahora
+                                            </button>
+                                        @endif
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+
+                        <!-- TARJETA 2: NOTAS DEL CLIENTE Y LOGÍSTICA / HORARIOS RESUMIDOS -->
+                        <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden shadow-xs">
+                            <div class="px-4 py-3 bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                                <h4 class="text-xs sm:text-sm font-black text-slate-800 dark:text-white flex items-center gap-2">
+                                    <span>📝</span> Solicitud Original, Finca y Horarios Clave
+                                </h4>
+                                <button type="button" wire:click="openScheduleModal" class="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer">
+                                    ⏰ Editar horarios
+                                </button>
+                            </div>
+                            <div class="p-4 space-y-3 text-xs">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                    <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/70 dark:border-slate-800">
+                                        <span class="text-[10px] font-bold uppercase text-slate-400 block">📍 Lugar / Finca</span>
+                                        <span class="font-bold text-slate-900 dark:text-white block mt-0.5">{{ $event->location ?: 'Por definir' }}</span>
+                                        @if($event->venue_contact_name || $event->venue_contact_phone)
+                                            <span class="text-[11px] text-indigo-600 dark:text-indigo-400 block mt-0.5">
+                                                👤 {{ $event->venue_contact_name ?: 'Contacto' }} {{ $event->venue_contact_phone ? '('.$event->venue_contact_phone.')' : '' }}
+                                            </span>
+                                        @endif
+                                    </div>
+                                    <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/70 dark:border-slate-800">
+                                        <span class="text-[10px] font-bold uppercase text-slate-400 block">⏰ Horarios Previstos</span>
+                                        <div class="space-y-0.5 mt-0.5 text-[11px] text-slate-700 dark:text-slate-300">
+                                            @if($event->setup_date || $event->start_time)
+                                                <div>🚗 <strong>Montaje:</strong> {{ $event->setup_schedule_label }}</div>
+                                            @endif
+                                            @if($event->ceremony_time)
+                                                <div>💍 <strong>Ceremonia:</strong> {{ substr($event->ceremony_time, 0, 5) }}h</div>
+                                            @endif
+                                            @if($event->cocktail_time)
+                                                <div>🍸 <strong>Cóctel:</strong> {{ substr($event->cocktail_time, 0, 5) }}h</div>
+                                            @endif
+                                            @if($event->banquet_time)
+                                                <div>🍽️ <strong>Banquete:</strong> {{ substr($event->banquet_time, 0, 5) }}h</div>
+                                            @endif
+                                            @if($event->dance_start_time)
+                                                <div>🎧 <strong>Baile:</strong> {{ $event->dance_schedule_label }}</div>
+                                            @endif
+                                            @if(!$event->setup_date && !$event->start_time && !$event->ceremony_time && !$event->cocktail_time && !$event->banquet_time && !$event->dance_start_time)
+                                                <span class="text-slate-400 italic">Horarios aún por concretar</span>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
+
+                                @if(!empty($event->venue_notes) || !empty($event->schedule_notes))
+                                    <div class="p-3 rounded-xl bg-indigo-50/50 dark:bg-indigo-950/30 border border-indigo-200/60 dark:border-indigo-900/50 space-y-1">
+                                        @if(!empty($event->venue_notes))
+                                            <p class="text-xs text-slate-700 dark:text-slate-300"><strong>🔧 Notas Finca / Montaje:</strong> {{ $event->venue_notes }}</p>
+                                        @endif
+                                        @if(!empty($event->schedule_notes))
+                                            <p class="text-xs text-slate-700 dark:text-slate-300"><strong>⏱️ Notas Horarios:</strong> {{ $event->schedule_notes }}</p>
+                                        @endif
+                                    </div>
+                                @endif
+
+                                @if(!empty($event->clean_client_request_notes))
+                                    <div>
+                                        <span class="text-[10px] font-bold uppercase text-amber-600 dark:text-amber-400 block mb-1">📋 Notas del Evento / Lo que pidió el cliente (sin logs automáticos):</span>
+                                        <div class="p-3 rounded-xl bg-amber-50/40 dark:bg-slate-950 border border-amber-200/70 dark:border-slate-800 text-xs text-slate-700 dark:text-slate-300 whitespace-pre-line max-h-48 overflow-y-auto leading-relaxed">{{ $event->clean_client_request_notes }}</div>
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- COLUMNA DERECHA (6 cols): ⚠️ COSAS IMPORTANTES / COMPRAS / CITAS / MATERIAL -->
+                    <div class="lg:col-span-6 space-y-5">
+
+                        <!-- TARJETA 1: ⚠️ COSAS IMPORTANTES / COMPRAS / PREPARACIÓN -->
+                        <div class="rounded-2xl border-2 border-amber-400/80 dark:border-amber-500/60 bg-amber-50/40 dark:bg-slate-900 overflow-hidden shadow-sm">
+                            <div class="px-4 py-3.5 bg-gradient-to-r from-amber-500/20 via-orange-500/15 to-amber-500/10 dark:from-amber-950/80 dark:to-slate-900 border-b border-amber-300/70 dark:border-amber-800/70 flex flex-wrap items-center justify-between gap-2">
+                                <div class="flex items-center gap-2.5">
+                                    <span class="text-xl">⚠️</span>
+                                    <div>
+                                        <h4 class="text-sm font-black text-amber-950 dark:text-amber-300 leading-tight">
+                                            Cosas Importantes, Compras y Preparación del Evento
+                                        </h4>
+                                        <p class="text-[11px] text-amber-800/90 dark:text-amber-400/90">
+                                            Lo que anotes aquí sale también en <strong>Dossier Técnico</strong>, <strong>Material / Carga</strong> y en el <strong>PDF de Hoja de Carga</strong>.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="p-4 space-y-4">
+                                <!-- Formulario para añadir nota importante / compra -->
+                                <form wire:submit.prevent="addImportantItem" class="p-3.5 rounded-xl bg-white dark:bg-slate-950 border border-amber-300 dark:border-amber-800/80 space-y-3 shadow-2xs">
+                                    <div>
+                                        <label class="block text-xs font-extrabold text-slate-800 dark:text-slate-200 mb-1">
+                                            ➕ Añadir recordatorio importante, compra o preparación especial:
+                                        </label>
+                                        <input
+                                            type="text"
+                                            wire:model="new_important_text"
+                                            placeholder="Ej: Comprar cosas para el biombo / Llevar alargador de 25m / Boda a 2h de casa, revisar repuestos..."
+                                            class="w-full rounded-xl border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-medium p-2.5 focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                                            required
+                                        >
+                                    </div>
+                                    <div class="flex flex-wrap items-center justify-between gap-2">
+                                        <div class="flex flex-wrap items-center gap-2">
+                                            <select wire:model="new_important_category" class="rounded-lg border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200 text-xs font-bold py-1.5 px-2.5">
+                                                <option value="compra">🛒 Comprar / Preparar</option>
+                                                <option value="material">📦 Material / Carga especial</option>
+                                                <option value="acuerdo">📞 Hablado con novios</option>
+                                                <option value="logistica">🚗 Viaje / Logística / Finca</option>
+                                            </select>
+
+                                            <label class="inline-flex items-center gap-1.5 text-[11px] font-bold text-slate-700 dark:text-slate-300 cursor-pointer select-none">
+                                                <input type="checkbox" wire:model="new_important_in_dossier" class="rounded text-amber-600 focus:ring-amber-500 border-slate-300 h-3.5 w-3.5">
+                                                <span>Mostrar en Dossier y Carga</span>
+                                            </label>
+                                        </div>
+
+                                        <button type="submit" class="px-4 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs shadow-xs transition cursor-pointer">
+                                            📌 Añadir Importante
+                                        </button>
+                                    </div>
+                                </form>
+
+                                <!-- Lista de Cosas Importantes -->
+                                @if(count($importantList) > 0)
+                                    <div class="space-y-2">
+                                        @foreach($importantList as $imp)
+                                            @php
+                                                $catBadge = match($imp['category'] ?? 'compra') {
+                                                    'compra' => ['label' => '🛒 Comprar / Preparar', 'classes' => 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 border-rose-200 dark:border-rose-800'],
+                                                    'material' => ['label' => '📦 Material / Carga', 'classes' => 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800'],
+                                                    'acuerdo' => ['label' => '📞 Hablado con novios', 'classes' => 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300 border-purple-200 dark:border-purple-800'],
+                                                    default => ['label' => '🚗 Viaje / Logística', 'classes' => 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border-amber-200 dark:border-amber-800'],
+                                                };
+                                                $isDone = !empty($imp['is_done']);
+                                            @endphp
+                                            <div class="p-3 rounded-xl border transition flex items-start justify-between gap-3 {{ $isDone ? 'bg-emerald-50/40 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-900/50 opacity-80' : 'bg-white dark:bg-slate-950 border-amber-300 dark:border-amber-800/80 shadow-2xs' }}">
+                                                <div class="flex items-start gap-2.5 min-w-0 flex-1">
+                                                    <button
+                                                        type="button"
+                                                        wire:click="toggleImportantItemDone('{{ $imp['id'] }}')"
+                                                        class="mt-0.5 w-5 h-5 rounded-md border flex items-center justify-center shrink-0 transition cursor-pointer {{ $isDone ? 'bg-emerald-600 border-emerald-600 text-white' : 'border-amber-400 hover:border-amber-600 bg-amber-50 dark:bg-slate-900' }}"
+                                                        title="{{ $isDone ? 'Marcar como pendiente' : 'Marcar como comprado / listo' }}"
+                                                    >
+                                                        @if($isDone) ✓ @endif
+                                                    </button>
+                                                    <div class="min-w-0 flex-1">
+                                                        <div class="flex flex-wrap items-center gap-1.5 mb-1">
+                                                            <span class="text-[10px] font-black px-2 py-0.5 rounded-md border {{ $catBadge['classes'] }}">
+                                                                {{ $catBadge['label'] }}
+                                                            </span>
+                                                            @if($isDone)
+                                                                <span class="text-[10px] font-black px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                                                                    ✅ LISTO / COMPRADO
+                                                                </span>
+                                                            @else
+                                                                <span class="text-[10px] font-black px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300">
+                                                                    ⏳ PENDIENTE
+                                                                </span>
+                                                            @endif
+                                                            @if(!empty($imp['source']) && $imp['source'] !== 'manual')
+                                                                <span class="text-[10px] text-slate-500 dark:text-slate-400 font-semibold">
+                                                                    ({{ $imp['source'] }})
+                                                                </span>
+                                                            @endif
+                                                        </div>
+                                                        <p class="text-xs font-bold leading-snug {{ $isDone ? 'line-through text-slate-500 dark:text-slate-400' : 'text-slate-900 dark:text-white' }}">
+                                                            {{ $imp['text'] }}
+                                                        </p>
+                                                    </div>
+                                                </div>
+
+                                                <div class="flex items-center gap-1.5 shrink-0">
+                                                    <button
+                                                        type="button"
+                                                        wire:click="toggleImportantItemDossier('{{ $imp['id'] }}')"
+                                                        class="px-2 py-1 rounded-lg text-[10px] font-bold border transition cursor-pointer {{ !empty($imp['include_in_dossier']) ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800' : 'bg-slate-100 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-700' }}"
+                                                        title="Activar/desactivar aparición en Dossier Técnico y PDF Hoja de Carga"
+                                                    >
+                                                        {{ !empty($imp['include_in_dossier']) ? '📋 En Dossier/Carga' : 'Oculto en Dossier' }}
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        wire:click="deleteImportantItem('{{ $imp['id'] }}')"
+                                                        class="p-1 text-slate-400 hover:text-rose-600 transition cursor-pointer"
+                                                        title="Eliminar nota importante"
+                                                    >
+                                                        ✕
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                @else
+                                    <div class="p-4 text-center rounded-xl bg-white/80 dark:bg-slate-950/70 border border-dashed border-amber-300 dark:border-amber-800/60">
+                                        <p class="text-xs text-slate-600 dark:text-slate-400 font-medium">
+                                            No hay cosas importantes apuntadas todavía. Añade arriba cualquier compra (ej. biombo) o pásalo con 1 clic desde tus Citas abajo.
+                                        </p>
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+
+                        <!-- TARJETA 2: 📅 LO HABLADO Y APUNTADO EN CITAS / LLAMADAS -->
+                        <div class="rounded-2xl border border-purple-200 dark:border-purple-900/60 bg-purple-50/20 dark:bg-slate-900 overflow-hidden shadow-xs">
+                            <div class="px-4 py-3 bg-purple-600/10 dark:bg-purple-950/50 border-b border-purple-200/70 dark:border-purple-900/60 flex flex-wrap items-center justify-between gap-2">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-base">📅</span>
+                                    <div>
+                                        <h4 class="text-xs sm:text-sm font-black text-slate-900 dark:text-white">
+                                            Notas de Citas y Llamadas ({{ $event->meetings->count() }})
+                                        </h4>
+                                        <p class="text-[11px] text-slate-500 dark:text-slate-400">
+                                            Lo apuntado al hablar con los novios. Pulsa «📌 Pasar a Importantes» para llevarlo a Carga y Dossier.
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-1.5">
+                                    <button type="button" wire:click="openNewMeetingModal" class="text-[11px] font-bold bg-purple-600 hover:bg-purple-700 text-white px-2.5 py-1.5 rounded-xl transition cursor-pointer">
+                                        + Nueva Cita
+                                    </button>
+                                    <button type="button" wire:click="$set('activeTab', 'meetings')" class="text-[11px] font-bold text-purple-700 dark:text-purple-300 bg-white dark:bg-slate-800 px-2.5 py-1.5 rounded-xl border border-purple-200 dark:border-purple-800 transition cursor-pointer">
+                                        Ver Citas →
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="p-4 space-y-3">
+                                @if($event->meetings->isNotEmpty())
+                                    @foreach($event->meetings as $mItem)
+                                        <div class="p-3.5 rounded-xl bg-white dark:bg-slate-950 border border-purple-200/80 dark:border-slate-800 space-y-2 shadow-2xs">
+                                            <div class="flex flex-wrap items-center justify-between gap-2">
+                                                <div class="flex items-center gap-2">
+                                                    <span class="text-xs font-black text-slate-900 dark:text-white">{{ $mItem->title }}</span>
+                                                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300">
+                                                        {{ $mItem->meeting_date ? $mItem->meeting_date->format('d/m/Y H:i') : '' }}
+                                                    </span>
+                                                </div>
+                                                <div class="flex items-center gap-1.5">
+                                                    @if(!empty(trim((string)$mItem->notes)) || !empty(trim((string)$mItem->summary)))
+                                                        <button
+                                                            type="button"
+                                                            wire:click="promoteMeetingToImportant({{ $mItem->id }})"
+                                                            class="px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-[11px] shadow-2xs transition cursor-pointer"
+                                                            title="Copiar estas notas a Cosas Importantes, Dossier y Hoja de Carga"
+                                                        >
+                                                            📌 Pasar a Importantes / Carga
+                                                        </button>
+                                                    @endif
+                                                    <button
+                                                        type="button"
+                                                        wire:click="editMeeting({{ $mItem->id }})"
+                                                        class="px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 font-bold text-[11px] transition cursor-pointer"
+                                                    >
+                                                        ✏️ Editar
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            @if(!empty(trim((string)$mItem->notes)))
+                                                <div class="p-2.5 rounded-lg bg-amber-50/70 dark:bg-amber-950/25 border border-amber-200/70 dark:border-amber-900/50 text-xs text-slate-800 dark:text-slate-200 whitespace-pre-line">
+                                                    <strong class="text-[10px] uppercase text-amber-800 dark:text-amber-300 block mb-0.5">📝 Notas / Apuntes:</strong>{{ $mItem->notes }}
+                                                </div>
+                                            @endif
+
+                                            @if(!empty(trim((string)$mItem->summary)))
+                                                <div class="p-2.5 rounded-lg bg-emerald-50/70 dark:bg-emerald-950/25 border border-emerald-200/70 dark:border-emerald-900/50 text-xs text-slate-800 dark:text-slate-200 whitespace-pre-line">
+                                                    <strong class="text-[10px] uppercase text-emerald-800 dark:text-emerald-300 block mb-0.5">💡 Acuerdos / Conclusiones:</strong>{{ $mItem->summary }}
+                                                </div>
+                                            @endif
+
+                                            @if(empty(trim((string)$mItem->notes)) && empty(trim((string)$mItem->summary)))
+                                                <p class="text-[11px] text-slate-400 italic">Cita sin notas todavía. Pulsa «Editar» para anotar lo hablado.</p>
+                                            @endif
+                                        </div>
+                                    @endforeach
+                                @else
+                                    <p class="text-xs text-slate-500 italic text-center py-3">
+                                        No hay citas registradas en este evento.
+                                    </p>
+                                @endif
+                            </div>
+                        </div>
+
+                        <!-- TARJETA 3: 📦 RESUMEN RÁPIDO DE MATERIAL Y CARGA -->
+                        <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden shadow-xs">
+                            <div class="px-4 py-3 bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
+                                <div class="flex items-center gap-2">
+                                    <span>📦</span>
+                                    <h4 class="text-xs sm:text-sm font-black text-slate-900 dark:text-white">
+                                        Material y Hoja de Carga ({{ $event->equipment->sum('pivot.quantity') }} uds)
+                                    </h4>
+                                </div>
+                                <div class="flex items-center gap-1.5">
+                                    <a href="{{ route('pdf.packing-list', ['event' => $event->id]) }}" target="_blank" class="px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 text-[11px] font-bold hover:bg-indigo-100 transition">
+                                        🖨️ PDF Hoja de Carga
+                                    </a>
+                                    <button type="button" wire:click="$set('activeTab', 'equipment')" class="px-2.5 py-1 rounded-lg bg-slate-900 dark:bg-slate-800 text-white text-[11px] font-bold hover:bg-slate-700 transition cursor-pointer">
+                                        Gestionar Material →
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="p-4">
+                                @if($event->equipment->isNotEmpty())
+                                    <div class="flex flex-wrap gap-1.5">
+                                        @foreach($event->equipment as $eqSummary)
+                                            @php
+                                                $eqNotes = trim((string)($eqSummary->pivot->notes ?? ''));
+                                                $eqIsImp = str_contains(mb_strtolower($eqNotes), 'importante') || str_contains($eqNotes, '⚠️');
+                                            @endphp
+                                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold border {{ $eqIsImp ? 'bg-amber-100 dark:bg-amber-950/70 text-amber-950 dark:text-amber-200 border-amber-400' : 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border-slate-200 dark:border-slate-700' }}">
+                                                @if($eqIsImp) ⚠️ @endif
+                                                <span>{{ $eqSummary->pivot->quantity }}x {{ $eqSummary->name }}</span>
+                                                @if($eqNotes !== '')
+                                                    <span class="text-[10px] font-normal opacity-80">({{ $eqNotes }})</span>
+                                                @endif
+                                            </span>
+                                        @endforeach
+                                    </div>
+                                @else
+                                    <p class="text-xs text-slate-500 italic">
+                                        Aún no se han asignado equipos del inventario a la hoja de carga (las notas importantes de arriba ya saldrán igualmente en el PDF de Carga y en el Dossier).
+                                    </p>
+                                @endif
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        @endif
         
         {{-- DOSSIER Y ACUERDOS WHATSAPP --}}
         @if($activeTab == 'dossier')
@@ -2640,7 +3212,52 @@
 
                             @php
                                 $dossierQrInfo = \App\Services\FotosEventosQrService::getEventAlbumInfo($event);
+                                $dossierImportantAlerts = $event->dossier_and_packing_important_alerts;
                             @endphp
+
+                            @if(count($dossierImportantAlerts) > 0)
+                                <div class="p-3.5 bg-amber-50 dark:bg-amber-950/40 border-2 border-amber-400 dark:border-amber-600 rounded-xl space-y-2.5 shadow-2xs">
+                                    <div class="flex flex-wrap items-center justify-between gap-2">
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-base">⚠️</span>
+                                            <div>
+                                                <span class="block text-xs font-black text-amber-950 dark:text-amber-200 uppercase tracking-wide">
+                                                    Cosas Importantes, Compras y Material Crítico ({{ count($dossierImportantAlerts) }})
+                                                </span>
+                                                <span class="block text-[10px] text-amber-800 dark:text-amber-400">
+                                                    Sincronizado con la pestaña Resumen y con el PDF de Hoja de Carga
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div class="flex items-center gap-1.5">
+                                            <button type="button" wire:click="appendImportantAlertsToDossierText" class="px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-600 text-slate-950 text-[11px] font-black transition cursor-pointer" title="Pegar estas alertas también dentro del cuadro de texto del Dossier">
+                                                ⬇️ Volcar al texto del Dossier
+                                            </button>
+                                            <button type="button" wire:click="$set('activeTab', 'summary')" class="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-700 text-amber-900 dark:text-amber-300 text-[11px] font-bold transition cursor-pointer">
+                                                📌 Gestionar en Resumen
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <ul class="space-y-1.5">
+                                        @foreach($dossierImportantAlerts as $dAlert)
+                                            <li class="flex items-start justify-between gap-2 text-xs p-2 rounded-lg bg-white/90 dark:bg-slate-900/90 border border-amber-200 dark:border-amber-800/70">
+                                                <div class="flex items-start gap-2 min-w-0">
+                                                    <span class="text-[10px] font-black px-1.5 py-0.5 rounded {{ !empty($dAlert['is_done']) ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' : 'bg-amber-200 text-amber-950 dark:bg-amber-900 dark:text-amber-200' }}">
+                                                        {{ !empty($dAlert['is_done']) ? '✅ LISTO' : '⚠️ PENDIENTE' }}
+                                                    </span>
+                                                    <span class="font-bold {{ !empty($dAlert['is_done']) ? 'line-through text-slate-400' : 'text-slate-900 dark:text-white' }}">
+                                                        [{{ $dAlert['category_label'] }}] {{ $dAlert['text'] }}
+                                                    </span>
+                                                </div>
+                                                @if(!empty($dAlert['source']) && $dAlert['source'] !== 'manual')
+                                                    <span class="text-[10px] text-slate-500 shrink-0">{{ $dAlert['source'] }}</span>
+                                                @endif
+                                            </li>
+                                        @endforeach
+                                    </ul>
+                                </div>
+                            @endif
+
                             @if($dossierQrInfo)
                                 <div class="p-3 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/70 rounded-xl flex flex-wrap items-center justify-between gap-2">
                                     <div class="flex items-center gap-2 min-w-0">
@@ -3626,11 +4243,71 @@
                     </div>
                 @endif
 
+                <!-- Panel de Cosas Importantes / Compras / Preparación (Sincronizado con Resumen y Dossier) -->
+                @php
+                    $equipImportantAlerts = $event->dossier_and_packing_important_alerts;
+                @endphp
+                <div class="bg-amber-50/70 dark:bg-amber-950/30 border-2 border-amber-400/80 dark:border-amber-600/70 rounded-xl p-4 mb-6 shadow-2xs space-y-3">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <div class="flex items-center gap-2">
+                            <span class="text-lg">⚠️</span>
+                            <div>
+                                <h5 class="font-black text-amber-950 dark:text-amber-200 text-sm">
+                                    Notas Importantes de Material, Compras y Preparación (Salen en Dossier y PDF de Carga)
+                                </h5>
+                                <p class="text-xs text-amber-800 dark:text-amber-400">
+                                    Ideal para eventos lejos de casa: apunta aquí qué hay que comprar (ej. biombo), repuestos o cables especiales.
+                                </p>
+                            </div>
+                        </div>
+                        <button type="button" wire:click="$set('activeTab', 'summary')" class="text-xs font-bold bg-white dark:bg-slate-900 text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-700 px-3 py-1.5 rounded-lg hover:bg-amber-100 transition cursor-pointer">
+                            📌 Ver Pestaña Resumen
+                        </button>
+                    </div>
+
+                    <form wire:submit.prevent="addImportantItem('material')" class="flex flex-col sm:flex-row gap-2">
+                        <input
+                            type="text"
+                            wire:model="new_important_text"
+                            placeholder="Ej: Comprar cosas para el biombo / Llevar patas extra / Revisar máquina de chispas..."
+                            class="flex-1 rounded-lg border-amber-300 dark:border-amber-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-medium p-2.5 focus:ring-amber-500 focus:border-amber-500"
+                            required
+                        >
+                        <button type="submit" class="bg-amber-500 hover:bg-amber-600 text-slate-950 font-black px-4 py-2 rounded-lg text-xs shadow-xs transition cursor-pointer shrink-0">
+                            + Añadir Nota Importante a Carga/Dossier
+                        </button>
+                    </form>
+
+                    @if(count($equipImportantAlerts) > 0)
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 pt-1">
+                            @foreach($equipImportantAlerts as $eAlert)
+                                <div class="flex items-center justify-between gap-2 p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-800 text-xs">
+                                    <div class="flex items-center gap-2 min-w-0">
+                                        @if(str_starts_with((string)$eAlert['id'], 'imp_'))
+                                            <button type="button" wire:click="toggleImportantItemDone('{{ $eAlert['id'] }}')" class="w-4 h-4 rounded border flex items-center justify-center shrink-0 cursor-pointer {{ !empty($eAlert['is_done']) ? 'bg-emerald-600 border-emerald-600 text-white' : 'border-amber-400 bg-amber-50' }}">
+                                                @if(!empty($eAlert['is_done'])) ✓ @endif
+                                            </button>
+                                        @else
+                                            <span>⚠️</span>
+                                        @endif
+                                        <span class="font-bold truncate {{ !empty($eAlert['is_done']) ? 'line-through text-slate-400' : 'text-slate-900 dark:text-white' }}">
+                                            [{{ $eAlert['category_label'] }}] {{ $eAlert['text'] }}
+                                        </span>
+                                    </div>
+                                    @if(str_starts_with((string)$eAlert['id'], 'imp_'))
+                                        <button type="button" wire:click="deleteImportantItem('{{ $eAlert['id'] }}')" class="text-slate-400 hover:text-rose-600 font-bold px-1 cursor-pointer">✕</button>
+                                    @endif
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
+                </div>
+
                 <!-- Formulario para añadir material al evento -->
                 <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6 shadow-inner">
                     <h5 class="font-bold text-gray-700 text-sm mb-3">➕ Añadir Material del Inventario</h5>
                     <form wire:submit.prevent="addEquipment" class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
-                        <div class="md:col-span-6">
+                        <div class="md:col-span-5">
                             <label class="block text-xs font-semibold text-gray-700 mb-1">Seleccionar Equipo *</label>
                             <select wire:model="selected_equipment_id" required class="w-full border-gray-300 rounded-md shadow-sm text-sm focus:ring-indigo-500 focus:border-indigo-500">
                                 <option value="">-- Elige un aparato del inventario --</option>
@@ -3658,11 +4335,15 @@
 
                         <div class="md:col-span-3">
                             <label class="block text-xs font-semibold text-gray-700 mb-1">Notas / Ubicación</label>
-                            <input type="text" wire:model="equipment_notes" placeholder="Ej: Ceremonia, Cabina DJ..." class="w-full border-gray-300 rounded-md shadow-sm text-sm focus:ring-indigo-500 focus:border-indigo-500">
+                            <input type="text" wire:model="equipment_notes" placeholder="Ej: Ceremonia, Biombo, Cabina..." class="w-full border-gray-300 rounded-md shadow-sm text-sm focus:ring-indigo-500 focus:border-indigo-500">
                         </div>
 
-                        <div class="md:col-span-1">
-                            <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-3 rounded-md text-sm shadow transition-colors">
+                        <div class="md:col-span-2 flex flex-col gap-1.5">
+                            <label class="inline-flex items-center gap-1.5 text-[11px] font-bold text-amber-800 cursor-pointer">
+                                <input type="checkbox" wire:model="equipment_is_important" class="rounded text-amber-600 focus:ring-amber-500 border-amber-400">
+                                <span>⚠️ Es Importante</span>
+                            </label>
+                            <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-3 rounded-md text-sm shadow transition-colors cursor-pointer">
                                 Añadir
                             </button>
                         </div>
@@ -3753,8 +4434,20 @@
                                                             <span class="text-xs text-gray-400">—</span>
                                                         @endif
                                                     </td>
-                                                    <td class="px-4 py-3 text-sm text-right font-medium">
-                                                        <button wire:click="removeEquipment({{ $eqItem->pivot->id }})" wire:confirm="¿Quitar este material del evento?" class="text-red-500 hover:text-red-700 text-xs font-semibold">
+                                                    <td class="px-4 py-3 text-sm text-right font-medium space-x-2">
+                                                        @php
+                                                            $pivNotes = trim((string)($eqItem->pivot->notes ?? ''));
+                                                            $pivImportant = str_contains(mb_strtolower($pivNotes), 'importante') || str_contains($pivNotes, '⚠️');
+                                                        @endphp
+                                                        <button
+                                                            type="button"
+                                                            wire:click="toggleEquipmentImportant({{ $eqItem->pivot->id }})"
+                                                            class="px-2 py-1 rounded text-xs font-bold border transition cursor-pointer {{ $pivImportant ? 'bg-amber-500 text-slate-950 border-amber-600' : 'bg-gray-100 text-gray-600 hover:bg-amber-50 border-gray-200' }}"
+                                                            title="Marcar/desmarcar como importante para que resalte en Resumen, Dossier y Hoja de Carga"
+                                                        >
+                                                            ⚠️ {{ $pivImportant ? 'Importante' : 'Marcar Imp.' }}
+                                                        </button>
+                                                        <button wire:click="removeEquipment({{ $eqItem->pivot->id }})" wire:confirm="¿Quitar este material del evento?" class="text-red-500 hover:text-red-700 text-xs font-semibold cursor-pointer">
                                                             Quitar
                                                         </button>
                                                     </td>
@@ -6115,13 +6808,25 @@
                                         @endif
                                     </div>
 
-                                    <button 
-                                        type="button" 
-                                        wire:click="editMeeting({{ $meeting->id }})" 
-                                        class="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
-                                    >
-                                        {{ $meeting->summary ? 'Editar Conclusiones' : '+ Anotar Acuerdos' }}
-                                    </button>
+                                    <div class="flex items-center gap-2">
+                                        @if($meeting->notes || $meeting->summary)
+                                            <button
+                                                type="button"
+                                                wire:click="promoteMeetingToImportant({{ $meeting->id }})"
+                                                class="text-[11px] font-black text-slate-950 bg-amber-400 hover:bg-amber-500 px-2.5 py-1 rounded-lg shadow-2xs transition cursor-pointer"
+                                                title="Añadir lo apuntado en esta cita a Cosas Importantes, Dossier y Hoja de Carga"
+                                            >
+                                                📌 Pasar a Importantes / Carga
+                                            </button>
+                                        @endif
+                                        <button 
+                                            type="button" 
+                                            wire:click="editMeeting({{ $meeting->id }})" 
+                                            class="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
+                                        >
+                                            {{ $meeting->summary ? 'Editar Conclusiones' : '+ Anotar Acuerdos' }}
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         @endforeach
@@ -7918,6 +8623,13 @@
                                 placeholder="Ej: Acordado que la entrada será con la canción de Coldplay al segundo 35. El ramo se entregará a la hermana de la novia..."
                                 class="w-full border-emerald-300 dark:border-emerald-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl text-xs font-medium p-2.5 focus:ring-2 focus:ring-emerald-500"
                             ></textarea>
+
+                            <label class="mt-3 flex items-center gap-2 p-2.5 rounded-xl bg-amber-100/80 dark:bg-amber-950/50 border border-amber-300 dark:border-amber-800 cursor-pointer">
+                                <input type="checkbox" wire:model="meeting_add_to_important" class="rounded text-amber-600 focus:ring-amber-500 border-amber-400 h-4 w-4">
+                                <span class="text-xs font-extrabold text-amber-950 dark:text-amber-200">
+                                    📌 Añadir también estas notas/acuerdos a «⚠️ Cosas Importantes / Material y Dossier»
+                                </span>
+                            </label>
                         </div>
                     </div>
 

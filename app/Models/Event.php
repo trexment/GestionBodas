@@ -1136,6 +1136,145 @@ class Event extends Model
 
         return null;
     }
+
+    /**
+     * Clave en Setting donde se guardan las notas importantes / tareas de preparación y compra de este evento.
+     */
+    public function importantItemsSettingKey(): string
+    {
+        return 'event_important_items_' . $this->id;
+    }
+
+    /**
+     * Devuelve la lista de notas importantes / compras / preparación del evento.
+     *
+     * @return array<int, array{id:string, text:string, category:string, is_important:bool, is_done:bool, include_in_dossier:bool, source:?string, created_at:string}>
+     */
+    public function getImportantItemsAttribute(): array
+    {
+        if (!$this->exists) {
+            return [];
+        }
+        $raw = Setting::get($this->importantItemsSettingKey());
+        if (empty($raw)) {
+            return [];
+        }
+        $decoded = is_array($raw) ? $raw : json_decode((string) $raw, true);
+        if (!is_array($decoded)) {
+            return [];
+        }
+
+        $items = [];
+        foreach ($decoded as $row) {
+            if (!is_array($row) || empty(trim((string) ($row['text'] ?? '')))) {
+                continue;
+            }
+            $items[] = [
+                'id' => (string) ($row['id'] ?? Str::random(10)),
+                'text' => trim((string) $row['text']),
+                'category' => (string) ($row['category'] ?? 'compra'),
+                'is_important' => (bool) ($row['is_important'] ?? true),
+                'is_done' => (bool) ($row['is_done'] ?? false),
+                'include_in_dossier' => (bool) ($row['include_in_dossier'] ?? true),
+                'source' => !empty($row['source']) ? (string) $row['source'] : null,
+                'created_at' => (string) ($row['created_at'] ?? now()->format('d/m/Y H:i')),
+            ];
+        }
+
+        return $items;
+    }
+
+    /**
+     * Guarda la lista de notas importantes / compras / preparación del evento.
+     */
+    public function saveImportantItems(array $items): void
+    {
+        if (!$this->exists) {
+            return;
+        }
+        Setting::set($this->importantItemsSettingKey(), json_encode(array_values($items), JSON_UNESCAPED_UNICODE));
+    }
+
+    /**
+     * Devuelve las notas importantes que deben mostrarse en el Dossier Técnico y en la Hoja de Carga PDF,
+     * incluyendo también el material asignado que tenga la marca [IMPORTANTE] en sus observaciones.
+     */
+    public function getDossierAndPackingImportantAlertsAttribute(): array
+    {
+        $alerts = [];
+
+        foreach ($this->important_items as $item) {
+            if (!empty($item['include_in_dossier']) || !empty($item['is_important']) || in_array($item['category'] ?? '', ['compra', 'material', 'logistica'], true)) {
+                $catLabel = match ($item['category'] ?? 'compra') {
+                    'compra' => '🛒 Comprar / Preparar',
+                    'material' => '📦 Material / Carga',
+                    'logistica' => '🏰 Finca / Logística',
+                    default => '📞 Acordado con novios',
+                };
+                $alerts[] = [
+                    'id' => $item['id'],
+                    'type' => 'note',
+                    'category' => $item['category'] ?? 'compra',
+                    'category_label' => $catLabel,
+                    'text' => $item['text'],
+                    'is_done' => !empty($item['is_done']),
+                    'source' => $item['source'] ?? null,
+                ];
+            }
+        }
+
+        try {
+            $equipments = $this->relationLoaded('equipment') ? $this->equipment : $this->equipment()->get();
+            foreach ($equipments as $eq) {
+                $note = trim((string) ($eq->pivot->notes ?? ''));
+                if (str_contains(mb_strtoupper($note), '[IMPORTANTE]') || str_starts_with($note, '⚠️')) {
+                    $cleanNote = trim(str_ireplace(['[IMPORTANTE]', '⚠️'], '', $note));
+                    $alerts[] = [
+                        'id' => 'eq_' . ($eq->pivot->id ?? $eq->id),
+                        'type' => 'equipment',
+                        'category' => 'material',
+                        'category_label' => '📦 Material Crítico',
+                        'text' => $eq->name . ' (' . ($eq->pivot->quantity ?? 1) . ' uds)' . ($cleanNote !== '' ? ' — ' . $cleanNote : ''),
+                        'is_done' => false,
+                        'source' => 'Hoja de Carga',
+                    ];
+                }
+            }
+        } catch (\Throwable $e) {}
+
+        return $alerts;
+    }
+
+    /**
+     * Extrae de las notas generales del evento únicamente las notas manuales o la solicitud original del cliente,
+     * ocultando el ruido de registros automáticos de envíos de WhatsApp ("[dd/mm/yyyy HH:mm] 💬 WhatsApp...").
+     */
+    public function getCleanClientRequestNotesAttribute(): string
+    {
+        $raw = trim((string) ($this->notes ?? ''));
+        if ($raw === '') {
+            return '';
+        }
+
+        $lines = preg_split('/\r\n|\r|\n/', $raw);
+        $kept = [];
+        foreach ($lines as $line) {
+            $trimmed = trim($line);
+            if ($trimmed === '') {
+                if (!empty($kept) && end($kept) !== '') {
+                    $kept[] = '';
+                }
+                continue;
+            }
+            // Omitir líneas automáticas de envíos de plantillas o reseteos de contador
+            if (preg_match('/^\[\d{2}\/\d{2}\/\d{4}\s+\d{2}:\d{2}\]\s*💬\s*WhatsApp\s*\(/u', $trimmed)) {
+                continue;
+            }
+            $kept[] = $line;
+        }
+
+        return trim(implode("\n", $kept));
+    }
 }
 
 

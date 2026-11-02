@@ -1075,12 +1075,23 @@ class WhatsAppTemplateService
             $scheduleInfo .= "\n📝 *Timing:* " . $event->schedule_notes;
         }
 
+        $importantInfo = '';
+        $importantAlerts = $event->dossier_and_packing_important_alerts ?? [];
+        if (!empty($importantAlerts)) {
+            $importantInfo .= "\n\n⚠️ *IMPORTANTE / COMPRAS / CARGA ESPECIAL:*";
+            foreach ($importantAlerts as $imp) {
+                $statusIcon = !empty($imp['is_done']) ? '✅' : '🔸';
+                $importantInfo .= "\n{$statusIcon} " . $imp['text'];
+            }
+        }
+
         return "¡Hola {$userName}! 🎧 Tienes asignado el evento *{$event->name}*:\n\n"
              . "📅 *Fecha:* {$date}\n"
              . "📍 *Ubicación:* {$location}\n"
              . "👤 *Cliente:* {$clientName} ({$clientPhone})"
              . $scheduleInfo
-             . $venueInfo . "\n\n"
+             . $venueInfo
+             . $importantInfo . "\n\n"
              . "📱 *Modo Cabina / Escaleta en Vivo:* {$boothUrl}\n\n"
              . "¡A darlo todo en el evento! 🔥";
     }

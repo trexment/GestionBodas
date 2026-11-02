@@ -19,7 +19,14 @@ class EventShow extends Component
     use HandlesDniValidation;
 
     public Event $event;
-    public $activeTab = 'dossier'; // dossier, music, equipment, quotes, contracts, invoices
+    public $activeTab = 'summary'; // summary, dossier, music, equipment, quotes, contracts, invoices, meetings
+
+    // Notas Importantes / Compras / Preparación del Evento
+    public string $new_important_text = '';
+    public string $new_important_category = 'compra'; // compra, material, acuerdo, logistica
+    public bool $new_important_in_dossier = true;
+    public bool $equipment_is_important = false;
+    public bool $meeting_add_to_important = false;
 
     // Personal asignado (DJ y Asistentes)
     public $assigned_dj_id;
@@ -387,7 +394,7 @@ class EventShow extends Component
         $this->invoice_number = \App\Models\Invoice::nextNumber('factura');
 
         $requestedTab = request()->query('tab');
-        if (in_array($requestedTab, ['dossier', 'music', 'equipment', 'meetings', 'quotes', 'contracts', 'invoices'], true)) {
+        if (in_array($requestedTab, ['summary', 'dossier', 'music', 'equipment', 'meetings', 'quotes', 'contracts', 'invoices'], true)) {
             $this->activeTab = $requestedTab;
         }
     }
@@ -1493,6 +1500,11 @@ class EventShow extends Component
             'equipment_notes' => 'nullable|string|max:255',
         ]);
 
+        $notesToSave = trim((string) $this->equipment_notes);
+        if ($this->equipment_is_important && !str_contains(mb_strtolower($notesToSave), 'importante') && !str_contains($notesToSave, '⚠️')) {
+            $notesToSave = '[IMPORTANTE] ' . ($notesToSave !== '' ? $notesToSave : 'Revisar / Preparar con antelación');
+        }
+
         $existing = DB::table('event_equipment')
             ->where('event_id', $this->event->id)
             ->where('equipment_id', $this->selected_equipment_id)
@@ -1503,20 +1515,196 @@ class EventShow extends Component
                 ->where('id', $existing->id)
                 ->update([
                     'quantity' => $existing->quantity + $this->equipment_quantity,
-                    'notes' => $this->equipment_notes ?: $existing->notes,
+                    'notes' => $notesToSave !== '' ? $notesToSave : $existing->notes,
                     'updated_at' => now(),
                 ]);
         } else {
             $this->event->equipment()->attach($this->selected_equipment_id, [
                 'quantity' => $this->equipment_quantity,
-                'notes' => $this->equipment_notes,
+                'notes' => $notesToSave !== '' ? $notesToSave : null,
             ]);
         }
 
-        $this->reset(['selected_equipment_id', 'equipment_quantity', 'equipment_notes']);
+        $this->reset(['selected_equipment_id', 'equipment_quantity', 'equipment_notes', 'equipment_is_important']);
         $this->equipment_quantity = 1;
         $this->event->load('equipment');
         session()->flash('equipment_message', 'Material añadido al evento correctamente.');
+    }
+
+    public function toggleEquipmentImportant($pivotId)
+    {
+        $item = DB::table('event_equipment')->where('event_id', $this->event->id)->where('id', $pivotId)->first();
+        if (!$item) {
+            return;
+        }
+
+        $currentNotes = trim((string) ($item->notes ?? ''));
+        $isCurrentlyImportant = str_contains(mb_strtolower($currentNotes), '[importante]')
+            || str_contains(mb_strtolower($currentNotes), 'importante:')
+            || str_contains($currentNotes, '⚠️');
+
+        if ($isCurrentlyImportant) {
+            $newNotes = trim((string) preg_replace('/^(\[IMPORTANTE\]|⚠️|IMPORTANTE:)\s*/iu', '', $currentNotes));
+            if ($newNotes === 'Revisar / Preparar con antelación') {
+                $newNotes = '';
+            }
+        } else {
+            $newNotes = '[IMPORTANTE] ' . ($currentNotes !== '' ? $currentNotes : 'Revisar / Preparar con antelación');
+        }
+
+        DB::table('event_equipment')
+            ->where('event_id', $this->event->id)
+            ->where('id', $pivotId)
+            ->update([
+                'notes' => $newNotes !== '' ? $newNotes : null,
+                'updated_at' => now(),
+            ]);
+
+        $this->event->load('equipment');
+        session()->flash('equipment_message', $isCurrentlyImportant ? 'Material desmarcado como importante.' : '⚠️ Material marcado como IMPORTANTE (visible en Resumen, Dossier y Hoja de Carga).');
+    }
+
+    // ==========================================
+    // COSAS IMPORTANTES / COMPRAS / PREPARACIÓN
+    // ==========================================
+    public function addImportantItem(?string $forcedCategory = null)
+    {
+        $text = trim($this->new_important_text);
+        if ($text === '') {
+            return;
+        }
+
+        $category = $forcedCategory ?: ($this->new_important_category ?: 'compra');
+        $items = $this->event->important_items;
+
+        array_unshift($items, [
+            'id' => uniqid('imp_'),
+            'text' => $text,
+            'category' => $category,
+            'is_important' => true,
+            'is_done' => false,
+            'include_in_dossier' => (bool) $this->new_important_in_dossier,
+            'source' => 'manual',
+            'created_at' => now()->format('d/m/Y H:i'),
+        ]);
+
+        $this->event->saveImportantItems($items);
+        $this->new_important_text = '';
+        $this->new_important_in_dossier = true;
+        session()->flash('important_message', '✅ Nota importante añadida y sincronizada con Dossier y Hoja de Carga.');
+    }
+
+    public function toggleImportantItemDone(string $itemId)
+    {
+        $items = $this->event->important_items;
+        foreach ($items as &$item) {
+            if (($item['id'] ?? '') === $itemId) {
+                $item['is_done'] = empty($item['is_done']);
+                break;
+            }
+        }
+        unset($item);
+        $this->event->saveImportantItems($items);
+    }
+
+    public function toggleImportantItemDossier(string $itemId)
+    {
+        $items = $this->event->important_items;
+        foreach ($items as &$item) {
+            if (($item['id'] ?? '') === $itemId) {
+                $item['include_in_dossier'] = empty($item['include_in_dossier']);
+                break;
+            }
+        }
+        unset($item);
+        $this->event->saveImportantItems($items);
+    }
+
+    public function deleteImportantItem(string $itemId)
+    {
+        $items = array_values(array_filter(
+            $this->event->important_items,
+            fn($item) => ($item['id'] ?? '') !== $itemId
+        ));
+        $this->event->saveImportantItems($items);
+        session()->flash('important_message', 'Nota importante eliminada.');
+    }
+
+    public function promoteMeetingToImportant(int $meetingId)
+    {
+        $meeting = $this->event->meetings()->find($meetingId);
+        if (!$meeting) {
+            return;
+        }
+
+        $parts = [];
+        if (!empty(trim((string) $meeting->notes))) {
+            $parts[] = trim((string) $meeting->notes);
+        }
+        if (!empty(trim((string) $meeting->summary))) {
+            $parts[] = trim((string) $meeting->summary);
+        }
+
+        $combinedText = implode(' — ', $parts);
+        if ($combinedText === '') {
+            $combinedText = $meeting->title;
+        }
+
+        $items = $this->event->important_items;
+        // Evitar duplicado exacto
+        foreach ($items as $existing) {
+            if (trim((string) ($existing['text'] ?? '')) === $combinedText) {
+                session()->flash('important_message', 'ℹ️ Este apunte de la cita ya está en Cosas Importantes.');
+                session()->flash('meeting_message', 'ℹ️ Este apunte de la cita ya está en Cosas Importantes.');
+                return;
+            }
+        }
+
+        $lower = mb_strtolower($combinedText);
+        $category = (str_contains($lower, 'comprar') || str_contains($lower, 'biombo') || str_contains($lower, 'encargar') || str_contains($lower, 'preparar'))
+            ? 'compra'
+            : 'acuerdo';
+
+        array_unshift($items, [
+            'id' => uniqid('imp_'),
+            'text' => $combinedText,
+            'category' => $category,
+            'is_important' => true,
+            'is_done' => false,
+            'include_in_dossier' => true,
+            'source' => '📅 Cita: ' . $meeting->title . ($meeting->meeting_date ? ' (' . $meeting->meeting_date->format('d/m/Y') . ')' : ''),
+            'created_at' => now()->format('d/m/Y H:i'),
+        ]);
+
+        $this->event->saveImportantItems($items);
+        session()->flash('important_message', '📌 Apunte de la cita añadido a Cosas Importantes, Dossier y Hoja de Carga.');
+        session()->flash('meeting_message', '📌 Apunte añadido a Cosas Importantes, Dossier y Hoja de Carga.');
+    }
+
+    public function appendImportantAlertsToDossierText()
+    {
+        $alerts = $this->event->dossier_and_packing_important_alerts;
+        if (empty($alerts)) {
+            return;
+        }
+
+        $lines = ["=== ⚠️ COSAS IMPORTANTES / COMPRAS / MATERIAL ESPECIAL ==="];
+        foreach ($alerts as $alert) {
+            $status = !empty($alert['is_done']) ? '[LISTO ✅]' : '[PENDIENTE ⚠️]';
+            $lines[] = "- {$status} ({$alert['category_label']}): {$alert['text']}";
+        }
+        $block = implode("\n", $lines);
+
+        $current = trim((string) $this->dossier_content);
+        if ($current === '') {
+            $this->dossier_content = $block;
+        } elseif (!str_contains($current, '=== ⚠️ COSAS IMPORTANTES')) {
+            $this->dossier_content = $block . "\n\n" . $current;
+        } else {
+            $this->dossier_content = $current . "\n\n" . $block;
+        }
+
+        $this->saveDossier();
     }
 
     public function updateEquipmentQuantity($pivotId, $amount)
@@ -5115,6 +5303,7 @@ class EventShow extends Component
         $this->meeting_status = 'scheduled';
         $this->meeting_summary = '';
         $this->meeting_notes = '';
+        $this->meeting_add_to_important = false;
         $this->showMeetingModal = true;
     }
 
@@ -5137,6 +5326,7 @@ class EventShow extends Component
         $this->meeting_status = $meeting->status ?: 'scheduled';
         $this->meeting_summary = $meeting->summary ?: '';
         $this->meeting_notes = $meeting->notes ?: '';
+        $this->meeting_add_to_important = false;
         $this->showMeetingModal = true;
     }
 
@@ -5187,8 +5377,12 @@ class EventShow extends Component
                 session()->flash('meeting_message', '¡Cita / Reunión actualizada correctamente!');
             }
         } else {
-            $this->event->meetings()->create($data);
+            $meeting = $this->event->meetings()->create($data);
             session()->flash('meeting_message', '¡Nueva reunión programada con éxito!');
+        }
+
+        if ($this->meeting_add_to_important && isset($meeting) && $meeting) {
+            $this->promoteMeetingToImportant((int) $meeting->id);
         }
 
         $this->event->load('meetings');
