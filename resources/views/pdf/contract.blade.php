@@ -248,8 +248,8 @@
         </p>
         <table style="width: 100%; font-size: 8pt; color: #1e293b;">
             <tr>
-                <td style="width: 50%;">[ &nbsp;<strong>{{ ($contract->consent_rrss ?? true) ? 'X' : '&nbsp;' }}</strong>&nbsp; ] <strong>SÍ</strong> autorizo la difusión en redes sociales y portfolio.</td>
-                <td style="width: 50%;">[ &nbsp;<strong>{{ !($contract->consent_rrss ?? true) ? 'X' : '&nbsp;' }}</strong>&nbsp; ] <strong>NO</strong> autorizo la difusión.</td>
+                <td style="width: 50%;">[ {!! ($contract->consent_rrss ?? true) ? '<strong>X</strong>' : '&nbsp;&nbsp;&nbsp;' !!} ] <strong>SÍ</strong> autorizo la difusión en redes sociales y portfolio.</td>
+                <td style="width: 50%;">[ {!! !($contract->consent_rrss ?? true) ? '<strong>X</strong>' : '&nbsp;&nbsp;&nbsp;' !!} ] <strong>NO</strong> autorizo la difusión.</td>
             </tr>
         </table>
     </div>
@@ -268,7 +268,7 @@
                         <img src="{{ $companySigPath }}" alt="Firma Empresa">
                     @else
                         <div style="border: 1px solid #16a34a; background: #f0fdf4; padding: 4px 6px; border-radius: 4px; text-align: left; font-size: 6.5pt; color: #166534; line-height: 1.25;">
-                            <strong style="color: #15803d;">&#x2714; SELLO DE CONFORMIDAD EMPRESA</strong><br>
+                            <strong style="color: #15803d;"><span style="font-family: DejaVu Sans, sans-serif;">&#10004;</span> SELLO DE CONFORMIDAD EMPRESA</strong><br>
                             <strong>Entidad:</strong> {{ $r['empresa'] ?? 'Núñez and Son' }}<br>
                             <strong>CIF/NIF:</strong> {{ $r['cif_empresa'] ?? '' }}<br>
                             <strong>Validez:</strong> Expedido y formalizado electrónicamente
@@ -291,7 +291,7 @@
                 <div class="signature-graphic">
                     @if(($contract->signature_type ?? '') === 'certificate' || (!empty($contract->certificate_hash) && empty($contract->signature_data)))
                         <div style="border: 1px solid #2563eb; background: #eff6ff; padding: 4px 6px; border-radius: 4px; text-align: left; font-size: 6.5pt; color: #1e3a8a; line-height: 1.25;">
-                            <strong style="color: #1d4ed8;">&#x2714; SELLO DE CERTIFICADO DIGITAL</strong><br>
+                            <strong style="color: #1d4ed8;"><span style="font-family: DejaVu Sans, sans-serif;">&#10004;</span> SELLO DE CERTIFICADO DIGITAL</strong><br>
                             <strong>Emisor:</strong> {{ $contract->certificate_issuer ?? 'FNMT / DNIe' }}<br>
                             <strong>Titular:</strong> {{ $contract->certificate_subject ?? ($r['cliente'] ?? '') }}<br>
                             <strong>SHA-256:</strong> <span style="font-family: monospace; font-size: 5pt;">{{ substr($contract->certificate_hash ?? '', 0, 28) }}...</span>
