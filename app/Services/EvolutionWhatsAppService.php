@@ -1623,7 +1623,8 @@ class EvolutionWhatsAppService
             if (mb_strlen($cleanPush) >= 5 && !in_array($cleanPush, ['cliente', 'novios', 'pareja'])) {
                 try {
                     $activeEvents = Event::with('client')
-                        ->where('status', '!=', 'cancelled')
+                        ->whereNotIn('status', ['cancelled', 'rejected'])
+                        ->orderByRaw("CASE WHEN status = 'completed' THEN 1 ELSE 0 END ASC")
                         ->orderBy('event_date', 'desc')
                         ->limit(100)
                         ->get();

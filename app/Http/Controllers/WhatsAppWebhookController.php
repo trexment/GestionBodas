@@ -276,8 +276,9 @@ class WhatsAppWebhookController extends Controller
             ]);
         }
 
-        // 5. NOTIFICACIONES MULTICANAL SOLO CUANDO RESPONDEN LOS NOVIOS / CLIENTES DE UN EVENTO ACTIVO
-        if (!$fromMe) {
+        // 5. NOTIFICACIONES MULTICANAL SOLO CUANDO RESPONDEN LOS NOVIOS / CLIENTES DE UN EVENTO ACTIVO (no completado, cancelado ni rechazado)
+        $isFinishedOrInactive = in_array($event->status, ['completed', 'cancelled', 'rejected'], true);
+        if (!$fromMe && !$isFinishedOrInactive) {
             $displayName = ($event->client && $event->client->name) ? $event->client->name : (($user && $user->name) ? $user->name : $senderName);
             $eventTitle = $event->name;
             $eventUrl = url("/admin/events/{$event->id}");
@@ -429,7 +430,7 @@ class WhatsAppWebhookController extends Controller
                       });
                 });
             })
-            ->orderByRaw("CASE WHEN status IN ('cancelled', 'rejected') THEN 1 ELSE 0 END ASC")
+            ->orderByRaw("CASE WHEN status IN ('cancelled', 'rejected') THEN 2 WHEN status = 'completed' THEN 1 ELSE 0 END ASC")
             ->orderBy('event_date', 'desc')
             ->first();
 

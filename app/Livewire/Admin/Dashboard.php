@@ -85,12 +85,16 @@ class Dashboard extends Component
             $this->activeClientsCount = User::where('role', 'client')->count();
             $this->djsCount = User::where('role', 'dj')->count();
             $this->assistantsCount = User::where('role', 'assistant')->count();
-            $this->totalEventsCount = Event::count();
+            $this->totalEventsCount = Event::whereNotIn('status', ['cancelled', 'rejected'])->count();
             $this->equipmentCount = Equipment::sum('quantity') ?: Equipment::count();
             
             // Eventos próximos
-            $this->upcomingEventsCount = Event::where('event_date', '>=', Carbon::today()->subDays(30))->count();
-            $this->pendingDossiersCount = Event::where('is_dossier_completed', false)->count();
+            $this->upcomingEventsCount = Event::whereNotIn('status', ['cancelled', 'rejected', 'completed'])
+                ->where('event_date', '>=', Carbon::today()->subDays(30))
+                ->count();
+            $this->pendingDossiersCount = Event::whereNotIn('status', ['cancelled', 'rejected', 'completed'])
+                ->where('is_dossier_completed', false)
+                ->count();
 
             // Embudo de Ventas & Conversión (Metodología Madrigal)
             $allEvents = Event::with('quotes')->get();
@@ -163,6 +167,7 @@ class Dashboard extends Component
             ];
 
             $futureEvents = Event::with(['client', 'dj', 'assistant'])
+                                 ->whereNotIn('status', ['cancelled', 'rejected'])
                                  ->where('event_date', '>=', Carbon::today())
                                  ->orderBy('event_date', 'asc')
                                  ->take(6)
@@ -172,6 +177,7 @@ class Dashboard extends Component
                 $this->upcomingEvents = $futureEvents;
             } else {
                 $this->upcomingEvents = Event::with(['client', 'dj', 'assistant'])
+                                             ->whereNotIn('status', ['cancelled', 'rejected'])
                                              ->orderBy('event_date', 'desc')
                                              ->take(6)
                                              ->get();
@@ -190,14 +196,21 @@ class Dashboard extends Component
             $this->assistantsCount = 0;
             $this->equipmentCount = Equipment::sum('quantity') ?: Equipment::count();
 
-            $assignedEventsQuery = Event::where(function ($q) use ($user) {
-                $q->where('dj_id', $user->id)
-                  ->orWhere('assistant_id', $user->id);
-            });
+            $assignedEventsQuery = Event::whereNotIn('status', ['cancelled', 'rejected'])
+                ->where(function ($q) use ($user) {
+                    $q->where('dj_id', $user->id)
+                      ->orWhere('assistant_id', $user->id);
+                });
 
             $this->totalEventsCount = (clone $assignedEventsQuery)->count();
-            $this->upcomingEventsCount = (clone $assignedEventsQuery)->where('event_date', '>=', Carbon::today())->count();
-            $this->pendingDossiersCount = (clone $assignedEventsQuery)->where('is_dossier_completed', false)->count();
+            $this->upcomingEventsCount = (clone $assignedEventsQuery)
+                ->where('status', '!=', 'completed')
+                ->where('event_date', '>=', Carbon::today())
+                ->count();
+            $this->pendingDossiersCount = (clone $assignedEventsQuery)
+                ->where('status', '!=', 'completed')
+                ->where('is_dossier_completed', false)
+                ->count();
 
             $futureEvents = (clone $assignedEventsQuery)
                 ->with(['client', 'dj', 'assistant'])
