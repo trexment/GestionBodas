@@ -936,11 +936,34 @@ class QuoteCalculator extends Component
             ];
         };
 
+        $fairConfig = \App\Services\GeneralTariffDossierService::getConfig();
+        $fairModeActive = !empty($fairConfig['fair_mode']['enabled']);
+        $fairData = $fairConfig['fair_mode'] ?? \App\Services\GeneralTariffDossierService::getDefaultFairModeConfig();
+        $fairName = trim((string)($fairData['fair_name'] ?? 'Feria de Novios')) ?: 'Feria de Novios';
+        $fairConditionText = trim((string)($fairData['fair_condition_text'] ?? 'Bonificación especial aplicada por visitarnos en la Feria de Novios.'));
+        $fairPackPricing = null;
+
+        if ($fairModeActive && $djPack) {
+            $packIdxMap = ['basic' => 0, 'medium' => 1, 'premium' => 2];
+            $pIdx = $packIdxMap[$djPack['pack_key'] ?? 'medium'] ?? 1;
+            $fairPackPricing = \App\Services\GeneralTariffDossierService::computePackFairPricing(
+                $fairConfig['packs'][$pIdx] ?? ['price_input' => $djPack['pack_price']],
+                $pIdx,
+                $fairConfig,
+                true
+            );
+        }
+
         // 1. Calculate internal total
         foreach ($this->services as $key => $service) {
             if ($service['selected']) {
                 if ($key === 'dj' && $djPack) {
-                    $totalEstimated += (float)$djPack['total_price'];
+                    if ($fairModeActive && $fairPackPricing) {
+                        $extraHoursCost = ((int)($djPack['extra_hours'] ?? 0)) * ((float)($djPack['extra_hour_price'] ?? 120));
+                        $totalEstimated += ((float)$fairPackPricing['final_price'] + $extraHoursCost);
+                    } else {
+                        $totalEstimated += (float)$djPack['total_price'];
+                    }
                 } elseif ($key === 'smoke_machine') {
                     if (empty($service['included'])) {
                         $totalEstimated += ($catalog['smoke_machine'] ?? 60);
@@ -1033,7 +1056,18 @@ class QuoteCalculator extends Component
         foreach ($this->services as $key => $service) {
             if ($service['selected']) {
                 if ($key === 'dj' && $djPack) {
-                    $requestedServicesList[] = "• " . $service['name'] . " (" . $djPack['requested_hours'] . "h) ➔ " . $djPack['badge'];
+                    if ($fairModeActive && $fairPackPricing) {
+                        $infStr = number_format((float)$fairPackPricing['inflated_price'], 0, ',', '.');
+                        $discStr = number_format((float)$fairPackPricing['discount_amount'], 0, ',', '.');
+                        $finStr = number_format((float)$fairPackPricing['final_price'], 0, ',', '.');
+                        $baseStr = number_format((float)$fairPackPricing['base_price'], 0, ',', '.');
+                        $extraHoursNote = $djPack['extra_hours'] > 0
+                            ? (" + {$djPack['extra_hours']}h extra (" . number_format((float)($djPack['extra_hours'] * $djPack['extra_hour_price']), 0, ',', '.') . " €)")
+                            : "";
+                        $requestedServicesList[] = "• " . $service['name'] . " (" . $djPack['requested_hours'] . "h) ➔ " . $djPack['base_name'] . " [🎪 Promo {$fairName}: Tarifa Feria {$infStr} € − Dto. {$discStr} € = {$finStr} €{$extraHoursNote} | Base normal: {$baseStr} €]";
+                    } else {
+                        $requestedServicesList[] = "• " . $service['name'] . " (" . $djPack['requested_hours'] . "h) ➔ " . $djPack['badge'];
+                    }
                     $clientServicesList[] = $service['name'] . " (" . $djPack['requested_hours'] . " horas — " . ($djPack['base_name'] ?? 'Configuración DJ') . ")";
                 } elseif ($key === 'smoke_machine') {
                     if (!empty($service['included'])) {
@@ -1092,6 +1126,19 @@ class QuoteCalculator extends Component
             $clientServicesList[] = "Modalidad conjunta: Pack Cóctel + Banquete";
         }
 
+        if ($fairModeActive) {
+            if ($fairPackPricing) {
+                $infStr = number_format((float)$fairPackPricing['inflated_price'], 0, ',', '.');
+                $discStr = number_format((float)$fairPackPricing['discount_amount'], 0, ',', '.');
+                $finStr = number_format((float)$fairPackPricing['final_price'], 0, ',', '.');
+                $baseStr = number_format((float)$fairPackPricing['base_price'], 0, ',', '.');
+                $requestedServicesList[] = "• 🎪 MODO FERIA ACTIVO ({$fairName}): Pack aplicado con Tarifa Feria {$infStr} € − Descuento Especial -{$discStr} € = {$finStr} € (Precio base habitual: {$baseStr} €)";
+            } else {
+                $requestedServicesList[] = "• 🎪 MODO FERIA ACTIVO ({$fairName}): Solicitud recibida durante promoción de feria";
+            }
+            $clientServicesList[] = "🎁 Promoción Especial registrada: {$fairName}";
+        }
+
         if ($this->custom_service_selected && !empty(trim($this->custom_service_name))) {
             $customName = trim($this->custom_service_name);
             $customDesc = trim($this->custom_service_description);
@@ -1118,6 +1165,9 @@ class QuoteCalculator extends Component
         $cleanSchedule = trim((string)$this->event_schedule);
 
         $scheduleAndSetupNotes = "";
+        if ($fairModeActive) {
+            $scheduleAndSetupNotes .= "🎪 MODO FERIA ACTIVO: SÍ ({$fairName})\n";
+        }
         if ($cleanSchedule !== '') {
             $scheduleAndSetupNotes .= "⏰ Horario / Tramo del Evento: " . $cleanSchedule . "\n";
         }
@@ -1126,6 +1176,9 @@ class QuoteCalculator extends Component
         }
 
         $quoteClientNotesParts = [];
+        if ($fairModeActive) {
+            $quoteClientNotesParts[] = "🎪 Solicitud recibida con MODO FERIA ACTIVO ({$fairName})";
+        }
         if ($cleanClientNotes !== '') {
             $quoteClientNotesParts[] = $cleanClientNotes;
         }
@@ -1141,7 +1194,8 @@ class QuoteCalculator extends Component
         $quoteClientNotes = implode("\n\n", $quoteClientNotesParts);
 
         $stampNow = now()->format('d/m/Y H:i');
-        $fullNotes = "SOLICITUD DE PRESUPUESTO ONLINE (/presupuesto) [{$stampNow}]:\n"
+        $fairHeaderNote = $fairModeActive ? " [🎪 MODO FERIA ACTIVO: {$fairName}]" : "";
+        $fullNotes = "SOLICITUD DE PRESUPUESTO ONLINE (/presupuesto){$fairHeaderNote} [{$stampNow}]:\n"
                    . "Tipo de Evento: " . $typeConfig['name'] . "\n"
                    . ($cleanClientNotes !== '' ? "\n📝 NOTAS Y EXPLICACIÓN DEL CLIENTE:\n" . $cleanClientNotes . "\n\n" : "")
                    . $scheduleAndSetupNotes
@@ -1231,10 +1285,11 @@ class QuoteCalculator extends Component
         // 4b. Guardar SIEMPRE las opciones seleccionadas (Ceremonia, Cóctel, Banquete, DJ, etc.) y las Notas del cliente en el DOSSIER del evento
         try {
             $formattedDate = $this->event_date ? \Carbon\Carbon::parse($this->event_date)->format('d/m/Y') : 'Por definir';
-            $dossierBlock = "### 📋 Solicitud Recibida desde /presupuesto ({$stampNow})\n"
+            $dossierBlock = "### 📋 Solicitud Recibida desde /presupuesto{$fairHeaderNote} ({$stampNow})\n"
                 . "**Cliente:** {$this->client_name} (" . ($this->client_phone ?: 'Sin tel.') . ")\n"
-                . "**Tipo de Evento:** {$typeConfig['name']} | **Fecha:** {$formattedDate} | **Lugar:** {$this->event_location}\n\n"
-                . "**✅ Servicios y Opciones Marcadas por el Cliente:**\n"
+                . "**Tipo de Evento:** {$typeConfig['name']} | **Fecha:** {$formattedDate} | **Lugar:** {$this->event_location}\n"
+                . ($fairModeActive ? "**🎪 Modo Feria / Evento Especial:** ACTIVO ({$fairName})\n" : "")
+                . "\n**✅ Servicios y Opciones Marcadas por el Cliente:**\n"
                 . implode("\n", $requestedServicesList) . "\n";
 
             if ($cleanSchedule !== '') {
@@ -1293,6 +1348,7 @@ class QuoteCalculator extends Component
         try {
             if (\Illuminate\Support\Facades\Schema::hasTable('whatsapp_messages')) {
                 $chatBody = "📋 *Solicitud desde Calculador de Presupuesto (/solicitar-presupuesto)*\n"
+                    . ($fairModeActive ? "🎪 *MODO FERIA ACTIVO:* {$fairName}\n" : "")
                     . "🎉 *Tipo:* {$typeConfig['name']}\n"
                     . "📍 *Lugar:* {$this->event_location}\n"
                     . ($cleanSchedule !== '' ? "⏰ *Horario:* {$cleanSchedule}\n" : "")
@@ -1308,7 +1364,7 @@ class QuoteCalculator extends Component
                     'direction' => 'inbound',
                     'message' => $chatBody,
                     'status' => 'received',
-                    'payload' => ['channel' => 'web_quote_calculator', 'quote_id' => $quote->id],
+                    'payload' => ['channel' => 'web_quote_calculator', 'quote_id' => $quote->id, 'fair_mode' => $fairModeActive],
                 ]);
             }
         } catch (\Throwable $e) {}
@@ -1317,14 +1373,39 @@ class QuoteCalculator extends Component
         foreach ($this->services as $key => $service) {
             if ($service['selected']) {
                 if ($key === 'dj' && $djPack) {
-                    // Base DJ Pack item
-                    $quote->items()->create([
-                        'service_name' => $djPack['base_name'],
-                        'description' => $djPack['description'],
-                        'quantity' => 1,
-                        'price' => $djPack['pack_price'],
-                        'total' => $djPack['pack_price'],
-                    ]);
+                    if ($fairModeActive && $fairPackPricing) {
+                        $inflatedPackPrice = (float)$fairPackPricing['inflated_price'];
+                        $fairDiscountAmt = (float)$fairPackPricing['discount_amount'];
+
+                        // Base DJ Pack item con Tarifa de Feria
+                        $quote->items()->create([
+                            'service_name' => $djPack['base_name'],
+                            'description' => $djPack['description'] . " (Tarifa Oficial {$fairName})",
+                            'quantity' => 1,
+                            'price' => $inflatedPackPrice,
+                            'total' => $inflatedPackPrice,
+                        ]);
+
+                        // Línea explícita de Descuento Especial Feria
+                        if ($fairDiscountAmt > 0) {
+                            $quote->items()->create([
+                                'service_name' => '🎁 Descuento Especial ' . $fairName,
+                                'description' => trim($fairConditionText . ' (' . $djPack['base_name'] . ': Tarifa Feria ' . number_format($inflatedPackPrice, 0, ',', '.') . ' € − Dto. ' . number_format($fairDiscountAmt, 0, ',', '.') . ' €)'),
+                                'quantity' => 1,
+                                'price' => -abs($fairDiscountAmt),
+                                'total' => -abs($fairDiscountAmt),
+                            ]);
+                        }
+                    } else {
+                        // Base DJ Pack item normal
+                        $quote->items()->create([
+                            'service_name' => $djPack['base_name'],
+                            'description' => $djPack['description'],
+                            'quantity' => 1,
+                            'price' => $djPack['pack_price'],
+                            'total' => $djPack['pack_price'],
+                        ]);
+                    }
 
                     // Extra Hours if applicable
                     if ($djPack['extra_hours'] > 0) {
@@ -1520,10 +1601,15 @@ class QuoteCalculator extends Component
 
         // C) Notificación en la App (Campana + Push Navegador/PWA + Toast) y WhatsApp a los socios
         try {
+            $notifTitle = $fairModeActive
+                ? "🎪 Presupuesto Feria ({$fairName}): {$this->client_name}"
+                : "💶 Presupuesto Web: {$this->client_name}";
+            $notifBody = "{$event->name} • Total est.: " . number_format((float)$quote->total_amount, 2, ',', '.') . " €"
+                . ($fairModeActive ? " (Con Promo {$fairName})" : "");
             \App\Services\AppNotificationService::push(
                 'quote_request',
-                "💶 Presupuesto Web: {$this->client_name}",
-                "{$event->name} • Total est.: " . number_format((float)$quote->total_amount, 2, ',', '.') . " €",
+                $notifTitle,
+                $notifBody,
                 url("/admin/events/{$event->id}"),
                 $event->id,
                 $notifyBrand
@@ -1535,6 +1621,9 @@ class QuoteCalculator extends Component
         try {
             if (\App\Services\EvolutionWhatsAppService::isEnabled()) {
                 $waExtra = "";
+                if ($fairModeActive) {
+                    $waExtra .= "🎪 *MODO FERIA ACTIVO:* {$fairName}\n";
+                }
                 if (!empty(trim((string)$this->event_schedule))) {
                     $waExtra .= "⏰ *Horario:* " . trim((string)$this->event_schedule) . "\n";
                 }
@@ -1544,13 +1633,13 @@ class QuoteCalculator extends Component
                 if (!empty(trim((string)$this->client_notes))) {
                     $waExtra .= "📝 *Notas del cliente:* " . Str::limit(trim((string)$this->client_notes), 350) . "\n";
                 }
-                $waAlert = "💶 *¡NUEVA SOLICITUD DE PRESUPUESTO!*\n\n"
+                $waAlert = ($fairModeActive ? "🎪 *¡NUEVA SOLICITUD EN MODO FERIA ({$fairName})!*\n\n" : "💶 *¡NUEVA SOLICITUD DE PRESUPUESTO!*\n\n")
                     . "👤 *Cliente:* {$this->client_name}\n"
                     . "📞 *Teléfono:* " . ($this->client_phone ?: 'No indicado') . "\n"
                     . "🎉 *Evento:* {$event->name}\n"
                     . "📍 *Lugar:* {$this->event_location}\n"
                     . $waExtra
-                    . "💰 *Total estimado:* " . number_format((float)$quote->total_amount, 2, ',', '.') . " €\n\n"
+                    . "💰 *Total estimado:* " . number_format((float)$quote->total_amount, 2, ',', '.') . " €" . ($fairModeActive ? " *(Promo Feria aplicada)*" : "") . "\n\n"
                     . "🔗 *Ficha:* " . url("/admin/events/{$event->id}");
                 \App\Services\EvolutionWhatsAppService::notifyAdmins($waAlert, $notifyBrand);
             }
@@ -1563,7 +1652,11 @@ class QuoteCalculator extends Component
 
     public function render()
     {
-        return view('livewire.guest.quote-calculator')
+        $fairConfig = Setting::getFairModeConfig();
+        return view('livewire.guest.quote-calculator', [
+            'fairModeActive' => !empty($fairConfig['enabled']),
+            'fairName' => $fairConfig['fair_name'] ?? 'Feria de Novios',
+        ])
             ->layout('components.layouts.wide-guest', ['title' => 'Solicitar Presupuesto - ' . Setting::get('company_name', 'Eventos Musicales')]);
     }
 }

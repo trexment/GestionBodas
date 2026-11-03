@@ -1708,6 +1708,109 @@ class EventShow extends Component
     }
 
     /**
+     * Devuelve el estado detallado del Modo Feria tanto a nivel global como en el configurador del presupuesto actual.
+     */
+    public function getFairPromoStatusInCalculatorProperty(): array
+    {
+        $fairConfig = \App\Services\GeneralTariffDossierService::getConfig();
+        $fairData = $fairConfig['fair_mode'] ?? \App\Services\GeneralTariffDossierService::getDefaultFairModeConfig();
+        $fairName = trim((string) ($fairData['fair_name'] ?? 'Feria de Novios')) ?: 'Feria de Novios';
+        $fairNameLower = mb_strtolower($fairName);
+        $globalEnabled = !empty($fairData['enabled']);
+
+        $appliedIdx = null;
+        $appliedDiscount = 0.0;
+        $appliedLineName = '';
+
+        foreach (($this->custom_extras ?? []) as $idx => $ex) {
+            $n = mb_strtolower(trim((string) ($ex['name'] ?? '')));
+            $p = (float) ($ex['price'] ?? 0);
+            if (
+                $n !== '' && (
+                    str_contains($n, 'feria') ||
+                    str_contains($n, 'descuento especial') ||
+                    str_contains($n, 'promo feria') ||
+                    ($fairNameLower !== '' && str_contains($n, $fairNameLower))
+                ) && $p < 0
+            ) {
+                $appliedIdx = $idx;
+                $appliedDiscount = abs($p);
+                $appliedLineName = trim((string) ($ex['name'] ?? ''));
+                break;
+            }
+        }
+
+        $evType = $this->event ? $this->event->event_type_clean : 'boda';
+        $normalBasic = (float) \App\Models\Setting::get("pack_basic_price_{$evType}", \App\Models\Setting::get('pack_basic_price', 600));
+        $normalMedium = (float) \App\Models\Setting::get("pack_medium_price_{$evType}", \App\Models\Setting::get('pack_medium_price', 950));
+        $normalPremium = (float) \App\Models\Setting::get("pack_premium_price_{$evType}", \App\Models\Setting::get('pack_premium_price', 1350));
+
+        $activePackSummary = null;
+        if (!empty($this->quote_services['pack_basic']['selected'])) {
+            $curP = (float) ($this->quote_services['pack_basic']['price'] ?? $normalBasic);
+            $activePackSummary = [
+                'name' => $this->quote_services['pack_basic']['name'] ?? 'Pack Esencial',
+                'current_price' => $curP,
+                'normal_price' => $normalBasic,
+                'net_after_fair' => max(0, $curP - $appliedDiscount),
+            ];
+        } elseif (!empty($this->quote_services['pack_medium']['selected'])) {
+            $curP = (float) ($this->quote_services['pack_medium']['price'] ?? $normalMedium);
+            $activePackSummary = [
+                'name' => $this->quote_services['pack_medium']['name'] ?? 'Pack Signature',
+                'current_price' => $curP,
+                'normal_price' => $normalMedium,
+                'net_after_fair' => max(0, $curP - $appliedDiscount),
+            ];
+        } elseif (!empty($this->quote_services['pack_premium']['selected'])) {
+            $curP = (float) ($this->quote_services['pack_premium']['price'] ?? $normalPremium);
+            $activePackSummary = [
+                'name' => $this->quote_services['pack_premium']['name'] ?? 'Pack Deluxe Show',
+                'current_price' => $curP,
+                'normal_price' => $normalPremium,
+                'net_after_fair' => max(0, $curP - $appliedDiscount),
+            ];
+        }
+
+        $notesLower = mb_strtolower((string) ($this->event?->notes ?? ''));
+        $eventCameFromFair = str_contains($notesLower, 'modo feria activo') || str_contains($notesLower, 'promo ' . $fairNameLower);
+        if (!$eventCameFromFair && $this->event && $this->event->relationLoaded('quotes')) {
+            foreach ($this->event->quotes as $q) {
+                if (str_contains(mb_strtolower((string) ($q->client_notes ?? '')), 'modo feria')) {
+                    $eventCameFromFair = true;
+                    break;
+                }
+                if ($q->relationLoaded('items')) {
+                    foreach ($q->items as $it) {
+                        $itName = mb_strtolower((string) ($it->service_name ?? ''));
+                        if ((str_contains($itName, 'feria') || str_contains($itName, 'descuento especial')) && (float) $it->price < 0) {
+                            $eventCameFromFair = true;
+                            break 2;
+                        }
+                    }
+                }
+            }
+        }
+
+        return [
+            'global_enabled' => $globalEnabled,
+            'fair_name' => $fairName,
+            'event_came_from_fair' => $eventCameFromFair,
+            'applied_in_calculator' => $appliedIdx !== null,
+            'applied_index' => $appliedIdx,
+            'applied_discount' => $appliedDiscount,
+            'applied_line_name' => $appliedLineName,
+            'configured_discount' => (float) ($fairData['quote_discount_amount'] ?? 150),
+            'active_pack_summary' => $activePackSummary,
+            'normal_prices' => [
+                'basic' => $normalBasic,
+                'medium' => $normalMedium,
+                'premium' => $normalPremium,
+            ],
+        ];
+    }
+
+    /**
      * Aplica o quita en 1 clic la Promoción de Feria de Novios en el configurador de presupuestos actual,
      * subiendo el importe mostrado del pack y añadiendo una línea de descuento negativo para que el total
      * final quede en el precio real, SIN modificar jamás las tarifas globales guardadas en Ajustes.
@@ -1717,16 +1820,30 @@ class EventShow extends Component
         $fairConfig = \App\Services\GeneralTariffDossierService::getConfig();
         $fairData = $fairConfig['fair_mode'] ?? \App\Services\GeneralTariffDossierService::getDefaultFairModeConfig();
         $fairName = trim((string) ($fairData['fair_name'] ?? 'Feria de Novios')) ?: 'Feria de Novios';
+        $fairNameLower = mb_strtolower($fairName);
 
         // Comprobar si ya hay una línea de Descuento Feria en custom_extras
         $existingFairIdx = null;
         foreach (($this->custom_extras ?? []) as $idx => $ex) {
             $n = mb_strtolower(trim((string) ($ex['name'] ?? '')));
-            if (str_contains($n, 'feria de novios') || str_contains($n, 'descuento especial feria') || str_contains($n, 'promo feria')) {
+            $p = (float) ($ex['price'] ?? 0);
+            if (
+                $n !== '' && (
+                    str_contains($n, 'feria') ||
+                    str_contains($n, 'descuento especial') ||
+                    str_contains($n, 'promo feria') ||
+                    ($fairNameLower !== '' && str_contains($n, $fairNameLower))
+                ) && $p < 0
+            ) {
                 $existingFairIdx = $idx;
                 break;
             }
         }
+
+        $evType = $this->event ? $this->event->event_type_clean : 'boda';
+        $normalBasic = (float) \App\Models\Setting::get("pack_basic_price_{$evType}", \App\Models\Setting::get('pack_basic_price', 600));
+        $normalMedium = (float) \App\Models\Setting::get("pack_medium_price_{$evType}", \App\Models\Setting::get('pack_medium_price', 950));
+        $normalPremium = (float) \App\Models\Setting::get("pack_premium_price_{$evType}", \App\Models\Setting::get('pack_premium_price', 1350));
 
         // Si ya estaba aplicada, quitarla y restaurar los precios base originales del configurador
         if ($existingFairIdx !== null) {
@@ -1735,14 +1852,18 @@ class EventShow extends Component
                 $this->custom_extras = [['name' => '', 'price' => 0, 'desc' => '', 'consult' => false]];
             }
 
-            $evType = $this->event ? $this->event->event_type_clean : 'boda';
-            $this->quote_services['pack_basic']['price'] = (float) \App\Models\Setting::get("pack_basic_price_{$evType}", \App\Models\Setting::get('pack_basic_price', 600));
-            $this->quote_services['pack_medium']['price'] = (float) \App\Models\Setting::get("pack_medium_price_{$evType}", \App\Models\Setting::get('pack_medium_price', 950));
-            $this->quote_services['pack_premium']['price'] = (float) \App\Models\Setting::get("pack_premium_price_{$evType}", \App\Models\Setting::get('pack_premium_price', 1350));
+            $this->quote_services['pack_basic']['price'] = $normalBasic;
+            $this->quote_services['pack_medium']['price'] = $normalMedium;
+            $this->quote_services['pack_premium']['price'] = $normalPremium;
 
-            session()->flash('quote_message', '🔄 Promoción de Feria retirada del presupuesto. Precios habituales restaurados.');
+            session()->flash('quote_message', '🔄 Promoción de Feria retirada del presupuesto. Se han restaurado las tarifas normales (' . number_format($normalBasic, 0) . ' €, ' . number_format($normalMedium, 0) . ' €, ' . number_format($normalPremium, 0) . ' €).');
             return;
         }
+
+        // Asegurar que partimos de los precios base normales antes de calcular la subida de feria
+        $this->quote_services['pack_basic']['price'] = $normalBasic;
+        $this->quote_services['pack_medium']['price'] = $normalMedium;
+        $this->quote_services['pack_premium']['price'] = $normalPremium;
 
         // Aplicar subida simulada + línea de Descuento Especial Feria
         $discountToApply = 0.0;
@@ -3591,14 +3712,19 @@ class EventShow extends Component
         $evType = $this->event ? $this->event->event_type_clean : 'boda';
         $evLabel = $this->event ? $this->event->event_type_label : 'Boda';
 
-        // Packs Comerciales (guardados específicamente para este tipo de evento)
-        $pbPriceVal = (float)($this->quote_services['pack_basic']['price'] ?? 600);
-        $pmPriceVal = (float)($this->quote_services['pack_medium']['price'] ?? 950);
-        $ppPriceVal = (float)($this->quote_services['pack_premium']['price'] ?? 1350);
+        $fairPromoStatus = $this->fair_promo_status_in_calculator;
+        $hasFairPromoActive = !empty($fairPromoStatus['applied_in_calculator']);
 
-        \App\Models\Setting::set("pack_basic_price_{$evType}", $pbPriceVal);
-        \App\Models\Setting::set("pack_medium_price_{$evType}", $pmPriceVal);
-        \App\Models\Setting::set("pack_premium_price_{$evType}", $ppPriceVal);
+        // Packs Comerciales (guardados específicamente para este tipo de evento, SOLO si no tiene la Promo Feria activa para no sobrescribir tus precios base con precios de feria)
+        if (!$hasFairPromoActive) {
+            $pbPriceVal = (float)($this->quote_services['pack_basic']['price'] ?? 600);
+            $pmPriceVal = (float)($this->quote_services['pack_medium']['price'] ?? 950);
+            $ppPriceVal = (float)($this->quote_services['pack_premium']['price'] ?? 1350);
+
+            \App\Models\Setting::set("pack_basic_price_{$evType}", $pbPriceVal);
+            \App\Models\Setting::set("pack_medium_price_{$evType}", $pmPriceVal);
+            \App\Models\Setting::set("pack_premium_price_{$evType}", $ppPriceVal);
+        }
 
         // Servicios Musicales (precios y textos por tipo de evento)
         $cerPriceVal = (float)($this->quote_services['ceremony']['price'] ?? 180);
@@ -3905,6 +4031,10 @@ class EventShow extends Component
                     $this->quote_services[$k]['selected'] = false;
                 }
             }
+            $evType = $this->event ? $this->event->event_type_clean : 'boda';
+            $this->quote_services['pack_basic']['price'] = (float) \App\Models\Setting::get("pack_basic_price_{$evType}", \App\Models\Setting::get('pack_basic_price', 600));
+            $this->quote_services['pack_medium']['price'] = (float) \App\Models\Setting::get("pack_medium_price_{$evType}", \App\Models\Setting::get('pack_medium_price', 950));
+            $this->quote_services['pack_premium']['price'] = (float) \App\Models\Setting::get("pack_premium_price_{$evType}", \App\Models\Setting::get('pack_premium_price', 1350));
             $this->quote_services['smoke_machine']['included'] = false;
             $this->quote_services['cold_sparks']['included'] = false;
             $this->quote_services['photo_qr']['included'] = false;
@@ -4599,9 +4729,23 @@ class EventShow extends Component
             // IMPORTANTE: Comprobar primero si es una línea de descuento o de efectos (humo/chispas incluidas en pack)
             // para que NO coincidan por nombre con 'cóctel', 'banquete' ni 'pack signature / pack deluxe'
             if (
+                str_contains($name, 'descuento especial pack') ||
+                str_contains($name, 'descuento pack')
+            ) {
+                // Descuento automático de Pack Cóctel + Banquete: se recalcula solo al seleccionar ambos
+                continue;
+            } elseif (
                 str_contains($name, 'descuento') ||
                 (float)$item->price < 0
             ) {
+                // Cualquier otro descuento personalizado o de Feria de Novios: conservarlo en extras personalizados
+                $rawName = $item->service_name ?: $item->concept ?: '';
+                $loadedCustomExtras[] = [
+                    'name' => trim($rawName),
+                    'price' => (float)$item->price,
+                    'desc' => $item->description ?: '',
+                    'consult' => false,
+                ];
                 continue;
             } elseif (
                 str_contains($name, 'fotos qr') ||

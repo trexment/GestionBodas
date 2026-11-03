@@ -2253,6 +2253,21 @@
                                             <span class="text-xs text-slate-500 dark:text-slate-400 font-semibold">
                                                 Presupuesto #{{ $summaryQuote->id }}
                                             </span>
+                                            @php
+                                                $summaryFairItem = $summaryQuote->items->first(function ($it) {
+                                                    $n = mb_strtolower((string) ($it->service_name ?? ''));
+                                                    return (str_contains($n, 'feria') || str_contains($n, 'descuento especial')) && !str_contains($n, 'pack cóctel') && !str_contains($n, 'pack coctel') && (float) $it->price < 0;
+                                                });
+                                            @endphp
+                                            @if($summaryFairItem)
+                                                <span class="px-2 py-0.5 rounded-full bg-amber-400 text-slate-950 text-[10px] font-black uppercase">
+                                                    🎪 Con Promo Feria ({{ number_format($summaryFairItem->price, 0) }} €)
+                                                </span>
+                                            @else
+                                                <span class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200 text-[10px] font-bold">
+                                                    🏷️ Tarifa Normal
+                                                </span>
+                                            @endif
                                         </div>
                                         @if(Auth::check() && Auth::user()->role === 'admin')
                                             <div class="text-right">
@@ -4510,7 +4525,84 @@
                     $hasAnyDjPackSelected = !empty($quote_services['pack_basic']['selected'])
                         || !empty($quote_services['pack_medium']['selected'])
                         || !empty($quote_services['pack_premium']['selected']);
+                    $fairPromoInfo = $this->fair_promo_status_in_calculator;
                 @endphp
+
+                <!-- INDICADOR CLARO DE MODO FERIA / TARIFA EN ESTE PRESUPUESTO -->
+                <div class="rounded-2xl border p-3.5 shadow-xs transition {{ !empty($fairPromoInfo['applied_in_calculator']) ? 'bg-amber-50 border-amber-300 text-amber-950' : (!empty($fairPromoInfo['global_enabled']) || !empty($fairPromoInfo['event_came_from_fair']) ? 'bg-indigo-50 border-indigo-200 text-indigo-950' : 'bg-slate-50 border-slate-200 text-slate-800') }}">
+                    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+                        <div class="space-y-1">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <span class="text-sm font-black uppercase tracking-wide flex items-center gap-1.5">
+                                    <span>🎪</span>
+                                    <span>Estado de Tarifas / Modo Feria:</span>
+                                </span>
+
+                                @if(!empty($fairPromoInfo['global_enabled']))
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-600 text-white shadow-2xs">
+                                        🟢 Modo Feria General ACTIVO ({{ $fairPromoInfo['fair_name'] }})
+                                    </span>
+                                @else
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-slate-200 text-slate-700 border border-slate-300">
+                                        ⚪ Modo Feria General DESACTIVADO
+                                    </span>
+                                @endif
+
+                                @if(!empty($fairPromoInfo['event_came_from_fair']))
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-purple-600 text-white shadow-2xs">
+                                        📥 Solicitud recibida en Feria
+                                    </span>
+                                @endif
+
+                                @if(!empty($fairPromoInfo['applied_in_calculator']))
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-amber-500 text-slate-950 shadow-2xs">
+                                        🎁 PRESUPUESTO CON PROMO FERIA APLICADA (-{{ number_format($fairPromoInfo['applied_discount'], 0, ',', '.') }} €)
+                                    </span>
+                                @else
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-white text-slate-800 border border-slate-300">
+                                        🏷️ PRESUPUESTO CON TARIFA NORMAL HABITUAL
+                                    </span>
+                                @endif
+                            </div>
+
+                            <p class="text-xs leading-relaxed {{ !empty($fairPromoInfo['applied_in_calculator']) ? 'text-amber-900' : 'text-slate-600' }}">
+                                @if(!empty($fairPromoInfo['applied_in_calculator']))
+                                    @if(!empty($fairPromoInfo['active_pack_summary']))
+                                        <strong>Desglose activo en este presupuesto:</strong>
+                                        {{ $fairPromoInfo['active_pack_summary']['name'] }} con Tarifa Feria de
+                                        <strong>{{ number_format($fairPromoInfo['active_pack_summary']['current_price'], 0, ',', '.') }} €</strong>
+                                        menos línea <strong>«{{ $fairPromoInfo['applied_line_name'] }} (-{{ number_format($fairPromoInfo['applied_discount'], 0, ',', '.') }} €)»</strong>
+                                        = <strong>{{ number_format($fairPromoInfo['active_pack_summary']['net_after_fair'], 0, ',', '.') }} €</strong>
+                                        <span class="opacity-80">(Precio base habitual sin feria: {{ number_format($fairPromoInfo['active_pack_summary']['normal_price'], 0, ',', '.') }} €)</span>.
+                                    @else
+                                        Este presupuesto incluye la línea <strong>«{{ $fairPromoInfo['applied_line_name'] }} (-{{ number_format($fairPromoInfo['applied_discount'], 0, ',', '.') }} €)»</strong> con la tarifa subida en el servicio principal.
+                                    @endif
+                                @else
+                                    Este presupuesto está usando <strong>tus precios normales almacenados</strong> ({{ number_format($fairPromoInfo['normal_prices']['basic'], 0) }} € / {{ number_format($fairPromoInfo['normal_prices']['medium'], 0) }} € / {{ number_format($fairPromoInfo['normal_prices']['premium'], 0) }} €) sin recargo ni descuento de feria.
+                                    @if(!empty($fairPromoInfo['global_enabled']) || !empty($fairPromoInfo['event_came_from_fair']))
+                                        Si quieres aplicarle la promoción de <strong>{{ $fairPromoInfo['fair_name'] }}</strong> (subir tarifa + línea de descuento), pulsa el botón de la derecha.
+                                    @endif
+                                @endif
+                            </p>
+                        </div>
+
+                        <div class="flex flex-wrap items-center gap-2 shrink-0">
+                            <button type="button" wire:click="toggleWeddingFairPromoOnQuote" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-black shadow-xs transition cursor-pointer {{ !empty($fairPromoInfo['applied_in_calculator']) ? 'bg-white hover:bg-rose-50 text-rose-700 border border-rose-300' : 'bg-amber-400 hover:bg-amber-300 text-slate-950 border border-amber-500' }}">
+                                @if(!empty($fairPromoInfo['applied_in_calculator']))
+                                    <span>🔄</span>
+                                    <span>Quitar Promo Feria (Usar Precio Normal)</span>
+                                @else
+                                    <span>🎪</span>
+                                    <span>Aplicar Promo Feria (+Subir y Descontar -{{ number_format($fairPromoInfo['configured_discount'], 0) }} €)</span>
+                                @endif
+                            </button>
+                            <a href="{{ route('admin.tariff-dossier') }}" class="inline-flex items-center gap-1 px-2.5 py-2 rounded-xl text-[11px] font-bold bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 transition">
+                                <span>⚙️</span> Configurar Feria / QR
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="bg-gradient-to-r {{ $isMagicBrand ? 'from-purple-950 via-purple-900 to-indigo-950' : 'from-indigo-900 via-indigo-800 to-purple-900' }} text-white p-3.5 rounded-2xl shadow-sm">
                     <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
                         <div class="flex items-center gap-2 flex-wrap">
@@ -4527,8 +4619,8 @@
                             </button>
                         </div>
                         <div class="flex flex-wrap items-center gap-1.5">
-                            <button type="button" wire:click="toggleWeddingFairPromoOnQuote" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-black bg-amber-400 hover:bg-amber-300 text-slate-950 shadow-xs transition cursor-pointer" title="Sube la tarifa en este presupuesto y añade automáticamente la línea de Descuento Especial Feria de Novios (sin tocar tus precios generales)">
-                                <span>🎪</span> Promo Feria (Subir + Descontar)
+                            <button type="button" wire:click="toggleWeddingFairPromoOnQuote" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-black {{ !empty($fairPromoInfo['applied_in_calculator']) ? 'bg-emerald-400 hover:bg-emerald-300 text-slate-950' : 'bg-amber-400 hover:bg-amber-300 text-slate-950' }} shadow-xs transition cursor-pointer" title="Sube la tarifa en este presupuesto y añade automáticamente la línea de Descuento Especial Feria de Novios (sin tocar tus precios generales)">
+                                <span>🎪</span> {{ !empty($fairPromoInfo['applied_in_calculator']) ? 'Promo Feria ACTIVA (Clic para quitar)' : 'Promo Feria (Subir + Descontar)' }}
                             </button>
                             <button type="button" wire:click="saveCurrentPricesAsDefault" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-white/15 hover:bg-white/25 text-white border border-white/20 transition cursor-pointer" title="Guardar los precios y textos actuales como predeterminados para eventos de tipo {{ $event->event_type_label }}">
                                 <span>💾</span> Fijar precios para {{ $event->event_type_label }}
@@ -5820,11 +5912,20 @@
                         
                         <!-- TARJETA RESUMEN EN VIVO + BOTÓN DE GENERACIÓN DIRECTA -->
                         <div class="bg-slate-900 text-white p-4 rounded-2xl shadow-xl space-y-3 border border-slate-800">
-                            <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2">
                                 <h5 class="font-black text-xs uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
                                     <span>📊</span> Resumen Económico en Vivo
                                 </h5>
-                                <div class="flex items-center gap-1">
+                                <div class="flex flex-wrap items-center gap-1">
+                                    @if(!empty($fairPromoInfo['applied_in_calculator']))
+                                        <span class="text-[10px] bg-amber-400 text-slate-950 px-2 py-0.5 rounded-full font-black uppercase shadow-2xs">
+                                            🎪 Con Promo Feria (-{{ number_format($fairPromoInfo['applied_discount'], 0) }} €)
+                                        </span>
+                                    @else
+                                        <span class="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full font-bold border border-slate-700">
+                                            🏷️ Tarifa Normal
+                                        </span>
+                                    @endif
                                     <span class="text-[10px] bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-full font-bold border border-indigo-400/30">
                                         {{ $quote_tax_type === 'included' ? 'IVA Incluido' : ($quote_tax_type === 'excluded' ? '+21% IVA' : 'Sin IVA') }}
                                     </span>
@@ -5976,6 +6077,22 @@
                                                     <span class="text-[10px] bg-slate-100 text-slate-700 font-bold px-1.5 py-0.5 rounded">
                                                         {{ $taxLabel }}
                                                     </span>
+
+                                                    @php
+                                                        $quoteFairItem = $quote->items->first(function ($it) {
+                                                            $n = mb_strtolower((string) ($it->service_name ?? ''));
+                                                            return (str_contains($n, 'feria') || str_contains($n, 'descuento especial')) && !str_contains($n, 'pack cóctel') && !str_contains($n, 'pack coctel') && (float) $it->price < 0;
+                                                        });
+                                                    @endphp
+                                                    @if($quoteFairItem)
+                                                        <span class="text-[10px] bg-amber-400 text-slate-950 font-black px-2 py-0.5 rounded-full uppercase flex items-center gap-1 shadow-2xs" title="{{ $quoteFairItem->service_name }} ({{ number_format($quoteFairItem->price, 0) }} €)">
+                                                            🎪 Con Promo Feria ({{ number_format($quoteFairItem->price, 0) }} €)
+                                                        </span>
+                                                    @else
+                                                        <span class="text-[10px] bg-slate-100 text-slate-600 border border-slate-200 font-bold px-2 py-0.5 rounded-full">
+                                                            🏷️ Tarifa Normal
+                                                        </span>
+                                                    @endif
 
                                                     @if($quote->is_expired)
                                                         <span class="text-[10px] bg-rose-100 text-rose-800 border border-rose-300 font-bold px-2 py-0.5 rounded-full flex items-center gap-1" title="Caducó el {{ $quote->expires_at_formatted }}">

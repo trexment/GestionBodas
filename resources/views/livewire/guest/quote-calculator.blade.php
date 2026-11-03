@@ -28,8 +28,15 @@
         
         <!-- Cabecera Ejecutiva -->
         <div class="text-center mb-6">
-            <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-amber-400 text-[11px] font-semibold uppercase tracking-[0.18em] mb-3">
-                Solicitud de Propuesta &bull; {{ $currentType['badge'] }}
+            <div class="inline-flex flex-wrap items-center justify-center gap-2 mb-3">
+                <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-amber-400 text-[11px] font-semibold uppercase tracking-[0.18em]">
+                    Solicitud de Propuesta &bull; {{ $currentType['badge'] }}
+                </div>
+                @if(!empty($fairModeActive))
+                    <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/40 text-amber-300 text-[11px] font-bold uppercase tracking-wider">
+                        <span>🎪 Promoción Especial {{ $fairName ?? 'Feria de Novios' }} Activa</span>
+                    </div>
+                @endif
             </div>
             <h1 class="text-2xl sm:text-4xl font-bold tracking-tight text-white mb-2">
                 {{ $currentType['hero_title'] }} <span class="text-amber-400">{{ $currentType['hero_highlight'] }}</span>
