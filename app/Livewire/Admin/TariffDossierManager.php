@@ -28,7 +28,7 @@ class TariffDossierManager extends Component
 
     // Modal de envío por WhatsApp
     public bool $showSendModal = false;
-    public ?int $selected_event_id = null;
+    public $selected_event_id = '';
     public string $recipient_name = '';
     public string $recipient_phone = '';
     public string $sender_name = 'Fran';
@@ -329,19 +329,31 @@ class TariffDossierManager extends Component
             return;
         }
 
-        $brand = strtolower($this->sender_name) === 'fran' ? 'fran' : 'miguel';
-        $res = EvolutionWhatsAppService::sendTextMessage(
-            $this->recipient_phone,
-            $this->whatsapp_preview_message,
-            $brand,
-            $this->selected_event_id ? (int) $this->selected_event_id : null,
-            auth()->id()
-        );
+        try {
+            $brand = mb_strtolower(trim($this->sender_name)) === 'fran' ? 'fran' : 'miguel';
+            $eventId = !empty($this->selected_event_id) ? (int) $this->selected_event_id : null;
 
-        if (!empty($res['success'])) {
-            session()->flash('wa_send_ok', '✅ Dossier de tarifas enviado por WhatsApp correctamente.');
-        } else {
-            session()->flash('wa_send_error', '⚠️ No se pudo enviar por API directa (' . ($res['error'] ?? 'Error') . '). Usa el botón de abrir en WhatsApp.');
+            $res = EvolutionWhatsAppService::sendMessage(
+                $this->recipient_phone,
+                $this->whatsapp_preview_message,
+                $brand,
+                $eventId,
+                auth()->check() ? auth()->id() : null
+            );
+
+            if (!empty($res['success'])) {
+                if (($res['mode'] ?? '') === 'manual' && !empty($res['url'])) {
+                    $this->dispatch('open-whatsapp-link', url: $res['url']);
+                    session()->flash('wa_send_ok', '📲 Gateway directo no activo: abriendo WhatsApp con el mensaje preparado.');
+                } else {
+                    session()->flash('wa_send_ok', '✅ Dossier de tarifas enviado por WhatsApp correctamente desde el número de ' . $this->sender_name . '.');
+                }
+            } else {
+                $errDetail = $res['message'] ?? ($res['error'] ?? 'Error de conexión con el Gateway');
+                session()->flash('wa_send_error', '⚠️ No se pudo enviar por API directa (' . $errDetail . '). Puedes pulsar «📲 Abrir en WhatsApp».');
+            }
+        } catch (\Throwable $e) {
+            session()->flash('wa_send_error', '⚠️ Error al enviar por Gateway (' . $e->getMessage() . '). Usa el botón «📲 Abrir en WhatsApp».');
         }
     }
 

@@ -70,6 +70,19 @@ class EvolutionWhatsAppService
     }
 
     /**
+     * Alias de sendMessage para compatibilidad con componentes que invocan sendTextMessage.
+     */
+    public static function sendTextMessage(
+        string $phone,
+        string $text,
+        ?string $brand = null,
+        ?int $eventId = null,
+        ?int $userId = null
+    ): array {
+        return self::sendMessage($phone, $text, $brand, $eventId, $userId);
+    }
+
+    /**
      * Envía un mensaje de texto por WhatsApp.
      * Si el gateway está activo, lo envía directamente por la API.
      * Si no, devuelve el enlace para abrirlo en WhatsApp Web / App.
