@@ -6038,18 +6038,42 @@
                                     @endphp
                                     <div class="p-4 border rounded-xl transition shadow-xs space-y-3 {{ $isEditingThis ? 'border-amber-400 bg-amber-50/40 ring-2 ring-amber-300' : ($quote->status === 'accepted' ? 'border-emerald-400 bg-emerald-50/30 ring-1 ring-emerald-300' : ($quote->status === 'rejected' ? 'border-rose-300 bg-rose-50/20' : ($isLatest ? 'border-emerald-300 bg-emerald-50/20' : 'border-gray-200 bg-gray-50/60 opacity-90'))) }}">
                                         
-                                        <!-- Cabecera de la Propuesta -->
-                                        <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-2.5">
-                                            <div>
-                                                <div class="flex flex-wrap items-center gap-2">
-                                                    <span class="text-lg font-black text-gray-900">{{ number_format($quote->amount, 2) }} €</span>
-                                                    
-                                                    @if($isEditingThis)
-                                                        <span class="bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-black px-2 py-0.5 rounded-full uppercase">
-                                                            ✏️ Editando
+                                        <!-- Cabecera de la Propuesta (Ancho completo sin columnas aplastadas) -->
+                                        <div class="space-y-2.5">
+                                            <div class="space-y-1.5">
+                                                <div class="flex flex-wrap items-center justify-between gap-2">
+                                                    <div class="flex flex-wrap items-center gap-2">
+                                                        <span class="text-lg font-black text-gray-900 whitespace-nowrap">{{ number_format($quote->amount, 2) }} €</span>
+
+                                                        @if($isLatest)
+                                                            <span class="bg-emerald-100 text-emerald-800 border border-emerald-300 text-[10px] font-black px-2 py-0.5 rounded-full uppercase flex items-center gap-1">
+                                                                ⭐ Versión Actual (V{{ $versionNumber }})
+                                                            </span>
+                                                        @else
+                                                            <span class="bg-gray-200 text-gray-700 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">
+                                                                🕒 Versión Anterior (V{{ $versionNumber }})
+                                                            </span>
+                                                        @endif
+
+                                                        @if($isEditingThis)
+                                                            <span class="bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-black px-2 py-0.5 rounded-full uppercase">
+                                                                ✏️ Editando
+                                                            </span>
+                                                        @endif
+                                                    </div>
+
+                                                    @if($quote->is_expired)
+                                                        <span class="text-[10px] bg-rose-100 text-rose-800 border border-rose-300 font-bold px-2 py-0.5 rounded-full flex items-center gap-1" title="Caducó el {{ $quote->expires_at_formatted }}">
+                                                            ⚠️ Caducada ({{ $quote->expires_at ? $quote->expires_at->format('d/m/Y') : '' }})
+                                                        </span>
+                                                    @else
+                                                        <span class="text-[10px] bg-amber-100 text-amber-800 border border-amber-300 font-bold px-2 py-0.5 rounded-full flex items-center gap-1" title="Válida hasta el {{ $quote->expires_at_formatted }}">
+                                                            ⏳ Válida hasta {{ $quote->expires_at ? $quote->expires_at->format('d/m/Y') : '' }}
                                                         </span>
                                                     @endif
+                                                </div>
 
+                                                <div class="flex flex-wrap items-center gap-1.5">
                                                     @if($quote->status === 'accepted')
                                                         <span class="bg-emerald-600 text-white text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase flex items-center gap-1 shadow-2xs">
                                                             ✅ Aceptado por Cliente {{ $quote->responded_at ? '(' . $quote->responded_at->format('d/m H:i') . ')' : '' }}
@@ -6060,21 +6084,11 @@
                                                         </span>
                                                     @endif
 
-                                                    @if($isLatest)
-                                                        <span class="bg-emerald-100 text-emerald-800 border border-emerald-300 text-[10px] font-black px-2 py-0.5 rounded-full uppercase flex items-center gap-1">
-                                                            ⭐ Versión Actual (V{{ $versionNumber }})
-                                                        </span>
-                                                    @else
-                                                        <span class="bg-gray-200 text-gray-700 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">
-                                                            🕒 Versión Anterior (V{{ $versionNumber }})
-                                                        </span>
-                                                    @endif
-
-                                                    <span class="text-xs text-emerald-700 font-bold bg-emerald-100 px-1.5 py-0.5 rounded">
+                                                    <span class="text-xs text-emerald-700 font-bold bg-emerald-100 px-2 py-0.5 rounded">
                                                         Señal: {{ number_format($qSignal, 2) }} €
                                                     </span>
 
-                                                    <span class="text-[10px] bg-slate-100 text-slate-700 font-bold px-1.5 py-0.5 rounded">
+                                                    <span class="text-[10px] bg-slate-100 text-slate-700 font-bold px-2 py-0.5 rounded">
                                                         {{ $taxLabel }}
                                                     </span>
 
@@ -6093,52 +6107,15 @@
                                                             🏷️ Tarifa Normal
                                                         </span>
                                                     @endif
-
-                                                    @if($quote->is_expired)
-                                                        <span class="text-[10px] bg-rose-100 text-rose-800 border border-rose-300 font-bold px-2 py-0.5 rounded-full flex items-center gap-1" title="Caducó el {{ $quote->expires_at_formatted }}">
-                                                            ⚠️ Caducada ({{ $quote->expires_at ? $quote->expires_at->format('d/m/Y') : '' }})
-                                                        </span>
-                                                    @else
-                                                        <span class="text-[10px] bg-amber-100 text-amber-800 border border-amber-300 font-bold px-2 py-0.5 rounded-full flex items-center gap-1" title="Válida hasta el {{ $quote->expires_at_formatted }}">
-                                                            ⏳ Válida hasta {{ $quote->expires_at ? $quote->expires_at->format('d/m/Y') : '' }}
-                                                        </span>
-                                                    @endif
                                                 </div>
-                                                <p class="text-[11px] text-gray-500 mt-1">
+
+                                                <p class="text-[11px] text-gray-500 leading-relaxed">
                                                     <strong>Propuesta #{{ $quote->id }}</strong> &bull; Emitida: {{ $quote->created_at->format('d/m/Y H:i') }} &bull; Validez: {{ $quote->expires_at ? $quote->expires_at->format('d/m/Y') : '' }} ({{ $quote->validity_days }} días) &bull; Señal: {{ $qLabel }}
                                                 </p>
-
-                                                @if($quote->status === 'rejected' && $quote->rejection_reason)
-                                                    <div class="mt-2 p-2.5 rounded-lg bg-rose-100/80 border border-rose-300 text-xs text-rose-900">
-                                                        <strong>📝 Motivo del rechazo indicado por el cliente:</strong> {{ $quote->rejection_reason }}
-                                                    </div>
-                                                @endif
-
-                                                @if(!empty($quote->client_notes))
-                                                    <div class="mt-2 p-2.5 rounded-lg {{ $quote->status === 'accepted' ? 'bg-emerald-100/80 border border-emerald-300 text-emerald-900' : 'bg-amber-50 border border-amber-300 text-amber-950' }} text-xs whitespace-pre-line">
-                                                        <strong>💬 {{ $quote->status === 'accepted' ? 'Comentario / Notas del cliente:' : 'Notas del cliente en la solicitud:' }}</strong> {{ $quote->client_notes }}
-                                                    </div>
-                                                @endif
-
-                                                @php
-                                                    $linkedDocs = $event->invoices->where('quote_id', $quote->id);
-                                                @endphp
-                                                @if($linkedDocs->count() > 0)
-                                                    <div class="flex flex-wrap items-center gap-1.5 mt-2">
-                                                        @foreach($linkedDocs as $ldoc)
-                                                            <a href="{{ route('admin.invoice.pdf', $ldoc->id) }}" target="_blank" class="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-md border {{ $ldoc->isReceipt() ? 'bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100' : 'bg-blue-50 text-blue-800 border-blue-300 hover:bg-blue-100' }} transition">
-                                                                <span>{{ $ldoc->isReceipt() ? '🧾 Recibo' : '📄 Factura' }}:</span>
-                                                                <span>{{ $ldoc->invoice_number }}</span>
-                                                                <span class="text-[9px] opacity-75">({{ number_format($ldoc->total, 2) }}€)</span>
-                                                                <span>⬇️</span>
-                                                            </a>
-                                                        @endforeach
-                                                    </div>
-                                                @endif
                                             </div>
 
-                                            <!-- Botones de Acción -->
-                                            <div class="flex flex-wrap items-center gap-1.5 self-start sm:self-auto">
+                                            <!-- Botonera de Acciones a ancho completo -->
+                                            <div class="flex flex-wrap items-center gap-1.5 pt-2 border-t border-gray-200/70">
                                                 <!-- BOTONES CONVERTIR A RECIBO / FACTURA -->
                                                 @if($quote->tax_type === 'none')
                                                     <button type="button" wire:click="convertQuoteToInvoice({{ $quote->id }}, 'recibo')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-2.5 py-1.5 rounded-lg flex items-center gap-1 transition shadow-2xs" title="Pasar directamente a Recibo de Pago (Sin IVA)">
@@ -6183,20 +6160,48 @@
                                                     📄 1 Pág. Express
                                                 </a>
 
-                                                <button type="button" wire:click="deleteQuote({{ $quote->id }})" wire:confirm="¿Estás seguro de que deseas eliminar la Propuesta #{{ $quote->id }}?" class="bg-white hover:bg-red-50 text-red-600 border border-gray-200 hover:border-red-300 text-xs font-bold px-2 py-1.5 rounded-lg transition" title="Eliminar Propuesta">
+                                                <button type="button" wire:click="deleteQuote({{ $quote->id }})" wire:confirm="¿Estás seguro de que deseas eliminar la Propuesta #{{ $quote->id }}?" class="bg-white hover:bg-red-50 text-red-600 border border-gray-200 hover:border-red-300 text-xs font-bold px-2 py-1.5 rounded-lg transition ml-auto" title="Eliminar Propuesta">
                                                     🗑️
                                                 </button>
                                             </div>
+
+                                            @if($quote->status === 'rejected' && $quote->rejection_reason)
+                                                <div class="w-full p-2.5 rounded-lg bg-rose-100/80 border border-rose-300 text-xs text-rose-900">
+                                                    <strong>📝 Motivo del rechazo indicado por el cliente:</strong> {{ $quote->rejection_reason }}
+                                                </div>
+                                            @endif
+
+                                            @if(!empty($quote->client_notes))
+                                                <div class="w-full p-3 rounded-xl {{ $quote->status === 'accepted' ? 'bg-emerald-100/80 border border-emerald-300 text-emerald-900' : 'bg-amber-50 border border-amber-300 text-amber-950' }} text-xs leading-relaxed whitespace-pre-line">
+                                                    <strong class="block mb-1">💬 {{ $quote->status === 'accepted' ? 'Comentario / Notas del cliente:' : 'Notas del cliente en la solicitud:' }}</strong>{{ $quote->client_notes }}
+                                                </div>
+                                            @endif
+
+                                            @php
+                                                $linkedDocs = $event->invoices->where('quote_id', $quote->id);
+                                            @endphp
+                                            @if($linkedDocs->count() > 0)
+                                                <div class="flex flex-wrap items-center gap-1.5">
+                                                    @foreach($linkedDocs as $ldoc)
+                                                        <a href="{{ route('admin.invoice.pdf', $ldoc->id) }}" target="_blank" class="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-md border {{ $ldoc->isReceipt() ? 'bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100' : 'bg-blue-50 text-blue-800 border-blue-300 hover:bg-blue-100' }} transition">
+                                                            <span>{{ $ldoc->isReceipt() ? '🧾 Recibo' : '📄 Factura' }}:</span>
+                                                            <span>{{ $ldoc->invoice_number }}</span>
+                                                            <span class="text-[9px] opacity-75">({{ number_format($ldoc->total, 2) }}€)</span>
+                                                            <span>⬇️</span>
+                                                        </a>
+                                                    @endforeach
+                                                </div>
+                                            @endif
                                         </div>
 
                                         <!-- Desglose de Servicios -->
                                         @if($quote->items && $quote->items->count() > 0)
-                                            <div class="pt-2 border-t border-gray-200/80 text-[11px] text-gray-600 space-y-1">
+                                            <div class="pt-2.5 border-t border-gray-200/80 text-[11px] text-gray-600 space-y-1.5">
                                                 @foreach($quote->items as $item)
                                                     <div>
-                                                        <div class="flex justify-between">
-                                                            <span class="font-medium text-gray-800">&bull; {{ $item->concept ?: $item->service_name }} {{ $item->quantity > 1 ? '('.$item->quantity.'x)' : '' }}</span>
-                                                            <span class="font-mono font-bold text-gray-800">{{ number_format($item->subtotal ?: ($item->price * $item->quantity), 2) }} €</span>
+                                                        <div class="flex items-baseline justify-between gap-3">
+                                                            <span class="font-medium text-gray-800 leading-snug">&bull; {{ $item->concept ?: $item->service_name }} {{ $item->quantity > 1 ? '('.$item->quantity.'x)' : '' }}</span>
+                                                            <span class="font-mono font-bold text-gray-800 whitespace-nowrap shrink-0">{{ number_format($item->subtotal ?: ($item->price * $item->quantity), 2) }} €</span>
                                                         </div>
                                                         @if(!empty($item->description))
                                                             <div class="text-[10px] text-gray-500 pl-3 leading-snug">{{ $item->description }}</div>
