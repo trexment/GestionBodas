@@ -234,16 +234,122 @@ class MusicSearchService
     }
 
     /**
+     * Normaliza un texto musical (minúsculas, sin tildes ni paréntesis secundarios) para comparar coincidencias reales.
+     */
+    private static function normalizeMusicText(string $text, bool $stripParentheses = true): string
+    {
+        $t = mb_strtolower(trim($text), 'UTF-8');
+        if ($stripParentheses) {
+            $t = (string) preg_replace('/\s*[\(\[].*?[\)\]]/u', '', $t);
+        }
+        $t = strtr($t, [
+            'á' => 'a', 'à' => 'a', 'ä' => 'a', 'â' => 'a',
+            'é' => 'e', 'è' => 'e', 'ë' => 'e', 'ê' => 'e',
+            'í' => 'i', 'ì' => 'i', 'ï' => 'i', 'î' => 'i',
+            'ó' => 'o', 'ò' => 'o', 'ö' => 'o', 'ô' => 'o',
+            'ú' => 'u', 'ù' => 'u', 'ü' => 'u', 'û' => 'u',
+            'ñ' => 'n',
+        ]);
+        $t = (string) preg_replace('/\b(feat\.?|ft\.?|con|with)\b.*$/iu', '', $t);
+        $t = (string) preg_replace('/[^a-z0-9\s]/u', ' ', $t);
+        return trim((string) preg_replace('/\s+/u', ' ', $t));
+    }
+
+    /**
+     * Evalúa qué tan bien coincide un resultado candidato (de Spotify o iTunes) con el título y artista pedidos.
+     * Devuelve < 0 si NO es la canción solicitada (ej. distinto artista o karaoke/tributo no pedido).
+     */
+    public static function scoreTrackCandidate(string $reqTitle, string $reqArtist, string $candTitle, string $candArtist): int
+    {
+        $normReqTitle = self::normalizeMusicText($reqTitle, true);
+        $normReqArtist = self::normalizeMusicText($reqArtist, true);
+        $normCandTitle = self::normalizeMusicText($candTitle, true);
+        $normCandArtist = self::normalizeMusicText($candArtist, false);
+        $rawCandCombined = mb_strtolower($candTitle . ' ' . $candArtist, 'UTF-8');
+        $rawReqCombined = mb_strtolower($reqTitle . ' ' . $reqArtist, 'UTF-8');
+
+        if ($normReqTitle === '' || $normCandTitle === '') {
+            return -100;
+        }
+
+        // Penalizar versiones karaoke, tributo, ringtone o instrumentales si el usuario no las pidió explícitamente
+        $junkWords = ['karaoke', 'tribute', 'made famous', 'in the style of', 'ringtone', '8-bit', 'lullaby', 'cover version'];
+        foreach ($junkWords as $junk) {
+            if (str_contains($rawCandCombined, $junk) && !str_contains($rawReqCombined, $junk)) {
+                return -100;
+            }
+        }
+
+        $score = 0;
+
+        // 1. Evaluar Título
+        if ($normCandTitle === $normReqTitle) {
+            $score += 60;
+        } elseif (str_starts_with($normCandTitle, $normReqTitle) || str_starts_with($normReqTitle, $normCandTitle)) {
+            $score += 45;
+        } elseif (str_contains($normCandTitle, $normReqTitle) || str_contains($normReqTitle, $normCandTitle)) {
+            $score += 30;
+        } else {
+            similar_text($normReqTitle, $normCandTitle, $pctTitle);
+            if ($pctTitle >= 78) {
+                $score += 25;
+            } else {
+                return -50; // El título no se parece
+            }
+        }
+
+        // 2. Evaluar Artista (si el usuario indicó artista, DEBE coincidir)
+        if ($normReqArtist !== '') {
+            $artistParts = array_filter(preg_split('/\s*(?:,|&|\/|\by\b|\band\b|\bx\b)\s*/u', $normReqArtist) ?: [$normReqArtist]);
+            $artistMatched = false;
+
+            if ($normCandArtist === $normReqArtist || str_contains($normCandArtist, $normReqArtist) || str_contains($normReqArtist, $normCandArtist)) {
+                $score += 60;
+                $artistMatched = true;
+            } else {
+                foreach ($artistParts as $part) {
+                    $part = trim($part);
+                    if (strlen($part) >= 3 && str_contains($normCandArtist, $part)) {
+                        $score += 45;
+                        $artistMatched = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!$artistMatched) {
+                similar_text($normReqArtist, $normCandArtist, $pctArtist);
+                if ($pctArtist >= 75) {
+                    $score += 30;
+                } else {
+                    // Artista distinto al solicitado -> descartar para no poner otra canción con el mismo título
+                    return -80;
+                }
+            }
+        }
+
+        return $score;
+    }
+
+    /**
      * Automatically resolve and enrich metadata (Spotify URL, Apple Music URL, YouTube URL, Preview URL, Cover Art)
      * for a given title and artist.
      */
-    public static function resolveTrackMetadata(string $title, string $artist = ''): array
+    public static function resolveTrackMetadata(string $title, string $artist = '', bool $forceRefresh = false): array
     {
         $title = trim($title);
         $artist = trim($artist);
+
+        // Si el artista viene vacío pero el título viene con formato "Artista - Canción", separarlos
+        if ($artist === '' && str_contains($title, ' - ')) {
+            $parts = explode(' - ', $title, 2);
+            $artist = trim($parts[0]);
+            $title = trim($parts[1]);
+        }
+
         $query = trim($artist . ' ' . $title);
 
-        if (empty($query)) {
+        if (empty($query) || str_starts_with(mb_strtolower($title), 'estilos:')) {
             return [
                 'spotify_url' => null,
                 'apple_music_url' => null,
@@ -253,7 +359,11 @@ class MusicSearchService
             ];
         }
 
-        $cacheKey = 'track_meta_v2_' . md5(strtolower($query));
+        $cacheKey = 'track_meta_v3_' . md5(mb_strtolower($artist . '|' . $title));
+        if ($forceRefresh) {
+            Cache::forget($cacheKey);
+        }
+
         return Cache::remember($cacheKey, 86400, function () use ($query, $title, $artist) {
             $spotifyUrl = null;
             $appleMusicUrl = null;
@@ -262,7 +372,7 @@ class MusicSearchService
             $coverUrl = null;
             $isDriveLibrary = false;
 
-            // 0. Prioridad 1: Comprobar si la canción está en la Biblioteca General de Google Drive
+            // 0. Prioridad 1: Comprobar si la canción exacta está en la Biblioteca General de Google Drive
             $driveTrack = \App\Services\CloudMusicStorageService::findInDriveLibrary($title, $artist);
             if ($driveTrack && !empty($driveTrack->audio_url)) {
                 $previewUrl = $driveTrack->audio_url;
@@ -272,51 +382,94 @@ class MusicSearchService
                 $isDriveLibrary = true;
             }
 
-            // 1. Try search in Spotify API if available
-            $spotifyResults = self::searchSpotifyApi($query, 1);
-            if (!empty($spotifyResults[0])) {
-                $item = $spotifyResults[0];
-                if (!$spotifyUrl) $spotifyUrl = $item['spotify_url'] ?? null;
-                if (!$coverUrl) $coverUrl = $item['cover_url'] ?? null;
-                if (!$previewUrl) $previewUrl = $item['preview_url'] ?? null;
+            // 1. Buscar en Spotify API evaluando los mejores candidatos por coincidencia de Título + Artista
+            $cleanedTitle = trim((string) preg_replace('/\s*[\(\[].*?[\)\]]/u', '', $title)) ?: $title;
+            $spotifyQueries = array_values(array_unique(array_filter([
+                $artist !== '' ? "track:{$cleanedTitle} artist:{$artist}" : null,
+                $query,
+            ])));
+
+            $bestSpotifyItem = null;
+            $bestSpotifyScore = -1;
+
+            foreach ($spotifyQueries as $spQ) {
+                $spotifyResults = self::searchSpotifyApi($spQ, 8);
+                foreach ($spotifyResults as $cand) {
+                    $sc = self::scoreTrackCandidate($title, $artist, (string) ($cand['title'] ?? ''), (string) ($cand['artist'] ?? ''));
+                    if ($sc > $bestSpotifyScore) {
+                        $bestSpotifyScore = $sc;
+                        $bestSpotifyItem = $cand;
+                    }
+                }
+                if ($bestSpotifyScore >= 90) {
+                    break;
+                }
             }
 
-            // 2. Search in iTunes / Apple Music (Free, fast, universal)
-            $cleanedTitle = preg_replace('/\s*[\(\[].*?[\)\]]/', '', $title);
-            $searchTerms = array_unique(array_filter([
+            if ($bestSpotifyItem && $bestSpotifyScore >= 30) {
+                if (!$spotifyUrl) {
+                    $spotifyUrl = $bestSpotifyItem['spotify_url'] ?? null;
+                }
+                if (!$coverUrl) {
+                    $coverUrl = $bestSpotifyItem['cover_url'] ?? null;
+                }
+                if (!$previewUrl && !empty($bestSpotifyItem['preview_url'])) {
+                    $previewUrl = $bestSpotifyItem['preview_url'];
+                }
+            }
+
+            // 2. Buscar en iTunes / Apple Music verificando que Título y Artista correspondan a la canción pedida
+            $searchTerms = array_values(array_unique(array_filter([
                 $query,
                 trim($artist . ' ' . $cleanedTitle),
-                $title,
-            ]));
+                $artist === '' ? $cleanedTitle : null,
+            ])));
+
+            $bestItunesItem = null;
+            $bestItunesScore = -1;
 
             foreach ($searchTerms as $term) {
                 try {
                     $country = Setting::get('apple_music_country', 'es');
-                    $res = Http::timeout(3)->get('https://itunes.apple.com/search', [
+                    $res = Http::timeout(4)->get('https://itunes.apple.com/search', [
                         'term' => $term,
                         'media' => 'music',
                         'entity' => 'song',
                         'country' => $country,
-                        'limit' => 2,
+                        'limit' => 15,
                     ]);
 
                     if ($res->successful()) {
                         $json = $res->json();
-                        if (!empty($json['results'][0])) {
-                            $it = $json['results'][0];
-                            if (!$previewUrl && !empty($it['previewUrl'])) {
-                                $previewUrl = $it['previewUrl'];
+                        foreach (($json['results'] ?? []) as $it) {
+                            $sc = self::scoreTrackCandidate(
+                                $title,
+                                $artist,
+                                (string) ($it['trackName'] ?? ''),
+                                (string) ($it['artistName'] ?? '')
+                            );
+                            if ($sc > $bestItunesScore) {
+                                $bestItunesScore = $sc;
+                                $bestItunesItem = $it;
                             }
-                            if (!$appleMusicUrl && !empty($it['trackViewUrl'])) {
-                                $appleMusicUrl = $it['trackViewUrl'];
-                            }
-                            if (!$coverUrl && !empty($it['artworkUrl100'])) {
-                                $coverUrl = str_replace('100x100bb.jpg', '600x600bb.jpg', $it['artworkUrl100']);
-                            }
+                        }
+                        if ($bestItunesScore >= 90) {
                             break;
                         }
                     }
                 } catch (\Throwable $e) {}
+            }
+
+            if ($bestItunesItem && $bestItunesScore >= 30) {
+                if (!$previewUrl && !empty($bestItunesItem['previewUrl'])) {
+                    $previewUrl = $bestItunesItem['previewUrl'];
+                }
+                if (!$appleMusicUrl && !empty($bestItunesItem['trackViewUrl'])) {
+                    $appleMusicUrl = $bestItunesItem['trackViewUrl'];
+                }
+                if (!$coverUrl && !empty($bestItunesItem['artworkUrl100'])) {
+                    $coverUrl = str_replace('100x100bb.jpg', '600x600bb.jpg', $bestItunesItem['artworkUrl100']);
+                }
             }
 
             // 3. Search direct YouTube Video ID as secondary fallback for rare tracks

@@ -372,34 +372,40 @@ class CloudMusicStorageService
         $cleanTitle = trim($title);
         $cleanArtist = trim($artist ?? '');
 
-        if (empty($cleanTitle)) {
+        if ($cleanArtist === '' && str_contains($cleanTitle, ' - ')) {
+            $parts = explode(' - ', $cleanTitle, 2);
+            $cleanArtist = trim($parts[0]);
+            $cleanTitle = trim($parts[1]);
+        }
+
+        if (empty($cleanTitle) || str_starts_with(mb_strtolower($cleanTitle), 'estilos:')) {
             return null;
         }
 
-        // 1. Exact match on title and artist
+        // Si se especificó artista, exigir SIEMPRE que el artista coincida para no devolver otra canción con título parecido
         if (!empty($cleanArtist)) {
-            $track = \App\Models\Track::where('title', $cleanTitle)
-                ->where('artist', $cleanArtist)
+            // 1. Coincidencia exacta en título y artista
+            $track = \App\Models\Track::whereRaw('LOWER(title) = ?', [mb_strtolower($cleanTitle)])
+                ->whereRaw('LOWER(artist) = ?', [mb_strtolower($cleanArtist)])
                 ->first();
-            if ($track) return $track;
+            if ($track) {
+                return $track;
+            }
 
-            // 2. Fuzzy match title AND artist
-            $track = \App\Models\Track::where('title', 'LIKE', "%{$cleanTitle}%")
-                ->where('artist', 'LIKE', "%{$cleanArtist}%")
-                ->first();
-            if ($track) return $track;
+            // 2. Coincidencia parcial pero exigiendo AMBOS: título y artista
+            if (mb_strlen($cleanTitle) >= 3 && mb_strlen($cleanArtist) >= 3) {
+                $track = \App\Models\Track::where('title', 'LIKE', "%{$cleanTitle}%")
+                    ->where('artist', 'LIKE', "%{$cleanArtist}%")
+                    ->first();
+                if ($track) {
+                    return $track;
+                }
+            }
+
+            return null;
         }
 
-        // 3. Exact title match
-        $track = \App\Models\Track::where('title', $cleanTitle)->first();
-        if ($track) return $track;
-
-        // 4. Substring title match
-        if (mb_strlen($cleanTitle) >= 4) {
-            $track = \App\Models\Track::where('title', 'LIKE', "%{$cleanTitle}%")->first();
-            if ($track) return $track;
-        }
-
-        return null;
+        // Si NO se indicó artista, solo devolver si el título coincide exactamente (nunca por LIKE parcial)
+        return \App\Models\Track::whereRaw('LOWER(title) = ?', [mb_strtolower($cleanTitle)])->first();
     }
 }

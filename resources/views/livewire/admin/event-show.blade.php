@@ -3718,17 +3718,17 @@
                                 </span>
                             </button>
 
-                            <!-- Botón Auto-completar todos los enlaces del evento -->
+                            <!-- Botón Auto-completar y corregir todos los enlaces del evento -->
                             <button 
                                 type="button" 
                                 wire:click="autoResolveAllMusicLinks" 
                                 wire:loading.attr="disabled"
                                 class="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-extrabold shadow-md shadow-indigo-600/20 inline-flex items-center gap-1.5 transition cursor-pointer"
-                                title="Detecta y completa automáticamente los enlaces de Spotify, Apple Music y YouTube de todas las canciones del evento"
+                                title="Verifica artista y título de todas las canciones, corrige preescuchas equivocadas y actualiza enlaces de Spotify, Apple Music y YouTube"
                             >
-                                <span>🪄</span>
-                                <span wire:loading.remove wire:target="autoResolveAllMusicLinks">Auto-detectar Enlaces</span>
-                                <span wire:loading wire:target="autoResolveAllMusicLinks">Detectando...</span>
+                                <span>🔄</span>
+                                <span wire:loading.remove wire:target="autoResolveAllMusicLinks">Corregir y Sincronizar Canciones</span>
+                                <span wire:loading wire:target="autoResolveAllMusicLinks">Sincronizando...</span>
                             </button>
 
                             <!-- Botón Exportar Spotify -->
@@ -3956,80 +3956,137 @@
                                 @endif
 
                                 <!-- Reproductor y Enlaces Multimedia -->
-                                <div class="bg-gray-950/60 rounded-lg p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border border-gray-800">
-                                    <div class="flex-1 w-full sm:w-auto">
-                                        @if($song->audio_url)
-                                            <div class="flex items-center gap-2">
-                                                <audio controls class="w-full h-8 rounded" style="filter: invert(0.85);" preload="metadata">
-                                                    <source src="{{ $song->audio_url }}" type="audio/mpeg">
-                                                    <source src="{{ $song->audio_url }}" type="audio/mp4">
-                                                    <source src="{{ $song->audio_url }}" type="audio/aac">
-                                                    Tu navegador no soporta el reproductor de audio.
-                                                </audio>
-                                            </div>
-                                        @else
-                                            <div class="flex items-center justify-between gap-2 text-xs text-slate-400 italic">
-                                                <span>Sin audio local directo</span>
+                                @php
+                                    $spotifyTrackId = null;
+                                    if (!empty($song->spotify_url) && preg_match('/spotify\.com\/(?:intl-[a-z]+\/)?track\/([a-zA-Z0-9]+)/i', $song->spotify_url, $spMatch)) {
+                                        $spotifyTrackId = $spMatch[1];
+                                    }
+                                    $isFullDriveOrLocalMp3 = !empty($song->audio_file) && (
+                                        !str_starts_with($song->audio_file, 'http://') && !str_starts_with($song->audio_file, 'https://')
+                                        || str_contains($song->audio_file, 'drive.google.com')
+                                        || str_contains($song->audio_file, '/music/cloud-stream/')
+                                    );
+                                @endphp
+                                <div x-data="{ showSpotifyEmbed: false }" class="bg-gray-950/60 rounded-lg p-3 flex flex-col gap-2.5 border border-gray-800">
+                                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                                        <div class="flex-1 w-full sm:w-auto">
+                                            @if($song->audio_url)
+                                                <div class="flex flex-col gap-1">
+                                                    <div class="flex items-center gap-2">
+                                                        <audio controls class="w-full h-8 rounded" style="filter: invert(0.85);" preload="metadata">
+                                                            <source src="{{ $song->audio_url }}" type="audio/mpeg">
+                                                            <source src="{{ $song->audio_url }}" type="audio/mp4">
+                                                            <source src="{{ $song->audio_url }}" type="audio/aac">
+                                                            Tu navegador no soporta el reproductor de audio.
+                                                        </audio>
+                                                    </div>
+                                                    <div class="flex items-center justify-between gap-2 px-1">
+                                                        @if($isFullDriveOrLocalMp3)
+                                                            <span class="text-[10px] font-bold text-emerald-400">✅ MP3 Completo (Drive / Biblioteca Local)</span>
+                                                        @else
+                                                            <span class="text-[10px] text-amber-300/90" title="Las APIs externas (Spotify/Apple) solo permiten 30s en reproductores MP3 estándar. Usa el botón 'Escuchar completa en Spotify' o sube el MP3 a tu Drive.">⏱️ Preescucha 30s (API) · Para escuchar entera abre el reproductor Spotify 👉</span>
+                                                        @endif
+                                                        <button 
+                                                            type="button" 
+                                                            wire:click="autoResolveSongAudio({{ $song->id }})" 
+                                                            class="text-[10px] font-bold text-indigo-400 hover:text-indigo-300 underline cursor-pointer shrink-0"
+                                                            title="Volver a buscar verificando Artista + Título exacto"
+                                                        >
+                                                            🔄 Corregir audio/enlace
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            @else
+                                                <div class="flex items-center justify-between gap-2 text-xs text-slate-400 italic">
+                                                    <span>Sin preescucha MP3 directa</span>
+                                                    <button 
+                                                        type="button" 
+                                                        wire:click="autoResolveSongAudio({{ $song->id }})" 
+                                                        class="not-italic text-[11px] font-bold text-indigo-400 hover:text-indigo-300 underline cursor-pointer"
+                                                        title="Detectar y vincular audio y enlaces verificando artista y título"
+                                                    >
+                                                        🔄 Detectar / Corregir
+                                                    </button>
+                                                </div>
+                                            @endif
+                                        </div>
+
+                                        <!-- Botones de Enlace Rápido -->
+                                        <div class="flex flex-wrap items-center gap-2">
+                                            @if($spotifyTrackId)
                                                 <button 
-                                                    type="button" 
-                                                    wire:click="autoResolveSongAudio({{ $song->id }})" 
-                                                    class="not-italic text-[11px] font-bold text-indigo-400 hover:text-indigo-300 underline cursor-pointer"
-                                                    title="Detectar y vincular audio MP3 automáticamente"
+                                                    type="button"
+                                                    @click="showSpotifyEmbed = !showSpotifyEmbed"
+                                                    class="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-bold px-2.5 py-1.5 rounded-md inline-flex items-center gap-1.5 transition cursor-pointer"
+                                                    title="Despliega el reproductor oficial de Spotify para escuchar la canción completa"
                                                 >
-                                                    🪄 Detectar Audio
+                                                    <span>🎧</span>
+                                                    <span x-text="showSpotifyEmbed ? 'Ocultar Player Spotify' : 'Escuchar completa (Spotify)'">Escuchar completa (Spotify)</span>
                                                 </button>
-                                            </div>
-                                        @endif
+                                            @endif
+
+                                            @if($song->youtube_url)
+                                                <a href="{{ $song->youtube_url }}" target="_blank" class="bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-500/30 text-xs font-semibold px-2.5 py-1.5 rounded-md inline-flex items-center gap-1.5 transition">
+                                                    <span>▶️ YouTube</span>
+                                                </a>
+                                            @else
+                                                <a href="https://www.youtube.com/results?search_query={{ urlencode($song->title . ' ' . $song->artist) }}" target="_blank" class="bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs px-2.5 py-1.5 rounded-md inline-flex items-center gap-1.5 transition" title="Buscar automáticamente en YouTube">
+                                                    <span>🔍 YouTube</span>
+                                                </a>
+                                            @endif
+
+                                            @if($song->spotify_url)
+                                                <a href="{{ $song->spotify_url }}" target="_blank" class="bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 text-xs font-semibold px-2.5 py-1.5 rounded-md inline-flex items-center gap-1.5 transition">
+                                                    <span>🟢 Abrir App</span>
+                                                </a>
+                                            @else
+                                                <a href="https://open.spotify.com/search/{{ urlencode($song->title . ' ' . $song->artist) }}" target="_blank" class="bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs px-2.5 py-1.5 rounded-md inline-flex items-center gap-1.5 transition" title="Buscar automáticamente en Spotify">
+                                                    <span>🔍 Spotify</span>
+                                                </a>
+                                            @endif
+
+                                            @if($song->apple_music_url)
+                                                <a href="{{ $song->apple_music_url }}" target="_blank" class="bg-pink-600/20 hover:bg-pink-600/30 text-pink-400 border border-pink-500/30 text-xs font-semibold px-2.5 py-1.5 rounded-md inline-flex items-center gap-1.5 transition">
+                                                    <span>🍎 Apple Music</span>
+                                                </a>
+                                            @else
+                                                <a href="https://music.apple.com/search?term={{ urlencode($song->title . ' ' . $song->artist) }}" target="_blank" class="bg-pink-950/40 hover:bg-pink-900/40 text-pink-300 border border-pink-800/40 text-xs px-2.5 py-1.5 rounded-md inline-flex items-center gap-1.5 transition" title="Buscar automáticamente en Apple Music">
+                                                    <span>🍎 Apple Music</span>
+                                                </a>
+                                            @endif
+
+                                            @if($song->tidal_url)
+                                                <a href="{{ $song->tidal_url }}" target="_blank" class="bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-400 border border-cyan-500/30 text-xs font-semibold px-2.5 py-1.5 rounded-md inline-flex items-center gap-1.5 transition" title="Abrir en Tidal (Hi-Fi / Denon DJ)">
+                                                    <span>🌊 Tidal</span>
+                                                </a>
+                                            @else
+                                                <a href="https://listen.tidal.com/search?q={{ urlencode($song->title . ' ' . $song->artist) }}" target="_blank" class="bg-cyan-950/40 hover:bg-cyan-900/40 text-cyan-300 border border-cyan-800/40 text-xs px-2.5 py-1.5 rounded-md inline-flex items-center gap-1.5 transition" title="Buscar automáticamente en Tidal">
+                                                    <span>🌊 Tidal</span>
+                                                </a>
+                                            @endif
+
+                                            @if($song->audio_file)
+                                                <a href="{{ route('admin.music.download', $song->id) }}" target="_blank" class="bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 text-xs font-semibold px-2.5 py-1.5 rounded-md inline-flex items-center gap-1 transition" title="Descargar MP3 para DJ">
+                                                    <span>⬇️ MP3</span>
+                                                </a>
+                                            @endif
+                                        </div>
                                     </div>
 
-                                    <!-- Botones de Enlace Rápido -->
-                                    <div class="flex flex-wrap items-center gap-2">
-                                        @if($song->youtube_url)
-                                            <a href="{{ $song->youtube_url }}" target="_blank" class="bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-500/30 text-xs font-semibold px-2.5 py-1.5 rounded-md inline-flex items-center gap-1.5 transition">
-                                                <span>▶️ YouTube</span>
-                                            </a>
-                                        @else
-                                            <a href="https://www.youtube.com/results?search_query={{ urlencode($song->title . ' ' . $song->artist) }}" target="_blank" class="bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs px-2.5 py-1.5 rounded-md inline-flex items-center gap-1.5 transition" title="Buscar automáticamente en YouTube">
-                                                <span>🔍 YouTube</span>
-                                            </a>
-                                        @endif
-
-                                        @if($song->spotify_url)
-                                            <a href="{{ $song->spotify_url }}" target="_blank" class="bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 text-xs font-semibold px-2.5 py-1.5 rounded-md inline-flex items-center gap-1.5 transition">
-                                                <span>🟢 Spotify</span>
-                                            </a>
-                                        @else
-                                            <a href="https://open.spotify.com/search/{{ urlencode($song->title . ' ' . $song->artist) }}" target="_blank" class="bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs px-2.5 py-1.5 rounded-md inline-flex items-center gap-1.5 transition" title="Buscar automáticamente en Spotify">
-                                                <span>🔍 Spotify</span>
-                                            </a>
-                                        @endif
-
-                                        @if($song->apple_music_url)
-                                            <a href="{{ $song->apple_music_url }}" target="_blank" class="bg-pink-600/20 hover:bg-pink-600/30 text-pink-400 border border-pink-500/30 text-xs font-semibold px-2.5 py-1.5 rounded-md inline-flex items-center gap-1.5 transition">
-                                                <span>🍎 Apple Music</span>
-                                            </a>
-                                        @else
-                                            <a href="https://music.apple.com/search?term={{ urlencode($song->title . ' ' . $song->artist) }}" target="_blank" class="bg-pink-950/40 hover:bg-pink-900/40 text-pink-300 border border-pink-800/40 text-xs px-2.5 py-1.5 rounded-md inline-flex items-center gap-1.5 transition" title="Buscar automáticamente en Apple Music">
-                                                <span>🍎 Apple Music</span>
-                                            </a>
-                                        @endif
-
-                                        @if($song->tidal_url)
-                                            <a href="{{ $song->tidal_url }}" target="_blank" class="bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-400 border border-cyan-500/30 text-xs font-semibold px-2.5 py-1.5 rounded-md inline-flex items-center gap-1.5 transition" title="Abrir en Tidal (Hi-Fi / Denon DJ)">
-                                                <span>🌊 Tidal</span>
-                                            </a>
-                                        @else
-                                            <a href="https://listen.tidal.com/search?q={{ urlencode($song->title . ' ' . $song->artist) }}" target="_blank" class="bg-cyan-950/40 hover:bg-cyan-900/40 text-cyan-300 border border-cyan-800/40 text-xs px-2.5 py-1.5 rounded-md inline-flex items-center gap-1.5 transition" title="Buscar automáticamente en Tidal">
-                                                <span>🌊 Tidal</span>
-                                            </a>
-                                        @endif
-
-                                        @if($song->audio_file)
-                                            <a href="{{ route('admin.music.download', $song->id) }}" target="_blank" class="bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 text-xs font-semibold px-2.5 py-1.5 rounded-md inline-flex items-center gap-1 transition" title="Descargar MP3 para DJ">
-                                                <span>⬇️ MP3</span>
-                                            </a>
-                                        @endif
-                                    </div>
+                                    @if($spotifyTrackId)
+                                        <div x-show="showSpotifyEmbed" x-cloak class="pt-1">
+                                            <iframe 
+                                                style="border-radius:12px" 
+                                                src="https://open.spotify.com/embed/track/{{ $spotifyTrackId }}?utm_source=generator&theme=0" 
+                                                width="100%" 
+                                                height="80" 
+                                                frameBorder="0" 
+                                                allowfullscreen="" 
+                                                allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" 
+                                                loading="lazy">
+                                            </iframe>
+                                        </div>
+                                    @endif
                                 </div>
 
                             </div>

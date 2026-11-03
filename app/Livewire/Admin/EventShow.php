@@ -2081,55 +2081,60 @@ class EventShow extends Component
         $updatedCount = 0;
 
         foreach ($songs as $song) {
-            $needsSpotify = empty($song->spotify_url) || str_contains($song->spotify_url, 'open.spotify.com/search/');
-            $needsApple = empty($song->apple_music_url) || str_contains($song->apple_music_url, 'music.apple.com/es/search');
-            $needsYoutube = empty($song->youtube_url) || str_contains($song->youtube_url, 'youtube.com/results');
-            $needsAudio = empty($song->audio_file);
+            $meta = \App\Services\MusicSearchService::resolveTrackMetadata($song->title, $song->artist ?? '', true);
 
-            if ($needsSpotify || $needsApple || $needsYoutube || $needsAudio) {
-                $meta = \App\Services\MusicSearchService::resolveTrackMetadata($song->title, $song->artist ?? '');
-                
-                $updates = [];
-                if ($needsSpotify && !empty($meta['spotify_url'])) {
-                    $updates['spotify_url'] = $meta['spotify_url'];
-                }
-                if ($needsApple && !empty($meta['apple_music_url'])) {
-                    $updates['apple_music_url'] = $meta['apple_music_url'];
-                }
-                if ($needsYoutube && !empty($meta['youtube_url'])) {
-                    $updates['youtube_url'] = $meta['youtube_url'];
-                }
-                if ($needsAudio && !empty($meta['preview_url'])) {
-                    $updates['audio_file'] = $meta['preview_url'];
-                }
+            $updates = [];
+            if (!empty($meta['spotify_url'])) {
+                $updates['spotify_url'] = $meta['spotify_url'];
+            }
+            if (!empty($meta['apple_music_url'])) {
+                $updates['apple_music_url'] = $meta['apple_music_url'];
+            }
+            if (!empty($meta['youtube_url'])) {
+                $updates['youtube_url'] = $meta['youtube_url'];
+            }
+            if (!empty($meta['tidal_url'])) {
+                $updates['tidal_url'] = $meta['tidal_url'];
+            }
 
-                if (!empty($updates)) {
-                    $song->update($updates);
-                    $updatedCount++;
-                }
+            // Si no tiene archivo local subido manualmente, actualizamos o limpiamos la previsualización remota
+            $isRemoteOrEmptyAudio = empty($song->audio_file) || str_starts_with($song->audio_file, 'http://') || str_starts_with($song->audio_file, 'https://');
+            if ($isRemoteOrEmptyAudio) {
+                $updates['audio_file'] = $meta['preview_url'] ?? null;
+            }
+
+            if (!empty($updates)) {
+                $song->update($updates);
+                $updatedCount++;
             }
         }
 
         $this->event->load('musicRequests');
-        session()->flash('music_message', "✨ Se han completado y actualizado automáticamente los audios y enlaces de {$updatedCount} canciones.");
+        session()->flash('music_message', "✨ Se han verificado y corregido los enlaces y preescuchas de {$updatedCount} canciones.");
     }
 
     public function autoResolveSongAudio($songId)
     {
         $song = $this->event->musicRequests()->findOrFail($songId);
-        $meta = \App\Services\MusicSearchService::resolveTrackMetadata($song->title, $song->artist ?? '');
+        $meta = \App\Services\MusicSearchService::resolveTrackMetadata($song->title, $song->artist ?? '', true);
         $updates = [];
-        if (!empty($meta['spotify_url']) && empty($song->spotify_url)) {
+
+        if (!empty($meta['spotify_url'])) {
             $updates['spotify_url'] = $meta['spotify_url'];
         }
-        if (!empty($meta['apple_music_url']) && empty($song->apple_music_url)) {
+        if (!empty($meta['apple_music_url'])) {
             $updates['apple_music_url'] = $meta['apple_music_url'];
         }
-        if (!empty($meta['youtube_url']) && empty($song->youtube_url)) {
+        if (!empty($meta['youtube_url'])) {
             $updates['youtube_url'] = $meta['youtube_url'];
         }
-        if (!empty($meta['preview_url'])) {
-            $updates['audio_file'] = $meta['preview_url'];
+        if (!empty($meta['tidal_url'])) {
+            $updates['tidal_url'] = $meta['tidal_url'];
+        }
+
+        $isRemoteOrEmptyAudio = empty($song->audio_file) || str_starts_with($song->audio_file, 'http://') || str_starts_with($song->audio_file, 'https://');
+        if ($isRemoteOrEmptyAudio) {
+            $updates['audio_file'] = $meta['preview_url'] ?? null;
         }
 
         if (!empty($updates)) {
@@ -2137,7 +2142,7 @@ class EventShow extends Component
         }
 
         $this->event->load('musicRequests');
-        session()->flash('music_message', "✨ Audio y enlaces localizados para '{$song->title}'.");
+        session()->flash('music_message', "✨ Audio y enlaces de Spotify/Apple Music recalculados y corregidos para '{$song->title}'.");
     }
 
     public function openCloudImportModal()
