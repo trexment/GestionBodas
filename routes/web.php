@@ -88,6 +88,11 @@ Route::get('/dossier-tarifas/presentacion/{brand?}', [PdfController::class, 'vie
     ->where('brand', 'nunez_and_son|javnx')
     ->name('public.tariff-dossier.presentation');
 
+// Pantalla Independiente para TV / Monitor de Stand (Feria de Novios - 21" Full Screen con todos los QRs)
+Route::get('/stand-feria/{brand?}', [PdfController::class, 'viewStandTvScreen'])
+    ->where('brand', 'nunez_and_son|javnx')
+    ->name('public.stand-tv');
+
 // Manual Oficial de Uso (Web Interactiva & Descarga PDF)
 Route::get('/manual', function () {
     $htmlPath = base_path('docs/MANUAL_DE_USO.html');

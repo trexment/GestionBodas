@@ -39,6 +39,18 @@
                     <span>💾</span> Guardar Cambios
                 </button>
 
+                <!-- Botón Pantalla TV 21" Independiente -->
+                <a
+                    href="{{ route('public.stand-tv', ['brand' => $config['brand'] ?? 'nunez_and_son']) }}"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onclick="window.open(this.href, 'StandTVWindow', 'width=1920,height=1080,menubar=no,toolbar=no,location=no,status=no,resizable=yes,scrollbars=yes'); return false;"
+                    title="Abrir pantalla visual independiente con todos los QRs para la tele de 21 pulgadas"
+                    class="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black shadow-md transition flex items-center gap-1.5"
+                >
+                    <span>📺</span> Pantalla TV 21&quot; (QRs)
+                </a>
+
                 <!-- Botón Compartir en Videollamada -->
                 <a
                     href="{{ route('admin.tariff-dossier.presentation', ['brand' => $config['brand'] ?? 'nunez_and_son']) }}"
@@ -133,6 +145,15 @@
                     >
                         <span>📱</span> Mostrar QR Gigante en Pantalla
                     </button>
+                    <a
+                        href="{{ route('public.stand-tv', ['brand' => $brandKeyCurrent]) }}"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onclick="window.open(this.href, 'StandTVWindow', 'width=1920,height=1080,menubar=no,toolbar=no,location=no,status=no,resizable=yes,scrollbars=yes'); return false;"
+                        class="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 border border-indigo-400/50 text-white text-xs font-black shadow-md flex items-center gap-1.5"
+                    >
+                        <span>📺</span> Abrir Pantalla TV 21&quot; (Ventana Independiente)
+                    </a>
                 </div>
 
                 <button

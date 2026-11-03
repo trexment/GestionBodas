@@ -268,6 +268,104 @@ class PdfController extends Controller
     }
 
     /**
+     * Pantalla visual independiente a ventana completa para TV / Monitor de Stand (ej. 21" en Feria de Novios),
+     * con los códigos QR de cada servicio/acción listos para escanear desde el móvil.
+     */
+    public function viewStandTvScreen(Request $request, ?string $brand = null)
+    {
+        $config = GeneralTariffDossierService::getConfig();
+
+        $requestedBrand = $brand ?: $request->query('brand');
+        if ($requestedBrand && in_array($requestedBrand, ['nunez_and_son', 'javnx'], true)) {
+            $config['brand'] = $requestedBrand;
+        }
+        if ($request->has('fair')) {
+            $config['fair_mode']['enabled'] = $request->boolean('fair');
+        }
+
+        $activeBrand = $config['brand'] ?? 'nunez_and_son';
+        $brandInfo = Setting::getBrandInfo($activeBrand);
+        $fairData = $config['fair_mode'] ?? GeneralTariffDossierService::getDefaultFairModeConfig();
+        $fairEnabled = !empty($fairData['enabled']);
+        $fairName = trim((string) ($fairData['fair_name'] ?? 'Feria de Novios')) ?: 'Feria de Novios';
+
+        $packsComputed = [];
+        $maxDiscount = 0;
+        foreach (($config['packs'] ?? []) as $idx => $pack) {
+            $calc = GeneralTariffDossierService::computePackFairPricing($pack, (int) $idx, $config, $fairEnabled);
+            if ($calc['discount_amount'] > $maxDiscount) {
+                $maxDiscount = $calc['discount_amount'];
+            }
+            $packsComputed[] = array_merge($pack, [
+                'pricing' => $calc,
+            ]);
+        }
+
+        $rawPhone = preg_replace('/\D+/', '', (string) ($config['contact_whatsapp'] ?? '34690878916')) ?: '34690878916';
+        if (strlen($rawPhone) === 9) {
+            $rawPhone = '34' . $rawPhone;
+        }
+        $waText = "¡Hola! Os estamos viendo en el stand de {$fairName} y nos gustaría recibir información y consultar disponibilidad para nuestra boda.";
+        $whatsappUrl = "https://wa.me/{$rawPhone}?text=" . rawurlencode($waText);
+
+        $qrItems = [
+            [
+                'key' => 'dossier_pdf',
+                'step' => 'OPCIÓN 1 · DESCARGA DIRECTA',
+                'icon' => '📕',
+                'title' => 'Dossier de Bodas ' . ($config['tariff_year'] ?? '2027') . ' (PDF)',
+                'subtitle' => $fairEnabled
+                    ? 'Descarga al instante nuestro dossier completo con los Packs, equipos y el Descuento Especial de Feria incluido.'
+                    : 'Descarga en tu móvil el PDF completo con nuestros Packs de DJ, sonido, iluminación, efectos y tarifas.',
+                'badge' => '📥 Descarga PDF inmediata en tu móvil',
+                'accent' => 'amber',
+                'url' => route('public.tariff-dossier.pdf', ['brand' => $activeBrand]),
+            ],
+            [
+                'key' => 'quote_calculator',
+                'step' => 'OPCIÓN 2 · A MEDIDA',
+                'icon' => '✨',
+                'title' => 'Configura Vuestra Boda Online',
+                'subtitle' => 'Marca qué momentos queréis cubrir (Ceremonia, Cóctel, Banquete, Fiesta DJ, Fotomatón, 360º o Mesa Dulce) en 1 minuto.',
+                'badge' => $fairEnabled ? '🎪 Aplica Promo Feria automáticamente' : '💍 Solicitud rápida en 1 minuto',
+                'accent' => 'emerald',
+                'url' => route('guest.quote'),
+            ],
+            [
+                'key' => 'whatsapp_direct',
+                'step' => 'OPCIÓN 3 · CONTACTO DIRECTO',
+                'icon' => '💬',
+                'title' => 'Háblanos por WhatsApp',
+                'subtitle' => 'Abre conversación directa con nosotros para consultar si vuestra fecha está libre y guardar nuestro contacto.',
+                'badge' => '📲 WhatsApp directo · ' . ($config['contact_whatsapp'] ?? '+34 690 87 89 16'),
+                'accent' => 'green',
+                'url' => $whatsappUrl,
+            ],
+            [
+                'key' => 'interactive_viewer',
+                'step' => 'OPCIÓN 4 · VISOR INTERACTIVO',
+                'icon' => '🖥️',
+                'title' => 'Ver Dossier Online (Sin Descargar)',
+                'subtitle' => 'Hojea las páginas del dossier directamente en tu navegador con fotografías reales y opiniones de parejas.',
+                'badge' => '🌐 Visor Web Interactivo',
+                'accent' => 'indigo',
+                'url' => route('public.tariff-dossier.presentation', ['brand' => $activeBrand]),
+            ],
+        ];
+
+        return view('pdf.stand-tv-screen', [
+            'config' => $config,
+            'brandInfo' => $brandInfo,
+            'fairData' => $fairData,
+            'fairEnabled' => $fairEnabled,
+            'fairName' => $fairName,
+            'packsComputed' => $packsComputed,
+            'maxDiscount' => $maxDiscount,
+            'qrItems' => $qrItems,
+        ]);
+    }
+
+    /**
      * Genera y descarga el Cartel / Tarjetas de Mesa en PDF vectorial para el Álbum de Fotos QR del evento,
      * con iniciales de los novios en el centro del QR, frases llamativas y formatos 1xA4, 2xA5 o 4xA6.
      */

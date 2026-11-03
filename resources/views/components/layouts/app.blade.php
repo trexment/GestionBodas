@@ -702,6 +702,21 @@
                     <span class="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-black">QR</span>
                 </a>
 
+                <a
+                    href="{{ route('public.stand-tv') }}"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onclick="window.open(this.href, 'StandTVWindow', 'width=1920,height=1080,menubar=no,toolbar=no,location=no,status=no,resizable=yes,scrollbars=yes'); return false;"
+                    title="Abrir Pantalla Visual de QRs en ventana independiente para Tele de 21 pulgadas"
+                    class="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition text-amber-300 hover:text-white hover:bg-slate-800/80 border border-amber-500/30"
+                >
+                    <span class="flex items-center gap-3">
+                        <span class="text-base">📺</span>
+                        <span>Pantalla TV 21&quot; (QRs)</span>
+                    </span>
+                    <span class="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-black">TV ↗</span>
+                </a>
+
                 <!-- 8. CONFIGURACIÓN & INTEGRACIONES -->
                 <a href="{{ route('admin.settings') }}" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition {{ request()->routeIs('admin.settings') ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30' : 'text-slate-300 hover:text-white hover:bg-slate-800/80' }}">
                     <span class="text-base">⚙️</span>
@@ -927,6 +942,21 @@
                                 </div>
                             </div>
                         </div>
+                        @endif
+
+                        @if(Auth::check() && Auth::user()->role === 'admin')
+                        <!-- BOTÓN PANTALLA TV 21" QRs DE STAND (VENTANA INDEPENDIENTE) -->
+                        <a
+                            href="{{ route('public.stand-tv') }}"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onclick="window.open(this.href, 'StandTVWindow', 'width=1920,height=1080,menubar=no,toolbar=no,location=no,status=no,resizable=yes,scrollbars=yes'); return false;"
+                            title="Abrir Pantalla Independiente con los QRs para la Tele del Stand (21 pulgadas)"
+                            class="px-2.5 sm:px-3 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 dark:text-amber-300 border border-amber-400/50 font-extrabold text-xs flex items-center gap-1.5 transition cursor-pointer shadow-2xs"
+                        >
+                            <span>📺</span>
+                            <span class="hidden md:inline">Pantalla TV QR</span>
+                        </a>
                         @endif
 
                         <!-- BOTÓN INSTALAR APP / GUÍA MÓVIL & TABLET -->
