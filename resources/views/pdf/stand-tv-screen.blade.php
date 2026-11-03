@@ -9,16 +9,17 @@
         $logoUrl = \App\Models\Setting::getLogoUrl();
         $faviconUrl = \App\Models\Setting::getFaviconUrl();
         $tariffYear = $config['tariff_year'] ?? '2027';
-        $phoneDisplay = $config['contact_whatsapp'] ?? '+34 690 87 89 16';
+        $phoneMiguelHeader = $config['phone_miguel'] ?? '+34 674 37 89 93';
+        $phoneFranHeader = \App\Models\Setting::fixLegacyTypoPhone($config['phone_fran'] ?? '+34 622 63 47 90');
+        $phoneDisplay = "Miguel: {$phoneMiguelHeader} · Fran: {$phoneFranHeader}";
         $igDisplay = $config['contact_instagram'] ?? '@nunezandson';
-        $webDisplay = $config['contact_web'] ?? 'www.nunezandson.com';
+        $webDisplay = $config['contact_website_nunez'] ?? 'www.nunezandson.com';
     @endphp
     <title>Pantalla Stand TV · {{ $companyName }} ({{ $fairName }})</title>
     <link rel="icon" type="image/svg+xml" href="{{ $faviconUrl }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,800;1,600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
     <style>
         :root {
@@ -365,17 +366,37 @@
         .accent-green .qr-box-wrapper { outline: 3px solid rgba(34, 197, 94, 0.65); }
         .accent-indigo .qr-box-wrapper { outline: 3px solid rgba(99, 102, 241, 0.65); }
 
-        .qr-canvas-target img,
-        .qr-canvas-target canvas {
-            display: block !important;
-            width: clamp(145px, 21vh, 220px) !important;
-            height: clamp(145px, 21vh, 220px) !important;
+        .qr-canvas-target {
+            width: clamp(160px, 23vh, 235px);
+            height: clamp(160px, 23vh, 235px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
-        .cols-3 .qr-canvas-target img,
-        .cols-3 .qr-canvas-target canvas {
-            width: clamp(160px, 23.5vh, 245px) !important;
-            height: clamp(160px, 23.5vh, 245px) !important;
+        .qr-canvas-target svg {
+            display: block !important;
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+        .cols-3 .qr-canvas-target {
+            width: clamp(175px, 25vh, 260px);
+            height: clamp(175px, 25vh, 260px);
+        }
+
+        #spotQrTarget {
+            width: clamp(240px, 42vh, 360px);
+            height: clamp(240px, 42vh, 360px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #spotQrTarget svg {
+            display: block !important;
+            width: 100% !important;
+            height: 100% !important;
         }
 
         .qr-scan-cta {
@@ -662,6 +683,7 @@
                 <div class="qr-card accent-{{ $item['accent'] }}"
                      id="qrCard-{{ $idx }}"
                      data-idx="{{ $idx }}"
+                     data-key="{{ $item['key'] }}"
                      data-title="{{ $item['icon'] }} {{ $item['title'] }}"
                      data-subtitle="{{ $item['subtitle'] }}"
                      data-badge="{{ $item['badge'] }}"
@@ -674,13 +696,15 @@
                     </div>
 
                     <div class="qr-box-wrapper">
-                        <div id="qrTarget-{{ $idx }}" class="qr-canvas-target" data-url="{{ $item['url'] }}"></div>
+                        <div id="qrTarget-{{ $idx }}" class="qr-canvas-target" data-url="{{ $item['url'] }}">
+                            {!! $item['svg'] !!}
+                        </div>
                     </div>
 
                     <div style="width: 100%;">
                         <div class="qr-scan-cta">
                             <span>📱</span>
-                            <span>{{ $item['badge'] }}</span>
+                            <span id="qrBadge-{{ $idx }}">{{ $item['badge'] }}</span>
                         </div>
                         <div class="qr-zoom-hint">🔍 Toca esta tarjeta para ampliar el QR a pantalla completa</div>
                     </div>
@@ -755,6 +779,9 @@
         <button type="button" class="tv-ctrl-btn" onclick="toggleFullScreen()" id="btnFullscreen" title="Poner en Pantalla Completa en la TV (F11)">
             <span>⛶</span> <span id="lblFullscreen">Pantalla Completa</span>
         </button>
+        <button type="button" class="tv-ctrl-btn" onclick="toggleWaContact()" id="btnWaContact" title="Cambiar el teléfono del QR de WhatsApp entre Miguel y Fran">
+            <span>📲</span> <span id="lblWaContact">WA: Miguel</span>
+        </button>
         <button type="button" class="tv-ctrl-btn" onclick="toggleQrColumns()" id="btnCols" title="Alternar entre 3 QRs gigantes o los 4 QRs">
             <span>🔢</span> <span id="lblCols">Ver 3 QRs Gigantes</span>
         </button>
@@ -767,6 +794,11 @@
     </div>
 
     <script>
+        const waProfiles = @json($waProfiles ?? []);
+        let currentWaKey = localStorage.getItem('stand_tv_wa_contact') || (waProfiles.default || 'miguel');
+        if (!waProfiles[currentWaKey]) {
+            currentWaKey = 'miguel';
+        }
         let currentCols = parseInt(localStorage.getItem('stand_tv_cols') || '4', 10);
         let showPacksFooter = localStorage.getItem('stand_tv_footer') === 'packs';
         let autoPulseEnabled = localStorage.getItem('stand_tv_autopulse') !== '0';
@@ -774,22 +806,35 @@
         let pulseTimer = null;
         let hideDockTimer = null;
 
-        function renderAllQrs() {
-            const targets = document.querySelectorAll('.qr-canvas-target');
-            targets.forEach((el) => {
-                const url = el.getAttribute('data-url');
-                el.innerHTML = '';
-                if (window.QRCode && url) {
-                    new QRCode(el, {
-                        text: url,
-                        width: 240,
-                        height: 240,
-                        colorDark: '#020617',
-                        colorLight: '#ffffff',
-                        correctLevel: QRCode.CorrectLevel.M
-                    });
-                }
-            });
+        function applyWaProfile() {
+            const prof = waProfiles[currentWaKey];
+            if (!prof) return;
+            const card = document.getElementById('qrCard-2');
+            const target = document.getElementById('qrTarget-2');
+            const badge = document.getElementById('qrBadge-2');
+            const lblBtn = document.getElementById('lblWaContact');
+            const fullBadge = '📲 WhatsApp directo · ' + prof.label;
+
+            if (target && prof.svg) {
+                target.innerHTML = prof.svg;
+                target.setAttribute('data-url', prof.url);
+            }
+            if (badge) {
+                badge.textContent = fullBadge;
+            }
+            if (card) {
+                card.setAttribute('data-badge', fullBadge);
+                card.setAttribute('data-url', prof.url);
+            }
+            if (lblBtn) {
+                lblBtn.textContent = 'WA: ' + prof.label;
+            }
+        }
+
+        function toggleWaContact() {
+            currentWaKey = currentWaKey === 'miguel' ? 'fran' : 'miguel';
+            localStorage.setItem('stand_tv_wa_contact', currentWaKey);
+            applyWaProfile();
         }
 
         function applyLayoutState() {
@@ -879,27 +924,18 @@
         }
 
         function openSpotlight(cardEl) {
+            const idx = cardEl.getAttribute('data-idx');
             const title = cardEl.getAttribute('data-title');
             const sub = cardEl.getAttribute('data-subtitle');
             const badge = cardEl.getAttribute('data-badge');
-            const url = cardEl.getAttribute('data-url');
+            const sourceQr = document.getElementById('qrTarget-' + idx);
 
             document.getElementById('spotTitle').textContent = title;
             document.getElementById('spotSub').textContent = sub;
             document.getElementById('spotBadge').textContent = badge;
 
             const qrContainer = document.getElementById('spotQrTarget');
-            qrContainer.innerHTML = '';
-            if (window.QRCode && url) {
-                new QRCode(qrContainer, {
-                    text: url,
-                    width: 340,
-                    height: 340,
-                    colorDark: '#020617',
-                    colorLight: '#ffffff',
-                    correctLevel: QRCode.CorrectLevel.M
-                });
-            }
+            qrContainer.innerHTML = sourceQr ? sourceQr.innerHTML : '';
 
             document.getElementById('spotlightModal').classList.add('open');
         }
@@ -949,7 +985,7 @@
         window.addEventListener('touchstart', resetDockTimer);
 
         window.addEventListener('DOMContentLoaded', () => {
-            renderAllQrs();
+            applyWaProfile();
             applyLayoutState();
             resetDockTimer();
         });

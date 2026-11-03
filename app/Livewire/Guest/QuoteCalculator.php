@@ -1652,7 +1652,8 @@ class QuoteCalculator extends Component
 
     public function render()
     {
-        $fairConfig = Setting::getFairModeConfig();
+        $dossierCfg = \App\Services\GeneralTariffDossierService::getConfig();
+        $fairConfig = $dossierCfg['fair_mode'] ?? [];
         return view('livewire.guest.quote-calculator', [
             'fairModeActive' => !empty($fairConfig['enabled']),
             'fairName' => $fairConfig['fair_name'] ?? 'Feria de Novios',

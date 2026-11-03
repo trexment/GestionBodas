@@ -301,12 +301,41 @@ class PdfController extends Controller
             ]);
         }
 
-        $rawPhone = preg_replace('/\D+/', '', (string) ($config['contact_whatsapp'] ?? '34690878916')) ?: '34690878916';
-        if (strlen($rawPhone) === 9) {
-            $rawPhone = '34' . $rawPhone;
+        $phoneMiguelDisplay = trim((string) ($config['phone_miguel'] ?? '+34 674 37 89 93')) ?: '+34 674 37 89 93';
+        $phoneFranDisplay = Setting::fixLegacyTypoPhone(trim((string) ($config['phone_fran'] ?? '+34 622 63 47 90')) ?: '+34 622 63 47 90');
+
+        $rawMiguel = preg_replace('/\D+/', '', $phoneMiguelDisplay) ?: '34674378993';
+        if (strlen($rawMiguel) === 9) {
+            $rawMiguel = '34' . $rawMiguel;
         }
+
+        $rawFran = preg_replace('/\D+/', '', $phoneFranDisplay) ?: '34622634790';
+        if (strlen($rawFran) === 9) {
+            $rawFran = '34' . $rawFran;
+        }
+
+        $defaultWaContact = ($activeBrand === 'javnx') ? 'fran' : ($request->query('wa', $fairData['whatsapp_contact'] ?? 'miguel'));
+        if (!in_array($defaultWaContact, ['miguel', 'fran'], true)) {
+            $defaultWaContact = 'miguel';
+        }
+
         $waText = "¡Hola! Os estamos viendo en el stand de {$fairName} y nos gustaría recibir información y consultar disponibilidad para nuestra boda.";
-        $whatsappUrl = "https://wa.me/{$rawPhone}?text=" . rawurlencode($waText);
+        $waUrlMiguel = "https://wa.me/{$rawMiguel}?text=" . rawurlencode($waText);
+        $waUrlFran = "https://wa.me/{$rawFran}?text=" . rawurlencode($waText);
+
+        $activeWaUrl = $defaultWaContact === 'fran' ? $waUrlFran : $waUrlMiguel;
+        $activeWaPhoneDisplay = $defaultWaContact === 'fran' ? $phoneFranDisplay : $phoneMiguelDisplay;
+        $activeWaLabel = $defaultWaContact === 'fran' ? "Fran · {$phoneFranDisplay}" : "Miguel · {$phoneMiguelDisplay}";
+
+        $pdfUrl = route('public.tariff-dossier.pdf', ['brand' => $activeBrand]);
+        $quoteUrl = route('guest.quote');
+        $viewerUrl = route('public.tariff-dossier.presentation', ['brand' => $activeBrand]);
+
+        $svgQrPdf = QrPosterPdfService::toStylizedSvg($pdfUrl, ['style' => 'clasico', 'initials' => '']);
+        $svgQrQuote = QrPosterPdfService::toStylizedSvg($quoteUrl, ['style' => 'clasico', 'initials' => '']);
+        $svgQrWaMiguel = QrPosterPdfService::toStylizedSvg($waUrlMiguel, ['style' => 'clasico', 'initials' => '']);
+        $svgQrWaFran = QrPosterPdfService::toStylizedSvg($waUrlFran, ['style' => 'clasico', 'initials' => '']);
+        $svgQrViewer = QrPosterPdfService::toStylizedSvg($viewerUrl, ['style' => 'clasico', 'initials' => '']);
 
         $qrItems = [
             [
@@ -319,7 +348,8 @@ class PdfController extends Controller
                     : 'Descarga en tu móvil el PDF completo con nuestros Packs de DJ, sonido, iluminación, efectos y tarifas.',
                 'badge' => '📥 Descarga PDF inmediata en tu móvil',
                 'accent' => 'amber',
-                'url' => route('public.tariff-dossier.pdf', ['brand' => $activeBrand]),
+                'url' => $pdfUrl,
+                'svg' => $svgQrPdf,
             ],
             [
                 'key' => 'quote_calculator',
@@ -329,7 +359,8 @@ class PdfController extends Controller
                 'subtitle' => 'Marca qué momentos queréis cubrir (Ceremonia, Cóctel, Banquete, Fiesta DJ, Fotomatón, 360º o Mesa Dulce) en 1 minuto.',
                 'badge' => $fairEnabled ? '🎪 Aplica Promo Feria automáticamente' : '💍 Solicitud rápida en 1 minuto',
                 'accent' => 'emerald',
-                'url' => route('guest.quote'),
+                'url' => $quoteUrl,
+                'svg' => $svgQrQuote,
             ],
             [
                 'key' => 'whatsapp_direct',
@@ -337,9 +368,10 @@ class PdfController extends Controller
                 'icon' => '💬',
                 'title' => 'Háblanos por WhatsApp',
                 'subtitle' => 'Abre conversación directa con nosotros para consultar si vuestra fecha está libre y guardar nuestro contacto.',
-                'badge' => '📲 WhatsApp directo · ' . ($config['contact_whatsapp'] ?? '+34 690 87 89 16'),
+                'badge' => '📲 WhatsApp directo · ' . $activeWaLabel,
                 'accent' => 'green',
-                'url' => $whatsappUrl,
+                'url' => $activeWaUrl,
+                'svg' => $defaultWaContact === 'fran' ? $svgQrWaFran : $svgQrWaMiguel,
             ],
             [
                 'key' => 'interactive_viewer',
@@ -349,7 +381,8 @@ class PdfController extends Controller
                 'subtitle' => 'Hojea las páginas del dossier directamente en tu navegador con fotografías reales y opiniones de parejas.',
                 'badge' => '🌐 Visor Web Interactivo',
                 'accent' => 'indigo',
-                'url' => route('public.tariff-dossier.presentation', ['brand' => $activeBrand]),
+                'url' => $viewerUrl,
+                'svg' => $svgQrViewer,
             ],
         ];
 
@@ -362,6 +395,21 @@ class PdfController extends Controller
             'packsComputed' => $packsComputed,
             'maxDiscount' => $maxDiscount,
             'qrItems' => $qrItems,
+            'waProfiles' => [
+                'default' => $defaultWaContact,
+                'miguel' => [
+                    'label' => "Miguel · {$phoneMiguelDisplay}",
+                    'phone' => $phoneMiguelDisplay,
+                    'url' => $waUrlMiguel,
+                    'svg' => $svgQrWaMiguel,
+                ],
+                'fran' => [
+                    'label' => "Fran · {$phoneFranDisplay}",
+                    'phone' => $phoneFranDisplay,
+                    'url' => $waUrlFran,
+                    'svg' => $svgQrWaFran,
+                ],
+            ],
         ]);
     }
 

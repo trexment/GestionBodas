@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Modo Presentación (Videollamada) — Dossier de Tarifas {{ $config['tariff_year'] ?? '2027' }}</title>
+    @php
+        $isAdminPresentation = request()->routeIs('admin.*') && auth()->check() && auth()->user()->role === 'admin';
+    @endphp
+    <title>{{ $isAdminPresentation ? 'Modo Presentación — ' : 'Dossier Interactivo — ' }}{{ $brandInfo['name'] ?? 'Núñez and Son' }} (Tarifas {{ $config['tariff_year'] ?? '2027' }})</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -58,11 +61,11 @@
     @keydown.window.arrow-left="prev()"
     class="min-h-screen flex flex-col justify-between select-none"
 >
-    <!-- BARRA SUPERIOR DE CONTROL PARA VIDEOLLAMADA -->
+    <!-- BARRA SUPERIOR DE CONTROL -->
     <header class="bg-slate-950/90 border-b border-amber-500/30 px-4 sm:px-8 py-3 flex flex-wrap items-center justify-between gap-3 sticky top-0 z-50 backdrop-blur-md">
         <div class="flex items-center gap-3">
             <span class="px-2.5 py-1 rounded-md bg-amber-500/20 border border-amber-400/50 text-amber-300 text-xs font-extrabold uppercase tracking-wider">
-                🖥️ Modo Videollamada &bull; Tarifas {{ $year }}
+                {{ $isAdminPresentation ? '🖥️ Modo Videollamada' : '📖 Dossier Interactivo' }} &bull; Tarifas {{ $year }}
             </span>
             <span class="text-sm font-extrabold text-white">{{ $brandInfo['name'] }}</span>
         </div>
@@ -81,19 +84,27 @@
             @endforeach
         </div>
 
-        <div class="flex items-center gap-2">
-            <button type="button" @click="showQrModal = true" class="px-3.5 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-black shadow-md cursor-pointer flex items-center gap-1.5">
-                <span>📱</span> QR Descargar en Móvil
-            </button>
-            <button type="button" @click="toggleFull()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-600 text-xs font-bold text-white cursor-pointer">
-                ⛶ Pantalla Completa
-            </button>
+        <div class="flex items-center gap-2 flex-wrap">
+            @if($isAdminPresentation)
+                <button type="button" @click="showQrModal = true" class="px-3.5 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-black shadow-md cursor-pointer flex items-center gap-1.5">
+                    <span>📱</span> QR Descargar en Móvil
+                </button>
+                <button type="button" @click="toggleFull()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-600 text-xs font-bold text-white cursor-pointer">
+                    ⛶ Pantalla Completa
+                </button>
+            @else
+                <a href="{{ route('guest.quote') }}" class="px-3.5 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-black shadow-md flex items-center gap-1.5">
+                    <span>✨</span> Configurar Boda / Presupuesto
+                </a>
+            @endif
             <a href="{{ $publicPdfDownloadUrl }}" target="_blank" class="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black">
                 ⬇ Descargar PDF
             </a>
-            <a href="{{ route('admin.tariff-dossier') }}" class="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-xs font-bold text-slate-300">
-                ✕ Volver al Editor
-            </a>
+            @if($isAdminPresentation)
+                <a href="{{ route('admin.tariff-dossier') }}" class="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-xs font-bold text-slate-300">
+                    ✕ Volver al Editor
+                </a>
+            @endif
         </div>
     </header>
 

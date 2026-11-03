@@ -250,6 +250,14 @@ class Setting extends Model
     /**
      * Corrige automáticamente la errata antigua del teléfono de Fran (622 62 47 90 -> 622 63 47 90)
      */
+    public static function getFairModeConfig(): array
+    {
+        $cfg = \App\Services\GeneralTariffDossierService::getConfig();
+        return is_array($cfg['fair_mode'] ?? null)
+            ? $cfg['fair_mode']
+            : \App\Services\GeneralTariffDossierService::getDefaultFairModeConfig();
+    }
+
     public static function fixLegacyTypoPhone(?string $val, ?string $settingKeyToUpdate = null): string
     {
         $str = (string) $val;

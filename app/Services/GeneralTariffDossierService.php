@@ -66,7 +66,7 @@ class GeneralTariffDossierService
             'payment_methods_text' => 'Transferencia bancaria, Bizum o efectivo',
             'after_booking_text' => 'En cuanto firmamos el contrato y recibimos la señal, vuestra fecha queda bloqueada en firme y agendamos juntos el primer paso: la reunión de personalización para conocer vuestros gustos y empezar a dar forma a la boda.',
             'valid_until' => '2026-12-31',
-            'phone_fran' => '+34 622 62 47 90',
+            'phone_fran' => '+34 622 63 47 90',
             'phone_miguel' => '+34 674 37 89 93',
             'contact_email_nunez' => 'info@nunezandson.com',
             'contact_website_nunez' => 'www.nunezandson.com',
@@ -530,6 +530,16 @@ class GeneralTariffDossierService
 
         if (empty(trim((string) ($merged['valid_until'] ?? '')))) {
             $merged['valid_until'] = $defaults['valid_until'];
+        }
+
+        if (!empty($merged['phone_fran'])) {
+            $merged['phone_fran'] = Setting::fixLegacyTypoPhone((string) $merged['phone_fran']);
+        } else {
+            $merged['phone_fran'] = $defaults['phone_fran'];
+        }
+
+        if (empty(trim((string) ($merged['phone_miguel'] ?? '')))) {
+            $merged['phone_miguel'] = $defaults['phone_miguel'];
         }
 
         // Asegurar estructura completa de fair_mode sin tocar los precios base
