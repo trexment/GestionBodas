@@ -1,9 +1,9 @@
 <div class="space-y-6 pb-16">
     <!-- CABECERA EJECUTIVA Y BOTONES DE ACCIÓN (VIDEOLLAMADA + EXPORTAR PDF + ENVIAR WHATSAPP) -->
     <div class="bg-gradient-to-r from-slate-900 via-slate-900 to-indigo-950 text-white rounded-2xl p-6 shadow-lg border border-amber-500/30">
-        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-            <div>
-                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-400/40 text-amber-300 text-xs font-extrabold uppercase tracking-wider mb-2">
+        <div class="space-y-4">
+            <div class="w-full">
+                <div class="inline-flex flex-wrap items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-400/40 text-amber-300 text-xs font-extrabold uppercase tracking-wider mb-2">
                     <span>📘 Dossier General de Tarifas ({{ $config['tariff_year'] ?? '2027' }})</span>
                     <span>&bull;</span>
                     <span>{{ $report['plan']['total_pages'] }} páginas</span>
@@ -16,16 +16,16 @@
                 </p>
             </div>
 
-            <div class="flex flex-wrap items-center gap-2.5 shrink-0">
+            <div class="flex flex-wrap items-center gap-2.5 pt-3 border-t border-slate-800">
                 <!-- Botón Modo Feria de Novios / Stand QR -->
                 <button
                     type="button"
                     wire:click="$toggle('showFairPanel')"
-                    class="px-4 py-2.5 rounded-xl border text-xs font-black shadow-md transition cursor-pointer flex items-center gap-1.5 {{ !empty($config['fair_mode']['enabled']) ? 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 border-emerald-300 ring-2 ring-emerald-400/40' : 'bg-purple-700 hover:bg-purple-600 text-white border-purple-500' }}"
+                    class="px-4 py-2.5 rounded-xl border text-xs font-black shadow-md transition cursor-pointer flex items-center gap-1.5 {{ !empty($config['fair_mode']['enabled']) ? 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 border-emerald-300' : 'bg-purple-600 hover:bg-purple-500 text-white border-purple-400' }}"
                 >
                     <span>🎪</span>
                     <span>Modo Feria / QR Stand</span>
-                    <span class="px-1.5 py-0.5 rounded text-[10px] {{ !empty($config['fair_mode']['enabled']) ? 'bg-slate-950 text-emerald-300' : 'bg-black/30 text-purple-200' }}">
+                    <span class="px-1.5 py-0.5 rounded text-[10px] {{ !empty($config['fair_mode']['enabled']) ? 'bg-slate-950 text-emerald-300' : 'bg-slate-900 text-purple-200' }}">
                         {{ !empty($config['fair_mode']['enabled']) ? 'ACTIVO' : 'OFF' }}
                     </span>
                 </button>
@@ -96,13 +96,13 @@
         $svgQrQuote = \App\Services\QrPosterPdfService::toStylizedSvg($publicQuoteCalcUrl, ['initials' => $qrInitials, 'style' => 'minimal']);
     @endphp
 
-    <div class="rounded-2xl border-2 {{ $fairActive ? 'border-emerald-500 bg-gradient-to-br from-slate-900 via-emerald-950/40 to-slate-900' : 'border-purple-500/50 bg-slate-900' }} text-white p-5 sm:p-6 shadow-xl space-y-5">
-        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-white/10 pb-4">
-            <div class="flex items-start gap-3.5">
-                <div class="w-12 h-12 rounded-2xl {{ $fairActive ? 'bg-emerald-500 text-slate-950' : 'bg-purple-600/30 text-purple-300 border border-purple-500/40' }} flex items-center justify-center text-2xl shrink-0 shadow-lg">
+    <div class="rounded-2xl border-2 {{ $fairActive ? 'border-emerald-500 bg-slate-900' : 'border-purple-500/50 bg-slate-900' }} text-white p-5 sm:p-6 shadow-xl space-y-5">
+        <div class="space-y-4 border-b border-slate-800 pb-4">
+            <div class="flex items-start gap-3.5 w-full">
+                <div class="w-12 h-12 rounded-2xl {{ $fairActive ? 'bg-emerald-500 text-slate-950' : 'bg-slate-800 text-purple-300 border border-purple-500/40' }} flex items-center justify-center text-2xl shadow-lg" style="min-width: 48px; min-height: 48px;">
                     🎪
                 </div>
-                <div>
+                <div class="flex-1 min-w-0">
                     <div class="flex flex-wrap items-center gap-2">
                         <h2 class="text-base sm:text-lg font-black text-white">
                             Modo Feria de Novios / Evento Especial &amp; Mostrador QR Instantáneo
@@ -117,14 +117,24 @@
                 </div>
             </div>
 
-            <div class="flex flex-wrap items-center gap-2.5 shrink-0">
-                <button
-                    type="button"
-                    wire:click="toggleFairMode"
-                    class="px-4 py-2.5 rounded-xl font-black text-xs shadow-lg transition cursor-pointer flex items-center gap-2 {{ $fairActive ? 'bg-rose-600 hover:bg-rose-500 text-white' : 'bg-emerald-500 hover:bg-emerald-400 text-slate-950' }}"
-                >
-                    <span>{{ $fairActive ? '⏹ Desactivar Modo Feria' : '▶ Activar Modo Feria Ahora' }}</span>
-                </button>
+            <div class="flex flex-wrap items-center justify-between gap-2.5 pt-2">
+                <div class="flex flex-wrap items-center gap-2.5">
+                    <button
+                        type="button"
+                        wire:click="toggleFairMode"
+                        class="px-4 py-2.5 rounded-xl font-black text-xs shadow-lg transition cursor-pointer flex items-center gap-2 {{ $fairActive ? 'bg-rose-600 hover:bg-rose-500 text-white' : 'bg-emerald-500 hover:bg-emerald-400 text-slate-950' }}"
+                    >
+                        <span>{{ $fairActive ? '⏹ Desactivar Modo Feria' : '▶ Activar Modo Feria Ahora' }}</span>
+                    </button>
+                    <button
+                        type="button"
+                        wire:click="openFullscreenQr('pdf')"
+                        class="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black shadow-md cursor-pointer flex items-center gap-1.5"
+                    >
+                        <span>📱</span> Mostrar QR Gigante en Pantalla
+                    </button>
+                </div>
+
                 <button
                     type="button"
                     wire:click="$toggle('showFairPanel')"
@@ -136,10 +146,10 @@
         </div>
 
         @if($showFairPanel)
-            <div class="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start pt-1">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start pt-1">
 
                 <!-- COLUMNA IZQUIERDA (7 cols): CONFIGURADOR DE PRECIOS SIMULADOS Y DESCUENTO DE FERIA -->
-                <div class="xl:col-span-7 bg-slate-950/80 border border-slate-800 rounded-2xl p-5 space-y-4">
+                <div class="lg:col-span-7 bg-slate-950 border border-slate-800 rounded-2xl p-5 space-y-4">
                     <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
                         <div>
                             <h3 class="text-sm font-black text-amber-400 uppercase tracking-wider">
@@ -200,10 +210,10 @@
                                 $sim = \App\Services\GeneralTariffDossierService::computePackFairPricing($fPack, (int) $fIdx, $config, true);
                             @endphp
                             <div class="p-3.5 rounded-xl bg-slate-900 border {{ $fIdx === 1 ? 'border-amber-400/70' : 'border-slate-700' }} space-y-2.5">
-                                <div class="flex items-center justify-between">
+                                <div class="flex items-center justify-between gap-1">
                                     <span class="text-xs font-black text-white">{{ $fPack['name'] }}</span>
                                     <span class="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-bold" title="Este precio original no se modifica">
-                                        Base real: {{ number_format($sim['normal_price'], 0) }} €
+                                        Base: {{ number_format($sim['normal_price'], 0) }} €
                                     </span>
                                 </div>
 
@@ -234,7 +244,7 @@
 
                     <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-800">
                         <span class="text-[11px] text-slate-400">
-                            💡 También tendrás un botón <strong>«🎪 Aplicar Promo Feria»</strong> dentro de Presupuestos de cada evento.
+                            💡 También tendrás un botón <strong>«🎪 Promo Feria»</strong> dentro de Presupuestos de cada evento.
                         </span>
                         <button type="button" wire:click="save" class="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black cursor-pointer">
                             💾 Guardar Configuración de Feria
@@ -243,8 +253,8 @@
                 </div>
 
                 <!-- COLUMNA DERECHA (5 cols): MOSTRADOR DE STAND — CÓDIGOS QR INSTANTÁNEOS + ACCIONES RÁPIDAS -->
-                <div class="xl:col-span-5 bg-slate-950/90 border-2 border-amber-400/60 rounded-2xl p-5 space-y-4">
-                    <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div class="lg:col-span-5 bg-slate-950 border-2 border-amber-400/60 rounded-2xl p-5 space-y-4">
+                    <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
                         <div>
                             <span class="text-[10px] font-black uppercase tracking-wider text-amber-400 block">
                                 Mostrador Rápido para los Novios (Sin esperas)
@@ -258,20 +268,21 @@
                             wire:click="openFullscreenQr('pdf')"
                             class="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black shadow-md cursor-pointer"
                         >
-                            🔍 QR Gigante en Pantalla
+                            🔍 QR Gigante
                         </button>
                     </div>
 
                     <!-- QR Principal grande: Descarga Directa del Dossier PDF -->
-                    <div class="p-4 rounded-2xl bg-slate-900 border border-amber-400/40 flex flex-col sm:flex-row items-center gap-4">
+                    <div class="p-4 rounded-2xl bg-slate-900 border border-amber-400/40 flex flex-wrap sm:flex-nowrap items-center gap-4">
                         <div
                             wire:click="openFullscreenQr('pdf')"
-                            class="w-36 h-36 p-2 bg-white rounded-2xl shadow-lg border-2 border-amber-400 shrink-0 cursor-pointer hover:scale-105 transition"
+                            class="p-2 bg-white rounded-2xl shadow-lg border-2 border-amber-400 cursor-pointer transition"
+                            style="width: 140px; height: 140px; min-width: 140px;"
                             title="Haz clic para abrir este QR en grande a pantalla completa"
                         >
                             {!! $svgQrPdf !!}
                         </div>
-                        <div class="space-y-2 text-center sm:text-left">
+                        <div class="space-y-2 flex-1 min-w-0">
                             <span class="inline-block px-2 py-0.5 rounded bg-emerald-500/20 border border-emerald-400/50 text-emerald-300 text-[10px] font-black uppercase">
                                 📄 Descarga Instantánea (Sin generar nada)
                             </span>
@@ -281,7 +292,7 @@
                             <p class="text-xs text-slate-300 leading-snug">
                                 Los novios apuntan con la cámara de su móvil y <strong>se descargan directamente el Dossier PDF</strong> {{ $fairActive ? 'con el Descuento Especial de Feria' : 'oficial' }}.
                             </p>
-                            <div class="flex flex-wrap items-center justify-center sm:justify-start gap-2 pt-1">
+                            <div class="flex flex-wrap items-center gap-2 pt-1">
                                 <button type="button" wire:click="openFullscreenQr('pdf')" class="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black cursor-pointer">
                                     🔍 Ampliar QR para Novios
                                 </button>
@@ -293,15 +304,15 @@
                     </div>
 
                     <!-- 2 QRs secundarios: Dossier Interactivo + Cotizador Online -->
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 flex items-center gap-3">
-                            <div wire:click="openFullscreenQr('presentation')" class="w-16 h-16 p-1 bg-white rounded-xl shrink-0 cursor-pointer hover:scale-105 transition">
+                            <div wire:click="openFullscreenQr('presentation')" class="p-1 bg-white rounded-xl cursor-pointer transition" style="width: 64px; height: 64px; min-width: 64px;">
                                 {!! $svgQrSlides !!}
                             </div>
-                            <div class="min-w-0">
+                            <div class="min-w-0 flex-1">
                                 <div class="text-xs font-black text-white">🖥️ Dossier Interactivo</div>
                                 <p class="text-[10px] text-slate-400 leading-tight mt-0.5">Ver fotos y packs pasando páginas en el móvil o tablet.</p>
-                                <div class="flex items-center gap-2 mt-1.5">
+                                <div class="flex flex-wrap items-center gap-2 mt-1.5">
                                     <button type="button" wire:click="openFullscreenQr('presentation')" class="text-[10px] font-black text-amber-400 hover:underline cursor-pointer">Ampliar QR</button>
                                     <a href="{{ $publicDossierSlideUrl }}" target="_blank" class="text-[10px] font-bold text-indigo-400 hover:underline">Abrir Modo Stand →</a>
                                 </div>
@@ -309,13 +320,13 @@
                         </div>
 
                         <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 flex items-center gap-3">
-                            <div wire:click="openFullscreenQr('quote')" class="w-16 h-16 p-1 bg-white rounded-xl shrink-0 cursor-pointer hover:scale-105 transition">
+                            <div wire:click="openFullscreenQr('quote')" class="p-1 bg-white rounded-xl cursor-pointer transition" style="width: 64px; height: 64px; min-width: 64px;">
                                 {!! $svgQrQuote !!}
                             </div>
-                            <div class="min-w-0">
+                            <div class="min-w-0 flex-1">
                                 <div class="text-xs font-black text-white">💶 Cotizador Online</div>
                                 <p class="text-[10px] text-slate-400 leading-tight mt-0.5">Para que los novios calculen su boda y os dejen sus datos.</p>
-                                <div class="flex items-center gap-2 mt-1.5">
+                                <div class="flex flex-wrap items-center gap-2 mt-1.5">
                                     <button type="button" wire:click="openFullscreenQr('quote')" class="text-[10px] font-black text-amber-400 hover:underline cursor-pointer">Ampliar QR</button>
                                     <a href="{{ $publicQuoteCalcUrl }}" target="_blank" class="text-[10px] font-bold text-indigo-400 hover:underline">Abrir →</a>
                                 </div>
@@ -324,15 +335,15 @@
                     </div>
 
                     <!-- Botón directo para enviar por WhatsApp a los novios que tienes delante en el stand -->
-                    <div class="p-3.5 rounded-xl bg-emerald-500/15 border border-emerald-500/40 flex flex-col sm:flex-row items-center justify-between gap-3">
-                        <div>
+                    <div class="p-3.5 rounded-xl bg-emerald-500/20 border border-emerald-400/40 flex flex-wrap items-center justify-between gap-3">
+                        <div class="flex-1 min-w-0">
                             <div class="text-xs font-black text-emerald-300">📲 ¿Prefieren que se lo mandéis por WhatsApp ahora mismo?</div>
                             <div class="text-[11px] text-slate-300">Envía el PDF en 1 clic poniendo solo su nombre y teléfono (y guárdalos como Lead de la Feria).</div>
                         </div>
                         <button
                             type="button"
                             wire:click="openSendModal"
-                            class="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-black shadow-md shrink-0 cursor-pointer"
+                            class="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-black shadow-md cursor-pointer"
                         >
                             📲 Enviar por WhatsApp
                         </button>
@@ -392,7 +403,7 @@
                     </button>
                 </div>
 
-                <div class="w-64 h-64 sm:w-72 sm:h-72 mx-auto p-3.5 bg-white rounded-3xl shadow-2xl border-4 border-amber-400">
+                <div class="mx-auto p-3.5 bg-white rounded-3xl shadow-2xl border-4 border-amber-400" style="width: 260px; height: 260px;">
                     {!! $modalQrSvg !!}
                 </div>
 
