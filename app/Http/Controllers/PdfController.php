@@ -9,6 +9,7 @@ use App\Models\Event;
 use App\Models\Setting;
 use App\Services\ContractTemplateService;
 use App\Services\GeneralTariffDossierService;
+use App\Services\QrPosterPdfService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 
@@ -319,7 +320,7 @@ class PdfController extends Controller
             $defaultWaContact = 'miguel';
         }
 
-        $waText = "¡Hola! Os estamos viendo en el stand de {$fairName} y nos gustaría recibir información y consultar disponibilidad para nuestra boda.";
+        $waText = "¡Hola! Os vemos en el stand de {$fairName} y queremos consultar disponibilidad para nuestra boda.";
         $waUrlMiguel = "https://wa.me/{$rawMiguel}?text=" . rawurlencode($waText);
         $waUrlFran = "https://wa.me/{$rawFran}?text=" . rawurlencode($waText);
 
@@ -331,11 +332,11 @@ class PdfController extends Controller
         $quoteUrl = route('guest.quote');
         $viewerUrl = route('public.tariff-dossier.presentation', ['brand' => $activeBrand]);
 
-        $svgQrPdf = QrPosterPdfService::toStylizedSvg($pdfUrl, ['style' => 'clasico', 'initials' => '']);
-        $svgQrQuote = QrPosterPdfService::toStylizedSvg($quoteUrl, ['style' => 'clasico', 'initials' => '']);
-        $svgQrWaMiguel = QrPosterPdfService::toStylizedSvg($waUrlMiguel, ['style' => 'clasico', 'initials' => '']);
-        $svgQrWaFran = QrPosterPdfService::toStylizedSvg($waUrlFran, ['style' => 'clasico', 'initials' => '']);
-        $svgQrViewer = QrPosterPdfService::toStylizedSvg($viewerUrl, ['style' => 'clasico', 'initials' => '']);
+        $svgQrPdf = \App\Services\QrPosterPdfService::toStylizedSvg($pdfUrl, ['style' => 'clasico', 'initials' => '']);
+        $svgQrQuote = \App\Services\QrPosterPdfService::toStylizedSvg($quoteUrl, ['style' => 'clasico', 'initials' => '']);
+        $svgQrWaMiguel = \App\Services\QrPosterPdfService::toStylizedSvg($waUrlMiguel, ['style' => 'clasico', 'initials' => '']);
+        $svgQrWaFran = \App\Services\QrPosterPdfService::toStylizedSvg($waUrlFran, ['style' => 'clasico', 'initials' => '']);
+        $svgQrViewer = \App\Services\QrPosterPdfService::toStylizedSvg($viewerUrl, ['style' => 'clasico', 'initials' => '']);
 
         $qrItems = [
             [
