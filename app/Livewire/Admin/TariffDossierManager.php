@@ -34,10 +34,22 @@ class TariffDossierManager extends Component
     public string $sender_name = 'Fran';
     public string $whatsapp_preview_message = '';
 
+    // Modo Feria de Novios / Mostrador Stand y QR Instantáneo
+    public bool $showFairPanel = false;
+    public bool $showFullscreenQrModal = false;
+    public string $fullscreenQrType = 'pdf'; // 'pdf' | 'presentation' | 'quote'
+    public bool $save_as_fair_lead = false;
+    public string $fair_lead_date = '';
+    public string $fair_lead_location = '';
+
     public function mount(): void
     {
         $this->config = GeneralTariffDossierService::getConfig();
         $this->syncTextHelpersFromConfig();
+
+        if (request()->boolean('fair_panel') || !empty($this->config['fair_mode']['enabled'])) {
+            $this->showFairPanel = true;
+        }
 
         if (auth()->check() && auth()->user()) {
             $uLower = mb_strtolower((auth()->user()->name ?? '') . ' ' . (auth()->user()->email ?? ''));
@@ -280,6 +292,115 @@ class TariffDossierManager extends Component
         $this->showSendModal = true;
     }
 
+    public function toggleFairMode(): void
+    {
+        $current = !empty($this->config['fair_mode']['enabled']);
+        $this->config['fair_mode']['enabled'] = !$current;
+        $this->showFairPanel = true;
+        $this->save(false);
+
+        if ($this->config['fair_mode']['enabled']) {
+            session()->flash('dossier_saved', '🎪 ¡Modo Feria de Novios ACTIVADO! Tus precios base siguen intactos; ahora el Dossier y los QR muestran el precio anterior tachado y el Descuento Especial de Feria.');
+        } else {
+            session()->flash('dossier_saved', '🔒 Modo Feria de Novios DESACTIVADO. El Dossier y las tarifas han vuelto al instante a tus precios normales.');
+        }
+    }
+
+    public function applyFairPricingPreset(string $preset = 'fixed_equal'): void
+    {
+        $this->syncConfigFromTextHelpers();
+        $pricesIncludeVat = (bool) ($this->config['prices_include_vat'] ?? true);
+        $vatRate = (float) ($this->config['vat_rate'] ?? 21);
+
+        foreach ([0, 1, 2] as $idx) {
+            $normal = GeneralTariffDossierService::computeFinalPriceWithVat(
+                $this->config['packs'][$idx]['price_input'] ?? 0,
+                $pricesIncludeVat,
+                $vatRate
+            );
+            $defaultAdd = $idx === 0 ? 100 : ($idx === 1 ? 150 : 200);
+
+            if ($preset === 'percent_15_equal') {
+                $inflated = (int) (round(($normal * 1.15) / 10) * 10);
+                if ($inflated <= $normal) {
+                    $inflated = (int) $normal + $defaultAdd;
+                }
+                $final = (int) round($normal);
+            } elseif ($preset === 'fixed_minus_20') {
+                $inflated = (int) round($normal + $defaultAdd);
+                $final = (int) max(100, round($normal - 20));
+            } else {
+                // 'fixed_equal': sube +100/+150/+200 y el precio final con descuento queda exactamente en tu precio real
+                $inflated = (int) round($normal + $defaultAdd);
+                $final = (int) round($normal);
+            }
+
+            $this->config['fair_mode']['packs_pricing'][$idx]['inflated_price'] = $inflated;
+            $this->config['fair_mode']['packs_pricing'][$idx]['fair_final_price'] = $final;
+        }
+
+        $this->save(false);
+        session()->flash('dossier_saved', '✅ Precios simulados de Feria calculados sin modificar tus precios reales.');
+    }
+
+    public function openFullscreenQr(string $type = 'pdf'): void
+    {
+        $this->fullscreenQrType = in_array($type, ['pdf', 'presentation', 'quote'], true) ? $type : 'pdf';
+        $this->showFullscreenQrModal = true;
+    }
+
+    protected function maybeCreateFairLeadEvent(): ?int
+    {
+        if (!$this->save_as_fair_lead || !empty($this->selected_event_id)) {
+            return !empty($this->selected_event_id) ? (int) $this->selected_event_id : null;
+        }
+
+        $name = trim($this->recipient_name);
+        $phone = trim($this->recipient_phone);
+        if ($name === '' && $phone === '') {
+            return null;
+        }
+
+        try {
+            $cleanPhone = WhatsAppTemplateService::cleanPhone($phone);
+            $client = null;
+            if ($cleanPhone !== '') {
+                $last9 = substr($cleanPhone, -9);
+                $client = \App\Models\User::where('role', 'client')
+                    ->where('phone', 'like', '%' . $last9 . '%')
+                    ->first();
+            }
+
+            if (!$client) {
+                $client = \App\Models\User::create([
+                    'name' => $name !== '' ? $name : ('Novios Feria ' . substr($cleanPhone, -4)),
+                    'email' => 'feria_' . uniqid() . '@pendiente.local',
+                    'phone' => $phone ?: null,
+                    'password' => bcrypt(\Illuminate\Support\Str::random(12)),
+                    'role' => 'client',
+                ]);
+            }
+
+            $fairName = trim((string) ($this->config['fair_mode']['fair_name'] ?? 'Feria de Novios')) ?: 'Feria de Novios';
+            $eventDate = !empty($this->fair_lead_date) ? $this->fair_lead_date : now()->addMonths(8)->format('Y-m-d');
+
+            $ev = Event::create([
+                'name' => 'Boda ' . ($name !== '' ? $name : $client->name),
+                'event_type' => 'boda',
+                'brand' => $this->config['brand'] ?? 'nunez_and_son',
+                'event_date' => $eventDate,
+                'location' => !empty(trim($this->fair_lead_location)) ? trim($this->fair_lead_location) : 'Por definir (' . $fairName . ')',
+                'status' => 'pending',
+                'client_id' => $client->id,
+                'notes' => '[' . now()->format('d/m/Y H:i') . '] 🎪 Pareja atendida en stand de ' . $fairName . '. Dossier enviado por WhatsApp.',
+            ]);
+
+            return $ev->id;
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
     public function updatedSelectedEventId($val): void
     {
         if ($val) {
@@ -318,6 +439,7 @@ class TariffDossierManager extends Component
 
     public function sendViaWhatsAppWeb(): void
     {
+        $this->maybeCreateFairLeadEvent();
         $url = WhatsAppTemplateService::buildUrl($this->recipient_phone, $this->whatsapp_preview_message);
         $this->dispatch('open-whatsapp-link', url: $url);
     }
@@ -331,7 +453,7 @@ class TariffDossierManager extends Component
 
         try {
             $brand = mb_strtolower(trim($this->sender_name)) === 'fran' ? 'fran' : 'miguel';
-            $eventId = !empty($this->selected_event_id) ? (int) $this->selected_event_id : null;
+            $eventId = $this->maybeCreateFairLeadEvent();
 
             $res = EvolutionWhatsAppService::sendMessage(
                 $this->recipient_phone,
@@ -341,12 +463,14 @@ class TariffDossierManager extends Component
                 auth()->check() ? auth()->id() : null
             );
 
+            $leadSuffix = ($this->save_as_fair_lead && $eventId) ? ' (y pareja guardada en Eventos para seguimiento).' : '.';
+
             if (!empty($res['success'])) {
                 if (($res['mode'] ?? '') === 'manual' && !empty($res['url'])) {
                     $this->dispatch('open-whatsapp-link', url: $res['url']);
-                    session()->flash('wa_send_ok', '📲 Gateway directo no activo: abriendo WhatsApp con el mensaje preparado.');
+                    session()->flash('wa_send_ok', '📲 Gateway directo no activo: abriendo WhatsApp con el mensaje preparado' . $leadSuffix);
                 } else {
-                    session()->flash('wa_send_ok', '✅ Dossier de tarifas enviado por WhatsApp correctamente desde el número de ' . $this->sender_name . '.');
+                    session()->flash('wa_send_ok', '✅ Dossier de tarifas enviado por WhatsApp correctamente desde el número de ' . $this->sender_name . $leadSuffix);
                 }
             } else {
                 $errDetail = $res['message'] ?? ($res['error'] ?? 'Error de conexión con el Gateway');

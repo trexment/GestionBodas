@@ -1707,6 +1707,111 @@ class EventShow extends Component
         $this->saveDossier();
     }
 
+    /**
+     * Aplica o quita en 1 clic la Promoción de Feria de Novios en el configurador de presupuestos actual,
+     * subiendo el importe mostrado del pack y añadiendo una línea de descuento negativo para que el total
+     * final quede en el precio real, SIN modificar jamás las tarifas globales guardadas en Ajustes.
+     */
+    public function toggleWeddingFairPromoOnQuote(): void
+    {
+        $fairConfig = \App\Services\GeneralTariffDossierService::getConfig();
+        $fairData = $fairConfig['fair_mode'] ?? \App\Services\GeneralTariffDossierService::getDefaultFairModeConfig();
+        $fairName = trim((string) ($fairData['fair_name'] ?? 'Feria de Novios')) ?: 'Feria de Novios';
+
+        // Comprobar si ya hay una línea de Descuento Feria en custom_extras
+        $existingFairIdx = null;
+        foreach (($this->custom_extras ?? []) as $idx => $ex) {
+            $n = mb_strtolower(trim((string) ($ex['name'] ?? '')));
+            if (str_contains($n, 'feria de novios') || str_contains($n, 'descuento especial feria') || str_contains($n, 'promo feria')) {
+                $existingFairIdx = $idx;
+                break;
+            }
+        }
+
+        // Si ya estaba aplicada, quitarla y restaurar los precios base originales del configurador
+        if ($existingFairIdx !== null) {
+            array_splice($this->custom_extras, $existingFairIdx, 1);
+            if (empty($this->custom_extras)) {
+                $this->custom_extras = [['name' => '', 'price' => 0, 'desc' => '', 'consult' => false]];
+            }
+
+            $evType = $this->event ? $this->event->event_type_clean : 'boda';
+            $this->quote_services['pack_basic']['price'] = (float) \App\Models\Setting::get("pack_basic_price_{$evType}", \App\Models\Setting::get('pack_basic_price', 600));
+            $this->quote_services['pack_medium']['price'] = (float) \App\Models\Setting::get("pack_medium_price_{$evType}", \App\Models\Setting::get('pack_medium_price', 950));
+            $this->quote_services['pack_premium']['price'] = (float) \App\Models\Setting::get("pack_premium_price_{$evType}", \App\Models\Setting::get('pack_premium_price', 1350));
+
+            session()->flash('quote_message', '🔄 Promoción de Feria retirada del presupuesto. Precios habituales restaurados.');
+            return;
+        }
+
+        // Aplicar subida simulada + línea de Descuento Especial Feria
+        $discountToApply = 0.0;
+        $packMap = [
+            'pack_basic' => 0,
+            'pack_medium' => 1,
+            'pack_premium' => 2,
+        ];
+
+        $appliedToPack = false;
+        foreach ($packMap as $serviceKey => $pIdx) {
+            if (!empty($this->quote_services[$serviceKey]['selected'])) {
+                $packCalc = \App\Services\GeneralTariffDossierService::computePackFairPricing(
+                    $fairConfig['packs'][$pIdx] ?? ['price_input' => $this->quote_services[$serviceKey]['price']],
+                    $pIdx,
+                    $fairConfig,
+                    true
+                );
+                $this->quote_services[$serviceKey]['price'] = $packCalc['inflated_price'];
+                $discountToApply += $packCalc['discount_amount'];
+                $appliedToPack = true;
+            }
+        }
+
+        if (!$appliedToPack) {
+            // Si no hay un pack cerrado marcado, activar el Pack Signature (o sumar al primer servicio seleccionado)
+            $defaultDto = (float) ($fairData['quote_discount_amount'] ?? 150);
+            if ($defaultDto <= 0) {
+                $defaultDto = 150;
+            }
+            $InflatedAdded = false;
+            foreach (['dj_custom', 'ceremony', 'cocktail', 'restaurant', 'photobooth', 'video_360'] as $sKey) {
+                if (!empty($this->quote_services[$sKey]['selected'])) {
+                    $qty = max(1, (int) ($this->quote_services[$sKey]['quantity'] ?? 1));
+                    $this->quote_services[$sKey]['price'] = round(((float) $this->quote_services[$sKey]['price']) + ($defaultDto / $qty), 2);
+                    $discountToApply = $defaultDto;
+                    $InflatedAdded = true;
+                    break;
+                }
+            }
+            if (!$InflatedAdded) {
+                // Si no había nada seleccionado aún, seleccionamos el Pack Signature con tarifa de Feria
+                $this->selectPack('medium');
+                $packCalc = \App\Services\GeneralTariffDossierService::computePackFairPricing(
+                    $fairConfig['packs'][1] ?? ['price_input' => 950],
+                    1,
+                    $fairConfig,
+                    true
+                );
+                $this->quote_services['pack_medium']['price'] = $packCalc['inflated_price'];
+                $discountToApply = $packCalc['discount_amount'];
+            }
+        }
+
+        // Limpiar fila vacía inicial de custom_extras si está en blanco
+        if (count($this->custom_extras) === 1 && empty(trim((string) ($this->custom_extras[0]['name'] ?? ''))) && (float) ($this->custom_extras[0]['price'] ?? 0) == 0) {
+            $this->custom_extras = [];
+        }
+
+        $this->custom_extras[] = [
+            'name' => '🎁 Descuento Especial ' . $fairName,
+            'price' => -abs($discountToApply),
+            'desc' => (string) ($fairData['fair_condition_text'] ?? 'Bonificación especial aplicada por visitarnos en la Feria de Novios.'),
+            'consult' => false,
+        ];
+
+        session()->flash('quote_message', "🎪 Promo «{$fairName}» aplicada en este presupuesto: se ha subido la tarifa mostrada (+{$discountToApply} €) y añadido la línea de Descuento Especial (-{$discountToApply} €). Tus precios generales siguen intactos.");
+    }
+
     public function updateEquipmentQuantity($pivotId, $amount)
     {
         $item = DB::table('event_equipment')->where('event_id', $this->event->id)->where('id', $pivotId)->first();

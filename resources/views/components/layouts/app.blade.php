@@ -686,10 +686,20 @@
                 </a>
 
                 @if(Auth::check() && Auth::user()->role === 'admin')
-                <!-- 7.5. DOSSIER GENERAL DE TARIFAS -->
-                <a href="{{ route('admin.tariff-dossier') }}" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition {{ request()->routeIs('admin.tariff-dossier') ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/30' : 'text-slate-300 hover:text-white hover:bg-slate-800/80' }}">
-                    <span class="text-base">📘</span>
-                    <span>Dossier de Tarifas</span>
+                <!-- 7.5. DOSSIER GENERAL DE TARIFAS Y MODO FERIA / STAND QR -->
+                <a href="{{ route('admin.tariff-dossier') }}" class="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition {{ request()->routeIs('admin.tariff-dossier') && !request()->boolean('fair_panel') ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/30' : 'text-slate-300 hover:text-white hover:bg-slate-800/80' }}">
+                    <span class="flex items-center gap-3">
+                        <span class="text-base">📘</span>
+                        <span>Dossier de Tarifas</span>
+                    </span>
+                </a>
+
+                <a href="{{ route('admin.tariff-dossier', ['fair_panel' => 1]) }}" class="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition {{ request()->routeIs('admin.tariff-dossier') && request()->boolean('fair_panel') ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/30' : 'text-emerald-300 hover:text-white hover:bg-slate-800/80 border border-emerald-500/20' }}">
+                    <span class="flex items-center gap-3">
+                        <span class="text-base">🎪</span>
+                        <span>Feria de Novios / QR Stand</span>
+                    </span>
+                    <span class="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-black">QR</span>
                 </a>
 
                 <!-- 8. CONFIGURACIÓN & INTEGRACIONES -->

@@ -76,6 +76,93 @@ class GeneralTariffDossierService
 
             // Plantilla WhatsApp
             'whatsapp_template' => '¡Hola {nombre}! Os dejo nuestro dossier de tarifas {anio} para que lo veáis con calma. Si os apetece, hacemos una videollamada de 10-15 minutos y os lo explico. ¡Un saludo! {firma}',
+
+            // 9. MODO FERIA DE NOVIOS / EVENTO ESPECIAL (Activable/desactivable sin tocar los precios base)
+            'fair_mode' => self::getDefaultFairModeConfig(),
+        ];
+    }
+
+    /**
+     * Configuración por defecto del Modo Feria de Novios / Evento Especial.
+     * Mantiene intactos los precios reales de los packs y simula un precio de tarifa superior con descuento de Feria.
+     */
+    public static function getDefaultFairModeConfig(?array $currentPacks = null): array
+    {
+        $packs = $currentPacks ?? self::getRecommendedPacks();
+        $p0 = (int) round((float) ($packs[0]['price_input'] ?? Setting::get('pack_basic_price', 600)));
+        $p1 = (int) round((float) ($packs[1]['price_input'] ?? Setting::get('pack_medium_price', 950)));
+        $p2 = (int) round((float) ($packs[2]['price_input'] ?? Setting::get('pack_premium_price', 1350)));
+
+        return [
+            'enabled' => false,
+            'fair_name' => 'Feria de Novios',
+            'fair_badge' => '🎪 PROMOCIÓN ESPECIAL FERIA DE NOVIOS',
+            'fair_condition_text' => 'Descuento exclusivo Feria de Novios (reservando vuestra fecha antes del 30 de noviembre)',
+            'quote_discount_amount' => 150,
+            'packs_pricing' => [
+                0 => [
+                    'inflated_price' => $p0 + 100, // Ej: 700 € tachado -> -100 € dto -> 600 € final
+                    'fair_final_price' => $p0,
+                ],
+                1 => [
+                    'inflated_price' => $p1 + 150, // Ej: 1.100 € tachado -> -150 € dto -> 950 € final
+                    'fair_final_price' => $p1,
+                ],
+                2 => [
+                    'inflated_price' => $p2 + 200, // Ej: 1.550 € tachado -> -200 € dto -> 1.350 € final
+                    'fair_final_price' => $p2,
+                ],
+            ],
+            'whatsapp_fair_template' => '¡Hola {nombre}! Qué alegría haberos saludado hoy en nuestro stand de la {feria}. Os dejamos nuestro Dossier de Tarifas {anio} con el Descuento Especial de Feria incluido. Cualquier duda o para ver disponibilidad de vuestra fecha nos decís por aquí. ¡Un saludo! {firma}',
+        ];
+    }
+
+    /**
+     * Calcula los precios de un pack teniendo en cuenta si el Modo Feria está activo (sin modificar jamás price_input).
+     */
+    public static function computePackFairPricing(array $pack, int $packIndex, array $config, bool $forceFair = false): array
+    {
+        $pricesIncludeVat = (bool) ($config['prices_include_vat'] ?? true);
+        $vatRate = (float) ($config['vat_rate'] ?? 21);
+
+        $normalFinalPrice = self::computeFinalPriceWithVat($pack['price_input'] ?? 0, $pricesIncludeVat, $vatRate);
+        $fairConfig = $config['fair_mode'] ?? self::getDefaultFairModeConfig($config['packs'] ?? null);
+        $isFairActive = $forceFair || !empty($fairConfig['enabled']);
+
+        if (!$isFairActive) {
+            return [
+                'is_fair_active' => false,
+                'normal_price' => $normalFinalPrice,
+                'inflated_price' => $normalFinalPrice,
+                'final_price' => $normalFinalPrice,
+                'discount_amount' => 0.0,
+                'discount_percent' => 0,
+            ];
+        }
+
+        $defaultAdd = $packIndex === 0 ? 100 : ($packIndex === 1 ? 150 : 200);
+        $packFair = $fairConfig['packs_pricing'][$packIndex] ?? [];
+
+        $rawInflated = (float) ($packFair['inflated_price'] ?? ($normalFinalPrice + $defaultAdd));
+        $rawFairFinal = (float) ($packFair['fair_final_price'] ?? $normalFinalPrice);
+
+        if ($rawFairFinal <= 0) {
+            $rawFairFinal = $normalFinalPrice;
+        }
+        if ($rawInflated <= $rawFairFinal) {
+            $rawInflated = $rawFairFinal + $defaultAdd;
+        }
+
+        $discountAmount = max(0.0, round($rawInflated - $rawFairFinal, 2));
+        $discountPercent = $rawInflated > 0 ? (int) round(($discountAmount / $rawInflated) * 100) : 0;
+
+        return [
+            'is_fair_active' => true,
+            'normal_price' => $normalFinalPrice,
+            'inflated_price' => $rawInflated,
+            'final_price' => $rawFairFinal,
+            'discount_amount' => $discountAmount,
+            'discount_percent' => $discountPercent,
         ];
     }
 
@@ -443,6 +530,24 @@ class GeneralTariffDossierService
 
         if (empty(trim((string) ($merged['valid_until'] ?? '')))) {
             $merged['valid_until'] = $defaults['valid_until'];
+        }
+
+        // Asegurar estructura completa de fair_mode sin tocar los precios base
+        $defaultFair = self::getDefaultFairModeConfig($merged['packs'] ?? null);
+        if (!isset($merged['fair_mode']) || !is_array($merged['fair_mode'])) {
+            $merged['fair_mode'] = $defaultFair;
+        } else {
+            $merged['fair_mode'] = array_merge($defaultFair, $merged['fair_mode']);
+            if (!isset($merged['fair_mode']['packs_pricing']) || !is_array($merged['fair_mode']['packs_pricing'])) {
+                $merged['fair_mode']['packs_pricing'] = $defaultFair['packs_pricing'];
+            } else {
+                foreach ([0, 1, 2] as $pi) {
+                    $merged['fair_mode']['packs_pricing'][$pi] = array_merge(
+                        $defaultFair['packs_pricing'][$pi],
+                        $merged['fair_mode']['packs_pricing'][$pi] ?? []
+                    );
+                }
+            }
         }
 
         return $merged;
@@ -1221,12 +1326,22 @@ class GeneralTariffDossierService
     /**
      * Genera el mensaje de WhatsApp para enviar el Dossier General de Tarifas
      */
-    public static function buildWhatsAppMessage(?string $clientName = null, ?string $senderName = 'Fran', ?array $config = null, bool $includePdfLink = true): string
+    public static function buildWhatsAppMessage(?string $clientName = null, ?string $senderName = 'Fran', ?array $config = null, bool $includePdfLink = true, ?bool $useFairMode = null): string
     {
         $config = $config ?? self::getConfig();
-        $tpl = trim((string) ($config['whatsapp_template'] ?? ''));
-        if ($tpl === '') {
-            $tpl = '¡Hola {nombre}! Os dejo nuestro dossier de tarifas 2027 para que lo veáis con calma. Si os apetece, hacemos una videollamada de 10-15 minutos y os lo explico. ¡Un saludo! Fran';
+        $isFair = $useFairMode !== null ? $useFairMode : !empty($config['fair_mode']['enabled']);
+        $fairName = trim((string) ($config['fair_mode']['fair_name'] ?? 'Feria de Novios')) ?: 'Feria de Novios';
+
+        if ($isFair) {
+            $tpl = trim((string) ($config['fair_mode']['whatsapp_fair_template'] ?? ''));
+            if ($tpl === '') {
+                $tpl = '¡Hola {nombre}! Qué alegría haberos saludado hoy en nuestro stand de la {feria}. Os dejamos nuestro Dossier de Tarifas {anio} con el Descuento Especial de Feria incluido. Cualquier duda o para ver disponibilidad de vuestra fecha nos decís por aquí. ¡Un saludo! {firma}';
+            }
+        } else {
+            $tpl = trim((string) ($config['whatsapp_template'] ?? ''));
+            if ($tpl === '') {
+                $tpl = '¡Hola {nombre}! Os dejo nuestro dossier de tarifas 2027 para que lo veáis con calma. Si os apetece, hacemos una videollamada de 10-15 minutos y os lo explico. ¡Un saludo! Fran';
+            }
         }
 
         $cleanName = trim((string) $clientName);
@@ -1240,10 +1355,13 @@ class GeneralTariffDossierService
         } catch (\Throwable $e) {
             $pdfUrl = url("/dossier-tarifas/{$brand}.pdf");
         }
+        if ($isFair) {
+            $pdfUrl .= (str_contains($pdfUrl, '?') ? '&' : '?') . 'fair=1';
+        }
 
         $msg = str_replace(
-            ['{nombre}', '{anio}', '{año}', '{firma}', '{enlace_dossier}', '{enlace}'],
-            [$cleanName, $year, $year, $firma, $pdfUrl, $pdfUrl],
+            ['{nombre}', '{anio}', '{año}', '{firma}', '{feria}', '{enlace_dossier}', '{enlace}'],
+            [$cleanName, $year, $year, $firma, $fairName, $pdfUrl, $pdfUrl],
             $tpl
         );
 
@@ -1251,7 +1369,8 @@ class GeneralTariffDossierService
         $msg = preg_replace('/¡Hola\s+!/u', '¡Hola!', $msg);
 
         if ($includePdfLink && !str_contains($msg, 'http')) {
-            $msg .= "\n\n📄 Dossier de Tarifas {$year} (PDF):\n{$pdfUrl}";
+            $label = $isFair ? "📄 Dossier de Tarifas {$year} (Promo {$fairName} PDF):" : "📄 Dossier de Tarifas {$year} (PDF):";
+            $msg .= "\n\n{$label}\n{$pdfUrl}";
         }
 
         return trim($msg);

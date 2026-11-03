@@ -32,11 +32,18 @@
         ? ($config['contact_website_javnx'] ?? 'www.javnxdj.com')
         : ($config['contact_website_nunez'] ?? 'www.nunezandson.com');
     $totalPages = $plan['total_pages'];
+    $isFairActivePres = !empty($config['fair_mode']['enabled']);
+    $publicPdfDownloadUrl = route('public.tariff-dossier.pdf', ['brand' => $brandKey]) . ($isFairActivePres ? '?fair=1' : '');
+    $qrSvgPresentation = \App\Services\QrPosterPdfService::toStylizedSvg($publicPdfDownloadUrl, [
+        'initials' => $brandKey === 'javnx' ? 'J' : 'N&S',
+        'style' => 'elegante',
+    ]);
 @endphp
 <body
     x-data="{
         current: 1,
         total: {{ $totalPages }},
+        showQrModal: false,
         next() { if (this.current < this.total) this.current++; },
         prev() { if (this.current > 1) this.current--; },
         toggleFull() {
@@ -75,10 +82,13 @@
         </div>
 
         <div class="flex items-center gap-2">
+            <button type="button" @click="showQrModal = true" class="px-3.5 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-black shadow-md cursor-pointer flex items-center gap-1.5">
+                <span>📱</span> QR Descargar en Móvil
+            </button>
             <button type="button" @click="toggleFull()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-600 text-xs font-bold text-white cursor-pointer">
                 ⛶ Pantalla Completa
             </button>
-            <a href="{{ route('admin.tariff-dossier.pdf', ['brand' => $brandKey]) }}" class="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black">
+            <a href="{{ $publicPdfDownloadUrl }}" target="_blank" class="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black">
                 ⬇ Descargar PDF
             </a>
             <a href="{{ route('admin.tariff-dossier') }}" class="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-xs font-bold text-slate-300">
@@ -274,18 +284,29 @@
 
                     @elseif($page['type'] === 'packs')
                         <div class="space-y-5">
-                            <div class="border-b border-amber-500/30 pb-3 flex items-center justify-between">
+                            <div class="border-b border-amber-500/30 pb-3 flex flex-wrap items-center justify-between gap-3">
                                 <div>
                                     <span class="text-xs font-extrabold uppercase tracking-widest text-amber-400">Página Central &bull; Precios Finales Cerrados</span>
                                     <h2 class="text-2xl sm:text-3xl font-black text-white">Packs y precio (IVA incluido)</h2>
                                 </div>
+                                @if($isFairActivePres)
+                                    <div class="px-4 py-2 rounded-xl bg-emerald-500/20 border-2 border-emerald-400 text-right">
+                                        <span class="block text-xs font-black text-emerald-300 uppercase tracking-wider">
+                                            {{ $config['fair_mode']['fair_badge'] ?? '🎪 PROMOCIÓN ESPECIAL FERIA DE NOVIOS' }}
+                                        </span>
+                                        @if(!empty($config['fair_mode']['fair_condition_text']))
+                                            <span class="block text-[11px] text-emerald-100">{{ $config['fair_mode']['fair_condition_text'] }}</span>
+                                        @endif
+                                    </div>
+                                @endif
                             </div>
 
                             <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 items-stretch">
                                 @foreach(($config['packs'] ?? []) as $pIdx => $pack)
                                     @php
                                         $isFeatured = ($pIdx === 1);
-                                        $finalPrice = \App\Services\GeneralTariffDossierService::computeFinalPriceWithVat($pack['price_input'] ?? 0, $pricesIncludeVat, $vatRate);
+                                        $fairCalcPres = \App\Services\GeneralTariffDossierService::computePackFairPricing($pack, (int) $pIdx, $config);
+                                        $finalPrice = $fairCalcPres['final_price'];
                                     @endphp
                                     <div class="rounded-2xl p-6 flex flex-col justify-between {{ $isFeatured ? 'bg-slate-950 border-2 border-amber-400 ring-2 ring-amber-400/20 lg:scale-105' : 'bg-slate-950/60 border border-slate-800' }}">
                                         <div>
@@ -298,6 +319,16 @@
                                             <p class="text-xs text-slate-300 mt-1 mb-4">{{ $pack['subtitle'] }}</p>
 
                                             <div class="p-4 rounded-xl bg-slate-900 border {{ $isFeatured ? 'border-amber-500/50' : 'border-slate-800' }} text-center mb-4">
+                                                @if(!empty($fairCalcPres['is_fair_active']) && $fairCalcPres['discount_amount'] > 0)
+                                                    <div class="flex items-center justify-center gap-2 mb-1">
+                                                        <span class="text-sm font-bold text-slate-400 line-through">
+                                                            Tarifa: {{ number_format($fairCalcPres['inflated_price'], 0, ',', '.') }} €
+                                                        </span>
+                                                        <span class="px-2 py-0.5 rounded-md bg-emerald-500 text-slate-950 text-[11px] font-black">
+                                                            🎁 DTO. FERIA -{{ number_format($fairCalcPres['discount_amount'], 0, ',', '.') }} €
+                                                        </span>
+                                                    </div>
+                                                @endif
                                                 <div class="text-3xl font-black {{ $isFeatured ? 'text-amber-400' : 'text-white' }}">
                                                     {{ number_format($finalPrice, 0, ',', '.') }} €
                                                 </div>
@@ -476,5 +507,43 @@
             @endforeach
         </div>
     </main>
+
+    <!-- MODAL GIGANTE DE QR PARA QUE LOS NOVIOS ESCANEEN EN EL STAND -->
+    <div
+        x-show="showQrModal"
+        x-cloak
+        @click.self="showQrModal = false"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/90 backdrop-blur-md p-4"
+    >
+        <div class="bg-slate-900 border-2 border-amber-400 rounded-3xl max-w-md w-full p-6 text-center space-y-4 shadow-2xl">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div class="text-left">
+                    <span class="text-[11px] font-black uppercase tracking-wider text-amber-400 block">
+                        {{ $isFairActivePres ? ($config['fair_mode']['fair_name'] ?? 'Feria de Novios') : ('Dossier Oficial ' . $year) }}
+                    </span>
+                    <h3 class="text-lg font-black text-white">Escanea para descargar el Dossier PDF</h3>
+                </div>
+                <button type="button" @click="showQrModal = false" class="text-slate-400 hover:text-white text-lg font-bold px-2 cursor-pointer">✕</button>
+            </div>
+
+            <div class="w-64 h-64 mx-auto p-3 bg-white rounded-2xl shadow-lg border-4 border-amber-400">
+                {!! $qrSvgPresentation !!}
+            </div>
+
+            @if($isFairActivePres)
+                <div class="p-3 rounded-xl bg-emerald-500/20 border border-emerald-400/50 text-xs text-emerald-200 font-bold">
+                    🎁 Incluye los precios con el <strong>Descuento Especial de la Feria</strong>
+                </div>
+            @endif
+
+            <p class="text-xs text-slate-300 leading-relaxed">
+                Apunta con la cámara de tu móvil al código QR y se abrirá directamente nuestro <strong>Dossier Completo en PDF</strong> sin instalar nada.
+            </p>
+
+            <button type="button" @click="showQrModal = false" class="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs cursor-pointer">
+                Cerrar QR
+            </button>
+        </div>
+    </div>
 </body>
 </html>

@@ -4527,6 +4527,9 @@
                             </button>
                         </div>
                         <div class="flex flex-wrap items-center gap-1.5">
+                            <button type="button" wire:click="toggleWeddingFairPromoOnQuote" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-black bg-amber-400 hover:bg-amber-300 text-slate-950 shadow-xs transition cursor-pointer" title="Sube la tarifa en este presupuesto y añade automáticamente la línea de Descuento Especial Feria de Novios (sin tocar tus precios generales)">
+                                <span>🎪</span> Promo Feria (Subir + Descontar)
+                            </button>
                             <button type="button" wire:click="saveCurrentPricesAsDefault" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-white/15 hover:bg-white/25 text-white border border-white/20 transition cursor-pointer" title="Guardar los precios y textos actuales como predeterminados para eventos de tipo {{ $event->event_type_label }}">
                                 <span>💾</span> Fijar precios para {{ $event->event_type_label }}
                             </button>

@@ -472,7 +472,24 @@
             </div>
 
             <div class="page-body" style="padding-top: 7mm;">
-                @if(!empty($config['packs_section_note']))
+                @php
+                    $isFairPdfActive = !empty($config['fair_mode']['enabled']);
+                    $fairBadgePdf = $config['fair_mode']['fair_badge'] ?? '🎪 PROMOCIÓN ESPECIAL FERIA DE NOVIOS';
+                    $fairConditionPdf = $config['fair_mode']['fair_condition_text'] ?? '';
+                @endphp
+
+                @if($isFairPdfActive)
+                    <div style="margin: 0 0 4mm 0; padding: 7px 12px; background-color: #0f172a; border: 1.5px solid #d4af37; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 9.5pt; font-weight: 900; color: #facc15; text-transform: uppercase; letter-spacing: 1px;">
+                            {{ $fairBadgePdf }}
+                        </div>
+                        @if(!empty($fairConditionPdf))
+                            <div style="font-size: 8.2pt; color: #e2e8f0; margin-top: 2px;">
+                                {{ $fairConditionPdf }}
+                            </div>
+                        @endif
+                    </div>
+                @elseif(!empty($config['packs_section_note']))
                     <p style="margin: 0 0 5mm 0; font-size: 9.5pt; color: #334155; text-align: center;">
                         {{ $config['packs_section_note'] }}
                     </p>
@@ -484,11 +501,8 @@
                         @foreach(($config['packs'] ?? []) as $pIdx => $pack)
                             @php
                                 $isFeatured = ($pIdx === 1);
-                                $finalPackPrice = \App\Services\GeneralTariffDossierService::computeFinalPriceWithVat(
-                                    $pack['price_input'] ?? 0,
-                                    $pricesIncludeVat,
-                                    $vatRate
-                                );
+                                $fairCalc = \App\Services\GeneralTariffDossierService::computePackFairPricing($pack, (int) $pIdx, $config);
+                                $finalPackPrice = $fairCalc['final_price'];
                             @endphp
                             <td style="width: 33.33%; vertical-align: top; border-radius: 10px; padding: {{ $isFeatured ? '14px 12px' : '12px 11px' }}; {{ $isFeatured ? 'background-color: #0f172a; color: #ffffff; border: 2.5px solid #d4af37;' : 'background-color: #f8fafc; color: #0f172a; border: 1.5px solid #cbd5e1;' }}">
                                 <!-- Etiqueta superior -->
@@ -514,9 +528,20 @@
                                     {{ $pack['subtitle'] }}
                                 </div>
 
-                                <!-- Precio final con IVA incluido -->
-                                <div style="padding: 10px 8px; border-radius: 8px; text-align: center; margin-bottom: 10px; {{ $isFeatured ? 'background-color: #1e293b; border: 1px solid #d4af37;' : 'background-color: #ffffff; border: 1px solid #cbd5e1;' }}">
-                                    <div style="font-size: {{ $isFeatured ? '22pt' : '19pt' }}; font-weight: 900; color: {{ $isFeatured ? '#facc15' : '#0f172a' }}; line-height: 1.1;">
+                                <!-- Precio final con IVA incluido (y Descuento Feria si está activo) -->
+                                <div style="padding: 9px 8px; border-radius: 8px; text-align: center; margin-bottom: 10px; {{ $isFeatured ? 'background-color: #1e293b; border: 1px solid #d4af37;' : 'background-color: #ffffff; border: 1px solid #cbd5e1;' }}">
+                                    @if(!empty($fairCalc['is_fair_active']) && $fairCalc['discount_amount'] > 0)
+                                        <div style="margin-bottom: 3px;">
+                                            <span style="font-size: 8.5pt; color: {{ $isFeatured ? '#94a3b8' : '#64748b' }}; text-decoration: line-through; font-weight: 700;">
+                                                Tarifa: {{ number_format($fairCalc['inflated_price'], 0, ',', '.') }} €
+                                            </span>
+                                            &nbsp;
+                                            <span style="display: inline-block; background-color: #10b981; color: #052e16; font-size: 7.5pt; font-weight: 900; padding: 1px 5px; border-radius: 4px;">
+                                                DTO. FERIA -{{ number_format($fairCalc['discount_amount'], 0, ',', '.') }} €
+                                            </span>
+                                        </div>
+                                    @endif
+                                    <div style="font-size: {{ $isFeatured ? '21pt' : '18.5pt' }}; font-weight: 900; color: {{ $isFeatured ? '#facc15' : '#0f172a' }}; line-height: 1.1;">
                                         {{ number_format($finalPackPrice, 0, ',', '.') }} €
                                     </div>
                                     <div style="font-size: 8pt; font-weight: 800; color: {{ $isFeatured ? '#86efac' : '#166534' }}; margin-top: 3px;">

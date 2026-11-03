@@ -207,6 +207,9 @@ class PdfController extends Controller
         if ($requestedBrand && in_array($requestedBrand, ['nunez_and_son', 'javnx'], true)) {
             $config['brand'] = $requestedBrand;
         }
+        if ($request->has('fair')) {
+            $config['fair_mode']['enabled'] = $request->boolean('fair');
+        }
 
         // Si un administrador solicita la generación desde el panel y no se pasa ?force=1,
         // verificamos el checklist obligatorio antes de exportar.
@@ -249,6 +252,9 @@ class PdfController extends Controller
         $requestedBrand = $brand ?: $request->query('brand');
         if ($requestedBrand && in_array($requestedBrand, ['nunez_and_son', 'javnx'], true)) {
             $config['brand'] = $requestedBrand;
+        }
+        if ($request->has('fair')) {
+            $config['fair_mode']['enabled'] = $request->boolean('fair');
         }
 
         $plan = GeneralTariffDossierService::buildPagesPlan($config);
