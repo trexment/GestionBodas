@@ -304,6 +304,7 @@ class PdfController extends Controller
 
         $phoneMiguelDisplay = trim((string) ($config['phone_miguel'] ?? '+34 674 37 89 93')) ?: '+34 674 37 89 93';
         $phoneFranDisplay = Setting::fixLegacyTypoPhone(trim((string) ($config['phone_fran'] ?? '+34 622 63 47 90')) ?: '+34 622 63 47 90');
+        $phoneEzequielDisplay = trim((string) ($config['phone_ezequiel'] ?? '+34 644 68 50 54')) ?: '+34 644 68 50 54';
 
         $rawMiguel = preg_replace('/\D+/', '', $phoneMiguelDisplay) ?: '34674378993';
         if (strlen($rawMiguel) === 9) {
@@ -315,18 +316,25 @@ class PdfController extends Controller
             $rawFran = '34' . $rawFran;
         }
 
+        $rawEzequiel = preg_replace('/\D+/', '', $phoneEzequielDisplay) ?: '34644685054';
+        if (strlen($rawEzequiel) === 9) {
+            $rawEzequiel = '34' . $rawEzequiel;
+        }
+
         $defaultWaContact = ($activeBrand === 'javnx') ? 'fran' : ($request->query('wa', $fairData['whatsapp_contact'] ?? 'miguel'));
-        if (!in_array($defaultWaContact, ['miguel', 'fran'], true)) {
+        if (!in_array($defaultWaContact, ['miguel', 'fran', 'ezequiel'], true)) {
             $defaultWaContact = 'miguel';
         }
 
         $waText = "¡Hola! Os vemos en el stand de {$fairName} y queremos consultar disponibilidad para nuestra boda.";
         $waUrlMiguel = "https://wa.me/{$rawMiguel}?text=" . rawurlencode($waText);
         $waUrlFran = "https://wa.me/{$rawFran}?text=" . rawurlencode($waText);
+        $waUrlEzequiel = "https://wa.me/{$rawEzequiel}?text=" . rawurlencode($waText);
 
-        $activeWaUrl = $defaultWaContact === 'fran' ? $waUrlFran : $waUrlMiguel;
-        $activeWaPhoneDisplay = $defaultWaContact === 'fran' ? $phoneFranDisplay : $phoneMiguelDisplay;
-        $activeWaLabel = $defaultWaContact === 'fran' ? "Fran · {$phoneFranDisplay}" : "Miguel · {$phoneMiguelDisplay}";
+        $activeWaUrl = $defaultWaContact === 'fran' ? $waUrlFran : ($defaultWaContact === 'ezequiel' ? $waUrlEzequiel : $waUrlMiguel);
+        $activeWaLabel = $defaultWaContact === 'fran'
+            ? "Fran · {$phoneFranDisplay}"
+            : ($defaultWaContact === 'ezequiel' ? "Ezequiel · {$phoneEzequielDisplay}" : "Miguel · {$phoneMiguelDisplay}");
 
         $pdfUrl = route('public.tariff-dossier.pdf', ['brand' => $activeBrand]);
         $quoteUrl = route('guest.quote');
@@ -336,6 +344,7 @@ class PdfController extends Controller
         $svgQrQuote = \App\Services\QrPosterPdfService::toStylizedSvg($quoteUrl, ['style' => 'clasico', 'initials' => '']);
         $svgQrWaMiguel = \App\Services\QrPosterPdfService::toStylizedSvg($waUrlMiguel, ['style' => 'clasico', 'initials' => '']);
         $svgQrWaFran = \App\Services\QrPosterPdfService::toStylizedSvg($waUrlFran, ['style' => 'clasico', 'initials' => '']);
+        $svgQrWaEzequiel = \App\Services\QrPosterPdfService::toStylizedSvg($waUrlEzequiel, ['style' => 'clasico', 'initials' => '']);
         $svgQrViewer = \App\Services\QrPosterPdfService::toStylizedSvg($viewerUrl, ['style' => 'clasico', 'initials' => '']);
 
         $qrItems = [
@@ -372,7 +381,7 @@ class PdfController extends Controller
                 'badge' => '📲 WhatsApp directo · ' . $activeWaLabel,
                 'accent' => 'green',
                 'url' => $activeWaUrl,
-                'svg' => $defaultWaContact === 'fran' ? $svgQrWaFran : $svgQrWaMiguel,
+                'svg' => $defaultWaContact === 'fran' ? $svgQrWaFran : ($defaultWaContact === 'ezequiel' ? $svgQrWaEzequiel : $svgQrWaMiguel),
             ],
             [
                 'key' => 'interactive_viewer',
@@ -409,6 +418,12 @@ class PdfController extends Controller
                     'phone' => $phoneFranDisplay,
                     'url' => $waUrlFran,
                     'svg' => $svgQrWaFran,
+                ],
+                'ezequiel' => [
+                    'label' => "Ezequiel · {$phoneEzequielDisplay}",
+                    'phone' => $phoneEzequielDisplay,
+                    'url' => $waUrlEzequiel,
+                    'svg' => $svgQrWaEzequiel,
                 ],
             ],
         ]);

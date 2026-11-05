@@ -479,8 +479,9 @@
 
                             <div class="p-5 rounded-2xl bg-slate-950 border border-amber-500/40 flex flex-col sm:flex-row items-center justify-between gap-4">
                                 <div class="space-y-1 text-sm">
-                                    <div><strong class="text-amber-400">Fran:</strong> {{ $config['phone_fran'] }}</div>
-                                    <div><strong class="text-amber-400">Miguel:</strong> {{ $config['phone_miguel'] }}</div>
+                                    <div><strong class="text-amber-400">Fran:</strong> {{ $config['phone_fran'] ?? '+34 622 63 47 90' }}</div>
+                                    <div><strong class="text-amber-400">Miguel:</strong> {{ $config['phone_miguel'] ?? '+34 674 37 89 93' }}</div>
+                                    <div><strong class="text-amber-400">Ezequiel:</strong> {{ $config['phone_ezequiel'] ?? '+34 644 68 50 54' }}</div>
                                 </div>
                                 <div class="space-y-1 text-sm sm:text-right">
                                     <div><strong class="text-amber-400">Email:</strong> {{ $contactEmail }}</div>

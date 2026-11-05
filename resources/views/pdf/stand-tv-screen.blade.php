@@ -11,7 +11,8 @@
         $tariffYear = $config['tariff_year'] ?? '2027';
         $phoneMiguelHeader = $config['phone_miguel'] ?? '+34 674 37 89 93';
         $phoneFranHeader = \App\Models\Setting::fixLegacyTypoPhone($config['phone_fran'] ?? '+34 622 63 47 90');
-        $phoneDisplay = "Miguel: {$phoneMiguelHeader} · Fran: {$phoneFranHeader}";
+        $phoneEzequielHeader = $config['phone_ezequiel'] ?? '+34 644 68 50 54';
+        $phoneDisplay = "Miguel: {$phoneMiguelHeader} · Fran: {$phoneFranHeader} · Ezequiel: {$phoneEzequielHeader}";
         $igDisplay = $config['contact_instagram'] ?? '@nunezandson';
         $webDisplay = $config['contact_website_nunez'] ?? 'www.nunezandson.com';
     @endphp
@@ -832,7 +833,9 @@
         }
 
         function toggleWaContact() {
-            currentWaKey = currentWaKey === 'miguel' ? 'fran' : 'miguel';
+            const order = ['miguel', 'fran', 'ezequiel'].filter(k => !!waProfiles[k]);
+            const idx = order.indexOf(currentWaKey);
+            currentWaKey = order[(idx + 1) % order.length] || 'miguel';
             localStorage.setItem('stand_tv_wa_contact', currentWaKey);
             applyWaProfile();
         }

@@ -248,7 +248,7 @@
                         <tr>
                             <td>
                                 <strong style="color: #d4af37;">Contacto directo:</strong><br>
-                                Fran: {{ $config['phone_fran'] ?? '+34 622 62 47 90' }} &nbsp;&bull;&nbsp; Miguel: {{ $config['phone_miguel'] ?? '+34 674 37 89 93' }}
+                                Fran: {{ $config['phone_fran'] ?? '+34 622 63 47 90' }} &nbsp;&bull;&nbsp; Miguel: {{ $config['phone_miguel'] ?? '+34 674 37 89 93' }} &nbsp;&bull;&nbsp; Ezequiel: {{ $config['phone_ezequiel'] ?? '+34 644 68 50 54' }}
                             </td>
                             <td style="text-align: right;">
                                 <strong style="color: #d4af37;">{{ $contactWeb }}</strong><br>
@@ -804,21 +804,26 @@
                     <div style="font-size: 9pt; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; color: #d4af37; margin-bottom: 8px;">
                         Contacto directo
                     </div>
-                    <table style="width: 100%; border-collapse: collapse; font-size: 10.5pt; color: #ffffff;">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 10pt; color: #ffffff;">
                         <tr>
-                            <td style="padding: 4px 0;">
-                                <strong>Fran:</strong> {{ $config['phone_fran'] ?? '+34 622 62 47 90' }} (Llamadas y WhatsApp)
+                            <td style="padding: 3.5px 0;">
+                                <strong>Fran:</strong> {{ $config['phone_fran'] ?? '+34 622 63 47 90' }} (Llamadas y WhatsApp)
                             </td>
-                            <td style="padding: 4px 0; text-align: right;">
+                            <td style="padding: 3.5px 0; text-align: right;">
                                 <strong>Correo:</strong> {{ $contactEmail }}
                             </td>
                         </tr>
                         <tr>
-                            <td style="padding: 4px 0;">
+                            <td style="padding: 3.5px 0;">
                                 <strong>Miguel:</strong> {{ $config['phone_miguel'] ?? '+34 674 37 89 93' }} (Llamadas y WhatsApp)
                             </td>
-                            <td style="padding: 4px 0; text-align: right;">
+                            <td style="padding: 3.5px 0; text-align: right;">
                                 <strong>Web:</strong> {{ $contactWeb }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td colspan="2" style="padding: 3.5px 0;">
+                                <strong>Ezequiel:</strong> {{ $config['phone_ezequiel'] ?? '+34 644 68 50 54' }} (Llamadas y WhatsApp)
                             </td>
                         </tr>
                     </table>

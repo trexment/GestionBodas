@@ -1015,7 +1015,7 @@
             <textarea wire:model.live="config.after_booking_text" rows="2" class="w-full rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white text-xs p-2.5"></textarea>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div>
                 <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Teléfono Fran</label>
                 <input type="text" wire:model.live="config.phone_fran" class="w-full rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white text-xs font-bold p-2.5">
@@ -1023,6 +1023,10 @@
             <div>
                 <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Teléfono Miguel</label>
                 <input type="text" wire:model.live="config.phone_miguel" class="w-full rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white text-xs font-bold p-2.5">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Teléfono Ezequiel</label>
+                <input type="text" wire:model.live="config.phone_ezequiel" class="w-full rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white text-xs font-bold p-2.5">
             </div>
             <div>
                 <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Correo ({{ ($config['brand'] ?? 'nunez_and_son') === 'javnx' ? 'JAVNX' : 'Núñez and Son' }})</label>

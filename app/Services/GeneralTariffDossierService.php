@@ -68,6 +68,7 @@ class GeneralTariffDossierService
             'valid_until' => '2026-12-31',
             'phone_fran' => '+34 622 63 47 90',
             'phone_miguel' => '+34 674 37 89 93',
+            'phone_ezequiel' => '+34 644 68 50 54',
             'contact_email_nunez' => 'info@nunezandson.com',
             'contact_website_nunez' => 'www.nunezandson.com',
             'contact_email_javnx' => 'info@javnxdj.com',
@@ -540,6 +541,10 @@ class GeneralTariffDossierService
 
         if (empty(trim((string) ($merged['phone_miguel'] ?? '')))) {
             $merged['phone_miguel'] = $defaults['phone_miguel'];
+        }
+
+        if (empty(trim((string) ($merged['phone_ezequiel'] ?? '')))) {
+            $merged['phone_ezequiel'] = $defaults['phone_ezequiel'];
         }
 
         // Asegurar estructura completa de fair_mode sin tocar los precios base
