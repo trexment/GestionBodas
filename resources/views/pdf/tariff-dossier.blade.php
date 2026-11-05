@@ -146,10 +146,21 @@
             padding: 2px 7px;
             border-radius: 4px;
         }
+        .pdf-icon {
+            font-family: 'DejaVu Sans', sans-serif;
+        }
     </style>
 </head>
 <body>
 @php
+    $cleanPdfText = function ($text): string {
+        if ($text === null) {
+            return '';
+        }
+        $cleaned = preg_replace('/[\x{1F000}-\x{1FFFF}\x{2600}-\x{27BF}\x{FE00}-\x{FE0F}\x{200D}]/u', '', (string) $text);
+        return trim(preg_replace('/\s{2,}/u', ' ', $cleaned ?? (string) $text));
+    };
+
     $year = trim((string) ($config['tariff_year'] ?? '2027')) ?: '2027';
     $pricesIncludeVat = !empty($config['prices_include_vat']);
     $vatRate = (float) ($config['vat_rate'] ?? 21);
@@ -283,7 +294,7 @@
                                 @if(trim((string) $fact) !== '')
                                     <tr>
                                         <td style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 7px 11px; font-size: 9.5pt; color: #0f172a;">
-                                            <strong style="color: #b45309;">&#10003;</strong> &nbsp;{{ $fact }}
+                                            <strong class="pdf-icon" style="color: #b45309;">&#10003;</strong> &nbsp;{{ $cleanPdfText($fact) }}
                                         </td>
                                     </tr>
                                 @endif
@@ -474,14 +485,14 @@
             <div class="page-body" style="padding-top: 7mm;">
                 @php
                     $isFairPdfActive = !empty($config['fair_mode']['enabled']);
-                    $fairBadgePdf = $config['fair_mode']['fair_badge'] ?? '🎪 PROMOCIÓN ESPECIAL FERIA DE NOVIOS';
-                    $fairConditionPdf = $config['fair_mode']['fair_condition_text'] ?? '';
+                    $fairBadgePdf = $cleanPdfText($config['fair_mode']['fair_badge'] ?? 'PROMOCIÓN ESPECIAL FERIA DE NOVIOS') ?: 'PROMOCIÓN ESPECIAL FERIA DE NOVIOS';
+                    $fairConditionPdf = $cleanPdfText($config['fair_mode']['fair_condition_text'] ?? '');
                 @endphp
 
                 @if($isFairPdfActive)
                     <div style="margin: 0 0 4mm 0; padding: 7px 12px; background-color: #0f172a; border: 1.5px solid #d4af37; border-radius: 8px; text-align: center;">
                         <div style="font-size: 9.5pt; font-weight: 900; color: #facc15; text-transform: uppercase; letter-spacing: 1px;">
-                            {{ $fairBadgePdf }}
+                            <span class="pdf-icon">&#9733;</span> {{ $fairBadgePdf }} <span class="pdf-icon">&#9733;</span>
                         </div>
                         @if(!empty($fairConditionPdf))
                             <div style="font-size: 8.2pt; color: #e2e8f0; margin-top: 2px;">
@@ -491,7 +502,7 @@
                     </div>
                 @elseif(!empty($config['packs_section_note']))
                     <p style="margin: 0 0 5mm 0; font-size: 9.5pt; color: #334155; text-align: center;">
-                        {{ $config['packs_section_note'] }}
+                        {{ $cleanPdfText($config['packs_section_note']) }}
                     </p>
                 @endif
 
@@ -509,7 +520,7 @@
                                 <div style="margin-bottom: 6px; min-height: 20px;">
                                     @if($isFeatured)
                                         <span style="display: inline-block; background-color: #d4af37; color: #0f172a; font-size: 8pt; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; padding: 3px 8px; border-radius: 4px;">
-                                            ★ {{ $pack['badge'] ?: 'El más elegido' }}
+                                            <span class="pdf-icon">&#9733;</span> {{ $cleanPdfText($pack['badge'] ?: 'El más elegido') ?: 'El más elegido' }}
                                         </span>
                                     @else
                                         <span style="display: inline-block; background-color: #e2e8f0; color: #334155; font-size: 7.5pt; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; padding: 2px 7px; border-radius: 4px;">
@@ -520,12 +531,12 @@
 
                                 <!-- Nombre del Pack -->
                                 <div style="font-size: {{ $isFeatured ? '14.5pt' : '13pt' }}; font-weight: 900; color: {{ $isFeatured ? '#ffffff' : '#0f172a' }}; margin-bottom: 4px;">
-                                    {{ $pack['name'] }}
+                                    {{ $cleanPdfText($pack['name']) }}
                                 </div>
 
                                 <!-- Subtítulo descriptivo -->
                                 <div style="font-size: 8.5pt; color: {{ $isFeatured ? '#cbd5e1' : '#475569' }}; line-height: 1.35; margin-bottom: 10px; min-height: 34px;">
-                                    {{ $pack['subtitle'] }}
+                                    {{ $cleanPdfText($pack['subtitle']) }}
                                 </div>
 
                                 <!-- Precio final con IVA incluido (y Descuento Feria si está activo) -->
@@ -557,11 +568,11 @@
                                     @foreach(($pack['includes'] ?? []) as $incLine)
                                         @if(trim((string) $incLine) !== '')
                                             <tr>
-                                                <td style="vertical-align: top; width: 13px; padding: 3px 0; color: {{ $isFeatured ? '#facc15' : '#0f172a' }}; font-weight: 900; font-size: 8.5pt;">
+                                                <td class="pdf-icon" style="vertical-align: top; width: 13px; padding: 3px 0; color: {{ $isFeatured ? '#facc15' : '#0f172a' }}; font-weight: 900; font-size: 8.5pt;">
                                                     &#10003;
                                                 </td>
                                                 <td style="vertical-align: top; padding: 3px 0; font-size: 8.3pt; color: {{ $isFeatured ? '#f1f5f9' : '#1e293b' }}; line-height: 1.35;">
-                                                    {{ $incLine }}
+                                                    {{ $cleanPdfText($incLine) }}
                                                 </td>
                                             </tr>
                                         @endif
@@ -610,10 +621,10 @@
                             <tr>
                                 <td style="vertical-align: middle; padding-right: 12px;">
                                     <div style="font-size: 10.5pt; font-weight: 900; color: #065f46; margin-bottom: 3px;">
-                                        &#9733; {{ $config['qr_photos_gift_title'] ?? 'REGALO INCLUIDO al contratar Ceremonia o Cóctel: Álbum de Fotos QR para Invitados' }}
+                                        <span class="pdf-icon">&#9733;</span> {{ $cleanPdfText($config['qr_photos_gift_title'] ?? 'REGALO INCLUIDO al contratar Ceremonia o Cóctel: Álbum de Fotos QR para Invitados') }}
                                     </div>
                                     <div style="font-size: 8.8pt; color: #047857; line-height: 1.38;">
-                                        {{ $config['qr_photos_gift_text'] ?? 'Colocamos un código QR personalizado para que todos los invitados suban y descarguen en calidad original las fotos que hagan con su móvil durante la ceremonia, el cóctel y la fiesta, directo a vuestro álbum privado sin instalar ninguna app.' }}
+                                        {{ $cleanPdfText($config['qr_photos_gift_text'] ?? 'Colocamos un código QR personalizado para que todos los invitados suban y descarguen en calidad original las fotos que hagan con su móvil durante la ceremonia, el cóctel y la fiesta, directo a vuestro álbum privado sin instalar ninguna app.') }}
                                     </div>
                                 </td>
                                 <td style="vertical-align: middle; text-align: right; width: 120px; white-space: nowrap;">
@@ -712,7 +723,7 @@
                 @if(!empty($config['google_reviews_url']))
                     <div class="gold-accent-card" style="margin-top: 6mm; text-align: center;">
                         <div style="font-size: 9.5pt; font-weight: 800; color: #facc15; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;">
-                            ★ Consulta todas nuestras reseñas verificadas en Google
+                            <span class="pdf-icon">&#9733;</span> Consulta todas nuestras reseñas verificadas en Google
                         </div>
                         <div style="font-size: 9.5pt; color: #e2e8f0; margin-bottom: 4px;">
                             Puedes leer más opiniones reales de parejas en nuestro perfil oficial:
