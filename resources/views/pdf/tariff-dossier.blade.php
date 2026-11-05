@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <title>Dossier de Tarifas {{ $config['tariff_year'] ?? '2027' }} - {{ $brandInfo['name'] }}</title>
     <style>
         @page {
@@ -18,14 +18,16 @@
             color: #0f172a;
             background-color: #ffffff;
             font-size: 10.5pt;
-            line-height: 1.45;
+            line-height: 1.42;
         }
         .page {
             width: 210mm;
-            height: 297mm;
+            height: 296mm;
+            max-height: 296mm;
             position: relative;
             overflow: hidden;
             page-break-after: always;
+            page-break-inside: avoid;
             background-color: #ffffff;
         }
         .page:last-child {
@@ -78,7 +80,7 @@
         .page-header {
             background-color: #0f172a;
             color: #ffffff;
-            padding: 10mm 16mm 8mm 16mm;
+            padding: 8.5mm 16mm 7mm 16mm;
             border-bottom: 3px solid #d4af37;
         }
         .page-header-kicker {
@@ -87,25 +89,25 @@
             font-weight: 800;
             text-transform: uppercase;
             letter-spacing: 2px;
-            margin-bottom: 3px;
+            margin-bottom: 2px;
         }
         .page-header-title {
-            font-size: 18pt;
+            font-size: 17.5pt;
             font-weight: 800;
             margin: 0;
             color: #ffffff;
             letter-spacing: -0.3px;
         }
         .page-body {
-            padding: 11mm 16mm 18mm 16mm;
+            padding: 8.5mm 16mm 15mm 16mm;
         }
         .page-footer {
             position: absolute;
             bottom: 0;
             left: 0;
             right: 0;
-            height: 12mm;
-            padding: 3.5mm 16mm;
+            height: 11.5mm;
+            padding: 3.2mm 16mm;
             background-color: #f8fafc;
             border-top: 1px solid #e2e8f0;
             font-size: 8pt;
@@ -117,14 +119,14 @@
             background-color: #f8fafc;
             border: 1px solid #e2e8f0;
             border-radius: 8px;
-            padding: 12px 14px;
+            padding: 10px 13px;
         }
         .gold-accent-card {
             background-color: #0f172a;
             color: #ffffff;
             border: 1.5px solid #d4af37;
             border-radius: 10px;
-            padding: 14px 16px;
+            padding: 11px 15px;
         }
         .step-badge {
             display: inline-block;
@@ -146,9 +148,6 @@
             padding: 2px 7px;
             border-radius: 4px;
         }
-        .pdf-icon {
-            font-family: 'DejaVu Sans', sans-serif;
-        }
     </style>
 </head>
 <body>
@@ -158,6 +157,7 @@
             return '';
         }
         $cleaned = preg_replace('/[\x{1F000}-\x{1FFFF}\x{2600}-\x{27BF}\x{FE00}-\x{FE0F}\x{200D}]/u', '', (string) $text);
+        $cleaned = preg_replace('/^\s*\?\s*|\s*\?\s*$/u', '', $cleaned ?? (string) $text);
         return trim(preg_replace('/\s{2,}/u', ' ', $cleaned ?? (string) $text));
     };
 
@@ -273,28 +273,28 @@
             <div class="page-body">
                 <!-- Foto de Fran y Miguel / Equipo -->
                 @if($aboutPhotoPath && file_exists($aboutPhotoPath))
-                    <div style="width: 100%; height: 74mm; border-radius: 10px; overflow: hidden; border: 2px solid #0f172a; margin-bottom: 6mm; background-color: #0f172a;">
-                        <img src="{{ $aboutPhotoPath }}" style="width: 100%; height: 74mm; object-fit: cover;">
+                    <div style="width: 100%; height: 58mm; border-radius: 10px; overflow: hidden; border: 2px solid #0f172a; margin-bottom: 4mm; background-color: #0f172a;">
+                        <img src="{{ $aboutPhotoPath }}" style="width: 100%; height: 58mm; object-fit: cover;">
                     </div>
                 @endif
 
                 <!-- Texto en primera persona basado en hechos -->
-                <div class="card" style="margin-bottom: 5mm; border-left: 4px solid #d4af37; background-color: #ffffff;">
-                    <div style="font-size: 10.5pt; color: #1e293b; line-height: 1.55; white-space: pre-line;">{{ trim((string) ($config['about_text'] ?? '')) }}</div>
+                <div class="card" style="margin-bottom: 4mm; border-left: 4px solid #d4af37; background-color: #ffffff;">
+                    <div style="font-size: 9.8pt; color: #1e293b; line-height: 1.44; white-space: pre-line;">{{ trim((string) ($config['about_text'] ?? '')) }}</div>
                 </div>
 
                 <!-- Hechos clave -->
                 @if(!empty($config['about_facts']) && is_array($config['about_facts']))
-                    <div style="margin-bottom: 5mm;">
-                        <div style="font-size: 9pt; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: #0f172a; margin-bottom: 6px;">
+                    <div style="margin-bottom: 4mm;">
+                        <div style="font-size: 8.8pt; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: #0f172a; margin-bottom: 4px;">
                             Por qué trabajamos así
                         </div>
-                        <table style="width: 100%; border-collapse: separate; border-spacing: 0 5px;">
+                        <table style="width: 100%; border-collapse: separate; border-spacing: 0 3.5px;">
                             @foreach($config['about_facts'] as $fact)
                                 @if(trim((string) $fact) !== '')
                                     <tr>
-                                        <td style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 7px 11px; font-size: 9.5pt; color: #0f172a;">
-                                            <strong class="pdf-icon" style="color: #b45309;">&#10003;</strong> &nbsp;{{ $cleanPdfText($fact) }}
+                                        <td style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 5.5px 10px; font-size: 9.2pt; color: #0f172a;">
+                                            <strong style="color: #d4af37; font-size: 10.5pt; line-height: 1;">&bull;</strong> &nbsp;{{ $cleanPdfText($fact) }}
                                         </td>
                                     </tr>
                                 @endif
@@ -306,10 +306,10 @@
                 <!-- Fincas y locales donde hemos trabajado -->
                 @if(!empty(trim((string) ($config['about_venues'] ?? ''))))
                     <div class="gold-accent-card">
-                        <div style="font-size: 8.5pt; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; color: #d4af37; margin-bottom: 4px;">
+                        <div style="font-size: 8.3pt; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; color: #d4af37; margin-bottom: 3px;">
                             {{ $config['about_venues_title'] ?? 'Fincas, bodegas y restaurantes donde hemos trabajado' }}
                         </div>
-                        <div style="font-size: 9.5pt; color: #e2e8f0; line-height: 1.45;">
+                        <div style="font-size: 9.2pt; color: #e2e8f0; line-height: 1.4;">
                             {{ $config['about_venues'] }}
                         </div>
                     </div>
@@ -492,7 +492,7 @@
                 @if($isFairPdfActive)
                     <div style="margin: 0 0 4mm 0; padding: 7px 12px; background-color: #0f172a; border: 1.5px solid #d4af37; border-radius: 8px; text-align: center;">
                         <div style="font-size: 9.5pt; font-weight: 900; color: #facc15; text-transform: uppercase; letter-spacing: 1px;">
-                            <span class="pdf-icon">&#9733;</span> {{ $fairBadgePdf }} <span class="pdf-icon">&#9733;</span>
+                            &bull; {{ $fairBadgePdf }} &bull;
                         </div>
                         @if(!empty($fairConditionPdf))
                             <div style="font-size: 8.2pt; color: #e2e8f0; margin-top: 2px;">
@@ -520,7 +520,7 @@
                                 <div style="margin-bottom: 6px; min-height: 20px;">
                                     @if($isFeatured)
                                         <span style="display: inline-block; background-color: #d4af37; color: #0f172a; font-size: 8pt; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; padding: 3px 8px; border-radius: 4px;">
-                                            <span class="pdf-icon">&#9733;</span> {{ $cleanPdfText($pack['badge'] ?: 'El más elegido') ?: 'El más elegido' }}
+                                            {{ $cleanPdfText($pack['badge'] ?: 'El más elegido') ?: 'El más elegido' }}
                                         </span>
                                     @else
                                         <span style="display: inline-block; background-color: #e2e8f0; color: #334155; font-size: 7.5pt; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; padding: 2px 7px; border-radius: 4px;">
@@ -568,8 +568,8 @@
                                     @foreach(($pack['includes'] ?? []) as $incLine)
                                         @if(trim((string) $incLine) !== '')
                                             <tr>
-                                                <td class="pdf-icon" style="vertical-align: top; width: 13px; padding: 3px 0; color: {{ $isFeatured ? '#facc15' : '#0f172a' }}; font-weight: 900; font-size: 8.5pt;">
-                                                    &#10003;
+                                                <td style="vertical-align: top; width: 12px; padding: 3px 0; color: {{ $isFeatured ? '#facc15' : '#b45309' }}; font-weight: 900; font-size: 10pt; line-height: 1.1;">
+                                                    &bull;
                                                 </td>
                                                 <td style="vertical-align: top; padding: 3px 0; font-size: 8.3pt; color: {{ $isFeatured ? '#f1f5f9' : '#1e293b' }}; line-height: 1.35;">
                                                     {{ $cleanPdfText($incLine) }}
@@ -621,7 +621,7 @@
                             <tr>
                                 <td style="vertical-align: middle; padding-right: 12px;">
                                     <div style="font-size: 10.5pt; font-weight: 900; color: #065f46; margin-bottom: 3px;">
-                                        <span class="pdf-icon">&#9733;</span> {{ $cleanPdfText($config['qr_photos_gift_title'] ?? 'REGALO INCLUIDO al contratar Ceremonia o Cóctel: Álbum de Fotos QR para Invitados') }}
+                                        &bull; {{ $cleanPdfText($config['qr_photos_gift_title'] ?? 'REGALO INCLUIDO al contratar Ceremonia o Cóctel: Álbum de Fotos QR para Invitados') }}
                                     </div>
                                     <div style="font-size: 8.8pt; color: #047857; line-height: 1.38;">
                                         {{ $cleanPdfText($config['qr_photos_gift_text'] ?? 'Colocamos un código QR personalizado para que todos los invitados suban y descarguen en calidad original las fotos que hagan con su móvil durante la ceremonia, el cóctel y la fiesta, directo a vuestro álbum privado sin instalar ninguna app.') }}
@@ -723,7 +723,7 @@
                 @if(!empty($config['google_reviews_url']))
                     <div class="gold-accent-card" style="margin-top: 6mm; text-align: center;">
                         <div style="font-size: 9.5pt; font-weight: 800; color: #facc15; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;">
-                            <span class="pdf-icon">&#9733;</span> Consulta todas nuestras reseñas verificadas en Google
+                            &bull; Consulta todas nuestras reseñas verificadas en Google &bull;
                         </div>
                         <div style="font-size: 9.5pt; color: #e2e8f0; margin-bottom: 4px;">
                             Puedes leer más opiniones reales de parejas en nuestro perfil oficial:
