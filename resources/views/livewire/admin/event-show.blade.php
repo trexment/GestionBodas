@@ -5914,30 +5914,35 @@
                                     <!-- Botones rápidos de destinos habituales fuera de los 50 km -->
                                     <div class="flex flex-wrap items-center gap-1.5">
                                         <span class="text-[10px] font-extrabold uppercase text-slate-500 mr-1">Destinos rápidos:</span>
-                                        <button type="button" wire:click="setTravelPreset('Vitoria-Gasteiz', 65, false, 0)" class="px-2 py-1 rounded-lg bg-white hover:bg-amber-50 text-slate-700 border border-slate-200 text-[11px] font-bold transition cursor-pointer">
+                                        <button type="button" wire:click="setTravelPreset('Vitoria-Gasteiz', 65, false, 0)" class="px-2 py-1 rounded-lg {{ (int) $travel_one_way_km === 65 ? 'bg-amber-100 text-amber-950 border-amber-400 font-extrabold' : 'bg-white hover:bg-amber-50 text-slate-700 border-slate-200 font-bold' }} border text-[11px] transition cursor-pointer">
                                             📍 Vitoria (65 km)
                                         </button>
-                                        <button type="button" wire:click="setTravelPreset('Pamplona', 88, false, 0)" class="px-2 py-1 rounded-lg bg-white hover:bg-amber-50 text-slate-700 border border-slate-200 text-[11px] font-bold transition cursor-pointer">
+                                        <button type="button" wire:click="setTravelPreset('Pamplona', 88, false, 0)" class="px-2 py-1 rounded-lg {{ (int) $travel_one_way_km === 88 ? 'bg-amber-100 text-amber-950 border-amber-400 font-extrabold' : 'bg-white hover:bg-amber-50 text-slate-700 border-slate-200 font-bold' }} border text-[11px] transition cursor-pointer">
                                             📍 Pamplona (88 km)
                                         </button>
-                                        <button type="button" wire:click="setTravelPreset('Burgos', 115, true, 65)" class="px-2 py-1 rounded-lg bg-white hover:bg-amber-50 text-slate-700 border border-slate-200 text-[11px] font-bold transition cursor-pointer">
+                                        <button type="button" wire:click="setTravelPreset('Burgos', 115, true, 65)" class="px-2 py-1 rounded-lg {{ (int) $travel_one_way_km === 115 ? 'bg-amber-100 text-amber-950 border-amber-400 font-extrabold' : 'bg-white hover:bg-amber-50 text-slate-700 border-slate-200 font-bold' }} border text-[11px] transition cursor-pointer">
                                             📍 Burgos (115 km + logística)
                                         </button>
-                                        <button type="button" wire:click="setTravelPreset('Bilbao / Bizkaia', 135, true, 75)" class="px-2 py-1 rounded-lg bg-white hover:bg-amber-50 text-slate-700 border border-slate-200 text-[11px] font-bold transition cursor-pointer">
+                                        <button type="button" wire:click="setTravelPreset('Bilbao / Bizkaia', 135, true, 75)" class="px-2 py-1 rounded-lg {{ (int) $travel_one_way_km === 135 ? 'bg-amber-100 text-amber-950 border-amber-400 font-extrabold' : 'bg-white hover:bg-amber-50 text-slate-700 border-slate-200 font-bold' }} border text-[11px] transition cursor-pointer">
                                             📍 Bilbao (135 km + logística)
                                         </button>
-                                        <button type="button" wire:click="setTravelPreset('Gautegiz-Arteaga / Urdaibai', 145, true, 75)" class="px-2 py-1 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-950 border border-amber-300 text-[11px] font-extrabold transition cursor-pointer">
+                                        <button type="button" wire:click="setTravelPreset('Gautegiz-Arteaga / Urdaibai', 145, true, 75)" class="px-2 py-1 rounded-lg {{ (int) $travel_one_way_km === 145 ? 'bg-amber-100 text-amber-950 border-amber-400 font-extrabold' : 'bg-white hover:bg-amber-50 text-slate-700 border-slate-200 font-bold' }} border text-[11px] transition cursor-pointer">
                                             📍 Gautegiz / Urdaibai (145 km + logística)
                                         </button>
-                                        <button type="button" wire:click="setTravelPreset('San Sebastián / Gipuzkoa', 165, true, 85)" class="px-2 py-1 rounded-lg bg-white hover:bg-amber-50 text-slate-700 border border-slate-200 text-[11px] font-bold transition cursor-pointer">
+                                        <button type="button" wire:click="setTravelPreset('San Sebastián / Gipuzkoa', 165, true, 85)" class="px-2 py-1 rounded-lg {{ (int) $travel_one_way_km === 165 ? 'bg-amber-100 text-amber-950 border-amber-400 font-extrabold' : 'bg-white hover:bg-amber-50 text-slate-700 border-slate-200 font-bold' }} border text-[11px] transition cursor-pointer">
                                             📍 Donostia (165 km + logística)
                                         </button>
+                                        @if(!empty($event->location))
+                                            <button type="button" wire:click="autoDetectTravelFromEventLocation(true)" class="px-2 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-200 text-[11px] font-extrabold transition cursor-pointer" title="Detectar distancia automáticamente desde la ubicación del evento ({{ $event->location }})">
+                                                🗺️ Auto-calcular desde ubicación
+                                            </button>
+                                        @endif
                                     </div>
 
                                     <div class="grid grid-cols-1 sm:grid-cols-4 gap-2.5">
                                         <div>
                                             <label class="block text-[10px] font-extrabold uppercase text-slate-600 mb-1">Localidad / Destino</label>
-                                            <input type="text" wire:model.live="travel_destination_label" placeholder="{{ $event->location ?: 'Ej: Gautegiz-Arteaga' }}" class="w-full rounded-lg border-slate-300 p-1.5 text-xs bg-white">
+                                            <input type="text" wire:model.live.debounce.500ms="travel_destination_label" placeholder="{{ $event->location ?: 'Ej: Gautegiz-Arteaga' }}" class="w-full rounded-lg border-slate-300 p-1.5 text-xs bg-white">
                                         </div>
                                         <div>
                                             <label class="block text-[10px] font-extrabold uppercase text-slate-600 mb-1">Distancia SOLO IDA (km)</label>

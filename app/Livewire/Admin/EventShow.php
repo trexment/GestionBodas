@@ -397,6 +397,11 @@ class EventShow extends Component
             } catch (\Throwable $e) {}
         }
 
+        // Auto-calcular los kilómetros de desplazamiento desde la ubicación del evento si existe
+        if (!empty($this->event->location)) {
+            $this->autoDetectTravelFromEventLocation();
+        }
+
         $this->invoice_type = 'factura';
         $this->invoice_tax_rate = 21.00;
         $this->invoice_issue_date = now()->format('Y-m-d');
@@ -4075,6 +4080,262 @@ class EventShow extends Component
         if ($withLogisticsSurcharge) {
             $this->travel_long_distance_surcharge = $surchargeAmount;
         }
+    }
+
+    public function updatedTravelDestinationLabel($value)
+    {
+        $clean = trim((string) $value);
+        if (mb_strlen($clean) >= 3) {
+            $resolved = self::resolveRoadDistanceFromLogrono($clean);
+            if ($resolved && !empty($resolved['km'])) {
+                $this->travel_one_way_km = (int) $resolved['km'];
+                $this->travel_long_distance_surcharge_enabled = !empty($resolved['surcharge_enabled']);
+                if (!empty($resolved['surcharge'])) {
+                    $this->travel_long_distance_surcharge = (int) $resolved['surcharge'];
+                }
+            }
+        }
+    }
+
+    public function autoDetectTravelFromEventLocation(bool $showFlash = false)
+    {
+        $query = trim((string) ($this->travel_destination_label ?: ($this->event?->location ?? '')));
+        if ($query === '') {
+            if ($showFlash) {
+                session()->flash('quote_error', 'El evento no tiene ubicación asignada ni has escrito una localidad.');
+            }
+            return;
+        }
+
+        $resolved = self::resolveRoadDistanceFromLogrono($query);
+        if ($resolved && isset($resolved['km'])) {
+            $this->travel_destination_label = $resolved['label'] ?: $query;
+            $this->travel_one_way_km = (int) $resolved['km'];
+            $this->travel_long_distance_surcharge_enabled = !empty($resolved['surcharge_enabled']);
+            if (!empty($resolved['surcharge'])) {
+                $this->travel_long_distance_surcharge = (int) $resolved['surcharge'];
+            }
+            if ($showFlash) {
+                session()->flash('quote_message', "🗺️ Distancia calculada desde Logroño a {$this->travel_destination_label}: {$this->travel_one_way_km} km (solo ida).");
+            }
+        } elseif ($showFlash) {
+            session()->flash('quote_error', "No se pudo detectar automáticamente la distancia para «{$query}». Puedes introducir los km manualmente.");
+        }
+    }
+
+    /**
+     * Calcula los kilómetros por carretera (solo ida) desde Logroño hasta la localidad/ubicación del evento.
+     * Usa primero una base de datos instantánea de municipios del norte/centro y como respaldo OpenStreetMap + OSRM.
+     */
+    public static function resolveRoadDistanceFromLogrono(?string $rawLocation): ?array
+    {
+        $text = trim((string) $rawLocation);
+        if ($text === '') {
+            return null;
+        }
+
+        $norm = mb_strtolower($text, 'UTF-8');
+        $norm = strtr($norm, [
+            'á' => 'a', 'é' => 'e', 'í' => 'i', 'ó' => 'o', 'ú' => 'u', 'ü' => 'u',
+            'Á' => 'a', 'É' => 'e', 'Í' => 'i', 'Ó' => 'o', 'Ú' => 'u', 'Ü' => 'u',
+        ]);
+
+        // Mapa de distancias reales por carretera desde Logroño (km solo ida)
+        $knownLocations = [
+            // Bizkaia
+            'gautegiz' => ['label' => 'Gautegiz-Arteaga (Bizkaia)', 'km' => 145, 'surcharge' => 75],
+            'arteaga' => ['label' => 'Gautegiz-Arteaga (Bizkaia)', 'km' => 145, 'surcharge' => 75],
+            'urdaibai' => ['label' => 'Urdaibai (Bizkaia)', 'km' => 145, 'surcharge' => 75],
+            'gernika' => ['label' => 'Gernika-Lumo (Bizkaia)', 'km' => 140, 'surcharge' => 75],
+            'guernica' => ['label' => 'Gernika-Lumo (Bizkaia)', 'km' => 140, 'surcharge' => 75],
+            'bermeo' => ['label' => 'Bermeo (Bizkaia)', 'km' => 152, 'surcharge' => 75],
+            'mundaka' => ['label' => 'Mundaka (Bizkaia)', 'km' => 150, 'surcharge' => 75],
+            'mungia' => ['label' => 'Mungia (Bizkaia)', 'km' => 142, 'surcharge' => 75],
+            'munguia' => ['label' => 'Mungia (Bizkaia)', 'km' => 142, 'surcharge' => 75],
+            'lekeitio' => ['label' => 'Lekeitio (Bizkaia)', 'km' => 155, 'surcharge' => 80],
+            'ondarroa' => ['label' => 'Ondarroa (Bizkaia)', 'km' => 150, 'surcharge' => 75],
+            'markina' => ['label' => 'Markina-Xemein (Bizkaia)', 'km' => 140, 'surcharge' => 75],
+            'amorebieta' => ['label' => 'Amorebieta-Etxano (Bizkaia)', 'km' => 125, 'surcharge' => 75],
+            'durango' => ['label' => 'Durango (Bizkaia)', 'km' => 118, 'surcharge' => 70],
+            'elorrio' => ['label' => 'Elorrio (Bizkaia)', 'km' => 115, 'surcharge' => 70],
+            'getxo' => ['label' => 'Getxo (Bizkaia)', 'km' => 148, 'surcharge' => 75],
+            'guecho' => ['label' => 'Getxo (Bizkaia)', 'km' => 148, 'surcharge' => 75],
+            'sopela' => ['label' => 'Sopela (Bizkaia)', 'km' => 150, 'surcharge' => 75],
+            'plentzia' => ['label' => 'Plentzia (Bizkaia)', 'km' => 153, 'surcharge' => 75],
+            'bakio' => ['label' => 'Bakio (Bizkaia)', 'km' => 155, 'surcharge' => 75],
+            'barakaldo' => ['label' => 'Barakaldo (Bizkaia)', 'km' => 140, 'surcharge' => 75],
+            'portugalete' => ['label' => 'Portugalete (Bizkaia)', 'km' => 144, 'surcharge' => 75],
+            'santurtzi' => ['label' => 'Santurtzi (Bizkaia)', 'km' => 146, 'surcharge' => 75],
+            'castro urdiales' => ['label' => 'Castro Urdiales (Cantabria)', 'km' => 165, 'surcharge' => 80],
+            'orozko' => ['label' => 'Orozko (Bizkaia)', 'km' => 115, 'surcharge' => 70],
+            'zeanuri' => ['label' => 'Zeanuri (Bizkaia)', 'km' => 110, 'surcharge' => 70],
+            'dima' => ['label' => 'Dima (Bizkaia)', 'km' => 112, 'surcharge' => 70],
+            'balmaseda' => ['label' => 'Balmaseda (Bizkaia)', 'km' => 155, 'surcharge' => 75],
+            'bilbao' => ['label' => 'Bilbao (Bizkaia)', 'km' => 135, 'surcharge' => 75],
+            'bilbo' => ['label' => 'Bilbao (Bizkaia)', 'km' => 135, 'surcharge' => 75],
+
+            // Gipuzkoa
+            'hondarribia' => ['label' => 'Hondarribia (Gipuzkoa)', 'km' => 175, 'surcharge' => 85],
+            'fuenterrabia' => ['label' => 'Hondarribia (Gipuzkoa)', 'km' => 175, 'surcharge' => 85],
+            'irun' => ['label' => 'Irun (Gipuzkoa)', 'km' => 172, 'surcharge' => 85],
+            'donostia' => ['label' => 'Donostia / San Sebastián', 'km' => 165, 'surcharge' => 85],
+            'san sebastian' => ['label' => 'Donostia / San Sebastián', 'km' => 165, 'surcharge' => 85],
+            'zarautz' => ['label' => 'Zarautz (Gipuzkoa)', 'km' => 158, 'surcharge' => 80],
+            'getaria' => ['label' => 'Getaria (Gipuzkoa)', 'km' => 160, 'surcharge' => 80],
+            'zumaia' => ['label' => 'Zumaia (Gipuzkoa)', 'km' => 155, 'surcharge' => 80],
+            'azpeitia' => ['label' => 'Azpeitia (Gipuzkoa)', 'km' => 145, 'surcharge' => 75],
+            'azkoitia' => ['label' => 'Azkoitia (Gipuzkoa)', 'km' => 142, 'surcharge' => 75],
+            'tolosa' => ['label' => 'Tolosa (Gipuzkoa)', 'km' => 140, 'surcharge' => 75],
+            'beasain' => ['label' => 'Beasain (Gipuzkoa)', 'km' => 125, 'surcharge' => 70],
+            'ordizia' => ['label' => 'Ordizia (Gipuzkoa)', 'km' => 127, 'surcharge' => 70],
+            'onati' => ['label' => 'Oñati (Gipuzkoa)', 'km' => 115, 'surcharge' => 70],
+            'oñati' => ['label' => 'Oñati (Gipuzkoa)', 'km' => 115, 'surcharge' => 70],
+            'arrasate' => ['label' => 'Arrasate / Mondragón (Gipuzkoa)', 'km' => 108, 'surcharge' => 70],
+            'mondragon' => ['label' => 'Arrasate / Mondragón (Gipuzkoa)', 'km' => 108, 'surcharge' => 70],
+            'bergara' => ['label' => 'Bergara (Gipuzkoa)', 'km' => 118, 'surcharge' => 70],
+            'eibar' => ['label' => 'Eibar (Gipuzkoa)', 'km' => 125, 'surcharge' => 75],
+
+            // Álava (fuera de Rioja Alavesa)
+            'llodio' => ['label' => 'Llodio / Laudio (Álava)', 'km' => 118, 'surcharge' => 70],
+            'laudio' => ['label' => 'Llodio / Laudio (Álava)', 'km' => 118, 'surcharge' => 70],
+            'amurrio' => ['label' => 'Amurrio (Álava)', 'km' => 110, 'surcharge' => 65],
+            'murguia' => ['label' => 'Murgia / Zuia (Álava)', 'km' => 85, 'surcharge' => 0],
+            'murgia' => ['label' => 'Murgia / Zuia (Álava)', 'km' => 85, 'surcharge' => 0],
+            'zuia' => ['label' => 'Zuia (Álava)', 'km' => 85, 'surcharge' => 0],
+            'salvatierra' => ['label' => 'Salvatierra / Agurain (Álava)', 'km' => 78, 'surcharge' => 0],
+            'agurain' => ['label' => 'Salvatierra / Agurain (Álava)', 'km' => 78, 'surcharge' => 0],
+            'vitoria' => ['label' => 'Vitoria-Gasteiz (Álava)', 'km' => 65, 'surcharge' => 0],
+            'gasteiz' => ['label' => 'Vitoria-Gasteiz (Álava)', 'km' => 65, 'surcharge' => 0],
+
+            // Navarra
+            'elizondo' => ['label' => 'Elizondo / Baztan (Navarra)', 'km' => 140, 'surcharge' => 75],
+            'baztan' => ['label' => 'Valle de Baztan (Navarra)', 'km' => 140, 'surcharge' => 75],
+            'alsasua' => ['label' => 'Alsasua / Altsasu (Navarra)', 'km' => 98, 'surcharge' => 50],
+            'altsasu' => ['label' => 'Alsasua / Altsasu (Navarra)', 'km' => 98, 'surcharge' => 50],
+            'tudela' => ['label' => 'Tudela (Navarra)', 'km' => 92, 'surcharge' => 0],
+            'olite' => ['label' => 'Olite (Navarra)', 'km' => 85, 'surcharge' => 0],
+            'tafalla' => ['label' => 'Tafalla (Navarra)', 'km' => 80, 'surcharge' => 0],
+            'puente la reina' => ['label' => 'Puente la Reina (Navarra)', 'km' => 66, 'surcharge' => 0],
+            'gorraiz' => ['label' => 'Gorraiz / Pamplona (Navarra)', 'km' => 92, 'surcharge' => 0],
+            'pamplona' => ['label' => 'Pamplona / Iruña (Navarra)', 'km' => 88, 'surcharge' => 0],
+            'iruna' => ['label' => 'Pamplona / Iruña (Navarra)', 'km' => 88, 'surcharge' => 0],
+            'iruña' => ['label' => 'Pamplona / Iruña (Navarra)', 'km' => 88, 'surcharge' => 0],
+            'estella' => ['label' => 'Estella-Lizarra (Navarra)', 'km' => 46, 'surcharge' => 0],
+            'viana' => ['label' => 'Viana (Navarra)', 'km' => 10, 'surcharge' => 0],
+            'los arcos' => ['label' => 'Los Arcos (Navarra)', 'km' => 29, 'surcharge' => 0],
+
+            // Burgos / Soria / Zaragoza / Cantabria
+            'miranda de ebro' => ['label' => 'Miranda de Ebro (Burgos)', 'km' => 63, 'surcharge' => 0],
+            'miranda' => ['label' => 'Miranda de Ebro (Burgos)', 'km' => 63, 'surcharge' => 0],
+            'belorado' => ['label' => 'Belorado (Burgos)', 'km' => 68, 'surcharge' => 0],
+            'briviesca' => ['label' => 'Briviesca (Burgos)', 'km' => 88, 'surcharge' => 0],
+            'lerma' => ['label' => 'Lerma (Burgos)', 'km' => 152, 'surcharge' => 75],
+            'aranda de duero' => ['label' => 'Aranda de Duero (Burgos)', 'km' => 195, 'surcharge' => 85],
+            'burgos' => ['label' => 'Burgos', 'km' => 115, 'surcharge' => 65],
+            'soria' => ['label' => 'Soria', 'km' => 102, 'surcharge' => 60],
+            'zaragoza' => ['label' => 'Zaragoza', 'km' => 172, 'surcharge' => 80],
+            'santander' => ['label' => 'Santander (Cantabria)', 'km' => 235, 'surcharge' => 95],
+            'laredo' => ['label' => 'Laredo (Cantabria)', 'km' => 185, 'surcharge' => 85],
+
+            // La Rioja y Rioja Alavesa (<= 50 km incluidos gratis, salvo Ezcaray/Alfaro)
+            'ezcaray' => ['label' => 'Ezcaray (La Rioja)', 'km' => 60, 'surcharge' => 0],
+            'alfaro' => ['label' => 'Alfaro (La Rioja)', 'km' => 74, 'surcharge' => 0],
+            'arnedo' => ['label' => 'Arnedo (La Rioja)', 'km' => 49, 'surcharge' => 0],
+            'calahorra' => ['label' => 'Calahorra (La Rioja)', 'km' => 48, 'surcharge' => 0],
+            'santo domingo' => ['label' => 'Santo Domingo de la Calzada (La Rioja)', 'km' => 47, 'surcharge' => 0],
+            'casalarreina' => ['label' => 'Casalarreina (La Rioja)', 'km' => 47, 'surcharge' => 0],
+            'cuzcurrita' => ['label' => 'Cuzcurrita de Río Tirón (La Rioja)', 'km' => 49, 'surcharge' => 0],
+            'haro' => ['label' => 'Haro (La Rioja)', 'km' => 45, 'surcharge' => 0],
+            'briones' => ['label' => 'Briones (La Rioja)', 'km' => 35, 'surcharge' => 0],
+            'san vicente de la sonsierra' => ['label' => 'San Vicente de la Sonsierra (La Rioja)', 'km' => 36, 'surcharge' => 0],
+            'najera' => ['label' => 'Nájera (La Rioja)', 'km' => 28, 'surcharge' => 0],
+            'laguardia' => ['label' => 'Laguardia (Rioja Alavesa)', 'km' => 18, 'surcharge' => 0],
+            'elciego' => ['label' => 'Elciego (Rioja Alavesa)', 'km' => 23, 'surcharge' => 0],
+            'samaniego' => ['label' => 'Samaniego (Rioja Alavesa)', 'km' => 27, 'surcharge' => 0],
+            'labastida' => ['label' => 'Labastida (Rioja Alavesa)', 'km' => 42, 'surcharge' => 0],
+            'logrono' => ['label' => 'Logroño (La Rioja)', 'km' => 5, 'surcharge' => 0],
+        ];
+
+        foreach ($knownLocations as $keyword => $data) {
+            if (str_contains($norm, $keyword)) {
+                return [
+                    'label' => $data['label'],
+                    'km' => $data['km'],
+                    'surcharge_enabled' => ($data['surcharge'] ?? 0) > 0,
+                    'surcharge' => $data['surcharge'] ?? 75,
+                ];
+            }
+        }
+
+        // Fallbacks generales por provincia si solo pusieron "Bizkaia", "Gipuzkoa", etc.
+        $provinceFallbacks = [
+            'bizkaia' => ['label' => 'Bizkaia', 'km' => 135, 'surcharge' => 75],
+            'vizcaya' => ['label' => 'Bizkaia', 'km' => 135, 'surcharge' => 75],
+            'gipuzkoa' => ['label' => 'Gipuzkoa', 'km' => 150, 'surcharge' => 80],
+            'guipuzcoa' => ['label' => 'Gipuzkoa', 'km' => 150, 'surcharge' => 80],
+            'cantabria' => ['label' => 'Cantabria', 'km' => 210, 'surcharge' => 90],
+        ];
+
+        // Antes de usar fallback genérico de provincia, intentamos geocodificar con OpenStreetMap + OSRM
+        $cleanQuery = preg_replace('/\b(municipio\s+de|localidad\s+de|pueblo\s+de|finca\s+en|bodega\s+en|restaurante\s+en|hotel\s+en|boda\s+en|en\s+la\s+provincia\s+de)\b/iu', ' ', $text);
+        $cleanQuery = trim(preg_replace('/\s{2,}/u', ' ', $cleanQuery ?? $text));
+
+        if (mb_strlen($cleanQuery) >= 3) {
+            $cacheKey = 'road_km_logrono_' . md5(mb_strtolower($cleanQuery, 'UTF-8'));
+            $osmResult = \Illuminate\Support\Facades\Cache::remember($cacheKey, now()->addDays(30), function () use ($cleanQuery) {
+                try {
+                    $geoResp = \Illuminate\Support\Facades\Http::timeout(3)
+                        ->withHeaders(['User-Agent' => 'NunezAndSonEventos/1.0 (info@nunezandson.com)'])
+                        ->get('https://nominatim.openstreetmap.org/search', [
+                            'q' => $cleanQuery . ', España',
+                            'format' => 'json',
+                            'limit' => 1,
+                        ]);
+
+                    if ($geoResp->successful() && !empty($geoResp->json()[0]['lat']) && !empty($geoResp->json()[0]['lon'])) {
+                        $hit = $geoResp->json()[0];
+                        $lat = (float) $hit['lat'];
+                        $lon = (float) $hit['lon'];
+
+                        // Logroño: lat 42.4627, lon -2.4449
+                        $routeUrl = "https://router.project-osrm.org/route/v1/driving/-2.4449,42.4627;{$lon},{$lat}?overview=false";
+                        $routeResp = \Illuminate\Support\Facades\Http::timeout(3)->get($routeUrl);
+                        if ($routeResp->successful() && !empty($routeResp->json()['routes'][0]['distance'])) {
+                            $meters = (float) $routeResp->json()['routes'][0]['distance'];
+                            $km = (int) round($meters / 1000);
+                            if ($km > 0 && $km < 1200) {
+                                return [
+                                    'label' => $cleanQuery,
+                                    'km' => $km,
+                                    'surcharge_enabled' => $km >= 100,
+                                    'surcharge' => $km >= 150 ? 85 : ($km >= 100 ? 75 : 0),
+                                ];
+                            }
+                        }
+                    }
+                } catch (\Throwable $e) {
+                    // Ignorar si Nominatim/OSRM no responde
+                }
+                return null;
+            });
+
+            if (is_array($osmResult) && !empty($osmResult['km'])) {
+                return $osmResult;
+            }
+        }
+
+        foreach ($provinceFallbacks as $provKey => $data) {
+            if (str_contains($norm, $provKey)) {
+                return [
+                    'label' => $data['label'],
+                    'km' => $data['km'],
+                    'surcharge_enabled' => ($data['surcharge'] ?? 0) > 0,
+                    'surcharge' => $data['surcharge'] ?? 75,
+                ];
+            }
+        }
+
+        return null;
     }
 
     public function getCalculatedTravelBreakdownProperty(): array
