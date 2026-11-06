@@ -363,9 +363,14 @@
                                 @endforeach
                             </div>
 
-                            <div class="p-4 rounded-2xl bg-slate-950/90 border border-slate-800 border-l-4 border-l-amber-400 text-xs sm:text-sm text-slate-300 leading-relaxed">
-                                <strong class="text-amber-400">* Montaje de iluminación y sonido adaptado a cada espacio:</strong>
-                                {{ !empty(trim((string) ($config['packs_section_note'] ?? ''))) ? $config['packs_section_note'] : 'El equipamiento indicado en cada pack es orientativo; dimensionamos siempre la iluminación y el sonido según el tamaño y características del salón o finca para que luzca impecable.' }}
+                            <div class="p-4 rounded-2xl bg-slate-950/90 border border-slate-800 border-l-4 border-l-amber-400 text-xs sm:text-sm text-slate-300 leading-relaxed space-y-1">
+                                <div>
+                                    <strong class="text-amber-400">* Montaje de iluminación y sonido adaptado a cada espacio:</strong>
+                                    {{ !empty(trim((string) ($config['packs_section_note'] ?? ''))) ? $config['packs_section_note'] : 'El equipamiento indicado en cada pack es orientativo; dimensionamos siempre la iluminación y el sonido según el tamaño y características del salón o finca para que luzca impecable.' }}
+                                </div>
+                                <div>
+                                    <strong class="text-amber-400">Desplazamiento:</strong> Incluido sin coste hasta 50 km desde Logroño (La Rioja y Rioja Alavesa). Para distancias superiores se aplica suplemento de kilometraje (0,39 €/km) y logística.
+                                </div>
                             </div>
                         </div>
 

@@ -5887,6 +5887,126 @@
                                 </div>
                             </div>
 
+                            <!-- SECCIÓN DESPLEGABLE: CALCULADORA DE DESPLAZAMIENTO (> 50 KM) Y LOGÍSTICA -->
+                            @php
+                                $travelBreakdown = $this->calculated_travel_breakdown;
+                                $hasTravelExtraApplied = collect($custom_extras)->contains(function ($ex) {
+                                    $n = mb_strtolower(trim((string) ($ex['name'] ?? '')));
+                                    return str_contains($n, 'desplazamiento') || str_contains($n, 'kilometraje');
+                                });
+                            @endphp
+                            <div x-data="{ openTravel: {{ ($hasTravelExtraApplied || $travel_one_way_km > 0) ? 'true' : 'false' }} }" class="bg-white rounded-xl border border-amber-200 shadow-xs overflow-hidden">
+                                <button type="button" @click="openTravel = !openTravel" class="w-full flex items-center justify-between p-3 text-left bg-amber-50/60 hover:bg-amber-50 transition">
+                                    <h6 class="text-xs font-black uppercase text-amber-900 tracking-wider flex items-center gap-1.5">
+                                        <span>🚐</span> Desplazamiento (> 50 km a 0,39 €/km) y Logística Fuera de Zona
+                                        @if($hasTravelExtraApplied)
+                                            <span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 text-[10px] font-extrabold">Aplicado</span>
+                                        @endif
+                                    </h6>
+                                    <span class="text-[11px] font-bold text-amber-900 bg-white px-2.5 py-0.5 rounded-full border border-amber-200" x-text="openTravel ? '🔼 Plegar' : '🔽 Calcular km'"></span>
+                                </button>
+
+                                <div x-show="openTravel" class="p-3.5 pt-3 border-t border-amber-100 space-y-3 bg-amber-50/20">
+                                    <div class="text-[11px] text-slate-600 leading-relaxed">
+                                        <strong>Regla base:</strong> Primeros <strong>50 km de radio desde Logroño</strong> (100 km ida y vuelta: La Rioja, Haro, Casalarreina, Santo Domingo, Calahorra y Rioja Alavesa) <strong>incluidos (0 €)</strong>. A partir de 50 km se calcula a <strong>0,39 €/km (ida y vuelta)</strong> + opción de suplemento de peajes/gestión/alta en salidas largas.
+                                    </div>
+
+                                    <!-- Botones rápidos de destinos habituales fuera de los 50 km -->
+                                    <div class="flex flex-wrap items-center gap-1.5">
+                                        <span class="text-[10px] font-extrabold uppercase text-slate-500 mr-1">Destinos rápidos:</span>
+                                        <button type="button" wire:click="setTravelPreset('Vitoria-Gasteiz', 65, false, 0)" class="px-2 py-1 rounded-lg bg-white hover:bg-amber-50 text-slate-700 border border-slate-200 text-[11px] font-bold transition cursor-pointer">
+                                            📍 Vitoria (65 km)
+                                        </button>
+                                        <button type="button" wire:click="setTravelPreset('Pamplona', 88, false, 0)" class="px-2 py-1 rounded-lg bg-white hover:bg-amber-50 text-slate-700 border border-slate-200 text-[11px] font-bold transition cursor-pointer">
+                                            📍 Pamplona (88 km)
+                                        </button>
+                                        <button type="button" wire:click="setTravelPreset('Burgos', 115, true, 65)" class="px-2 py-1 rounded-lg bg-white hover:bg-amber-50 text-slate-700 border border-slate-200 text-[11px] font-bold transition cursor-pointer">
+                                            📍 Burgos (115 km + logística)
+                                        </button>
+                                        <button type="button" wire:click="setTravelPreset('Bilbao / Bizkaia', 135, true, 75)" class="px-2 py-1 rounded-lg bg-white hover:bg-amber-50 text-slate-700 border border-slate-200 text-[11px] font-bold transition cursor-pointer">
+                                            📍 Bilbao (135 km + logística)
+                                        </button>
+                                        <button type="button" wire:click="setTravelPreset('Gautegiz-Arteaga / Urdaibai', 145, true, 75)" class="px-2 py-1 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-950 border border-amber-300 text-[11px] font-extrabold transition cursor-pointer">
+                                            📍 Gautegiz / Urdaibai (145 km + logística)
+                                        </button>
+                                        <button type="button" wire:click="setTravelPreset('San Sebastián / Gipuzkoa', 165, true, 85)" class="px-2 py-1 rounded-lg bg-white hover:bg-amber-50 text-slate-700 border border-slate-200 text-[11px] font-bold transition cursor-pointer">
+                                            📍 Donostia (165 km + logística)
+                                        </button>
+                                    </div>
+
+                                    <div class="grid grid-cols-1 sm:grid-cols-4 gap-2.5">
+                                        <div>
+                                            <label class="block text-[10px] font-extrabold uppercase text-slate-600 mb-1">Localidad / Destino</label>
+                                            <input type="text" wire:model.live="travel_destination_label" placeholder="{{ $event->location ?: 'Ej: Gautegiz-Arteaga' }}" class="w-full rounded-lg border-slate-300 p-1.5 text-xs bg-white">
+                                        </div>
+                                        <div>
+                                            <label class="block text-[10px] font-extrabold uppercase text-slate-600 mb-1">Distancia SOLO IDA (km)</label>
+                                            <input type="number" min="0" step="1" wire:model.live="travel_one_way_km" placeholder="Ej: 145" class="w-full rounded-lg border-slate-300 p-1.5 text-xs font-black text-slate-900 bg-white">
+                                        </div>
+                                        <div>
+                                            <label class="block text-[10px] font-extrabold uppercase text-slate-600 mb-1">Radio gratis ida (km)</label>
+                                            <input type="number" min="0" step="1" wire:model.live="travel_free_radius_km" class="w-full rounded-lg border-slate-300 p-1.5 text-xs font-bold text-slate-700 bg-white">
+                                        </div>
+                                        <div>
+                                            <label class="block text-[10px] font-extrabold uppercase text-slate-600 mb-1">Precio €/km (i+v)</label>
+                                            <input type="number" min="0" step="0.01" wire:model.live="travel_rate_per_km" class="w-full rounded-lg border-slate-300 p-1.5 text-xs font-bold text-slate-700 bg-white">
+                                        </div>
+                                    </div>
+
+                                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-2.5 rounded-xl bg-white border border-slate-200">
+                                        <div class="space-y-1.5">
+                                            <label class="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-700">
+                                                <input type="checkbox" wire:model.live="travel_deduct_free_radius" class="rounded text-amber-600 focus:ring-amber-500 h-3.5 w-3.5">
+                                                <span>Descontar los primeros {{ (int) $travel_free_radius_km }} km de ida ({{ (int) ($travel_free_radius_km * 2) }} km i+v gratis)</span>
+                                            </label>
+                                            <div class="flex flex-wrap items-center gap-2">
+                                                <label class="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-800">
+                                                    <input type="checkbox" wire:model.live="travel_long_distance_surcharge_enabled" class="rounded text-indigo-600 focus:ring-indigo-500 h-3.5 w-3.5">
+                                                    <span>Añadir suplemento Peajes + Gestión/Alta plataforma (salida larga):</span>
+                                                </label>
+                                                @if($travel_long_distance_surcharge_enabled)
+                                                    <div class="inline-flex items-center gap-1">
+                                                        <input type="number" step="5" wire:model.live="travel_long_distance_surcharge" class="w-16 rounded-lg border-slate-300 p-1 text-xs font-black text-right bg-slate-50">
+                                                        <span class="text-xs font-bold text-slate-600">€</span>
+                                                    </div>
+                                                @endif
+                                            </div>
+                                        </div>
+
+                                        <div class="flex flex-col sm:items-end justify-center gap-1.5 shrink-0 border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-100">
+                                            @if($travelBreakdown['is_within_free_zone'])
+                                                <span class="text-xs font-extrabold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
+                                                    ✅ Dentro de los {{ (int) $travelBreakdown['free_radius_km'] }} km incluidos (0 €)
+                                                </span>
+                                            @else
+                                                <div class="text-right">
+                                                    <div class="text-[11px] text-slate-500">
+                                                        Ida y vuelta: <strong>{{ (int) $travelBreakdown['round_trip_km'] }} km</strong>
+                                                        · A cobrar: <strong>{{ (int) $travelBreakdown['billable_km'] }} km</strong> ({{ number_format($travelBreakdown['km_cost'], 2, ',', '.') }} €)
+                                                        @if($travelBreakdown['surcharge'] > 0)
+                                                            + Logística/Peajes ({{ number_format($travelBreakdown['surcharge'], 0, ',', '.') }} €)
+                                                        @endif
+                                                    </div>
+                                                    <div class="text-base font-black text-amber-900">
+                                                        Suplemento Total: {{ number_format($travelBreakdown['total'], 2, ',', '.') }} €
+                                                    </div>
+                                                </div>
+                                                <div class="flex items-center gap-1.5">
+                                                    <button type="button" wire:click="applyTravelToQuote" class="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs font-extrabold shadow-xs transition cursor-pointer">
+                                                        ➕ Aplicar {{ number_format($travelBreakdown['total'], 2, ',', '.') }} € al Presupuesto
+                                                    </button>
+                                                    @if($hasTravelExtraApplied)
+                                                        <button type="button" wire:click="removeTravelFromQuote" class="px-2.5 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold transition cursor-pointer" title="Quitar desplazamiento del presupuesto">
+                                                            ✕ Quitar
+                                                        </button>
+                                                    @endif
+                                                </div>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                             <!-- SECCIÓN DESPLEGABLE: EXTRAS PERSONALIZADOS (MÚLTIPLES LÍNEAS) -->
                             <div x-data="{ openExtras: {{ (!empty($custom_extras[0]['name'])) ? 'true' : 'false' }} }" class="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
                                 <button type="button" @click="openExtras = !openExtras" class="w-full flex items-center justify-between p-3 text-left hover:bg-gray-50 transition">

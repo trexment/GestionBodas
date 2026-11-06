@@ -173,6 +173,15 @@ class EventShow extends Component
         ['name' => '', 'price' => 0, 'desc' => '', 'consult' => false]
     ];
 
+    // Calculadora de Desplazamiento / Kilometraje (> 50 km desde Logroño)
+    public $travel_destination_label = '';
+    public $travel_one_way_km = 0;
+    public $travel_free_radius_km = 50;
+    public $travel_rate_per_km = 0.39;
+    public $travel_deduct_free_radius = true;
+    public $travel_long_distance_surcharge_enabled = false;
+    public $travel_long_distance_surcharge = 75;
+
     // Dossier form
     public $dossier_content;
     public $is_dossier_completed;
@@ -4056,6 +4065,107 @@ class EventShow extends Component
     public function addCustomExtra()
     {
         $this->custom_extras[] = ['name' => '', 'price' => 0, 'desc' => '', 'consult' => false];
+    }
+
+    public function setTravelPreset(string $city, int $oneWayKm, bool $withLogisticsSurcharge = false, int $surchargeAmount = 75)
+    {
+        $this->travel_destination_label = $city;
+        $this->travel_one_way_km = $oneWayKm;
+        $this->travel_long_distance_surcharge_enabled = $withLogisticsSurcharge;
+        if ($withLogisticsSurcharge) {
+            $this->travel_long_distance_surcharge = $surchargeAmount;
+        }
+    }
+
+    public function getCalculatedTravelBreakdownProperty(): array
+    {
+        $oneWay = max(0, (float) $this->travel_one_way_km);
+        $freeRadius = max(0, (float) $this->travel_free_radius_km);
+        $rate = max(0, (float) $this->travel_rate_per_km);
+        $roundTripKm = $oneWay * 2;
+        $freeRoundTripKm = $this->travel_deduct_free_radius ? ($freeRadius * 2) : 0;
+
+        $billableKm = $oneWay > $freeRadius ? max(0, $roundTripKm - $freeRoundTripKm) : 0;
+        $kmCost = round($billableKm * $rate, 2);
+        $surcharge = $this->travel_long_distance_surcharge_enabled ? max(0, (float) $this->travel_long_distance_surcharge) : 0.0;
+        $total = round($kmCost + $surcharge, 2);
+
+        return [
+            'one_way_km' => $oneWay,
+            'round_trip_km' => $roundTripKm,
+            'free_radius_km' => $freeRadius,
+            'free_round_trip_km' => $freeRoundTripKm,
+            'billable_km' => $billableKm,
+            'rate' => $rate,
+            'km_cost' => $kmCost,
+            'surcharge' => $surcharge,
+            'total' => $total,
+            'is_within_free_zone' => ($oneWay > 0 && $oneWay <= $freeRadius && !$this->travel_long_distance_surcharge_enabled),
+        ];
+    }
+
+    public function applyTravelToQuote()
+    {
+        $b = $this->calculated_travel_breakdown;
+        if ($b['total'] <= 0) {
+            session()->flash('quote_error', 'La distancia indicada está dentro de los ' . (int) $b['free_radius_km'] . ' km incluidos sin coste (0 €).');
+            return;
+        }
+
+        $dest = trim((string) $this->travel_destination_label);
+        if ($dest === '' && !empty($this->event?->location)) {
+            $dest = trim((string) $this->event->location);
+        }
+
+        $conceptName = 'Desplazamiento y logística fuera de zona habitual' . ($dest !== '' ? " ({$dest})" : '');
+        $rateFormatted = number_format($b['rate'], 2, ',', '.');
+
+        if ($this->travel_deduct_free_radius && $b['free_radius_km'] > 0) {
+            $desc = "Kilometraje ida y vuelta desde Logroño ({$b['round_trip_km']} km totales; primeros {$b['free_radius_km']} km de radio / {$b['free_round_trip_km']} km i+v incluidos sin coste; {$b['billable_km']} km adicionales a {$rateFormatted} €/km" . ($b['surcharge'] > 0 ? ' + peajes, gestión y logística de larga distancia' : '') . ').';
+        } else {
+            $desc = "Kilometraje ida y vuelta desde Logroño ({$b['round_trip_km']} km a {$rateFormatted} €/km" . ($b['surcharge'] > 0 ? ' + peajes, gestión y logística de larga distancia' : '') . ').';
+        }
+
+        $foundIndex = null;
+        foreach ($this->custom_extras as $idx => $ex) {
+            $n = mb_strtolower(trim((string) ($ex['name'] ?? '')));
+            if (str_contains($n, 'desplazamiento') || str_contains($n, 'kilometraje')) {
+                $foundIndex = $idx;
+                break;
+            }
+        }
+
+        $newExtra = [
+            'name' => $conceptName,
+            'price' => $b['total'],
+            'desc' => $desc,
+            'consult' => false,
+        ];
+
+        if ($foundIndex !== null) {
+            $this->custom_extras[$foundIndex] = $newExtra;
+        } elseif (count($this->custom_extras) === 1 && empty(trim((string) ($this->custom_extras[0]['name'] ?? '')))) {
+            $this->custom_extras[0] = $newExtra;
+        } else {
+            $this->custom_extras[] = $newExtra;
+        }
+
+        session()->flash('quote_message', "🚐 Añadido al presupuesto: {$conceptName} por " . number_format($b['total'], 2, ',', '.') . " €.");
+    }
+
+    public function removeTravelFromQuote()
+    {
+        $filtered = [];
+        foreach ($this->custom_extras as $ex) {
+            $n = mb_strtolower(trim((string) ($ex['name'] ?? '')));
+            if (str_contains($n, 'desplazamiento') || str_contains($n, 'kilometraje')) {
+                continue;
+            }
+            $filtered[] = $ex;
+        }
+        $this->custom_extras = !empty($filtered)
+            ? array_values($filtered)
+            : [['name' => '', 'price' => 0, 'desc' => '', 'consult' => false]];
     }
 
     public function removeCustomExtra($index)
