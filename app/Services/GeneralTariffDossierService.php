@@ -134,6 +134,7 @@ class GeneralTariffDossierService
             return [
                 'is_fair_active' => false,
                 'normal_price' => $normalFinalPrice,
+                'base_price' => $normalFinalPrice,
                 'inflated_price' => $normalFinalPrice,
                 'final_price' => $normalFinalPrice,
                 'discount_amount' => 0.0,
@@ -160,6 +161,7 @@ class GeneralTariffDossierService
         return [
             'is_fair_active' => true,
             'normal_price' => $normalFinalPrice,
+            'base_price' => $normalFinalPrice,
             'inflated_price' => $rawInflated,
             'final_price' => $rawFairFinal,
             'discount_amount' => $discountAmount,

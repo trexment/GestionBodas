@@ -65,19 +65,55 @@ class Event extends Model
         'photo_qr_created_at' => 'datetime',
     ];
 
+    protected static bool $tokensSchemaChecked = false;
+    protected static bool $hasGuestTokenColumn = false;
+    protected static bool $hasStaffTokenColumn = false;
+
+    protected static function ensureTokenColumnsExist(): void
+    {
+        if (static::$tokensSchemaChecked) {
+            return;
+        }
+        static::$tokensSchemaChecked = true;
+
+        try {
+            if (\Illuminate\Support\Facades\Schema::hasTable('events')) {
+                static::$hasGuestTokenColumn = \Illuminate\Support\Facades\Schema::hasColumn('events', 'guest_token');
+                static::$hasStaffTokenColumn = \Illuminate\Support\Facades\Schema::hasColumn('events', 'staff_token');
+
+                if (!static::$hasGuestTokenColumn || !static::$hasStaffTokenColumn) {
+                    \Illuminate\Support\Facades\Schema::table('events', function (\Illuminate\Database\Schema\Blueprint $table) {
+                        if (!static::$hasGuestTokenColumn) {
+                            $table->string('guest_token', 64)->nullable()->after('token');
+                        }
+                        if (!static::$hasStaffTokenColumn) {
+                            $table->string('staff_token', 64)->nullable()->after('token');
+                        }
+                    });
+                    static::$hasGuestTokenColumn = true;
+                    static::$hasStaffTokenColumn = true;
+                }
+            }
+        } catch (\Throwable $e) {
+            // Ignorar si no se puede alterar esquema en caliente
+        }
+    }
+
     protected static function boot()
     {
         parent::boot();
         
         static::creating(function ($event) {
+            static::ensureTokenColumnsExist();
+
             if (empty($event->token)) {
                 $event->token = Str::random(32);
             }
             // Tokens separados: invitados (QR peticiones) y personal (Modo Cabina)
-            if (empty($event->attributes['guest_token'] ?? null)) {
+            if (static::$hasGuestTokenColumn && empty($event->attributes['guest_token'] ?? null)) {
                 $event->attributes['guest_token'] = Str::random(32);
             }
-            if (empty($event->attributes['staff_token'] ?? null)) {
+            if (static::$hasStaffTokenColumn && empty($event->attributes['staff_token'] ?? null)) {
                 $event->attributes['staff_token'] = Str::random(40);
             }
         });

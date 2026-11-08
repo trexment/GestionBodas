@@ -1035,16 +1035,28 @@ class QuoteCalculator extends Component
                 $updates['phone'] = $this->client_phone;
             }
             if (!empty($updates)) {
-                $client->update($updates);
+                try {
+                    $client->update($updates);
+                } catch (\Throwable $e) {}
             }
         } else {
-            $client = User::create([
-                'name' => $this->client_name,
-                'email' => $cleanEmail ?: ('lead_' . time() . '_' . Str::lower(Str::random(6)) . '@eventosmusicales.local'),
-                'password' => bcrypt(Str::random(16)),
-                'role' => 'client',
-                'phone' => $this->client_phone,
-            ]);
+            try {
+                $client = User::create([
+                    'name' => $this->client_name,
+                    'email' => $cleanEmail ?: ('lead_' . time() . '_' . Str::lower(Str::random(6)) . '@eventosmusicales.local'),
+                    'password' => bcrypt(Str::random(16)),
+                    'role' => 'client',
+                    'phone' => $this->client_phone,
+                ]);
+            } catch (\Throwable $e) {
+                $client = User::create([
+                    'name' => $this->client_name,
+                    'email' => 'lead_' . time() . '_' . Str::lower(Str::random(6)) . '@eventosmusicales.local',
+                    'password' => bcrypt(Str::random(16)),
+                    'role' => 'client',
+                    'phone' => $this->client_phone,
+                ]);
+            }
         }
 
         // 3. Format notes with requested services
@@ -1057,10 +1069,10 @@ class QuoteCalculator extends Component
             if ($service['selected']) {
                 if ($key === 'dj' && $djPack) {
                     if ($fairModeActive && $fairPackPricing) {
-                        $infStr = number_format((float)$fairPackPricing['inflated_price'], 0, ',', '.');
-                        $discStr = number_format((float)$fairPackPricing['discount_amount'], 0, ',', '.');
-                        $finStr = number_format((float)$fairPackPricing['final_price'], 0, ',', '.');
-                        $baseStr = number_format((float)$fairPackPricing['base_price'], 0, ',', '.');
+                        $infStr = number_format((float)($fairPackPricing['inflated_price'] ?? 0), 0, ',', '.');
+                        $discStr = number_format((float)($fairPackPricing['discount_amount'] ?? 0), 0, ',', '.');
+                        $finStr = number_format((float)($fairPackPricing['final_price'] ?? 0), 0, ',', '.');
+                        $baseStr = number_format((float)($fairPackPricing['base_price'] ?? $fairPackPricing['normal_price'] ?? $djPack['pack_price'] ?? 0), 0, ',', '.');
                         $extraHoursNote = $djPack['extra_hours'] > 0
                             ? (" + {$djPack['extra_hours']}h extra (" . number_format((float)($djPack['extra_hours'] * $djPack['extra_hour_price']), 0, ',', '.') . " €)")
                             : "";
@@ -1128,10 +1140,10 @@ class QuoteCalculator extends Component
 
         if ($fairModeActive) {
             if ($fairPackPricing) {
-                $infStr = number_format((float)$fairPackPricing['inflated_price'], 0, ',', '.');
-                $discStr = number_format((float)$fairPackPricing['discount_amount'], 0, ',', '.');
-                $finStr = number_format((float)$fairPackPricing['final_price'], 0, ',', '.');
-                $baseStr = number_format((float)$fairPackPricing['base_price'], 0, ',', '.');
+                $infStr = number_format((float)($fairPackPricing['inflated_price'] ?? 0), 0, ',', '.');
+                $discStr = number_format((float)($fairPackPricing['discount_amount'] ?? 0), 0, ',', '.');
+                $finStr = number_format((float)($fairPackPricing['final_price'] ?? 0), 0, ',', '.');
+                $baseStr = number_format((float)($fairPackPricing['base_price'] ?? $fairPackPricing['normal_price'] ?? ($djPack['pack_price'] ?? 0)), 0, ',', '.');
                 $requestedServicesList[] = "• 🎪 MODO FERIA ACTIVO ({$fairName}): Pack aplicado con Tarifa Feria {$infStr} € − Descuento Especial -{$discStr} € = {$finStr} € (Precio base habitual: {$baseStr} €)";
             } else {
                 $requestedServicesList[] = "• 🎪 MODO FERIA ACTIVO ({$fairName}): Solicitud recibida durante promoción de feria";
@@ -1356,7 +1368,7 @@ class QuoteCalculator extends Component
                     . ($cleanClientNotes !== '' ? "\n📝 *Notas del cliente:*\n{$cleanClientNotes}\n" : "")
                     . "\n*Servicios seleccionados:*\n" . implode("\n", $requestedServicesList);
 
-                \App\Models\WhatsappMessage::create([
+                \App\Models\WhatsAppMessage::create([
                     'event_id' => $event->id,
                     'user_id' => null,
                     'phone' => preg_replace('/\D/', '', (string)$this->client_phone) ?: $this->client_email,
