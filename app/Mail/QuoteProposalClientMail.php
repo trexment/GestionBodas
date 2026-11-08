@@ -57,7 +57,7 @@ class QuoteProposalClientMail extends Mailable
         $attachments = [];
 
         try {
-            // Generate PDF on the fly and attach
+            // Generate PDF eagerly inside try/catch so any DomPDF rendering issue is caught safely
             $pdf = Pdf::loadView('pdf.quote', [
                 'quote' => $this->quote,
                 'event' => $this->event,
@@ -65,9 +65,10 @@ class QuoteProposalClientMail extends Mailable
                 'settings' => Setting::all()->pluck('value', 'key')->toArray(),
             ]);
 
-            $fileName = 'Presupuesto_' . $this->quote->id . '_' . \Illuminate\Support\Str::slug($this->event->name) . '.pdf';
+            $pdfBinary = $pdf->output();
+            $fileName = 'Presupuesto_' . $this->quote->id . '_' . \Illuminate\Support\Str::slug($this->event->name ?: 'evento') . '.pdf';
 
-            $attachments[] = Attachment::fromData(fn () => $pdf->output(), $fileName)
+            $attachments[] = Attachment::fromData(fn () => $pdfBinary, $fileName)
                 ->withMime('application/pdf');
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::warning('Could not generate PDF attachment for quote email: ' . $e->getMessage());

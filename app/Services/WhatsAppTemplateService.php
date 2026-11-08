@@ -692,8 +692,12 @@ class WhatsAppTemplateService
     /**
      * ETAPA 4: ENVÍO DEL DOSSIER CON EL PRESUPUESTO.
      */
-    public static function envioDossierPresupuesto(Event $event, ?\App\Models\Quote $quote = null, ?string $senderBrand = null): string
+    public static function envioDossierPresupuesto(Event $event, $quote = null, ?string $senderBrand = null): string
     {
+        if (is_string($quote) && $senderBrand === null) {
+            $senderBrand = $quote;
+            $quote = null;
+        }
         return self::renderTemplateByKey('dossier', $event, $senderBrand);
     }
 
@@ -1192,8 +1196,15 @@ class WhatsAppTemplateService
              . "¡Hasta pronto! 🎧";
     }
 
-    public static function resumenPresupuesto(Event $event, ?\App\Models\Quote $quote = null): string
+    public static function resumenPresupuesto(Event $event, $quote = null, ?string $senderBrand = null): string
     {
+        if (is_string($quote) && $senderBrand === null) {
+            $senderBrand = $quote;
+            $quote = null;
+        }
+        if (!($quote instanceof \App\Models\Quote)) {
+            $quote = null;
+        }
         $clientName = self::cleanClientDisplayName($event->client ? $event->client->name : null, $event->is_wedding ? 'pareja' : '', $event);
         $greeting = $clientName !== '' ? "¡Hola {$clientName}!" : "¡Hola!";
         $latestQuote = $quote ?: $event->quotes()->latest()->first();
@@ -1250,7 +1261,7 @@ class WhatsAppTemplateService
         $onlineUrl = $latestQuote ? $latestQuote->public_url : ($event->token ? route('guest.quote.view', $event->token) : '');
         $onlineLinkText = $onlineUrl ? "\n\n👉 *Ver propuesta online, descargar Dossier en PDF y Aceptar / Rechazar:*\n{$onlineUrl}" : "";
 
-        return "{$greeting} 👋\n\nOs compartimos la propuesta detallada para vuestro evento *{$event->name}*" . ($eventDate ? " ({$eventDate}{$loc})" : "") . ":\n\n"
+        $msg = "{$greeting} 👋\n\nOs compartimos la propuesta detallada para vuestro evento *{$event->name}*" . ($eventDate ? " ({$eventDate}{$loc})" : "") . ":\n\n"
              . ($quoteItemsText ?: '• Servicios musicales y sonorización profesional.') . "\n"
              . $adminNotesText . "\n"
              . "💰 *TOTAL PRESUPUESTO:* " . number_format($quoteAmount, 2, ',', '.') . " €\n\n"
@@ -1259,10 +1270,19 @@ class WhatsAppTemplateService
              . $quoteValidityNotice
              . $onlineLinkText . "\n\n"
              . "Cualquier duda o ajuste, estamos a vuestra entera disposición. ¡Un saludo!";
+
+        return self::applySenderSignatureToMessage($msg, $senderBrand, $event);
     }
 
-    public static function senalReserva(Event $event, ?\App\Models\Quote $quote = null): string
+    public static function senalReserva(Event $event, $quote = null, ?string $senderBrand = null): string
     {
+        if (is_string($quote) && $senderBrand === null) {
+            $senderBrand = $quote;
+            $quote = null;
+        }
+        if (!($quote instanceof \App\Models\Quote)) {
+            $quote = null;
+        }
         $clientName = self::cleanClientDisplayName($event->client ? $event->client->name : null, $event->is_wedding ? 'pareja' : '', $event);
         $greeting = $clientName !== '' ? "¡Hola {$clientName}!" : "¡Hola!";
         $latestQuote = $quote ?: $event->quotes()->latest()->first();
@@ -1284,11 +1304,13 @@ class WhatsAppTemplateService
         $bizum = Setting::get('company_bizum', '');
         $eventDate = $event->event_date ? Carbon::parse($event->event_date)->format('d/m/Y') : '';
 
-        return "{$greeting} 👋\n\nPara confirmar la fecha de vuestro evento *{$event->name}*" . ($eventDate ? " ({$eventDate})" : "") . ", podéis abonar la *Señal de reserva (" . number_format($signalAmount, 2, ',', '.') . " €)* mediante:\n\n"
+        $msg = "{$greeting} 👋\n\nPara confirmar la fecha de vuestro evento *{$event->name}*" . ($eventDate ? " ({$eventDate})" : "") . ", podéis abonar la *Señal de reserva (" . number_format($signalAmount, 2, ',', '.') . " €)* mediante:\n\n"
              . ($iban ? "🏦 *Transferencia Bancaria:*\n" . $iban . "\n\n" : "")
              . ($bizum ? "📱 *Bizum:* " . $bizum . "\n\n" : "")
              . "Concepto: " . $event->name . "\n\n"
              . "¡Muchas gracias y quedamos a vuestra disposición!";
+
+        return self::applySenderSignatureToMessage($msg, $senderBrand, $event);
     }
 
     public static function facturaRecibo(Event $event, \App\Models\Invoice $invoice): string

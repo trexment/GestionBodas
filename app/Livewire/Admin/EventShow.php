@@ -399,7 +399,9 @@ class EventShow extends Component
 
         // Auto-calcular los kilómetros de desplazamiento desde la ubicación del evento si existe
         if (!empty($this->event->location)) {
-            $this->autoDetectTravelFromEventLocation();
+            try {
+                $this->autoDetectTravelFromEventLocation();
+            } catch (\Throwable $e) {}
         }
 
         $this->invoice_type = 'factura';
@@ -2660,7 +2662,7 @@ class EventShow extends Component
             $this->whatsapp_chat_message = \App\Services\WhatsAppTemplateService::propuestaLlamada($this->event, $sender);
             $this->email_chat_subject = \App\Services\WhatsAppTemplateService::getEmailSubjectForKey($this->event, 'llamada');
         } elseif ($resolvedKey === 'dossier') {
-            $this->whatsapp_chat_message = \App\Services\WhatsAppTemplateService::envioDossierPresupuesto($this->event, $sender);
+            $this->whatsapp_chat_message = \App\Services\WhatsAppTemplateService::envioDossierPresupuesto($this->event, null, $sender);
             $this->email_chat_subject = \App\Services\WhatsAppTemplateService::getEmailSubjectForKey($this->event, 'dossier');
         } elseif ($resolvedKey === 'fotomaton_360') {
             $this->whatsapp_chat_message = \App\Services\WhatsAppTemplateService::infoFotomatonY360($this->event);
@@ -3028,7 +3030,7 @@ class EventShow extends Component
                     $title = 'Propuesta de Llamada';
                     break;
                 case 'envio_dossier':
-                    $text = \App\Services\WhatsAppTemplateService::envioDossierPresupuesto($this->event, $sender);
+                    $text = \App\Services\WhatsAppTemplateService::envioDossierPresupuesto($this->event, null, $sender);
                     $title = 'Dossier y Presupuesto';
                     break;
                 case 'post_presupuesto':
@@ -3037,12 +3039,12 @@ class EventShow extends Component
                     break;
                 case 'quote_propuesta':
                 case 'resumen_presupuesto':
-                    $text = \App\Services\WhatsAppTemplateService::resumenPresupuesto($this->event);
+                    $text = \App\Services\WhatsAppTemplateService::resumenPresupuesto($this->event, null, $sender);
                     $title = 'Resumen de Presupuesto';
                     break;
                 case 'signal':
                 case 'senal':
-                    $text = \App\Services\WhatsAppTemplateService::senalReserva($this->event);
+                    $text = \App\Services\WhatsAppTemplateService::senalReserva($this->event, null, $sender);
                     $title = 'Señal de Reserva';
                     break;
                 case 'tecnica_no':
@@ -3136,53 +3138,65 @@ class EventShow extends Component
         }
     }
 
-    public function sendDirectQuoteWhatsApp(int $quoteId)
+    public function sendDirectQuoteWhatsApp($quoteId)
     {
-        $phone = $this->event->client ? $this->event->client->phone : $this->event->partner_phone;
-        if (empty($phone)) {
-            session()->flash('whatsapp_error', 'No hay teléfono registrado para el cliente.');
-            return;
-        }
+        try {
+            $phone = $this->event->client ? $this->event->client->phone : $this->event->partner_phone;
+            if (empty($phone)) {
+                session()->flash('whatsapp_error', 'No hay teléfono registrado para el cliente.');
+                session()->flash('quote_error', 'No hay teléfono registrado para el cliente.');
+                return;
+            }
 
-        $quote = $this->event->quotes()->find($quoteId);
-        if (!$quote) {
-            session()->flash('whatsapp_error', 'Presupuesto no encontrado.');
-            return;
-        }
+            $quote = $this->event->quotes()->with('items')->find((int) $quoteId);
+            if (!$quote) {
+                session()->flash('whatsapp_error', 'Presupuesto no encontrado.');
+                session()->flash('quote_error', 'Presupuesto no encontrado.');
+                return;
+            }
 
-        $text = \App\Services\WhatsAppTemplateService::resumenPresupuesto($this->event, $quote);
-        $title = 'Presupuesto #' . $quote->id;
+            $senderBrand = $this->whatsapp_sender_brand ?: $this->event->brand_clean;
+            $text = \App\Services\WhatsAppTemplateService::resumenPresupuesto($this->event, $quote, $senderBrand);
+            $title = 'Presupuesto #' . $quote->id;
 
-        $senderBrand = $this->whatsapp_sender_brand ?: $this->event->brand_clean;
-        $senderLabel = $this->getSenderBrandLabel();
-        $result = \App\Services\EvolutionWhatsAppService::sendMessage(
-            $phone,
-            $text,
-            $senderBrand,
-            $this->event->id,
-            auth()->id()
-        );
+            $senderLabel = $this->getSenderBrandLabel();
+            $result = \App\Services\EvolutionWhatsAppService::sendMessage(
+                $phone,
+                $text,
+                $senderBrand,
+                $this->event->id,
+                auth()->id()
+            );
 
-        $newEntry = "[" . now()->format('d/m/Y H:i') . "] 💬 WhatsApp ({$title}) enviado desde {$senderLabel} por " . auth()->user()->name . ". Contador reseteado a 0.";
-        $this->event->update([
-            'no_response_at' => now(),
-            'notes' => \App\Models\Event::prependNote($this->event->notes, $newEntry),
-        ]);
-        $this->event->refresh();
-        $this->event_notes = $this->event->notes;
-        $this->event->load('whatsappMessages');
+            $userName = auth()->user() ? auth()->user()->name : 'Admin';
+            $newEntry = "[" . now()->format('d/m/Y H:i') . "] 💬 WhatsApp ({$title}) enviado desde {$senderLabel} por {$userName}. Contador reseteado a 0.";
+            $this->event->update([
+                'no_response_at' => now(),
+                'notes' => \App\Models\Event::prependNote($this->event->notes, $newEntry),
+            ]);
+            $this->event->refresh();
+            $this->event_notes = $this->event->notes;
+            $this->event->load('whatsappMessages');
 
-        if ($result['mode'] === 'api' && $result['success']) {
-            $msg = "✅ ¡Presupuesto #{$quote->id} enviado al cliente desde el WhatsApp de {$senderLabel}!";
-            session()->flash('message', $msg);
-            session()->flash('quote_message', $msg);
-        } elseif ($result['mode'] === 'manual' && !empty($result['url'])) {
-            $this->dispatch('open-whatsapp-link', ['url' => $result['url']]);
-            session()->flash('quote_message', "💬 Abriendo WhatsApp con la Propuesta #{$quote->id}...");
-        } elseif ($result['mode'] === 'fallback_link') {
-            session()->flash('whatsapp_error', 'El servicio de WhatsApp (' . $senderLabel . ') no está conectado. Usa el enlace manual.');
-        } else {
-            session()->flash('whatsapp_error', 'Error al enviar por WhatsApp: ' . ($result['error'] ?? 'desconocido'));
+            if (($result['mode'] ?? '') === 'api' && !empty($result['success'])) {
+                $msg = "✅ ¡Presupuesto #{$quote->id} enviado al cliente desde el WhatsApp de {$senderLabel}!";
+                session()->flash('message', $msg);
+                session()->flash('quote_message', $msg);
+            } elseif (($result['mode'] ?? '') === 'manual' && !empty($result['url'])) {
+                $this->dispatch('open-whatsapp-link', ['url' => $result['url']]);
+                session()->flash('quote_message', "💬 Abriendo WhatsApp con la Propuesta #{$quote->id}...");
+            } elseif (($result['mode'] ?? '') === 'fallback_link') {
+                session()->flash('whatsapp_error', 'El servicio de WhatsApp (' . $senderLabel . ') no está conectado. Usa el enlace manual.');
+                session()->flash('quote_error', 'El servicio de WhatsApp (' . $senderLabel . ') no está conectado. Usa el enlace manual.');
+            } else {
+                $errMsg = 'Error al enviar por WhatsApp: ' . ($result['error'] ?? 'desconocido');
+                session()->flash('whatsapp_error', $errMsg);
+                session()->flash('quote_error', $errMsg);
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Error en sendDirectQuoteWhatsApp: ' . $e->getMessage());
+            session()->flash('whatsapp_error', 'Error al enviar el presupuesto por WhatsApp: ' . $e->getMessage());
+            session()->flash('quote_error', 'Error al enviar el presupuesto por WhatsApp: ' . $e->getMessage());
         }
     }
 
@@ -4281,46 +4295,50 @@ class EventShow extends Component
         $cleanQuery = trim(preg_replace('/\s{2,}/u', ' ', $cleanQuery ?? $text));
 
         if (mb_strlen($cleanQuery) >= 3) {
-            $cacheKey = 'road_km_logrono_' . md5(mb_strtolower($cleanQuery, 'UTF-8'));
-            $osmResult = \Illuminate\Support\Facades\Cache::remember($cacheKey, now()->addDays(30), function () use ($cleanQuery) {
-                try {
-                    $geoResp = \Illuminate\Support\Facades\Http::timeout(3)
-                        ->withHeaders(['User-Agent' => 'NunezAndSonEventos/1.0 (info@nunezandson.com)'])
-                        ->get('https://nominatim.openstreetmap.org/search', [
-                            'q' => $cleanQuery . ', España',
-                            'format' => 'json',
-                            'limit' => 1,
-                        ]);
+            try {
+                $cacheKey = 'road_km_logrono_' . md5(mb_strtolower($cleanQuery, 'UTF-8'));
+                $osmResult = \Illuminate\Support\Facades\Cache::remember($cacheKey, now()->addDays(30), function () use ($cleanQuery) {
+                    try {
+                        $geoResp = \Illuminate\Support\Facades\Http::timeout(2)
+                            ->withHeaders(['User-Agent' => 'NunezAndSonEventos/1.0 (info@nunezandson.com)'])
+                            ->get('https://nominatim.openstreetmap.org/search', [
+                                'q' => $cleanQuery . ', España',
+                                'format' => 'json',
+                                'limit' => 1,
+                            ]);
 
-                    if ($geoResp->successful() && !empty($geoResp->json()[0]['lat']) && !empty($geoResp->json()[0]['lon'])) {
-                        $hit = $geoResp->json()[0];
-                        $lat = (float) $hit['lat'];
-                        $lon = (float) $hit['lon'];
+                        if ($geoResp->successful() && !empty($geoResp->json()[0]['lat']) && !empty($geoResp->json()[0]['lon'])) {
+                            $hit = $geoResp->json()[0];
+                            $lat = (float) $hit['lat'];
+                            $lon = (float) $hit['lon'];
 
-                        // Logroño: lat 42.4627, lon -2.4449
-                        $routeUrl = "https://router.project-osrm.org/route/v1/driving/-2.4449,42.4627;{$lon},{$lat}?overview=false";
-                        $routeResp = \Illuminate\Support\Facades\Http::timeout(3)->get($routeUrl);
-                        if ($routeResp->successful() && !empty($routeResp->json()['routes'][0]['distance'])) {
-                            $meters = (float) $routeResp->json()['routes'][0]['distance'];
-                            $km = (int) round($meters / 1000);
-                            if ($km > 0 && $km < 1200) {
-                                return [
-                                    'label' => $cleanQuery,
-                                    'km' => $km,
-                                    'surcharge_enabled' => $km >= 100,
-                                    'surcharge' => $km >= 150 ? 85 : ($km >= 100 ? 75 : 0),
-                                ];
+                            // Logroño: lat 42.4627, lon -2.4449
+                            $routeUrl = "https://router.project-osrm.org/route/v1/driving/-2.4449,42.4627;{$lon},{$lat}?overview=false";
+                            $routeResp = \Illuminate\Support\Facades\Http::timeout(2)->get($routeUrl);
+                            if ($routeResp->successful() && !empty($routeResp->json()['routes'][0]['distance'])) {
+                                $meters = (float) $routeResp->json()['routes'][0]['distance'];
+                                $km = (int) round($meters / 1000);
+                                if ($km > 0 && $km < 1200) {
+                                    return [
+                                        'label' => $cleanQuery,
+                                        'km' => $km,
+                                        'surcharge_enabled' => $km >= 100,
+                                        'surcharge' => $km >= 150 ? 85 : ($km >= 100 ? 75 : 0),
+                                    ];
+                                }
                             }
                         }
+                    } catch (\Throwable $e) {
+                        // Ignorar si Nominatim/OSRM no responde
                     }
-                } catch (\Throwable $e) {
-                    // Ignorar si Nominatim/OSRM no responde
-                }
-                return null;
-            });
+                    return null;
+                });
 
-            if (is_array($osmResult) && !empty($osmResult['km'])) {
-                return $osmResult;
+                if (is_array($osmResult) && !empty($osmResult['km'])) {
+                    return $osmResult;
+                }
+            } catch (\Throwable $e) {
+                // Ignorar cualquier fallo de caché o red
             }
         }
 
@@ -5112,9 +5130,12 @@ class EventShow extends Component
                 continue;
             } elseif (
                 str_contains($name, 'descuento') ||
-                (float)$item->price < 0
+                (float)$item->price < 0 ||
+                str_contains($name, 'desplazamiento') ||
+                str_contains($name, 'kilometraje')
             ) {
-                // Cualquier otro descuento personalizado o de Feria de Novios: conservarlo en extras personalizados
+                // Descuentos personalizados o suplemento de desplazamiento: conservar siempre en extras personalizados
+                // sin que colisionen con palabras del destino como 'ceremonia', 'restaurante' o 'plataforma'
                 $rawName = $item->service_name ?: $item->concept ?: '';
                 $loadedCustomExtras[] = [
                     'name' => trim($rawName),
