@@ -122,17 +122,27 @@ class FotosEventosQrService
         $posterUrl = trim((string) ($event->photo_qr_poster_url ?? ''));
         $createdAt = $event->photo_qr_created_at ? (string) $event->photo_qr_created_at : null;
 
-        if ($slug === '' && $guestUrl === '') {
-            $rawFallback = Setting::get('event_photo_qr_' . $event->id);
-            if (!empty($rawFallback)) {
-                $decoded = is_array($rawFallback) ? $rawFallback : json_decode((string) $rawFallback, true);
-                if (is_array($decoded) && (!empty($decoded['slug']) || !empty($decoded['guest_url']))) {
-                    $slug = trim((string) ($decoded['slug'] ?? ''));
-                    $guestUrl = trim((string) ($decoded['guest_url'] ?? ''));
-                    $driveUrl = trim((string) ($decoded['drive_url'] ?? ''));
-                    $posterUrl = trim((string) ($decoded['poster_url'] ?? ''));
-                    $createdAt = $decoded['created_at'] ?? null;
-                }
+        $decoded = [];
+        $rawFallback = Setting::get('event_photo_qr_' . $event->id);
+        if (!empty($rawFallback)) {
+            $parsed = is_array($rawFallback) ? $rawFallback : json_decode((string) $rawFallback, true);
+            if (is_array($parsed)) {
+                $decoded = $parsed;
+            }
+        }
+
+        if ($slug === '' && $guestUrl === '' && (!empty($decoded['slug']) || !empty($decoded['guest_url']))) {
+            $slug = trim((string) ($decoded['slug'] ?? ''));
+            $guestUrl = trim((string) ($decoded['guest_url'] ?? ''));
+            $driveUrl = trim((string) ($decoded['drive_url'] ?? ''));
+            $posterUrl = trim((string) ($decoded['poster_url'] ?? ''));
+            $createdAt = $decoded['created_at'] ?? null;
+        } else {
+            if ($driveUrl === '' && !empty($decoded['drive_url'])) {
+                $driveUrl = trim((string) $decoded['drive_url']);
+            }
+            if ($posterUrl === '' && !empty($decoded['poster_url'])) {
+                $posterUrl = trim((string) $decoded['poster_url']);
             }
         }
 
@@ -144,6 +154,8 @@ class FotosEventosQrService
             $guestUrl = $baseUrl . '/e/' . rawurlencode($slug);
         }
 
+        $isActive = array_key_exists('is_active', $decoded) ? (bool) $decoded['is_active'] : true;
+
         return [
             'slug' => $slug,
             'guest_url' => $guestUrl,
@@ -151,6 +163,10 @@ class FotosEventosQrService
             'poster_url' => $posterUrl !== '' ? $posterUrl : null,
             'admin_url' => $baseUrl . '/admin/index.php',
             'created_at' => $createdAt,
+            'is_active' => $isActive,
+            'closed_at' => $decoded['closed_at'] ?? null,
+            'drive_sent_at' => $decoded['drive_sent_at'] ?? null,
+            'photos_count' => isset($decoded['photos_count']) ? (int) $decoded['photos_count'] : null,
         ];
     }
 
@@ -159,11 +175,36 @@ class FotosEventosQrService
      */
     public static function persistEventAlbumInfo(Event $event, array $albumPayload): void
     {
-        $slug = trim((string) ($albumPayload['slug'] ?? ''));
-        $guestUrl = trim((string) ($albumPayload['guest_url'] ?? ''));
-        $driveUrl = trim((string) ($albumPayload['drive_folder_url'] ?? $albumPayload['drive_url'] ?? ''));
-        $posterUrl = trim((string) ($albumPayload['print_poster_url'] ?? $albumPayload['poster_url'] ?? ''));
-        $nowStr = now()->toDateTimeString();
+        $existingRaw = Setting::get('event_photo_qr_' . $event->id);
+        $existingDecoded = [];
+        if (!empty($existingRaw)) {
+            $parsed = is_array($existingRaw) ? $existingRaw : json_decode((string) $existingRaw, true);
+            if (is_array($parsed)) {
+                $existingDecoded = $parsed;
+            }
+        }
+
+        $slug = trim((string) ($albumPayload['slug'] ?? $existingDecoded['slug'] ?? $event->photo_qr_slug ?? ''));
+        $guestUrl = trim((string) ($albumPayload['guest_url'] ?? $existingDecoded['guest_url'] ?? $event->photo_qr_url ?? ''));
+        $driveUrl = trim((string) ($albumPayload['drive_folder_url'] ?? $albumPayload['drive_url'] ?? $existingDecoded['drive_url'] ?? $event->photo_qr_drive_url ?? ''));
+        $posterUrl = trim((string) ($albumPayload['print_poster_url'] ?? $albumPayload['poster_url'] ?? $existingDecoded['poster_url'] ?? $event->photo_qr_poster_url ?? ''));
+        $nowStr = $existingDecoded['created_at'] ?? now()->toDateTimeString();
+
+        $isActive = array_key_exists('is_active', $albumPayload)
+            ? (bool) $albumPayload['is_active']
+            : (array_key_exists('is_active', $existingDecoded) ? (bool) $existingDecoded['is_active'] : true);
+
+        $closedAt = array_key_exists('closed_at', $albumPayload)
+            ? $albumPayload['closed_at']
+            : ($isActive ? null : ($existingDecoded['closed_at'] ?? now()->toDateTimeString()));
+
+        $driveSentAt = array_key_exists('drive_sent_at', $albumPayload)
+            ? $albumPayload['drive_sent_at']
+            : ($existingDecoded['drive_sent_at'] ?? null);
+
+        $photosCount = array_key_exists('photos_count', $albumPayload)
+            ? (int) $albumPayload['photos_count']
+            : ($existingDecoded['photos_count'] ?? null);
 
         Setting::set('event_photo_qr_' . $event->id, json_encode([
             'slug' => $slug,
@@ -171,6 +212,10 @@ class FotosEventosQrService
             'drive_url' => $driveUrl,
             'poster_url' => $posterUrl,
             'created_at' => $nowStr,
+            'is_active' => $isActive,
+            'closed_at' => $closedAt,
+            'drive_sent_at' => $driveSentAt,
+            'photos_count' => $photosCount,
         ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
 
         try {
@@ -191,6 +236,102 @@ class FotosEventosQrService
         } catch (\Throwable $e) {
             // El respaldo en Setting mantiene la funcionalidad operativa aunque falte ejecutar migrate
         }
+    }
+
+    /**
+     * Activa o desactiva (cierra) la recepción de fotos del código QR del evento,
+     * habilitando opcionalmente el acceso público de lectura a la carpeta de Google Drive para que los novios descarguen sus fotos.
+     */
+    public static function setAlbumActiveStatus(Event $event, bool $isActive, bool $enablePublicDrive = true): array
+    {
+        $info = self::getEventAlbumInfo($event);
+        if (!$info) {
+            return [
+                'success' => false,
+                'message' => 'Este evento aún no tiene un Álbum de Fotos QR creado.',
+            ];
+        }
+
+        $remoteUpdated = false;
+        $evPayload = array_merge($info, [
+            'is_active' => $isActive,
+            'closed_at' => $isActive ? null : now()->toDateTimeString(),
+        ]);
+        $warning = null;
+
+        if (self::isConfigured()) {
+            try {
+                $response = Http::withHeaders([
+                    'X-Api-Key' => self::getApiKey(),
+                    'Accept' => 'application/json',
+                ])->timeout(20)->post(self::endpointUrl(), [
+                    'action' => 'set_active',
+                    'slug' => $info['slug'] ?? '',
+                    'external_ref' => 'em-event-' . $event->id,
+                    'is_active' => $isActive ? 1 : 0,
+                    'share_drive_album' => $enablePublicDrive ? 1 : 0,
+                ]);
+
+                $json = $response->json();
+                if ($response->successful() && is_array($json) && !empty($json['ok']) && !empty($json['event'])) {
+                    $evPayload = array_merge($evPayload, $json['event'], [
+                        'is_active' => $isActive,
+                        'closed_at' => $isActive ? null : now()->toDateTimeString(),
+                    ]);
+                    $remoteUpdated = true;
+                    $warning = $json['warning'] ?? null;
+                } else {
+                    // Fallback: intentar create_or_get pasando is_active y share_drive_album
+                    $fallbackResp = Http::withHeaders([
+                        'X-Api-Key' => self::getApiKey(),
+                        'Accept' => 'application/json',
+                    ])->timeout(20)->post(self::endpointUrl(), [
+                        'action' => 'create_or_get',
+                        'external_ref' => 'em-event-' . $event->id,
+                        'slug' => $info['slug'] ?? '',
+                        'title' => $event->name,
+                        'is_active' => $isActive ? 1 : 0,
+                        'share_drive_album' => $enablePublicDrive ? 1 : 0,
+                    ]);
+                    $fbJson = $fallbackResp->json();
+                    if ($fallbackResp->successful() && is_array($fbJson) && !empty($fbJson['ok']) && !empty($fbJson['event'])) {
+                        $evPayload = array_merge($evPayload, $fbJson['event'], [
+                            'is_active' => $isActive,
+                            'closed_at' => $isActive ? null : now()->toDateTimeString(),
+                        ]);
+                        $remoteUpdated = true;
+                    }
+                }
+            } catch (\Throwable $e) {
+                $warning = 'Estado actualizado en la ficha local (pendiente sincronizar con servidor de fotos).';
+            }
+        }
+
+        self::persistEventAlbumInfo($event, $evPayload);
+
+        return [
+            'success' => true,
+            'remote_updated' => $remoteUpdated,
+            'warning' => $warning,
+            'event' => self::getEventAlbumInfo($event),
+            'drive_url' => $evPayload['drive_folder_url'] ?? $evPayload['drive_url'] ?? $info['drive_url'] ?? null,
+            'message' => $isActive
+                ? '▶️ Recepción de fotos del código QR reactivada.'
+                : '⏹️ Recepción de fotos del código QR finalizada y cerrada para nuevos escaneos.',
+        ];
+    }
+
+    /**
+     * Registra la fecha/hora en que se ha enviado el enlace de la carpeta de Google Drive a los novios.
+     */
+    public static function markDriveFolderSent(Event $event): void
+    {
+        $info = self::getEventAlbumInfo($event);
+        if (!$info) {
+            return;
+        }
+        $info['drive_sent_at'] = now()->toDateTimeString();
+        self::persistEventAlbumInfo($event, $info);
     }
 
     /**

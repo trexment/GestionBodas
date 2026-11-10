@@ -137,6 +137,14 @@ class AppNotificationService
         ?int $eventId = null,
         ?string $brand = null
     ): array {
+        if ($eventId && \App\Models\Event::isEventMuted($eventId)) {
+            return [
+                'id' => 'muted',
+                'muted' => true,
+                'event_id' => $eventId,
+            ];
+        }
+
         $list = self::getRawList();
 
         $notification = [

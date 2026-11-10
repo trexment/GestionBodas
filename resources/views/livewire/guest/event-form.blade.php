@@ -111,6 +111,12 @@
                         <span>Abrir Álbum</span>
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
                     </a>
+                    @if(!empty($guestPhotoQr['drive_url']))
+                        <a href="{{ $guestPhotoQr['drive_url'] }}" target="_blank" rel="noopener noreferrer"
+                           class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-extrabold bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition">
+                            <span>📁 Descargar Fotos en Google Drive</span>
+                        </a>
+                    @endif
                 </div>
             </div>
 

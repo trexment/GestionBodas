@@ -250,6 +250,8 @@ class WhatsAppTemplateService
                 "Recordatorio de pago pendiente - {$eventName} ({$companyName})",
             'pre_boda' =>
                 "Preparativos y logística {$preEventLabel} ({$eventDate}) - {$companyName}",
+            'entrega_fotos_qr_drive', 'fotos_qr_drive' =>
+                "📸 Vuestras fotos y recuerdos de {$eventName} en Google Drive - {$companyName}",
             default =>
                 "Seguimiento de vuestro evento {$eventName} ({$eventDate}) - {$companyName}",
         };
@@ -449,6 +451,10 @@ class WhatsAppTemplateService
                 'label' => '🎉 Pre-boda (Logística)',
                 'default' => "¡Hola {nombre}! Soy {firma}, de {empresa}. Ya queda muy poquito para vuestra boda del {fecha} en {lugar} y estamos organizando la logística y el montaje. ¿Me confirmáis los horarios definitivos de ceremonia, cóctel, banquete y barra libre, y el contacto del responsable de la finca? Si aún os falta alguna canción, podéis anotarla en: {enlace_cuestionario}. ¡Un saludo! {firma}",
             ],
+            'entrega_fotos_qr_drive' => [
+                'label' => '📸 Entrega Carpeta Drive Fotos QR (Fin de Evento)',
+                'default' => "¡Hola {nombre}! Soy {firma}, de {empresa}. ¡Muchísimas gracias por contar con nosotros en {vuestro_evento}! Ya hemos cerrado la recepción del código QR para invitados y os dejamos aquí el enlace directo a vuestra carpeta de Google Drive para que podáis ver y descargar todas las fotos y recuerdos en su calidad original:\n\n📁 *Carpeta de Google Drive:*\n{enlace_drive_fotos}\n\n¡Esperamos que las disfrutéis muchísimo! ¡Un abrazo! {firma}",
+            ],
         ];
     }
 
@@ -560,6 +566,12 @@ class WhatsAppTemplateService
         }
         $scheduleStr = !empty($scheduleParts) ? implode(', ', $scheduleParts) : 'horario según escaleta acordada';
 
+        $photoQrInfo = $event ? \App\Services\FotosEventosQrService::getEventAlbumInfo($event) : null;
+        $drivePhotosUrl = ($photoQrInfo && !empty($photoQrInfo['drive_url']))
+            ? $photoQrInfo['drive_url']
+            : (($photoQrInfo && !empty($photoQrInfo['guest_url'])) ? $photoQrInfo['guest_url'] : '');
+        $guestPhotosUrl = ($photoQrInfo && !empty($photoQrInfo['guest_url'])) ? $photoQrInfo['guest_url'] : $drivePhotosUrl;
+
         return [
             '{nombre}' => $clientName,
             '{fecha}' => $eventDate,
@@ -583,6 +595,8 @@ class WhatsAppTemplateService
             '{enlace_dossier_tarifas}' => $generalDossierUrl,
             '{enlace_cuestionario}' => $formUrl,
             '{enlace_contrato}' => $signUrl,
+            '{enlace_drive_fotos}' => $drivePhotosUrl,
+            '{enlace_album_fotos}' => $guestPhotosUrl,
         ];
     }
 
@@ -640,6 +654,17 @@ class WhatsAppTemplateService
     public static function preBodaLogistica(Event $event, ?string $senderBrand = null): string
     {
         return self::renderTemplateByKey('pre_boda', $event, $senderBrand);
+    }
+
+    public static function entregaFotosQrDrive(Event $event, ?string $driveUrl = null, ?string $senderBrand = null): string
+    {
+        $rawTemplate = self::getRawTemplateForEdit('entrega_fotos_qr_drive');
+        $vars = self::getTemplateVariables($event, $senderBrand);
+        if (!empty($driveUrl)) {
+            $vars['{enlace_drive_fotos}'] = $driveUrl;
+        }
+        $rendered = str_replace(array_keys($vars), array_values($vars), $rawTemplate);
+        return self::applySenderSignatureToMessage($rendered, $senderBrand, $event);
     }
 
     public static function liquidacion(Event $event, ?string $senderBrand = null): string
@@ -940,6 +965,14 @@ class WhatsAppTemplateService
                     ? 'Mensaje de logística unas semanas antes del evento para confirmar horarios y contacto de finca.'
                     : 'Mensaje de logística antes del evento para confirmar horarios de montaje, sonido y responsable del espacio.',
                 'text' => self::preBodaLogistica($event, $senderBrand),
+            ],
+            'entrega_fotos_qr_drive' => [
+                'key' => 'entrega_fotos_qr_drive',
+                'title' => 'Entrega Carpeta Drive Fotos QR (Fin de Evento)',
+                'stage' => 'Post-Evento',
+                'icon' => '📁',
+                'description' => 'Envía el enlace directo a la carpeta de Google Drive con todas las fotos originales subidas por los invitados una vez cerrado el QR.',
+                'text' => self::entregaFotosQrDrive($event, null, $senderBrand),
             ],
             'fotomaton_360' => [
                 'key' => 'fotomaton_360',

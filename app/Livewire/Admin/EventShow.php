@@ -6206,6 +6206,149 @@ class EventShow extends Component
         session()->flash('photo_qr_message', 'Diseño del cartel restaurado con los nombres y fecha actuales del evento.');
     }
 
+    public function togglePhotoQrActive(bool $makeActive): void
+    {
+        if (!$this->event) {
+            return;
+        }
+
+        $res = \App\Services\FotosEventosQrService::setAlbumActiveStatus($this->event, $makeActive, true);
+        $this->event->refresh();
+
+        if (!empty($res['success'])) {
+            if (!empty($res['event'])) {
+                $this->photoQrLiveStats = array_merge($this->photoQrLiveStats ?? [], $res['event']);
+            }
+            $msg = $res['message'];
+            if (!empty($res['warning'])) {
+                $msg .= ' (' . $res['warning'] . ')';
+            }
+            session()->flash('photo_qr_message', $msg);
+        } else {
+            session()->flash('photo_qr_error', $res['message'] ?? 'No se pudo actualizar el estado del QR.');
+        }
+    }
+
+    public function stopPhotoQrAndSendDrive(string $channel = 'whatsapp'): void
+    {
+        if (!$this->event) {
+            return;
+        }
+
+        // 1. Cerrar recepción del QR y activar enlace público de lectura de la carpeta de Google Drive
+        $res = \App\Services\FotosEventosQrService::setAlbumActiveStatus($this->event, false, true);
+        $this->event->refresh();
+
+        $info = \App\Services\FotosEventosQrService::getEventAlbumInfo($this->event);
+        if (!$info) {
+            session()->flash('photo_qr_error', 'No se encontró información del álbum QR para este evento.');
+            return;
+        }
+
+        if (!empty($res['event'])) {
+            $this->photoQrLiveStats = array_merge($this->photoQrLiveStats ?? [], $res['event']);
+        }
+
+        $driveUrl = trim((string) ($res['drive_url'] ?? $info['drive_url'] ?? $info['guest_url'] ?? ''));
+        if ($driveUrl === '') {
+            session()->flash('photo_qr_error', 'El álbum QR se ha cerrado, pero aún no hay URL de carpeta de Google Drive vinculada.');
+            return;
+        }
+
+        $senderBrand = $this->whatsapp_sender_brand ?: $this->event->brand_clean;
+        $senderLabel = $this->getSenderBrandLabel();
+        $text = \App\Services\WhatsAppTemplateService::entregaFotosQrDrive($this->event, $driveUrl, $senderBrand);
+        $subject = \App\Services\WhatsAppTemplateService::getEmailSubjectForKey($this->event, 'entrega_fotos_qr_drive');
+
+        $phone = $this->event->client ? $this->event->client->phone : $this->event->partner_phone;
+        $toEmail = strtolower(trim((string) ($this->email_chat_to ?: $this->event->client_contact_email)));
+
+        if ($channel === 'email' || (empty($phone) && !empty($toEmail))) {
+            if (empty($toEmail) || !filter_var($toEmail, FILTER_VALIDATE_EMAIL)) {
+                session()->flash('photo_qr_error', '⏹️ Subida QR desactivada. Para enviar la carpeta por email, añade primero el correo del cliente en la ficha.');
+                return;
+            }
+
+            $emailRes = \App\Services\WhatsAppTemplateService::sendAndLogClientEmail(
+                $this->event,
+                $toEmail,
+                $subject,
+                $text,
+                $senderBrand,
+                auth()->id(),
+                'Carpeta Drive Fotos QR'
+            );
+
+            \App\Services\FotosEventosQrService::markDriveFolderSent($this->event);
+            $this->event->refresh();
+            $this->event_notes = $this->event->notes;
+            $this->event->load('whatsappMessages.user');
+
+            if (($emailRes['mode'] ?? '') === 'mailto_fallback' && !empty($emailRes['mailto_url'])) {
+                $this->dispatch('open-whatsapp-link', ['url' => $emailRes['mailto_url']]);
+            }
+
+            session()->flash('photo_qr_message', '⏹️ ¡QR cerrado para nuevos escaneos y enlace de la carpeta de Google Drive enviado por Email a ' . $toEmail . '!');
+            return;
+        }
+
+        if (empty($phone)) {
+            session()->flash('photo_qr_error', '⏹️ Subida QR desactivada. El cliente no tiene teléfono registrado; puedes usar el botón «📧 Enviar Carpeta Drive por Email» o copiar el enlace.');
+            return;
+        }
+
+        $waRes = \App\Services\EvolutionWhatsAppService::sendMessage(
+            $phone,
+            $text,
+            $senderBrand,
+            $this->event->id,
+            auth()->id()
+        );
+
+        $authorName = auth()->user() ? auth()->user()->name : 'Admin';
+        $newEntry = '[' . now()->format('d/m/Y H:i') . "] 📸 Subida de Fotos QR finalizada y enlace de Carpeta Drive enviado a los novios desde {$senderLabel} por {$authorName}.";
+        $this->event->update([
+            'no_response_at' => now(),
+            'notes' => \App\Models\Event::prependNote($this->event->notes, $newEntry),
+        ]);
+
+        \App\Services\FotosEventosQrService::markDriveFolderSent($this->event);
+        $this->event->refresh();
+        $this->event_notes = $this->event->notes;
+        $this->event->load('whatsappMessages.user');
+
+        if (($waRes['mode'] ?? '') === 'api' && !empty($waRes['success'])) {
+            session()->flash('photo_qr_message', "⏹️ ¡Subida QR cerrada y enlace de la carpeta de Google Drive enviado directamente por WhatsApp desde {$senderLabel}!");
+        } else {
+            $fallbackUrl = !empty($waRes['url'])
+                ? $waRes['url']
+                : \App\Services\WhatsAppTemplateService::getLink($phone, $text);
+            if (!empty($fallbackUrl)) {
+                $this->dispatch('open-whatsapp-link', ['url' => $fallbackUrl]);
+            }
+            session()->flash('photo_qr_message', '⏹️ Subida QR cerrada para nuevos escaneos. Abriendo WhatsApp con el enlace de la carpeta de Google Drive...');
+        }
+    }
+
+    public function toggleMuteNotifications(): void
+    {
+        if (!$this->event) {
+            return;
+        }
+
+        $currentlyMuted = $this->event->notifications_muted;
+        $newMuted = !$currentlyMuted;
+        $this->event->setNotificationsMuted($newMuted);
+        $this->event->refresh();
+
+        $msg = $newMuted
+            ? '🔕 Alertas silenciadas para este evento: los mensajes de WhatsApp y Email se seguirán guardando en la conversación, pero no te enviarán notificaciones.'
+            : '🔔 Alertas reactivadas para este evento.';
+
+        session()->flash('message', $msg);
+        session()->flash('whatsapp_success', $msg);
+    }
+
     public function render()
     {
         $allEquipment = Equipment::orderBy('category')->orderBy('name')->get();

@@ -146,13 +146,26 @@
                 </button>
                 @php
                     $headerPhotoQrInfo = \App\Services\FotosEventosQrService::getEventAlbumInfo($event);
+                    $headerPhotoQrIsActive = $headerPhotoQrInfo ? (bool) ($headerPhotoQrInfo['is_active'] ?? true) : false;
+                    $isEventMuted = (bool) $event->notifications_muted;
                 @endphp
                 <button type="button" wire:click="openPhotoQrModal" class="inline-flex items-center gap-1.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-bold px-3 py-2 rounded-xl text-xs shadow-xs transition cursor-pointer">
                     <span>📸</span>
                     <span>QR Fotos</span>
                     @if($headerPhotoQrInfo)
-                        <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 ring-2 ring-white/40" title="Álbum QR activo"></span>
+                        @if($headerPhotoQrIsActive)
+                            <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 ring-2 ring-white/40" title="Álbum QR activo (recibiendo fotos)"></span>
+                        @else
+                            <span class="inline-block w-2 h-2 rounded-full bg-rose-400 ring-2 ring-white/40" title="Álbum QR finalizado/cerrado"></span>
+                        @endif
                     @endif
+                </button>
+                <button type="button"
+                        wire:click="toggleMuteNotifications"
+                        title="{{ $isEventMuted ? 'Este evento tiene las alertas silenciadas. Pulsa para volver a recibir notificaciones de su conversación.' : 'Silenciar únicamente las alertas de este evento (no enviará notificaciones de WhatsApp, Email ni campana cuando hablen)' }}"
+                        class="inline-flex items-center gap-1.5 font-bold px-3 py-2 rounded-xl text-xs shadow-xs transition cursor-pointer border {{ $isEventMuted ? 'bg-amber-100 hover:bg-amber-200 dark:bg-amber-950/80 dark:hover:bg-amber-900 text-amber-900 dark:text-amber-200 border-amber-400 dark:border-amber-700' : 'bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700' }}">
+                    <span>{{ $isEventMuted ? '🔕' : '🔔' }}</span>
+                    <span>{{ $isEventMuted ? 'Silenciado' : 'Alertas ON' }}</span>
                 </button>
                 <button type="button" @click="openWhatsappHub = true" class="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3.5 py-2 rounded-xl text-xs shadow-xs transition cursor-pointer">
                     <span>💬</span>
@@ -1864,10 +1877,33 @@
                             </div>
                         </div>
                     @else
-                        <!-- QR estilizado ya creado y activo -->
+                        <!-- QR estilizado ya creado -->
+                        @php
+                            $photoQrIsActive = isset($photoQrLiveStats['is_active'])
+                                ? (bool) $photoQrLiveStats['is_active']
+                                : (bool) ($photoQrInfo['is_active'] ?? true);
+                            $driveDeliveryText = \App\Services\WhatsAppTemplateService::entregaFotosQrDrive(
+                                $event,
+                                $photoQrInfo['drive_url'] ?? $photoQrInfo['guest_url'] ?? null,
+                                $whatsapp_sender_brand ?: null
+                            );
+                            $driveDeliveryWaUrl = $clientPhone
+                                ? \App\Services\WhatsAppTemplateService::getLink($clientPhone, $driveDeliveryText)
+                                : '';
+                        @endphp
                         <div class="mt-4 mb-2 flex items-center justify-center gap-2 flex-wrap">
+                            @if($photoQrIsActive)
+                                <span class="px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-700 text-emerald-800 dark:text-emerald-300 text-xs font-extrabold inline-flex items-center gap-1.5">
+                                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                    <span>🟢 Recepción QR Activa</span>
+                                </span>
+                            @else
+                                <span class="px-3 py-1 rounded-full bg-rose-50 dark:bg-rose-950/60 border border-rose-300 dark:border-rose-700 text-rose-800 dark:text-rose-300 text-xs font-extrabold inline-flex items-center gap-1.5">
+                                    <span>🔴 QR Cerrado / Finalizado (No admite más subidas)</span>
+                                </span>
+                            @endif
                             <span class="px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 text-indigo-800 dark:text-indigo-300 text-xs font-bold">
-                                📸 {{ $photoQrCount !== null ? ($photoQrCount . ' fotos en Google Drive') : 'Álbum activo en Google Drive' }}
+                                📸 {{ $photoQrCount !== null ? ($photoQrCount . ' fotos en Google Drive') : 'Álbum en Google Drive' }}
                             </span>
                             <button type="button" wire:click="refreshPhotoQrStatus" wire:loading.attr="disabled" class="px-2.5 py-1 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[11px] font-bold transition cursor-pointer">
                                 <span wire:loading.remove wire:target="refreshPhotoQrStatus">🔄 Actualizar</span>
@@ -2065,6 +2101,78 @@
                                 <a href="{{ $photoQrInfo['admin_url'] }}" target="_blank" rel="noopener" class="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold py-2.5 px-3 rounded-xl text-xs transition text-center">
                                     ⚙️ FotosEventosQR
                                 </a>
+                            </div>
+
+                            <!-- Bloque Fin del Evento: Parar / Desactivar QR y Enviar Carpeta de Google Drive a los Novios -->
+                            <div class="p-3.5 rounded-2xl border {{ $photoQrIsActive ? 'bg-rose-50/70 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800/70' : 'bg-emerald-50/70 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800/70' }} space-y-2.5">
+                                <div class="flex flex-wrap items-center justify-between gap-2">
+                                    <div>
+                                        <span class="text-xs font-extrabold {{ $photoQrIsActive ? 'text-rose-950 dark:text-rose-200' : 'text-emerald-950 dark:text-emerald-200' }} flex items-center gap-1.5">
+                                            <span>🏁</span>
+                                            <span>{{ $photoQrIsActive ? 'Al finalizar el evento: Cerrar QR y Enviar Carpeta Drive' : 'QR Finalizado: Entrega de Carpeta Drive a los Novios' }}</span>
+                                        </span>
+                                        <p class="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5">
+                                            @if($photoQrIsActive)
+                                                Desactiva el código QR para que deje de aceptar fotos nuevas al escanearlo y envía automáticamente a los novios el enlace directo a su carpeta de Google Drive para descargar todas las fotos.
+                                            @else
+                                                Si alguien escanea el QR ahora verá que la subida ya ha finalizado. Puedes reenviar la carpeta de Google Drive o reactivar la subida si lo necesitas.
+                                            @endif
+                                        </p>
+                                    </div>
+                                    @if(!empty($photoQrInfo['drive_sent_at']))
+                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-700">
+                                            ✅ Carpeta enviada ({{ \Carbon\Carbon::parse($photoQrInfo['drive_sent_at'])->format('d/m H:i') }})
+                                        </span>
+                                    @endif
+                                </div>
+
+                                <div class="flex flex-col sm:flex-row flex-wrap gap-2">
+                                    <button type="button"
+                                            wire:click="stopPhotoQrAndSendDrive('whatsapp')"
+                                            wire:loading.attr="disabled"
+                                            class="flex-1 bg-gradient-to-r from-rose-600 via-orange-600 to-amber-600 hover:from-rose-700 hover:to-amber-700 text-white font-extrabold py-2.5 px-3.5 rounded-xl text-xs shadow-sm transition cursor-pointer flex items-center justify-center gap-1.5">
+                                        <span wire:loading.remove wire:target="stopPhotoQrAndSendDrive('whatsapp')">
+                                            {{ $photoQrIsActive ? '⏹️ Parar QR y Enviar Carpeta Drive (WhatsApp)' : '📤 Reenviar Carpeta Drive por WhatsApp' }}
+                                        </span>
+                                        <span wire:loading wire:target="stopPhotoQrAndSendDrive('whatsapp')">Cerrando QR y enviando Drive...</span>
+                                    </button>
+
+                                    <button type="button"
+                                            wire:click="stopPhotoQrAndSendDrive('email')"
+                                            wire:loading.attr="disabled"
+                                            class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-3.5 rounded-xl text-xs shadow-sm transition cursor-pointer flex items-center justify-center gap-1.5">
+                                        <span wire:loading.remove wire:target="stopPhotoQrAndSendDrive('email')">
+                                            {{ $photoQrIsActive ? '📧 Parar QR + Enviar por Email' : '📧 Enviar Drive por Email' }}
+                                        </span>
+                                        <span wire:loading wire:target="stopPhotoQrAndSendDrive('email')">Enviando...</span>
+                                    </button>
+                                </div>
+
+                                <div class="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-slate-200/70 dark:border-slate-800">
+                                    @if($photoQrIsActive)
+                                        <button type="button"
+                                                wire:click="togglePhotoQrActive(false)"
+                                                wire:loading.attr="disabled"
+                                                class="text-[11px] font-bold text-rose-700 dark:text-rose-300 hover:underline cursor-pointer flex items-center gap-1">
+                                            <span>⏸️</span>
+                                            <span>Solo desactivar subida del QR (sin enviar mensaje ahora)</span>
+                                        </button>
+                                    @else
+                                        <button type="button"
+                                                wire:click="togglePhotoQrActive(true)"
+                                                wire:loading.attr="disabled"
+                                                class="text-[11px] font-bold text-emerald-700 dark:text-emerald-300 hover:underline cursor-pointer flex items-center gap-1">
+                                            <span>▶️</span>
+                                            <span>Reactivar subida de fotos del QR</span>
+                                        </button>
+                                    @endif
+
+                                    @if($driveDeliveryWaUrl)
+                                        <a href="{{ $driveDeliveryWaUrl }}" target="_blank" rel="noopener" class="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 hover:underline ml-auto">
+                                            🔗 Abrir en WhatsApp Web &nearr;
+                                        </a>
+                                    @endif
+                                </div>
                             </div>
 
                             <div class="flex items-center gap-2 pt-1">
@@ -2866,6 +2974,13 @@
                                 </span>
                                 <div class="flex flex-wrap items-center gap-1.5">
                                     <button type="button"
+                                            wire:click="toggleMuteNotifications"
+                                            title="{{ $event->notifications_muted ? 'Alertas silenciadas para este evento. Pulsa para reactivar notificaciones.' : 'Silenciar únicamente las alertas de este evento para no recibir notificaciones de esta conversación' }}"
+                                            class="text-[10px] font-bold px-2.5 py-1 rounded-lg border transition cursor-pointer flex items-center gap-1 {{ $event->notifications_muted ? 'bg-amber-100 dark:bg-amber-950/80 text-amber-900 dark:text-amber-200 border-amber-400 dark:border-amber-700 shadow-xs' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800' }}">
+                                        <span>{{ $event->notifications_muted ? '🔕' : '🔔' }}</span>
+                                        <span>{{ $event->notifications_muted ? 'Alertas Silenciadas (Reactivar)' : 'Silenciar Alertas Evento' }}</span>
+                                    </button>
+                                    <button type="button"
                                             wire:click="$toggle('showWhatsAppImportBox')"
                                             class="text-[10px] font-bold px-2.5 py-1 rounded-lg border transition cursor-pointer flex items-center gap-1 {{ $showWhatsAppImportBox ? 'bg-indigo-600 text-white border-indigo-500 shadow-xs' : 'bg-white dark:bg-slate-900 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800 hover:bg-indigo-50 dark:hover:bg-slate-800' }}">
                                         <span>📋</span>
@@ -2878,6 +2993,13 @@
                                     @endif
                                 </div>
                             </div>
+
+                            @if($event->notifications_muted)
+                                <div class="p-2 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 text-[11px] font-bold text-amber-900 dark:text-amber-200 flex items-center justify-between gap-2">
+                                    <span>🔕 <strong>Evento Silenciado:</strong> Los mensajes de este evento se guardan aquí con normalidad, pero no te enviarán alertas de WhatsApp, Email ni campana.</span>
+                                    <button type="button" wire:click="toggleMuteNotifications" class="underline hover:text-amber-700 shrink-0 cursor-pointer">Reactivar</button>
+                                </div>
+                            @endif
 
                             <!-- Buscador de conversación previa por número de teléfono o email (Evolution API + IMAP + Base de Datos) -->
                             <div class="p-2 bg-white dark:bg-slate-900/90 rounded-lg border border-slate-200 dark:border-slate-800 flex flex-wrap items-center gap-1.5">
@@ -3147,6 +3269,9 @@
                                     <button type="button" wire:click="loadWhatsAppTemplate('pre_boda')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-white dark:bg-slate-900 hover:bg-pink-50 dark:hover:bg-slate-800 text-pink-700 dark:text-pink-400 border border-pink-200 dark:border-pink-800/60 hover:border-pink-300 transition shadow-2xs cursor-pointer flex items-center gap-1">
                                         <span>🎉</span> {{ $event->is_wedding ? 'Pre-boda (Logística)' : 'Pre-evento (Logística)' }}
                                     </button>
+                                    <button type="button" wire:click="loadWhatsAppTemplate('entrega_fotos_qr_drive')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-white dark:bg-slate-900 hover:bg-indigo-50 dark:hover:bg-slate-800 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800/60 hover:border-indigo-300 transition shadow-2xs cursor-pointer flex items-center gap-1" title="Cargar mensaje con el enlace directo a la carpeta de Google Drive de las fotos QR">
+                                        <span>📁</span> Carpeta Drive Fotos QR
+                                    </button>
                                 </div>
                             </div>
 
@@ -3274,15 +3399,31 @@
                             @endif
 
                             @if($dossierQrInfo)
-                                <div class="p-3 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/70 rounded-xl flex flex-wrap items-center justify-between gap-2">
+                                @php
+                                    $dossierQrIsActive = (bool) ($dossierQrInfo['is_active'] ?? true);
+                                @endphp
+                                <div class="p-3 {{ $dossierQrIsActive ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800/70' : 'bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800/70' }} border rounded-xl flex flex-wrap items-center justify-between gap-2">
                                     <div class="flex items-center gap-2 min-w-0">
                                         <span class="text-base">📸</span>
                                         <div class="min-w-0">
-                                            <span class="block text-xs font-extrabold text-emerald-950 dark:text-emerald-200 truncate">Álbum de Fotos QR activado para este evento</span>
-                                            <span class="block text-[10px] text-emerald-800 dark:text-emerald-400 truncate">Recordatorio staff: llevar / verificar carteles QR impresos si aplica</span>
+                                            <span class="block text-xs font-extrabold {{ $dossierQrIsActive ? 'text-emerald-950 dark:text-emerald-200' : 'text-rose-950 dark:text-rose-200' }} truncate">
+                                                {{ $dossierQrIsActive ? '🟢 Álbum de Fotos QR activo para este evento' : '🔴 Álbum de Fotos QR finalizado / cerrado' }}
+                                            </span>
+                                            <span class="block text-[10px] {{ $dossierQrIsActive ? 'text-emerald-800 dark:text-emerald-400' : 'text-rose-800 dark:text-rose-400' }} truncate">
+                                                {{ $dossierQrIsActive ? 'Al acabar el evento puedes parar el QR y enviar la carpeta de Drive a los novios' : 'Subida QR desactivada para nuevos escaneos' }}
+                                            </span>
                                         </div>
                                     </div>
-                                    <div class="flex items-center gap-1.5 shrink-0">
+                                    <div class="flex flex-wrap items-center gap-1.5 shrink-0">
+                                        @if($dossierQrIsActive)
+                                            <button type="button"
+                                                    wire:click="stopPhotoQrAndSendDrive('whatsapp')"
+                                                    wire:loading.attr="disabled"
+                                                    class="px-2.5 py-1 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-[11px] font-extrabold transition cursor-pointer"
+                                                    title="Desactiva la subida del QR y envía a los novios por WhatsApp la URL de su carpeta de Google Drive">
+                                                ⏹️ Parar QR + Enviar Drive
+                                            </button>
+                                        @endif
                                         <a href="{{ route('pdf.photo-qr-poster', ['event' => $event->id]) }}" target="_blank" class="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-900 border border-emerald-300 dark:border-emerald-700 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100 text-[11px] font-bold transition">
                                             🖨️ Cartel PDF
                                         </a>

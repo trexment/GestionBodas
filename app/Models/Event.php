@@ -1311,6 +1311,40 @@ class Event extends Model
 
         return trim(implode("\n", $kept));
     }
+
+    /**
+     * Comprueba si las notificaciones/alertas de conversación están silenciadas para un ID de evento concreto.
+     */
+    public static function isEventMuted(?int $eventId): bool
+    {
+        if (!$eventId || $eventId <= 0) {
+            return false;
+        }
+        try {
+            return (string) Setting::get('event_notifications_muted_' . $eventId, '0') === '1';
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
+    /**
+     * Atributo dinámico: $event->notifications_muted
+     */
+    public function getNotificationsMutedAttribute(): bool
+    {
+        return self::isEventMuted($this->id ? (int) $this->id : null);
+    }
+
+    /**
+     * Activa o desactiva el silencio de alertas/notificaciones para este evento concreto.
+     */
+    public function setNotificationsMuted(bool $muted): void
+    {
+        if (!$this->id) {
+            return;
+        }
+        Setting::set('event_notifications_muted_' . $this->id, $muted ? '1' : '0');
+    }
 }
 
 
