@@ -87,7 +87,7 @@ class EventManager extends Component
         'initial_status' => 'nullable|string|in:draft,confirmed',
         'new_client_name' => 'nullable|string|max:255',
         'new_client_phone' => 'nullable|string|max:50',
-        'event_date' => 'required|date',
+        'event_date' => 'nullable|date',
         'setup_date' => 'nullable|date',
         'start_time' => 'nullable|string|max:20',
         'ceremony_time' => 'nullable|string|max:20',
@@ -96,7 +96,7 @@ class EventManager extends Component
         'dance_start_time' => 'nullable|string|max:20',
         'dance_duration_hours' => 'nullable|numeric|min:0.5|max:24',
         'max_end_time' => 'nullable|string|max:20',
-        'location' => 'required|string|max:255',
+        'location' => 'nullable|string|max:255',
         'client_id' => 'nullable|exists:users,id',
         'partner_name' => 'nullable|string|max:255',
         'partner_phone' => 'nullable|string|max:50',
@@ -292,12 +292,23 @@ class EventManager extends Component
 
             $firstAssistantId = !empty($this->assistant_ids) ? (int)$this->assistant_ids[0] : ($this->assistant_id ?: null);
 
+            $effectiveDate = !empty($this->event_date)
+                ? $this->event_date
+                : \Carbon\Carbon::createFromDate(2027, 6, 1)->format('Y-m-d');
+            $effectiveLocation = !empty(trim((string)$this->location))
+                ? trim((string)$this->location)
+                : 'Por definir';
+            $effectiveNotes = $this->notes;
+            if (empty($this->event_date) && !str_contains((string)$effectiveNotes, 'Fecha exacta pendiente')) {
+                $effectiveNotes = Event::prependNote($effectiveNotes, '⏳ Fecha exacta pendiente de definir (fecha orientativa temporal).');
+            }
+
             $eventData = [
                 'name' => $this->name,
                 'brand' => $this->brand ?: 'nunez_and_son',
                 'event_type' => $this->event_type ?: 'boda',
-                'event_date' => $this->event_date,
-                'location' => $this->location,
+                'event_date' => $effectiveDate,
+                'location' => $effectiveLocation,
                 'client_id' => $this->client_id ?: null,
                 'partner_name' => $this->partner_name ?: null,
                 'partner_phone' => $this->partner_phone ?: null,
@@ -305,7 +316,7 @@ class EventManager extends Component
                 'partner_dni' => $this->partner_dni ?: null,
                 'dj_id' => ($this->event_type === 'video') ? auth()->id() : ($this->dj_id ?: auth()->id()),
                 'assistant_id' => ($this->event_type === 'video') ? null : $firstAssistantId,
-                'notes' => $this->notes,
+                'notes' => $effectiveNotes,
             ];
 
             $scheduleFields = [
@@ -592,6 +603,488 @@ class EventManager extends Component
 
         $this->loadEvents();
         session()->flash('message', "⏸️ «{$event->name}» puesto En Espera (En Pausa). Ya no saldrá como sin respuesta; contará los días en pausa y avisará a los 30 días.");
+    }
+
+    // =========================================================================
+    // 🎪 FERIA DE NOVIOS: IMPORTACIÓN Y DIFUSIÓN MASIVA (LA RIOJA BRIDAL MARKET)
+    // =========================================================================
+    public bool $showFairModal = false;
+    public bool $fairShowCsvEditor = false;
+    public string $fairName = 'III Edición La Rioja Bridal Market';
+    public string $fairBrand = 'nunez_and_son';
+    public string $fairSenderBrand = 'miguel';
+    public string $fairInitialStatus = 'no_response';
+    public string $fairRawCsv = '';
+    public array $fairRows = [];
+    public string $fairFilter = 'all'; // all, with_date, with_phone, only_email, music_interest, pending
+    public string $fairMessageTemplate = '';
+    public string $fairEmailSubject = '';
+
+    public function openFairModal(): void
+    {
+        if (!in_array(auth()->user()->role, ['admin', 'dj'])) {
+            session()->flash('error', 'Solo los administradores y DJs autorizados pueden usar el importador masivo de feria.');
+            return;
+        }
+
+        $this->fairBrand = \App\Models\Setting::getDetectedBrand();
+        $uLower = mb_strtolower((auth()->user()->name ?? '') . ' ' . (auth()->user()->email ?? ''));
+        if (str_contains($uLower, 'fran') || str_contains($uLower, 'javnx')) {
+            $this->fairSenderBrand = 'fran';
+        } elseif (str_contains($uLower, 'ezequiel')) {
+            $this->fairSenderBrand = 'ezequiel';
+        } else {
+            $this->fairSenderBrand = 'miguel';
+        }
+
+        if (empty(trim($this->fairRawCsv))) {
+            $this->fairRawCsv = \App\Services\BridalFairLeadService::getDefaultRiojaBridalMarketCsv();
+        }
+        if (empty(trim($this->fairMessageTemplate))) {
+            $this->fairMessageTemplate = \App\Services\BridalFairLeadService::getDefaultFairTemplate();
+        }
+        if (empty(trim($this->fairEmailSubject))) {
+            $companyName = $this->fairBrand === 'javnx' ? 'JAVNX DJ' : 'Núñez and Son DJ';
+            $this->fairEmailSubject = "💍 Promoción Especial La Rioja Bridal Market + Dossier Tarifas 2027 - {$companyName}";
+        }
+
+        $this->parseFairCsvInput();
+        $this->showFairModal = true;
+    }
+
+    public function closeFairModal(): void
+    {
+        $this->showFairModal = false;
+    }
+
+    public function toggleFairCsvEditor(): void
+    {
+        $this->fairShowCsvEditor = !$this->fairShowCsvEditor;
+    }
+
+    public function setFairSenderBrand(string $sender): void
+    {
+        if (in_array($sender, ['miguel', 'fran', 'ezequiel'], true)) {
+            $this->fairSenderBrand = $sender;
+        }
+    }
+
+    public function resetFairTemplate(): void
+    {
+        $this->fairMessageTemplate = \App\Services\BridalFairLeadService::getDefaultFairTemplate();
+        $companyName = $this->fairBrand === 'javnx' ? 'JAVNX DJ' : 'Núñez and Son DJ';
+        $this->fairEmailSubject = "💍 Promoción Especial La Rioja Bridal Market + Dossier Tarifas 2027 - {$companyName}";
+    }
+
+    public function setFairFilter(string $filter): void
+    {
+        $this->fairFilter = $filter;
+    }
+
+    public function parseFairCsvInput(): void
+    {
+        $parsed = \App\Services\BridalFairLeadService::parseFairCsv($this->fairRawCsv, $this->fairName);
+
+        // Enriquecer con estado real de envíos previos en WhatsAppMessage si el evento ya existe
+        $eventIds = array_values(array_filter(array_column($parsed, 'existing_event_id')));
+        $sentWaMap = [];
+        $sentEmailMap = [];
+
+        if (!empty($eventIds)) {
+            try {
+                $msgs = \App\Models\WhatsAppMessage::whereIn('event_id', $eventIds)
+                    ->where('direction', 'outbound')
+                    ->get(['event_id', 'payload', 'message']);
+                foreach ($msgs as $m) {
+                    $eid = (int) $m->event_id;
+                    $channel = is_array($m->payload) ? ($m->payload['channel'] ?? 'whatsapp') : 'whatsapp';
+                    if ($channel === 'email' || str_starts_with((string) $m->message, '📧')) {
+                        $sentEmailMap[$eid] = true;
+                    } else {
+                        $sentWaMap[$eid] = true;
+                    }
+                }
+            } catch (\Throwable $e) {}
+        }
+
+        foreach ($parsed as &$row) {
+            $eid = (int) ($row['existing_event_id'] ?? 0);
+            if ($eid > 0) {
+                $row['wa_sent'] = !empty($sentWaMap[$eid]);
+                $row['email_sent'] = !empty($sentEmailMap[$eid]);
+            }
+        }
+        unset($row);
+
+        $this->fairRows = $parsed;
+    }
+
+    public function toggleFairRow(int $index): void
+    {
+        if (isset($this->fairRows[$index])) {
+            $this->fairRows[$index]['selected'] = !($this->fairRows[$index]['selected'] ?? false);
+        }
+    }
+
+    public function selectAllFairRows(bool $select): void
+    {
+        foreach ($this->fairRows as $idx => $row) {
+            if ($this->doesFairRowMatchFilter($row)) {
+                $this->fairRows[$idx]['selected'] = $select;
+            }
+        }
+    }
+
+    protected function doesFairRowMatchFilter(array $row): bool
+    {
+        return match ($this->fairFilter) {
+            'with_date' => !empty($row['has_exact_date']),
+            'with_phone' => !empty($row['has_phone']),
+            'only_email' => empty($row['has_phone']) && !empty($row['has_email']),
+            'music_interest' => !empty($row['mentions_music']),
+            'pending' => empty($row['wa_sent']) && empty($row['email_sent']),
+            default => true,
+        };
+    }
+
+    public function importSelectedFairLeads(): void
+    {
+        $createdEvents = 0;
+        $alreadyExisted = 0;
+        $djId = auth()->id();
+
+        foreach ($this->fairRows as $idx => $row) {
+            if (empty($row['selected'])) {
+                continue;
+            }
+
+            $res = \App\Services\BridalFairLeadService::createOrGetFairEvent(
+                $row,
+                $this->fairBrand ?: 'nunez_and_son',
+                $djId,
+                $this->fairInitialStatus ?: 'no_response'
+            );
+
+            $ev = $res['event'];
+            $this->fairRows[$idx]['existing_event_id'] = $ev->id;
+            $this->fairRows[$idx]['existing_event_name'] = $ev->name;
+            $this->fairRows[$idx]['existing_event_token'] = $ev->token;
+
+            if (!empty($res['created_event'])) {
+                $createdEvents++;
+            } else {
+                $alreadyExisted++;
+            }
+        }
+
+        $this->loadEvents();
+        $this->loadStaff();
+
+        session()->flash(
+            'message',
+            "🎪 ¡Importación de Feria completada! {$createdEvents} nuevo(s) evento(s) y cliente(s) creados"
+            . ($alreadyExisted > 0 ? " ({$alreadyExisted} ya existían y se han vinculado sin duplicar)." : ".")
+        );
+    }
+
+    public function sendFairSingleWhatsApp(int $index): void
+    {
+        if (!isset($this->fairRows[$index])) {
+            return;
+        }
+
+        $row = $this->fairRows[$index];
+        if (empty($row['has_phone']) || empty($row['phone'])) {
+            session()->flash('error', "El contacto {$row['name']} no tiene teléfono móvil anotado. Envíale la información por Email.");
+            return;
+        }
+
+        $res = \App\Services\BridalFairLeadService::createOrGetFairEvent(
+            $row,
+            $this->fairBrand ?: 'nunez_and_son',
+            auth()->id(),
+            $this->fairInitialStatus ?: 'no_response'
+        );
+        /** @var Event $event */
+        $event = $res['event'];
+
+        $this->fairRows[$index]['existing_event_id'] = $event->id;
+        $this->fairRows[$index]['existing_event_name'] = $event->name;
+        $this->fairRows[$index]['existing_event_token'] = $event->token;
+
+        $msgText = \App\Services\BridalFairLeadService::renderFairMessageForEvent(
+            $event,
+            $row,
+            $this->fairMessageTemplate,
+            $this->fairSenderBrand
+        );
+
+        $evo = new \App\Services\EvolutionApiService($this->fairBrand ?: 'nunez_and_son');
+        $sentByApi = false;
+
+        if ($evo->isConfigured()) {
+            $apiRes = $evo->sendText($row['phone'], $msgText);
+            if (!empty($apiRes['success'])) {
+                $sentByApi = true;
+            }
+        }
+
+        try {
+            \App\Models\WhatsAppMessage::create([
+                'event_id' => $event->id,
+                'user_id' => auth()->id(),
+                'phone' => \App\Services\WhatsAppTemplateService::cleanPhone($row['phone']),
+                'sender_name' => auth()->user()?->name ?? 'Sistema',
+                'direction' => 'outbound',
+                'message' => $msgText,
+                'status' => $sentByApi ? 'sent' : 'manual',
+                'brand' => $this->fairBrand ?: 'nunez_and_son',
+                'payload' => [
+                    'channel' => 'whatsapp',
+                    'campaign' => 'bridal_fair',
+                    'fair_name' => $this->fairName,
+                    'sent_by_api' => $sentByApi,
+                ],
+            ]);
+
+            $noteLine = "[" . now()->format('d/m/Y H:i') . "] 🎪 WhatsApp Promo Feria enviado a {$row['phone']} por " . (auth()->user()?->name ?? 'Sistema') . ".";
+            $event->update([
+                'no_response_at' => now(),
+                'notes' => Event::prependNote($event->notes, $noteLine),
+            ]);
+        } catch (\Throwable $e) {}
+
+        $this->fairRows[$index]['wa_sent'] = true;
+        $this->loadEvents();
+
+        if ($sentByApi) {
+            session()->flash('message', "💬 ¡WhatsApp enviado directamente por API a {$row['name']} ({$row['phone']})!");
+        } else {
+            $waUrl = \App\Services\WhatsAppTemplateService::buildUrl($row['phone'], $msgText);
+            $this->dispatch('open-whatsapp-link', url: $waUrl);
+            session()->flash('message', "💬 Abriendo WhatsApp para {$row['name']} ({$row['phone']}) y registrado en su ficha.");
+        }
+    }
+
+    public function sendFairSingleEmail(int $index): void
+    {
+        if (!isset($this->fairRows[$index])) {
+            return;
+        }
+
+        $row = $this->fairRows[$index];
+        if (empty($row['has_email']) || empty($row['email'])) {
+            session()->flash('error', "El contacto {$row['name']} no tiene email válido.");
+            return;
+        }
+
+        $res = \App\Services\BridalFairLeadService::createOrGetFairEvent(
+            $row,
+            $this->fairBrand ?: 'nunez_and_son',
+            auth()->id(),
+            $this->fairInitialStatus ?: 'no_response'
+        );
+        /** @var Event $event */
+        $event = $res['event'];
+
+        $this->fairRows[$index]['existing_event_id'] = $event->id;
+        $this->fairRows[$index]['existing_event_name'] = $event->name;
+        $this->fairRows[$index]['existing_event_token'] = $event->token;
+
+        $msgText = \App\Services\BridalFairLeadService::renderFairMessageForEvent(
+            $event,
+            $row,
+            $this->fairMessageTemplate,
+            $this->fairSenderBrand
+        );
+
+        $subject = trim($this->fairEmailSubject) ?: \App\Services\WhatsAppTemplateService::getEmailSubjectForKey($event, 'feria_novios');
+
+        $emailRes = \App\Services\WhatsAppTemplateService::sendAndLogClientEmail(
+            $event,
+            $row['email'],
+            $subject,
+            $msgText,
+            $this->fairBrand ?: 'nunez_and_son',
+            auth()->id(),
+            'Feria de Novios (' . $this->fairName . ')'
+        );
+
+        $this->fairRows[$index]['email_sent'] = true;
+        $this->loadEvents();
+
+        if (($emailRes['mode'] ?? '') === 'smtp') {
+            session()->flash('message', "📧 ¡Email enviado por SMTP a {$row['name']} ({$row['email']}) y guardado en su ficha!");
+        } else {
+            $this->dispatch('open-whatsapp-link', url: $emailRes['mailto_url']);
+            session()->flash('message', "📧 Email registrado para {$row['name']} ({$row['email']}). Abriendo gestor de correo...");
+        }
+    }
+
+    public function sendFairBulkEmails(): void
+    {
+        $sentCount = 0;
+        $skippedAlreadySent = 0;
+        $djId = auth()->id();
+
+        foreach ($this->fairRows as $idx => $row) {
+            if (empty($row['selected']) || empty($row['has_email']) || empty($row['email'])) {
+                continue;
+            }
+            if (!empty($row['email_sent'])) {
+                $skippedAlreadySent++;
+                continue;
+            }
+
+            $res = \App\Services\BridalFairLeadService::createOrGetFairEvent(
+                $row,
+                $this->fairBrand ?: 'nunez_and_son',
+                $djId,
+                $this->fairInitialStatus ?: 'no_response'
+            );
+            /** @var Event $event */
+            $event = $res['event'];
+
+            $this->fairRows[$idx]['existing_event_id'] = $event->id;
+            $this->fairRows[$idx]['existing_event_name'] = $event->name;
+            $this->fairRows[$idx]['existing_event_token'] = $event->token;
+
+            $msgText = \App\Services\BridalFairLeadService::renderFairMessageForEvent(
+                $event,
+                $row,
+                $this->fairMessageTemplate,
+                $this->fairSenderBrand
+            );
+
+            $subject = trim($this->fairEmailSubject) ?: \App\Services\WhatsAppTemplateService::getEmailSubjectForKey($event, 'feria_novios');
+
+            \App\Services\WhatsAppTemplateService::sendAndLogClientEmail(
+                $event,
+                $row['email'],
+                $subject,
+                $msgText,
+                $this->fairBrand ?: 'nunez_and_son',
+                $djId,
+                'Feria de Novios (' . $this->fairName . ')'
+            );
+
+            $this->fairRows[$idx]['email_sent'] = true;
+            $sentCount++;
+        }
+
+        $this->loadEvents();
+        $this->loadStaff();
+
+        if ($sentCount > 0) {
+            session()->flash(
+                'message',
+                "📧 ¡Envío Masivo por Email completado! Se han enviado {$sentCount} correos personalizados con el Dossier de Tarifas y enlace a /presupuesto (y creado sus fichas de cliente/evento)."
+                . ($skippedAlreadySent > 0 ? " ({$skippedAlreadySent} omitidos porque ya se les había enviado)." : "")
+            );
+        } else {
+            session()->flash('message', "ℹ️ No había contactos seleccionados pendientes de envío por Email ({$skippedAlreadySent} ya enviados previamente).");
+        }
+    }
+
+    public function sendFairBulkWhatsAppBatch(int $batchSize = 10): void
+    {
+        $evo = new \App\Services\EvolutionApiService($this->fairBrand ?: 'nunez_and_son');
+        $isApiConfigured = $evo->isConfigured();
+
+        if (!$isApiConfigured) {
+            // Si no hay API automática configurada, abrimos el siguiente pendiente en WhatsApp Web
+            foreach ($this->fairRows as $idx => $row) {
+                if (!empty($row['selected']) && !empty($row['has_phone']) && empty($row['wa_sent'])) {
+                    $this->sendFairSingleWhatsApp($idx);
+                    return;
+                }
+            }
+            session()->flash('message', 'ℹ️ Todos los contactos con teléfono seleccionados ya tienen su WhatsApp marcado como enviado.');
+            return;
+        }
+
+        $sentCount = 0;
+        $failedCount = 0;
+        $djId = auth()->id();
+
+        foreach ($this->fairRows as $idx => $row) {
+            if ($sentCount >= $batchSize) {
+                break;
+            }
+            if (empty($row['selected']) || empty($row['has_phone']) || empty($row['phone']) || !empty($row['wa_sent'])) {
+                continue;
+            }
+
+            $res = \App\Services\BridalFairLeadService::createOrGetFairEvent(
+                $row,
+                $this->fairBrand ?: 'nunez_and_son',
+                $djId,
+                $this->fairInitialStatus ?: 'no_response'
+            );
+            /** @var Event $event */
+            $event = $res['event'];
+
+            $this->fairRows[$idx]['existing_event_id'] = $event->id;
+            $this->fairRows[$idx]['existing_event_name'] = $event->name;
+            $this->fairRows[$idx]['existing_event_token'] = $event->token;
+
+            $msgText = \App\Services\BridalFairLeadService::renderFairMessageForEvent(
+                $event,
+                $row,
+                $this->fairMessageTemplate,
+                $this->fairSenderBrand
+            );
+
+            $apiRes = $evo->sendText($row['phone'], $msgText);
+            if (!empty($apiRes['success'])) {
+                try {
+                    \App\Models\WhatsAppMessage::create([
+                        'event_id' => $event->id,
+                        'user_id' => $djId,
+                        'phone' => \App\Services\WhatsAppTemplateService::cleanPhone($row['phone']),
+                        'sender_name' => auth()->user()?->name ?? 'Sistema',
+                        'direction' => 'outbound',
+                        'message' => $msgText,
+                        'status' => 'sent',
+                        'brand' => $this->fairBrand ?: 'nunez_and_son',
+                        'payload' => [
+                            'channel' => 'whatsapp',
+                            'campaign' => 'bridal_fair_batch',
+                            'fair_name' => $this->fairName,
+                        ],
+                    ]);
+                    $noteLine = "[" . now()->format('d/m/Y H:i') . "] 🎪 WhatsApp Promo Feria (Lote Masivo) enviado a {$row['phone']} por " . (auth()->user()?->name ?? 'Sistema') . ".";
+                    $event->update([
+                        'no_response_at' => now(),
+                        'notes' => Event::prependNote($event->notes, $noteLine),
+                    ]);
+                } catch (\Throwable $e) {}
+
+                $this->fairRows[$idx]['wa_sent'] = true;
+                $sentCount++;
+                // Pequeña pausa anti-bloqueo entre envíos consecutivos
+                usleep(500000);
+            } else {
+                $failedCount++;
+            }
+        }
+
+        $this->loadEvents();
+        $this->loadStaff();
+
+        $remainingWa = collect($this->fairRows)->filter(fn($r) => !empty($r['selected']) && !empty($r['has_phone']) && empty($r['wa_sent']))->count();
+
+        if ($sentCount > 0) {
+            session()->flash(
+                'message',
+                "💬 ¡Lote de {$sentCount} WhatsApps enviado con éxito!"
+                . ($remainingWa > 0 ? " Quedan {$remainingWa} contactos con teléfono pendientes (vuelve a pulsar el botón para enviar el siguiente lote de {$batchSize})." : " ¡Todos los WhatsApps seleccionados han sido enviados!")
+            );
+        } elseif ($failedCount > 0) {
+            session()->flash('error', "⚠️ No se pudo enviar por API automática ({$failedCount} fallos). Puedes pulsar el botón 💬 WA individual de cada fila para abrir WhatsApp directamente.");
+        } else {
+            session()->flash('message', "ℹ️ No quedan contactos con teléfono pendientes de envío por WhatsApp en la selección actual.");
+        }
     }
 
     public function render()

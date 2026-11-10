@@ -309,10 +309,11 @@ class QuoteCalculator extends Component
                     $this->client_phone = $linkedEvent->partner_phone ?: '';
                     $this->client_email = $linkedEvent->partner_email ?: '';
                 }
-                if ($linkedEvent->event_date) {
+                $hasPendingExactDate = str_contains((string) $linkedEvent->notes, 'Fecha exacta pendiente');
+                if ($linkedEvent->event_date && !$hasPendingExactDate) {
                     $this->event_date = \Carbon\Carbon::parse($linkedEvent->event_date)->format('Y-m-d');
                 }
-                if (!empty($linkedEvent->location) && $linkedEvent->location !== 'Por definir') {
+                if (!empty($linkedEvent->location) && !str_starts_with($linkedEvent->location, 'Por definir')) {
                     $this->event_location = $linkedEvent->location;
                 }
             }
@@ -813,12 +814,16 @@ class QuoteCalculator extends Component
             'client_name' => 'required|string|max:255',
             'client_email' => 'required|email|max:255',
             'client_phone' => 'required|string|max:50',
-            'event_date' => 'required|date',
-            'event_location' => 'required|string|max:255',
+            'event_date' => 'nullable|date',
+            'event_location' => 'nullable|string|max:255',
             'event_schedule' => 'nullable|string|max:255',
             'needs_prior_setup' => 'nullable|boolean',
             'client_notes' => 'nullable|string|max:3000'
         ]);
+
+        if (empty(trim((string) $this->event_location))) {
+            $this->event_location = 'Por definir';
+        }
 
         \Illuminate\Support\Facades\RateLimiter::hit($throttleKey, 600);
 
@@ -1280,12 +1285,18 @@ class QuoteCalculator extends Component
             $event->update($eventUpdates);
         } else {
             $initialSchedNotes = trim(($cleanSchedule !== '' ? "Horario: {$cleanSchedule}. " : '') . $cleanClientNotes);
+            $effectiveNewDate = !empty($this->event_date)
+                ? $this->event_date
+                : \Carbon\Carbon::createFromDate(2027, 6, 1)->format('Y-m-d');
+            if (empty($this->event_date)) {
+                $fullNotes = "⏳ Fecha exacta pendiente de definir por los novios.\n" . $fullNotes;
+            }
             $event = Event::create([
                 'name' => $eventTitle,
                 'brand' => Setting::getDetectedBrand(),
                 'event_type' => $this->event_type ?: 'boda',
-                'event_date' => $this->event_date,
-                'location' => $this->event_location,
+                'event_date' => $effectiveNewDate,
+                'location' => $this->event_location ?: 'Por definir',
                 'status' => 'draft',
                 'client_id' => $client->id,
                 'token' => Str::random(32),

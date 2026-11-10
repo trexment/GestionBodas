@@ -252,6 +252,8 @@ class WhatsAppTemplateService
                 "Preparativos y logística {$preEventLabel} ({$eventDate}) - {$companyName}",
             'entrega_fotos_qr_drive', 'fotos_qr_drive' =>
                 "📸 Vuestras fotos y recuerdos de {$eventName} en Google Drive - {$companyName}",
+            'feria_novios' =>
+                "💍 Promoción Especial La Rioja Bridal Market + Dossier Tarifas 2027 - {$companyName}",
             default =>
                 "Seguimiento de vuestro evento {$eventName} ({$eventDate}) - {$companyName}",
         };
@@ -454,6 +456,10 @@ class WhatsAppTemplateService
             'entrega_fotos_qr_drive' => [
                 'label' => '📸 Entrega Carpeta Drive Fotos QR (Fin de Evento)',
                 'default' => "¡Hola {nombre}! Soy {firma}, de {empresa}. ¡Muchísimas gracias por contar con nosotros en {vuestro_evento}! Ya hemos cerrado la recepción del código QR para invitados y os dejamos aquí el enlace directo a vuestra carpeta de Google Drive para que podáis ver y descargar todas las fotos y recuerdos en su calidad original:\n\n📁 *Carpeta de Google Drive:*\n{enlace_drive_fotos}\n\n¡Esperamos que las disfrutéis muchísimo! ¡Un abrazo! {firma}",
+            ],
+            'feria_novios' => [
+                'label' => '🎪 Feria de Novios (Dossier + Promo Feria)',
+                'default' => "¡Hola {nombre}! Soy {firma}, de {empresa} 🎧💍\n\n¡Un placer saludaros tras vuestro paso por la *III Edición de La Rioja Bridal Market*! 🎉\n\nTal y como comentamos en la feria, os dejamos por aquí toda nuestra información con la *Promoción Especial Feria* activa (precios especiales y *Álbum de Fotos QR para invitados gratis* al contratar Ceremonia o Cóctel):\n\n📑 *Dossier de Tarifas 2027 (Especial Feria):*\n{enlace_dossier_tarifas}\n\n✨ *Configurador de Propuesta a Medida (incluso si aún no tenéis fecha o finca cerrada):*\n{enlace_presupuesto}\n\nAunque todavía estéis decidiendo el día o el restaurante, podéis ir viendo todas las opciones con calma o preguntarnos cualquier duda por aquí sin compromiso.\n\n¡Enhorabuena por la boda y un abrazo grande! {firma}",
             ],
         ];
     }
@@ -833,6 +839,14 @@ class WhatsAppTemplateService
                 'icon' => '👋',
                 'description' => 'Saludo inicial con enlace al presupuesto y disposición para resolver dudas.',
                 'text' => self::primeraTomaContacto($event, 'presupuesto_online', $senderBrand),
+            ],
+            'feria_novios' => [
+                'key' => 'feria_novios',
+                'title' => 'Feria de Novios (Dossier + Promo)',
+                'stage' => 'Feria',
+                'icon' => '🎪',
+                'description' => 'Saludo post-feria La Rioja Bridal Market con enlace al Dossier de Tarifas con Descuento Feria y configurador /presupuesto.',
+                'text' => self::renderTemplateByKey('feria_novios', $event, $senderBrand),
             ],
             'primer_contacto_madrigal' => [
                 'key' => 'primer_contacto_madrigal',

@@ -26,6 +26,10 @@
             <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Planificación, asignación de DJ / Asistente y seguimiento integral.</p>
         </div>
         <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+            <button type="button" wire:click="openFairModal" class="flex-1 sm:flex-none bg-gradient-to-r from-amber-500 to-rose-600 hover:from-amber-600 hover:to-rose-700 text-white font-extrabold py-2.5 px-4 rounded-xl shadow-md shadow-rose-500/20 text-xs sm:text-sm transition flex items-center justify-center gap-2 cursor-pointer">
+                <span>🎪</span>
+                <span>Feria de Novios (Masivo)</span>
+            </button>
             <button type="button" wire:click="syncEmailLeads" wire:loading.attr="disabled" class="flex-1 sm:flex-none bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 disabled:opacity-60 text-white font-bold py-2.5 px-4 rounded-xl shadow-md shadow-emerald-600/20 text-xs sm:text-sm transition flex items-center justify-center gap-2 cursor-pointer">
                 <span wire:loading.remove wire:target="syncEmailLeads">📩</span>
                 <span wire:loading wire:target="syncEmailLeads" class="animate-spin">🔄</span>
@@ -562,13 +566,19 @@
                         
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
                             <div>
-                                <label class="block text-gray-700 dark:text-slate-300 text-xs font-bold mb-1">Fecha *</label>
+                                <div class="flex items-center justify-between mb-1">
+                                    <label class="block text-gray-700 dark:text-slate-300 text-xs font-bold">Fecha del Evento</label>
+                                    <span class="text-[10px] text-amber-600 dark:text-amber-400 font-semibold">Opcional si aún no tienen día</span>
+                                </div>
                                 <input type="date" wire:model="event_date" class="border dark:border-slate-700 rounded-xl w-full py-2 px-3 text-gray-700 dark:text-slate-200 text-sm focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-slate-800 font-bold">
                                 @error('event_date') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                             </div>
                             <div>
-                                <label class="block text-gray-700 dark:text-slate-300 text-xs font-bold mb-1">Lugar / Finca / Salón *</label>
-                                <input type="text" wire:model="location" placeholder="Ej: Finca El Portón" class="border dark:border-slate-700 rounded-xl w-full py-2 px-3 text-gray-700 dark:text-slate-200 text-sm focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-slate-800">
+                                <div class="flex items-center justify-between mb-1">
+                                    <label class="block text-gray-700 dark:text-slate-300 text-xs font-bold">Lugar / Finca / Salón</label>
+                                    <span class="text-[10px] text-amber-600 dark:text-amber-400 font-semibold">Opcional («Por definir»)</span>
+                                </div>
+                                <input type="text" wire:model="location" placeholder="Ej: Finca El Portón (o vacío si está por definir)" class="border dark:border-slate-700 rounded-xl w-full py-2 px-3 text-gray-700 dark:text-slate-200 text-sm focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-slate-800">
                                 @error('location') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                             </div>
                         </div>
@@ -906,6 +916,328 @@
 
                     <button type="button" wire:click="cancelFollowup" class="w-full py-1.5 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 font-medium text-xs transition cursor-pointer">
                         Cerrar sin cambiar contador
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    @endif
+
+    <!-- ========================================================================= -->
+    <!-- 🎪 MODAL DE IMPORTACIÓN Y DIFUSIÓN MASIVA: FERIA DE NOVIOS                -->
+    <!-- ========================================================================= -->
+    @if($showFairModal)
+        @php
+            $totalFair = count($fairRows);
+            $selectedFair = collect($fairRows)->where('selected', true)->count();
+            $withExactDateCount = collect($fairRows)->where('has_exact_date', true)->count();
+            $withPhoneCount = collect($fairRows)->where('has_phone', true)->count();
+            $onlyEmailCount = collect($fairRows)->filter(fn($r) => empty($r['has_phone']) && !empty($r['has_email']))->count();
+            $musicInterestCount = collect($fairRows)->where('mentions_music', true)->count();
+            $alreadyImportedCount = collect($fairRows)->filter(fn($r) => !empty($r['existing_event_id']))->count();
+            $waSentCount = collect($fairRows)->where('wa_sent', true)->count();
+            $emailSentCount = collect($fairRows)->where('email_sent', true)->count();
+        @endphp
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-900/85 backdrop-blur-xs overflow-y-auto">
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-6xl w-full shadow-2xl flex flex-col max-h-[94vh] overflow-hidden">
+
+                <!-- Cabecera Sticky -->
+                <div class="px-5 py-4 bg-gradient-to-r from-amber-500/15 via-rose-500/15 to-purple-500/15 dark:from-amber-950/60 dark:via-rose-950/50 dark:to-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3 shrink-0">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <span class="text-2xl p-2 bg-gradient-to-br from-amber-500 to-rose-600 text-white rounded-2xl shadow-sm shrink-0">🎪</span>
+                        <div class="min-w-0">
+                            <h3 class="text-base sm:text-lg font-black text-slate-900 dark:text-white truncate">
+                                Feria de Novios · Creación Masiva de Clientes/Eventos y Envío de Dossier
+                            </h3>
+                            <p class="text-[11px] sm:text-xs text-slate-600 dark:text-slate-300 truncate">
+                                Precargado con las <strong>{{ $totalFair }} parejas únicas</strong> del Excel de la <strong>{{ $fairName }}</strong> (incluso si aún no tienen día o finca definida).
+                            </p>
+                        </div>
+                    </div>
+                    <button type="button" wire:click="closeFairModal" class="p-2 rounded-xl bg-white/80 dark:bg-slate-800 text-slate-500 hover:text-slate-900 dark:hover:text-white font-black text-sm border border-slate-200 dark:border-slate-700 cursor-pointer shrink-0">
+                        ✕ Cerrar
+                    </button>
+                </div>
+
+                <!-- Cuerpo Scrollable -->
+                <div class="p-4 sm:p-5 overflow-y-auto space-y-4 flex-1">
+
+                    <!-- Resumen de Métricas Rápidas -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
+                        <div class="p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 text-center">
+                            <div class="text-base font-black text-slate-900 dark:text-white">{{ $totalFair }}</div>
+                            <div class="text-[10px] font-bold text-slate-500 dark:text-slate-400">Parejas Únicas</div>
+                        </div>
+                        <div class="p-2.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-center">
+                            <div class="text-base font-black text-emerald-700 dark:text-emerald-300">{{ $withPhoneCount }}</div>
+                            <div class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">💬 Con WhatsApp</div>
+                        </div>
+                        <div class="p-2.5 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 text-center">
+                            <div class="text-base font-black text-indigo-700 dark:text-indigo-300">{{ $onlyEmailCount }}</div>
+                            <div class="text-[10px] font-bold text-indigo-600 dark:text-indigo-400">📧 Solo Email (Sin Tel)</div>
+                        </div>
+                        <div class="p-2.5 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-center">
+                            <div class="text-base font-black text-amber-700 dark:text-amber-300">{{ $withExactDateCount }}</div>
+                            <div class="text-[10px] font-bold text-amber-600 dark:text-amber-400">📅 Con Día Exacto</div>
+                        </div>
+                        <div class="p-2.5 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-center">
+                            <div class="text-base font-black text-rose-700 dark:text-rose-300">{{ $musicInterestCount }}</div>
+                            <div class="text-[10px] font-bold text-rose-600 dark:text-rose-400">🎵 Citan Música/Prov.</div>
+                        </div>
+                        <div class="p-2.5 rounded-2xl bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 text-center">
+                            <div class="text-base font-black text-purple-700 dark:text-purple-300">{{ $alreadyImportedCount }} / {{ $totalFair }}</div>
+                            <div class="text-[10px] font-bold text-purple-600 dark:text-purple-400">📥 Ya en Eventos</div>
+                        </div>
+                        <div class="p-2.5 rounded-2xl bg-cyan-50 dark:bg-cyan-950/40 border border-cyan-200 dark:border-cyan-800 text-center">
+                            <div class="text-base font-black text-cyan-700 dark:text-cyan-300">💬{{ $waSentCount }} · 📧{{ $emailSentCount }}</div>
+                            <div class="text-[10px] font-bold text-cyan-600 dark:text-cyan-400">✅ Enviados</div>
+                        </div>
+                    </div>
+
+                    <!-- Configuración del Envío y Plantilla Personalizada -->
+                    <div class="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 rounded-2xl p-3.5 space-y-3">
+                        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <span class="text-xs font-extrabold text-slate-700 dark:text-slate-200">Firma del mensaje:</span>
+                                <button type="button" wire:click="setFairSenderBrand('miguel')" class="px-2.5 py-1 rounded-lg text-xs font-bold cursor-pointer transition {{ $fairSenderBrand === 'miguel' ? 'bg-indigo-600 text-white shadow-xs' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700' }}">
+                                    👑 Miguel
+                                </button>
+                                <button type="button" wire:click="setFairSenderBrand('fran')" class="px-2.5 py-1 rounded-lg text-xs font-bold cursor-pointer transition {{ $fairSenderBrand === 'fran' ? 'bg-indigo-600 text-white shadow-xs' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700' }}">
+                                    🎧 Fran
+                                </button>
+                                <button type="button" wire:click="setFairSenderBrand('ezequiel')" class="px-2.5 py-1 rounded-lg text-xs font-bold cursor-pointer transition {{ $fairSenderBrand === 'ezequiel' ? 'bg-indigo-600 text-white shadow-xs' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700' }}">
+                                    👥 Ezequiel
+                                </button>
+
+                                <span class="h-4 w-px bg-slate-300 dark:bg-slate-700 mx-1"></span>
+
+                                <label class="text-xs font-extrabold text-slate-700 dark:text-slate-200">Estado inicial al importar:</label>
+                                <select wire:model="fairInitialStatus" class="text-xs font-bold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 py-1 px-2">
+                                    <option value="no_response">⏳ Sin Respuesta (Con seguimiento)</option>
+                                    <option value="draft">📝 Borrador</option>
+                                    <option value="on_hold">⏸️ En Espera (En pausa)</option>
+                                </select>
+                            </div>
+
+                            <div class="flex items-center gap-2">
+                                <button type="button" wire:click="toggleFairCsvEditor" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 cursor-pointer">
+                                    {{ $fairShowCsvEditor ? '🔼 Ocultar CSV / Excel' : '📋 Pegar otro Excel / CSV' }}
+                                </button>
+                                <button type="button" wire:click="resetFairTemplate" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-white dark:bg-slate-800 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 hover:bg-amber-50 cursor-pointer">
+                                    🔄 Restaurar texto Feria
+                                </button>
+                            </div>
+                        </div>
+
+                        @if($fairShowCsvEditor)
+                            <div class="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 space-y-2">
+                                <div class="flex items-center justify-between">
+                                    <label class="text-xs font-bold text-slate-700 dark:text-slate-300">Pega aquí las filas de cualquier Excel o CSV de Feria (Nombre, Email, Teléfono, Fecha/Año, Comentarios):</label>
+                                    <button type="button" wire:click="parseFairCsvInput" class="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg cursor-pointer">
+                                        🔍 Analizar Datos Pegados
+                                    </button>
+                                </div>
+                                <textarea wire:model="fairRawCsv" rows="4" class="w-full text-xs font-mono p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200"></textarea>
+                            </div>
+                        @endif
+
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-3">
+                            <div class="lg:col-span-2">
+                                <div class="flex items-center justify-between mb-1">
+                                    <label class="text-xs font-extrabold text-slate-700 dark:text-slate-300">
+                                        💬 / 📧 Mensaje personalizado para cada pareja (soporta <code class="text-indigo-600 dark:text-indigo-400">{nombre}</code>, <code class="text-indigo-600 dark:text-indigo-400">{enlace_dossier_tarifas}</code> y <code class="text-indigo-600 dark:text-indigo-400">{enlace_presupuesto}</code>):
+                                    </label>
+                                </div>
+                                <textarea wire:model="fairMessageTemplate" rows="5" class="w-full text-xs p-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 leading-relaxed"></textarea>
+                            </div>
+                            <div class="flex flex-col justify-between space-y-2">
+                                <div>
+                                    <label class="block text-xs font-extrabold text-slate-700 dark:text-slate-300 mb-1">📧 Asunto del Correo Electrónico:</label>
+                                    <input type="text" wire:model="fairEmailSubject" class="w-full text-xs p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 font-bold">
+                                </div>
+                                <div class="p-3 rounded-xl bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/70 text-[11px] text-amber-900 dark:text-amber-200 space-y-1">
+                                    <div class="font-extrabold flex items-center gap-1"><span>💡</span> ¿Cómo funciona si no tienen fecha ni sitio?</div>
+                                    <p class="leading-snug">
+                                        Al importar o enviar, el sistema crea el <strong>Cliente</strong> y su <strong>Evento</strong> con lugar <em>«Por definir (Feria Bridal Market)»</em> y su año previsto (o la fecha real en las 8 parejas que ya la pusieron en comentarios). Cada pareja recibe su propio enlace único a <code class="font-bold">/presupuesto?evento=token</code>.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- BARRA DE 3 ACCIONES MASIVAS EN 1 CLIC -->
+                        <div class="pt-2 border-t border-slate-200 dark:border-slate-700 grid grid-cols-1 md:grid-cols-3 gap-2.5">
+                            <button type="button" wire:click="importSelectedFairLeads" wire:loading.attr="disabled" class="py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-extrabold text-xs shadow-md shadow-indigo-600/20 transition flex items-center justify-center gap-2 cursor-pointer">
+                                <span wire:loading.remove wire:target="importSelectedFairLeads">📥 1. Crear Clientes y Eventos ({{ $selectedFair }} selec.)</span>
+                                <span wire:loading wire:target="importSelectedFairLeads">⏳ Creando fichas de clientes y eventos...</span>
+                            </button>
+
+                            <button type="button" wire:click="sendFairBulkEmails" wire:loading.attr="disabled" class="py-2.5 px-4 rounded-xl bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white font-extrabold text-xs shadow-md shadow-purple-600/20 transition flex items-center justify-center gap-2 cursor-pointer">
+                                <span wire:loading.remove wire:target="sendFairBulkEmails">📧 2. Enviar Email Masivo a Seleccionados</span>
+                                <span wire:loading wire:target="sendFairBulkEmails">⏳ Enviando correos personalizados...</span>
+                            </button>
+
+                            <button type="button" wire:click="sendFairBulkWhatsAppBatch(10)" wire:loading.attr="disabled" class="py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-extrabold text-xs shadow-md shadow-emerald-600/20 transition flex items-center justify-center gap-2 cursor-pointer">
+                                <span wire:loading.remove wire:target="sendFairBulkWhatsAppBatch">💬 3. Enviar Lote WhatsApp (10 siguientes)</span>
+                                <span wire:loading wire:target="sendFairBulkWhatsAppBatch">⏳ Enviando WhatsApps...</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Filtros de la Tabla y Selección Masiva -->
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <div class="flex flex-wrap items-center gap-1.5">
+                            <button type="button" wire:click="setFairFilter('all')" class="px-2.5 py-1 rounded-lg text-xs font-bold cursor-pointer {{ $fairFilter === 'all' ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300' }}">
+                                Todos ({{ $totalFair }})
+                            </button>
+                            <button type="button" wire:click="setFairFilter('with_date')" class="px-2.5 py-1 rounded-lg text-xs font-bold cursor-pointer {{ $fairFilter === 'with_date' ? 'bg-amber-600 text-white' : 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300' }}">
+                                📅 Con Fecha Exacta ({{ $withExactDateCount }})
+                            </button>
+                            <button type="button" wire:click="setFairFilter('music_interest')" class="px-2.5 py-1 rounded-lg text-xs font-bold cursor-pointer {{ $fairFilter === 'music_interest' ? 'bg-rose-600 text-white' : 'bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-300' }}">
+                                🎵 Citan Música/Proveedores ({{ $musicInterestCount }})
+                            </button>
+                            <button type="button" wire:click="setFairFilter('with_phone')" class="px-2.5 py-1 rounded-lg text-xs font-bold cursor-pointer {{ $fairFilter === 'with_phone' ? 'bg-emerald-600 text-white' : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300' }}">
+                                💬 Con Teléfono ({{ $withPhoneCount }})
+                            </button>
+                            <button type="button" wire:click="setFairFilter('only_email')" class="px-2.5 py-1 rounded-lg text-xs font-bold cursor-pointer {{ $fairFilter === 'only_email' ? 'bg-indigo-600 text-white' : 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-800 dark:text-indigo-300' }}">
+                                📧 Solo Email ({{ $onlyEmailCount }})
+                            </button>
+                            <button type="button" wire:click="setFairFilter('pending')" class="px-2.5 py-1 rounded-lg text-xs font-bold cursor-pointer {{ $fairFilter === 'pending' ? 'bg-cyan-600 text-white' : 'bg-cyan-50 dark:bg-cyan-950/40 text-cyan-800 dark:text-cyan-300' }}">
+                                ⏳ Pendientes de envío
+                            </button>
+                        </div>
+
+                        <div class="flex items-center gap-2">
+                            <button type="button" wire:click="selectAllFairRows(true)" class="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer">
+                                ☑️ Marcar visibles
+                            </button>
+                            <span class="text-slate-300">|</span>
+                            <button type="button" wire:click="selectAllFairRows(false)" class="text-xs font-bold text-slate-500 hover:underline cursor-pointer">
+                                ⬜ Desmarcar visibles
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Tabla de Parejas Inscritas en la Feria -->
+                    <div class="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden">
+                        <div class="overflow-x-auto max-h-96">
+                            <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-800 text-xs">
+                                <thead class="bg-slate-100 dark:bg-slate-800/90 sticky top-0 z-10">
+                                    <tr>
+                                        <th class="px-3 py-2.5 text-left font-black text-slate-600 dark:text-slate-300 w-8">#</th>
+                                        <th class="px-3 py-2.5 text-left font-black text-slate-600 dark:text-slate-300">Novios / Contacto</th>
+                                        <th class="px-3 py-2.5 text-left font-black text-slate-600 dark:text-slate-300">Teléfono & Email</th>
+                                        <th class="px-3 py-2.5 text-left font-black text-slate-600 dark:text-slate-300">Fecha / Año Boda</th>
+                                        <th class="px-3 py-2.5 text-left font-black text-slate-600 dark:text-slate-300">Comentarios en Feria</th>
+                                        <th class="px-3 py-2.5 text-left font-black text-slate-600 dark:text-slate-300">Ficha Evento</th>
+                                        <th class="px-3 py-2.5 text-right font-black text-slate-600 dark:text-slate-300">Envío Directo</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100 dark:divide-slate-800/70 bg-white dark:bg-slate-900">
+                                    @foreach($fairRows as $idx => $row)
+                                        @php
+                                            $showRow = match ($fairFilter) {
+                                                'with_date' => !empty($row['has_exact_date']),
+                                                'with_phone' => !empty($row['has_phone']),
+                                                'only_email' => empty($row['has_phone']) && !empty($row['has_email']),
+                                                'music_interest' => !empty($row['mentions_music']),
+                                                'pending' => empty($row['wa_sent']) && empty($row['email_sent']),
+                                                default => true,
+                                            };
+                                        @endphp
+                                        @if($showRow)
+                                            <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition {{ !empty($row['selected']) ? '' : 'opacity-60' }}">
+                                                <td class="px-3 py-2.5 whitespace-nowrap">
+                                                    <input type="checkbox" wire:click="toggleFairRow({{ $idx }})" @checked(!empty($row['selected'])) class="rounded text-indigo-600 focus:ring-indigo-500 h-4 w-4 cursor-pointer">
+                                                </td>
+                                                <td class="px-3 py-2.5">
+                                                    <div class="font-extrabold text-slate-900 dark:text-white flex items-center gap-1.5">
+                                                        <span>{{ $row['name'] }}</span>
+                                                        @if(!empty($row['mentions_music']))
+                                                            <span class="text-[9px] px-1.5 py-0.2 rounded-full bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 font-black" title="Menciona música o proveedores en sus comentarios">🎵 Música/Prov.</span>
+                                                        @endif
+                                                    </div>
+                                                    <div class="text-[10px] text-slate-400">Saludo: «¡Hola {{ $row['first_name'] }}!»</div>
+                                                </td>
+                                                <td class="px-3 py-2.5 whitespace-nowrap">
+                                                    @if(!empty($row['has_phone']))
+                                                        <div class="font-bold text-emerald-700 dark:text-emerald-400">📱 {{ $row['phone'] }}</div>
+                                                    @else
+                                                        <div class="font-bold text-amber-600 dark:text-amber-400">📵 Sin teléfono</div>
+                                                    @endif
+                                                    @if(!empty($row['has_email']))
+                                                        <div class="text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-[190px]" title="{{ $row['email'] }}">✉️ {{ $row['email'] }}</div>
+                                                    @endif
+                                                </td>
+                                                <td class="px-3 py-2.5 whitespace-nowrap">
+                                                    @if(!empty($row['has_exact_date']))
+                                                        <span class="px-2 py-0.5 rounded-lg bg-amber-100 text-amber-900 dark:bg-amber-950/80 dark:text-amber-300 font-black text-[11px]">
+                                                            {{ $row['date_label'] }}
+                                                        </span>
+                                                    @else
+                                                        <span class="px-2 py-0.5 rounded-lg bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 font-semibold text-[11px]">
+                                                            {{ $row['date_label'] }}
+                                                        </span>
+                                                    @endif
+                                                </td>
+                                                <td class="px-3 py-2.5 max-w-xs">
+                                                    @if(!empty($row['comments']))
+                                                        <div class="text-[11px] text-slate-700 dark:text-slate-300 line-clamp-2" title="{{ $row['comments'] }}">
+                                                            💬 {{ $row['comments'] }}
+                                                        </div>
+                                                    @else
+                                                        <span class="text-[10px] text-slate-400 italic">Sin comentarios adicionales</span>
+                                                    @endif
+                                                </td>
+                                                <td class="px-3 py-2.5 whitespace-nowrap">
+                                                    @if(!empty($row['existing_event_id']))
+                                                        <a href="{{ route('admin.events.show', $row['existing_event_id']) }}" target="_blank" class="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 font-bold text-[11px] border border-indigo-200 dark:border-indigo-800">
+                                                            <span>✅ Ver Ficha #{{ $row['existing_event_id'] }}</span>
+                                                            <span>↗</span>
+                                                        </a>
+                                                    @else
+                                                        <span class="text-[10px] text-slate-400 font-semibold">Pendiente de crear</span>
+                                                    @endif
+                                                </td>
+                                                <td class="px-3 py-2.5 whitespace-nowrap text-right">
+                                                    <div class="inline-flex items-center gap-1.5">
+                                                        @if(!empty($row['has_phone']))
+                                                            <button type="button"
+                                                                    wire:click="sendFairSingleWhatsApp({{ $idx }})"
+                                                                    wire:loading.attr="disabled"
+                                                                    class="px-2.5 py-1 rounded-lg font-extrabold text-[11px] transition cursor-pointer flex items-center gap-1 {{ !empty($row['wa_sent']) ? 'bg-emerald-100 text-emerald-900 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700' : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs' }}"
+                                                                    title="Importar (si no existe) y enviar promoción por WhatsApp">
+                                                                <span>{{ !empty($row['wa_sent']) ? '✅ WA' : '💬 WA' }}</span>
+                                                            </button>
+                                                        @endif
+
+                                                        @if(!empty($row['has_email']))
+                                                            <button type="button"
+                                                                    wire:click="sendFairSingleEmail({{ $idx }})"
+                                                                    wire:loading.attr="disabled"
+                                                                    class="px-2.5 py-1 rounded-lg font-extrabold text-[11px] transition cursor-pointer flex items-center gap-1 {{ !empty($row['email_sent']) ? 'bg-purple-100 text-purple-900 dark:bg-purple-950/80 dark:text-purple-300 border border-purple-300 dark:border-purple-700' : 'bg-purple-600 hover:bg-purple-700 text-white shadow-xs' }}"
+                                                                    title="Importar (si no existe) y enviar promoción por Email">
+                                                                <span>{{ !empty($row['email_sent']) ? '✅ Email' : '📧 Email' }}</span>
+                                                            </button>
+                                                        @endif
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        @endif
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Pie del Modal -->
+                <div class="px-5 py-3 bg-slate-50 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-2 shrink-0">
+                    <div class="text-[11px] text-slate-500 dark:text-slate-400">
+                        💡 <strong>Consejo:</strong> Pulsa primero <strong>«1. Crear Clientes y Eventos»</strong>, luego <strong>«2. Enviar Email Masivo»</strong> (así las 45 parejas reciben el Dossier al instante, incluidas las 7 que no dejaron teléfono) y después envía los <strong>WhatsApps</strong> por lotes o fila a fila.
+                    </div>
+                    <button type="button" wire:click="closeFairModal" class="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs cursor-pointer shrink-0">
+                        Cerrar ventana
                     </button>
                 </div>
 
