@@ -577,6 +577,16 @@
                                             </tr>
                                         @endif
                                     @endforeach
+                                    @if(!empty($fairCalc['is_fair_active']) && !empty($config['qr_photos_gift_enabled']))
+                                        <tr>
+                                            <td style="vertical-align: top; width: 12px; padding: 3px 0; color: {{ $isFeatured ? '#86efac' : '#059669' }}; font-weight: 900; font-size: 10pt; line-height: 1.1;">
+                                                &#9733;
+                                            </td>
+                                            <td style="vertical-align: top; padding: 3px 0; font-size: 8.3pt; font-weight: 800; color: {{ $isFeatured ? '#86efac' : '#065f46' }}; line-height: 1.35;">
+                                                REGALO FERIA (0 €): Álbum de Fotos QR para invitados + Carteles PDF incluido gratis
+                                            </td>
+                                        </tr>
+                                    @endif
                                 </table>
                             </td>
                         @endforeach
@@ -616,12 +626,18 @@
                 </p>
 
                 @if($page['type'] === 'extras' && !empty($config['qr_photos_gift_enabled']))
+                    @php
+                        $isFairActiveExtras = !empty($config['fair_mode']['enabled']);
+                        $qrGiftTitlePdf = $isFairActiveExtras
+                            ? 'REGALO INCLUIDO CON CUALQUIER PACK (PROMOCIÓN FERIA): Álbum de Fotos QR para Invitados + Carteles PDF'
+                            : ($config['qr_photos_gift_title'] ?? 'REGALO INCLUIDO al contratar Ceremonia o Cóctel: Álbum de Fotos QR para Invitados');
+                    @endphp
                     <div style="margin-bottom: 4.5mm; border: 1.5px solid #10b981; border-left: 5px solid #10b981; border-radius: 8px; padding: 10px 15px; background-color: #ecfdf5;">
                         <table style="width: 100%; border-collapse: collapse;">
                             <tr>
                                 <td style="vertical-align: middle; padding-right: 12px;">
                                     <div style="font-size: 10.5pt; font-weight: 900; color: #065f46; margin-bottom: 3px;">
-                                        &bull; {{ $cleanPdfText($config['qr_photos_gift_title'] ?? 'REGALO INCLUIDO al contratar Ceremonia o Cóctel: Álbum de Fotos QR para Invitados') }}
+                                        &bull; {{ $cleanPdfText($qrGiftTitlePdf) }}
                                     </div>
                                     <div style="font-size: 8.8pt; color: #047857; line-height: 1.38;">
                                         {{ $cleanPdfText($config['qr_photos_gift_text'] ?? 'Colocamos un código QR personalizado para que todos los invitados suban y descarguen en calidad original las fotos que hagan con su móvil durante la ceremonia, el cóctel y la fiesta, directo a vuestro álbum privado sin instalar ninguna app.') }}

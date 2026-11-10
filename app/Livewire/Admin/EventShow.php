@@ -3973,7 +3973,19 @@ class EventShow extends Component
         $freeWithCerCock = \App\Models\Setting::get('photo_qr_free_with_ceremony_cocktail', '1') !== '0';
         $hasCerOrCock = !empty($this->quote_services['ceremony']['selected']) || !empty($this->quote_services['cocktail']['selected']);
 
-        if (!$isMagic && $freeWithCerCock && $hasCerOrCock) {
+        $fairConfig = \App\Services\GeneralTariffDossierService::getConfig();
+        $notesAndLoc = mb_strtolower((string) ($this->event?->notes ?? '') . ' ' . (string) ($this->event?->location ?? ''));
+        $isFairPromoEvent = !empty($this->fair_discount_enabled)
+            || !empty($fairConfig['fair_mode']['enabled'])
+            || str_contains($notesAndLoc, 'feria')
+            || str_contains($notesAndLoc, 'bridal market');
+
+        $hasAnyPack = !empty($this->quote_services['pack_basic']['selected'])
+            || !empty($this->quote_services['pack_medium']['selected'])
+            || !empty($this->quote_services['pack_premium']['selected'])
+            || !empty($this->quote_services['dj_custom']['selected']);
+
+        if (!$isMagic && (($isFairPromoEvent && ($hasAnyPack || $hasCerOrCock)) || ($freeWithCerCock && $hasCerOrCock))) {
             $this->quote_services['photo_qr']['selected'] = true;
             $this->quote_services['photo_qr']['included'] = true;
             $this->quote_services['photo_qr']['auto_gift'] = true;

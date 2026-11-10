@@ -640,7 +640,7 @@ class EventManager extends Component
         if (empty(trim($this->fairRawCsv))) {
             $this->fairRawCsv = \App\Services\BridalFairLeadService::getDefaultRiojaBridalMarketCsv();
         }
-        if (empty(trim($this->fairMessageTemplate))) {
+        if (empty(trim($this->fairMessageTemplate)) || str_contains($this->fairMessageTemplate, 'al contratar Ceremonia o Cóctel')) {
             $this->fairMessageTemplate = \App\Services\BridalFairLeadService::getDefaultFairTemplate();
         }
         if (empty(trim($this->fairEmailSubject))) {

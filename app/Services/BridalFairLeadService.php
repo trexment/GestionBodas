@@ -177,6 +177,7 @@ CSV;
             $existingEvent = self::findExistingEventForLead($fullName, $email, $cleanPhone);
 
             $firstName = explode(' ', $fullName)[0] ?? $fullName;
+            $mentionsMusic = (bool) preg_match('/m[uú]sica|dj|sonido|proveedores/iu', $commentsCol);
 
             $parsedRows[] = [
                 'uid' => md5($dedupeKey . '_' . $fullName),
@@ -185,15 +186,23 @@ CSV;
                 'first_name' => $firstName,
                 'email' => $email,
                 'phone' => $cleanPhone,
+                'has_phone' => $cleanPhone !== '',
+                'has_email' => $email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL) !== false,
                 'target_year' => $dateInfo['year_label'],
                 'event_date' => $dateInfo['event_date'],
                 'has_exact_date' => $dateInfo['has_exact_date'],
                 'date_display' => $dateInfo['display'],
+                'date_label' => $dateInfo['display'],
                 'comments' => $commentsCol,
-                'looks_for_music' => (bool) preg_match('/m[uú]sica|dj|sonido|proveedores/iu', $commentsCol),
+                'looks_for_music' => $mentionsMusic,
+                'mentions_music' => $mentionsMusic,
                 'fair_name' => $fairName,
                 'existing_event_id' => $existingEvent ? $existingEvent->id : null,
+                'existing_event_name' => $existingEvent ? $existingEvent->name : null,
+                'existing_event_token' => $existingEvent ? $existingEvent->token : null,
                 'existing_event_status' => $existingEvent ? $existingEvent->status : null,
+                'wa_sent' => false,
+                'email_sent' => false,
             ];
         }
 
@@ -321,8 +330,12 @@ CSV;
     /**
      * Crea (o recupera si ya existe) el Cliente y el Evento de un contacto de Feria de Novios.
      */
-    public static function createOrGetFairEvent(array $row, string $brand = 'nunez_and_son', ?int $djId = null): Event
-    {
+    public static function createOrGetFairEvent(
+        array $row,
+        string $brand = 'nunez_and_son',
+        ?int $djId = null,
+        string $initialStatus = 'no_response'
+    ): array {
         $name = trim((string) ($row['name'] ?? 'Pareja Feria'));
         $email = strtolower(trim((string) ($row['email'] ?? '')));
         $phone = trim((string) ($row['phone'] ?? ''));
@@ -334,7 +347,10 @@ CSV;
 
         $existingEvent = self::findExistingEventForLead($name, $email, $phone);
         if ($existingEvent) {
-            return $existingEvent;
+            return [
+                'event' => $existingEvent,
+                'created_event' => false,
+            ];
         }
 
         // 1. Buscar o crear usuario Cliente
@@ -377,6 +393,7 @@ CSV;
         // 2. Construir notas claras indicando que viene de la Feria y si tiene o no fecha/finca
         $noteLines = [
             "🎪 CONTACTO FERIA DE NOVIOS: {$fairName}",
+            "🎁 PROMO FERIA ACTIVA: Descuento en Packs + Álbum de Fotos QR GRATIS con cualquier pack",
             "👤 Nombre: {$name}",
         ];
         if ($phone !== '') {
@@ -388,7 +405,7 @@ CSV;
         if ($hasExactDate) {
             $noteLines[] = "📅 Fecha indicada por la pareja: " . Carbon::parse($eventDate)->format('d/m/Y');
         } else {
-            $noteLines[] = "⏳ Fecha exacta: PENDIENTE DE CONCRETAR (Año previsto: {$targetYear})";
+            $noteLines[] = "⏳ Fecha exacta pendiente de definir (Año previsto: {$targetYear})";
         }
         $noteLines[] = "📍 Lugar / Finca: Pendiente de concretar";
         if ($comments !== '') {
@@ -399,6 +416,8 @@ CSV;
             ? 'Por definir (Feria Bridal Market)'
             : "Fecha y finca por definir ({$targetYear} · Feria Bridal Market)";
 
+        $validStatus = in_array($initialStatus, ['no_response', 'draft', 'on_hold'], true) ? $initialStatus : 'no_response';
+
         $event = Event::create([
             'name' => "Boda - {$name}",
             'brand' => $brand ?: 'nunez_and_son',
@@ -407,7 +426,9 @@ CSV;
             'location' => $locationLabel,
             'client_id' => $client->id,
             'dj_id' => $djId ?: auth()->id(),
-            'status' => 'draft',
+            'status' => $validStatus,
+            'no_response_at' => $validStatus === 'no_response' ? now() : null,
+            'token' => Str::random(32),
             'notes' => implode("\n", $noteLines),
         ]);
 
@@ -417,7 +438,10 @@ CSV;
             ImapLeadFetcherService::recordProcessedLeadSignatures($sigs);
         } catch (\Throwable $e) {}
 
-        return $event;
+        return [
+            'event' => $event,
+            'created_event' => true,
+        ];
     }
 
     /**
@@ -426,10 +450,10 @@ CSV;
     public static function getDefaultFairTemplate(): string
     {
         return "¡Hola {nombre}! 👋 Soy {firma}, de *{empresa}*. ¡Qué ilusión haberos tenido en la *III Edición de La Rioja Bridal Market*! 💍✨\n\n"
-            . "Por haber asistido a la feria tenéis activada nuestra *Promoción Especial Feria de Novios* (con descuento exclusivo en nuestros packs de sonido, iluminación y DJ para bodas).\n\n"
+            . "Por haber asistido a la feria tenéis activada nuestra *Promoción Especial Feria de Novios* (con descuento exclusivo en los packs y el *Álbum de Fotos QR para invitados + Carteles PDF totalmente GRATIS* elijáis el paquete que elijáis).\n\n"
             . "📄 *Aquí podéis ver nuestro Dossier de Tarifas 2027 con los precios especiales de feria:*\n"
             . "{enlace_dossier_tarifas}\n\n"
-            . "🎛️ *Y aquí podéis configurar vuestro presupuesto a medida en 1 minuto (aunque aún estéis mirando fecha o finca):*\n"
+            . "🎛️ *Y aquí podéis configurar vuestro presupuesto a medida en 1 minuto (incluso si aún no tenéis día o finca cerrada):*\n"
             . "{enlace_presupuesto}\n\n"
             . "¿Ya tenéis fecha y finca decididas o todavía estáis viendo opciones? Cualquier duda me decís por aquí. ¡Un saludo! {firma}";
     }
@@ -437,10 +461,23 @@ CSV;
     /**
      * Renderiza el mensaje personalizado para una pareja concreta de la feria.
      */
-    public static function renderFairMessageForEvent(Event $event, string $rawTemplate, ?string $senderBrand = null): string
-    {
+    public static function renderFairMessageForEvent(
+        Event $event,
+        $rowOrTemplate = null,
+        ?string $rawTemplate = null,
+        ?string $senderBrand = null
+    ): string {
+        $row = is_array($rowOrTemplate) ? $rowOrTemplate : [];
+        if (is_string($rowOrTemplate) && $rawTemplate === null) {
+            $rawTemplate = $rowOrTemplate;
+        }
+        $templateText = !empty(trim((string) $rawTemplate)) ? (string) $rawTemplate : self::getDefaultFairTemplate();
+
         $vars = WhatsAppTemplateService::getTemplateVariables($event, $senderBrand);
-        $rendered = str_replace(array_keys($vars), array_values($vars), $rawTemplate);
+        if (!empty($row['first_name'])) {
+            $vars['{nombre}'] = $row['first_name'];
+        }
+        $rendered = str_replace(array_keys($vars), array_values($vars), $templateText);
         return WhatsAppTemplateService::applySenderSignatureToMessage($rendered, $senderBrand, $event);
     }
 }

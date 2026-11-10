@@ -357,6 +357,12 @@
                                                         </li>
                                                     @endif
                                                 @endforeach
+                                                @if(!empty($fairCalcPres['is_fair_active']) && !empty($config['qr_photos_gift_enabled']))
+                                                    <li class="flex items-start gap-2 pt-1 text-emerald-300 font-extrabold">
+                                                        <span class="text-emerald-400 font-black">🎁</span>
+                                                        <span>REGALO FERIA (0 €): Álbum de Fotos QR para invitados + Carteles PDF incluido gratis</span>
+                                                    </li>
+                                                @endif
                                             </ul>
                                         </div>
                                     </div>
@@ -382,10 +388,15 @@
                             </div>
 
                             @if($page['type'] === 'extras' && !empty($config['qr_photos_gift_enabled']))
+                                @php
+                                    $qrGiftTitlePres = $isFairActivePres
+                                        ? 'REGALO INCLUIDO CON CUALQUIER PACK (PROMOCIÓN FERIA): Álbum de Fotos QR para Invitados + Carteles PDF'
+                                        : ($config['qr_photos_gift_title'] ?? 'REGALO INCLUIDO al contratar Ceremonia o Cóctel: Álbum de Fotos QR para Invitados');
+                                @endphp
                                 <div class="p-4 sm:p-5 rounded-2xl bg-emerald-950/60 border-2 border-emerald-500/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                     <div>
                                         <div class="text-sm sm:text-base font-black text-emerald-300">
-                                            ★ {{ $config['qr_photos_gift_title'] ?? 'REGALO INCLUIDO al contratar Ceremonia o Cóctel: Álbum de Fotos QR para Invitados' }}
+                                            ★ {{ $qrGiftTitlePres }}
                                         </div>
                                         <p class="text-xs text-emerald-100/80 mt-1 leading-relaxed">
                                             {{ $config['qr_photos_gift_text'] ?? 'Colocamos un código QR personalizado para que todos los invitados suban y descarguen en calidad original las fotos que hagan con su móvil durante la ceremonia, el cóctel y la fiesta, directo a vuestro álbum privado sin instalar ninguna app.' }}

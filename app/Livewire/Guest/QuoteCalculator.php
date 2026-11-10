@@ -748,6 +748,7 @@ class QuoteCalculator extends Component
             if (isset($this->services['cold_sparks'])) {
                 $this->services['cold_sparks']['included'] = false;
             }
+            $this->syncPhotoQrGift();
             return;
         }
 
@@ -780,20 +781,34 @@ class QuoteCalculator extends Component
         $this->syncPhotoQrGift();
     }
 
+    public function getIsFairModeActiveProperty(): bool
+    {
+        $fairConfig = \App\Services\GeneralTariffDossierService::getConfig();
+        return !empty($fairConfig['fair_mode']['enabled']);
+    }
+
     public function syncPhotoQrGift(): void
     {
         if (!isset($this->services['photo_qr'])) {
             return;
         }
 
+        $fairActive = $this->is_fair_mode_active;
+        $hasDjPack = !empty($this->services['dj']['selected']);
         $freeWithCerCock = Setting::get('photo_qr_free_with_ceremony_cocktail', '1') !== '0';
         $hasCerOrCock = !empty($this->services['ceremony']['selected']) || !empty($this->services['cocktail']['selected']);
 
-        if ($freeWithCerCock && $hasCerOrCock) {
+        if ($fairActive && ($hasDjPack || $hasCerOrCock)) {
             $this->services['photo_qr']['included'] = true;
             $this->services['photo_qr']['selected'] = true;
+            $this->services['photo_qr']['gift_reason'] = 'fair';
+        } elseif ($freeWithCerCock && $hasCerOrCock) {
+            $this->services['photo_qr']['included'] = true;
+            $this->services['photo_qr']['selected'] = true;
+            $this->services['photo_qr']['gift_reason'] = 'ceremony_cocktail';
         } else {
             $this->services['photo_qr']['included'] = false;
+            $this->services['photo_qr']['gift_reason'] = null;
             if (empty($this->services['photo_qr']['manually_toggled'])) {
                 $this->services['photo_qr']['selected'] = false;
             }
@@ -1096,8 +1111,11 @@ class QuoteCalculator extends Component
                     }
                 } elseif ($key === 'photo_qr') {
                     if (!empty($service['included'])) {
-                        $requestedServicesList[] = "• " . $service['name'] . " (Incluido de regalo con Ceremonia / Cóctel - 0 €)";
-                        $clientServicesList[] = $service['name'] . " (Incluido de regalo con Ceremonia / Cóctel)";
+                        $giftLabel = $fairModeActive
+                            ? 'Incluido de regalo con Promoción Feria (cualquier Pack) - 0 €'
+                            : 'Incluido de regalo con Ceremonia / Cóctel - 0 €';
+                        $requestedServicesList[] = "• " . $service['name'] . " ({$giftLabel})";
+                        $clientServicesList[] = $service['name'] . " (" . ($fairModeActive ? 'Incluido de regalo con Promoción Feria' : 'Incluido de regalo con Ceremonia / Cóctel') . ")";
                     } else {
                         $qrP = number_format((float)($catalog['photo_qr'] ?? 60), 0, ',', '.');
                         $requestedServicesList[] = "• " . $service['name'] . " ({$qrP} €)";
@@ -1455,7 +1473,9 @@ class QuoteCalculator extends Component
                     $p = $isIncluded ? 0 : ($catalog['photo_qr'] ?? 60);
                     $quote->items()->create([
                         'service_name' => $isIncluded
-                            ? 'Álbum de Fotos QR para Invitados (Incluido de regalo con Ceremonia / Cóctel)'
+                            ? ($fairModeActive
+                                ? 'Álbum de Fotos QR para Invitados + Carteles PDF (Incluido de regalo con Promoción Feria)'
+                                : 'Álbum de Fotos QR para Invitados (Incluido de regalo con Ceremonia / Cóctel)')
                             : 'Álbum de Fotos QR para Invitados + Carteles PDF',
                         'description' => $service['description'],
                         'quantity' => 1,

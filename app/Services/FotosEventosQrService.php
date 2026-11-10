@@ -458,6 +458,16 @@ class FotosEventosQrService
             return true;
         }
 
+        // Durante promoción de Feria activa o si el evento procede de Feria de Novios, el QR es gratis elijan el pack que elijan
+        $fairConfig = \App\Services\GeneralTariffDossierService::getConfig();
+        if (!empty($fairConfig['fair_mode']['enabled'])) {
+            return true;
+        }
+        $notesAndLoc = mb_strtolower((string) ($event->notes ?? '') . ' ' . (string) ($event->location ?? ''));
+        if (str_contains($notesAndLoc, 'feria') || str_contains($notesAndLoc, 'bridal market')) {
+            return true;
+        }
+
         $latestQuote = $event->relationLoaded('quotes')
             ? $event->quotes->sortByDesc('id')->first()
             : $event->quotes()->with('items')->latest()->first();
@@ -465,6 +475,9 @@ class FotosEventosQrService
         if ($latestQuote && $latestQuote->items) {
             foreach ($latestQuote->items as $item) {
                 $t = mb_strtolower((string) ($item->service_name ?: $item->concept ?: ''));
+                if (str_contains($t, 'descuento especial') || str_contains($t, 'feria')) {
+                    return true;
+                }
                 if (
                     !str_contains($t, 'descuento') &&
                     !str_contains($t, 'fotografía') &&

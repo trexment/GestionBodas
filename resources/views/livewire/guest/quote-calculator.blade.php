@@ -220,7 +220,7 @@
                                                                 </span>
                                                             @elseif($key === 'photo_qr' && !empty($service['included']))
                                                                 <span class="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-emerald-950/80 text-emerald-400 border border-emerald-500/40">
-                                                                    REGALO INCLUIDO (0 €)
+                                                                    {{ !empty($fairModeActive) ? '🎁 REGALO PROMO FERIA (0 €)' : 'REGALO INCLUIDO (0 €)' }}
                                                                 </span>
                                                             @elseif($key === 'cold_sparks' && !empty($service['included']))
                                                                 <span class="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-zinc-800 text-amber-400 border border-amber-500/30">
@@ -250,6 +250,8 @@
                                                         @else
                                                             @if($key === 'smoke_machine')
                                                                 <span class="text-[10px] text-zinc-400 font-medium">Incluido desde 5h DJ</span>
+                                                            @elseif($key === 'photo_qr' && !empty($fairModeActive))
+                                                                <span class="text-[10px] text-emerald-400 font-medium">🎁 Gratis con cualquier Pack (Promo Feria)</span>
                                                             @elseif($key === 'photo_qr' && \App\Models\Setting::get('photo_qr_free_with_ceremony_cocktail', '1') !== '0')
                                                                 <span class="text-[10px] text-emerald-400 font-medium">Gratis con Ceremonia/Cóctel</span>
                                                             @elseif($key === 'cold_sparks')
