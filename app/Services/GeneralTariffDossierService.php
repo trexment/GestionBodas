@@ -98,7 +98,7 @@ class GeneralTariffDossierService
             'enabled' => false,
             'fair_name' => 'Feria de Novios',
             'fair_badge' => '🎪 PROMOCIÓN ESPECIAL FERIA DE NOVIOS',
-            'fair_condition_text' => 'Descuento exclusivo Feria de Novios (reservando vuestra fecha antes del 30 de noviembre)',
+            'fair_condition_text' => 'Descuento exclusivo Feria de Novios (reservando vuestra fecha antes del 30 de diciembre)',
             'quote_discount_amount' => 150,
             'packs_pricing' => [
                 0 => [
@@ -555,6 +555,9 @@ class GeneralTariffDossierService
             $merged['fair_mode'] = $defaultFair;
         } else {
             $merged['fair_mode'] = array_merge($defaultFair, $merged['fair_mode']);
+            if (!empty($merged['fair_mode']['fair_condition_text']) && stripos((string) $merged['fair_mode']['fair_condition_text'], '30 de noviembre') !== false) {
+                $merged['fair_mode']['fair_condition_text'] = str_ireplace('30 de noviembre', '30 de diciembre', (string) $merged['fair_mode']['fair_condition_text']);
+            }
             if (!isset($merged['fair_mode']['packs_pricing']) || !is_array($merged['fair_mode']['packs_pricing'])) {
                 $merged['fair_mode']['packs_pricing'] = $defaultFair['packs_pricing'];
             } else {

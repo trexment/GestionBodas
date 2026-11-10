@@ -220,7 +220,7 @@
                         </div>
                         <div class="md:col-span-2">
                             <label class="block text-[11px] font-bold text-slate-300 mb-1">Condición / Validez del Descuento de Feria</label>
-                            <input type="text" wire:model.live="config.fair_mode.fair_condition_text" placeholder="Ej: Descuento exclusivo Feria de Novios reservando fecha antes del 30 de noviembre" class="w-full rounded-xl border-slate-700 bg-slate-900 text-white text-xs p-2.5">
+                            <input type="text" wire:model.live="config.fair_mode.fair_condition_text" placeholder="Ej: Descuento exclusivo Feria de Novios reservando fecha antes del 30 de diciembre" class="w-full rounded-xl border-slate-700 bg-slate-900 text-white text-xs p-2.5">
                         </div>
                     </div>
 
