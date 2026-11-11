@@ -749,6 +749,10 @@ class EventManager extends Component
 
     public function importSelectedFairLeads(): void
     {
+        if (!auth()->check() || !in_array(auth()->user()->role, ['admin', 'dj'], true)) {
+            abort(403, 'No autorizado.');
+        }
+
         $createdEvents = 0;
         $alreadyExisted = 0;
         $djId = auth()->id();
@@ -789,6 +793,10 @@ class EventManager extends Component
 
     public function sendFairSingleWhatsApp(int $index): void
     {
+        if (!auth()->check() || !in_array(auth()->user()->role, ['admin', 'dj'], true)) {
+            abort(403, 'No autorizado.');
+        }
+
         if (!isset($this->fairRows[$index])) {
             return;
         }
@@ -868,6 +876,10 @@ class EventManager extends Component
 
     public function sendFairSingleEmail(int $index): void
     {
+        if (!auth()->check() || !in_array(auth()->user()->role, ['admin', 'dj'], true)) {
+            abort(403, 'No autorizado.');
+        }
+
         if (!isset($this->fairRows[$index])) {
             return;
         }
@@ -923,6 +935,10 @@ class EventManager extends Component
 
     public function sendFairBulkEmails(): void
     {
+        if (!auth()->check() || !in_array(auth()->user()->role, ['admin', 'dj'], true)) {
+            abort(403, 'No autorizado.');
+        }
+
         $sentCount = 0;
         $skippedAlreadySent = 0;
         $djId = auth()->id();
@@ -988,6 +1004,10 @@ class EventManager extends Component
 
     public function sendFairBulkWhatsAppBatch(int $batchSize = 10): void
     {
+        if (!auth()->check() || !in_array(auth()->user()->role, ['admin', 'dj'], true)) {
+            abort(403, 'No autorizado.');
+        }
+
         $evo = new \App\Services\EvolutionApiService($this->fairBrand ?: 'nunez_and_son');
         $isApiConfigured = $evo->isConfigured();
 

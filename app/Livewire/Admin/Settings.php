@@ -1330,6 +1330,10 @@ class Settings extends Component
 
     public function runSystemHealthDiagnostics(): void
     {
+        if (!auth()->check() || auth()->user()->role !== 'admin') {
+            abort(403, 'No autorizado.');
+        }
+
         $this->systemHealthReport = \App\Services\SystemHealthAuditService::runFullDiagnostics(true);
         if (!empty($this->systemHealthReport['all_ok'])) {
             session()->flash('message', '🩺 ¡Diagnóstico integral completado! Todos los módulos, tablas, plantillas y botones están operativos.');
