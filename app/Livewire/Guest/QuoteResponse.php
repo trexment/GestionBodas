@@ -31,7 +31,8 @@ class QuoteResponse extends Component
         $this->token = $token;
         Quote::EnsureQuoteResponseColumns();
 
-        $this->event = Event::with(['client', 'quotes.items'])->where('token', $token)->first();
+        $slugQuoteId = null;
+        $this->event = Event::findByTokenOrPrettySlug($token, ['client', 'quotes.items'], $slugQuoteId);
 
         if (!$this->event) {
             abort(404, 'Propuesta no encontrada o enlace no válido.');
@@ -49,13 +50,22 @@ class QuoteResponse extends Component
             }
         }
 
-        $requestedQuoteId = request()->query('quote');
+        $requestedQuoteId = request()->query('quote') ?: $slugQuoteId;
         if ($requestedQuoteId) {
             $this->quote = $this->event->quotes->firstWhere('id', (int) $requestedQuoteId);
         }
 
         if (!$this->quote) {
             $this->quote = $this->event->quotes->sortByDesc('id')->first();
+        }
+
+        // Redirigir automáticamente a la URL bonita si entró con el token largo o con ?quote=
+        if ($this->quote && ($token === $this->event->token || request()->has('quote'))) {
+            $prettyUrl = $this->quote->public_url;
+            if (request()->fullUrl() !== $prettyUrl) {
+                $this->redirect($prettyUrl);
+                return;
+            }
         }
 
         if ($this->quote) {

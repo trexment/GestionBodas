@@ -76,7 +76,7 @@ Route::get('/live/{token}', DjBoothMode::class)->name('staff.live');
 Route::get('/calendar/feed/{token}.ics', [CalendarFeedController::class, 'feed'])->name('calendar.feed');
 
 // Public Quote Calculator - Rate limited to 20 requests/min
-Route::get('/presupuesto', \App\Livewire\Guest\QuoteCalculator::class)->middleware('throttle:20,1')->name('guest.quote');
+Route::get('/presupuesto/{evento?}', \App\Livewire\Guest\QuoteCalculator::class)->middleware('throttle:20,1')->name('guest.quote');
 
 // Public General Tariff Dossier PDF (igual para todas las parejas, distinto del presupuesto por boda)
 Route::get('/dossier-tarifas/{brand}.pdf', [PdfController::class, 'downloadTariffDossier'])

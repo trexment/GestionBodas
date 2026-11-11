@@ -516,13 +516,13 @@ class WhatsAppTemplateService
         $activeQuote = $event ? $event->quotes()->latest()->first() : null;
         $onlineUrl = $activeQuote
             ? $activeQuote->public_url
-            : (($event && $event->token) ? route('guest.quote.view', $event->token) : $presupuestoCalcUrl);
+            : (($event && $event->token) ? route('guest.quote.view', $event->pretty_token) : $presupuestoCalcUrl);
         $presupuestoUrl = $activeQuote ? $onlineUrl : $presupuestoCalcUrl;
         $generalDossierBrand = $isJavnx ? 'javnx' : 'nunez_and_son';
         $generalDossierUrl = url("/dossier-tarifas/{$generalDossierBrand}.pdf");
         $dossierUrl = $activeQuote ? $onlineUrl : $generalDossierUrl;
-        $formUrl = ($event && $event->token) ? route('guest.form', $event->token) : '';
-        $signUrl = ($event && $event->token) ? route('guest.contract', $event->token) : '';
+        $formUrl = ($event && $event->token) ? route('guest.form', $event->pretty_token) : '';
+        $signUrl = ($event && $event->token) ? route('guest.contract', $event->pretty_token) : '';
 
         // Importes de señal y pendiente
         $quoteAmount = $activeQuote ? (float)$activeQuote->amount : (float)($event->total_budget ?? 0);
@@ -682,12 +682,12 @@ class WhatsAppTemplateService
     {
         try {
             if ($event && !empty($event->token)) {
-                return url('/presupuesto?evento=' . rawurlencode($event->token));
+                return url('/presupuesto/' . $event->pretty_token);
             }
             return url('/presupuesto');
         } catch (\Throwable $e) {
             if ($event && !empty($event->token)) {
-                return 'https://app.nunezandson.com/presupuesto?evento=' . rawurlencode($event->token);
+                return 'https://app.nunezandson.com/presupuesto/' . $event->pretty_token;
             }
             return 'https://app.nunezandson.com/presupuesto';
         }
@@ -1305,7 +1305,7 @@ class WhatsAppTemplateService
             ? "• Señal de reserva ({$signalLabel}): " . number_format($signalAmount, 2, ',', '.') . " €\n• Restante el día del evento: " . number_format($remainingAmount, 2, ',', '.') . " €"
             : "• Pago íntegro el día del evento: " . number_format($quoteAmount, 2, ',', '.') . " € (Sin señal previa de reserva)";
 
-        $onlineUrl = $latestQuote ? $latestQuote->public_url : ($event->token ? route('guest.quote.view', $event->token) : '');
+        $onlineUrl = $latestQuote ? $latestQuote->public_url : ($event->token ? route('guest.quote.view', $event->pretty_token) : '');
         $onlineLinkText = $onlineUrl ? "\n\n👉 *Ver propuesta online, descargar Dossier en PDF y Aceptar / Rechazar:*\n{$onlineUrl}" : "";
 
         $msg = "{$greeting} 👋\n\nOs compartimos la propuesta detallada para vuestro evento *{$event->name}*" . ($eventDate ? " ({$eventDate}{$loc})" : "") . ":\n\n"

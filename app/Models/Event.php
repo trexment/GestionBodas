@@ -125,6 +125,69 @@ class Event extends Model
     }
 
     /**
+     * Slug legible y seguro para las URLs públicas del cliente
+     * (ej: "boda-javi-y-cristina-ucnyeo" en lugar de un token de 32 caracteres).
+     */
+    public function getPrettyTokenAttribute(): string
+    {
+        $rawToken = (string) $this->token;
+        $shortCode = strtolower(substr($rawToken, 0, 6));
+        $cleanName = str_replace(['&', '+'], ' y ', (string) ($this->name ?: 'evento'));
+        $slug = Str::slug($cleanName);
+        if ($slug === '') {
+            $slug = 'evento';
+        }
+        $slug = rtrim(substr($slug, 0, 48), '-');
+
+        return "{$slug}-{$shortCode}";
+    }
+
+    /**
+     * Localiza un evento tanto por su token tradicional de 32 caracteres como por su slug bonito
+     * ("boda-javi-y-cristina-ucnyeo" o "boda-javi-y-cristina-ucnyeo-29").
+     */
+    public static function findByTokenOrPrettySlug(string $tokenOrSlug, array $with = [], ?int &$extractedQuoteId = null): ?self
+    {
+        $tokenOrSlug = trim($tokenOrSlug);
+        if ($tokenOrSlug === '') {
+            return null;
+        }
+
+        $query = !empty($with) ? static::with($with) : static::query();
+        $exact = (clone $query)->where('token', $tokenOrSlug)->first();
+        if ($exact) {
+            return $exact;
+        }
+
+        $workSlug = $tokenOrSlug;
+        if (preg_match('/^(.+-[a-z0-9]{6})-(\d+)$/i', $workSlug, $qm)) {
+            $workSlug = $qm[1];
+            $extractedQuoteId = (int) $qm[2];
+        }
+
+        if (preg_match('/-([a-z0-9]{6})$/i', $workSlug, $m)) {
+            $shortCode = strtolower($m[1]);
+            $candidates = (clone $query)
+                ->whereRaw('LOWER(LEFT(token, 6)) = ?', [$shortCode])
+                ->get();
+
+            if ($candidates->count() === 1) {
+                return $candidates->first();
+            }
+
+            foreach ($candidates as $candidate) {
+                if (strcasecmp($candidate->pretty_token, $workSlug) === 0) {
+                    return $candidate;
+                }
+            }
+
+            return $candidates->first();
+        }
+
+        return null;
+    }
+
+    /**
      * Token público de invitados: solo da acceso al portal de peticiones en vivo (QR).
      */
     public function getGuestTokenAttribute($value)

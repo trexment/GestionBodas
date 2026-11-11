@@ -280,15 +280,15 @@ class QuoteCalculator extends Component
         }
     }
 
-    public function mount()
+    public function mount(?string $evento = null)
     {
         $initialType = request()->get('tipo', 'boda');
         $types = self::getEventTypes();
         $this->event_type = isset($types[$initialType]) ? $initialType : 'boda';
 
-        $tokenParam = trim((string) (request()->query('evento') ?: request()->query('token') ?: ''));
+        $tokenParam = trim((string) ($evento ?: request()->query('evento') ?: request()->query('token') ?: ''));
         if ($tokenParam !== '') {
-            $linkedEvent = Event::with('client')->where('token', $tokenParam)->first();
+            $linkedEvent = Event::findByTokenOrPrettySlug($tokenParam, ['client']);
             if ($linkedEvent) {
                 $this->event_token = $linkedEvent->token;
                 $evTypeClean = $linkedEvent->event_type_clean ?? 'boda';

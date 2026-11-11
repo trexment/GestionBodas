@@ -77,9 +77,20 @@ class Quote extends Model
         if (!$this->event || empty($this->event->token)) {
             return url('/presupuesto');
         }
+
+        $prettySlug = $this->event->pretty_token;
+
+        // Solo añadir "-{id}" si el evento tiene varios presupuestos y este NO es el más reciente
+        $latestQuoteId = $this->event->relationLoaded('quotes')
+            ? $this->event->quotes->max('id')
+            : $this->event->quotes()->max('id');
+
+        if ($latestQuoteId && (int) $this->id !== (int) $latestQuoteId) {
+            $prettySlug .= '-' . $this->id;
+        }
+
         return route('guest.quote.view', [
-            'token' => $this->event->token,
-            'quote' => $this->id,
+            'token' => $prettySlug,
         ]);
     }
 

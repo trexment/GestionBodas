@@ -67,7 +67,7 @@ class ContractSign extends Component
         $this->contract = Contract::with(['event.client', 'event.quotes'])->where('token', $token)->first();
 
         if (!$this->contract) {
-            $event = Event::with(['client', 'quotes'])->where('token', $token)->first();
+            $event = Event::findByTokenOrPrettySlug((string) $token, ['client', 'quotes']);
             if ($event) {
                 $this->contract = $event->contracts()->latest()->first();
                 if (!$this->contract) {

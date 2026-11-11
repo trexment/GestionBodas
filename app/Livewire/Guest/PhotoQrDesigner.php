@@ -30,7 +30,11 @@ class PhotoQrDesigner extends Component
     public function mount(string $token): void
     {
         $this->token = $token;
-        $this->event = Event::where('token', $token)->firstOrFail();
+        $found = Event::findByTokenOrPrettySlug($token);
+        if (!$found) {
+            abort(404);
+        }
+        $this->event = $found;
 
         $albumInfo = FotosEventosQrService::getEventAlbumInfo($this->event);
         if ((!$albumInfo || empty($albumInfo['guest_url'])) && FotosEventosQrService::isConfigured()) {

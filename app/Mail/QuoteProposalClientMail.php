@@ -32,7 +32,7 @@ class QuoteProposalClientMail extends Mailable
         $this->companyName = Setting::get('company_name', config('app.name', 'Eventos Musicales'));
         $this->companyPhone = Setting::get('company_phone', '');
         $this->companyEmail = Setting::get('company_email', '');
-        $this->portalUrl = route('guest.form', $event->token);
+        $this->portalUrl = route('guest.form', $event->pretty_token);
         $this->quotePortalUrl = $this->quote->public_url;
     }
 

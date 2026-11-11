@@ -31,7 +31,10 @@ class EventForm extends Component
     public function mount($token)
     {
         $this->token = $token;
-        $this->event = Event::where('token', $token)->firstOrFail();
+        $this->event = Event::findByTokenOrPrettySlug((string) $token);
+        if (!$this->event) {
+            abort(404);
+        }
         $this->loadExistingData();
     }
 
