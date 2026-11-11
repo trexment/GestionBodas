@@ -2720,7 +2720,7 @@
                                     </div>
                                 </div>
                                 <div class="flex items-center gap-1.5">
-                                    <button type="button" wire:click="openNewMeetingModal" class="text-[11px] font-bold bg-purple-600 hover:bg-purple-700 text-white px-2.5 py-1.5 rounded-xl transition cursor-pointer">
+                                    <button type="button" wire:click="openCreateMeetingModal" class="text-[11px] font-bold bg-purple-600 hover:bg-purple-700 text-white px-2.5 py-1.5 rounded-xl transition cursor-pointer">
                                         + Nueva Cita
                                     </button>
                                     <button type="button" wire:click="$set('activeTab', 'meetings')" class="text-[11px] font-bold text-purple-700 dark:text-purple-300 bg-white dark:bg-slate-800 px-2.5 py-1.5 rounded-xl border border-purple-200 dark:border-purple-800 transition cursor-pointer">

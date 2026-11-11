@@ -5945,6 +5945,11 @@ class EventShow extends Component
     // ==========================================
     // GESTIÓN DE CITAS Y REUNIONES CON CLIENTES
     // ==========================================
+    public function openNewMeetingModal()
+    {
+        $this->openCreateMeetingModal();
+    }
+
     public function openCreateMeetingModal()
     {
         $this->resetValidation();
