@@ -395,8 +395,39 @@ class EventShow extends Component
             if ($repairedAnyQuote) {
                 $this->event->load('quotes.items');
             }
+
+            // Sincronizar estado del evento si tiene varias propuestas:
+            // 1) Si alguna propuesta ya fue aceptada, descartar las demás pendientes
+            $acceptedQuote = $this->event->quotes->firstWhere('status', 'accepted');
+            if ($acceptedQuote) {
+                $otherOpen = $this->event->quotes->where('id', '!=', $acceptedQuote->id)->where('status', '!=', 'rejected');
+                if ($otherOpen->isNotEmpty()) {
+                    $this->event->quotes()
+                        ->where('id', '!=', $acceptedQuote->id)
+                        ->where('status', '!=', 'rejected')
+                        ->update([
+                            'status' => 'rejected',
+                            'rejection_reason' => "Descartada automáticamente al confirmar la Propuesta #{$acceptedQuote->id}",
+                            'responded_at' => now(),
+                        ]);
+                    $this->event->load('quotes.items');
+                }
+                if ($this->event->status === 'rejected') {
+                    $this->event->update(['status' => 'confirmed']);
+                    $this->status = 'confirmed';
+                }
+            } elseif ($this->event->status === 'rejected') {
+                // 2) Si el evento quedó en 'rejected' al rechazar una propuesta pero tiene otras propuestas activas/pendientes, mantenerlo activo
+                $hasActiveQuote = $this->event->quotes->contains(fn ($q) => !in_array($q->status, ['rejected', 'cancelled'], true));
+                if ($hasActiveQuote) {
+                    $this->event->update(['status' => 'quote_sent']);
+                    $this->status = 'quote_sent';
+                }
+            }
         }
-        $latestQuote = $this->event->quotes ? $this->event->quotes->sortByDesc('id')->first() : null;
+        $latestQuote = $this->event->quotes
+            ? ($this->event->quotes->where('status', '!==', 'rejected')->sortByDesc('id')->first() ?: $this->event->quotes->sortByDesc('id')->first())
+            : null;
         if ($latestQuote) {
             try {
                 $this->loadQuoteIntoCalculator($latestQuote->id, false);
@@ -5050,6 +5081,11 @@ class EventShow extends Component
             $quote->items()->create($item);
         }
 
+        if ($this->event->status === 'rejected') {
+            $this->event->update(['status' => 'quote_sent']);
+            $this->status = 'quote_sent';
+        }
+
         $this->editing_quote_id = null;
         $this->event->load('quotes.items');
         session()->flash('quote_message', 'Nueva Propuesta Comercial #' . $quote->id . ' generada exitosamente (Total: ' . number_format($finalTotal, 2, ',', '.') . ' € | Señal de reserva: ' . number_format($signal, 2, ',', '.') . ' €).');
@@ -5093,6 +5129,11 @@ class EventShow extends Component
         $quote->items()->delete();
         foreach ($items as $item) {
             $quote->items()->create($item);
+        }
+
+        if ($this->event->status === 'rejected') {
+            $this->event->update(['status' => 'quote_sent']);
+            $this->status = 'quote_sent';
         }
 
         $this->editing_quote_id = null;

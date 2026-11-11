@@ -148,9 +148,27 @@ class QuoteResponse extends Component
             'responded_at' => now(),
         ]);
 
+        // Descartar automáticamente el resto de presupuestos pendientes del mismo evento
+        $otherQuotesCount = $this->event->quotes()
+            ->where('id', '!=', $this->quote->id)
+            ->where('status', '!=', 'rejected')
+            ->count();
+
+        if ($otherQuotesCount > 0) {
+            $this->event->quotes()
+                ->where('id', '!=', $this->quote->id)
+                ->where('status', '!=', 'rejected')
+                ->update([
+                    'status' => 'rejected',
+                    'rejection_reason' => "Descartada automáticamente al aceptar la Propuesta #{$this->quote->id}",
+                    'responded_at' => now(),
+                ]);
+        }
+
         $newEventStatus = in_array($this->event->status, ['completed'], true) ? $this->event->status : 'confirmed';
         $amountFormatted = number_format((float) $this->quote->amount, 2, ',', '.');
         $logLine = '[' . now()->format('d/m/Y H:i') . "] ✅ PRESUPUESTO #{$this->quote->id} ACEPTADO ONLINE por el cliente ({$amountFormatted} €)."
+            . ($otherQuotesCount > 0 ? " (Se han cerrado automáticamente las otras {$otherQuotesCount} propuestas alternativas)." : '')
             . ($notesClean ? " Comentario: {$notesClean}" : '');
 
         $updateEvent = [
@@ -264,10 +282,32 @@ class QuoteResponse extends Component
             'responded_at' => now(),
         ]);
 
-        $logLine = '[' . now()->format('d/m/Y H:i') . "] ❌ PRESUPUESTO #{$this->quote->id} RECHAZADO ONLINE por el cliente ({$amountFormatted} €). Motivo indicado: {$reasonClean}";
+        // Comprobar si el evento tiene otros presupuestos activos (pendientes o aceptados)
+        $remainingQuotes = $this->event->quotes()
+            ->where('id', '!=', $this->quote->id)
+            ->get();
+
+        $hasAcceptedQuote = $remainingQuotes->contains(fn ($q) => $q->status === 'accepted');
+        $activePendingQuotes = $remainingQuotes->filter(fn ($q) => !in_array($q->status, ['rejected', 'cancelled'], true));
+        $hasOtherActiveQuotes = $hasAcceptedQuote || $activePendingQuotes->isNotEmpty();
+
+        if ($hasAcceptedQuote) {
+            $newEventStatus = in_array($this->event->status, ['completed'], true) ? $this->event->status : 'confirmed';
+        } elseif ($activePendingQuotes->isNotEmpty()) {
+            // Si aún quedan otros presupuestos pendientes, mantener el evento ACTIVO
+            $newEventStatus = in_array($this->event->status, ['rejected', 'cancelled'], true)
+                ? 'quote_sent'
+                : $this->event->status;
+        } else {
+            // Solo si TODOS los presupuestos han sido rechazados, el evento pasa a rechazado
+            $newEventStatus = 'rejected';
+        }
+
+        $logLine = '[' . now()->format('d/m/Y H:i') . "] ❌ PRESUPUESTO #{$this->quote->id} RECHAZADO ONLINE por el cliente ({$amountFormatted} €). Motivo indicado: {$reasonClean}"
+            . ($hasOtherActiveQuotes ? ' (El evento continúa ACTIVO porque existen otras propuestas vigentes).' : '');
 
         $updateEvent = [
-            'status' => 'rejected',
+            'status' => $newEventStatus,
             'notes' => ($this->event->notes ? $this->event->notes . "\n" : '') . $logLine,
         ];
         if (Schema::hasColumn('events', 'no_response_at')) {
@@ -277,10 +317,11 @@ class QuoteResponse extends Component
         try {
             $this->event->update($updateEvent);
         } catch (\Throwable $e) {
-            $this->event->update(['status' => 'rejected']);
+            $this->event->update(['status' => $newEventStatus]);
         }
 
         $this->event->refresh();
+        $this->event->load('quotes.items');
         $this->quote->refresh();
         $this->actionMode = 'view';
 
@@ -289,13 +330,16 @@ class QuoteResponse extends Component
         $clientEmail = $this->event->client_contact_email ?? '';
         $eventDate = $this->event->event_date ? \Carbon\Carbon::parse($this->event->event_date)->format('d/m/Y') : 'Sin fecha';
         $eventUrl = route('admin.events.show', $this->event->id);
+        $eventStatusLabel = $hasOtherActiveQuotes
+            ? 'Sigue Activo ✅ (Tiene otras propuestas vigentes)'
+            : 'Rechazado ❌ (Sin más propuestas activas)';
 
         // Notificación interna en tiempo real
         try {
             AppNotificationService::push(
                 'quote_request',
-                "❌ Presupuesto Rechazado ({$this->event->name})",
-                "{$clientName} ha rechazado la Propuesta #{$this->quote->id}. Motivo: {$reasonClean}",
+                "❌ Propuesta #{$this->quote->id} Descartada ({$this->event->name})",
+                "{$clientName} ha rechazado la Propuesta #{$this->quote->id}. Motivo: {$reasonClean}" . ($hasOtherActiveQuotes ? ' · Evento sigue activo.' : ''),
                 $eventUrl,
                 $this->event->id,
                 $this->event->brand_clean
@@ -311,8 +355,8 @@ class QuoteResponse extends Component
         try {
             $djEmail = ($this->event->dj && !empty($this->event->dj->email)) ? $this->event->dj->email : null;
             AppNotificationService::sendAlertEmailToAdmins(
-                "❌ Presupuesto Rechazado Online — {$this->event->name} ({$amountFormatted} €)",
-                "❌ El cliente ha RECHAZADO el Presupuesto #{$this->quote->id}",
+                "❌ Propuesta #{$this->quote->id} Rechazada Online — {$this->event->name} ({$amountFormatted} €)",
+                "❌ El cliente ha RECHAZADO la Propuesta #{$this->quote->id}",
                 [
                     'Evento' => $this->event->name,
                     'Fecha del Evento' => $eventDate,
@@ -322,7 +366,7 @@ class QuoteResponse extends Component
                     'Email' => $clientEmail ?: 'No indicado',
                     'Propuesta Rechazada' => "Propuesta #{$this->quote->id} — {$amountFormatted} € (" . $this->quote->tax_label . ")",
                     'Motivo Indicado por el Cliente' => $reasonClean,
-                    'Estado del Evento' => 'Rechazado ❌',
+                    'Estado del Evento' => $eventStatusLabel,
                 ],
                 $eventUrl,
                 'Abrir Ficha del Evento para Seguimiento / Ajuste',
@@ -335,12 +379,12 @@ class QuoteResponse extends Component
 
         // Alerta opcional por WhatsApp a administradores
         try {
-            $waAlert = "❌ *PRESUPUESTO RECHAZADO ONLINE*\n\n"
+            $waAlert = "❌ *PROPUESTA #{$this->quote->id} RECHAZADA ONLINE*\n\n"
                 . "👤 *Cliente:* {$clientName}\n"
                 . "📅 *Evento:* {$this->event->name} ({$eventDate})\n"
                 . "💰 *Propuesta #{$this->quote->id}:* {$amountFormatted} €\n"
                 . "📝 *Motivo indicado:* {$reasonClean}\n\n"
-                . "El estado del evento se ha actualizado a *Rechazado*.\n"
+                . "📌 *Estado del evento:* {$eventStatusLabel}\n"
                 . "🔗 *Ficha:* {$eventUrl}";
             EvolutionWhatsAppService::notifyAdmins($waAlert, $effectiveBrand);
         } catch (\Throwable $e) {
