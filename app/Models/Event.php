@@ -841,6 +841,251 @@ class Event extends Model
     }
 
     /**
+     * Normaliza una hora extraída de texto libre a formato 24h (HH:MM) según la fase del evento.
+     */
+    protected static function normalizeParsedTime(int $hour, int $minute, string $phase, ?string $referenceDayStart = null): ?string
+    {
+        if ($hour < 0 || $hour > 24 || $minute < 0 || $minute > 59) {
+            return null;
+        }
+        if ($hour === 24) {
+            $hour = 0;
+        }
+
+        switch ($phase) {
+            case 'ceremony':
+                // En España las ceremonias a la "1:00" o "6:30" se refieren a 13:00 o 18:30
+                if ($hour >= 1 && $hour <= 9) {
+                    $hour += 12;
+                }
+                break;
+
+            case 'cocktail':
+                // Cóctel nunca es de madrugada (1:00-10:59 -> 13:00-22:59)
+                if ($hour >= 1 && $hour <= 10) {
+                    $hour += 12;
+                }
+                break;
+
+            case 'banquet':
+                // Comida o cena nunca es entre la 1:00 AM y las 11:59 AM -> 13:00-23:59
+                if ($hour >= 1 && $hour <= 11) {
+                    $hour += 12;
+                }
+                break;
+
+            case 'dance_start':
+                // Si ponen "baile a las 7:00" o "baile 11:30", entre 5 y 11 es tarde/noche (17:00-23:59)
+                if ($hour >= 5 && $hour <= 11) {
+                    $hour += 12;
+                }
+                break;
+
+            case 'max_end':
+            case 'dance_end':
+                // Si el baile/evento es de tarde y ponen "finalizar a las 11:30" o "hasta las 10:30", 9..11 es 21:00..23:59
+                if ($hour >= 9 && $hour <= 11) {
+                    $hour += 12;
+                }
+                break;
+        }
+
+        return sprintf('%02d:%02d', $hour, $minute);
+    }
+
+    /**
+     * Extrae automáticamente los horarios de Ceremonia, Cóctel, Banquete, Baile, Fin y Montaje
+     * desde texto libre escrito por el cliente (en /presupuesto, notas o email/WhatsApp).
+     */
+    public static function extractScheduleFromText(?string $rawText, ?float $defaultDjHours = null): array
+    {
+        $result = [
+            'ceremony_time' => null,
+            'cocktail_time' => null,
+            'banquet_time' => null,
+            'dance_start_time' => null,
+            'dance_duration_hours' => $defaultDjHours && $defaultDjHours > 0 ? (float) $defaultDjHours : null,
+            'dance_end_time' => null,
+            'max_end_time' => null,
+            'start_time' => null,
+        ];
+
+        $text = trim((string) $rawText);
+        if ($text === '') {
+            return $result;
+        }
+
+        // Ignorar marcas de fecha+hora de cabeceras como "[10/11/2026 22:40]" o "11/11/2026 09:00"
+        $clean = preg_replace('/\[\s*\d{1,2}\/\d{1,2}\/\d{2,4}\s+\d{1,2}:\d{2}\s*\]/u', ' ', $text);
+        $clean = preg_replace('/\b\d{1,2}\/\d{1,2}\/\d{2,4}\s+\d{1,2}:\d{2}\b/u', ' ', $clean);
+        // Ignorar "360" o "360º" para que nunca se confunda con una hora
+        $clean = preg_replace('/\b360\s*[º°]?\b/u', ' ', $clean);
+
+        $timePattern = '(?:(?P<h>\d{1,2})\s*[:\.]\s*(?P<m>\d{2})\s*(?:h|hs|hrs)?|(?P<h2>\d{1,2})\s*(?:h|hs|hrs)\b)';
+
+        $phaseKeywords = [
+            'ceremony'    => '(?:ceremonia(?:\s+civil|\s+religiosa)?|enlace|iglesia|ayuntamiento|misa)',
+            'cocktail'    => '(?:c[oó]ctel(?:\s+de\s+bienvenida)?|cocktail|aperitivo|vino\s+espa[nñ]ol|copa\s+de\s+bienvenida)',
+            'banquet'     => '(?:banquete|comida|almuerzo|cena|convite|entrada\s+sal[oó]n)',
+            'dance_start' => '(?:baile(?:\s+inicial|\s+nupcial)?|barra\s+libre|fiesta|discom[oó]vil|inicio\s+(?:del\s+)?baile|empieza\s+(?:el\s+)?baile)',
+            'max_end'     => '(?:finalizar(?:á|a|emos)?|finaliza|fin\s+de\s+fiesta|fin\s+del\s+evento|terminar(?:á|a|emos)?|termina|acabar(?:á|a|emos)?|acaba|hasta\s+las|hora\s+l[ií]mite|cierre)',
+            'setup'       => '(?:montaje|hora\s+de\s+llegada|llegada\s+montaje)',
+        ];
+
+        $allPhaseWordsUnion = implode('|', $phaseKeywords);
+
+        // 0. Caso especial: rango directo de baile "baile de 19:00 a 23:30" o "barra libre 23:30 - 03:30"
+        $rangeRegex = '/\b' . $phaseKeywords['dance_start'] . '\b[^,\n;]{0,25}?\b(?P<h1>\d{1,2})[:\.](?P<m1>\d{2})\s*(?:h|hs)?\s*(?:a|hasta|-|–)\s*(?:las\s*)?(?P<h2>\d{1,2})[:\.](?P<m2>\d{2})/iu';
+        if (preg_match($rangeRegex, $clean, $rm)) {
+            $result['dance_start_time'] = self::normalizeParsedTime((int) $rm['h1'], (int) $rm['m1'], 'dance_start');
+            $result['max_end_time'] = self::normalizeParsedTime((int) $rm['h2'], (int) $rm['m2'], 'max_end', $result['dance_start_time']);
+        }
+
+        // 1. Buscar patrón: PALABRA_CLAVE ... HORA (sin cruzar otra palabra clave, ni 'y/luego', ni coma/salto de línea)
+        // Ej: "La ceremonia será a las 13:00", "cóctel 14:30", "banquete 16:00", "para finalizar a las 11:30"
+        foreach ($phaseKeywords as $phase => $kwRegex) {
+            $field = $phase === 'setup' ? 'start_time' : ($phase === 'max_end' ? 'max_end_time' : ($phase === 'dance_start' ? 'dance_start_time' : "{$phase}_time"));
+            if (!empty($result[$field])) {
+                continue;
+            }
+
+            $patternAfter = '/\b' . $kwRegex . '\b(?:(?!\b(?:' . $allPhaseWordsUnion . '|y|luego|despu[eé]s)\b)[^,\n;\d]){0,40}?' . $timePattern . '/iu';
+            if (preg_match($patternAfter, $clean, $m)) {
+                $h = isset($m['h']) && $m['h'] !== '' ? (int) $m['h'] : (int) ($m['h2'] ?? -1);
+                $min = isset($m['m']) && $m['m'] !== '' ? (int) $m['m'] : 0;
+                $result[$field] = self::normalizeParsedTime($h, $min, $phase, $result['dance_start_time']);
+            }
+        }
+
+        // 2. Buscar patrón inverso: HORA ... PALABRA_CLAVE en el mismo fragmento (sin cruzar coma ni otra hora)
+        // Ej: ",19:00 baile inicial", "a las 13:00 ceremonia", "14:30 cóctel"
+        foreach ($phaseKeywords as $phase => $kwRegex) {
+            $field = $phase === 'setup' ? 'start_time' : ($phase === 'max_end' ? 'max_end_time' : ($phase === 'dance_start' ? 'dance_start_time' : "{$phase}_time"));
+            if (!empty($result[$field])) {
+                continue;
+            }
+
+            $patternBefore = '/' . $timePattern . '\s*(?:h|hs|hrs)?\s*(?:-\s*)?(?:el\s+|la\s+|inicio\s+de\s+)?\b' . $kwRegex . '\b/iu';
+            if (preg_match($patternBefore, $clean, $m)) {
+                $h = isset($m['h']) && $m['h'] !== '' ? (int) $m['h'] : (int) ($m['h2'] ?? -1);
+                $min = isset($m['m']) && $m['m'] !== '' ? (int) $m['m'] : 0;
+                $result[$field] = self::normalizeParsedTime($h, $min, $phase, $result['dance_start_time']);
+            }
+        }
+
+        // 3. Re-normalizar max_end_time si ahora ya conocemos dance_start_time o ceremony_time
+        if (!empty($result['max_end_time'])) {
+            [$eh, $em] = array_map('intval', explode(':', $result['max_end_time']));
+            if ($eh >= 9 && $eh <= 11) {
+                $result['max_end_time'] = sprintf('%02d:%02d', $eh + 12, $em);
+            }
+        }
+
+        // 4. Calcular fin previsto del baile (dance_end_time)
+        if (!empty($result['dance_start_time'])) {
+            $hours = $result['dance_duration_hours'];
+            if (!empty($hours) && $hours > 0) {
+                try {
+                    $startObj = \Carbon\Carbon::createFromFormat('H:i', $result['dance_start_time']);
+                    $result['dance_end_time'] = $startObj->addMinutes((int) round($hours * 60))->format('H:i');
+                } catch (\Throwable $e) {}
+            } elseif (!empty($result['max_end_time'])) {
+                $result['dance_end_time'] = $result['max_end_time'];
+                try {
+                    $startObj = \Carbon\Carbon::createFromFormat('H:i', $result['dance_start_time']);
+                    $endObj = \Carbon\Carbon::createFromFormat('H:i', $result['max_end_time']);
+                    if ($endObj->lessThanOrEqualTo($startObj)) {
+                        $endObj->addDay();
+                    }
+                    $diffHours = round($startObj->diffInMinutes($endObj) / 60, 1);
+                    if ($diffHours >= 0.5 && $diffHours <= 12) {
+                        $result['dance_duration_hours'] = $diffHours;
+                    }
+                } catch (\Throwable $e) {}
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * Completa automáticamente los campos de horario vacíos del evento a partir de schedule_notes / notes.
+     */
+    public function syncParsedScheduleFromNotes(bool $saveIfChanged = true, bool $overwriteExisting = false): array
+    {
+        $sources = [];
+        if (!empty($this->schedule_notes)) {
+            $sources[] = (string) $this->schedule_notes;
+        }
+        if (!empty($this->notes)) {
+            // Extraer especialmente el bloque de NOTAS Y EXPLICACIÓN DEL CLIENTE o Horario de las notas generales
+            $notesStr = (string) $this->notes;
+            if (preg_match('/NOTAS Y EXPLICACIÓN DEL CLIENTE:\s*(.+?)(?:\n\n|\nServicios Solicitados:|$)/su', $notesStr, $nm)) {
+                $sources[] = trim($nm[1]);
+            }
+            if (preg_match('/Horario\s*\/\s*Tramo del Evento:\s*(.+)/iu', $notesStr, $hm)) {
+                $sources[] = trim($hm[1]);
+            }
+            $sources[] = $notesStr;
+        }
+
+        $combinedText = trim(implode("\n", array_unique(array_filter($sources))));
+        if ($combinedText === '') {
+            return [];
+        }
+
+        $suggestedHours = $this->dance_duration_hours ?: $this->suggested_dance_hours;
+        $parsed = self::extractScheduleFromText($combinedText, $suggestedHours ? (float) $suggestedHours : null);
+
+        $updates = [];
+        $timeFields = [
+            'ceremony_time',
+            'cocktail_time',
+            'banquet_time',
+            'dance_start_time',
+            'dance_duration_hours',
+            'dance_end_time',
+            'max_end_time',
+            'start_time',
+        ];
+
+        foreach ($timeFields as $field) {
+            $currentVal = $this->getAttribute($field);
+            $newVal = $parsed[$field] ?? null;
+
+            if ($newVal !== null && ($overwriteExisting || empty($currentVal))) {
+                $this->setAttribute($field, $newVal);
+                $updates[$field] = $newVal;
+            }
+        }
+
+        // Si ya tenía dance_start_time (o se acaba de detectar) y aún no tenía dance_end_time, calcularlo
+        if (!empty($this->dance_start_time) && empty($this->dance_end_time)) {
+            $calcEnd = $this->calculated_dance_end_time ?: ($this->max_end_time ?: null);
+            if (!empty($calcEnd)) {
+                $this->dance_end_time = $calcEnd;
+                $updates['dance_end_time'] = $calcEnd;
+            }
+        }
+
+        if ($saveIfChanged && !empty($updates) && $this->exists) {
+            try {
+                $validUpdates = [];
+                foreach ($updates as $col => $val) {
+                    if (\Illuminate\Support\Facades\Schema::hasColumn('events', $col)) {
+                        $validUpdates[$col] = $val;
+                    }
+                }
+                if (!empty($validUpdates)) {
+                    $this->update($validUpdates);
+                }
+            } catch (\Throwable $e) {}
+        }
+
+        return $updates;
+    }
+
+    /**
      * Devuelve la lista de momentos musicales sugeridos según el tipo de evento
      */
     public function getSuggestedMomentsAttribute(): array

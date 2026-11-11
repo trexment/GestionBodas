@@ -360,15 +360,21 @@ class EventShow extends Component
             } catch (\Throwable $e) {}
         }
 
-        // Horarios
+        // Horarios (autocompletando primero los campos vacíos si el cliente ya indicó las horas en sus notas)
+        try {
+            $this->event->syncParsedScheduleFromNotes(true);
+        } catch (\Throwable $e) {}
         $this->setup_date = $this->event->setup_date ? \Carbon\Carbon::parse($this->event->setup_date)->format('Y-m-d') : null;
-        $this->dance_start_time = $this->event->dance_start_time;
+        $this->dance_start_time = $this->event->dance_start_time ? substr((string)$this->event->dance_start_time, 0, 5) : null;
         $this->dance_duration_hours = $this->event->dance_duration_hours ?: $this->event->suggested_dance_hours;
-        $this->dance_end_time = $this->event->dance_end_time ?: $this->event->calculated_dance_end_time;
-        $this->start_time = $this->event->start_time;
-        $this->ceremony_time = $this->event->ceremony_time;
-        $this->cocktail_time = $this->event->cocktail_time;
-        $this->banquet_time = $this->event->banquet_time;
+        $this->dance_end_time = ($this->event->dance_end_time ?: $this->event->calculated_dance_end_time)
+            ? substr((string)($this->event->dance_end_time ?: $this->event->calculated_dance_end_time), 0, 5)
+            : null;
+        $this->max_end_time = $this->event->max_end_time ? substr((string)$this->event->max_end_time, 0, 5) : null;
+        $this->start_time = $this->event->start_time ? substr((string)$this->event->start_time, 0, 5) : null;
+        $this->ceremony_time = $this->event->ceremony_time ? substr((string)$this->event->ceremony_time, 0, 5) : null;
+        $this->cocktail_time = $this->event->cocktail_time ? substr((string)$this->event->cocktail_time, 0, 5) : null;
+        $this->banquet_time = $this->event->banquet_time ? substr((string)$this->event->banquet_time, 0, 5) : null;
         $this->schedule_notes = $this->event->schedule_notes;
         
         $dossier = $this->event->dossiers()->first();
@@ -5678,17 +5684,56 @@ class EventShow extends Component
 
     public function openScheduleModal()
     {
+        try {
+            $this->event->syncParsedScheduleFromNotes(true);
+        } catch (\Throwable $e) {}
         $this->setup_date = $this->event->setup_date ? \Carbon\Carbon::parse($this->event->setup_date)->format('Y-m-d') : null;
-        $this->dance_start_time = $this->event->dance_start_time;
+        $this->dance_start_time = $this->event->dance_start_time ? substr((string)$this->event->dance_start_time, 0, 5) : null;
         $this->dance_duration_hours = $this->event->dance_duration_hours ?: $this->event->suggested_dance_hours;
-        $this->dance_end_time = $this->event->dance_end_time ?: $this->event->calculated_dance_end_time;
-        $this->max_end_time = $this->event->max_end_time;
-        $this->start_time = $this->event->start_time;
-        $this->ceremony_time = $this->event->ceremony_time;
-        $this->cocktail_time = $this->event->cocktail_time;
-        $this->banquet_time = $this->event->banquet_time;
+        $this->dance_end_time = ($this->event->dance_end_time ?: $this->event->calculated_dance_end_time)
+            ? substr((string)($this->event->dance_end_time ?: $this->event->calculated_dance_end_time), 0, 5)
+            : null;
+        $this->max_end_time = $this->event->max_end_time ? substr((string)$this->event->max_end_time, 0, 5) : null;
+        $this->start_time = $this->event->start_time ? substr((string)$this->event->start_time, 0, 5) : null;
+        $this->ceremony_time = $this->event->ceremony_time ? substr((string)$this->event->ceremony_time, 0, 5) : null;
+        $this->cocktail_time = $this->event->cocktail_time ? substr((string)$this->event->cocktail_time, 0, 5) : null;
+        $this->banquet_time = $this->event->banquet_time ? substr((string)$this->event->banquet_time, 0, 5) : null;
         $this->schedule_notes = $this->event->schedule_notes;
         $this->showScheduleModal = true;
+    }
+
+    public function autoFillScheduleFromNotes()
+    {
+        $sourceText = trim((string)$this->schedule_notes . "\n" . (string)$this->event->notes);
+        $hours = $this->dance_duration_hours ?: $this->event->suggested_dance_hours;
+        $parsed = \App\Models\Event::extractScheduleFromText($sourceText, $hours ? (float)$hours : null);
+
+        if (!empty($parsed['ceremony_time'])) {
+            $this->ceremony_time = $parsed['ceremony_time'];
+        }
+        if (!empty($parsed['cocktail_time'])) {
+            $this->cocktail_time = $parsed['cocktail_time'];
+        }
+        if (!empty($parsed['banquet_time'])) {
+            $this->banquet_time = $parsed['banquet_time'];
+        }
+        if (!empty($parsed['dance_start_time'])) {
+            $this->dance_start_time = $parsed['dance_start_time'];
+        }
+        if (!empty($parsed['dance_duration_hours']) && empty($this->dance_duration_hours)) {
+            $this->dance_duration_hours = $parsed['dance_duration_hours'];
+        }
+        if (!empty($parsed['max_end_time'])) {
+            $this->max_end_time = $parsed['max_end_time'];
+        }
+        if (!empty($parsed['start_time']) && empty($this->start_time)) {
+            $this->start_time = $parsed['start_time'];
+        }
+        if (!empty($this->dance_start_time) && !empty($this->dance_duration_hours)) {
+            $this->recalculateDanceEndTime();
+        } elseif (!empty($parsed['dance_end_time'])) {
+            $this->dance_end_time = $parsed['dance_end_time'];
+        }
     }
 
     public function closeScheduleModal()

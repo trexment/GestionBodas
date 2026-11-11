@@ -7915,7 +7915,12 @@
 
                         <!-- Observaciones de Horarios -->
                         <div>
-                            <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1">Notas / Observaciones de Horario y Timing</label>
+                            <div class="flex items-center justify-between gap-2 mb-1">
+                                <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Notas / Observaciones de Horario y Timing</label>
+                                <button type="button" wire:click="autoFillScheduleFromNotes" class="text-[11px] font-bold text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-200 bg-purple-50 dark:bg-purple-950/50 border border-purple-200 dark:border-purple-800 px-2.5 py-0.5 rounded-lg transition cursor-pointer">
+                                    ✨ Extraer horas del texto
+                                </button>
+                            </div>
                             <textarea wire:model="schedule_notes" rows="2" placeholder="Ej: Montaje listo antes de las 18:00. Los novios quieren abrir baile a las 23:30 puntuales tras el corte de tarta..." class="w-full border-gray-300 dark:border-slate-700 dark:bg-slate-950 dark:text-white rounded-xl text-xs p-2.5"></textarea>
                         </div>
                     </div>

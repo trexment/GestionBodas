@@ -1284,6 +1284,11 @@ class QuoteCalculator extends Component
                 ->first();
         }
 
+        $parsedSchedule = Event::extractScheduleFromText(
+            trim($cleanSchedule . "\n" . $cleanClientNotes),
+            (!empty($this->services['dj']['selected']) && $totalPartyHours > 0) ? (float) $totalPartyHours : null
+        );
+
         if ($event) {
             $eventUpdates = [
                 'event_date' => $this->event_date ?: $event->event_date,
@@ -1298,6 +1303,11 @@ class QuoteCalculator extends Component
                 $existingSched = trim((string) $event->schedule_notes);
                 if ($schedBlock !== '' && !str_contains($existingSched, $schedBlock)) {
                     $eventUpdates['schedule_notes'] = $existingSched !== '' ? ($schedBlock . "\n" . $existingSched) : $schedBlock;
+                }
+            }
+            foreach (['ceremony_time', 'cocktail_time', 'banquet_time', 'dance_start_time', 'dance_duration_hours', 'dance_end_time', 'max_end_time', 'start_time'] as $schedField) {
+                if (!empty($parsedSchedule[$schedField])) {
+                    $eventUpdates[$schedField] = $parsedSchedule[$schedField];
                 }
             }
             $event->update($eventUpdates);
@@ -1320,6 +1330,14 @@ class QuoteCalculator extends Component
                 'token' => Str::random(32),
                 'notes' => $fullNotes,
                 'schedule_notes' => $initialSchedNotes !== '' ? $initialSchedNotes : null,
+                'ceremony_time' => $parsedSchedule['ceremony_time'],
+                'cocktail_time' => $parsedSchedule['cocktail_time'],
+                'banquet_time' => $parsedSchedule['banquet_time'],
+                'dance_start_time' => $parsedSchedule['dance_start_time'],
+                'dance_duration_hours' => $parsedSchedule['dance_duration_hours'],
+                'dance_end_time' => $parsedSchedule['dance_end_time'],
+                'max_end_time' => $parsedSchedule['max_end_time'],
+                'start_time' => $parsedSchedule['start_time'],
             ]);
         }
 
