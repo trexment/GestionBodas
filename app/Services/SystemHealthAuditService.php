@@ -31,18 +31,32 @@ class SystemHealthAuditService
         // 2. Conexión a Base de Datos y Esquema de Tablas/Columnas
         try {
             DB::connection()->getPdo();
+
+            if ($autoFix) {
+                try {
+                    \App\Models\Quote::EnsureQuoteResponseColumns();
+                } catch (\Throwable $e) {}
+                try {
+                    if (Schema::hasTable('events') && !Schema::hasColumn('events', 'notifications_muted')) {
+                        Schema::table('events', function (\Illuminate\Database\Schema\Blueprint $table) {
+                            $table->boolean('notifications_muted')->default(false)->after('notes');
+                        });
+                    }
+                } catch (\Throwable $e) {}
+            }
+
             $requiredSchema = [
                 'users' => ['id', 'name', 'email', 'phone', 'role'],
                 'events' => [
                     'id', 'name', 'brand', 'event_type', 'event_date', 'location',
                     'status', 'client_id', 'dj_id', 'token', 'notes',
                     'notifications_muted', 'photo_qr_slug', 'photo_qr_drive_url',
-                    'important_notes', 'schedule_notes',
+                    'schedule_notes',
                 ],
-                'quotes' => ['id', 'event_id', 'amount', 'status', 'response_token'],
+                'quotes' => ['id', 'event_id', 'amount', 'status', 'rejection_reason', 'client_notes'],
                 'quote_items' => ['id', 'quote_id', 'service_name', 'price', 'quantity'],
-                'contracts' => ['id', 'event_id', 'status', 'content'],
-                'meetings' => ['id', 'event_id', 'title', 'meeting_date', 'status'],
+                'contracts' => ['id', 'event_id', 'status', 'token', 'contract_number'],
+                'client_meetings' => ['id', 'event_id', 'title', 'meeting_date', 'status'],
                 'whatsapp_messages' => ['id', 'event_id', 'direction', 'message', 'status'],
                 'settings' => ['id', 'key', 'value'],
             ];
@@ -228,7 +242,8 @@ class SystemHealthAuditService
         // 5. Motor de Generación PDF (DomPDF + Dossier de Tarifas)
         try {
             $config = GeneralTariffDossierService::getConfig();
-            $pages = GeneralTariffDossierService::buildPages($config);
+            $plan = GeneralTariffDossierService::buildPagesPlan($config);
+            $pages = $plan['pages'] ?? [];
             if (class_exists(\Barryvdh\DomPDF\Facade\Pdf::class) && !empty($pages)) {
                 $checks[] = [
                     'category' => 'Generador de PDFs (DomPDF)',
