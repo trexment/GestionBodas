@@ -24,12 +24,61 @@
                 <p class="text-xs font-semibold text-gray-400 uppercase tracking-widest">{{ $company_subtitle }} &bull; {{ $company_season }}</p>
             </div>
         </div>
-        <div class="flex items-center gap-2">
+        <div class="flex flex-wrap items-center gap-2">
+            <button type="button"
+                    wire:click="runSystemHealthDiagnostics"
+                    wire:loading.attr="disabled"
+                    class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-extrabold bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition cursor-pointer">
+                <span wire:loading.remove wire:target="runSystemHealthDiagnostics">🩺</span>
+                <span wire:loading wire:target="runSystemHealthDiagnostics" class="animate-spin">🔄</span>
+                <span wire:loading.remove wire:target="runSystemHealthDiagnostics">Probar Funcionamiento Total de la App</span>
+                <span wire:loading wire:target="runSystemHealthDiagnostics">Verificando toda la App...</span>
+            </button>
             <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
                 <span class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span> Sistema Activo
             </span>
         </div>
     </div>
+
+    @if($systemHealthReport)
+        <div class="bg-white dark:bg-slate-900 border-2 {{ !empty($systemHealthReport['all_ok']) ? 'border-emerald-400' : 'border-rose-400' }} rounded-2xl p-5 shadow-md space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
+                <div class="flex items-center gap-2.5">
+                    <span class="text-2xl">{{ !empty($systemHealthReport['all_ok']) ? '✅' : '⚠️' }}</span>
+                    <div>
+                        <h3 class="text-sm sm:text-base font-black text-slate-900 dark:text-white">
+                            Informe de Diagnóstico Integral de la Aplicación ({{ $systemHealthReport['ran_at'] ?? '' }})
+                        </h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">
+                            Correctos: <strong class="text-emerald-600">{{ $systemHealthReport['passed'] ?? 0 }}</strong> &bull;
+                            Avisos: <strong class="text-amber-600">{{ $systemHealthReport['warnings'] ?? 0 }}</strong> &bull;
+                            Errores: <strong class="text-rose-600">{{ $systemHealthReport['errors'] ?? 0 }}</strong>
+                        </p>
+                    </div>
+                </div>
+                <button type="button" wire:click="closeHealthDiagnostics" class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold cursor-pointer">
+                    ✕ Cerrar informe
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                @foreach(($systemHealthReport['checks'] ?? []) as $chk)
+                    <div class="p-3.5 rounded-xl border {{ ($chk['status'] ?? '') === 'ok' ? 'bg-emerald-50/50 border-emerald-200' : (($chk['status'] ?? '') === 'warning' ? 'bg-amber-50/60 border-amber-200' : 'bg-rose-50/70 border-rose-300') }}">
+                        <div class="flex items-center justify-between gap-2 mb-1">
+                            <span class="text-[10px] font-black uppercase tracking-wider {{ ($chk['status'] ?? '') === 'ok' ? 'text-emerald-700' : (($chk['status'] ?? '') === 'warning' ? 'text-amber-700' : 'text-rose-700') }}">
+                                {{ $chk['category'] ?? 'Módulo' }}
+                            </span>
+                            <span class="text-xs">
+                                {{ ($chk['status'] ?? '') === 'ok' ? '🟢 OK' : (($chk['status'] ?? '') === 'warning' ? '🟡 Aviso' : '🔴 Error') }}
+                            </span>
+                        </div>
+                        <div class="text-xs font-extrabold text-slate-900">{{ $chk['title'] ?? '' }}</div>
+                        <div class="text-[11px] text-slate-600 mt-0.5">{{ $chk['detail'] ?? '' }}</div>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    @endif
 
     <!-- FLOATING TOAST NOTIFICATION -->
     @if (session()->has('message'))

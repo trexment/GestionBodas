@@ -1326,6 +1326,23 @@ class Settings extends Component
         }
     }
 
+    public ?array $systemHealthReport = null;
+
+    public function runSystemHealthDiagnostics(): void
+    {
+        $this->systemHealthReport = \App\Services\SystemHealthAuditService::runFullDiagnostics(true);
+        if (!empty($this->systemHealthReport['all_ok'])) {
+            session()->flash('message', '🩺 ¡Diagnóstico integral completado! Todos los módulos, tablas, plantillas y botones están operativos.');
+        } else {
+            session()->flash('error', '⚠️ El diagnóstico detectó ' . ($this->systemHealthReport['errors'] ?? 1) . ' incidencia(s). Revisa el informe abajo.');
+        }
+    }
+
+    public function closeHealthDiagnostics(): void
+    {
+        $this->systemHealthReport = null;
+    }
+
     public function render()
     {
         return view('livewire.admin.settings', [
