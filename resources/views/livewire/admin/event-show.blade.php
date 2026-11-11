@@ -6488,9 +6488,15 @@
                                                 </button>
                                             </div>
 
-                                            @if($quote->status === 'rejected' && $quote->rejection_reason)
-                                                <div class="w-full p-2.5 rounded-lg bg-rose-100/80 border border-rose-300 text-xs text-rose-900">
-                                                    <strong>📝 Motivo del rechazo indicado por el cliente:</strong> {{ $quote->rejection_reason }}
+                                            @if($quote->status === 'rejected')
+                                                <div class="w-full p-2.5 rounded-lg bg-rose-100/80 border border-rose-300 text-xs text-rose-900 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                                    <div>
+                                                        <strong>📝 Motivo del rechazo indicado por el cliente:</strong> {{ $quote->rejection_reason ?: 'Sin motivo detallado' }}
+                                                        <span class="block text-[10px] text-rose-700 mt-0.5">🔒 Bloqueada para el cliente (solo reactivable desde aquí).</span>
+                                                    </div>
+                                                    <button type="button" wire:click="reactivateQuote({{ $quote->id }})" class="bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-[11px] px-3 py-1.5 rounded-lg shadow-2xs shrink-0 cursor-pointer transition">
+                                                        🔄 Reactivar Propuesta
+                                                    </button>
                                                 </div>
                                             @endif
 

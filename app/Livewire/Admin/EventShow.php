@@ -5442,6 +5442,33 @@ class EventShow extends Component
         session()->flash('quote_message', 'Propuesta comercial eliminada correctamente.');
     }
 
+    public function reactivateQuote($quoteId)
+    {
+        $quote = $this->event->quotes()->find($quoteId);
+        if (!$quote) {
+            session()->flash('quote_error', 'No se encontró la propuesta comercial.');
+            return;
+        }
+
+        $quote->update([
+            'status' => 'pending',
+            'responded_at' => null,
+        ]);
+
+        if ($this->event->status === 'rejected') {
+            $logLine = '[' . now()->format('d/m/Y H:i') . "] 🔄 PROPUESTA #{$quote->id} REACTIVADA desde el panel de administración.";
+            $this->event->update([
+                'status' => 'quote_sent',
+                'notes' => ($this->event->notes ? $this->event->notes . "\n" : '') . $logLine,
+            ]);
+            $this->status = 'quote_sent';
+        }
+
+        $this->event->refresh();
+        $this->event->load('quotes.items');
+        session()->flash('quote_message', "🔄 Propuesta #{$quote->id} reactivada correctamente. El cliente ya puede volver a aceptarla desde su enlace.");
+    }
+
     public function sendQuoteByEmail($quoteId)
     {
         $quote = $this->event->quotes()->with('items')->find($quoteId);

@@ -163,13 +163,19 @@
                     @endif
                 </div>
             @elseif($quote->status === 'rejected' && $actionMode === 'view')
+                @php
+                    $latestActiveQuote = $event->quotes
+                        ->where('status', '!==', 'rejected')
+                        ->sortByDesc('id')
+                        ->first();
+                @endphp
                 <div class="bg-zinc-50 dark:bg-zinc-800/50 border-b border-zinc-200 dark:border-zinc-800 px-6 py-5 sm:px-10">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div>
                             <div class="flex items-center gap-2">
                                 <span class="inline-block w-2 h-2 rounded-full bg-zinc-400"></span>
                                 <h2 class="text-sm font-bold text-zinc-900 dark:text-white uppercase tracking-wider">
-                                    Propuesta Desestimada
+                                    Propuesta Desestimada (Cerrada)
                                 </h2>
                                 @if($quote->responded_at)
                                     <span class="text-xs text-zinc-500 dark:text-zinc-400">
@@ -182,10 +188,15 @@
                                     Motivo registrado: {{ $quote->rejection_reason }}
                                 </p>
                             @endif
+                            <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-1.5">
+                                🔒 Esta propuesta fue desestimada y no puede reactivarse directamente desde este enlace. Si deseáis retomarla o solicitar ajustes, contactad con nosotros para que la reactivemos desde nuestro panel.
+                            </p>
                         </div>
-                        <button type="button" wire:click="openAcceptBox" class="inline-flex items-center gap-2 bg-zinc-900 dark:bg-amber-500 hover:bg-zinc-800 dark:hover:bg-amber-400 text-white dark:text-zinc-950 font-semibold px-4 py-2 rounded-lg text-xs transition cursor-pointer shrink-0">
-                            Reactivar y Aceptar Propuesta
-                        </button>
+                        @if($latestActiveQuote && $latestActiveQuote->id !== $quote->id)
+                            <button type="button" wire:click="selectQuote({{ $latestActiveQuote->id }})" class="inline-flex items-center gap-2 bg-zinc-900 dark:bg-amber-500 hover:bg-zinc-800 dark:hover:bg-amber-400 text-white dark:text-zinc-950 font-semibold px-4 py-2 rounded-lg text-xs transition cursor-pointer shrink-0">
+                                Ver Propuesta Activa (Ref. #{{ str_pad($latestActiveQuote->id, 4, '0', STR_PAD_LEFT) }})
+                            </button>
+                        @endif
                     </div>
                 </div>
             @endif
@@ -342,7 +353,7 @@
             </div>
 
             <!-- PIE DE FORMALIZACIÓN / RESPUESTA ONLINE -->
-            @if($quote->status !== 'accepted' || $actionMode !== 'view')
+            @if(!in_array($quote->status, ['accepted', 'rejected'], true) || $actionMode !== 'view')
                 <div class="bg-zinc-50 dark:bg-zinc-950/70 border-t border-zinc-200 dark:border-zinc-800 px-6 py-6 sm:px-10 sm:py-8">
                     @if($actionMode === 'view')
                         <div class="flex flex-col md:flex-row md:items-center justify-between gap-5">

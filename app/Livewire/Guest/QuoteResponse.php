@@ -56,7 +56,12 @@ class QuoteResponse extends Component
         }
 
         if (!$this->quote) {
-            $this->quote = $this->event->quotes->sortByDesc('id')->first();
+            // Priorizar la última propuesta activa (no rechazada) si existe
+            $this->quote = $this->event->quotes
+                ->where('status', '!==', 'rejected')
+                ->sortByDesc('id')
+                ->first()
+                ?: $this->event->quotes->sortByDesc('id')->first();
         }
 
         // Redirigir automáticamente a la URL bonita si entró con el token largo o con ?quote=
@@ -88,12 +93,18 @@ class QuoteResponse extends Component
 
     public function openAcceptBox(): void
     {
+        if (!$this->quote || $this->quote->status === 'rejected') {
+            return;
+        }
         $this->actionMode = 'accept_box';
         $this->resetValidation();
     }
 
     public function openRejectBox(): void
     {
+        if (!$this->quote || $this->quote->status === 'rejected') {
+            return;
+        }
         $this->actionMode = 'reject_box';
         $this->resetValidation();
     }
@@ -120,7 +131,7 @@ class QuoteResponse extends Component
 
     public function acceptQuoteOnline(): void
     {
-        if (!$this->quote || !$this->event) {
+        if (!$this->quote || !$this->event || $this->quote->status === 'rejected') {
             return;
         }
 
