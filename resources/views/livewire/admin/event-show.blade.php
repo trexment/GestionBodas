@@ -6498,6 +6498,18 @@
                                                         🔄 Reactivar Propuesta
                                                     </button>
                                                 </div>
+                                            @elseif($quote->status === 'accepted')
+                                                <div class="w-full p-2 rounded-lg bg-emerald-100/70 border border-emerald-300 text-xs text-emerald-900 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                                    <div>
+                                                        <strong>✅ Propuesta aceptada y bloqueada para el cliente</strong>
+                                                        @if($quote->responded_at)
+                                                            <span class="text-[11px] text-emerald-800">({{ $quote->responded_at->format('d/m/Y H:i') }})</span>
+                                                        @endif
+                                                    </div>
+                                                    <button type="button" wire:click="reactivateQuote({{ $quote->id }})" wire:confirm="¿Devolver esta propuesta a estado Pendiente?" class="bg-white hover:bg-emerald-50 text-emerald-800 border border-emerald-300 font-bold text-[10px] px-2.5 py-1 rounded-lg shrink-0 cursor-pointer transition">
+                                                        🔓 Reabrir como Pendiente
+                                                    </button>
+                                                </div>
                                             @endif
 
                                             @if(!empty($quote->client_notes))

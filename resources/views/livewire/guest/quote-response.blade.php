@@ -135,9 +135,9 @@
                                 @endif
                             </div>
                         </div>
-                        <button type="button" wire:click="openRejectBox" class="text-xs text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 underline shrink-0 cursor-pointer self-start sm:self-center">
-                            Modificar estado de la propuesta
-                        </button>
+                        <span class="inline-flex items-center gap-1.5 text-[11px] font-semibold text-emerald-700 dark:text-amber-400 bg-emerald-50 dark:bg-amber-500/10 border border-emerald-200 dark:border-amber-500/30 px-3 py-1.5 rounded-lg shrink-0 self-start sm:self-center">
+                            🔒 Reserva Confirmada
+                        </span>
                     </div>
 
                     @if($quote->signal_amount > 0 && ($companyIban || $companyBizum))
@@ -352,8 +352,8 @@
                 </div>
             </div>
 
-            <!-- PIE DE FORMALIZACIÓN / RESPUESTA ONLINE -->
-            @if(!in_array($quote->status, ['accepted', 'rejected'], true) || $actionMode !== 'view')
+            <!-- PIE DE FORMALIZACIÓN / RESPUESTA ONLINE (SOLO SI SIGUE PENDIENTE DE RESPUESTA) -->
+            @if(!in_array($quote->status, ['accepted', 'rejected'], true))
                 <div class="bg-zinc-50 dark:bg-zinc-950/70 border-t border-zinc-200 dark:border-zinc-800 px-6 py-6 sm:px-10 sm:py-8">
                     @if($actionMode === 'view')
                         <div class="flex flex-col md:flex-row md:items-center justify-between gap-5">

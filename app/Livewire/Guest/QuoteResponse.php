@@ -93,7 +93,7 @@ class QuoteResponse extends Component
 
     public function openAcceptBox(): void
     {
-        if (!$this->quote || $this->quote->status === 'rejected') {
+        if (!$this->quote || in_array($this->quote->status, ['accepted', 'rejected'], true)) {
             return;
         }
         $this->actionMode = 'accept_box';
@@ -102,7 +102,7 @@ class QuoteResponse extends Component
 
     public function openRejectBox(): void
     {
-        if (!$this->quote || $this->quote->status === 'rejected') {
+        if (!$this->quote || in_array($this->quote->status, ['accepted', 'rejected'], true)) {
             return;
         }
         $this->actionMode = 'reject_box';
@@ -131,7 +131,7 @@ class QuoteResponse extends Component
 
     public function acceptQuoteOnline(): void
     {
-        if (!$this->quote || !$this->event || $this->quote->status === 'rejected') {
+        if (!$this->quote || !$this->event || in_array($this->quote->status, ['accepted', 'rejected'], true)) {
             return;
         }
 
@@ -257,7 +257,7 @@ class QuoteResponse extends Component
 
     public function rejectQuoteOnline(): void
     {
-        if (!$this->quote || !$this->event) {
+        if (!$this->quote || !$this->event || in_array($this->quote->status, ['accepted', 'rejected'], true)) {
             return;
         }
 
