@@ -50,8 +50,8 @@
 
     <!-- Offline Audio Cache Engine -->
     <script src="/js/offline-audio-cache.js"></script>
-    <!-- DNI / NIE / CIF Validator & Auto-completer -->
-    <script src="/js/dni-validator.js"></script>
+    <!-- DNI / NIE / CIF Validator -->
+    <script src="/js/dni-validator.js?v=2"></script>
     <!-- SPANISH DATE (dd/mm/yyyy, Monday-first) & 24H TIME PICKER -->
     <script src="/js/es-datetime-picker.js?v=2"></script>
     @livewireScripts

@@ -57,50 +57,49 @@ class DocumentValidationService
 
         $clean = strtoupper(trim(preg_replace('/[\s\-\.]/', '', (string)$document)));
 
-        // 1. Only digits (7 or 8 digits) -> Auto-complete DNI letter!
-        if (preg_match('/^\d{7,8}$/', $clean)) {
+        // 1. Only digits (8 digits) without letter -> Validate only (do NOT auto-overwrite input)
+        if (preg_match('/^\d{8}$/', $clean)) {
             $num = (int)$clean;
-            $paddedNumber = str_pad($clean, 8, '0', STR_PAD_LEFT);
             $expectedLetter = self::DNI_LETTERS[$num % 23];
-            $completed = $paddedNumber . $expectedLetter;
+            $suggested = $clean . $expectedLetter;
 
             return [
-                'valid' => true,
+                'valid' => false,
                 'type' => 'DNI',
-                'formatted' => $completed,
-                'suggested' => $completed,
-                'message' => "Letra '{$expectedLetter}' añadida automáticamente.",
+                'formatted' => $clean,
+                'suggested' => $suggested,
+                'message' => "Falta la letra del DNI. Para {$clean} corresponde la letra '{$expectedLetter}'.",
                 'expected_letter' => $expectedLetter,
-                'was_completed' => true,
+                'was_completed' => false,
             ];
         }
 
-        // 2. NIE without letter: X, Y, Z + 7 digits -> Auto-complete NIE letter!
+        // 2. NIE without letter: X, Y, Z + 7 digits -> Validate only (do NOT auto-overwrite input)
         if (preg_match('/^([XYZ])(\d{7})$/', $clean, $m)) {
             $prefix = $m[1];
             $digits = $m[2];
             $expectedLetter = self::calculateNieLetter($prefix, $digits);
-            $completed = $prefix . $digits . $expectedLetter;
+            $suggested = $prefix . $digits . $expectedLetter;
 
             return [
-                'valid' => true,
+                'valid' => false,
                 'type' => 'NIE',
-                'formatted' => $completed,
-                'suggested' => $completed,
-                'message' => "Letra '{$expectedLetter}' de NIE añadida automáticamente.",
+                'formatted' => $clean,
+                'suggested' => $suggested,
+                'message' => "Falta la letra final del NIE. Corresponde la letra '{$expectedLetter}'.",
                 'expected_letter' => $expectedLetter,
-                'was_completed' => true,
+                'was_completed' => false,
             ];
         }
 
-        // 3. User still typing digits (1 to 6 digits)
-        if (preg_match('/^\d{1,6}$/', $clean)) {
+        // 3. User still typing digits (1 to 7 digits)
+        if (preg_match('/^\d{1,7}$/', $clean)) {
             return [
                 'valid' => false,
                 'type' => 'INCOMPLETE',
                 'formatted' => $clean,
                 'suggested' => null,
-                'message' => 'Introduce los 8 dígitos para calcular la letra.',
+                'message' => 'Introduce los 8 números y la letra del DNI (ej: 45422025S).',
                 'expected_letter' => null,
                 'was_completed' => false,
             ];

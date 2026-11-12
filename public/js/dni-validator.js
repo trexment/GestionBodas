@@ -151,44 +151,24 @@
         }
     };
 
-    // Auto-escucha global para cualquier input con atributo data-dni-input o data-dni
+    // Auto-escucha global para cualquier input con atributo data-dni-input o data-dni (solo mayúsculas, sin autorrelleno intrusivo)
     function handleDniInput(e) {
         const target = e.target;
         if (!target || !target.matches('input[data-dni-input], input[data-dni]')) return;
 
-        // Convertir a mayúsculas
+        // Convertir a mayúsculas sin añadir ceros ni letras automáticamente mientras escribe
         const initialVal = target.value;
         const upperVal = initialVal.toUpperCase();
         if (initialVal !== upperVal) {
+            const start = target.selectionStart;
+            const end = target.selectionEnd;
             target.value = upperVal;
-        }
-
-        // Si el usuario introduce 8 dígitos y no hay letra todavía, autocompletar de inmediato
-        const cleanDigits = upperVal.replace(/[\s\-\.]/g, '');
-        if (/^\d{8}$/.test(cleanDigits) || /^([XYZ])\d{7}$/.test(cleanDigits)) {
-            const completed = window.DniHelper.autoComplete(cleanDigits);
-            if (completed.wasCompleted && completed.value !== upperVal) {
-                target.value = completed.value;
-                // Disparar evento para sincronizar con Livewire
-                target.dispatchEvent(new Event('input', { bubbles: true }));
-                target.dispatchEvent(new Event('change', { bubbles: true }));
+            if (typeof start === 'number' && typeof end === 'number') {
+                target.setSelectionRange(start, end);
             }
         }
     }
 
-    function handleDniBlur(e) {
-        const target = e.target;
-        if (!target || !target.matches('input[data-dni-input], input[data-dni]')) return;
-
-        const completed = window.DniHelper.autoComplete(target.value);
-        if (completed.wasCompleted && completed.value !== target.value) {
-            target.value = completed.value;
-            target.dispatchEvent(new Event('input', { bubbles: true }));
-            target.dispatchEvent(new Event('change', { bubbles: true }));
-        }
-    }
-
     document.addEventListener('input', handleDniInput, true);
-    document.addEventListener('blur', handleDniBlur, true);
 
 })();

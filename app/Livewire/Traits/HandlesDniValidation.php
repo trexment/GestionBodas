@@ -30,11 +30,8 @@ trait HandlesDniValidation
 
         $res = DocumentValidationService::autoCompleteAndValidate($value);
 
-        if (!empty($res['was_completed']) && !empty($res['formatted'])) {
-            $this->$field = $res['formatted'];
-        } else {
-            $this->$field = strtoupper(trim($value));
-        }
+        // No sobrescribir ni autocompletar automáticamente lo que escribe el usuario; solo validar
+        $this->$field = strtoupper(trim($value));
 
         $this->dniValidations[$field] = $res;
     }
