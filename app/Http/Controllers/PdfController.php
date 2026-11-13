@@ -542,4 +542,85 @@ class PdfController extends Controller
             'Cache-Control' => 'private, max-age=0, must-revalidate',
         ]);
     }
+
+    /**
+     * Descarga el Informe de Facturación y Control de Ingresos en PDF (A4 Horizontal)
+     */
+    public function downloadBillingReportPdf(Request $request)
+    {
+        if (!auth()->check() || auth()->user()->role !== 'admin') {
+            abort(403, 'Acceso restringido a administradores.');
+        }
+
+        $filters = [
+            'year' => $request->query('year', 'all'),
+            'date_basis' => $request->query('date_basis', 'payment_date'),
+            'quarter' => $request->query('quarter', 'all'),
+            'date_from' => $request->query('date_from', ''),
+            'date_to' => $request->query('date_to', ''),
+            'payment_status' => $request->query('payment_status', 'with_payments'),
+            'payment_method' => $request->query('payment_method', 'all'),
+            'doc_type' => $request->query('doc_type', 'all'),
+            'brand' => $request->query('brand', 'all'),
+            'event_status' => $request->query('event_status', 'active'),
+            'search' => $request->query('search', ''),
+        ];
+
+        $report = \App\Services\BillingReportService::buildReportData($filters);
+
+        $brandKey = ($filters['brand'] !== 'all') ? $filters['brand'] : null;
+        $brand = Setting::getBrandInfo($brandKey);
+
+        $company = [
+            'name' => $brand['name'] ?: Setting::getCompanyName('Núñez and Son'),
+            'cif' => Setting::get('company_cif', '78902362B'),
+            'phone' => $brand['phone'] ?: Setting::get('company_phone', '+34 622 62 47 90'),
+            'email' => $brand['email'] ?: Setting::get('company_email', 'info@nunezandson.com'),
+        ];
+
+        $pdf = Pdf::loadView('pdf.billing-report', [
+            'company' => $company,
+            'filters' => $filters,
+            'eventsRows' => $report['events_rows'],
+            'ledgerRows' => $report['ledger_rows'],
+            'kpis' => $report['kpis'],
+        ])->setPaper('a4', 'landscape');
+
+        $suffix = ($filters['year'] !== 'all' ? '_' . $filters['year'] : '') . '_' . date('Ymd');
+        return $pdf->download('Informe_Facturacion_Ingresos' . $suffix . '.pdf');
+    }
+
+    /**
+     * Descarga el Informe de Facturación y Control de Ingresos en Excel (.xlsx nativo con 3 pestañas)
+     */
+    public function downloadBillingReportExcel(Request $request)
+    {
+        if (!auth()->check() || auth()->user()->role !== 'admin') {
+            abort(403, 'Acceso restringido a administradores.');
+        }
+
+        $filters = [
+            'year' => $request->query('year', 'all'),
+            'date_basis' => $request->query('date_basis', 'payment_date'),
+            'quarter' => $request->query('quarter', 'all'),
+            'date_from' => $request->query('date_from', ''),
+            'date_to' => $request->query('date_to', ''),
+            'payment_status' => $request->query('payment_status', 'with_payments'),
+            'payment_method' => $request->query('payment_method', 'all'),
+            'doc_type' => $request->query('doc_type', 'all'),
+            'brand' => $request->query('brand', 'all'),
+            'event_status' => $request->query('event_status', 'active'),
+            'search' => $request->query('search', ''),
+        ];
+
+        $report = \App\Services\BillingReportService::buildReportData($filters);
+        $xlsxPath = \App\Services\BillingReportService::generateXlsx($report);
+
+        $suffix = ($filters['year'] !== 'all' ? '_' . $filters['year'] : '') . '_' . date('Ymd');
+        $filename = 'Facturacion_Control_Ingresos' . $suffix . '.xlsx';
+
+        return response()->download($xlsxPath, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ])->deleteFileAfterSend(true);
+    }
 }

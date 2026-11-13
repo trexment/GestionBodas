@@ -538,6 +538,14 @@ class Event extends Model
     }
 
     /**
+     * Alias retrocompatible para deposit_paid_amount
+     */
+    public function getDepositAmountAttribute(): float
+    {
+        return (float) ($this->attributes['deposit_paid_amount'] ?? 0);
+    }
+
+    /**
      * Etiqueta legible del método de pago de la señal
      */
     public function getDepositMethodLabelAttribute(): string
@@ -566,6 +574,243 @@ class Event extends Model
             'card' => '💳',
             default => '💶',
         };
+    }
+
+    /**
+     * Desglose financiero unificado del evento (Presupuesto, Señal, Liquidación, Facturas, Métodos y Fechas de pago)
+     */
+    public function getFinancialBreakdownAttribute(): array
+    {
+        $quotes = $this->relationLoaded('quotes') ? $this->quotes : $this->quotes()->get();
+        $invoices = ($this->relationLoaded('invoices') ? $this->invoices : $this->invoices()->get())
+            ->where('status', '!=', 'cancelled')
+            ->values();
+
+        $activeQuote = $quotes->where('status', 'accepted')->sortByDesc('id')->first()
+            ?? $quotes->where('status', '!=', 'rejected')->sortByDesc('id')->first()
+            ?? $quotes->sortByDesc('id')->first();
+
+        $quoteTotal = 0.0;
+        $signalExpected = 0.0;
+        if ($activeQuote) {
+            if ($activeQuote->tax_type === 'excluded') {
+                $quoteTotal = round((float) $activeQuote->amount + (float) $activeQuote->computed_tax, 2);
+            } else {
+                $quoteTotal = (float) $activeQuote->amount;
+            }
+            $signalExpected = (float) $activeQuote->signal_amount;
+        } elseif ($invoices->count() > 0) {
+            $quoteTotal = (float) $invoices->sum('total');
+        }
+
+        $hasDepositField = (bool) ($this->deposit_paid ?? false) && (float) ($this->deposit_paid_amount ?? 0) > 0;
+        $depositFieldAmount = $hasDepositField ? (float) $this->deposit_paid_amount : 0.0;
+        $depositFieldMethod = $this->deposit_payment_method ?: null;
+        $depositFieldDate = !empty($this->deposit_paid_at) ? \Carbon\Carbon::parse($this->deposit_paid_at) : null;
+
+        // Identificar si alguna factura/recibo corresponde a la señal de reserva
+        $signalInvoice = $invoices->first(function ($inv) {
+            $n = mb_strtolower((string) ($inv->notes ?? ''));
+            return str_contains($n, 'señal') || str_contains($n, 'senal') || str_contains($n, 'reserva');
+        });
+
+        if (!$signalInvoice && $hasDepositField && $invoices->count() === 1) {
+            $onlyInv = $invoices->first();
+            if (abs((float) $onlyInv->total - $depositFieldAmount) < 0.05) {
+                $signalInvoice = $onlyInv;
+            }
+        }
+
+        $depositPaid = $hasDepositField || ($signalInvoice && $signalInvoice->status === 'paid');
+        $depositAmount = $hasDepositField
+            ? $depositFieldAmount
+            : (($signalInvoice && $signalInvoice->status === 'paid') ? (float) $signalInvoice->total : 0.0);
+        $depositDate = $depositFieldDate ?: ($signalInvoice?->issue_date ? \Carbon\Carbon::parse($signalInvoice->issue_date) : null);
+        $depositMethod = $depositFieldMethod ?: ($signalInvoice?->effective_payment_method ?? null);
+
+        $depositMethodLabel = match ($depositMethod) {
+            'bizum' => 'Bizum',
+            'transfer' => 'Transferencia Bancaria',
+            'cash' => 'Efectivo',
+            'card' => 'Tarjeta / TPV',
+            'other' => 'Otro',
+            default => $depositMethod ? ucfirst($depositMethod) : 'No especificado',
+        };
+        $depositMethodIcon = match ($depositMethod) {
+            'bizum' => '📱',
+            'transfer' => '🏦',
+            'cash' => '💵',
+            'card' => '💳',
+            default => '💶',
+        };
+
+        // Resto de documentos pagados (liquidación final o facturas adicionales)
+        $otherPaidInvoices = $invoices->filter(function ($inv) use ($signalInvoice) {
+            if ($inv->status !== 'paid') {
+                return false;
+            }
+            if ($signalInvoice && $inv->id === $signalInvoice->id) {
+                return false;
+            }
+            return true;
+        })->values();
+
+        $sumOtherPaid = (float) $otherPaidInvoices->sum('total');
+
+        if ($signalInvoice && $signalInvoice->status === 'paid') {
+            $finalPaidAmount = $sumOtherPaid;
+            $totalPaid = $depositAmount + $finalPaidAmount;
+        } elseif ($depositPaid && $depositAmount > 0) {
+            if ($otherPaidInvoices->isEmpty()) {
+                $finalPaidAmount = 0.0;
+                $totalPaid = $depositAmount;
+            } else {
+                $hasExplicitFinalNote = $otherPaidInvoices->contains(function ($inv) {
+                    $n = mb_strtolower((string) ($inv->notes ?? ''));
+                    return str_contains($n, 'liquidación') || str_contains($n, 'liquidacion') || str_contains($n, 'final') || str_contains($n, 'resto');
+                });
+
+                if (!$hasExplicitFinalNote && $quoteTotal > 0 && $sumOtherPaid >= ($quoteTotal - 0.05)) {
+                    $totalPaid = max($depositAmount, $sumOtherPaid);
+                    $finalPaidAmount = max(0.0, $totalPaid - $depositAmount);
+                } else {
+                    $finalPaidAmount = $sumOtherPaid;
+                    $totalPaid = $depositAmount + $finalPaidAmount;
+                }
+            }
+        } else {
+            $finalPaidAmount = $sumOtherPaid;
+            $totalPaid = $sumOtherPaid;
+        }
+
+        $lastFinalInv = $otherPaidInvoices->sortByDesc('issue_date')->first();
+        $finalPaidDate = $lastFinalInv?->issue_date ? \Carbon\Carbon::parse($lastFinalInv->issue_date) : null;
+        $finalMethod = $lastFinalInv?->effective_payment_method ?? null;
+        $finalMethodLabel = match ($finalMethod) {
+            'bizum' => 'Bizum',
+            'transfer' => 'Transferencia Bancaria',
+            'cash' => 'Efectivo',
+            'card' => 'Tarjeta / TPV',
+            'other' => 'Otro',
+            default => $finalMethod ? ucfirst($finalMethod) : null,
+        };
+        $finalMethodIcon = match ($finalMethod) {
+            'bizum' => '📱',
+            'transfer' => '🏦',
+            'cash' => '💵',
+            'card' => '💳',
+            default => '💶',
+        };
+
+        $effectiveQuoteTotal = max($quoteTotal, $totalPaid);
+        $pendingAmount = max(0.0, round($effectiveQuoteTotal - $totalPaid, 2));
+
+        if ($totalPaid > 0 && ($pendingAmount <= 0.05 || $this->status === 'completed' && $effectiveQuoteTotal <= 0)) {
+            $paymentStatus = 'paid';
+            $paymentStatusLabel = 'Pagado 100%';
+        } elseif ($totalPaid > 0) {
+            $paymentStatus = 'partial';
+            $paymentStatusLabel = $depositPaid ? 'Señal Pagada' : 'Pago Parcial';
+        } elseif ($effectiveQuoteTotal > 0) {
+            $paymentStatus = 'unpaid';
+            $paymentStatusLabel = 'Pendiente';
+        } else {
+            $paymentStatus = 'no_quote';
+            $paymentStatusLabel = 'Sin Presupuesto';
+        }
+
+        $lastPaymentDate = $finalPaidDate ?: $depositDate;
+        if ($depositDate && $finalPaidDate && $depositDate->gt($finalPaidDate)) {
+            $lastPaymentDate = $depositDate;
+        }
+
+        // Lista de pagos individuales de este evento (para el Libro de Ingresos)
+        $paymentsList = [];
+        if ($depositPaid && $depositAmount > 0) {
+            $paymentsList[] = [
+                'event_id' => $this->id,
+                'invoice_id' => $signalInvoice?->id,
+                'document_number' => $signalInvoice?->invoice_number ?? ('SEÑAL-EV' . str_pad((string) $this->id, 3, '0', STR_PAD_LEFT)),
+                'document_type' => $signalInvoice ? ($signalInvoice->isReceipt() ? 'recibo' : 'factura') : 'senal',
+                'concept' => 'Señal de Reserva',
+                'base_amount' => $signalInvoice ? (float) $signalInvoice->amount : $depositAmount,
+                'tax_amount' => $signalInvoice ? (float) $signalInvoice->tax : 0.0,
+                'tax_rate' => $signalInvoice ? (float) $signalInvoice->tax_rate : 0.0,
+                'total' => $depositAmount,
+                'date' => $depositDate,
+                'method' => $depositMethod ?: 'other',
+                'method_label' => $depositMethodLabel,
+                'method_icon' => $depositMethodIcon,
+                'status' => 'paid',
+                'notes' => $this->deposit_notes ?: ($signalInvoice?->notes ?? 'Señal de reserva registrada en el evento'),
+            ];
+        }
+
+        foreach ($invoices as $inv) {
+            if ($signalInvoice && $inv->id === $signalInvoice->id && $depositPaid) {
+                continue; // Ya incluido arriba como señal con todos sus metadatos
+            }
+            $pm = $inv->effective_payment_method ?: ($this->deposit_payment_method ?: 'other');
+            $paymentsList[] = [
+                'event_id' => $this->id,
+                'invoice_id' => $inv->id,
+                'document_number' => $inv->invoice_number,
+                'document_type' => $inv->isReceipt() ? 'recibo' : 'factura',
+                'concept' => $inv->payment_concept_label,
+                'base_amount' => (float) $inv->amount,
+                'tax_amount' => (float) $inv->tax,
+                'tax_rate' => (float) $inv->tax_rate,
+                'total' => (float) $inv->total,
+                'date' => $inv->issue_date ? \Carbon\Carbon::parse($inv->issue_date) : null,
+                'method' => $pm,
+                'method_label' => $inv->payment_method_label,
+                'method_icon' => $inv->payment_method_icon,
+                'status' => $inv->status,
+                'notes' => $inv->notes,
+            ];
+        }
+
+        // Totales por método de pago en este evento (solo cobrados)
+        $byMethod = [
+            'bizum' => 0.0,
+            'transfer' => 0.0,
+            'cash' => 0.0,
+            'card' => 0.0,
+            'other' => 0.0,
+        ];
+        foreach ($paymentsList as $p) {
+            if (($p['status'] ?? '') === 'paid') {
+                $mKey = in_array($p['method'], ['bizum', 'transfer', 'cash', 'card'], true) ? $p['method'] : 'other';
+                $byMethod[$mKey] += (float) $p['total'];
+            }
+        }
+
+        return [
+            'active_quote' => $activeQuote,
+            'quote_total' => $effectiveQuoteTotal,
+            'signal_expected' => $signalExpected,
+            'deposit_paid' => $depositPaid,
+            'deposit_amount' => $depositAmount,
+            'deposit_date' => $depositDate,
+            'deposit_method' => $depositMethod,
+            'deposit_method_label' => $depositMethodLabel,
+            'deposit_method_icon' => $depositMethodIcon,
+            'signal_invoice' => $signalInvoice,
+            'final_paid_amount' => $finalPaidAmount,
+            'final_paid_date' => $finalPaidDate,
+            'final_method' => $finalMethod,
+            'final_method_label' => $finalMethodLabel,
+            'final_method_icon' => $finalMethodIcon,
+            'total_paid' => round($totalPaid, 2),
+            'pending_amount' => $pendingAmount,
+            'paid_percentage' => $effectiveQuoteTotal > 0 ? min(100, (int) round(($totalPaid / $effectiveQuoteTotal) * 100)) : ($totalPaid > 0 ? 100 : 0),
+            'payment_status' => $paymentStatus,
+            'payment_status_label' => $paymentStatusLabel,
+            'last_payment_date' => $lastPaymentDate,
+            'by_method' => $byMethod,
+            'payments_list' => $paymentsList,
+            'invoices_count' => $invoices->count(),
+        ];
     }
 
     /**

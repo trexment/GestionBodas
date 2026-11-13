@@ -183,6 +183,9 @@ Route::middleware('auth')->group(function () {
             Route::get('/tariff-dossier/presentation', [PdfController::class, 'viewTariffDossierPresentation'])->name('tariff-dossier.presentation');
             Route::get('/settings', Settings::class)->name('settings');
             Route::get('/analytics', AnalyticsManager::class)->name('analytics');
+            Route::get('/billing', \App\Livewire\Admin\BillingManager::class)->name('billing');
+            Route::get('/billing/export/pdf', [PdfController::class, 'downloadBillingReportPdf'])->name('billing.export.pdf');
+            Route::get('/billing/export/excel', [PdfController::class, 'downloadBillingReportExcel'])->name('billing.export.excel');
 
             // Admin PDF Routes
             Route::get('/quote/{quote}/pdf', [PdfController::class, 'downloadQuote'])->name('quote.pdf');

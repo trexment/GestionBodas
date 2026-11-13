@@ -9,8 +9,12 @@
             <p class="text-xs text-slate-500 mt-1">Análisis de rendimiento económico, estacionalidad y repertorio más solicitado por las parejas.</p>
         </div>
 
-        <div class="flex items-center gap-2">
-            <span class="text-xs font-bold text-slate-500 uppercase">Temporada:</span>
+        <div class="flex flex-wrap items-center gap-2">
+            <a href="{{ route('admin.billing') }}" class="inline-flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl px-3.5 py-1.5 text-xs font-bold shadow-xs transition">
+                <span>💶</span>
+                <span>Abrir Panel de Facturación e Ingresos (PDF / Excel)</span>
+            </a>
+            <span class="text-xs font-bold text-slate-500 uppercase ml-1">Temporada:</span>
             <select wire:model.live="selectedYear" class="bg-white border border-slate-300 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500">
                 @for($y = (int)date('Y') + 1; $y >= 2024; $y--)
                     <option value="{{ $y }}">{{ $y }}</option>

@@ -68,6 +68,84 @@ class Invoice extends Model
     }
 
     /**
+     * Método de pago efectivo (explícito, extraído de las notas o heredado del evento)
+     */
+    public function getEffectivePaymentMethodAttribute(): ?string
+    {
+        $pm = strtolower(trim((string) ($this->attributes['payment_method'] ?? '')));
+        if (in_array($pm, ['bizum', 'transfer', 'cash', 'card', 'other'], true)) {
+            return $pm;
+        }
+
+        $notesLower = mb_strtolower((string) ($this->notes ?? ''));
+        if (str_contains($notesLower, 'bizum')) {
+            return 'bizum';
+        }
+        if (str_contains($notesLower, 'transferencia') || str_contains($notesLower, 'banco') || str_contains($notesLower, 'iban')) {
+            return 'transfer';
+        }
+        if (str_contains($notesLower, 'efectivo') || str_contains($notesLower, 'metálico') || str_contains($notesLower, 'metalico')) {
+            return 'cash';
+        }
+        if (str_contains($notesLower, 'tarjeta') || str_contains($notesLower, 'tpv')) {
+            return 'card';
+        }
+
+        if ($this->relationLoaded('event') && $this->event && !empty($this->event->deposit_payment_method)) {
+            if (str_contains($notesLower, 'señal') || str_contains($notesLower, 'senal') || str_contains($notesLower, 'reserva')) {
+                return $this->event->deposit_payment_method;
+            }
+        }
+
+        return $pm !== '' ? $pm : null;
+    }
+
+    /**
+     * Etiqueta legible del método de pago
+     */
+    public function getPaymentMethodLabelAttribute(): string
+    {
+        $pm = $this->effective_payment_method;
+        return match ($pm) {
+            'bizum' => 'Bizum',
+            'transfer' => 'Transferencia Bancaria',
+            'cash' => 'Efectivo',
+            'card' => 'Tarjeta / TPV',
+            'other' => 'Otro',
+            default => $pm ? ucfirst($pm) : 'No especificado',
+        };
+    }
+
+    /**
+     * Icono del método de pago
+     */
+    public function getPaymentMethodIconAttribute(): string
+    {
+        return match ($this->effective_payment_method) {
+            'bizum' => '📱',
+            'transfer' => '🏦',
+            'cash' => '💵',
+            'card' => '💳',
+            default => '💶',
+        };
+    }
+
+    /**
+     * Concepto resumido del cobro / documento
+     */
+    public function getPaymentConceptLabelAttribute(): string
+    {
+        $notesLower = mb_strtolower((string) ($this->notes ?? ''));
+        if (str_contains($notesLower, 'señal') || str_contains($notesLower, 'senal') || str_contains($notesLower, 'reserva')) {
+            return 'Señal de Reserva';
+        }
+        if (str_contains($notesLower, 'liquidación') || str_contains($notesLower, 'liquidacion') || str_contains($notesLower, 'final')) {
+            return 'Liquidación Final';
+        }
+        return $this->isReceipt() ? 'Recibo de Pago' : 'Factura Oficial';
+    }
+
+    /**
      * Generador automático del siguiente número correlativo de Factura o Recibo
      * Ej: FAC-2026-001 o REC-2026-001
      */

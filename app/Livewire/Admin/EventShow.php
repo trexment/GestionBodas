@@ -1120,9 +1120,8 @@ class EventShow extends Component
             'deposit_notes' => $this->deposit_notes_input,
         ]);
 
-        // Generar recibo de cobro automático si está marcado y el importe es > 0
+        // Generar o actualizar recibo de cobro automático si está marcado y el importe es > 0
         if ($this->generate_receipt_checkbox && $hasPaid) {
-            $nextNum = \App\Models\Invoice::nextNumber('recibo');
             $methodLabel = match($this->deposit_method_input) {
                 'bizum' => 'Bizum',
                 'transfer' => 'Transferencia Bancaria',
@@ -1133,19 +1132,38 @@ class EventShow extends Component
             };
 
             $latestQuote = $this->event->quotes()->latest()->first();
+            $noteText = "Señal de reserva cobrada vía {$methodLabel} el " . \Carbon\Carbon::parse($this->deposit_date_input)->format('d/m/Y') . ($this->deposit_notes_input ? " ({$this->deposit_notes_input})" : "");
 
-            $this->event->invoices()->create([
-                'quote_id' => $latestQuote ? $latestQuote->id : null,
-                'invoice_number' => $nextNum,
-                'type' => 'recibo',
-                'amount' => $amount,
-                'tax' => 0.00,
-                'tax_rate' => 0.00,
-                'total' => $amount,
-                'issue_date' => $this->deposit_date_input,
-                'status' => 'paid',
-                'notes' => "Señal de reserva cobrada vía {$methodLabel} el " . \Carbon\Carbon::parse($this->deposit_date_input)->format('d/m/Y') . ($this->deposit_notes_input ? " ({$this->deposit_notes_input})" : ""),
-            ]);
+            $existingSignalInv = $this->event->invoices()->get()->first(function ($inv) {
+                $n = mb_strtolower((string) ($inv->notes ?? ''));
+                return str_contains($n, 'señal') || str_contains($n, 'senal');
+            });
+
+            if ($existingSignalInv) {
+                $existingSignalInv->update([
+                    'amount' => $amount,
+                    'total' => $amount,
+                    'issue_date' => $this->deposit_date_input,
+                    'status' => 'paid',
+                    'payment_method' => $this->deposit_method_input,
+                    'notes' => $noteText,
+                ]);
+            } else {
+                $nextNum = \App\Models\Invoice::nextNumber('recibo');
+                $this->event->invoices()->create([
+                    'quote_id' => $latestQuote ? $latestQuote->id : null,
+                    'invoice_number' => $nextNum,
+                    'type' => 'recibo',
+                    'amount' => $amount,
+                    'tax' => 0.00,
+                    'tax_rate' => 0.00,
+                    'total' => $amount,
+                    'issue_date' => $this->deposit_date_input,
+                    'status' => 'paid',
+                    'payment_method' => $this->deposit_method_input,
+                    'notes' => $noteText,
+                ]);
+            }
             $this->event->load('invoices');
         }
 
@@ -1237,6 +1255,7 @@ class EventShow extends Component
                 'total' => $amount,
                 'issue_date' => $this->final_payment_date,
                 'status' => 'paid',
+                'payment_method' => $this->final_payment_method,
                 'notes' => "Liquidación final del evento cobrada vía {$methodLabel} el " . \Carbon\Carbon::parse($this->final_payment_date)->format('d/m/Y') . ($this->final_payment_notes ? " ({$this->final_payment_notes})" : ""),
             ]);
             $this->event->load('invoices');

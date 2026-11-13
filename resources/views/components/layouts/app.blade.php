@@ -652,7 +652,16 @@
                 </a>
 
                 @if(Auth::check() && Auth::user()->role === 'admin')
-                <!-- 4. CLIENTES -->
+                <!-- 4. FACTURACIÓN Y CONTROL DE INGRESOS -->
+                <a href="{{ route('admin.billing') }}" class="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition {{ request()->routeIs('admin.billing') ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30' : 'text-slate-300 hover:text-white hover:bg-slate-800/80' }}">
+                    <span class="flex items-center gap-3">
+                        <span class="text-base">💶</span>
+                        <span>Facturación e Ingresos</span>
+                    </span>
+                    <span class="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-black">PDF/XLS</span>
+                </a>
+
+                <!-- 4.5. CLIENTES -->
                 <a href="{{ route('admin.clients') }}" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition {{ request()->routeIs('admin.clients') ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30' : 'text-slate-300 hover:text-white hover:bg-slate-800/80' }}">
                     <span class="text-base">👤</span>
                     <span>Clientes y Novios</span>
