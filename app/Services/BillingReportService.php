@@ -14,6 +14,7 @@ class BillingReportService
      */
     public static function buildReportData(array $filters = []): array
     {
+        $season = $filters['season'] ?? 'all'; // 'all' | '2026' | '2027' | '2028' (Temporada = año de event_date)
         $year = $filters['year'] ?? 'all';
         $dateBasis = $filters['date_basis'] ?? 'payment_date'; // 'payment_date' | 'event_date'
         $quarter = $filters['quarter'] ?? 'all'; // 'all' | '1' | '2' | '3' | '4'
@@ -100,6 +101,14 @@ class BillingReportService
             // 1. Filtro por Marca
             if ($brand !== 'all' && $event->brand_clean !== $brand) {
                 continue;
+            }
+
+            // 1b. Filtro por Temporada (Año de celebración del evento)
+            if ($season !== 'all' && is_numeric($season)) {
+                $evYear = $event->event_date ? (int) Carbon::parse($event->event_date)->year : null;
+                if ($evYear !== (int) $season) {
+                    continue;
+                }
             }
 
             // 2. Filtro por Estado del Evento

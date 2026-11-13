@@ -14,6 +14,7 @@ class BillingManager extends Component
     public string $viewMode = 'events';
 
     // Filtros
+    public string $season = 'all'; // 'all' | '2026' | '2027' | '2028' (Año de celebración del evento / Temporada)
     public string $year = 'all';
     public string $dateBasis = 'payment_date'; // 'payment_date' | 'event_date'
     public string $quarter = 'all'; // 'all' | '1' | '2' | '3' | '4'
@@ -68,6 +69,7 @@ class BillingManager extends Component
 
     public function resetFilters()
     {
+        $this->season = 'all';
         $this->year = 'all';
         $this->dateBasis = 'payment_date';
         $this->quarter = 'all';
@@ -79,6 +81,11 @@ class BillingManager extends Component
         $this->brand = 'all';
         $this->eventStatus = 'active';
         $this->search = '';
+    }
+
+    public function setSeason(string $season)
+    {
+        $this->season = $season;
     }
 
     public function filterByMethod(string $method)
@@ -442,6 +449,7 @@ class BillingManager extends Component
     public function getActiveFiltersProperty(): array
     {
         return [
+            'season' => $this->season,
             'year' => $this->year,
             'date_basis' => $this->dateBasis,
             'quarter' => $this->quarter,
@@ -461,20 +469,32 @@ class BillingManager extends Component
     {
         $report = BillingReportService::buildReportData($this->activeFilters);
 
-        // Obtener años disponibles dinámicamente
-        $eventYears = Event::whereNotNull('event_date')
-            ->selectRaw('YEAR(event_date) as y')
-            ->distinct()
-            ->pluck('y')
+        // Obtener años y temporadas disponibles dinámicamente
+        $eventYearsRaw = Event::whereNotNull('event_date')
+            ->whereNotIn('status', ['cancelled', 'rejected'])
+            ->selectRaw('YEAR(event_date) as y, COUNT(*) as cnt')
+            ->groupBy('y')
+            ->pluck('cnt', 'y')
             ->toArray();
+
+        $eventYears = array_map('intval', array_keys($eventYearsRaw));
         $invoiceYears = Invoice::whereNotNull('issue_date')
             ->selectRaw('YEAR(issue_date) as y')
             ->distinct()
             ->pluck('y')
+            ->map(fn($y) => (int) $y)
             ->toArray();
         $currentYear = (int) date('Y');
         $availableYears = array_unique(array_merge($eventYears, $invoiceYears, [$currentYear - 1, $currentYear, $currentYear + 1, $currentYear + 2]));
         rsort($availableYears);
+
+        $availableSeasons = array_unique(array_merge($eventYears, [$currentYear, $currentYear + 1, $currentYear + 2]));
+        sort($availableSeasons);
+
+        $seasonCounts = [];
+        foreach ($availableSeasons as $sy) {
+            $seasonCounts[$sy] = (int) ($eventYearsRaw[$sy] ?? 0);
+        }
 
         $exportQuery = http_build_query(array_filter($this->activeFilters, fn($v) => $v !== '' && $v !== null));
 
@@ -488,6 +508,8 @@ class BillingManager extends Component
             'providerRows' => $report['provider_rows'] ?? [],
             'kpis' => $report['kpis'],
             'availableYears' => $availableYears,
+            'availableSeasons' => $availableSeasons,
+            'seasonCounts' => $seasonCounts,
             'exportQuery' => $exportQuery,
             'allEventsList' => $allEventsList,
         ])->layout('components.layouts.app', ['header' => 'Facturación y Control de Ingresos']);

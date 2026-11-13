@@ -553,6 +553,7 @@ class PdfController extends Controller
         }
 
         $filters = [
+            'season' => $request->query('season', 'all'),
             'year' => $request->query('year', 'all'),
             'date_basis' => $request->query('date_basis', 'payment_date'),
             'quarter' => $request->query('quarter', 'all'),
@@ -587,7 +588,9 @@ class PdfController extends Controller
             'kpis' => $report['kpis'],
         ])->setPaper('a4', 'landscape');
 
-        $suffix = ($filters['year'] !== 'all' ? '_' . $filters['year'] : '') . '_' . date('Ymd');
+        $suffix = ($filters['season'] !== 'all' ? '_Temporada_' . $filters['season'] : '')
+            . ($filters['year'] !== 'all' ? '_' . $filters['year'] : '')
+            . '_' . date('Ymd');
         return $pdf->download('Informe_Facturacion_Ingresos' . $suffix . '.pdf');
     }
 
@@ -601,6 +604,7 @@ class PdfController extends Controller
         }
 
         $filters = [
+            'season' => $request->query('season', 'all'),
             'year' => $request->query('year', 'all'),
             'date_basis' => $request->query('date_basis', 'payment_date'),
             'quarter' => $request->query('quarter', 'all'),
@@ -617,7 +621,9 @@ class PdfController extends Controller
         $report = \App\Services\BillingReportService::buildReportData($filters);
         $xlsxPath = \App\Services\BillingReportService::generateXlsx($report);
 
-        $suffix = ($filters['year'] !== 'all' ? '_' . $filters['year'] : '') . '_' . date('Ymd');
+        $suffix = ($filters['season'] !== 'all' ? '_Temporada_' . $filters['season'] : '')
+            . ($filters['year'] !== 'all' ? '_' . $filters['year'] : '')
+            . '_' . date('Ymd');
         $filename = 'Facturacion_Control_Ingresos' . $suffix . '.xlsx';
 
         return response()->download($xlsxPath, $filename, [

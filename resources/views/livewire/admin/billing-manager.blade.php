@@ -65,6 +65,53 @@
                 </a>
             </div>
         </div>
+
+        <!-- SELECTOR RÁPIDO DE TEMPORADA (AÑO DEL EVENTO) -->
+        <div class="mt-4 pt-3.5 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
+            <div class="flex flex-wrap items-center gap-2">
+                <span class="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 flex items-center gap-1.5 mr-1">
+                    <span>🗓️</span>
+                    <span>Filtrar por Temporada:</span>
+                </span>
+
+                <button
+                    type="button"
+                    wire:click="setSeason('all')"
+                    class="px-3 py-1.5 rounded-xl text-xs font-black transition cursor-pointer flex items-center gap-1.5 {{ $season === 'all' ? 'bg-slate-900 dark:bg-indigo-600 text-white shadow-xs' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700' }}"
+                >
+                    <span>🌍</span>
+                    <span>Todas las Temporadas</span>
+                    <span class="px-1.5 py-0.2 rounded-md text-[10px] {{ $season === 'all' ? 'bg-white/20 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300' }}">
+                        {{ array_sum($seasonCounts ?? []) }}
+                    </span>
+                </button>
+
+                @foreach($availableSeasons ?? [] as $sy)
+                    @php
+                        $sCnt = (int) ($seasonCounts[$sy] ?? 0);
+                        $isActiveSeason = (string) $season === (string) $sy;
+                    @endphp
+                    <button
+                        type="button"
+                        wire:click="setSeason('{{ $sy }}')"
+                        class="px-3 py-1.5 rounded-xl text-xs font-black transition cursor-pointer flex items-center gap-1.5 {{ $isActiveSeason ? 'bg-indigo-600 text-white shadow-xs ring-2 ring-indigo-300 dark:ring-indigo-800' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-indigo-50 dark:hover:bg-slate-700' }}"
+                    >
+                        <span>💍</span>
+                        <span>Temporada {{ $sy }}</span>
+                        <span class="px-1.5 py-0.2 rounded-md text-[10px] {{ $isActiveSeason ? 'bg-white/25 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300' }}">
+                            {{ $sCnt }} ev.
+                        </span>
+                    </button>
+                @endforeach
+            </div>
+
+            @if($season !== 'all')
+                <div class="inline-flex items-center gap-2 text-xs font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 px-3 py-1 rounded-xl">
+                    <span>🎯 Viendo solo eventos de la <strong>Temporada {{ $season }}</strong> (incluye señales cobradas en cualquier año)</span>
+                    <button type="button" wire:click="setSeason('all')" class="text-indigo-500 hover:text-rose-600 font-black cursor-pointer ml-1" title="Ver todas las temporadas">✕</button>
+                </div>
+            @endif
+        </div>
     </div>
 
     <!-- TARJETAS KPI GLOBALES (INGRESOS, PENDIENTE, VOLUMEN, GASTO PROVEEDORES Y DESGLOSE FISCAL) -->
@@ -237,9 +284,9 @@
     <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-xs space-y-3">
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
             <!-- Buscador -->
-            <div class="lg:col-span-2">
+            <div>
                 <label class="block text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mb-1">
-                    🔍 Buscar Evento, Cliente, DNI o Nº Factura
+                    🔍 Buscar Evento, Cliente, DNI o Factura
                 </label>
                 <input
                     type="text"
@@ -247,6 +294,19 @@
                     placeholder="Ej: Boda Javi, 45422025S, REC-2026..."
                     class="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-xs font-semibold text-slate-900 dark:text-white"
                 >
+            </div>
+
+            <!-- Temporada (Año del Evento) -->
+            <div>
+                <label class="block text-[10px] font-extrabold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 mb-1">
+                    💍 Temporada (Año Evento)
+                </label>
+                <select wire:model.live="season" class="w-full rounded-xl border border-indigo-300 dark:border-indigo-700 bg-indigo-50/50 dark:bg-indigo-950/30 px-3 py-2 text-xs font-black text-indigo-900 dark:text-indigo-200">
+                    <option value="all">🌍 Todas las temporadas</option>
+                    @foreach($availableSeasons ?? [] as $sy)
+                        <option value="{{ $sy }}">💍 Temporada {{ $sy }} ({{ $seasonCounts[$sy] ?? 0 }} ev.)</option>
+                    @endforeach
+                </select>
             </div>
 
             <!-- Estado de Pago -->

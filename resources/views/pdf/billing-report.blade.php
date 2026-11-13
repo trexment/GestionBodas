@@ -170,11 +170,16 @@
                 </div>
             </td>
             <td style="width: 45%;">
-                <div class="report-title">Informe de Facturación e Ingresos</div>
+                <div class="report-title">
+                    Informe de Facturación e Ingresos{{ (($filters['season'] ?? 'all') !== 'all') ? ' — Temporada ' . $filters['season'] : '' }}
+                </div>
                 <div class="report-subtitle">
                     Generado el {{ now()->format('d/m/Y H:i') }}
+                    @if(($filters['season'] ?? 'all') !== 'all')
+                        &bull; <strong>Temporada {{ $filters['season'] }}</strong>
+                    @endif
                     @if(($filters['year'] ?? 'all') !== 'all')
-                        &bull; Año: {{ $filters['year'] }}
+                        &bull; Año Cobro: {{ $filters['year'] }}
                     @endif
                     @if(($filters['quarter'] ?? 'all') !== 'all')
                         ({{ $filters['quarter'] }}T)
