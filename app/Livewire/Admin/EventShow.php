@@ -143,6 +143,8 @@ class EventShow extends Component
     public $prov_key = 'logrono';
     public $prov_name = 'Logroño';
     public $prov_service = 'Fotomatón / Plataforma 360º';
+    public $prov_client_price = 0;
+    public $prov_detected_items_text = '';
     public $prov_total_cost = 0;
     public $prov_deposit_paid = true;
     public $prov_deposit_amount = 100;
@@ -1291,6 +1293,8 @@ class EventShow extends Component
         $this->prov_key = (string) ($prov['provider_key'] ?: 'logrono');
         $this->prov_name = (string) ($prov['provider_name'] ?: 'Logroño');
         $this->prov_service = (string) ($prov['service_description'] ?: 'Fotomatón / Plataforma 360º');
+        $this->prov_client_price = (float) ($prov['client_price'] ?? 0);
+        $this->prov_detected_items_text = (string) ($prov['detected_services_with_prices'] ?: ($prov['detected_services'] ?? ''));
         $this->prov_total_cost = (float) ($prov['provider_total_cost'] > 0 ? $prov['provider_total_cost'] : ($prov['client_price'] > 0 ? $prov['client_price'] : 0));
 
         $this->prov_deposit_paid = $focusStep === 'deposit' ? true : (bool) $prov['deposit_paid'];
@@ -1314,6 +1318,21 @@ class EventShow extends Component
 
         $this->prov_notes = (string) ($prov['notes'] ?? '');
         $this->showProviderBookingModal = true;
+    }
+
+    public function syncProviderFromQuoteInEvent()
+    {
+        $this->event->load('quotes.items');
+        $prov = $this->event->external_provider_summary;
+        $detectedPrice = (float) ($prov['detected_client_price'] ?: ($prov['client_price'] ?? 0));
+        if ($detectedPrice > 0) {
+            $this->prov_client_price = $detectedPrice;
+            $this->prov_total_cost = $detectedPrice;
+        }
+        if (!empty($prov['detected_services'])) {
+            $this->prov_service = $prov['detected_services'];
+        }
+        $this->prov_detected_items_text = (string) ($prov['detected_services_with_prices'] ?: ($prov['detected_services'] ?? ''));
     }
 
     public function updatedProvKey($value)
@@ -1362,6 +1381,7 @@ class EventShow extends Component
             'provider_key' => $this->prov_key ?: 'logrono',
             'provider_name' => trim((string) $this->prov_name),
             'service_description' => trim((string) $this->prov_service),
+            'client_price' => round((float) ($this->prov_client_price > 0 ? $this->prov_client_price : $this->prov_total_cost), 2),
             'provider_total_cost' => round((float) $this->prov_total_cost, 2),
             'deposit_paid' => $this->prov_deposit_paid && $depAmt > 0,
             'deposit_amount' => $depAmt,

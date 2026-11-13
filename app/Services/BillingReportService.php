@@ -74,6 +74,7 @@ class BillingReportService
             ],
             'provider_summary' => [
                 'events_count' => 0,
+                'total_client_price' => 0.0,
                 'total_cost' => 0.0,
                 'deposits_paid' => 0.0,
                 'finals_paid' => 0.0,
@@ -83,10 +84,18 @@ class BillingReportService
                 'events_fully_paid_count' => 0,
                 'events_unpaid_count' => 0,
             ],
+            'provider_events_in_table_count' => 0,
+            'provider_client_price_in_events' => 0.0,
+            'provider_cost_in_events' => 0.0,
+            'provider_paid_in_events' => 0.0,
+            'provider_pending_in_events' => 0.0,
+            'net_agreed_after_providers' => 0.0,
+            'net_collected_after_providers' => 0.0,
         ];
 
         foreach ($events as $event) {
             $fb = $event->financial_breakdown;
+            $prov = $event->external_provider_summary;
 
             // 1. Filtro por Marca
             if ($brand !== 'all' && $event->brand_clean !== $brand) {
@@ -227,6 +236,7 @@ class BillingReportService
                 $filteredEvents[] = [
                     'event' => $event,
                     'fb' => $fb,
+                    'prov' => $prov,
                     'matching_payments' => $matchingPayments,
                 ];
 
@@ -247,6 +257,14 @@ class BillingReportService
                 $kpis['total_pending'] += (float) $fb['pending_amount'];
                 $kpis['total_deposits_collected'] += (float) $fb['deposit_amount'];
                 $kpis['total_finals_collected'] += (float) $fb['final_paid_amount'];
+
+                if (!empty($prov['has_external_service'])) {
+                    $kpis['provider_events_in_table_count']++;
+                    $kpis['provider_client_price_in_events'] += (float) ($prov['client_price'] ?? 0);
+                    $kpis['provider_cost_in_events'] += (float) ($prov['provider_total_cost'] ?? 0);
+                    $kpis['provider_paid_in_events'] += (float) ($prov['total_paid'] ?? 0);
+                    $kpis['provider_pending_in_events'] += (float) ($prov['pending_amount'] ?? 0);
+                }
 
                 // Agregar los pagos que coinciden al Libro de Cobros y a los KPIs de ingresos cobrados
                 foreach ($matchingPayments as $mp) {
@@ -274,7 +292,6 @@ class BillingReportService
             }
 
             // 6. Control de Reservas y Pagos a Proveedores Externos (Fotomatón / Plataforma 360º)
-            $prov = $event->external_provider_summary;
             if ($prov['has_external_service']) {
                 $provDateMatches = true;
                 $evDateForProv = $event->event_date ? Carbon::parse($event->event_date) : null;
@@ -311,6 +328,7 @@ class BillingReportService
                     ];
 
                     $kpis['provider_summary']['events_count']++;
+                    $kpis['provider_summary']['total_client_price'] += (float) ($prov['client_price'] ?? 0);
                     $kpis['provider_summary']['total_cost'] += (float) $prov['provider_total_cost'];
                     $kpis['provider_summary']['deposits_paid'] += (float) $prov['deposit_amount'];
                     $kpis['provider_summary']['finals_paid'] += (float) $prov['final_amount'];
@@ -327,6 +345,9 @@ class BillingReportService
                 }
             }
         }
+
+        $kpis['net_agreed_after_providers'] = round($kpis['total_agreed'] - $kpis['provider_cost_in_events'], 2);
+        $kpis['net_collected_after_providers'] = round($kpis['total_collected'] - $kpis['provider_paid_in_events'], 2);
 
         // Ordenar providerRows por fecha de evento ascendente (próximos primero) o más recientes
         usort($providerRows, function ($a, $b) {
@@ -399,6 +420,11 @@ class BillingReportService
             'Método Cobro Final',
             'Total Cobrado (€)',
             'Pendiente de Cobro (€)',
+            'PVP Fotomatón/360º en Presupuesto (€)',
+            'Gasto Proveedor Fotomatón/360º (€)',
+            'Pagado a Proveedor (€)',
+            'Pendiente a Proveedor (€)',
+            'Neto Evento (Descontando Proveedor) (€)',
             '% Cobrado',
             'Estado de Pago',
             'Documentos Emitidos',
@@ -408,6 +434,13 @@ class BillingReportService
             /** @var \App\Models\Event $ev */
             $ev = $row['event'];
             $fb = $row['fb'];
+            $prov = $row['prov'] ?? $ev->external_provider_summary;
+            $hasProv = !empty($prov['has_external_service']);
+            $provClientPrice = $hasProv ? round((float) ($prov['client_price'] ?? 0), 2) : 0.0;
+            $provCost = $hasProv ? round((float) ($prov['provider_total_cost'] ?? 0), 2) : 0.0;
+            $provPaid = $hasProv ? round((float) ($prov['total_paid'] ?? 0), 2) : 0.0;
+            $provPending = $hasProv ? round((float) ($prov['pending_amount'] ?? 0), 2) : 0.0;
+            $netEvent = round((float) $fb['quote_total'] - $provCost, 2);
             $docsList = $ev->invoices->where('status', '!=', 'cancelled')->pluck('invoice_number')->implode(', ');
 
             $sheet1Rows[] = [
@@ -429,6 +462,11 @@ class BillingReportService
                 $fb['final_paid_amount'] > 0 ? (string) ($fb['final_method_label'] ?: 'No especificado') : '-',
                 round((float) $fb['total_paid'], 2),
                 round((float) $fb['pending_amount'], 2),
+                $provClientPrice,
+                $provCost,
+                $provPaid,
+                $provPending,
+                $netEvent,
                 $fb['paid_percentage'] . '%',
                 (string) $fb['payment_status_label'],
                 $docsList ?: 'Sin documento emitido',
@@ -455,6 +493,11 @@ class BillingReportService
             '',
             round((float) ($kpis['total_collected'] ?? 0), 2),
             round((float) ($kpis['total_pending'] ?? 0), 2),
+            round((float) ($kpis['provider_client_price_in_events'] ?? 0), 2),
+            round((float) ($kpis['provider_cost_in_events'] ?? 0), 2),
+            round((float) ($kpis['provider_paid_in_events'] ?? 0), 2),
+            round((float) ($kpis['provider_pending_in_events'] ?? 0), 2),
+            round((float) ($kpis['net_agreed_after_providers'] ?? 0), 2),
             '',
             '',
             '',
@@ -557,6 +600,7 @@ class BillingReportService
             'Cliente',
             'Empresa / Proveedor',
             'Servicio (Fotomatón / 360º)',
+            'PVP en Presupuesto Cliente (€)',
             'Total a Pagar Proveedor (€)',
             '1º Pago: Señal Pagada (€)',
             'Fecha Pago Señal',
@@ -582,6 +626,7 @@ class BillingReportService
                 (string) ($ev->client?->name ?? 'Sin cliente'),
                 (string) ($prov['provider_name'] ?? ''),
                 (string) ($prov['service_description'] ?? ''),
+                round((float) ($prov['client_price'] ?? 0), 2),
                 round((float) ($prov['provider_total_cost'] ?? 0), 2),
                 round((float) ($prov['deposit_amount'] ?? 0), 2),
                 $prov['deposit_date'] ? Carbon::parse($prov['deposit_date'])->format('d/m/Y') : '-',
@@ -603,6 +648,7 @@ class BillingReportService
             '',
             '',
             '',
+            round((float) ($provKpis['total_client_price'] ?? 0), 2),
             round((float) ($provKpis['total_cost'] ?? 0), 2),
             round((float) ($provKpis['deposits_paid'] ?? 0), 2),
             '',
@@ -620,8 +666,11 @@ class BillingReportService
         $sheet3Rows = [
             ['Indicador / Concepto', 'Nº Registros', 'Importe (€)'],
             ['Total Contratado / Presupuestado', (int) ($kpis['events_count'] ?? 0), round((float) ($kpis['total_agreed'] ?? 0), 2)],
-            ['Total Ingresado / Cobrado', (int) ($kpis['events_with_payment_count'] ?? 0), round((float) ($kpis['total_collected'] ?? 0), 2)],
-            ['Total Pendiente de Cobro', (int) ($kpis['events_partial_count'] ?? 0) + (int) ($kpis['events_unpaid_count'] ?? 0), round((float) ($kpis['total_pending'] ?? 0), 2)],
+            ['Total Ingresado / Cobrado de Clientes', (int) ($kpis['events_with_payment_count'] ?? 0), round((float) ($kpis['total_collected'] ?? 0), 2)],
+            ['Total Pendiente de Cobro de Clientes', (int) ($kpis['events_partial_count'] ?? 0) + (int) ($kpis['events_unpaid_count'] ?? 0), round((float) ($kpis['total_pending'] ?? 0), 2)],
+            ['Gasto Total Proveedores (Fotomatón / 360º)', (int) ($kpis['provider_events_in_table_count'] ?? 0), round((float) ($kpis['provider_cost_in_events'] ?? 0), 2)],
+            ['Neto Eventos (Total Contratado - Gasto Proveedores)', (int) ($kpis['events_count'] ?? 0), round((float) ($kpis['net_agreed_after_providers'] ?? 0), 2)],
+            ['Caja Neta Actual (Cobrado Clientes - Pagado Proveedores)', (int) ($kpis['events_with_payment_count'] ?? 0), round((float) ($kpis['net_collected_after_providers'] ?? 0), 2)],
             ['---', '', ''],
             ['DESGLOSE POR MÉTODO DE PAGO', 'Nº Cobros', 'Total Cobrado (€)'],
             ['Bizum', (int) ($kpis['by_method']['bizum']['count'] ?? 0), round((float) ($kpis['by_method']['bizum']['amount'] ?? 0), 2)],
@@ -637,6 +686,7 @@ class BillingReportService
             ['Total Recibos y Señales (Sin IVA)', (int) ($kpis['tax_summary']['receipts_count'] ?? 0), round((float) ($kpis['tax_summary']['receipts_total'] ?? 0), 2)],
             ['---', '', ''],
             ['PAGOS A PROVEEDOR (FOTOMATÓN / PLATAFORMA 360º)', 'Eventos', 'Importe (€)'],
+            ['PVP Fotomatón / 360º en Presupuestos de Clientes', (int) ($provKpis['events_count'] ?? 0), round((float) ($provKpis['total_client_price'] ?? 0), 2)],
             ['Coste Total Proveedor Fotomatón / 360º', (int) ($provKpis['events_count'] ?? 0), round((float) ($provKpis['total_cost'] ?? 0), 2)],
             ['Señales de Reserva Pagadas al Proveedor', (int) ($provKpis['events_deposit_paid_count'] ?? 0) + (int) ($provKpis['events_fully_paid_count'] ?? 0), round((float) ($provKpis['deposits_paid'] ?? 0), 2)],
             ['Liquidaciones / Restos Pagados al Proveedor', (int) ($provKpis['events_fully_paid_count'] ?? 0), round((float) ($provKpis['finals_paid'] ?? 0), 2)],

@@ -67,8 +67,11 @@
         </div>
     </div>
 
-    <!-- TARJETAS KPI GLOBALES -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <!-- TARJETAS KPI GLOBALES (INGRESOS, PENDIENTE, VOLUMEN, GASTO PROVEEDORES Y DESGLOSE FISCAL) -->
+    @php
+        $pSummary = $kpis['provider_summary'] ?? [];
+    @endphp
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
         <!-- 1. TOTAL INGRESADO / COBRADO -->
         <div class="bg-white dark:bg-slate-900 rounded-2xl border border-emerald-200 dark:border-emerald-900/60 p-4 shadow-xs relative overflow-hidden">
             <div class="flex items-center justify-between">
@@ -82,9 +85,17 @@
             <div class="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-2">
                 {{ number_format($kpis['total_collected'], 2, ',', '.') }} €
             </div>
-            <div class="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
-                <span>Señales: <strong class="text-slate-800 dark:text-slate-200">{{ number_format($kpis['total_deposits_collected'], 2, ',', '.') }} €</strong></span>
-                <span>Resto/Final: <strong class="text-slate-800 dark:text-slate-200">{{ number_format($kpis['total_finals_collected'], 2, ',', '.') }} €</strong></span>
+            <div class="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800 space-y-1 text-[11px] text-slate-500 dark:text-slate-400">
+                <div class="flex items-center justify-between">
+                    <span>Señales: <strong class="text-slate-800 dark:text-slate-200">{{ number_format($kpis['total_deposits_collected'], 2, ',', '.') }} €</strong></span>
+                    <span>Resto: <strong class="text-slate-800 dark:text-slate-200">{{ number_format($kpis['total_finals_collected'], 2, ',', '.') }} €</strong></span>
+                </div>
+                @if(($kpis['provider_paid_in_events'] ?? 0) > 0)
+                    <div class="flex items-center justify-between text-emerald-700 dark:text-emerald-300 font-bold pt-0.5">
+                        <span>💎 Caja Neta (desc. prov.):</span>
+                        <span>{{ number_format($kpis['net_collected_after_providers'], 2, ',', '.') }} €</span>
+                    </div>
+                @endif
             </div>
         </div>
 
@@ -107,7 +118,7 @@
             </div>
         </div>
 
-        <!-- 3. VOLUMEN TOTAL ACORDADO -->
+        <!-- 3. VOLUMEN TOTAL ACORDADO Y NETO -->
         <div class="bg-white dark:bg-slate-900 rounded-2xl border border-indigo-200 dark:border-indigo-900/60 p-4 shadow-xs">
             <div class="flex items-center justify-between">
                 <span class="text-[11px] font-extrabold uppercase tracking-wider text-indigo-700 dark:text-indigo-400">
@@ -123,13 +134,52 @@
             @php
                 $globalPct = $kpis['total_agreed'] > 0 ? min(100, (int) round(($kpis['total_collected'] / $kpis['total_agreed']) * 100)) : 0;
             @endphp
-            <div class="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
-                <span>Porcentaje cobrado:</span>
-                <strong class="text-indigo-600 dark:text-indigo-400">{{ $globalPct }}% del total</strong>
+            <div class="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800 space-y-1 text-[11px] text-slate-500 dark:text-slate-400">
+                <div class="flex items-center justify-between">
+                    <span>Porcentaje cobrado:</span>
+                    <strong class="text-indigo-600 dark:text-indigo-400">{{ $globalPct }}% del total</strong>
+                </div>
+                @if(($kpis['provider_cost_in_events'] ?? 0) > 0)
+                    <div class="flex items-center justify-between text-indigo-700 dark:text-indigo-300 font-bold pt-0.5">
+                        <span>💎 Neto (sin proveedores):</span>
+                        <span>{{ number_format($kpis['net_agreed_after_providers'], 2, ',', '.') }} €</span>
+                    </div>
+                @endif
             </div>
         </div>
 
-        <!-- 4. DESGLOSE FACTURAS (IVA) vs RECIBOS -->
+        <!-- 4. GASTO DE PROVEEDORES (FOTOMATÓN / 360º) -->
+        <div
+            wire:click="$set('viewMode', 'providers')"
+            class="bg-white dark:bg-slate-900 rounded-2xl border border-purple-200 dark:border-purple-900/60 p-4 shadow-xs hover:border-purple-400 transition cursor-pointer"
+            title="Haz clic para abrir el desglose completo de pagos a proveedores (Fotomatón / 360º)"
+        >
+            <div class="flex items-center justify-between">
+                <span class="text-[11px] font-extrabold uppercase tracking-wider text-purple-700 dark:text-purple-400">
+                    📸 Gasto Proveedores
+                </span>
+                <span class="text-xs font-bold px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-950 text-purple-800 dark:text-purple-300">
+                    {{ $pSummary['events_count'] ?? 0 }} eventos
+                </span>
+            </div>
+            <div class="text-2xl font-black text-purple-600 dark:text-purple-400 mt-2">
+                {{ number_format($pSummary['total_cost'] ?? 0, 2, ',', '.') }} €
+            </div>
+            <div class="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800 space-y-1 text-[11px] text-slate-500 dark:text-slate-400">
+                <div class="flex items-center justify-between">
+                    <span>Pagado: <strong class="text-emerald-600 dark:text-emerald-400">{{ number_format($pSummary['total_paid'] ?? 0, 2, ',', '.') }} €</strong></span>
+                    <span>Falta: <strong class="text-amber-600 dark:text-amber-400">{{ number_format($pSummary['total_pending'] ?? 0, 2, ',', '.') }} €</strong></span>
+                </div>
+                @if(($pSummary['total_client_price'] ?? 0) > 0)
+                    <div class="flex items-center justify-between text-[10px] text-slate-400">
+                        <span>PVP pasado a clientes:</span>
+                        <strong class="text-slate-700 dark:text-slate-300">{{ number_format($pSummary['total_client_price'], 2, ',', '.') }} €</strong>
+                    </div>
+                @endif
+            </div>
+        </div>
+
+        <!-- 5. DESGLOSE FACTURAS (IVA) vs RECIBOS -->
         <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-xs">
             <div class="flex items-center justify-between">
                 <span class="text-[11px] font-extrabold uppercase tracking-wider text-slate-600 dark:text-slate-300">
@@ -335,6 +385,7 @@
                             <th class="py-3 px-4">2º Pago: Liquidación / Resto</th>
                             <th class="py-3 px-3 text-right">Total Cobrado</th>
                             <th class="py-3 px-3 text-right">Pendiente</th>
+                            <th class="py-3 px-4">📸 Gasto Proveedor / Neto</th>
                             <th class="py-3 px-4">Facturas / Recibos</th>
                         </tr>
                     </thead>
@@ -344,6 +395,9 @@
                                 /** @var \App\Models\Event $ev */
                                 $ev = $row['event'];
                                 $fb = $row['fb'];
+                                $evProv = $row['prov'] ?? $ev->external_provider_summary;
+                                $evProvCost = !empty($evProv['has_external_service']) ? (float) ($evProv['provider_total_cost'] ?? 0) : 0.0;
+                                $evNetTotal = max(0, round((float) $fb['quote_total'] - $evProvCost, 2));
                             @endphp
                             <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition">
                                 <!-- Evento y Fecha -->
@@ -362,31 +416,6 @@
                                                     {{ $ev->status_label }}
                                                 </span>
                                             </div>
-                                            @php
-                                                $evProv = $ev->external_provider_summary;
-                                            @endphp
-                                            @if($evProv['has_external_service'])
-                                                <div class="mt-1.5">
-                                                    <button
-                                                        type="button"
-                                                        wire:click="openProviderModal({{ $ev->id }}, 'deposit')"
-                                                        class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold border transition cursor-pointer {{ $evProv['status'] === 'paid' ? 'bg-emerald-50 text-emerald-800 border-emerald-300' : ($evProv['status'] === 'deposit_paid' ? 'bg-purple-50 text-purple-800 border-purple-300' : 'bg-amber-50 text-amber-800 border-amber-300') }}"
-                                                        title="Pulsar para gestionar reserva y pagos a la empresa de Fotomatón / 360º"
-                                                    >
-                                                        <span>📸</span>
-                                                        <span>
-                                                            @if($evProv['status'] === 'paid')
-                                                                Fotomatón/360º: Pagado ({{ number_format($evProv['total_paid'], 0, ',', '.') }}€)
-                                                            @elseif($evProv['status'] === 'deposit_paid')
-                                                                Fotomatón/360º: Señal {{ number_format($evProv['deposit_amount'], 0, ',', '.') }}€ · Falta {{ number_format($evProv['pending_amount'], 0, ',', '.') }}€
-                                                            @else
-                                                                Fotomatón/360º: Reserva pendiente
-                                                            @endif
-                                                        </span>
-                                                        <span>✏️</span>
-                                                    </button>
-                                                </div>
-                                            @endif
                                         </div>
                                     </div>
                                 </td>
@@ -409,9 +438,16 @@
                                 </td>
 
                                 <!-- Total Acordado -->
-                                <td class="py-3.5 px-3 text-right align-top font-black text-slate-900 dark:text-white whitespace-nowrap">
+                                <td class="py-3.5 px-3 text-right align-top whitespace-nowrap">
                                     @if($fb['quote_total'] > 0)
-                                        {{ number_format($fb['quote_total'], 2, ',', '.') }} €
+                                        <div class="font-black text-slate-900 dark:text-white">
+                                            {{ number_format($fb['quote_total'], 2, ',', '.') }} €
+                                        </div>
+                                        @if($evProvCost > 0)
+                                            <div class="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 mt-0.5" title="Ingreso neto del evento descontando el gasto de Fotomatón / 360º ({{ number_format($evProvCost, 2, ',', '.') }} €)">
+                                                💎 Neto: {{ number_format($evNetTotal, 2, ',', '.') }} €
+                                            </div>
+                                        @endif
                                     @else
                                         <span class="text-slate-400 font-normal text-[11px]">Sin imp.</span>
                                     @endif
@@ -529,6 +565,71 @@
                                     @endif
                                 </td>
 
+                                <!-- Gasto Proveedor (Fotomatón / 360º) y Neto -->
+                                <td class="py-3.5 px-4 align-top">
+                                    @if($evProv['has_external_service'])
+                                        <div class="p-2 rounded-xl border space-y-1 {{ $evProv['status'] === 'paid' ? 'bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800/70' : ($evProv['status'] === 'deposit_paid' ? 'bg-purple-50/60 dark:bg-purple-950/30 border-purple-200 dark:border-purple-800/70' : 'bg-amber-50/50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800/70') }}">
+                                            <div class="flex items-center justify-between gap-2">
+                                                <span class="text-[11px] font-black text-purple-700 dark:text-purple-300 truncate max-w-[155px]" title="{{ $evProv['service_description'] }} ({{ $evProv['provider_name'] }})">
+                                                    📸 Gasto: {{ number_format($evProv['provider_total_cost'], 2, ',', '.') }} €
+                                                </span>
+                                                <button
+                                                    type="button"
+                                                    wire:click="openProviderModal({{ $ev->id }}, 'deposit')"
+                                                    class="text-[11px] text-purple-700 dark:text-purple-400 hover:underline font-bold cursor-pointer shrink-0"
+                                                    title="Editar reserva y pagos a proveedor ({{ $evProv['provider_name'] }})"
+                                                >
+                                                    ✏️
+                                                </button>
+                                            </div>
+                                            @if($evProv['client_price'] > 0)
+                                                <div class="text-[10px] text-slate-500 dark:text-slate-400">
+                                                    PVP Cliente: <strong class="text-slate-700 dark:text-slate-200">{{ number_format($evProv['client_price'], 2, ',', '.') }} €</strong>
+                                                </div>
+                                            @endif
+                                            <div class="flex flex-wrap items-center justify-between gap-1 text-[10px] pt-0.5 border-t border-purple-200/50 dark:border-purple-800/40">
+                                                @if($evProv['status'] === 'paid')
+                                                    <span class="font-bold text-emerald-700 dark:text-emerald-400">
+                                                        ✅ Pagado 100% ({{ number_format($evProv['total_paid'], 0, ',', '.') }}€)
+                                                    </span>
+                                                @elseif($evProv['status'] === 'deposit_paid')
+                                                    <span class="font-bold text-emerald-700 dark:text-emerald-400">
+                                                        Señal: {{ number_format($evProv['deposit_amount'], 0, ',', '.') }}€
+                                                    </span>
+                                                    <button
+                                                        type="button"
+                                                        wire:click="openProviderModal({{ $ev->id }}, 'final')"
+                                                        class="font-bold text-amber-700 dark:text-amber-300 hover:underline cursor-pointer"
+                                                        title="Anotar liquidación pendiente al proveedor"
+                                                    >
+                                                        Falta: {{ number_format($evProv['pending_amount'], 0, ',', '.') }}€
+                                                    </button>
+                                                @else
+                                                    <button
+                                                        type="button"
+                                                        wire:click="openProviderModal({{ $ev->id }}, 'deposit')"
+                                                        class="font-bold text-amber-700 dark:text-amber-300 hover:underline cursor-pointer"
+                                                    >
+                                                        ⏳ + Anotar Señal ({{ number_format($evProv['suggested_deposit'], 0, ',', '.') }}€)
+                                                    </button>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    @else
+                                        <div class="flex items-center justify-between gap-1">
+                                            <span class="text-[11px] text-slate-400">—</span>
+                                            <button
+                                                type="button"
+                                                wire:click="openProviderModal({{ $ev->id }}, 'deposit')"
+                                                class="text-[10px] font-bold text-slate-400 hover:text-purple-600 transition cursor-pointer"
+                                                title="Añadir gasto de proveedor externo (Fotomatón / 360º) a este evento"
+                                            >
+                                                + Prov.
+                                            </button>
+                                        </div>
+                                    @endif
+                                </td>
+
                                 <!-- Facturas y Recibos -->
                                 <td class="py-3.5 px-4 align-top">
                                     <div class="flex flex-wrap gap-1.5">
@@ -556,12 +657,55 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="8" class="py-10 text-center text-slate-400 text-xs">
+                                <td colspan="9" class="py-10 text-center text-slate-400 text-xs">
                                     No hay eventos que coincidan con los filtros seleccionados. Prueba cambiando el filtro de «Estado de Cobro» a «Todos los Eventos».
                                 </td>
                             </tr>
                         @endforelse
                     </tbody>
+                    @if(count($eventsRows) > 0)
+                        <tfoot>
+                            <tr class="border-t-2 border-slate-300 dark:border-slate-700 bg-slate-100/90 dark:bg-slate-950 font-black text-xs text-slate-900 dark:text-white">
+                                <td class="py-3.5 px-4" colspan="2">
+                                    TOTALES ({{ count($eventsRows) }} eventos listados)
+                                </td>
+                                <td class="py-3.5 px-3 text-right whitespace-nowrap">
+                                    <div>{{ number_format($kpis['total_agreed'], 2, ',', '.') }} €</div>
+                                    @if(($kpis['provider_cost_in_events'] ?? 0) > 0)
+                                        <div class="text-[10px] font-bold text-indigo-600 dark:text-indigo-400">
+                                            💎 Neto: {{ number_format($kpis['net_agreed_after_providers'], 2, ',', '.') }} €
+                                        </div>
+                                    @endif
+                                </td>
+                                <td class="py-3.5 px-4 text-emerald-700 dark:text-emerald-400">
+                                    Señales: {{ number_format($kpis['total_deposits_collected'], 2, ',', '.') }} €
+                                </td>
+                                <td class="py-3.5 px-4 text-blue-700 dark:text-blue-400">
+                                    Restos: {{ number_format($kpis['total_finals_collected'], 2, ',', '.') }} €
+                                </td>
+                                <td class="py-3.5 px-3 text-right text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
+                                    <div>{{ number_format($kpis['total_collected'], 2, ',', '.') }} €</div>
+                                    @if(($kpis['provider_paid_in_events'] ?? 0) > 0)
+                                        <div class="text-[10px] font-bold text-slate-500">
+                                            Caja neta: {{ number_format($kpis['net_collected_after_providers'], 2, ',', '.') }} €
+                                        </div>
+                                    @endif
+                                </td>
+                                <td class="py-3.5 px-3 text-right text-amber-600 dark:text-amber-400 whitespace-nowrap">
+                                    {{ number_format($kpis['total_pending'], 2, ',', '.') }} €
+                                </td>
+                                <td class="py-3.5 px-4 whitespace-nowrap">
+                                    <div class="text-purple-700 dark:text-purple-300">
+                                        Gasto Prov.: {{ number_format($kpis['provider_cost_in_events'] ?? 0, 2, ',', '.') }} €
+                                    </div>
+                                    <div class="text-[10px] font-bold text-slate-500">
+                                        Pagado: {{ number_format($kpis['provider_paid_in_events'] ?? 0, 0, ',', '.') }}€ · Falta: {{ number_format($kpis['provider_pending_in_events'] ?? 0, 0, ',', '.') }}€
+                                    </div>
+                                </td>
+                                <td class="py-3.5 px-4"></td>
+                            </tr>
+                        </tfoot>
+                    @endif
                 </table>
             </div>
         </div>
@@ -729,8 +873,11 @@
                     <div class="text-2xl font-black text-slate-900 dark:text-white mt-1.5">
                         {{ $pKpis['events_count'] ?? 0 }} eventos
                     </div>
-                    <div class="text-[11px] text-slate-500 mt-1">
-                        Coste total proveedor: <strong class="text-slate-800 dark:text-slate-200">{{ number_format($pKpis['total_cost'] ?? 0, 2, ',', '.') }} €</strong>
+                    <div class="text-[11px] text-slate-500 mt-1 space-y-0.5">
+                        <div>Gasto total proveedor: <strong class="text-purple-700 dark:text-purple-300">{{ number_format($pKpis['total_cost'] ?? 0, 2, ',', '.') }} €</strong></div>
+                        @if(($pKpis['total_client_price'] ?? 0) > 0)
+                            <div>PVP pasado a clientes: <strong class="text-slate-800 dark:text-slate-200">{{ number_format($pKpis['total_client_price'], 2, ',', '.') }} €</strong></div>
+                        @endif
                     </div>
                 </div>
 
@@ -799,7 +946,8 @@
                             <tr class="border-b border-slate-200 dark:border-slate-800 text-[10px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-950">
                                 <th class="py-3 px-4">Evento / Fecha</th>
                                 <th class="py-3 px-3">Empresa / Servicio Contratado</th>
-                                <th class="py-3 px-3 text-right">Total Proveedor</th>
+                                <th class="py-3 px-3 text-right">PVP Cliente (Presupuesto)</th>
+                                <th class="py-3 px-3 text-right">Gasto Proveedor</th>
                                 <th class="py-3 px-4">1º Pago: Señal Reserva a Empresa</th>
                                 <th class="py-3 px-4">2º Pago: Liquidación / Resto a Empresa</th>
                                 <th class="py-3 px-3 text-right">Total Pagado</th>
@@ -844,14 +992,21 @@
                                         @endif
                                     </td>
 
-                                    <!-- Coste Total Proveedor -->
-                                    <td class="py-3.5 px-3 text-right align-top font-black text-slate-900 dark:text-white whitespace-nowrap">
-                                        {{ number_format($prov['provider_total_cost'], 2, ',', '.') }} €
-                                        @if($prov['client_price'] > 0 && abs($prov['client_price'] - $prov['provider_total_cost']) > 0.05)
-                                            <div class="text-[10px] text-slate-400 font-normal">
-                                                PVP Cliente: {{ number_format($prov['client_price'], 2, ',', '.') }} €
-                                            </div>
+                                    <!-- PVP Pasado al Cliente en Presupuesto -->
+                                    <td class="py-3.5 px-3 text-right align-top whitespace-nowrap">
+                                        @if($prov['client_price'] > 0)
+                                            <span class="font-black text-indigo-700 dark:text-indigo-300">
+                                                {{ number_format($prov['client_price'], 2, ',', '.') }} €
+                                            </span>
+                                            <div class="text-[10px] text-slate-400">En presupuesto</div>
+                                        @else
+                                            <span class="text-slate-400 text-[11px]">—</span>
                                         @endif
+                                    </td>
+
+                                    <!-- Coste Total Proveedor -->
+                                    <td class="py-3.5 px-3 text-right align-top font-black text-purple-700 dark:text-purple-300 whitespace-nowrap">
+                                        {{ number_format($prov['provider_total_cost'], 2, ',', '.') }} €
                                     </td>
 
                                     <!-- 1º Pago: Señal pagada al proveedor -->
@@ -995,12 +1150,40 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="8" class="py-10 text-center text-slate-400 text-xs">
+                                    <td colspan="9" class="py-10 text-center text-slate-400 text-xs">
                                         No hay eventos con Fotomatón o Plataforma 360º en los filtros actuales. Pulsa «➕ Añadir Reserva Fotomatón / 360º» para anotar uno manualmente.
                                     </td>
                                 </tr>
                             @endforelse
                         </tbody>
+                        @if(count($providerRows) > 0)
+                            <tfoot>
+                                <tr class="border-t-2 border-slate-300 dark:border-slate-700 bg-slate-100/90 dark:bg-slate-950 font-black text-xs text-slate-900 dark:text-white">
+                                    <td class="py-3.5 px-4" colspan="2">
+                                        TOTALES PROVEEDOR ({{ count($providerRows) }} eventos)
+                                    </td>
+                                    <td class="py-3.5 px-3 text-right text-indigo-700 dark:text-indigo-300 whitespace-nowrap">
+                                        {{ number_format($pKpis['total_client_price'] ?? 0, 2, ',', '.') }} €
+                                    </td>
+                                    <td class="py-3.5 px-3 text-right text-purple-700 dark:text-purple-300 whitespace-nowrap">
+                                        {{ number_format($pKpis['total_cost'] ?? 0, 2, ',', '.') }} €
+                                    </td>
+                                    <td class="py-3.5 px-4 text-emerald-700 dark:text-emerald-400">
+                                        Señales: {{ number_format($pKpis['deposits_paid'] ?? 0, 2, ',', '.') }} €
+                                    </td>
+                                    <td class="py-3.5 px-4 text-blue-700 dark:text-blue-400">
+                                        Restos: {{ number_format($pKpis['finals_paid'] ?? 0, 2, ',', '.') }} €
+                                    </td>
+                                    <td class="py-3.5 px-3 text-right text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
+                                        {{ number_format($pKpis['total_paid'] ?? 0, 2, ',', '.') }} €
+                                    </td>
+                                    <td class="py-3.5 px-3 text-right text-amber-600 dark:text-amber-400 whitespace-nowrap">
+                                        {{ number_format($pKpis['total_pending'] ?? 0, 2, ',', '.') }} €
+                                    </td>
+                                    <td class="py-3.5 px-3"></td>
+                                </tr>
+                            </tfoot>
+                        @endif
                     </table>
                 </div>
             </div>
@@ -1107,6 +1290,30 @@
                         </select>
                     </div>
 
+                    @if($provClientPrice > 0 || !empty($provDetectedItemsText))
+                        <div class="p-3 rounded-2xl bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 flex flex-wrap items-center justify-between gap-2">
+                            <div>
+                                <div class="text-[11px] font-black text-indigo-800 dark:text-indigo-300">
+                                    💶 Detectado en el presupuesto del cliente: {{ number_format((float)$provClientPrice, 2, ',', '.') }} €
+                                </div>
+                                @if(!empty($provDetectedItemsText))
+                                    <div class="text-[10px] text-indigo-600 dark:text-indigo-400 font-semibold mt-0.5">
+                                        {{ $provDetectedItemsText }}
+                                    </div>
+                                @endif
+                            </div>
+                            @if($provClientPrice > 0 && abs((float)$provTotalCost - (float)$provClientPrice) > 0.05)
+                                <button
+                                    type="button"
+                                    wire:click="syncProviderFromQuote"
+                                    class="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold transition cursor-pointer shrink-0"
+                                >
+                                    🔄 Usar {{ number_format((float)$provClientPrice, 2, ',', '.') }} €
+                                </button>
+                            @endif
+                        </div>
+                    @endif
+
                     <!-- Proveedor y Servicio -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
@@ -1123,7 +1330,7 @@
                         </div>
 
                         <div>
-                            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Total a Pagar a la Empresa (€) *</label>
+                            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Gasto Total Proveedor (€) *</label>
                             <input type="number" step="0.01" wire:model.live="provTotalCost" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 p-2.5 font-black text-sm mt-6">
                         </div>
                     </div>

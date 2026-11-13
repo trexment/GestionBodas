@@ -324,20 +324,44 @@ class Event extends Model
         }
 
         $quotes = $this->relationLoaded('quotes') ? $this->quotes : $this->quotes()->with('items')->get();
-        $activeQuote = $quotes->where('status', 'accepted')->sortByDesc('id')->first()
-            ?? $quotes->where('status', '!=', 'rejected')->sortByDesc('id')->first()
-            ?? $quotes->sortByDesc('id')->first();
+
+        // Ordenar presupuestos priorizando: 1º aceptados, 2º enviados/pendientes, 3º rechazados (más recientes primero)
+        $sortedQuotes = $quotes->sortByDesc(function ($q) {
+            $statusWeight = match ($q->status) {
+                'accepted' => 30,
+                'sent', 'pending' => 20,
+                'rejected' => 0,
+                default => 10,
+            };
+            return ($statusWeight * 1000000) + (int) $q->id;
+        });
+
+        // Sugerir proveedor según ubicación (Vitoria/Álava vs Logroño/La Rioja)
+        $locLower = mb_strtolower((string) ($this->location ?? ''));
+        $suggestedProviderKey = (str_contains($locLower, 'vitoria') || str_contains($locLower, 'álava') || str_contains($locLower, 'alava') || str_contains($locLower, 'bilbao'))
+            ? 'vitoria'
+            : 'logrono';
+        $providersCatalog = Setting::getPhotoboothProviders();
+        $pbConfig = $providersCatalog[$suggestedProviderKey] ?? ($providersCatalog['logrono'] ?? []);
+        $suggestedProviderName = $pbConfig['name'] ?? ($suggestedProviderKey === 'vitoria' ? 'Vitoria (FotomatonCheese)' : 'Logroño');
 
         $detectedNames = [];
+        $detectedWithPrices = [];
         $detectedClientPrice = 0.0;
         $hasPhotobooth = false;
         $has360 = false;
 
-        if ($activeQuote) {
-            $items = $activeQuote->relationLoaded('items') ? $activeQuote->items : $activeQuote->items()->get();
+        foreach ($sortedQuotes as $q) {
+            $items = $q->relationLoaded('items') ? $q->items : $q->items()->get();
+            $qNames = [];
+            $qWithPrices = [];
+            $qPrice = 0.0;
+            $qHasPb = false;
+            $qHas360 = false;
+
             foreach ($items as $item) {
-                $name = (string) ($item->service_name ?? '');
-                $desc = (string) ($item->description ?? '');
+                $name = trim((string) ($item->service_name ?? ''));
+                $desc = trim((string) ($item->description ?? ''));
                 $combined = mb_strtolower($name . ' ' . $desc);
 
                 // Ignorar el Álbum QR de fotos de invitados
@@ -347,65 +371,109 @@ class Event extends Model
 
                 $isPb = str_contains($combined, 'fotomaton') || str_contains($combined, 'fotomatón') || str_contains($combined, 'photobooth');
                 $is360 = str_contains($combined, '360') || str_contains($combined, 'plataforma');
-                $isDuo = str_contains($combined, 'pack dúo') || str_contains($combined, 'pack duo');
-                $isSweet = str_contains($combined, 'fuente de chocolate') || str_contains($combined, 'mesa de chuches') || str_contains($combined, 'candy bar') || str_contains($combined, 'carrito de gofres');
+                $isDuo = str_contains($combined, 'pack dúo') || str_contains($combined, 'pack duo') || ($isPb && $is360);
+                $isSweet = str_contains($combined, 'fuente de chocolate') || str_contains($combined, 'mesa de chuches') || str_contains($combined, 'solo chuches') || str_contains($combined, 'candy bar') || str_contains($combined, 'carrito de gofres');
 
                 if ($isPb || $is360 || $isDuo || $isSweet) {
-                    if ((float) ($item->total_price ?? 0) < 0) {
-                        // Línea de descuento asociada
-                        $detectedClientPrice += (float) $item->total_price;
+                    $qty = max(1, (int) ($item->quantity ?? 1));
+                    // En QuoteItem la columna de precio es 'price' (unitario); soportamos también total_price como fallback
+                    $unitPrice = (float) ($item->price ?? $item->total_price ?? 0);
+                    $lineTotal = round($unitPrice * $qty, 2);
+
+                    if ($lineTotal < 0) {
+                        // Línea de descuento asociada a este servicio
+                        $qPrice += $lineTotal;
                         continue;
                     }
-                    $detectedNames[] = trim($name);
-                    $detectedClientPrice += (float) ($item->total_price ?? 0);
+
+                    // Si la línea tenía precio 0 (ej. "A consultar"), estimar según tarifas del proveedor configurado
+                    if ($lineTotal <= 0) {
+                        $is3h = str_contains($combined, '3 hora') || str_contains($combined, '3h');
+                        $is2h = str_contains($combined, '2 hora') || str_contains($combined, '2h');
+                        if ($isDuo) {
+                            $lineTotal = (float) ($is2h ? ($pbConfig['pack_duo_2h'] ?? 690) : ($pbConfig['pack_duo_3h'] ?? 850));
+                        } elseif ($isPb) {
+                            $lineTotal = (float) ($is3h ? ($pbConfig['photobooth_3h'] ?? 480) : ($pbConfig['photobooth_2h'] ?? 430));
+                        } elseif ($is360) {
+                            $lineTotal = (float) ($is3h ? ($pbConfig['video_360_3h'] ?? 490) : ($pbConfig['video_360_2h'] ?? 430));
+                        }
+                    }
+
+                    $qNames[] = $name;
+                    $qWithPrices[] = $name . ($lineTotal > 0 ? ' (' . number_format($lineTotal, 2, ',', '.') . ' €)' : '');
+                    $qPrice += $lineTotal;
+
                     if ($isPb || $isDuo) {
-                        $hasPhotobooth = true;
+                        $qHasPb = true;
                     }
                     if ($is360 || $isDuo) {
-                        $has360 = true;
+                        $qHas360 = true;
                     }
                 }
             }
+
+            if (!empty($qNames)) {
+                $detectedNames = $qNames;
+                $detectedWithPrices = $qWithPrices;
+                $detectedClientPrice = $qPrice;
+                $hasPhotobooth = $qHasPb;
+                $has360 = $qHas360;
+                break;
+            }
         }
 
-        // Si no estaba en líneas pero se menciona en notas de solicitud online
+        // Si no estaba en líneas de presupuesto pero se menciona en notas de solicitud online (/presupuesto)
         if (empty($detectedNames) && !empty($this->notes)) {
             $notesLower = mb_strtolower((string) $this->notes);
-            if (str_contains($notesLower, 'fotomaton') || str_contains($notesLower, 'fotomatón')) {
+            $isDuoNotes = str_contains($notesLower, 'pack dúo') || str_contains($notesLower, 'pack duo');
+            if ($isDuoNotes || str_contains($notesLower, 'fotomaton') || str_contains($notesLower, 'fotomatón')) {
                 $hasPhotobooth = true;
             }
-            if (str_contains($notesLower, 'plataforma 360') || str_contains($notesLower, 'video 360') || str_contains($notesLower, 'vídeo 360')) {
+            if ($isDuoNotes || str_contains($notesLower, 'plataforma 360') || str_contains($notesLower, 'video 360') || str_contains($notesLower, 'vídeo 360')) {
                 $has360 = true;
             }
+            $is2hNotes = str_contains($notesLower, '2 hora') || str_contains($notesLower, '2h');
+            $is3hNotes = str_contains($notesLower, '3 hora') || str_contains($notesLower, '3h');
             if ($hasPhotobooth && $has360) {
-                $detectedNames[] = 'Fotomatón + Plataforma 360º';
+                $lbl = 'Pack Dúo: Fotomatón + Plataforma 360º' . ($is2hNotes ? ' (2 Horas)' : ($is3hNotes ? ' (3 Horas)' : ''));
+                $detectedNames[] = $lbl;
+                $detectedClientPrice = (float) ($is2hNotes ? ($pbConfig['pack_duo_2h'] ?? 690) : ($pbConfig['pack_duo_3h'] ?? 850));
+                $detectedWithPrices[] = $lbl . ' (' . number_format($detectedClientPrice, 2, ',', '.') . ' €)';
             } elseif ($hasPhotobooth) {
-                $detectedNames[] = 'Fotomatón';
+                $lbl = 'Fotomatón' . ($is3hNotes ? ' (3 Horas)' : ($is2hNotes ? ' (2 Horas)' : ''));
+                $detectedNames[] = $lbl;
+                $detectedClientPrice = (float) ($is3hNotes ? ($pbConfig['photobooth_3h'] ?? 480) : ($pbConfig['photobooth_2h'] ?? 430));
+                $detectedWithPrices[] = $lbl . ' (' . number_format($detectedClientPrice, 2, ',', '.') . ' €)';
             } elseif ($has360) {
-                $detectedNames[] = 'Plataforma 360º';
+                $lbl = 'Plataforma 360º' . ($is3hNotes ? ' (3 Horas)' : ($is2hNotes ? ' (2 Horas)' : ''));
+                $detectedNames[] = $lbl;
+                $detectedClientPrice = (float) ($is3hNotes ? ($pbConfig['video_360_3h'] ?? 490) : ($pbConfig['video_360_2h'] ?? 430));
+                $detectedWithPrices[] = $lbl . ' (' . number_format($detectedClientPrice, 2, ',', '.') . ' €)';
             }
         }
 
         $detectedServiceText = implode(' + ', array_unique(array_filter($detectedNames)));
+        $detectedServicesWithPricesText = implode(' + ', array_unique(array_filter($detectedWithPrices)));
         $suggestedDeposit = ($hasPhotobooth && $has360) ? 200.0 : (($hasPhotobooth || $has360 || !empty($detectedNames)) ? 100.0 : 100.0);
-
-        // Sugerir proveedor según ubicación (Vitoria/Álava vs Logroño/La Rioja)
-        $locLower = mb_strtolower((string) ($this->location ?? ''));
-        $suggestedProviderKey = (str_contains($locLower, 'vitoria') || str_contains($locLower, 'álava') || str_contains($locLower, 'alava') || str_contains($locLower, 'bilbao'))
-            ? 'vitoria'
-            : 'logrono';
-        $providersCatalog = Setting::getPhotoboothProviders();
-        $suggestedProviderName = $providersCatalog[$suggestedProviderKey]['name'] ?? ($suggestedProviderKey === 'vitoria' ? 'Vitoria (FotomatonCheese)' : 'Logroño');
 
         $primaryBooking = $bookings->first();
 
-        $serviceLabel = $primaryBooking?->service_description ?: ($detectedServiceText ?: 'Fotomatón / Plataforma 360º');
+        $serviceLabel = ($primaryBooking && !empty($primaryBooking->service_description) && $primaryBooking->service_description !== 'Fotomatón / Plataforma 360º')
+            ? $primaryBooking->service_description
+            : ($detectedServiceText ?: ($primaryBooking?->service_description ?: 'Fotomatón / Plataforma 360º'));
         $providerName = $primaryBooking?->provider_name ?: $suggestedProviderName;
         $providerKey = $primaryBooking?->provider_key ?: $suggestedProviderKey;
-        $clientPrice = ($primaryBooking && (float) $primaryBooking->client_price > 0)
-            ? (float) $primaryBooking->client_price
-            : max(0.0, round($detectedClientPrice, 2));
-        $providerTotalCost = $primaryBooking ? (float) $primaryBooking->provider_total_cost : $clientPrice;
+
+        // El precio pasado al cliente (client_price) se detecta siempre automáticamente del presupuesto si existe (> 0)
+        $detectedClientPrice = max(0.0, round($detectedClientPrice, 2));
+        $clientPrice = $detectedClientPrice > 0
+            ? $detectedClientPrice
+            : (($primaryBooking && (float) $primaryBooking->client_price > 0) ? (float) $primaryBooking->client_price : 0.0);
+
+        // El coste de proveedor usa el guardado si es > 0, o por defecto el precio detectado en el presupuesto del cliente
+        $providerTotalCost = ($primaryBooking && (float) $primaryBooking->provider_total_cost > 0)
+            ? (float) $primaryBooking->provider_total_cost
+            : $clientPrice;
 
         $depositPaid = $primaryBooking ? (bool) $primaryBooking->deposit_paid && (float) $primaryBooking->deposit_amount > 0 : false;
         $depositAmount = $depositPaid ? (float) $primaryBooking->deposit_amount : 0.0;
@@ -445,6 +513,8 @@ class Event extends Model
             'provider_name' => $providerName,
             'service_description' => $serviceLabel,
             'detected_services' => $detectedServiceText,
+            'detected_services_with_prices' => $detectedServicesWithPricesText,
+            'detected_client_price' => $detectedClientPrice,
             'client_price' => $clientPrice,
             'provider_total_cost' => $effectiveCost,
             'suggested_deposit' => $suggestedDeposit,

@@ -184,21 +184,31 @@
     <!-- RESUMEN EJECUTIVO DE INGRESOS Y MÉTODOS DE PAGO -->
     <table class="kpi-table">
         <tr>
-            <td class="kpi-box green" style="width: 22%;">
+            <td class="kpi-box green" style="width: 20%;">
                 <div class="kpi-label">Total Cobrado / Ingresado</div>
                 <div class="kpi-value green">{{ number_format($kpis['total_collected'], 2, ',', '.') }} €</div>
                 <div class="kpi-sub">
-                    Señales: {{ number_format($kpis['total_deposits_collected'], 2, ',', '.') }} € | Resto: {{ number_format($kpis['total_finals_collected'], 2, ',', '.') }} €
+                    Señales: {{ number_format($kpis['total_deposits_collected'], 2, ',', '.') }} € | Resto: {{ number_format($kpis['total_finals_collected'], 2, ',', '.') }} €<br>
+                    <strong>Neto (desc. prov.):</strong> {{ number_format($kpis['net_collected_after_providers'] ?? $kpis['total_collected'], 2, ',', '.') }} €
                 </div>
             </td>
-            <td class="kpi-box amber" style="width: 18%;">
+            <td class="kpi-box amber" style="width: 17%;">
                 <div class="kpi-label">Pendiente de Cobrar</div>
                 <div class="kpi-value amber">{{ number_format($kpis['total_pending'], 2, ',', '.') }} €</div>
                 <div class="kpi-sub">
-                    Volumen Eventos: {{ number_format($kpis['total_agreed'], 2, ',', '.') }} € ({{ $kpis['events_count'] }} ev.)
+                    Volumen Eventos: {{ number_format($kpis['total_agreed'], 2, ',', '.') }} € ({{ $kpis['events_count'] }} ev.)<br>
+                    <strong>Neto total:</strong> {{ number_format($kpis['net_agreed_after_providers'] ?? $kpis['total_agreed'], 2, ',', '.') }} €
                 </div>
             </td>
-            <td class="kpi-box" style="width: 34%;">
+            <td class="kpi-box" style="width: 19%; border-left: 3px solid #a855f7; background: #faf5ff;">
+                <div class="kpi-label" style="color: #6b21a8;">Gasto Proveedores (Fotomatón/360)</div>
+                <div class="kpi-value" style="color: #7e22ce;">{{ number_format($kpis['provider_cost_in_events'] ?? 0, 2, ',', '.') }} €</div>
+                <div class="kpi-sub">
+                    Pagado: {{ number_format($kpis['provider_paid_in_events'] ?? 0, 2, ',', '.') }} € | Falta: {{ number_format($kpis['provider_pending_in_events'] ?? 0, 2, ',', '.') }} €<br>
+                    PVP Presupuesto: {{ number_format($kpis['provider_client_price_in_events'] ?? 0, 2, ',', '.') }} € ({{ $kpis['provider_events_in_table_count'] ?? 0 }} ev.)
+                </div>
+            </td>
+            <td class="kpi-box" style="width: 24%;">
                 <div class="kpi-label">Ingresos Cobrados por Método de Pago</div>
                 <div class="kpi-sub" style="margin-top: 4px; color: #0f172a; font-size: 7pt;">
                     <strong>Bizum:</strong> {{ number_format($kpis['by_method']['bizum']['amount'], 2, ',', '.') }} € ({{ $kpis['by_method']['bizum']['count'] }})
@@ -210,7 +220,7 @@
                     <strong>Tarjeta:</strong> {{ number_format($kpis['by_method']['card']['amount'], 2, ',', '.') }} € ({{ $kpis['by_method']['card']['count'] }})
                 </div>
             </td>
-            <td class="kpi-box" style="width: 26%;">
+            <td class="kpi-box" style="width: 20%;">
                 <div class="kpi-label">Desglose Facturas (IVA) vs Recibos</div>
                 <div class="kpi-sub" style="margin-top: 4px; color: #0f172a; font-size: 7pt;">
                     <strong>Facturas ({{ $kpis['tax_summary']['invoices_count'] }}):</strong> {{ number_format($kpis['tax_summary']['invoices_total'], 2, ',', '.') }} €
@@ -226,14 +236,15 @@
     <table class="data-table">
         <thead>
             <tr>
-                <th style="width: 18%;">Evento / Fecha</th>
-                <th style="width: 15%;">Cliente / DNI</th>
+                <th style="width: 16%;">Evento / Fecha</th>
+                <th style="width: 13%;">Cliente / DNI</th>
                 <th style="width: 8%;" class="text-right">Total Evento</th>
-                <th style="width: 17%;">1º Pago: Señal (Fecha y Método)</th>
-                <th style="width: 17%;">2º Pago: Resto / Final (Fecha y Método)</th>
+                <th style="width: 15%;">1º Pago: Señal (Fecha y Método)</th>
+                <th style="width: 15%;">2º Pago: Resto / Final (Fecha y Método)</th>
                 <th style="width: 8%;" class="text-right">Total Cobrado</th>
-                <th style="width: 8%;" class="text-right">Pendiente</th>
-                <th style="width: 9%;">Facturas / Recibos</th>
+                <th style="width: 7%;" class="text-right">Pendiente</th>
+                <th style="width: 11%;" class="text-right">Gasto Proveedor / Neto</th>
+                <th style="width: 7%;">Fact. / Rec.</th>
             </tr>
         </thead>
         <tbody>
@@ -241,6 +252,8 @@
                 @php
                     $ev = $row['event'];
                     $fb = $row['fb'];
+                    $prov = $row['prov'] ?? $ev->external_provider_summary;
+                    $hasProv = ($prov['needs_provider'] ?? false) || ($prov['has_booking'] ?? false);
                     $docs = $ev->invoices->where('status', '!=', 'cancelled')->pluck('invoice_number')->implode(', ');
                 @endphp
                 <tr>
@@ -290,13 +303,30 @@
                     <td class="text-right {{ $fb['pending_amount'] > 0 ? 'text-amber' : 'text-muted' }}">
                         {{ $fb['pending_amount'] > 0 ? number_format($fb['pending_amount'], 2, ',', '.') . ' €' : '0,00 €' }}
                     </td>
+                    <td class="text-right">
+                        @if($hasProv)
+                            <div style="color: #7e22ce; font-weight: bold;">-{{ number_format($prov['provider_total_cost'] ?? 0, 2, ',', '.') }} €</div>
+                            <div class="text-muted">
+                                @if(($prov['client_price'] ?? 0) > 0)
+                                    PVP: {{ number_format($prov['client_price'], 0, ',', '.') }}€ &bull;
+                                @endif
+                                Pag: {{ number_format($prov['total_paid'] ?? 0, 0, ',', '.') }}€
+                                @if(($prov['pending_amount'] ?? 0) > 0)
+                                    | Falta: {{ number_format($prov['pending_amount'], 0, ',', '.') }}€
+                                @endif
+                            </div>
+                            <div class="text-green" style="font-size: 6.5pt;">Neto: {{ number_format(max(0, $fb['quote_total'] - ($prov['provider_total_cost'] ?? 0)), 2, ',', '.') }} €</div>
+                        @else
+                            <span class="text-muted">—</span>
+                        @endif
+                    </td>
                     <td>
                         <span class="text-muted">{{ $docs ?: '—' }}</span>
                     </td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="8" class="text-center text-muted">No hay eventos para los filtros seleccionados.</td>
+                    <td colspan="9" class="text-center text-muted">No hay eventos para los filtros seleccionados.</td>
                 </tr>
             @endforelse
             @if(count($eventsRows) > 0)
@@ -307,6 +337,10 @@
                     <td>Liquidaciones: {{ number_format($kpis['total_finals_collected'], 2, ',', '.') }} €</td>
                     <td class="text-right text-green">{{ number_format($kpis['total_collected'], 2, ',', '.') }} €</td>
                     <td class="text-right text-amber">{{ number_format($kpis['total_pending'], 2, ',', '.') }} €</td>
+                    <td class="text-right" style="color: #7e22ce;">
+                        -{{ number_format($kpis['provider_cost_in_events'] ?? 0, 2, ',', '.') }} €
+                        <div class="text-green" style="font-size: 6.5pt;">Neto: {{ number_format($kpis['net_agreed_after_providers'] ?? $kpis['total_agreed'], 2, ',', '.') }} €</div>
+                    </td>
                     <td></td>
                 </tr>
             @endif
@@ -369,13 +403,14 @@
         <table class="data-table">
             <thead>
                 <tr>
-                    <th style="width: 18%;">Evento / Fecha</th>
-                    <th style="width: 18%;">Empresa / Servicio Contratado</th>
-                    <th style="width: 9%;" class="text-right">Coste Total</th>
-                    <th style="width: 18%;">1º Pago: Señal Reserva (Fecha y Método)</th>
-                    <th style="width: 18%;">2º Pago: Resto / Final (Fecha y Método)</th>
-                    <th style="width: 9%;" class="text-right">Total Pagado</th>
-                    <th style="width: 10%;" class="text-right">Falta por Pagar</th>
+                    <th style="width: 16%;">Evento / Fecha</th>
+                    <th style="width: 16%;">Empresa / Servicio Contratado</th>
+                    <th style="width: 9%;" class="text-right">PVP Cliente</th>
+                    <th style="width: 9%;" class="text-right">Coste Prov.</th>
+                    <th style="width: 17%;">1º Pago: Señal Reserva (Fecha y Método)</th>
+                    <th style="width: 17%;">2º Pago: Resto / Final (Fecha y Método)</th>
+                    <th style="width: 8%;" class="text-right">Total Pagado</th>
+                    <th style="width: 8%;" class="text-right">Falta por Pagar</th>
                 </tr>
             </thead>
             <tbody>
@@ -392,6 +427,9 @@
                         <td>
                             <div class="font-bold">{{ $prov['provider_name'] }}</div>
                             <div class="text-muted">{{ $prov['service_description'] }}</div>
+                        </td>
+                        <td class="text-right font-bold" style="color: #7e22ce;">
+                            {{ ($prov['client_price'] ?? 0) > 0 ? number_format($prov['client_price'], 2, ',', '.') . ' €' : '—' }}
                         </td>
                         <td class="text-right font-bold">{{ number_format($prov['provider_total_cost'], 2, ',', '.') }} €</td>
                         <td>
@@ -424,6 +462,7 @@
                 @endforeach
                 <tr class="total-row">
                     <td colspan="2">TOTALES PROVEEDOR FOTOMATÓN / 360º ({{ count($providerRows) }} EVENTOS)</td>
+                    <td class="text-right" style="color: #7e22ce;">{{ number_format($pKpis['total_client_price'] ?? 0, 2, ',', '.') }} €</td>
                     <td class="text-right">{{ number_format($pKpis['total_cost'] ?? 0, 2, ',', '.') }} €</td>
                     <td>Señales: {{ number_format($pKpis['deposits_paid'] ?? 0, 2, ',', '.') }} €</td>
                     <td>Liquidaciones: {{ number_format($pKpis['finals_paid'] ?? 0, 2, ',', '.') }} €</td>

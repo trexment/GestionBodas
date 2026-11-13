@@ -44,6 +44,8 @@ class BillingManager extends Component
     public string $provKey = 'logrono';
     public string $provName = 'Logroño';
     public string $provService = 'Fotomatón + Plataforma 360º';
+    public $provClientPrice = 0;
+    public string $provDetectedItemsText = '';
     public $provTotalCost = 0;
     public bool $provDepositPaid = true;
     public $provDepositAmount = 100;
@@ -315,6 +317,8 @@ class BillingManager extends Component
         $this->provKey = (string) ($prov['provider_key'] ?: 'logrono');
         $this->provName = (string) ($prov['provider_name'] ?: 'Logroño');
         $this->provService = (string) ($prov['service_description'] ?: 'Fotomatón / Plataforma 360º');
+        $this->provClientPrice = (float) ($prov['client_price'] ?? 0);
+        $this->provDetectedItemsText = (string) ($prov['detected_services_with_prices'] ?: ($prov['detected_services'] ?? ''));
         $this->provTotalCost = (float) ($prov['provider_total_cost'] > 0 ? $prov['provider_total_cost'] : ($prov['client_price'] > 0 ? $prov['client_price'] : 0));
 
         $this->provDepositPaid = $focusStep === 'deposit' ? true : (bool) $prov['deposit_paid'];
@@ -337,6 +341,27 @@ class BillingManager extends Component
         }
 
         $this->provNotes = (string) ($prov['notes'] ?? '');
+    }
+
+    public function syncProviderFromQuote()
+    {
+        if (!$this->provEventId) {
+            return;
+        }
+        $event = Event::with(['quotes.items', 'providerBookings'])->find($this->provEventId);
+        if (!$event) {
+            return;
+        }
+        $prov = $event->external_provider_summary;
+        $detectedPrice = (float) ($prov['detected_client_price'] ?: ($prov['client_price'] ?? 0));
+        if ($detectedPrice > 0) {
+            $this->provClientPrice = $detectedPrice;
+            $this->provTotalCost = $detectedPrice;
+        }
+        if (!empty($prov['detected_services'])) {
+            $this->provService = $prov['detected_services'];
+        }
+        $this->provDetectedItemsText = (string) ($prov['detected_services_with_prices'] ?: ($prov['detected_services'] ?? ''));
     }
 
     public function fillProviderRemaining()
@@ -380,6 +405,7 @@ class BillingManager extends Component
             'provider_key' => $this->provKey ?: 'logrono',
             'provider_name' => trim($this->provName),
             'service_description' => trim($this->provService),
+            'client_price' => round((float) ($this->provClientPrice > 0 ? $this->provClientPrice : $this->provTotalCost), 2),
             'provider_total_cost' => round((float) $this->provTotalCost, 2),
             'deposit_paid' => $this->provDepositPaid && $depAmt > 0,
             'deposit_amount' => $depAmt,
