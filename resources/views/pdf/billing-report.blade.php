@@ -5,13 +5,8 @@
     <title>Informe de Facturación y Control de Ingresos - {{ $company['name'] }}</title>
     <style>
         @page {
-            margin: 9mm 10mm 9mm 10mm;
+            margin: 12mm 14mm 12mm 14mm;
             size: a4 landscape;
-        }
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
         }
         body {
             font-family: 'DejaVu Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
@@ -19,6 +14,11 @@
             font-size: 7.5pt;
             line-height: 1.3;
             background-color: #ffffff;
+            margin: 0;
+            padding: 0;
+        }
+        table {
+            border-collapse: collapse;
         }
         .header-table {
             width: 100%;
@@ -53,8 +53,14 @@
         .kpi-table {
             width: 100%;
             border-collapse: separate;
-            border-spacing: 6px 0;
+            border-spacing: 0;
             margin-bottom: 10px;
+        }
+        .kpi-spacer {
+            width: 0.8%;
+            border: none;
+            background: transparent;
+            padding: 0;
         }
         .kpi-box {
             border: 1px solid #cbd5e1;
@@ -184,7 +190,7 @@
     <!-- RESUMEN EJECUTIVO DE INGRESOS Y MÉTODOS DE PAGO -->
     <table class="kpi-table">
         <tr>
-            <td class="kpi-box green" style="width: 20%;">
+            <td class="kpi-box green" style="width: 19.4%;">
                 <div class="kpi-label">Total Cobrado / Ingresado</div>
                 <div class="kpi-value green">{{ number_format($kpis['total_collected'], 2, ',', '.') }} €</div>
                 <div class="kpi-sub">
@@ -192,7 +198,8 @@
                     <strong>Neto (desc. prov.):</strong> {{ number_format($kpis['net_collected_after_providers'] ?? $kpis['total_collected'], 2, ',', '.') }} €
                 </div>
             </td>
-            <td class="kpi-box amber" style="width: 17%;">
+            <td class="kpi-spacer"></td>
+            <td class="kpi-box amber" style="width: 16.4%;">
                 <div class="kpi-label">Pendiente de Cobrar</div>
                 <div class="kpi-value amber">{{ number_format($kpis['total_pending'], 2, ',', '.') }} €</div>
                 <div class="kpi-sub">
@@ -200,7 +207,8 @@
                     <strong>Neto total:</strong> {{ number_format($kpis['net_agreed_after_providers'] ?? $kpis['total_agreed'], 2, ',', '.') }} €
                 </div>
             </td>
-            <td class="kpi-box" style="width: 19%; border-left: 3px solid #a855f7; background: #faf5ff;">
+            <td class="kpi-spacer"></td>
+            <td class="kpi-box" style="width: 18.4%; border-left: 3px solid #a855f7; background: #faf5ff;">
                 <div class="kpi-label" style="color: #6b21a8;">Gasto Proveedores (Fotomatón/360)</div>
                 <div class="kpi-value" style="color: #7e22ce;">{{ number_format($kpis['provider_cost_in_events'] ?? 0, 2, ',', '.') }} €</div>
                 <div class="kpi-sub">
@@ -208,7 +216,8 @@
                     PVP Presupuesto: {{ number_format($kpis['provider_client_price_in_events'] ?? 0, 2, ',', '.') }} € ({{ $kpis['provider_events_in_table_count'] ?? 0 }} ev.)
                 </div>
             </td>
-            <td class="kpi-box" style="width: 24%;">
+            <td class="kpi-spacer"></td>
+            <td class="kpi-box" style="width: 23.4%;">
                 <div class="kpi-label">Ingresos Cobrados por Método de Pago</div>
                 <div class="kpi-sub" style="margin-top: 4px; color: #0f172a; font-size: 7pt;">
                     <strong>Bizum:</strong> {{ number_format($kpis['by_method']['bizum']['amount'], 2, ',', '.') }} € ({{ $kpis['by_method']['bizum']['count'] }})
@@ -220,7 +229,8 @@
                     <strong>Tarjeta:</strong> {{ number_format($kpis['by_method']['card']['amount'], 2, ',', '.') }} € ({{ $kpis['by_method']['card']['count'] }})
                 </div>
             </td>
-            <td class="kpi-box" style="width: 20%;">
+            <td class="kpi-spacer"></td>
+            <td class="kpi-box" style="width: 19.2%;">
                 <div class="kpi-label">Desglose Facturas (IVA) vs Recibos</div>
                 <div class="kpi-sub" style="margin-top: 4px; color: #0f172a; font-size: 7pt;">
                     <strong>Facturas ({{ $kpis['tax_summary']['invoices_count'] }}):</strong> {{ number_format($kpis['tax_summary']['invoices_total'], 2, ',', '.') }} €
@@ -253,7 +263,7 @@
                     $ev = $row['event'];
                     $fb = $row['fb'];
                     $prov = $row['prov'] ?? $ev->external_provider_summary;
-                    $hasProv = ($prov['needs_provider'] ?? false) || ($prov['has_booking'] ?? false);
+                    $hasProv = !empty($prov['has_external_service']);
                     $docs = $ev->invoices->where('status', '!=', 'cancelled')->pluck('invoice_number')->implode(', ');
                 @endphp
                 <tr>
