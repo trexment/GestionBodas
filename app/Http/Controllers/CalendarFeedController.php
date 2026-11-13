@@ -8,8 +8,14 @@ use App\Models\Setting;
 use Carbon\Carbon;
 use Illuminate\Http\Response;
 
+/**
+ * Controlador encargado de generar la suscripción de calendario iCal (.ics) para el equipo.
+ */
 class CalendarFeedController extends Controller
 {
+    /**
+     * Genera y devuelve el feed iCal (.ics) con los eventos asignados según el token del usuario.
+     */
     public function feed($token): Response
     {
         if (empty($token) || strlen(trim($token)) < 16) {
@@ -97,6 +103,9 @@ class CalendarFeedController extends Controller
         ]);
     }
 
+    /**
+     * Escapa caracteres especiales para cumplir con el formato de texto iCalendar (RFC 5545).
+     */
     private function escapeIcal($str)
     {
         return preg_replace('/([\,;])/', '\\\$1', $str);

@@ -8,6 +8,9 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 
+/**
+ * Correo de notificación enviado a los administradores cuando un cliente firma un contrato.
+ */
 class ContractSignedNotificationMail extends Mailable
 {
     use Queueable, SerializesModels;
@@ -16,6 +19,9 @@ class ContractSignedNotificationMail extends Mailable
     public $event;
     public $brand;
 
+    /**
+     * Inicializa la notificación con el contrato firmado y la información del evento.
+     */
     public function __construct(Contract $contract)
     {
         $this->contract = $contract;
@@ -24,6 +30,9 @@ class ContractSignedNotificationMail extends Mailable
         $this->brand = Setting::getBrandInfo($brandKey);
     }
 
+    /**
+     * Construye el correo electrónico de aviso de firma de contrato.
+     */
     public function build()
     {
         $brandName = $this->brand['name'] ?? 'Eventos Musicales';

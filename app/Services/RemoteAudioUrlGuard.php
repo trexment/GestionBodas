@@ -93,6 +93,9 @@ class RemoteAudioUrlGuard
         return self::sanitizeInput($url) !== '';
     }
 
+    /**
+     * Comprueba si el dominio indicado pertenece a la lista blanca de hosts permitidos para audio remoto.
+     */
     protected static function hostIsAllowed(string $host): bool
     {
         foreach (self::ALLOWED_HOSTS as $allowed) {

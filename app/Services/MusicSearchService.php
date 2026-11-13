@@ -6,6 +6,9 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
 use App\Models\Setting;
 
+/**
+ * Servicio de búsqueda musical y obtención de metadatos, carátulas, preescuchas e importación de playlists desde iTunes, Apple Music y Spotify.
+ */
 class MusicSearchService
 {
     /**

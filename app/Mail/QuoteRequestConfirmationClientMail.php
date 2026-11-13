@@ -11,6 +11,9 @@ use App\Models\Event;
 use App\Models\Quote;
 use App\Models\Setting;
 
+/**
+ * Correo de confirmación enviado automáticamente al cliente tras solicitar un presupuesto online.
+ */
 class QuoteRequestConfirmationClientMail extends Mailable
 {
     use Queueable, SerializesModels;
@@ -25,6 +28,9 @@ class QuoteRequestConfirmationClientMail extends Mailable
     public string $eventSchedule;
     public bool $needsPriorSetup;
 
+    /**
+     * Inicializa el correo de confirmación con los datos del evento y los servicios solicitados.
+     */
     public function __construct(
         Event $event,
         Quote $quote,
@@ -46,6 +52,9 @@ class QuoteRequestConfirmationClientMail extends Mailable
         $this->companyName = $this->brand['name'] ?: Setting::get('company_name', config('app.name', 'Eventos Musicales'));
     }
 
+    /**
+     * Define el sobre del correo con el asunto de confirmación de solicitud.
+     */
     public function envelope(): Envelope
     {
         $typeName = $this->typeConfig['name'] ?? 'tu evento';
@@ -55,6 +64,9 @@ class QuoteRequestConfirmationClientMail extends Mailable
         );
     }
 
+    /**
+     * Define la vista Blade del correo de confirmación para el cliente.
+     */
     public function content(): Content
     {
         return new Content(
@@ -62,6 +74,9 @@ class QuoteRequestConfirmationClientMail extends Mailable
         );
     }
 
+    /**
+     * Devuelve la lista de archivos adjuntos del correo.
+     */
     public function attachments(): array
     {
         return [];

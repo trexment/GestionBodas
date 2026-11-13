@@ -2,6 +2,9 @@
 
 namespace App\Services;
 
+/**
+ * Servicio de validación, formateo y autocompletado de documentos de identidad españoles (DNI, NIE y CIF).
+ */
 class DocumentValidationService
 {
     /**

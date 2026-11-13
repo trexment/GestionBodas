@@ -8,8 +8,14 @@ use App\Models\User;
 use App\Models\Setting;
 use Carbon\Carbon;
 
+/**
+ * Servicio de generación de plantillas comerciales, enlaces de WhatsApp/correo y secuencias de seguimiento para eventos y clientes.
+ */
 class WhatsAppTemplateService
 {
+    /**
+     * Normaliza un número de teléfono eliminando caracteres no numéricos y añadiendo el prefijo internacional 34 si procede.
+     */
     public static function cleanPhone($phone): string
     {
         $clean = preg_replace('/[^0-9]/', '', (string)$phone);
@@ -22,6 +28,9 @@ class WhatsAppTemplateService
         return $clean;
     }
 
+    /**
+     * Construye el enlace universal wa.me con el teléfono y el mensaje codificado.
+     */
     public static function buildUrl($phone, $message): string
     {
         $cleanPhone = self::cleanPhone($phone);
@@ -31,11 +40,17 @@ class WhatsAppTemplateService
         return "https://api.whatsapp.com/send?text=" . rawurlencode($message);
     }
 
+    /**
+     * Alias de buildUrl para obtener el enlace directo de envío por WhatsApp.
+     */
     public static function getLink($phone, $message): string
     {
         return self::buildUrl($phone, $message);
     }
 
+    /**
+     * Construye el enlace directo para abrir la conversación en WhatsApp Web con el mensaje pre-rellenado.
+     */
     public static function getWebLink($phone, $message): string
     {
         $cleanPhone = self::cleanPhone($phone);
@@ -464,6 +479,9 @@ class WhatsAppTemplateService
         ];
     }
 
+    /**
+     * Obtiene el texto en bruto de una plantilla editable (personalizada o por defecto) para su edición en ajustes.
+     */
     public static function getRawTemplateForEdit(string $key): string
     {
         $catalog = self::getEditableTemplatesCatalog();
@@ -474,16 +492,25 @@ class WhatsAppTemplateService
         return $catalog[$key]['default'] ?? '';
     }
 
+    /**
+     * Comprueba si una plantilla de WhatsApp tiene una versión personalizada guardada en ajustes.
+     */
     public static function hasCustomTemplate(string $key): bool
     {
         return !empty(trim((string)Setting::get('wa_custom_tpl_' . $key, '')));
     }
 
+    /**
+     * Guarda una plantilla personalizada de WhatsApp en los ajustes del sistema.
+     */
     public static function saveCustomTemplate(string $key, string $rawText): void
     {
         Setting::set('wa_custom_tpl_' . $key, trim($rawText));
     }
 
+    /**
+     * Restaura una plantilla de WhatsApp a su texto original por defecto eliminando la personalización.
+     */
     public static function resetCustomTemplate(string $key): void
     {
         Setting::set('wa_custom_tpl_' . $key, '');
@@ -606,6 +633,9 @@ class WhatsAppTemplateService
         ];
     }
 
+    /**
+     * Renderiza una plantilla del catálogo por su clave interpolando las variables del evento y la firma del remitente.
+     */
     public static function renderTemplateByKey(string $key, ?Event $event, ?string $senderBrand = null): string
     {
         $rawTemplate = self::getRawTemplateForEdit($key);
@@ -614,6 +644,9 @@ class WhatsAppTemplateService
         return self::applySenderSignatureToMessage($rendered, $senderBrand, $event);
     }
 
+    /**
+     * Renderiza la versión personalizada de una plantilla si existe en ajustes, o aplica la firma sobre el texto por defecto.
+     */
     public static function renderCustomIfPresent(string $key, ?Event $event, string $defaultRendered, ?string $senderBrand = null): string
     {
         try {
@@ -631,37 +664,58 @@ class WhatsAppTemplateService
         }
     }
 
+    /**
+     * Genera el mensaje con el cuestionario inicial o enlace al formulario musical del evento.
+     */
     public static function cuestionario(Event $event, ?string $senderBrand = null): string
     {
         return self::renderTemplateByKey('cuestionario', $event, $senderBrand);
     }
 
+    /**
+     * Genera el mensaje con el enlace de firma del contrato y las instrucciones de señal de reserva.
+     */
     public static function contrato($contractOrEvent, ?string $senderBrand = null): string
     {
         $event = ($contractOrEvent instanceof Contract) ? $contractOrEvent->event : $contractOrEvent;
         return self::renderTemplateByKey('contrato', $event, $senderBrand);
     }
 
+    /**
+     * Genera el mensaje de confirmación tras recibir el pago de la señal de reserva.
+     */
     public static function confirmacionSenal(Event $event, ?string $senderBrand = null): string
     {
         return self::renderTemplateByKey('confirmacion_senal', $event, $senderBrand);
     }
 
+    /**
+     * Genera el mensaje de recordatorio amable de pago pendiente de señal o liquidación.
+     */
     public static function recordatorioPagoPendiente(Event $event, ?string $senderBrand = null): string
     {
         return self::renderTemplateByKey('recordatorio_pago', $event, $senderBrand);
     }
 
+    /**
+     * Genera el mensaje de verificación previa para filtrar leads sospechosos o incompletos.
+     */
     public static function verificacionLeadSospechoso(Event $event, ?string $senderBrand = null): string
     {
         return self::renderTemplateByKey('verificacion_lead', $event, $senderBrand);
     }
 
+    /**
+     * Genera el mensaje de coordinación logística previa al evento o boda.
+     */
     public static function preBodaLogistica(Event $event, ?string $senderBrand = null): string
     {
         return self::renderTemplateByKey('pre_boda', $event, $senderBrand);
     }
 
+    /**
+     * Genera el mensaje post-evento con el enlace a la carpeta de Google Drive de fotos subidas mediante QR.
+     */
     public static function entregaFotosQrDrive(Event $event, ?string $driveUrl = null, ?string $senderBrand = null): string
     {
         $rawTemplate = self::getRawTemplateForEdit('entrega_fotos_qr_drive');
@@ -673,11 +727,17 @@ class WhatsAppTemplateService
         return self::applySenderSignatureToMessage($rendered, $senderBrand, $event);
     }
 
+    /**
+     * Genera el mensaje de recordatorio de liquidación económica del evento.
+     */
     public static function liquidacion(Event $event, ?string $senderBrand = null): string
     {
         return self::renderTemplateByKey('recordatorio_pago', $event, $senderBrand);
     }
 
+    /**
+     * Obtiene la URL pública del configurador de presupuestos online vinculada opcionalmente al evento.
+     */
     public static function getQuoteCalculatorUrl(?Event $event = null): string
     {
         try {
@@ -1021,6 +1081,9 @@ class WhatsAppTemplateService
         return $options;
     }
 
+    /**
+     * Construye los datos de un recordatorio de seguimiento comercial para la variante indicada o la recomendada.
+     */
     public static function followupReminder(Event $event, ?string $variant = null): array
     {
         $clientPhone = $event->client ? $event->client->phone : ($event->partner_phone ?? '');
@@ -1088,6 +1151,9 @@ class WhatsAppTemplateService
         ];
     }
 
+    /**
+     * Genera el mensaje de hoja de ruta y briefing técnico para el DJ o técnico asignado al evento.
+     */
     public static function hojaRutaDj(Event $event, ?User $user = null): string
     {
         $targetUser = $user ?: $event->dj;
@@ -1147,6 +1213,9 @@ class WhatsAppTemplateService
              . "¡A darlo todo en el evento! 🔥";
     }
 
+    /**
+     * Devuelve los datos de envío de WhatsApp para recordar al cliente el cuestionario musical.
+     */
     public static function questionnaireReminder(Event $event): array
     {
         $clientPhone = $event->client ? $event->client->phone : '';
@@ -1161,6 +1230,9 @@ class WhatsAppTemplateService
         ];
     }
 
+    /**
+     * Devuelve los datos de envío de WhatsApp con el enlace para la firma digital del contrato.
+     */
     public static function contractSignReminder(Event $event, ?Contract $contract = null): array
     {
         $clientPhone = $event->client ? $event->client->phone : '';
@@ -1175,6 +1247,9 @@ class WhatsAppTemplateService
         ];
     }
 
+    /**
+     * Devuelve los datos de envío de WhatsApp para el recordatorio de pago o liquidación del evento.
+     */
     public static function paymentReminder(Event $event): array
     {
         $clientPhone = $event->client ? $event->client->phone : '';
@@ -1189,6 +1264,9 @@ class WhatsAppTemplateService
         ];
     }
 
+    /**
+     * Devuelve los datos de envío de WhatsApp con la hoja de ruta para un miembro del equipo técnico.
+     */
     public static function staffBriefing(Event $event, User $user, string $role = 'dj'): array
     {
         $roleTitle = $role === 'dj' ? 'DJ Principal' : 'Técnico / Asistente';
@@ -1203,6 +1281,9 @@ class WhatsAppTemplateService
         ];
     }
 
+    /**
+     * Genera el mensaje de confirmación de cita o reunión con el cliente.
+     */
     public static function meetingConfirmation(\App\Models\ClientMeeting $meeting): string
     {
         $event = $meeting->event;
@@ -1224,6 +1305,9 @@ class WhatsAppTemplateService
              . "¡Nos vemos pronto para avanzar con los preparativos de vuestro evento! 🎉";
     }
 
+    /**
+     * Genera el mensaje de recordatorio previo para una cita o reunión programada con el cliente.
+     */
     public static function meetingReminder(\App\Models\ClientMeeting $meeting): string
     {
         $event = $meeting->event;
@@ -1243,6 +1327,9 @@ class WhatsAppTemplateService
              . "¡Hasta pronto! 🎧";
     }
 
+    /**
+     * Genera el mensaje con el desglose detallado del presupuesto, condiciones de pago y enlace a la propuesta online.
+     */
     public static function resumenPresupuesto(Event $event, $quote = null, ?string $senderBrand = null): string
     {
         if (is_string($quote) && $senderBrand === null) {
@@ -1321,6 +1408,9 @@ class WhatsAppTemplateService
         return self::applySenderSignatureToMessage($msg, $senderBrand, $event);
     }
 
+    /**
+     * Genera el mensaje con las instrucciones de pago (IBAN y Bizum) para abonar la señal de reserva.
+     */
     public static function senalReserva(Event $event, $quote = null, ?string $senderBrand = null): string
     {
         if (is_string($quote) && $senderBrand === null) {
@@ -1360,6 +1450,9 @@ class WhatsAppTemplateService
         return self::applySenderSignatureToMessage($msg, $senderBrand, $event);
     }
 
+    /**
+     * Genera el mensaje con los datos de una factura o recibo de pago emitido al cliente.
+     */
     public static function facturaRecibo(Event $event, \App\Models\Invoice $invoice): string
     {
         $clientName = self::cleanClientDisplayName($event->client ? $event->client->name : null, $event->is_wedding ? 'pareja' : '', $event);
@@ -1380,6 +1473,9 @@ class WhatsAppTemplateService
              . "\nCualquier consulta estamos a vuestra entera disposición. ¡Muchas gracias!";
     }
 
+    /**
+     * Obtiene los nombres de pila de la pareja o del cliente principal para personalizar el saludo.
+     */
     public static function resolveCouplesFirstNames(?Event $event): string
     {
         if (!$event) {
@@ -1394,6 +1490,9 @@ class WhatsAppTemplateService
         return $c1 ?: ($c2 ?: $defaultFallback);
     }
 
+    /**
+     * Genera el mensaje comercial con toda la información y tarifas de Fotomatón, Plataforma 360º y Pack Dúo.
+     */
     public static function infoFotomatonY360(?Event $event = null, ?string $provider = null): string
     {
         $clientName = self::resolveCouplesFirstNames($event);
@@ -1454,6 +1553,9 @@ class WhatsAppTemplateService
              . "📆 Para reservar el día serían *{$dep} € por servicio contratado*, mediante cuenta bancaria y el resto del pago se realizaría la semana de antes.";
     }
 
+    /**
+     * Genera el mensaje comercial con la información y precios de Mesa Dulce con Fuente de Chocolate, Candy Bar y Carrito de Gofres.
+     */
     public static function infoMesaDulceYGofres(?Event $event = null, ?string $provider = null): string
     {
         $clientName = self::resolveCouplesFirstNames($event);

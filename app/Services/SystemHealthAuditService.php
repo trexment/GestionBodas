@@ -8,6 +8,9 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Schema;
 
+/**
+ * Servicio de auditoría y diagnóstico integral del estado técnico de la aplicación, base de datos, vistas y servicios externos.
+ */
 class SystemHealthAuditService
 {
     /**

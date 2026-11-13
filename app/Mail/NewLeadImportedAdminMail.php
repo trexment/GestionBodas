@@ -10,6 +10,9 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
+/**
+ * Correo de alerta enviado a los administradores cuando se importa o recibe un nuevo lead web.
+ */
 class NewLeadImportedAdminMail extends Mailable
 {
     use Queueable, SerializesModels;
@@ -22,6 +25,9 @@ class NewLeadImportedAdminMail extends Mailable
     public string $adminUrl;
     public ?string $whatsappUrl;
 
+    /**
+     * Inicializa el correo con el evento creado, los datos del lead y la marca detectada.
+     */
     public function __construct(Event $event, array $leadData, string $brandKey)
     {
         $this->event = $event;
@@ -39,6 +45,9 @@ class NewLeadImportedAdminMail extends Mailable
         $this->whatsappUrl = $cleanPhone ? "https://wa.me/{$cleanPhone}" : null;
     }
 
+    /**
+     * Define el sobre del correo con el asunto personalizado del lead.
+     */
     public function envelope(): Envelope
     {
         $clientName = $this->event->client ? $this->event->client->name : ($this->leadData['client_name'] ?? 'Nuevo Cliente');
@@ -50,6 +59,9 @@ class NewLeadImportedAdminMail extends Mailable
         );
     }
 
+    /**
+     * Define la vista Blade que renderiza el cuerpo del correo.
+     */
     public function content(): Content
     {
         return new Content(
@@ -57,6 +69,9 @@ class NewLeadImportedAdminMail extends Mailable
         );
     }
 
+    /**
+     * Devuelve la lista de archivos adjuntos del correo.
+     */
     public function attachments(): array
     {
         return [];

@@ -13,6 +13,9 @@ use App\Livewire\Traits\ThrottlesGuestActions;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
 
+/**
+ * Componente Livewire público para la revisión de datos, previsualización en tiempo real y firma electrónica de contratos por parte del cliente.
+ */
 class ContractSign extends Component
 {
     use HandlesDniValidation;
@@ -59,6 +62,9 @@ class ContractSign extends Component
 
     public $isSigned = false;
 
+    /**
+     * Inicializa el componente localizando el contrato por token y cargando los datos del cliente, pareja y firma previa si existe.
+     */
     public function mount($token)
     {
         $this->token = $token;
@@ -135,6 +141,9 @@ class ContractSign extends Component
         $this->renderLiveContract();
     }
 
+    /**
+     * Actualiza la vista previa del contrato cuando se modifica cualquier campo del cliente o de su pareja.
+     */
     public function updated($propertyName)
     {
         if (str_starts_with($propertyName, 'client_') || str_starts_with($propertyName, 'partner_')) {
@@ -142,6 +151,9 @@ class ContractSign extends Component
         }
     }
 
+    /**
+     * Valida y autocompleta el DNI/NIE del cliente titular al actualizarse el campo.
+     */
     public function updatedClientDni($value)
     {
         $this->validateAndCompleteDni('client_dni', $value);
@@ -149,6 +161,9 @@ class ContractSign extends Component
         $this->renderLiveContract();
     }
 
+    /**
+     * Valida y autocompleta el DNI/NIE de la pareja al actualizarse el campo.
+     */
     public function updatedPartnerDni($value)
     {
         $this->validateAndCompleteDni('partner_dni', $value);
@@ -156,6 +171,9 @@ class ContractSign extends Component
         $this->renderLiveContract();
     }
 
+    /**
+     * Ejecuta la validación del documento de identidad del cliente titular y, en su caso, de la pareja.
+     */
     public function validateDni()
     {
         if (!empty($this->client_dni)) {
@@ -175,6 +193,9 @@ class ContractSign extends Component
         }
     }
 
+    /**
+     * Aplica la letra o formato sugerido para el DNI/NIE indicado y regenera la previsualización del contrato.
+     */
     public function applyDniSuggestion(string $field, string $suggested): void
     {
         $this->$field = $suggested;
@@ -187,6 +208,9 @@ class ContractSign extends Component
         $this->renderLiveContract();
     }
 
+    /**
+     * Renderiza en vivo el título, cuerpo, pie e importe del contrato con los datos actuales del formulario.
+     */
     public function renderLiveContract()
     {
         $isWedding = $this->event && ($this->event->event_type_clean === 'boda');
@@ -212,6 +236,9 @@ class ContractSign extends Component
         $this->amount = $rendered['amount'];
     }
 
+    /**
+     * Autocompleta la localidad y provincia del cliente al modificar su código postal.
+     */
     public function updatedClientPostalCode($value)
     {
         $lookup = PostalCodeService::lookup($value);
@@ -224,6 +251,9 @@ class ContractSign extends Component
         $this->renderLiveContract();
     }
 
+    /**
+     * Procesa la firma del contrato mediante certificado digital generando la huella criptográfica SHA-256.
+     */
     public function signWithCertificate($certData)
     {
         $this->signature_type = 'certificate';
@@ -239,6 +269,9 @@ class ContractSign extends Component
         $this->signContract();
     }
 
+    /**
+     * Valida los datos del firmante, formaliza la firma del contrato en base de datos y envía las notificaciones y copia en PDF.
+     */
     public function signContract()
     {
         // isSigned es una propiedad pública manipulable desde el navegador: se comprueba también en BD
@@ -403,6 +436,9 @@ class ContractSign extends Component
         session()->flash('success_message', '¡Contrato firmado y formalizado correctamente! Se ha enviado una copia en PDF a tu correo electrónico.');
     }
 
+    /**
+     * Renderiza la vista pública de firma de contrato.
+     */
     public function render()
     {
         return view('livewire.guest.contract-sign')->layout('components.layouts.wide-guest');

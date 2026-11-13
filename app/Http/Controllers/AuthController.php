@@ -7,13 +7,22 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 
+/**
+ * Controlador de autenticación de usuarios (inicio y cierre de sesión).
+ */
 class AuthController extends Controller
 {
+    /**
+     * Muestra el formulario de inicio de sesión.
+     */
     public function showLoginForm()
     {
         return view('auth.login');
     }
 
+    /**
+     * Procesa la solicitud de inicio de sesión aplicando limitación de intentos y validación de credenciales.
+     */
     public function login(Request $request)
     {
         $request->validate([
@@ -57,6 +66,9 @@ class AuthController extends Controller
         ])->onlyInput('login');
     }
 
+    /**
+     * Cierra la sesión activa del usuario e invalida el token de sesión.
+     */
     public function logout(Request $request)
     {
         Auth::logout();

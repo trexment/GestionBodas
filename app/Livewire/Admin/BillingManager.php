@@ -8,6 +8,9 @@ use App\Services\BillingReportService;
 use Carbon\Carbon;
 use Livewire\Component;
 
+/**
+ * Componente Livewire para la gestión de facturación, control de ingresos por evento, libro de cobros y pagos a proveedores externos.
+ */
 class BillingManager extends Component
 {
     // Vista activa: 'events' (Control de pagos por evento) o 'ledger' (Libro cronológico de cobros/facturas)
@@ -58,6 +61,11 @@ class BillingManager extends Component
     public string $provFinalMethod = 'transfer';
     public string $provNotes = '';
 
+    /**
+     * Inicializa el componente comprobando el rol de administrador y estableciendo la fecha actual para cobros rápidos.
+     *
+     * @return void
+     */
     public function mount()
     {
         if (!auth()->check() || auth()->user()->role !== 'admin') {
@@ -67,6 +75,11 @@ class BillingManager extends Component
         $this->quickDate = now()->format('Y-m-d');
     }
 
+    /**
+     * Restablece todos los filtros de búsqueda y visualización a sus valores predeterminados.
+     *
+     * @return void
+     */
     public function resetFilters()
     {
         $this->season = 'all';
@@ -83,21 +96,46 @@ class BillingManager extends Component
         $this->search = '';
     }
 
+    /**
+     * Filtra los registros por año de temporada del evento.
+     *
+     * @param string $season Año de la temporada o 'all'.
+     * @return void
+     */
     public function setSeason(string $season)
     {
         $this->season = $season;
     }
 
+    /**
+     * Alterna el filtro por método de pago.
+     *
+     * @param string $method Método de pago a filtrar.
+     * @return void
+     */
     public function filterByMethod(string $method)
     {
         $this->paymentMethod = ($this->paymentMethod === $method) ? 'all' : $method;
     }
 
+    /**
+     * Establece el filtro por estado de pago del evento.
+     *
+     * @param string $status Estado de pago ('all', 'with_payments', 'paid', 'partial', 'unpaid').
+     * @return void
+     */
     public function filterByPaymentStatus(string $status)
     {
         $this->paymentStatus = $status;
     }
 
+    /**
+     * Abre el modal de registro o edición rápida de un pago (señal o liquidación final) para un evento.
+     *
+     * @param int $eventId Identificador del evento.
+     * @param string $type Tipo de pago ('deposit' o 'final').
+     * @return void
+     */
     public function openQuickPayment(int $eventId, string $type = 'deposit')
     {
         $event = Event::with(['quotes', 'invoices'])->find($eventId);
@@ -133,12 +171,22 @@ class BillingManager extends Component
         $this->showQuickPaymentModal = true;
     }
 
+    /**
+     * Cierra el modal de pago rápido y limpia el identificador del evento activo.
+     *
+     * @return void
+     */
     public function closeQuickPaymentModal()
     {
         $this->showQuickPaymentModal = false;
         $this->quickEventId = null;
     }
 
+    /**
+     * Valida y guarda el pago rápido (señal o cobro final) del evento, generando o actualizando su recibo correspondiente.
+     *
+     * @return void
+     */
     public function saveQuickPayment()
     {
         $this->validate([
@@ -241,6 +289,12 @@ class BillingManager extends Component
         $this->closeQuickPaymentModal();
     }
 
+    /**
+     * Alterna el estado de una factura o recibo entre cobrado ('paid') y pendiente ('unpaid').
+     *
+     * @param int $invoiceId Identificador de la factura o recibo.
+     * @return void
+     */
     public function toggleInvoicePaid(int $invoiceId)
     {
         $invoice = Invoice::find($invoiceId);
@@ -252,6 +306,13 @@ class BillingManager extends Component
         session()->flash('message', "Documento {$invoice->invoice_number} marcado como " . ($newStatus === 'paid' ? 'COBRADO' : 'PENDIENTE') . ".");
     }
 
+    /**
+     * Actualiza el método de pago de una factura o recibo y lo sincroniza con el evento si corresponde a la señal.
+     *
+     * @param int $invoiceId Identificador de la factura o recibo.
+     * @param string $method Nuevo método de pago.
+     * @return void
+     */
     public function updateInvoicePaymentMethod(int $invoiceId, string $method)
     {
         if (!in_array($method, ['bizum', 'transfer', 'cash', 'card', 'other'], true)) {
@@ -274,6 +335,13 @@ class BillingManager extends Component
 
     // ==================== RESERVAS Y PAGOS A PROVEEDOR (FOTOMATÓN / 360º) ====================
 
+    /**
+     * Abre el modal para gestionar la reserva y pagos a proveedor externo de un evento.
+     *
+     * @param int|null $eventId Identificador del evento (o null para usar el más reciente).
+     * @param string $focusStep Paso inicial en el que enfocar ('deposit' o 'final').
+     * @return void
+     */
     public function openProviderModal(?int $eventId = null, string $focusStep = 'deposit')
     {
         \App\Models\EventProviderBooking::ensureTableExists();
@@ -292,6 +360,12 @@ class BillingManager extends Component
         $this->showProviderModal = true;
     }
 
+    /**
+     * Recarga los datos del proveedor en el modal cuando cambia el evento seleccionado.
+     *
+     * @param mixed $value Identificador del evento seleccionado.
+     * @return void
+     */
     public function updatedProvEventId($value)
     {
         if (!$value) {
@@ -303,6 +377,12 @@ class BillingManager extends Component
         }
     }
 
+    /**
+     * Actualiza el nombre del proveedor cuando se cambia la clave del proveedor seleccionado.
+     *
+     * @param mixed $value Clave del proveedor en el catálogo.
+     * @return void
+     */
     public function updatedProvKey($value)
     {
         $catalog = \App\Models\Setting::getPhotoboothProviders();
@@ -315,6 +395,13 @@ class BillingManager extends Component
         }
     }
 
+    /**
+     * Carga en las propiedades del modal la información de reserva y pagos a proveedor de un evento dado.
+     *
+     * @param Event $event Instancia del evento.
+     * @param string $focusStep Paso a destacar ('deposit' o 'final').
+     * @return void
+     */
     protected function loadEventIntoProviderModal(Event $event, string $focusStep = 'deposit'): void
     {
         $prov = $event->external_provider_summary;
@@ -350,6 +437,11 @@ class BillingManager extends Component
         $this->provNotes = (string) ($prov['notes'] ?? '');
     }
 
+    /**
+     * Sincroniza los servicios y precios del proveedor externo a partir de las líneas del presupuesto del evento.
+     *
+     * @return void
+     */
     public function syncProviderFromQuote()
     {
         if (!$this->provEventId) {
@@ -371,6 +463,11 @@ class BillingManager extends Component
         $this->provDetectedItemsText = (string) ($prov['detected_services_with_prices'] ?: ($prov['detected_services'] ?? ''));
     }
 
+    /**
+     * Calcula y rellena automáticamente el importe restante pendiente de pago al proveedor externo.
+     *
+     * @return void
+     */
     public function fillProviderRemaining()
     {
         $dep = $this->provDepositPaid ? (float) $this->provDepositAmount : 0.0;
@@ -381,11 +478,21 @@ class BillingManager extends Component
         }
     }
 
+    /**
+     * Cierra el modal de gestión de reserva a proveedor externo.
+     *
+     * @return void
+     */
     public function closeProviderModal()
     {
         $this->showProviderModal = false;
     }
 
+    /**
+     * Valida y guarda los datos de reserva y pagos realizados al proveedor externo para el evento seleccionado.
+     *
+     * @return void
+     */
     public function saveProviderBooking()
     {
         \App\Models\EventProviderBooking::ensureTableExists();
@@ -436,6 +543,12 @@ class BillingManager extends Component
         session()->flash('message', "📸 Reserva y pagos de Fotomatón / 360º actualizados en '{$event->name}'.");
     }
 
+    /**
+     * Elimina un registro de reserva a proveedor externo.
+     *
+     * @param int $bookingId Identificador de la reserva a proveedor.
+     * @return void
+     */
     public function deleteProviderBooking(int $bookingId)
     {
         \App\Models\EventProviderBooking::ensureTableExists();
@@ -446,6 +559,11 @@ class BillingManager extends Component
         }
     }
 
+    /**
+     * Obtiene el arreglo de filtros activos aplicados actualmente en el panel de facturación.
+     *
+     * @return array<string, mixed>
+     */
     public function getActiveFiltersProperty(): array
     {
         return [
@@ -465,6 +583,11 @@ class BillingManager extends Component
         ];
     }
 
+    /**
+     * Genera los datos del informe de facturación y renderiza la vista correspondiente.
+     *
+     * @return \Illuminate\Contracts\View\View
+     */
     public function render()
     {
         $report = BillingReportService::buildReportData($this->activeFilters);

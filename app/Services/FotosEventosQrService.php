@@ -8,10 +8,16 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Schema;
 
+/**
+ * Servicio de integración con la plataforma externa FotosEventosQR para crear, sincronizar y consultar álbumes de fotos compartidos mediante QR.
+ */
 class FotosEventosQrService
 {
     public const DEFAULT_BASE_URL = 'https://fotos.appinformaticas.com';
 
+    /**
+     * Obtiene la URL base normalizada del servicio FotosEventosQR.
+     */
     public static function getBaseUrl(): string
     {
         $url = trim((string) Setting::get('fotos_qr_base_url', self::DEFAULT_BASE_URL));
@@ -24,16 +30,25 @@ class FotosEventosQrService
         return rtrim($url, '/');
     }
 
+    /**
+     * Obtiene la clave API configurada para la integración con FotosEventosQR.
+     */
     public static function getApiKey(): string
     {
         return trim((string) Setting::get('fotos_qr_api_key', ''));
     }
 
+    /**
+     * Comprueba si la integración con FotosEventosQR dispone de clave API configurada.
+     */
     public static function isConfigured(): bool
     {
         return self::getApiKey() !== '';
     }
 
+    /**
+     * Construye la URL completa del endpoint de eventos de la API de FotosEventosQR.
+     */
     public static function endpointUrl(?string $baseUrl = null): string
     {
         $base = $baseUrl !== null && trim($baseUrl) !== ''

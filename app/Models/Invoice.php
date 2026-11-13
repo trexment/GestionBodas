@@ -5,6 +5,9 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * Modelo que representa una factura oficial o un recibo de pago vinculado a un evento.
+ */
 class Invoice extends Model
 {
     use HasFactory;
@@ -33,11 +36,17 @@ class Invoice extends Model
         'total' => 'decimal:2',
     ];
 
+    /**
+     * Relación con el evento al que corresponde la factura o recibo.
+     */
     public function event()
     {
         return $this->belongsTo(Event::class);
     }
 
+    /**
+     * Relación con el presupuesto del que procede la factura o recibo.
+     */
     public function quote()
     {
         return $this->belongsTo(Quote::class);

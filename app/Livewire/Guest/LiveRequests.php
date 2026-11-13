@@ -6,6 +6,9 @@ use Livewire\Component;
 use App\Models\Event;
 use App\Models\EventMusicRequest;
 
+/**
+ * Componente Livewire público para que los invitados soliciten y voten canciones en directo durante el evento.
+ */
 class LiveRequests extends Component
 {
     public $token;
@@ -20,12 +23,18 @@ class LiveRequests extends Component
     public $blacklistWarning = '';
     public $successMessage = '';
 
+    /**
+     * Inicializa el componente localizando el evento a partir del token público de invitados.
+     */
     public function mount($token)
     {
         $this->token = $token;
         $this->event = Event::where('guest_token', $token)->firstOrFail();
     }
 
+    /**
+     * Selecciona una canción de los resultados de búsqueda rellenando su título y artista.
+     */
     public function selectSong($title, $artist = '')
     {
         $this->song_title = $title;
@@ -34,6 +43,9 @@ class LiveRequests extends Component
         $this->blacklistWarning = '';
     }
 
+    /**
+     * Comprueba si la canción o el artista solicitado coincide con algún elemento de la lista negra del evento.
+     */
     public function checkBlacklist($title, $artist): bool
     {
         $blacklist = $this->event->musicRequests()->where('category', 'lista_negra')->get();
@@ -55,6 +67,9 @@ class LiveRequests extends Component
         return false;
     }
 
+    /**
+     * Valida y registra una nueva petición musical de un invitado aplicando límite de velocidad y filtro de lista negra.
+     */
     public function sendRequest()
     {
         $ip = request()->ip();
@@ -100,6 +115,9 @@ class LiveRequests extends Component
         $this->successMessage = '¡Petición enviada al DJ en cabina! Ya está en la lista de la fiesta.';
     }
 
+    /**
+     * Incrementa el contador de votos ("me gusta") de una petición musical evitando votos duplicados en la misma sesión.
+     */
     public function likeSong($requestId)
     {
         $likedSongs = session('liked_songs_' . $this->event->id, []);
@@ -115,6 +133,9 @@ class LiveRequests extends Component
         }
     }
 
+    /**
+     * Renderiza la vista de peticiones musicales en vivo con el listado ordenado por votos.
+     */
     public function render()
     {
         $guestRequests = $this->event->musicRequests()

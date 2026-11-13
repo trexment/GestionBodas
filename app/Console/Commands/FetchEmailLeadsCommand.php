@@ -5,6 +5,9 @@ namespace App\Console\Commands;
 use App\Services\ImapLeadFetcherService;
 use Illuminate\Console\Command;
 
+/**
+ * Comando de consola Artisan para escanear buzones IMAP y convertir correos entrantes de portales nupciales en eventos/leads.
+ */
 class FetchEmailLeadsCommand extends Command
 {
     /**

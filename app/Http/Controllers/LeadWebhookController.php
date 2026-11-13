@@ -13,6 +13,9 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
+/**
+ * Controlador para la recepción automática de leads desde formularios web externos vía webhook.
+ */
 class LeadWebhookController extends Controller
 {
     /**

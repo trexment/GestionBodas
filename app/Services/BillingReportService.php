@@ -7,6 +7,9 @@ use App\Models\Invoice;
 use Carbon\Carbon;
 use ZipArchive;
 
+/**
+ * Servicio encargado de generar informes de facturación, métricas financieras y exportaciones en Excel/CSV.
+ */
 class BillingReportService
 {
     /**
@@ -887,6 +890,9 @@ class BillingReportService
             . '</worksheet>';
     }
 
+    /**
+     * Convierte un índice numérico de columna (base 0) en su letra equivalente de hoja de cálculo (A, B, ..., AA).
+     */
     protected static function columnLetter(int $index): string
     {
         $letter = '';

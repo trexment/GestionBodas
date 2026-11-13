@@ -6,6 +6,9 @@ use Livewire\Component;
 use App\Models\Event;
 use App\Models\EventMusicRequest;
 
+/**
+ * Componente Livewire público para que los novios o anfitriones completen el cuestionario de preferencias musicales del evento.
+ */
 class EventForm extends Component
 {
     public $token;
@@ -28,6 +31,9 @@ class EventForm extends Component
     public $totalSavedSongs = 0;
     public $hasExistingData = false;
 
+    /**
+     * Inicializa el formulario localizando el evento por su token o slug público y cargando los datos previos.
+     */
     public function mount($token)
     {
         $this->token = $token;
@@ -38,6 +44,9 @@ class EventForm extends Component
         $this->loadExistingData();
     }
 
+    /**
+     * Carga las canciones y observaciones previamente guardadas en el evento para rellenar el formulario.
+     */
     protected function loadExistingData()
     {
         $requests = $this->event->musicRequests()->orderBy('order', 'asc')->get();
@@ -142,6 +151,9 @@ class EventForm extends Component
         }
     }
 
+    /**
+     * Desglosa una cadena de texto de canción en formato "Artista - Título" en sus componentes individuales.
+     */
     protected function parseSong($str)
     {
         $str = trim($str, " \t\n\r\0\x0B-*•");
@@ -160,6 +172,9 @@ class EventForm extends Component
         ];
     }
 
+    /**
+     * Procesa y guarda las preferencias musicales del cliente, actualiza el dossier del evento y notifica a los administradores.
+     */
     public function submitForm()
     {
         if ($this->event->is_dossier_completed) {
@@ -507,11 +522,17 @@ class EventForm extends Component
         }
     }
 
+    /**
+     * Cierra el modal de confirmación tras haber guardado el cuestionario musical.
+     */
     public function closeSuccessModal()
     {
         $this->showSuccessModal = false;
     }
 
+    /**
+     * Renderiza la vista del cuestionario musical del evento.
+     */
     public function render()
     {
         return view('livewire.guest.event-form')->layout('components.layouts.guest');

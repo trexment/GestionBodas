@@ -6,6 +6,9 @@ use App\Models\Setting;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
+/**
+ * Servicio centralizado de notificaciones internas de la aplicación y alertas por correo para administradores.
+ */
 class AppNotificationService
 {
     public const SETTING_KEY = 'app_admin_notifications';

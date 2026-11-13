@@ -14,6 +14,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
+/**
+ * Controlador de webhook para recibir y procesar mensajes de WhatsApp en tiempo real desde Evolution API.
+ */
 class WhatsAppWebhookController extends Controller
 {
     /**

@@ -11,6 +11,9 @@ use App\Models\Setting;
 use App\Services\CloudMusicStorageService;
 use App\Services\MusicSearchService;
 
+/**
+ * Componente Livewire para la gestión de la biblioteca musical, sincronización con Google Drive, listas de reproducción y rankings Top Charts.
+ */
 class MusicManager extends Component
 {
     use WithPagination;
@@ -59,11 +62,23 @@ class MusicManager extends Component
         'topChartType' => ['except' => 'spain_top50'],
     ];
 
+    /**
+     * Establece el tipo de listado de éxitos (Top Charts) activo.
+     *
+     * @param string $type Identificador del ranking musical.
+     * @return void
+     */
     public function setTopChartType($type)
     {
         $this->topChartType = $type;
     }
 
+    /**
+     * Añade una canción del ranking de éxitos a la biblioteca musical general según su posición en la lista.
+     *
+     * @param int $index Índice de la canción en el listado Top Charts.
+     * @return void
+     */
     public function addTopTrackByIndex(int $index)
     {
         $topTracks = MusicSearchService::getTopCharts($this->topChartType, 50);
@@ -82,6 +97,12 @@ class MusicManager extends Component
         );
     }
 
+    /**
+     * Añade una canción del ranking de éxitos directamente a la escaleta del evento seleccionado mediante su índice.
+     *
+     * @param int $index Índice de la canción en el listado Top Charts.
+     * @return void
+     */
     public function addTopTrackToEventByIndex(int $index)
     {
         if (empty($this->selectedEventForTopTrack)) {
@@ -104,6 +125,18 @@ class MusicManager extends Component
         );
     }
 
+    /**
+     * Registra una canción procedente de Top Charts en el catálogo musical si no existe previamente.
+     *
+     * @param string $title Título de la canción.
+     * @param string $artist Artista de la canción.
+     * @param string $coverUrl URL de la portada.
+     * @param string $spotifyUrl Enlace a Spotify.
+     * @param string $appleUrl Enlace a Apple Music.
+     * @param string $youtubeUrl Enlace a YouTube.
+     * @param string $previewUrl URL de preescucha.
+     * @return void
+     */
     public function addTopTrackToLibrary($title, $artist, $coverUrl = '', $spotifyUrl = '', $appleUrl = '', $youtubeUrl = '', $previewUrl = '')
     {
         // Check if track already exists
@@ -127,6 +160,18 @@ class MusicManager extends Component
         session()->flash('top_message', "✅ '{$title}' de {$artist} añadida a tu catálogo musical.");
     }
 
+    /**
+     * Crea una petición musical en el evento indicado a partir de una canción de Top Charts.
+     *
+     * @param string $title Título de la canción.
+     * @param string $artist Artista de la canción.
+     * @param int|string $eventId Identificador del evento destino.
+     * @param string $spotifyUrl Enlace a Spotify.
+     * @param string $appleUrl Enlace a Apple Music.
+     * @param string $youtubeUrl Enlace a YouTube.
+     * @param string $previewUrl URL de preescucha.
+     * @return void
+     */
     public function addTopTrackToEvent($title, $artist, $eventId, $spotifyUrl = '', $appleUrl = '', $youtubeUrl = '', $previewUrl = '')
     {
         if (empty($eventId)) {
@@ -159,32 +204,62 @@ class MusicManager extends Component
         session()->flash('top_message', "✨ '{$title}' añadida a la escaleta del evento '{$event->name}'.");
     }
 
+    /**
+     * Reinicia la paginación cuando se modifica el texto de búsqueda en la biblioteca.
+     *
+     * @return void
+     */
     public function updatingSearch()
     {
         $this->resetPage();
     }
 
+    /**
+     * Reinicia la paginación cuando se modifica el filtro de origen de las pistas.
+     *
+     * @return void
+     */
     public function updatingSourceFilter()
     {
         $this->resetPage();
     }
 
+    /**
+     * Reinicia la paginación cuando se modifica el filtro de carpeta en la nube.
+     *
+     * @return void
+     */
     public function updatingFolderFilter()
     {
         $this->resetPage();
     }
 
+    /**
+     * Inicializa el componente cargando las listas de reproducción y eventos disponibles.
+     *
+     * @return void
+     */
     public function mount()
     {
         $this->loadPlaylistsAndEvents();
     }
 
+    /**
+     * Obtiene todas las playlists con su evento asociado y el listado de eventos ordenados por fecha.
+     *
+     * @return void
+     */
     public function loadPlaylistsAndEvents()
     {
         $this->playlists = Playlist::with('event')->orderBy('name', 'asc')->get();
         $this->events = Event::orderBy('event_date', 'desc')->get();
     }
 
+    /**
+     * Sincroniza la biblioteca maestra de música con la carpeta configurada en Google Drive.
+     *
+     * @return void
+     */
     public function syncDrive()
     {
         $folderUrlOrId = Setting::get('google_drive_library_folder', '');
@@ -206,6 +281,11 @@ class MusicManager extends Component
         $this->resetPage();
     }
 
+    /**
+     * Valida y guarda una nueva pista musical en el catálogo resolviendo automáticamente sus enlaces de streaming.
+     *
+     * @return void
+     */
     public function saveTrack()
     {
         $this->validate([
@@ -236,12 +316,23 @@ class MusicManager extends Component
         session()->flash('track_message', 'Canción añadida al catálogo con enlaces sincronizados.');
     }
 
+    /**
+     * Elimina una canción del catálogo musical por su identificador.
+     *
+     * @param int|string $id Identificador de la pista a eliminar.
+     * @return void
+     */
     public function deleteTrack($id)
     {
         Track::destroy($id);
         session()->flash('track_message', 'Canción eliminada del catálogo.');
     }
 
+    /**
+     * Valida y crea una nueva lista de reproducción, vinculándola opcionalmente a un evento.
+     *
+     * @return void
+     */
     public function savePlaylist()
     {
         $this->validate([
@@ -259,12 +350,23 @@ class MusicManager extends Component
         session()->flash('playlist_message', 'Playlist creada exitosamente.');
     }
 
+    /**
+     * Abre la vista de gestión de canciones de una playlist específica.
+     *
+     * @param int|string $id Identificador de la playlist.
+     * @return void
+     */
     public function managePlaylist($id)
     {
         $this->activePlaylist = Playlist::with('tracks')->find($id);
         $this->activeTab = 'manage_playlist';
     }
 
+    /**
+     * Busca pistas en el catálogo local para añadirlas a la playlist activa.
+     *
+     * @return void
+     */
     public function searchTracksToAdd()
     {
         if (strlen($this->searchTrack) > 1) {
@@ -277,6 +379,12 @@ class MusicManager extends Component
         }
     }
 
+    /**
+     * Asocia una pista musical a la playlist activa si aún no forma parte de ella.
+     *
+     * @param int|string $trackId Identificador de la pista musical.
+     * @return void
+     */
     public function addTrackToPlaylist($trackId)
     {
         if ($this->activePlaylist && !$this->activePlaylist->tracks->contains($trackId)) {
@@ -287,6 +395,12 @@ class MusicManager extends Component
         $this->searchResults = [];
     }
 
+    /**
+     * Desvincula una pista musical de la playlist activa.
+     *
+     * @param int|string $trackId Identificador de la pista musical.
+     * @return void
+     */
     public function removeTrackFromPlaylist($trackId)
     {
         if ($this->activePlaylist) {
@@ -295,6 +409,11 @@ class MusicManager extends Component
         }
     }
 
+    /**
+     * Regresa desde el editor de una playlist al listado general de listas de reproducción.
+     *
+     * @return void
+     */
     public function backToPlaylists()
     {
         $this->activePlaylist = null;
@@ -302,6 +421,11 @@ class MusicManager extends Component
         $this->loadPlaylistsAndEvents();
     }
 
+    /**
+     * Filtra y pagina las canciones del catálogo y renderiza la vista del gestor musical.
+     *
+     * @return \Illuminate\Contracts\View\View
+     */
     public function render()
     {
         $query = Track::query();

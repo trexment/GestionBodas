@@ -11,6 +11,9 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
+/**
+ * Servicio de lectura de buzones IMAP para la captación e importación automática de leads desde portales nupciales y formularios de contacto.
+ */
 class ImapLeadFetcherService
 {
     /**
@@ -1254,6 +1257,9 @@ class ImapLeadFetcherService
         return ['type' => 'socket', 'stream' => $socket];
     }
 
+    /**
+     * Envía un comando IMAP a través de un socket SSL directo y devuelve las líneas de respuesta del servidor.
+     */
     protected function sendSocketCmd($socket, string $cmd): array
     {
         fwrite($socket, $cmd . "\r\n");
@@ -1277,6 +1283,9 @@ class ImapLeadFetcherService
         return $lines;
     }
 
+    /**
+     * Obtiene el cuerpo del mensaje de correo usando las funciones nativas de la extensión IMAP de PHP.
+     */
     protected function getNativeBody($stream, int $msgNumber): string
     {
         $peeks = defined('FT_PEEK') ? FT_PEEK : 0;
@@ -1290,6 +1299,9 @@ class ImapLeadFetcherService
         return (string)$body;
     }
 
+    /**
+     * Decodifica una cabecera MIME codificada (RFC 2047) a texto UTF-8 legible.
+     */
     protected function decodeMimeHeader(string $str): string
     {
         if (function_exists('imap_mime_header_decode')) {
@@ -1322,6 +1334,9 @@ class ImapLeadFetcherService
         return $str;
     }
 
+    /**
+     * Extrae el valor de una cabecera específica a partir del bloque de cabeceras en bruto de un correo.
+     */
     protected function extractHeaderValue(string $raw, string $headerName): ?string
     {
         if (preg_match('/^' . preg_quote($headerName, '/') . ':\s*(.+)$/mi', $raw, $m)) {
@@ -1330,6 +1345,9 @@ class ImapLeadFetcherService
         return null;
     }
 
+    /**
+     * Analiza una cabecera From para separar el nombre visible y la dirección de correo electrónico.
+     */
     protected function parseFromHeader(string $fromRaw): array
     {
         $name = '';
@@ -1347,6 +1365,9 @@ class ImapLeadFetcherService
         ];
     }
 
+    /**
+     * Devuelve el nombre comercial legible correspondiente al identificador de marca indicado.
+     */
     protected function getBrandDisplayName(string $brandKey): string
     {
         return match($brandKey) {

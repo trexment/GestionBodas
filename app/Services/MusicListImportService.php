@@ -6,6 +6,9 @@ use App\Models\Event;
 use App\Models\EventMusicRequest;
 use Illuminate\Support\Facades\Log;
 
+/**
+ * Servicio para procesar e importar listas de canciones a partir de texto libre, mensajes de WhatsApp, CSV o documentos.
+ */
 class MusicListImportService
 {
     /**

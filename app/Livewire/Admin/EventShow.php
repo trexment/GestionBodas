@@ -13,6 +13,11 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use App\Livewire\Traits\HandlesDniValidation;
 
+/**
+ * Componente Livewire principal para la gestión integral de la ficha de un evento en el panel de administración.
+ * Centraliza presupuestos, contratos, facturas/recibos, comunicaciones (WhatsApp/Email), horarios, dossier,
+ * inventario de material, proveedores externos (Fotomatón/360º), escaleta musical, historial DJ, álbum QR y citas.
+ */
 class EventShow extends Component
 {
     use WithFileUploads;
@@ -280,6 +285,10 @@ class EventShow extends Component
     public ?array $photoQrLiveStats = null;
     public int $photoQrPosterKey = 0;
 
+    /**
+     * Verifica en cada petición de Livewire que el usuario autenticado tenga permisos sobre el evento
+     * (administrador, DJ asignado o asistente asignado).
+     */
     public function boot()
     {
         if ($this->event && auth()->check()) {
@@ -299,6 +308,10 @@ class EventShow extends Component
         }
     }
 
+    /**
+     * Inicializa el componente cargando el evento con todas sus relaciones, sincronizando datos
+     * automáticos (teléfono de finca, correos de leads, horarios, precios de ajustes y último presupuesto).
+     */
     public function mount(Event $event)
     {
         $user = auth()->user();
@@ -470,6 +483,10 @@ class EventShow extends Component
         }
     }
 
+    /**
+     * Carga desde Ajustes las tarifas, horas y descripciones predeterminadas de packs y servicios
+     * adaptándolas al tipo de evento, marca comercial (incluyendo Mago Leugim) y proveedor de fotomatón.
+     */
     public function loadSettingsPrices()
     {
         // Packs
@@ -717,6 +734,9 @@ class EventShow extends Component
     public $cancellation_target_status = 'rejected';
     public $cancellation_reason_input = '';
 
+    /**
+     * Abre el modal para confirmar el rechazo o cancelación del evento precargando el motivo actual si existe.
+     */
     public function openCancellationModal(string $targetStatus = 'rejected')
     {
         $this->cancellation_target_status = in_array($targetStatus, ['rejected', 'cancelled']) ? $targetStatus : 'rejected';
@@ -724,16 +744,26 @@ class EventShow extends Component
         $this->showCancellationModal = true;
     }
 
+    /**
+     * Asigna un motivo rápido predefinido en el campo de razón de rechazo o cancelación del evento.
+     */
     public function setPresetCancellationReason(string $reason)
     {
         $this->cancellation_reason_input = $reason;
     }
 
+    /**
+     * Cierra el modal de confirmación de rechazo o cancelación del evento.
+     */
     public function closeCancellationModal()
     {
         $this->showCancellationModal = false;
     }
 
+    /**
+     * Registra el cambio de estado del evento a rechazado o cancelado junto con el motivo indicado
+     * y añade una entrada de auditoría en las notas del evento.
+     */
     public function confirmCancellationStatus()
     {
         $reason = trim((string)$this->cancellation_reason_input);
@@ -778,6 +808,10 @@ class EventShow extends Component
         session()->flash('message', "📌 Estado actualizado a {$statusText}. Motivo registrado: {$reason}");
     }
 
+    /**
+     * Actualiza el estado general del evento o abre el modal correspondiente cuando requiere datos adicionales
+     * (cobro de señal al confirmar, liquidación final al completar o motivo al rechazar/cancelar).
+     */
     public function changeStatus($status)
     {
         if ($status === 'confirmed') {
@@ -848,6 +882,10 @@ class EventShow extends Component
     public $confirmingFollowupSubject = '';
     public $confirmingFollowupMailtoUrl = '';
 
+    /**
+     * Abre el modal de seguimiento comercial cargando las plantillas disponibles y seleccionando
+     * la plantilla recomendada según los días sin respuesta del evento.
+     */
     public function promptFollowupFromShow(?string $templateKey = null)
     {
         $this->confirmingFollowupEmail = $this->event->client_contact_email ?: $this->email_chat_to;
@@ -857,6 +895,9 @@ class EventShow extends Component
         $this->showConfirmFollowupModal = true;
     }
 
+    /**
+     * Selecciona una plantilla de seguimiento en el modal y prepara su texto, asunto y enlaces de envío.
+     */
     public function selectFollowupTemplateFromShow(string $key)
     {
         $this->confirmingFollowupSelectedKey = $key;
@@ -873,6 +914,9 @@ class EventShow extends Component
         }
     }
 
+    /**
+     * Recalcula el enlace mailto de seguimiento cuando se modifica la dirección de correo del destinatario.
+     */
     public function updatedConfirmingFollowupEmail($value)
     {
         $this->confirmingFollowupMailtoUrl = \App\Services\WhatsAppTemplateService::buildMailtoUrl(
@@ -882,6 +926,9 @@ class EventShow extends Component
         );
     }
 
+    /**
+     * Recalcula el enlace mailto de seguimiento cuando se modifica el asunto del correo.
+     */
     public function updatedConfirmingFollowupSubject($value)
     {
         $this->confirmingFollowupMailtoUrl = \App\Services\WhatsAppTemplateService::buildMailtoUrl(
@@ -891,6 +938,10 @@ class EventShow extends Component
         );
     }
 
+    /**
+     * Registra manualmente que se ha enviado un seguimiento al cliente, anotándolo en el historial
+     * del evento y reiniciando el contador de días sin respuesta.
+     */
     public function confirmFollowupSentFromShow()
     {
         $templateName = $this->confirmingFollowupOptions[$this->confirmingFollowupSelectedKey]['title'] ?? 'Seguimiento Madrigal';
@@ -905,6 +956,10 @@ class EventShow extends Component
         session()->flash('message', "¡Seguimiento registrado! ({$templateName}). El contador se ha reseteado a 0.");
     }
 
+    /**
+     * Envía directamente el mensaje de seguimiento seleccionado por WhatsApp (vía Evolution API o enlace manual)
+     * y reinicia el contador de días sin respuesta del evento.
+     */
     public function sendDirectFollowupFromShow()
     {
         $phone = $this->event->client ? $this->event->client->phone : $this->event->partner_phone;
@@ -948,6 +1003,10 @@ class EventShow extends Component
         }
     }
 
+    /**
+     * Envía el mensaje de seguimiento al cliente por correo electrónico, lo registra en el historial
+     * de conversación del evento y actualiza el email del cliente si no tenía uno válido.
+     */
     public function sendDirectEmailFromShow()
     {
         $toEmail = strtolower(trim((string)($this->confirmingFollowupEmail ?: $this->event->client_contact_email)));
@@ -996,17 +1055,27 @@ class EventShow extends Component
         session()->flash('whatsapp_success', $result['message']);
     }
 
+    /**
+     * Cierra el modal de seguimiento y cambia el estado del evento tras recibir respuesta del cliente.
+     */
     public function markAsRespondedFromShow(string $newStatus = 'draft')
     {
         $this->showConfirmFollowupModal = false;
         $this->changeStatus($newStatus);
     }
 
+    /**
+     * Cierra el modal de confirmación de seguimiento sin realizar cambios.
+     */
     public function cancelFollowupFromShow()
     {
         $this->showConfirmFollowupModal = false;
     }
 
+    /**
+     * Cambia la categoría o tipo del evento (boda, comunión, empresa, cumpleaños, vídeo, etc.)
+     * y recarga las tarifas y textos adaptados si no se está editando un presupuesto existente.
+     */
     public function changeEventType($type)
     {
         if ($type === 'video' && !\App\Models\Setting::isVideoServiceEnabled($this->event->brand_clean)) {
@@ -1021,6 +1090,10 @@ class EventShow extends Component
         session()->flash('message', "Tipo de evento actualizado a: {$this->event->event_type_label} (formularios y tarifas adaptados)");
     }
 
+    /**
+     * Cambia la marca comercial asignada al evento (Núñez & Son, JAVNX DJ o Mago Leugim)
+     * y adapta los servicios y precios del configurador.
+     */
     public function changeBrand($brand)
     {
         $update = ['brand' => $brand];
@@ -1036,6 +1109,10 @@ class EventShow extends Component
         session()->flash('message', "Marca comercial del evento cambiada a: {$brandLabel} (servicios y tarifas adaptados)");
     }
 
+    /**
+     * Elimina permanentemente el evento y todas sus entidades relacionadas (presupuestos, facturas,
+     * contratos, dossiers, música, mensajes y material asignado), restringido solo a administradores.
+     */
     public function deleteEvent()
     {
         if (auth()->user()->role !== 'admin') {
@@ -1071,6 +1148,10 @@ class EventShow extends Component
         return redirect()->route('admin.events');
     }
 
+    /**
+     * Abre el modal para registrar el cobro de la señal o reserva del evento, sugiriendo el importe
+     * estipulado en la última propuesta comercial si aún no se había registrado un pago.
+     */
     public function openDepositModal(string $targetStatus = 'confirmed')
     {
         $this->target_status = $targetStatus;
@@ -1107,11 +1188,18 @@ class EventShow extends Component
         $this->showDepositModal = true;
     }
 
+    /**
+     * Cierra el modal de registro de cobro de señal o reserva.
+     */
     public function closeDepositModal()
     {
         $this->showDepositModal = false;
     }
 
+    /**
+     * Guarda los datos de la señal cobrada, actualiza el estado del evento (por defecto a confirmado)
+     * y genera o actualiza automáticamente el recibo de pago correspondiente si procede.
+     */
     public function saveDepositAndStatus()
     {
         $this->validate([
@@ -1191,6 +1279,9 @@ class EventShow extends Component
         session()->flash('message', "✅ Evento actualizado a '" . ucfirst($this->event->status) . "' y señal de " . number_format($amount, 2, ',', '.') . " € registrada correctamente.");
     }
 
+    /**
+     * Restablece a cero los datos de señal pagada en el evento.
+     */
     public function removeDeposit()
     {
         $this->event->update([
@@ -1207,6 +1298,10 @@ class EventShow extends Component
         session()->flash('message', "ℹ️ Datos de la señal de reserva reseteados.");
     }
 
+    /**
+     * Abre el modal de liquidación final del evento calculando automáticamente el importe pendiente
+     * de cobro respecto al último presupuesto y los pagos ya realizados.
+     */
     public function openFinalPaymentModal()
     {
         $latestQuote = $this->event->quotes()->latest()->first();
@@ -1225,11 +1320,18 @@ class EventShow extends Component
         $this->showFinalPaymentModal = true;
     }
 
+    /**
+     * Cierra el modal de liquidación y cobro final del evento.
+     */
     public function closeFinalPaymentModal()
     {
         $this->showFinalPaymentModal = false;
     }
 
+    /**
+     * Registra el cobro de la liquidación final, marca el evento como completado y emite
+     * automáticamente el recibo justificante si la opción está activada.
+     */
     public function saveFinalPaymentAndComplete()
     {
         $this->validate([
@@ -1285,6 +1387,10 @@ class EventShow extends Component
         session()->flash('message', "🎉 Evento marcado como 'Completado' y cobro final de " . number_format($amount, 2, ',', '.') . " € registrado correctamente con recibo.");
     }
 
+    /**
+     * Abre el modal de gestión de reserva y pagos a la empresa proveedora externa (Fotomatón / Plataforma 360º),
+     * precargando los servicios detectados en el presupuesto y los pagos de señal o liquidación.
+     */
     public function openProviderBookingModal(string $focusStep = 'deposit')
     {
         \App\Models\EventProviderBooking::ensureTableExists();
@@ -1320,6 +1426,10 @@ class EventShow extends Component
         $this->showProviderBookingModal = true;
     }
 
+    /**
+     * Sincroniza en el formulario del proveedor externo los servicios y precios de fotomatón/360º
+     * detectados en las propuestas comerciales del evento.
+     */
     public function syncProviderFromQuoteInEvent()
     {
         $this->event->load('quotes.items');
@@ -1335,6 +1445,9 @@ class EventShow extends Component
         $this->prov_detected_items_text = (string) ($prov['detected_services_with_prices'] ?: ($prov['detected_services'] ?? ''));
     }
 
+    /**
+     * Actualiza automáticamente el nombre del proveedor externo cuando se cambia su clave en el selector.
+     */
     public function updatedProvKey($value)
     {
         $catalog = \App\Models\Setting::getPhotoboothProviders();
@@ -1347,6 +1460,10 @@ class EventShow extends Component
         }
     }
 
+    /**
+     * Calcula y rellena automáticamente el importe pendiente de pago final al proveedor externo
+     * descontando la señal ya abonada del coste total.
+     */
     public function fillProviderRemainingInEvent()
     {
         $dep = $this->prov_deposit_paid ? (float) $this->prov_deposit_amount : 0.0;
@@ -1357,11 +1474,18 @@ class EventShow extends Component
         }
     }
 
+    /**
+     * Cierra el modal de reserva y pagos al proveedor externo de Fotomatón / 360º.
+     */
     public function closeProviderBookingModal()
     {
         $this->showProviderBookingModal = false;
     }
 
+    /**
+     * Valida y guarda el registro de reserva, costes y pagos (señal y liquidación) realizados
+     * al proveedor externo de Fotomatón / Plataforma 360º asociado al evento.
+     */
     public function saveProviderBookingFromEvent()
     {
         \App\Models\EventProviderBooking::ensureTableExists();
@@ -1408,6 +1532,9 @@ class EventShow extends Component
         session()->flash('message', "📸 Reserva y pagos al proveedor de Fotomatón / 360º guardados correctamente.");
     }
 
+    /**
+     * Abre el modal de asignación de personal técnico cargando el DJ titular y los asistentes actuales.
+     */
     public function openStaffModal()
     {
         $this->assigned_dj_id = $this->event->dj_id;
@@ -1416,6 +1543,9 @@ class EventShow extends Component
         $this->showStaffModal = true;
     }
 
+    /**
+     * Guarda la asignación del DJ responsable y sincroniza la lista de asistentes técnicos del evento.
+     */
     public function saveStaff()
     {
         if (!\Illuminate\Support\Facades\Schema::hasTable('event_assistants')) {
@@ -1451,6 +1581,10 @@ class EventShow extends Component
         session()->flash('message', 'Personal asignado (DJ y Asistentes) actualizado correctamente.');
     }
 
+    /**
+     * Abre el modal de edición de datos del cliente principal y de su pareja, validando
+     * el formato de los DNI/NIE si están presentes.
+     */
     public function openClientModal()
     {
         $this->resetValidation();
@@ -1501,16 +1635,26 @@ class EventShow extends Component
         $this->showClientModal = true;
     }
 
+    /**
+     * Valida y autocompleta la letra del DNI/NIE del cliente principal al modificar el campo.
+     */
     public function updatedClientEditDni($value)
     {
         $this->validateAndCompleteDni('client_edit_dni', $value);
     }
 
+    /**
+     * Valida y autocompleta la letra del DNI/NIE de la pareja o segundo titular al modificar el campo.
+     */
     public function updatedPartnerEditDni($value)
     {
         $this->validateAndCompleteDni('partner_edit_dni', $value);
     }
 
+    /**
+     * Carga en el formulario los datos personales y de facturación cuando se selecciona un cliente existente,
+     * o limpia los campos si se opta por crear uno nuevo.
+     */
     public function updatedSelectedClientId($value)
     {
         if (!empty($value)) {
@@ -1548,6 +1692,9 @@ class EventShow extends Component
         }
     }
 
+    /**
+     * Autocompleta la localidad y provincia del cliente a partir del código postal introducido.
+     */
     public function updatedClientEditPostalCode($value)
     {
         $lookup = \App\Services\PostalCodeService::lookup($value);
@@ -1559,6 +1706,10 @@ class EventShow extends Component
         }
     }
 
+    /**
+     * Crea o actualiza la ficha del usuario cliente (con rol client) y guarda los datos
+     * del segundo titular/pareja vinculados al evento.
+     */
     public function saveClientDetails()
     {
         // Auto-migrar si la columna partner_name no existe todavía
@@ -1675,6 +1826,9 @@ class EventShow extends Component
         }
     }
 
+    /**
+     * Desvincula el usuario cliente actualmente asociado al evento sin eliminar su cuenta.
+     */
     public function unlinkClient()
     {
         $this->event->update(['client_id' => null]);
@@ -1683,6 +1837,9 @@ class EventShow extends Component
         session()->flash('message', 'Cliente desvinculado del evento.');
     }
 
+    /**
+     * Guarda el contenido del dossier técnico/musical del evento y su estado de finalización.
+     */
     public function saveDossier()
     {
         $this->event->update(['is_dossier_completed' => $this->is_dossier_completed]);
@@ -1696,6 +1853,9 @@ class EventShow extends Component
         session()->flash('dossier_message', 'Dossier guardado correctamente.');
     }
 
+    /**
+     * Alterna el bloqueo del cuestionario/dossier del evento para impedir o permitir ediciones por parte del cliente.
+     */
     public function toggleDossierStatus()
     {
         $this->is_dossier_completed = !$this->is_dossier_completed;
@@ -1705,6 +1865,10 @@ class EventShow extends Component
     }
 
     // Material / Hoja de Carga Methods
+    /**
+     * Añade un equipo del inventario a la hoja de carga del evento o incrementa su cantidad
+     * si ya estaba asignado, permitiendo marcarlo como importante.
+     */
     public function addEquipment()
     {
         $this->validate([
@@ -1744,6 +1908,10 @@ class EventShow extends Component
         session()->flash('equipment_message', 'Material añadido al evento correctamente.');
     }
 
+    /**
+     * Marca o desmarca una línea de material asignado al evento como importante para destacarla
+     * en el resumen, dossier y hoja de carga.
+     */
     public function toggleEquipmentImportant($pivotId)
     {
         $item = DB::table('event_equipment')->where('event_id', $this->event->id)->where('id', $pivotId)->first();
@@ -1780,6 +1948,10 @@ class EventShow extends Component
     // ==========================================
     // COSAS IMPORTANTES / COMPRAS / PREPARACIÓN
     // ==========================================
+    /**
+     * Añade una nueva nota importante, compra pendiente o aviso de preparación al evento
+     * y la sincroniza con el dossier y la hoja de carga.
+     */
     public function addImportantItem(?string $forcedCategory = null)
     {
         $text = trim($this->new_important_text);
@@ -1807,6 +1979,9 @@ class EventShow extends Component
         session()->flash('important_message', '✅ Nota importante añadida y sincronizada con Dossier y Hoja de Carga.');
     }
 
+    /**
+     * Alterna el estado de completado/pendiente de un elemento de la lista de cosas importantes del evento.
+     */
     public function toggleImportantItemDone(string $itemId)
     {
         $items = $this->event->important_items;
@@ -1820,6 +1995,9 @@ class EventShow extends Component
         $this->event->saveImportantItems($items);
     }
 
+    /**
+     * Activa o desactiva la visibilidad de una nota importante dentro del dossier y la hoja de carga.
+     */
     public function toggleImportantItemDossier(string $itemId)
     {
         $items = $this->event->important_items;
@@ -1833,6 +2011,9 @@ class EventShow extends Component
         $this->event->saveImportantItems($items);
     }
 
+    /**
+     * Elimina un elemento de la lista de notas importantes y compras pendientes del evento.
+     */
     public function deleteImportantItem(string $itemId)
     {
         $items = array_values(array_filter(
@@ -1843,6 +2024,10 @@ class EventShow extends Component
         session()->flash('important_message', 'Nota importante eliminada.');
     }
 
+    /**
+     * Convierte los apuntes y el resumen de una reunión con los clientes en una alerta
+     * dentro de la sección de Cosas Importantes, Dossier y Hoja de Carga.
+     */
     public function promoteMeetingToImportant(int $meetingId)
     {
         $meeting = $this->event->meetings()->find($meetingId);
@@ -1894,6 +2079,10 @@ class EventShow extends Component
         session()->flash('meeting_message', '📌 Apunte añadido a Cosas Importantes, Dossier y Hoja de Carga.');
     }
 
+    /**
+     * Inserta o adjunta en el texto del dossier un bloque formateado con todas las alertas,
+     * compras y materiales especiales marcados como importantes.
+     */
     public function appendImportantAlertsToDossierText()
     {
         $alerts = $this->event->dossier_and_packing_important_alerts;
@@ -2146,6 +2335,10 @@ class EventShow extends Component
         session()->flash('quote_message', "🎪 Promo «{$fairName}» aplicada en este presupuesto: se ha subido la tarifa mostrada (+{$discountToApply} €) y añadido la línea de Descuento Especial (-{$discountToApply} €). Tus precios generales siguen intactos.");
     }
 
+    /**
+     * Modifica la cantidad asignada de un material en la hoja de carga del evento,
+     * eliminándolo si la cantidad resultante es menor o igual a cero.
+     */
     public function updateEquipmentQuantity($pivotId, $amount)
     {
         $item = DB::table('event_equipment')->where('event_id', $this->event->id)->where('id', $pivotId)->first();
@@ -2163,6 +2356,9 @@ class EventShow extends Component
         }
     }
 
+    /**
+     * Elimina un elemento de equipamiento de la hoja de carga del evento.
+     */
     public function removeEquipment($pivotId)
     {
         DB::table('event_equipment')->where('event_id', $this->event->id)->where('id', $pivotId)->delete();
@@ -2170,6 +2366,9 @@ class EventShow extends Component
         session()->flash('equipment_message', 'Material eliminado del evento.');
     }
 
+    /**
+     * Ejecuta la búsqueda autocompletada de canciones en el catálogo musical cuando el texto supera los 2 caracteres.
+     */
     public function updatedMusicSearchQuery()
     {
         if (strlen(trim($this->musicSearchQuery)) >= 2) {
@@ -2179,6 +2378,10 @@ class EventShow extends Component
         }
     }
 
+    /**
+     * Rellena el formulario de petición musical con los metadatos, enlaces de plataformas
+     * y preescucha de la canción seleccionada en el buscador.
+     */
     public function selectTrackFromSearch($track)
     {
         $this->req_title = $track['title'] ?? '';
@@ -2196,6 +2399,9 @@ class EventShow extends Component
         $this->musicSearchQuery = '';
     }
 
+    /**
+     * Abre el modal para añadir una nueva canción a la escaleta musical o editar una petición existente.
+     */
     public function openSongModal($songId = null)
     {
         $this->resetValidation();
@@ -2239,6 +2445,9 @@ class EventShow extends Component
         $this->showSongModal = true;
     }
 
+    /**
+     * Desvincula el archivo de audio local o remoto asociado a la canción en edición.
+     */
     public function removeExistingAudioFile()
     {
         $this->existing_audio_file = null;
@@ -2250,6 +2459,9 @@ class EventShow extends Component
         session()->flash('music_modal_message', '🗑️ Archivo de audio eliminado. Ahora se reproducirá mediante Spotify / Apple Music / YouTube.');
     }
 
+    /**
+     * Ajusta automáticamente el momento sugerido del evento al cambiar la categoría musical en una nueva canción.
+     */
     public function updatedReqCategory($val)
     {
         if (!$this->editingSongId) {
@@ -2265,6 +2477,10 @@ class EventShow extends Component
         }
     }
 
+    /**
+     * Busca y autocompleta los enlaces de Spotify, Apple Music, YouTube y preescucha para la canción
+     * actualmente en edición dentro del modal.
+     */
     public function autoFillTrackLinks()
     {
         if (empty($this->req_title)) {
@@ -2288,6 +2504,10 @@ class EventShow extends Component
         session()->flash('music_modal_message', '✨ Enlaces de Spotify, Apple Music y YouTube completados.');
     }
 
+    /**
+     * Recorre todas las canciones de la escaleta del evento para resolver y actualizar automáticamente
+     * sus enlaces a plataformas de streaming y preescuchas.
+     */
     public function autoResolveAllMusicLinks()
     {
         $songs = $this->event->musicRequests;
@@ -2326,6 +2546,9 @@ class EventShow extends Component
         session()->flash('music_message', "✨ Se han verificado y corregido los enlaces y preescuchas de {$updatedCount} canciones.");
     }
 
+    /**
+     * Recalcula y corrige los enlaces de streaming y el archivo de preescucha para una canción concreta del evento.
+     */
     public function autoResolveSongAudio($songId)
     {
         $song = $this->event->musicRequests()->findOrFail($songId);
@@ -2358,6 +2581,9 @@ class EventShow extends Component
         session()->flash('music_message', "✨ Audio y enlaces de Spotify/Apple Music recalculados y corregidos para '{$song->title}'.");
     }
 
+    /**
+     * Abre el modal para importar archivos de audio desde una carpeta compartida en la nube (Google Drive).
+     */
     public function openCloudImportModal()
     {
         $this->cloudFolderUrl = '';
@@ -2375,6 +2601,9 @@ class EventShow extends Component
         $this->showCloudImportModal = true;
     }
 
+    /**
+     * Escanea la carpeta de Google Drive indicada para listar los archivos de audio disponibles antes de importarlos.
+     */
     public function scanCloudFolder()
     {
         $this->validate([
@@ -2399,6 +2628,9 @@ class EventShow extends Component
         }
     }
 
+    /**
+     * Importa a la escaleta musical del evento todos los archivos de audio detectados en la carpeta de la nube.
+     */
     public function confirmImportCloudFolder()
     {
         if (empty($this->cloudScannedFiles)) {
@@ -2417,6 +2649,10 @@ class EventShow extends Component
         session()->flash('music_message', "📁 ¡Se importaron {$imported} canciones de la carpeta de la nube a '{$this->cloudImportMoment}'!");
     }
 
+    /**
+     * Valida y guarda una canción o momento especial en la escaleta del evento, subiendo el archivo de audio
+     * si se adjuntó y resolviendo automáticamente los enlaces pendientes.
+     */
     public function saveSongRequest()
     {
         $this->validate([
@@ -2513,6 +2749,9 @@ class EventShow extends Component
         $this->event->load('musicRequests');
     }
 
+    /**
+     * Alterna cíclicamente el estado de una canción de la escaleta entre pendiente, lista y reproducida.
+     */
     public function toggleSongStatus($songId)
     {
         $song = $this->event->musicRequests()->findOrFail($songId);
@@ -2526,6 +2765,9 @@ class EventShow extends Component
         $this->event->load('musicRequests');
     }
 
+    /**
+     * Elimina una canción de la escaleta musical del evento y borra su archivo de audio local si existe.
+     */
     public function deleteSongRequest($songId)
     {
         $song = $this->event->musicRequests()->findOrFail($songId);
@@ -2537,6 +2779,9 @@ class EventShow extends Component
         session()->flash('music_message', 'Canción eliminada de la escaleta.');
     }
 
+    /**
+     * Cambia la posición de orden de una canción hacia arriba o hacia abajo dentro de la escaleta musical.
+     */
     public function moveSongOrder($songId, $direction)
     {
         $song = $this->event->musicRequests()->findOrFail($songId);
@@ -2566,6 +2811,9 @@ class EventShow extends Component
 
     // ==================== FACTURAS Y RECIBOS ====================
 
+    /**
+     * Actualiza la numeración correlativa y el cálculo de IVA al alternar el tipo de documento entre factura y recibo.
+     */
     public function updatedInvoiceType($value)
     {
         $this->invoice_number = \App\Models\Invoice::nextNumber($value);
@@ -2580,6 +2828,9 @@ class EventShow extends Component
         }
     }
 
+    /**
+     * Recalcula automáticamente la cuota de IVA cuando se modifica el importe base de la factura.
+     */
     public function updatedInvoiceAmount($value)
     {
         if ($this->invoice_type === 'factura') {
@@ -2590,6 +2841,9 @@ class EventShow extends Component
         }
     }
 
+    /**
+     * Recalcula la cuota de IVA cuando cambia el porcentaje impositivo aplicable a la factura.
+     */
     public function updatedInvoiceTaxRate($value)
     {
         if ($this->invoice_type === 'factura' && (float)$this->invoice_amount > 0) {
@@ -2597,6 +2851,9 @@ class EventShow extends Component
         }
     }
 
+    /**
+     * Precarga en el formulario de facturación los importes, impuestos y concepto de una propuesta comercial.
+     */
     public function loadQuoteIntoInvoice(int $quoteId)
     {
         $quote = \App\Models\Quote::with('items')->find($quoteId);
@@ -2633,6 +2890,9 @@ class EventShow extends Component
         session()->flash('invoice_message', "Propuesta #{$quote->id} cargada en el formulario de " . ($this->invoice_type === 'recibo' ? 'Recibo' : 'Factura') . ".");
     }
 
+    /**
+     * Genera y guarda directamente una factura o recibo a partir de una propuesta comercial del evento.
+     */
     public function convertQuoteToInvoice(int $quoteId, string $type = 'auto')
     {
         $quote = \App\Models\Quote::with('items')->find($quoteId);
@@ -2690,6 +2950,9 @@ class EventShow extends Component
         session()->flash('invoice_message', '¡' . ($type === 'recibo' ? 'Recibo' : 'Factura') . " {$nextNum} generado con éxito a partir de la Propuesta #{$quote->id}!");
     }
 
+    /**
+     * Valida y emite una nueva factura o recibo asociado al evento con los importes e impuestos indicados.
+     */
     public function createInvoice()
     {
         $this->validate([
@@ -2730,6 +2993,9 @@ class EventShow extends Component
         session()->flash('invoice_message', 'Documento emitido y guardado exitosamente.');
     }
 
+    /**
+     * Alterna el estado de pago de una factura o recibo entre pendiente y cobrado/pagado.
+     */
     public function toggleInvoiceStatus(int $invoiceId)
     {
         $invoice = $this->event->invoices()->find($invoiceId);
@@ -2741,6 +3007,9 @@ class EventShow extends Component
         }
     }
 
+    /**
+     * Elimina una factura o recibo emitido en el evento.
+     */
     public function deleteInvoice(int $invoiceId)
     {
         $invoice = $this->event->invoices()->find($invoiceId);
@@ -2752,6 +3021,9 @@ class EventShow extends Component
         }
     }
 
+    /**
+     * Guarda las notas generales y acuerdos internos registrados en la ficha del evento.
+     */
     public function saveEventNotes()
     {
         $this->event->update(['notes' => $this->event_notes]);
@@ -2759,6 +3031,9 @@ class EventShow extends Component
         session()->flash('notes_message', 'Notas del evento y acuerdos actualizados correctamente.');
     }
 
+    /**
+     * Añade con marca de fecha y hora el texto o acuerdo de WhatsApp introducido al principio de las notas del evento.
+     */
     public function applyWhatsappTextToNotes()
     {
         if (empty(trim($this->whatsapp_chat_input))) {
@@ -2781,6 +3056,9 @@ class EventShow extends Component
     public $editingTemplateKey = 'primer_contacto_presupuesto';
     public $editingTemplateRawText = '';
 
+    /**
+     * Muestra u oculta el editor de plantillas de mensajes cargando el texto base de la plantilla seleccionada.
+     */
     public function toggleTemplateEditor(?string $key = null)
     {
         if ($key) {
@@ -2795,11 +3073,17 @@ class EventShow extends Component
         }
     }
 
+    /**
+     * Carga el contenido sin procesar de la plantilla cuando se cambia la clave seleccionada en el editor.
+     */
     public function updatedEditingTemplateKey($value)
     {
         $this->editingTemplateRawText = \App\Services\WhatsAppTemplateService::getRawTemplateForEdit((string)$value);
     }
 
+    /**
+     * Guarda de forma global la personalización del texto de una plantilla de WhatsApp/Email y la aplica al mensaje actual.
+     */
     public function saveTemplateCustomization()
     {
         if (empty(trim((string)$this->editingTemplateRawText))) {
@@ -2813,6 +3097,9 @@ class EventShow extends Component
         session()->flash('whatsapp_success', '✅ ¡Plantilla guardada! A partir de ahora se usará este texto en todos los eventos.');
     }
 
+    /**
+     * Restaura una plantilla de comunicación a su texto original por defecto eliminando la personalización guardada.
+     */
     public function resetTemplateToDefault()
     {
         \App\Services\WhatsAppTemplateService::resetCustomTemplate($this->editingTemplateKey);
@@ -2821,6 +3108,10 @@ class EventShow extends Component
         session()->flash('whatsapp_success', '🔄 Plantilla restaurada a su texto original por defecto.');
     }
 
+    /**
+     * Carga en la caja de envío rápido el texto y asunto de una plantilla de WhatsApp/Email
+     * interpolando los datos del evento y aplicando la firma del remitente activo.
+     */
     public function loadWhatsAppTemplate(string $templateKey)
     {
         // Mapear alias posibles del panel rápido
@@ -2879,17 +3170,26 @@ class EventShow extends Component
         }
     }
 
+    /**
+     * Establece la identidad/marca remitente para los mensajes de WhatsApp y actualiza la firma en el texto actual.
+     */
     public function setSenderBrand(string $brand): void
     {
         $this->whatsapp_sender_brand = $brand;
         $this->syncSenderSignatureInCurrentMessage();
     }
 
+    /**
+     * Sincroniza la firma del mensaje actual cuando cambia la propiedad de marca remitente de WhatsApp.
+     */
     public function updatedWhatsappSenderBrand($value): void
     {
         $this->syncSenderSignatureInCurrentMessage();
     }
 
+    /**
+     * Reemplaza o aplica la firma correspondiente al remitente seleccionado en el mensaje de chat actual.
+     */
     protected function syncSenderSignatureInCurrentMessage(): void
     {
         if (!empty(trim((string)$this->whatsapp_chat_message))) {
@@ -2901,6 +3201,9 @@ class EventShow extends Component
         }
     }
 
+    /**
+     * Devuelve la etiqueta legible con icono del remitente de WhatsApp activo (Miguel, Fran o Ezequiel).
+     */
     public function getSenderBrandLabel(): string
     {
         return match ($this->whatsapp_sender_brand) {
@@ -2910,6 +3213,10 @@ class EventShow extends Component
         };
     }
 
+    /**
+     * Envía el mensaje redactado en el panel de conversación al cliente por WhatsApp (vía API o enlace manual)
+     * y actualiza la fecha de último contacto del evento.
+     */
     public function sendDirectWhatsAppMessage()
     {
         if (empty(trim($this->whatsapp_chat_message))) {
@@ -2949,6 +3256,10 @@ class EventShow extends Component
         }
     }
 
+    /**
+     * Envía el mensaje redactado en el panel de conversación al correo electrónico del cliente
+     * y lo registra en el historial de comunicaciones del evento.
+     */
     public function sendDirectEmailMessage()
     {
         if (empty(trim((string)$this->whatsapp_chat_message))) {
@@ -2999,6 +3310,10 @@ class EventShow extends Component
         }
     }
 
+    /**
+     * Sincroniza bajo demanda el historial de mensajes de WhatsApp (vía Evolution API) o de correo IMAP
+     * buscando por el teléfono o email indicado.
+     */
     public function syncWhatsAppHistoryByPhone()
     {
         $query = trim((string)$this->whatsapp_sync_phone);
@@ -3090,6 +3405,10 @@ class EventShow extends Component
         }
     }
 
+    /**
+     * Importa manualmente en el historial de conversación del evento un bloque de texto pegado
+     * desde WhatsApp o desde un correo electrónico.
+     */
     public function importWhatsAppConversationText()
     {
         if (empty(trim((string)$this->whatsapp_import_text))) {
@@ -3166,6 +3485,9 @@ class EventShow extends Component
         }
     }
 
+    /**
+     * Elimina un mensaje individual del historial de conversación registrada del evento.
+     */
     public function deleteWhatsAppMessage(int $messageId)
     {
         try {
@@ -3176,6 +3498,10 @@ class EventShow extends Component
         } catch (\Throwable $e) {}
     }
 
+    /**
+     * Genera y envía en un solo clic una plantilla predefinida de WhatsApp al cliente, al DJ o al asistente,
+     * registrando el envío en las notas y en el historial del evento.
+     */
     public function sendDirectTemplate(string $templateKey, ?string $recipientType = 'client')
     {
         $phone = $this->event->client ? $this->event->client->phone : $this->event->partner_phone;
@@ -3335,6 +3661,9 @@ class EventShow extends Component
         }
     }
 
+    /**
+     * Envía directamente por WhatsApp al cliente el resumen y enlace interactivo de una propuesta comercial.
+     */
     public function sendDirectQuoteWhatsApp($quoteId)
     {
         try {
@@ -3397,6 +3726,9 @@ class EventShow extends Component
         }
     }
 
+    /**
+     * Envía directamente por WhatsApp al cliente el enlace para revisar y firmar online un contrato del evento.
+     */
     public function sendDirectContractWhatsApp(int $contractId)
     {
         $phone = $this->event->client ? $this->event->client->phone : $this->event->partner_phone;
@@ -3447,6 +3779,9 @@ class EventShow extends Component
         }
     }
 
+    /**
+     * Envía directamente por WhatsApp al cliente los detalles y el enlace de una factura o recibo emitido.
+     */
     public function sendDirectInvoiceWhatsApp(int $invoiceId)
     {
         $phone = $this->event->client ? $this->event->client->phone : $this->event->partner_phone;
@@ -3497,6 +3832,9 @@ class EventShow extends Component
         }
     }
 
+    /**
+     * Envía por WhatsApp al cliente el mensaje de confirmación o recordatorio de una cita o reunión programada.
+     */
     public function sendDirectMeetingWhatsApp(int $meetingId, string $type = 'confirm')
     {
         $phone = $this->event->client ? $this->event->client->phone : $this->event->partner_phone;
@@ -3549,6 +3887,9 @@ class EventShow extends Component
         }
     }
 
+    /**
+     * Propiedad computada que obtiene la colección de mensajes de WhatsApp y correos asociados al evento.
+     */
     public function getWhatsappMessagesProperty()
     {
         try {
@@ -3563,6 +3904,10 @@ class EventShow extends Component
         }
     }
 
+    /**
+     * Reacciona a los cambios en la selección, horas o precios de los servicios del configurador de presupuestos,
+     * recalculando tarifas de fotomatón/360º, packs combinados, efectos incluidos y regalos promocionales.
+     */
     public function updatedQuoteServices($value, $key)
     {
         if ($key === 'ceremony.selected' || $key === 'cocktail.selected') {
@@ -3771,6 +4116,10 @@ class EventShow extends Component
         }
     }
 
+    /**
+     * Cambia el proveedor de Fotomatón, Plataforma 360º y Mesas Dulces activo en el configurador
+     * y actualiza las tarifas, horas y disponibilidad de cada servicio.
+     */
     public function setPhotoboothProvider(string $provider)
     {
         $providers = \App\Models\Setting::getPhotoboothProviders();
@@ -3844,6 +4193,10 @@ class EventShow extends Component
         $this->quote_services['waffle_cart']['desc'] = $pbConfig['waffle_cart_desc'];
     }
 
+    /**
+     * Activa o desactiva en la configuración del proveedor actual la disponibilidad de un servicio
+     * complementario (fotomatón, 360º, pack dúo, fuente de chocolate, candy bar o carrito de gofres).
+     */
     public function toggleProviderServiceFromQuote(string $serviceFlag): void
     {
         $providers = \App\Models\Setting::getPhotoboothProviders();
@@ -3872,6 +4225,9 @@ class EventShow extends Component
         }
     }
 
+    /**
+     * Selecciona el servicio de Fotomatón con el número de horas indicado y calcula su tarifa correspondiente.
+     */
     public function setPhotoboothHours(int $hours)
     {
         $pbConfig = \App\Models\Setting::getPhotobooth360Config($this->photobooth_provider ?: 'logrono');
@@ -3887,6 +4243,9 @@ class EventShow extends Component
         $this->quote_services['pack_duo_360']['selected'] = false;
     }
 
+    /**
+     * Selecciona el servicio de Plataforma Vídeo 360º con las horas indicadas y calcula su tarifa correspondiente.
+     */
     public function setVideo360Hours(int $hours)
     {
         $pbConfig = \App\Models\Setting::getPhotobooth360Config($this->photobooth_provider ?: 'logrono');
@@ -3902,6 +4261,9 @@ class EventShow extends Component
         $this->quote_services['pack_duo_360']['selected'] = false;
     }
 
+    /**
+     * Activa el Pack Dúo (Fotomatón + Plataforma 360º) con la duración indicada y desmarca ambos servicios por separado.
+     */
     public function setPackDuoHours(int $hours)
     {
         $pbConfig = \App\Models\Setting::getPhotobooth360Config($this->photobooth_provider ?: 'logrono');
@@ -3913,6 +4275,9 @@ class EventShow extends Component
         $this->quote_services['video_360']['selected'] = false;
     }
 
+    /**
+     * Configura y selecciona el servicio de Mesa Dulce con Fuente de Chocolate según el número de fuentes y horas.
+     */
     public function setChocolateFountainOption(int $fountains, int $hours)
     {
         $pbConfig = \App\Models\Setting::getPhotobooth360Config($this->photobooth_provider ?: 'vitoria');
@@ -3927,6 +4292,9 @@ class EventShow extends Component
         $this->quote_services['chocolate_fountain']['price'] = (float)($pbConfig[$priceKey] ?? $defaultPrice);
     }
 
+    /**
+     * Selecciona el servicio de Carrito de Gofres con la duración de horas elegida y asigna su tarifa.
+     */
     public function setWaffleCartHours(int $hours)
     {
         $pbConfig = \App\Models\Setting::getPhotobooth360Config($this->photobooth_provider ?: 'vitoria');
@@ -3937,6 +4305,10 @@ class EventShow extends Component
         $this->quote_services['waffle_cart']['price'] = ($h === 3) ? (float)($pbConfig['waffle_cart_3h'] ?? 550) : (float)($pbConfig['waffle_cart_2h'] ?? 420);
     }
 
+    /**
+     * Guarda los precios, nombres y descripciones actuales del configurador como valores predeterminados
+     * en Ajustes para el tipo de evento y el proveedor de fotomatón seleccionados.
+     */
     public function saveCurrentPricesAsDefault()
     {
         $evType = $this->event ? $this->event->event_type_clean : 'boda';
@@ -4126,6 +4498,10 @@ class EventShow extends Component
         session()->flash('quote_message', "💾 ¡Precios y textos actuales guardados como predeterminados para eventos de tipo «{$evLabel}» y proveedor seleccionado!");
     }
 
+    /**
+     * Sincroniza la inclusión gratuita de máquina de humo y chispas frías según el pack DJ seleccionado
+     * (Signature o Deluxe Show) y actualiza la promoción del Álbum QR.
+     */
     public function syncPackEffectsAdmin()
     {
         $hasPremium = !empty($this->quote_services['pack_premium']['selected']);
@@ -4160,6 +4536,10 @@ class EventShow extends Component
         $this->syncPhotoQrGiftAdmin();
     }
 
+    /**
+     * Evalúa y aplica automáticamente la inclusión gratuita de regalo del Álbum de Fotos QR
+     * cuando se contrata Ceremonia/Cóctel o aplica la promoción de Feria.
+     */
     public function syncPhotoQrGiftAdmin(): void
     {
         if (!isset($this->quote_services['photo_qr'])) {
@@ -4195,6 +4575,10 @@ class EventShow extends Component
         }
     }
 
+    /**
+     * Aplica una preselección rápida de pack comercial (Esencial, Signature, Deluxe, Magia, Boda completa, etc.)
+     * o limpia por completo el configurador de presupuestos.
+     */
     public function selectPack($packKey)
     {
         $this->selected_pack_type = $packKey;
@@ -4290,11 +4674,17 @@ class EventShow extends Component
         }
     }
 
+    /**
+     * Añade una nueva fila vacía de concepto o servicio extra personalizado al configurador de presupuestos.
+     */
     public function addCustomExtra()
     {
         $this->custom_extras[] = ['name' => '', 'price' => 0, 'desc' => '', 'consult' => false];
     }
 
+    /**
+     * Aplica un destino predefinido en la calculadora de desplazamiento con sus kilómetros de ida y recargo logístico.
+     */
     public function setTravelPreset(string $city, int $oneWayKm, bool $withLogisticsSurcharge = false, int $surchargeAmount = 75)
     {
         $this->travel_destination_label = $city;
@@ -4305,6 +4695,9 @@ class EventShow extends Component
         }
     }
 
+    /**
+     * Calcula automáticamente la distancia por carretera desde Logroño cuando se escribe una localidad de destino.
+     */
     public function updatedTravelDestinationLabel($value)
     {
         $clean = trim((string) $value);
@@ -4320,6 +4713,9 @@ class EventShow extends Component
         }
     }
 
+    /**
+     * Detecta automáticamente los kilómetros de desplazamiento y posibles recargos a partir de la ubicación del evento.
+     */
     public function autoDetectTravelFromEventLocation(bool $showFlash = false)
     {
         $query = trim((string) ($this->travel_destination_label ?: ($this->event?->location ?? '')));
@@ -4565,6 +4961,10 @@ class EventShow extends Component
         return null;
     }
 
+    /**
+     * Propiedad computada que devuelve el desglose detallado del coste de desplazamiento (ida y vuelta,
+     * radio gratuito descontado, kilómetros facturables y suplemento de larga distancia).
+     */
     public function getCalculatedTravelBreakdownProperty(): array
     {
         $oneWay = max(0, (float) $this->travel_one_way_km);
@@ -4592,6 +4992,9 @@ class EventShow extends Component
         ];
     }
 
+    /**
+     * Añade o actualiza en los extras personalizados del presupuesto la partida de desplazamiento y logística calculada.
+     */
     public function applyTravelToQuote()
     {
         $b = $this->calculated_travel_breakdown;
@@ -4641,6 +5044,9 @@ class EventShow extends Component
         session()->flash('quote_message', "🚐 Añadido al presupuesto: {$conceptName} por " . number_format($b['total'], 2, ',', '.') . " €.");
     }
 
+    /**
+     * Elimina cualquier concepto de desplazamiento o kilometraje de los extras personalizados del presupuesto actual.
+     */
     public function removeTravelFromQuote()
     {
         $filtered = [];
@@ -4656,6 +5062,9 @@ class EventShow extends Component
             : [['name' => '', 'price' => 0, 'desc' => '', 'consult' => false]];
     }
 
+    /**
+     * Elimina una línea de servicio extra personalizado del configurador de presupuestos según su índice.
+     */
     public function removeCustomExtra($index)
     {
         if (isset($this->custom_extras[$index])) {
@@ -4667,6 +5076,10 @@ class EventShow extends Component
         }
     }
 
+    /**
+     * Propiedad computada que suma el importe bruto total de todos los packs, servicios, descuentos
+     * y extras seleccionados en el configurador de presupuestos.
+     */
     public function getCalculatedGrossTotalProperty()
     {
         $total = 0;
@@ -4789,6 +5202,9 @@ class EventShow extends Component
         return $total;
     }
 
+    /**
+     * Propiedad computada que calcula la base imponible (subtotal sin IVA) del presupuesto en configuración.
+     */
     public function getCalculatedSubtotalProperty()
     {
         $gross = (float)$this->calculated_gross_total;
@@ -4801,6 +5217,9 @@ class EventShow extends Component
         return $gross;
     }
 
+    /**
+     * Propiedad computada que calcula la cuota de IVA del presupuesto según el régimen fiscal seleccionado.
+     */
     public function getCalculatedTaxAmountProperty()
     {
         $gross = (float)$this->calculated_gross_total;
@@ -4817,6 +5236,9 @@ class EventShow extends Component
         return 0.00;
     }
 
+    /**
+     * Propiedad computada que devuelve el importe total final (con impuestos aplicados si proceden) del presupuesto.
+     */
     public function getCalculatedTotalProperty()
     {
         $gross = (float)$this->calculated_gross_total;
@@ -4828,6 +5250,9 @@ class EventShow extends Component
         return $gross;
     }
 
+    /**
+     * Propiedad computada que calcula el importe de la señal o reserva requerida según el tipo de señal configurado.
+     */
     public function getCalculatedSignalProperty()
     {
         if ($this->quote_deposit_type === 'none') {
@@ -4841,11 +5266,18 @@ class EventShow extends Component
         return round(($total * $pct) / 100, 2);
     }
 
+    /**
+     * Propiedad computada que devuelve el importe restante a abonar tras descontar la señal del total del presupuesto.
+     */
     public function getCalculatedRemainingProperty()
     {
         return max(0, (float)$this->calculated_total - (float)$this->calculated_signal);
     }
 
+    /**
+     * Construye el listado estructurado de líneas de detalle (conceptos, descripciones, precios y cantidades)
+     * para guardar una propuesta comercial y calcula su suma total por referencia.
+     */
     private function buildQuoteItemsList(&$total)
     {
         $total = 0;
@@ -5208,6 +5640,10 @@ class EventShow extends Component
         return $items;
     }
 
+    /**
+     * Crea y guarda una nueva propuesta comercial para el evento con todos los servicios, impuestos,
+     * señal y métodos de pago configurados en la calculadora.
+     */
     public function createQuote()
     {
         $grossTotal = 0;
@@ -5251,6 +5687,9 @@ class EventShow extends Component
         session()->flash('quote_message', 'Nueva Propuesta Comercial #' . $quote->id . ' generada exitosamente (Total: ' . number_format($finalTotal, 2, ',', '.') . ' € | Señal de reserva: ' . number_format($signal, 2, ',', '.') . ' €).');
     }
 
+    /**
+     * Actualiza los importes, condiciones y líneas de servicio de la propuesta comercial que se encuentra en edición.
+     */
     public function updateQuote()
     {
         if (!$this->editing_quote_id) {
@@ -5301,12 +5740,19 @@ class EventShow extends Component
         session()->flash('quote_message', 'Propuesta Comercial #' . $quote->id . ' actualizada correctamente (Total: ' . number_format($finalTotal, 2, ',', '.') . ' € | Señal: ' . number_format($signal, 2, ',', '.') . ' €).');
     }
 
+    /**
+     * Configura la señal del presupuesto en modo porcentual aplicando el porcentaje gradual recomendado según la fecha del evento.
+     */
     public function applyGradualDeposit()
     {
         $this->quote_deposit_type = 'percentage';
         $this->quote_deposit_percentage = \App\Models\Quote::calculateGradualDepositPercentage($this->event?->event_date);
     }
 
+    /**
+     * Carga una propuesta comercial existente dentro del configurador interactivo mapeando sus líneas
+     * a los packs, servicios individuales, efectos y extras personalizados.
+     */
     public function loadQuoteIntoCalculator($quoteId, bool $flash = true)
     {
         $quote = $this->event->quotes()->with('items')->findOrFail($quoteId);
@@ -5622,6 +6068,9 @@ class EventShow extends Component
         }
     }
 
+    /**
+     * Cancela el modo de edición de una propuesta comercial y limpia el configurador de presupuestos.
+     */
     public function cancelQuoteEditing()
     {
         $this->editing_quote_id = null;
@@ -5629,6 +6078,9 @@ class EventShow extends Component
         session()->flash('quote_message', 'Edición cancelada.');
     }
 
+    /**
+     * Elimina una propuesta comercial y todas sus líneas de servicio asociadas.
+     */
     public function deleteQuote($quoteId)
     {
         $quote = \App\Models\Quote::findOrFail($quoteId);
@@ -5643,6 +6095,9 @@ class EventShow extends Component
         session()->flash('quote_message', 'Propuesta comercial eliminada correctamente.');
     }
 
+    /**
+     * Reactiva una propuesta comercial previamente rechazada o caducada para que el cliente pueda volver a aceptarla.
+     */
     public function reactivateQuote($quoteId)
     {
         $quote = $this->event->quotes()->find($quoteId);
@@ -5670,6 +6125,9 @@ class EventShow extends Component
         session()->flash('quote_message', "🔄 Propuesta #{$quote->id} reactivada correctamente. El cliente ya puede volver a aceptarla desde su enlace.");
     }
 
+    /**
+     * Envía por correo electrónico al cliente la propuesta comercial indicada con su documento PDF oficial adjunto.
+     */
     public function sendQuoteByEmail($quoteId)
     {
         $quote = $this->event->quotes()->with('items')->find($quoteId);
@@ -5694,6 +6152,9 @@ class EventShow extends Component
         }
     }
 
+    /**
+     * Genera un nuevo contrato para el evento con un token único para su revisión y firma online.
+     */
     public function createContract()
     {
         $token = \Illuminate\Support\Str::random(32);
@@ -5705,6 +6166,9 @@ class EventShow extends Component
         session()->flash('contract_message', "Contrato '{$contract->contract_number}' generado con enlace para firma online.");
     }
 
+    /**
+     * Inicia la edición en línea del código o número identificativo de un contrato del evento.
+     */
     public function startEditContractNumber($contractId)
     {
         $contract = $this->event->contracts()->find($contractId);
@@ -5714,12 +6178,18 @@ class EventShow extends Component
         }
     }
 
+    /**
+     * Cancela la edición del código o número identificativo del contrato.
+     */
     public function cancelEditContractNumber()
     {
         $this->editing_contract_id = null;
         $this->editing_contract_number = '';
     }
 
+    /**
+     * Guarda el nuevo código o número personalizado asignado a un contrato del evento.
+     */
     public function saveContractNumber($contractId)
     {
         $contract = $this->event->contracts()->find($contractId);
@@ -5735,6 +6205,9 @@ class EventShow extends Component
         }
     }
 
+    /**
+     * Elimina un contrato asociado al evento.
+     */
     public function deleteContract($contractId)
     {
         $contract = $this->event->contracts()->find($contractId);
@@ -5745,6 +6218,9 @@ class EventShow extends Component
         }
     }
 
+    /**
+     * Marca manualmente un contrato del evento como firmado registrando la fecha y hora actual.
+     */
     public function signContract($contractId)
     {
         $contract = $this->event->contracts()->find($contractId);
@@ -5757,6 +6233,9 @@ class EventShow extends Component
         }
     }
 
+    /**
+     * Abre el modal para editar los datos de contacto y notas de la finca, bodega o restaurante del evento.
+     */
     public function openVenueModal()
     {
         $this->venue_contact_name = $this->event->venue_contact_name;
@@ -5765,11 +6244,17 @@ class EventShow extends Component
         $this->showVenueModal = true;
     }
 
+    /**
+     * Cierra el modal de edición de datos de contacto del lugar de celebración.
+     */
     public function closeVenueModal()
     {
         $this->showVenueModal = false;
     }
 
+    /**
+     * Guarda el nombre de contacto, teléfono y observaciones de la finca, bodega o restaurante en el evento.
+     */
     public function saveVenueContact()
     {
         $this->event->update([
@@ -5782,6 +6267,10 @@ class EventShow extends Component
         session()->flash('venue_message', 'Contacto de la finca/bodega guardado correctamente.');
     }
 
+    /**
+     * Busca automáticamente en directorios web el teléfono público del restaurante, finca o bodega del evento
+     * y lo guarda en la ficha si lo localiza.
+     */
     public function lookupVenuePhoneAutomatically()
     {
         $location = trim((string)$this->event->location);
@@ -5803,6 +6292,9 @@ class EventShow extends Component
         }
     }
 
+    /**
+     * Abre el modal de edición general del evento cargando su nombre, fecha, ubicación, tipo, marca, estado y notas.
+     */
     public function openEditEventModal()
     {
         $this->event_edit_name = $this->event->name;
@@ -5815,11 +6307,17 @@ class EventShow extends Component
         $this->showEditEventModal = true;
     }
 
+    /**
+     * Cierra el modal de edición general de los detalles del evento.
+     */
     public function closeEditEventModal()
     {
         $this->showEditEventModal = false;
     }
 
+    /**
+     * Ajusta el tipo de evento en el modal de edición si se cambia a una marca que no ofrece servicio de vídeo.
+     */
     public function updatedEventEditBrand($value)
     {
         if ($this->event_edit_type === 'video' && !\App\Models\Setting::isVideoServiceEnabled($value)) {
@@ -5827,6 +6325,10 @@ class EventShow extends Component
         }
     }
 
+    /**
+     * Valida y guarda los datos generales del evento (nombre, fecha, lugar, tipo, marca, estado y notas),
+     * recalculando la señal gradual y buscando el teléfono del recinto si cambió la ubicación.
+     */
     public function saveEventDetails()
     {
         if ($this->event_edit_type === 'video' && !\App\Models\Setting::isVideoServiceEnabled($this->event_edit_brand)) {
@@ -5910,6 +6412,10 @@ class EventShow extends Component
         session()->flash('message', '¡Detalles y estado del evento actualizados correctamente!');
     }
 
+    /**
+     * Abre el modal de configuración de horarios del evento (montaje, ceremonia, cóctel, banquete y baile),
+     * sincronizando antes cualquier hora detectada en las notas.
+     */
     public function openScheduleModal()
     {
         try {
@@ -5930,6 +6436,9 @@ class EventShow extends Component
         $this->showScheduleModal = true;
     }
 
+    /**
+     * Extrae automáticamente las horas de ceremonia, cóctel, banquete y baile desde el texto de las notas del evento.
+     */
     public function autoFillScheduleFromNotes()
     {
         $sourceText = trim((string)$this->schedule_notes . "\n" . (string)$this->event->notes);
@@ -5964,11 +6473,17 @@ class EventShow extends Component
         }
     }
 
+    /**
+     * Cierra el modal de edición de horarios del evento.
+     */
     public function closeScheduleModal()
     {
         $this->showScheduleModal = false;
     }
 
+    /**
+     * Establece rápidamente la fecha de montaje del equipo (el mismo día del evento, el día anterior o sin definir).
+     */
     public function setPresetSetupDate($type)
     {
         if ($type === 'same_day') {
@@ -5980,16 +6495,25 @@ class EventShow extends Component
         }
     }
 
+    /**
+     * Recalcula la hora prevista de finalización del baile cuando cambia su hora de inicio.
+     */
     public function updatedDanceStartTime($value)
     {
         $this->recalculateDanceEndTime();
     }
 
+    /**
+     * Recalcula la hora prevista de finalización del baile cuando cambia la duración en horas.
+     */
     public function updatedDanceDurationHours($value)
     {
         $this->recalculateDanceEndTime();
     }
 
+    /**
+     * Calcula automáticamente la hora de finalización del baile sumando las horas de duración a la hora de inicio.
+     */
     public function recalculateDanceEndTime()
     {
         if (!empty($this->dance_start_time) && !empty($this->dance_duration_hours)) {
@@ -6001,12 +6525,18 @@ class EventShow extends Component
         }
     }
 
+    /**
+     * Asigna un valor rápido de duración del baile en horas y recalcula la hora de cierre.
+     */
     public function setPresetDanceDuration($hours)
     {
         $this->dance_duration_hours = (float)$hours;
         $this->recalculateDanceEndTime();
     }
 
+    /**
+     * Valida y guarda en la base de datos todos los horarios del evento, montaje y barra libre/baile.
+     */
     public function saveSchedule()
     {
         $this->validate([
@@ -6072,6 +6602,9 @@ class EventShow extends Component
         }
     }
 
+    /**
+     * Genera y descarga un archivo de lista de reproducción en formato M3U con las canciones solicitadas en el evento.
+     */
     public function exportPlaylistM3u()
     {
         $requests = $this->event->musicRequests()->where('status', '!=', 'rejected')->get();
@@ -6106,6 +6639,9 @@ class EventShow extends Component
         ]);
     }
 
+    /**
+     * Abre el modal del importador inteligente de listas musicales desde archivos PDF, TXT, CSV o texto pegado.
+     */
     public function openImportModal()
     {
         $this->importRawText = '';
@@ -6115,6 +6651,9 @@ class EventShow extends Component
         $this->showImportModal = true;
     }
 
+    /**
+     * Procesa automáticamente el archivo subido (extrayendo texto de PDF o leyendo TXT/CSV) y analiza las canciones detectadas.
+     */
     public function updatedImportFile()
     {
         $this->validate([
@@ -6150,6 +6689,9 @@ class EventShow extends Component
         }
     }
 
+    /**
+     * Analiza el texto bruto introducido en el importador para identificar títulos, artistas y notas musicales.
+     */
     public function parseImportInput()
     {
         if (empty(trim($this->importRawText))) {
@@ -6168,6 +6710,9 @@ class EventShow extends Component
         $this->parsedImportNotes = $result['notes'] ?? [];
     }
 
+    /**
+     * Descarta una canción concreta de la lista previa de pistas detectadas antes de ejecutar la importación.
+     */
     public function removeParsedTrack($index)
     {
         if (isset($this->parsedImportTracks[$index])) {
@@ -6176,6 +6721,10 @@ class EventShow extends Component
         }
     }
 
+    /**
+     * Importa definitivamente a la escaleta del evento las canciones seleccionadas tras el análisis,
+     * omitiendo duplicados y resolviendo carátulas y enlaces.
+     */
     public function executeImport()
     {
         $selectedTracks = array_filter($this->parsedImportTracks, function($t) {
@@ -6202,6 +6751,9 @@ class EventShow extends Component
         session()->flash('music_message', $msg);
     }
 
+    /**
+     * Crea automáticamente una playlist en la cuenta de Spotify conectada con todas las canciones del evento.
+     */
     public function createSpotifyPlaylist()
     {
         $res = \App\Services\SpotifyService::createPlaylistForEvent($this->event);
@@ -6218,11 +6770,17 @@ class EventShow extends Component
     // ==========================================
     // GESTIÓN DE CITAS Y REUNIONES CON CLIENTES
     // ==========================================
+    /**
+     * Alias para abrir el modal de creación de una nueva cita o reunión con los clientes del evento.
+     */
     public function openNewMeetingModal()
     {
         $this->openCreateMeetingModal();
     }
 
+    /**
+     * Inicializa y abre el modal para programar una nueva reunión o cita con los clientes del evento.
+     */
     public function openCreateMeetingModal()
     {
         $this->resetValidation();
@@ -6243,6 +6801,9 @@ class EventShow extends Component
         $this->showMeetingModal = true;
     }
 
+    /**
+     * Carga los datos de una cita o reunión existente del evento en el modal para su edición.
+     */
     public function editMeeting($meetingId)
     {
         $this->resetValidation();
@@ -6266,6 +6827,10 @@ class EventShow extends Component
         $this->showMeetingModal = true;
     }
 
+    /**
+     * Valida y guarda una nueva reunión o actualiza una existente, permitiendo promocionar sus apuntes
+     * directamente a la sección de Cosas Importantes y Dossier.
+     */
     public function saveMeeting()
     {
         $this->validate([
@@ -6325,6 +6890,9 @@ class EventShow extends Component
         $this->showMeetingModal = false;
     }
 
+    /**
+     * Elimina una cita o reunión registrada en el evento.
+     */
     public function deleteMeeting($meetingId)
     {
         $meeting = $this->event->meetings()->find($meetingId);
@@ -6335,6 +6903,9 @@ class EventShow extends Component
         }
     }
 
+    /**
+     * Marca directamente una cita o reunión programada como realizada.
+     */
     public function markMeetingCompleted($meetingId)
     {
         $meeting = $this->event->meetings()->find($meetingId);
@@ -6345,6 +6916,9 @@ class EventShow extends Component
         }
     }
 
+    /**
+     * Abre el modal para importar el historial real de canciones pinchadas por el DJ (Rekordbox, Engine DJ, M3U, CSV o texto).
+     */
     public function openDjHistoryModal()
     {
         $this->djHistoryFile = null;
@@ -6354,11 +6928,17 @@ class EventShow extends Component
         $this->showDjHistoryModal = true;
     }
 
+    /**
+     * Cierra el modal de importación del historial de sesión DJ.
+     */
     public function closeDjHistoryModal()
     {
         $this->showDjHistoryModal = false;
     }
 
+    /**
+     * Procesa e importa el historial de temas reproducidos en la sesión DJ y los cruza con las peticiones del evento.
+     */
     public function importDjHistory()
     {
         $content = '';
@@ -6395,6 +6975,9 @@ class EventShow extends Component
         }
     }
 
+    /**
+     * Elimina al completo el historial de canciones reproducidas en la sesión DJ del evento.
+     */
     public function deleteDjHistory()
     {
         $count = $this->event->djHistories()->count();
@@ -6403,17 +6986,26 @@ class EventShow extends Component
         session()->flash('message', "🗑️ Se ha eliminado el historial de sesión ({$count} canciones).");
     }
 
+    /**
+     * Elimina una pista individual del historial de sesión DJ del evento.
+     */
     public function deleteDjHistoryTrack(int $trackId)
     {
         $this->event->djHistories()->where('id', $trackId)->delete();
         $this->event->load(['djHistories', 'musicRequests']);
     }
 
+    /**
+     * Propiedad computada que indica si la pasarela de envío directo de WhatsApp (Evolution API) está activa.
+     */
     public function getGatewayActiveProperty(): bool
     {
         return \App\Services\EvolutionWhatsAppService::isEnabled();
     }
 
+    /**
+     * Recarga desde la base de datos la colección de peticiones musicales de la escaleta del evento.
+     */
     public function refreshMusicRequests(): void
     {
         if ($this->event) {
@@ -6423,6 +7015,9 @@ class EventShow extends Component
 
     // ==================== ÁLBUM DE FOTOS QR (FOTOSEVENTOSQR) ====================
 
+    /**
+     * Abre el modal de gestión del Álbum Colaborativo de Fotos QR y consulta su estado en tiempo real si ya existe.
+     */
     public function openPhotoQrModal(): void
     {
         $this->showPhotoQrModal = true;
@@ -6434,11 +7029,17 @@ class EventShow extends Component
         }
     }
 
+    /**
+     * Cierra el modal de configuración y seguimiento del Álbum de Fotos QR.
+     */
     public function closePhotoQrModal(): void
     {
         $this->showPhotoQrModal = false;
     }
 
+    /**
+     * Crea o sincroniza a través de la API de FotosEventosQR el álbum colaborativo y la carpeta de Google Drive del evento.
+     */
     public function createOrSyncPhotoQrAlbum(): void
     {
         if (!$this->event) {
@@ -6465,6 +7066,9 @@ class EventShow extends Component
         }
     }
 
+    /**
+     * Consulta en tiempo real a la API de FotosEventosQR las estadísticas y el número de fotos subidas al álbum del evento.
+     */
     public function refreshPhotoQrStatus(bool $flash = true): void
     {
         if (!$this->event) {
@@ -6484,6 +7088,9 @@ class EventShow extends Component
         }
     }
 
+    /**
+     * Restaura los textos y el diseño del cartel PDF del código QR a los valores actuales de nombres y fecha del evento.
+     */
     public function resetPhotoQrPosterCustomization(): void
     {
         if (!$this->event) {
@@ -6496,6 +7103,9 @@ class EventShow extends Component
         session()->flash('photo_qr_message', 'Diseño del cartel restaurado con los nombres y fecha actuales del evento.');
     }
 
+    /**
+     * Activa o pausa la recepción de nuevas fotos en el código QR del evento mediante la API remota.
+     */
     public function togglePhotoQrActive(bool $makeActive): void
     {
         if (!$this->event) {
@@ -6519,6 +7129,10 @@ class EventShow extends Component
         }
     }
 
+    /**
+     * Cierra la subida de fotos por QR, habilita el acceso de lectura al álbum en Google Drive
+     * y envía el enlace final a los clientes por WhatsApp o correo electrónico.
+     */
     public function stopPhotoQrAndSendDrive(string $channel = 'whatsapp'): void
     {
         if (!$this->event) {
@@ -6620,6 +7234,9 @@ class EventShow extends Component
         }
     }
 
+    /**
+     * Silencia o reactiva las notificaciones de nuevos mensajes de WhatsApp y correo para este evento concreto.
+     */
     public function toggleMuteNotifications(): void
     {
         if (!$this->event) {
@@ -6639,6 +7256,10 @@ class EventShow extends Component
         session()->flash('whatsapp_success', $msg);
     }
 
+    /**
+     * Renderiza la vista principal de la ficha del evento cargando los catálogos de material, personal,
+     * clientes, peticiones musicales filtradas e historial de sesión DJ.
+     */
     public function render()
     {
         $allEquipment = Equipment::orderBy('category')->orderBy('name')->get();

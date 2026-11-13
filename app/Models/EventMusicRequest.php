@@ -5,6 +5,9 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * Modelo que representa una petición o indicación musical de la escaleta o de los invitados de un evento.
+ */
 class EventMusicRequest extends Model
 {
     use HasFactory;
@@ -37,6 +40,9 @@ class EventMusicRequest extends Model
         'order' => 'integer',
     ];
 
+    /**
+     * Registra el hook de guardado para resolver enlaces y metadatos musicales automáticamente.
+     */
     protected static function booted()
     {
         static::saving(function (EventMusicRequest $request) {
@@ -72,6 +78,9 @@ class EventMusicRequest extends Model
         });
     }
 
+    /**
+     * Devuelve la URL pública o de retransmisión del archivo de audio asociado a la petición.
+     */
     public function getAudioUrlAttribute(): ?string
     {
         if (empty($this->audio_file)) {
@@ -100,6 +109,9 @@ class EventMusicRequest extends Model
         return asset('storage/' . $file);
     }
 
+    /**
+     * Relación con el evento al que pertenece la petición musical.
+     */
     public function event()
     {
         return $this->belongsTo(Event::class);

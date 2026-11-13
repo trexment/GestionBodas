@@ -8,6 +8,9 @@ use App\Models\Setting;
 use App\Models\Event;
 use App\Models\EventMusicRequest;
 
+/**
+ * Servicio de integración con almacenamiento en la nube (Google Drive y Dropbox) para sincronizar pistas musicales de eventos.
+ */
 class CloudMusicStorageService
 {
     /**

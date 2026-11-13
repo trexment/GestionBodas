@@ -8,6 +8,9 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 
+/**
+ * Correo de notificación enviado cuando el cliente completa o actualiza el cuestionario musical de su evento.
+ */
 class ClientMusicFormSubmittedMail extends Mailable
 {
     use Queueable, SerializesModels;
@@ -16,6 +19,9 @@ class ClientMusicFormSubmittedMail extends Mailable
     public $brand;
     public $songsSummary;
 
+    /**
+     * Inicializa el correo con el evento y el resumen de canciones solicitadas.
+     */
     public function __construct(Event $event, array $songsSummary = [])
     {
         $this->event = $event;
@@ -23,6 +29,9 @@ class ClientMusicFormSubmittedMail extends Mailable
         $this->songsSummary = $songsSummary;
     }
 
+    /**
+     * Construye el mensaje de correo electrónico con su asunto y vista.
+     */
     public function build()
     {
         $brandName = $this->brand['name'] ?? 'Eventos Musicales';

@@ -5,6 +5,9 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * Modelo que representa un equipo o elemento de inventario técnico (sonido, iluminación, efectos, etc.).
+ */
 class Equipment extends Model
 {
     use HasFactory;
@@ -21,6 +24,9 @@ class Equipment extends Model
         'notes',
     ];
 
+    /**
+     * Relación muchos a muchos con los eventos en los que está asignado este equipamiento.
+     */
     public function events()
     {
         return $this->belongsToMany(Event::class, 'event_equipment')

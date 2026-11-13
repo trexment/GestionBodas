@@ -5,6 +5,9 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * Modelo que representa un concepto o línea de servicio dentro de un presupuesto.
+ */
 class QuoteItem extends Model
 {
     use HasFactory;
@@ -20,6 +23,9 @@ class QuoteItem extends Model
         'quantity'
     ];
 
+    /**
+     * Registra el evento de guardado para asegurar compatibilidad de longitud en las columnas de texto.
+     */
     protected static function booted(): void
     {
         static::saving(function (QuoteItem $item) {
@@ -48,6 +54,9 @@ class QuoteItem extends Model
         });
     }
 
+    /**
+     * Relación con el presupuesto al que pertenece esta línea de concepto.
+     */
     public function quote()
     {
         return $this->belongsTo(Quote::class);

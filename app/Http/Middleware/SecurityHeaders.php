@@ -6,6 +6,9 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
+/**
+ * Middleware que aplica cabeceras de seguridad HTTP (anti-clickjacking, XSS, MIME sniffing y políticas de permisos) a las respuestas.
+ */
 class SecurityHeaders
 {
     /**

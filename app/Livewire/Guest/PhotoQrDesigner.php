@@ -7,6 +7,9 @@ use App\Services\FotosEventosQrService;
 use App\Services\QrPosterPdfService;
 use Livewire\Component;
 
+/**
+ * Componente Livewire público para diseñar, personalizar y descargar los carteles PDF del álbum de fotos QR del evento.
+ */
 class PhotoQrDesigner extends Component
 {
     public string $token;
@@ -27,6 +30,9 @@ class PhotoQrDesigner extends Component
     public bool $has_saved_custom = false;
     public ?string $statusMessage = null;
 
+    /**
+     * Inicializa el diseñador de carteles QR localizando el evento, sincronizando su álbum si es necesario y cargando la configuración.
+     */
     public function mount(string $token): void
     {
         $this->token = $token;
@@ -67,6 +73,9 @@ class PhotoQrDesigner extends Component
         $this->has_saved_custom = (bool) ($defaults['has_saved_custom'] ?? false);
     }
 
+    /**
+     * Actualiza el titular y subtítulo cuando el cliente selecciona una frase predefinida.
+     */
     public function updatedPreset(string $value): void
     {
         $presets = QrPosterPdfService::presetPhrases();
@@ -77,6 +86,9 @@ class PhotoQrDesigner extends Component
         $this->statusMessage = null;
     }
 
+    /**
+     * Cambia el selector de frase a personalizado si el cliente edita manualmente el titular.
+     */
     public function updatedHeadline(): void
     {
         $presets = QrPosterPdfService::presetPhrases();
@@ -88,6 +100,9 @@ class PhotoQrDesigner extends Component
         $this->statusMessage = null;
     }
 
+    /**
+     * Cambia el selector de frase a personalizado si el cliente edita manualmente el subtítulo.
+     */
     public function updatedSubtitle(): void
     {
         $presets = QrPosterPdfService::presetPhrases();
@@ -99,6 +114,9 @@ class PhotoQrDesigner extends Component
         $this->statusMessage = null;
     }
 
+    /**
+     * Selecciona el formato de disposición de página (A4, 2xA5 o 4xA6) para el cartel QR.
+     */
     public function selectLayout(string $layout): void
     {
         if (isset(QrPosterPdfService::layouts()[$layout])) {
@@ -107,6 +125,9 @@ class PhotoQrDesigner extends Component
         }
     }
 
+    /**
+     * Selecciona el estilo visual y paleta cromática del cartel QR.
+     */
     public function selectStyle(string $style): void
     {
         if (isset(QrPosterPdfService::visualStyles()[$style])) {
@@ -115,6 +136,9 @@ class PhotoQrDesigner extends Component
         }
     }
 
+    /**
+     * Guarda en la configuración del evento el diseño personalizado actual del cartel QR.
+     */
     public function saveDesign(): void
     {
         $saved = QrPosterPdfService::saveCustomizationForEvent($this->event, $this->currentPayload(), 'client');
@@ -122,6 +146,9 @@ class PhotoQrDesigner extends Component
         $this->statusMessage = '¡Vuestro diseño ha quedado guardado! Podéis descargarlo en PDF ahora o volver cuando queráis.';
     }
 
+    /**
+     * Restaura los textos y opciones de diseño del cartel QR a los valores sugeridos por defecto.
+     */
     public function resetDefaults(): void
     {
         $defaults = QrPosterPdfService::resetCustomizationForEvent($this->event);
@@ -149,6 +176,9 @@ class PhotoQrDesigner extends Component
         ];
     }
 
+    /**
+     * Construye la URL hacia la ruta de generación del cartel PDF para previsualización o descarga directa.
+     */
     protected function buildPdfRoute(bool $download): string
     {
         return route('pdf.photo-qr-poster', [
@@ -170,6 +200,9 @@ class PhotoQrDesigner extends Component
         ]);
     }
 
+    /**
+     * Renderiza la vista interactiva del diseñador de carteles QR con su previsualización SVG.
+     */
     public function render()
     {
         $albumInfo = FotosEventosQrService::getEventAlbumInfo($this->event);

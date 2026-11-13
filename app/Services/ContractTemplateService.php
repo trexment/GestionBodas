@@ -7,8 +7,14 @@ use App\Models\Event;
 use App\Models\Setting;
 use Carbon\Carbon;
 
+/**
+ * Servicio de gestión de plantillas de contratos, variables dinámicas y renderizado de cláusulas para eventos.
+ */
 class ContractTemplateService
 {
+    /**
+     * Devuelve el catálogo de variables dinámicas disponibles para insertar en las plantillas de contrato.
+     */
     public static function availableVariables(): array
     {
         return [
@@ -66,6 +72,9 @@ class ContractTemplateService
         ];
     }
 
+    /**
+     * Devuelve las plantillas predefinidas de contratos con su título, cuerpo clausulado y pie de firma.
+     */
     public static function presets(): array
     {
         return [
@@ -146,21 +155,33 @@ TEXT
         ];
     }
 
+    /**
+     * Obtiene el título por defecto configurado para el contrato.
+     */
     public static function getDefaultTitle(): string
     {
         return Setting::get('contract_title', self::presets()['servicio_dj']['title']);
     }
 
+    /**
+     * Obtiene el cuerpo legal por defecto configurado para el contrato.
+     */
     public static function getDefaultBody(): string
     {
         return Setting::get('contract_body', self::presets()['servicio_dj']['body']);
     }
 
+    /**
+     * Obtiene el pie de firma por defecto configurado para el contrato.
+     */
     public static function getDefaultFooter(): string
     {
         return Setting::get('contract_footer', self::presets()['servicio_dj']['footer']);
     }
 
+    /**
+     * Renderiza el título, cuerpo, pie e importes de un contrato sustituyendo las variables por los datos reales del evento y cliente.
+     */
     public static function renderContract(Contract $contract, array $overrides = []): array
     {
         $event = $contract->event;

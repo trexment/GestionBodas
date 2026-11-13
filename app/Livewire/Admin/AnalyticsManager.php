@@ -10,10 +10,18 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * Componente Livewire para la gestión de estadísticas, facturación anual y rankings de repertorio y personal.
+ */
 class AnalyticsManager extends Component
 {
     public $selectedYear;
 
+    /**
+     * Inicializa el componente verificando permisos de administrador y estableciendo el año actual por defecto.
+     *
+     * @return void
+     */
     public function mount()
     {
         if (auth()->user()->role !== 'admin') {
@@ -23,6 +31,11 @@ class AnalyticsManager extends Component
         $this->selectedYear = (int) date('Y');
     }
 
+    /**
+     * Calcula las métricas de facturación, eventos por estado, canciones más solicitadas y estadísticas de personal para renderizar la vista.
+     *
+     * @return \Illuminate\Contracts\View\View
+     */
     public function render()
     {
         // 1. Facturación total y por meses

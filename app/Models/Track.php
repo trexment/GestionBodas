@@ -5,6 +5,9 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * Modelo que representa una pista de audio o canción de la biblioteca musical.
+ */
 class Track extends Model
 {
     use HasFactory;
@@ -23,6 +26,9 @@ class Track extends Model
         'youtube_url',
     ];
 
+    /**
+     * Obtiene la URL de reproducción o streaming del archivo de audio de la pista.
+     */
     public function getAudioUrlAttribute(): ?string
     {
         if (!empty($this->cloud_id) && $this->source === 'google_drive') {
@@ -47,6 +53,9 @@ class Track extends Model
         return asset('storage/' . $file);
     }
     
+    /**
+     * Relación muchos a muchos con las listas de reproducción en las que se incluye esta pista.
+     */
     public function playlists()
     {
         return $this->belongsToMany(Playlist::class)->withPivot('order')->withTimestamps();

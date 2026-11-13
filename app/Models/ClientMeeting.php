@@ -6,6 +6,9 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Carbon\Carbon;
 
+/**
+ * Modelo que representa una reunión o cita (presencial, videollamada o telefónica) con el cliente de un evento.
+ */
 class ClientMeeting extends Model
 {
     use HasFactory;
@@ -30,16 +33,25 @@ class ClientMeeting extends Model
         'duration_minutes' => 'integer',
     ];
 
+    /**
+     * Relación con el evento al que pertenece la reunión.
+     */
     public function event()
     {
         return $this->belongsTo(Event::class);
     }
 
+    /**
+     * Relación con el miembro del equipo responsable de la reunión.
+     */
     public function staff()
     {
         return $this->belongsTo(User::class, 'user_id');
     }
 
+    /**
+     * Devuelve la etiqueta descriptiva del tipo de reunión.
+     */
     public function getMeetingTypeLabelAttribute(): string
     {
         return match ($this->meeting_type) {
@@ -51,6 +63,9 @@ class ClientMeeting extends Model
         };
     }
 
+    /**
+     * Devuelve el icono representativo del tipo de reunión.
+     */
     public function getMeetingTypeIconAttribute(): string
     {
         return match ($this->meeting_type) {
@@ -62,6 +77,9 @@ class ClientMeeting extends Model
         };
     }
 
+    /**
+     * Devuelve la etiqueta legible de la modalidad de ubicación de la reunión.
+     */
     public function getLocationTypeLabelAttribute(): string
     {
         return match ($this->location_type) {
@@ -71,6 +89,9 @@ class ClientMeeting extends Model
         };
     }
 
+    /**
+     * Devuelve el icono representativo de la modalidad de ubicación de la reunión.
+     */
     public function getLocationTypeIconAttribute(): string
     {
         return match ($this->location_type) {
@@ -80,6 +101,9 @@ class ClientMeeting extends Model
         };
     }
 
+    /**
+     * Devuelve la etiqueta legible del estado de la reunión.
+     */
     public function getStatusLabelAttribute(): string
     {
         return match ($this->status) {
@@ -89,6 +113,9 @@ class ClientMeeting extends Model
         };
     }
 
+    /**
+     * Devuelve las clases CSS para el distintivo visual del estado de la reunión.
+     */
     public function getStatusBadgeClassAttribute(): string
     {
         return match ($this->status) {

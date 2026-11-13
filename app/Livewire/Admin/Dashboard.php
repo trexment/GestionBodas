@@ -9,6 +9,9 @@ use App\Models\User;
 use App\Models\Equipment;
 use Carbon\Carbon;
 
+/**
+ * Componente Livewire del panel de control principal con métricas financieras, embudo comercial, temporadas y seguimiento de eventos.
+ */
 class Dashboard extends Component
 {
     public $totalBilled = 0;
@@ -55,6 +58,11 @@ class Dashboard extends Component
         'pipeline_revenue' => 0,
     ];
 
+    /**
+     * Inicializa el panel cargando las métricas financieras, estadísticas de temporadas, eventos próximos y alertas de seguimiento según el rol del usuario.
+     *
+     * @return void
+     */
     public function mount()
     {
         $user = auth()->user();
@@ -246,6 +254,13 @@ class Dashboard extends Component
     public $confirmingFollowupMailtoUrl = '';
     public $confirmingFollowupHasPhone = false;
 
+    /**
+     * Prepara el modal de seguimiento comercial cargando las plantillas disponibles para el evento indicado.
+     *
+     * @param int $eventId Identificador del evento.
+     * @param string|null $templateKey Clave de la plantilla de seguimiento opcional.
+     * @return void
+     */
     public function promptFollowup(int $eventId, ?string $templateKey = null)
     {
         $event = Event::with('client')->find($eventId);
@@ -263,6 +278,12 @@ class Dashboard extends Component
         $this->selectFollowupTemplate($key);
     }
 
+    /**
+     * Selecciona una plantilla de seguimiento y actualiza el texto, asunto y enlaces correspondientes.
+     *
+     * @param string $key Clave de la plantilla seleccionada.
+     * @return void
+     */
     public function selectFollowupTemplate(string $key)
     {
         $this->confirmingFollowupSelectedKey = $key;
@@ -274,6 +295,11 @@ class Dashboard extends Component
         }
     }
 
+    /**
+     * Envía el mensaje de seguimiento directamente por correo electrónico al cliente y registra la acción en el evento.
+     *
+     * @return void
+     */
     public function sendDirectFollowupEmail()
     {
         if (!$this->confirmingFollowupEventId) return;
@@ -310,6 +336,11 @@ class Dashboard extends Component
         }
     }
 
+    /**
+     * Registra en las notas del evento que el seguimiento ha sido enviado y reinicia el contador de días sin respuesta.
+     *
+     * @return void
+     */
     public function confirmFollowupSent()
     {
         if (!$this->confirmingFollowupEventId) return;
@@ -329,6 +360,12 @@ class Dashboard extends Component
         $this->mount();
     }
 
+    /**
+     * Marca el evento en seguimiento como respondido por el cliente y actualiza su estado.
+     *
+     * @param string $newStatus Nuevo estado del evento ('draft' o 'confirmed').
+     * @return void
+     */
     public function markAsResponded(string $newStatus = 'draft')
     {
         if (!$this->confirmingFollowupEventId) return;
@@ -348,11 +385,22 @@ class Dashboard extends Component
         $this->mount();
     }
 
+    /**
+     * Cierra el modal de confirmación de seguimiento comercial.
+     *
+     * @return void
+     */
     public function cancelFollowup()
     {
         $this->confirmingFollowupEventId = null;
     }
 
+    /**
+     * Marca una factura como cobrada ('paid') y recarga las métricas del panel.
+     *
+     * @param int|string $id Identificador de la factura.
+     * @return void
+     */
     public function markInvoiceAsPaid($id)
     {
         $invoice = Invoice::find($id);
@@ -362,6 +410,11 @@ class Dashboard extends Component
         }
     }
 
+    /**
+     * Renderiza la vista del panel de control principal.
+     *
+     * @return \Illuminate\Contracts\View\View
+     */
     public function render()
     {
         return view('livewire.admin.dashboard')->layout('components.layouts.app', ['header' => 'Panel de Control']);

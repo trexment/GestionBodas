@@ -7,6 +7,9 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
+/**
+ * Servicio para la configuración, cálculo de tarifas (incluyendo Modo Feria) y preparación de recursos del Dossier General de Tarifas.
+ */
 class GeneralTariffDossierService
 {
     public const SETTING_KEY = 'general_tariff_dossier_config_v1';

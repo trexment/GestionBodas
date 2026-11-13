@@ -5,6 +5,9 @@ namespace App\Livewire\Admin;
 use Livewire\Component;
 use App\Models\Equipment;
 
+/**
+ * Componente Livewire para la gestión del inventario de equipos de sonido, iluminación, estructuras y material técnico.
+ */
 class InventoryManager extends Component
 {
     public $equipmentList;
@@ -44,21 +47,41 @@ class InventoryManager extends Component
         'lost' => 'Extraviado'
     ];
 
+    /**
+     * Inicializa el componente cargando el listado de material del inventario.
+     *
+     * @return void
+     */
     public function mount()
     {
         $this->loadEquipment();
     }
 
+    /**
+     * Actualiza el listado de equipos cuando cambia el término de búsqueda.
+     *
+     * @return void
+     */
     public function updatedSearch()
     {
         $this->loadEquipment();
     }
 
+    /**
+     * Actualiza el listado de equipos cuando cambia el filtro de categoría.
+     *
+     * @return void
+     */
     public function updatedFilterCategory()
     {
         $this->loadEquipment();
     }
 
+    /**
+     * Consulta y filtra los equipos del inventario por búsqueda y categoría, ordenándolos alfabéticamente.
+     *
+     * @return void
+     */
     public function loadEquipment()
     {
         $query = Equipment::query();
@@ -77,6 +100,11 @@ class InventoryManager extends Component
         $this->equipmentList = $query->orderBy('category')->orderBy('name')->get();
     }
 
+    /**
+     * Reinicia el formulario y abre el modal para registrar un nuevo equipo en el inventario.
+     *
+     * @return void
+     */
     public function create()
     {
         $this->resetForm();
@@ -84,6 +112,12 @@ class InventoryManager extends Component
         $this->showModal = true;
     }
 
+    /**
+     * Carga los datos de un equipo existente en el formulario y abre el modal en modo edición.
+     *
+     * @param int|string $id Identificador del equipo.
+     * @return void
+     */
     public function edit($id)
     {
         $this->resetForm();
@@ -105,6 +139,11 @@ class InventoryManager extends Component
         $this->showModal = true;
     }
 
+    /**
+     * Valida los campos del formulario y crea o actualiza el registro del equipo en la base de datos.
+     *
+     * @return void
+     */
     public function save()
     {
         $this->validate([
@@ -155,6 +194,12 @@ class InventoryManager extends Component
         $this->loadEquipment();
     }
 
+    /**
+     * Elimina un equipo del inventario a partir de su identificador.
+     *
+     * @param int|string $id Identificador del equipo a eliminar.
+     * @return void
+     */
     public function delete($id)
     {
         Equipment::findOrFail($id)->delete();
@@ -162,6 +207,13 @@ class InventoryManager extends Component
         $this->loadEquipment();
     }
     
+    /**
+     * Incrementa o decrementa la cantidad disponible de un equipo en el inventario sin bajar de cero.
+     *
+     * @param int|string $id Identificador del equipo.
+     * @param int $amount Cantidad a sumar o restar.
+     * @return void
+     */
     public function updateQuantity($id, $amount)
     {
         $equipment = Equipment::findOrFail($id);
@@ -172,6 +224,11 @@ class InventoryManager extends Component
         }
     }
 
+    /**
+     * Restablece todos los campos del formulario de equipo y limpia los errores de validación.
+     *
+     * @return void
+     */
     public function resetForm()
     {
         $this->name = '';
@@ -187,6 +244,11 @@ class InventoryManager extends Component
         $this->resetValidation();
     }
 
+    /**
+     * Renderiza la vista de gestión de inventario.
+     *
+     * @return \Illuminate\Contracts\View\View
+     */
     public function render()
     {
         return view('livewire.admin.inventory-manager')

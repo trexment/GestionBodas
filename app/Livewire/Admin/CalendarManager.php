@@ -9,6 +9,9 @@ use App\Models\Quote;
 use App\Models\QuoteItem;
 use Carbon\Carbon;
 
+/**
+ * Componente Livewire para la visualización del calendario mensual de eventos y creación rápida desde fechas.
+ */
 class CalendarManager extends Component
 {
     public $year;
@@ -31,6 +34,11 @@ class CalendarManager extends Component
     public $new_assistant_id = '';
     public $new_status = 'draft';
 
+    /**
+     * Inicializa el calendario posicionándolo en el año y mes actuales.
+     *
+     * @return void
+     */
     public function mount()
     {
         $today = Carbon::today();
@@ -38,6 +46,11 @@ class CalendarManager extends Component
         $this->month = $today->month;
     }
 
+    /**
+     * Retrocede la vista del calendario al mes inmediatamente anterior.
+     *
+     * @return void
+     */
     public function previousMonth()
     {
         $date = Carbon::createFromDate($this->year, $this->month, 1)->subMonth();
@@ -45,6 +58,11 @@ class CalendarManager extends Component
         $this->month = $date->month;
     }
 
+    /**
+     * Avanza la vista del calendario al mes inmediatamente siguiente.
+     *
+     * @return void
+     */
     public function nextMonth()
     {
         $date = Carbon::createFromDate($this->year, $this->month, 1)->addMonth();
@@ -52,6 +70,11 @@ class CalendarManager extends Component
         $this->month = $date->month;
     }
 
+    /**
+     * Posiciona nuevamente el calendario en el mes y año del día actual.
+     *
+     * @return void
+     */
     public function goToToday()
     {
         $today = Carbon::today();
@@ -59,6 +82,12 @@ class CalendarManager extends Component
         $this->month = $today->month;
     }
 
+    /**
+     * Abre el modal de creación rápida de evento preseleccionando la fecha indicada.
+     *
+     * @param string|null $dateStr Fecha seleccionada en formato 'Y-m-d'.
+     * @return void
+     */
     public function openCreateModal($dateStr = null)
     {
         if (!in_array(auth()->user()->role, ['admin', 'dj'])) {
@@ -76,6 +105,11 @@ class CalendarManager extends Component
         $this->showCreateModal = true;
     }
 
+    /**
+     * Valida y registra un nuevo evento desde el modal del calendario, generando presupuesto automático si es de tipo vídeo.
+     *
+     * @return void
+     */
     public function createEvent()
     {
         if (!in_array(auth()->user()->role, ['admin', 'dj'])) {
@@ -178,6 +212,11 @@ class CalendarManager extends Component
         session()->flash('message', 'Evento creado exitosamente en el calendario.');
     }
 
+    /**
+     * Reinicia los campos del formulario de creación rápida de evento a sus valores por defecto.
+     *
+     * @return void
+     */
     public function resetCreateForm()
     {
         $this->new_name = '';
@@ -191,6 +230,11 @@ class CalendarManager extends Component
         $this->new_status = 'draft';
     }
 
+    /**
+     * Construye la cuadrícula de semanas del mes activo con sus eventos asociados y renderiza la vista del calendario.
+     *
+     * @return \Illuminate\Contracts\View\View
+     */
     public function render()
     {
         $firstDayOfMonth = Carbon::createFromDate($this->year, $this->month, 1);

@@ -8,6 +8,9 @@ use App\Models\WhatsAppMessage;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
+/**
+ * Servicio de integración con Evolution API para la gestión de instancias, envío, recepción y sincronización de mensajes de WhatsApp.
+ */
 class EvolutionWhatsAppService
 {
     /**
@@ -20,17 +23,26 @@ class EvolutionWhatsAppService
             && !empty(self::getApiKey());
     }
 
+    /**
+     * Obtiene la URL base del servidor Evolution API sin barra final.
+     */
     public static function getBaseUrl(): string
     {
         $url = trim(Setting::get('whatsapp_gateway_url', ''));
         return rtrim($url, '/');
     }
 
+    /**
+     * Obtiene la clave API configurada para autenticar las peticiones contra Evolution API.
+     */
     public static function getApiKey(): string
     {
         return trim(Setting::get('whatsapp_gateway_api_key', ''));
     }
 
+    /**
+     * Resuelve el nombre de la instancia de WhatsApp correspondiente a la marca o socio indicado.
+     */
     public static function getInstanceName(?string $brand = null): string
     {
         $clean = $brand ? strtolower(trim($brand)) : Setting::getDetectedBrand();

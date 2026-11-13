@@ -10,6 +10,9 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
+/**
+ * Componente Livewire para la gestión de usuarios, personal técnico (DJs, asistentes, administradores) y credenciales de acceso.
+ */
 class UserManager extends Component
 {
     use HandlesDniValidation;
@@ -48,6 +51,11 @@ class UserManager extends Component
     public $showPasswordModal = false;
     public $generatedPasswordInfo = null;
 
+    /**
+     * Verifica en cada petición que el usuario autenticado tenga permisos de administrador.
+     *
+     * @return void
+     */
     public function boot()
     {
         if (!auth()->check() || auth()->user()->role !== 'admin') {
@@ -55,6 +63,11 @@ class UserManager extends Component
         }
     }
 
+    /**
+     * Inicializa el componente restringiendo el acceso exclusivamente a usuarios administradores.
+     *
+     * @return void
+     */
     public function mount()
     {
         if (auth()->user()->role !== 'admin') {
@@ -64,6 +77,11 @@ class UserManager extends Component
 
     // ==================== CREACIÓN ====================
 
+    /**
+     * Reinicia el formulario y abre el modal para crear un nuevo usuario o miembro del equipo.
+     *
+     * @return void
+     */
     public function openCreateModal()
     {
         $this->resetValidation();
@@ -72,11 +90,21 @@ class UserManager extends Component
         $this->showCreateModal = true;
     }
 
+    /**
+     * Cierra el modal de creación de usuario.
+     *
+     * @return void
+     */
     public function closeCreateModal()
     {
         $this->showCreateModal = false;
     }
 
+    /**
+     * Valida los datos y registra un nuevo usuario en la base de datos comprobando duplicidades de teléfono o nombre.
+     *
+     * @return void
+     */
     public function saveUser()
     {
         if ($this->role === 'client') {
@@ -145,6 +173,12 @@ class UserManager extends Component
 
     // ==================== EDICIÓN COMPLETA ====================
 
+    /**
+     * Carga los datos de un usuario existente y abre el modal de edición.
+     *
+     * @param int|string $userId Identificador del usuario a editar.
+     * @return void
+     */
     public function openEditModal($userId)
     {
         $this->resetValidation();
@@ -173,17 +207,34 @@ class UserManager extends Component
         $this->showEditModal = true;
     }
 
+    /**
+     * Valida y completa automáticamente la letra del DNI al editarlo en el formulario.
+     *
+     * @param mixed $value DNI/NIE introducido.
+     * @return void
+     */
     public function updatedEditDni($value)
     {
         $this->validateAndCompleteDni('edit_dni', $value);
     }
 
+    /**
+     * Cierra el modal de edición de usuario y limpia el identificador activo.
+     *
+     * @return void
+     */
     public function closeEditModal()
     {
         $this->showEditModal = false;
         $this->editing_user_id = null;
     }
 
+    /**
+     * Autocompleta la localidad y provincia al modificar el código postal en el formulario de edición.
+     *
+     * @param mixed $value Código postal introducido.
+     * @return void
+     */
     public function updatedEditPostalCode($value)
     {
         $lookup = PostalCodeService::lookup($value);
@@ -195,6 +246,11 @@ class UserManager extends Component
         }
     }
 
+    /**
+     * Valida y actualiza los datos personales, rol y credenciales del usuario en edición.
+     *
+     * @return void
+     */
     public function updateUser()
     {
         $user = User::find($this->editing_user_id);
@@ -273,6 +329,12 @@ class UserManager extends Component
 
     // ==================== CAMBIO RÁPIDO DE CONTRASEÑA ====================
 
+    /**
+     * Abre el modal de cambio rápido de contraseña para el usuario indicado.
+     *
+     * @param int|string $userId Identificador del usuario.
+     * @return void
+     */
     public function openPasswordModal($userId)
     {
         $this->resetValidation();
@@ -286,6 +348,11 @@ class UserManager extends Component
         $this->showPasswordModal = true;
     }
 
+    /**
+     * Cierra el modal de cambio rápido de contraseña y reinicia las propiedades asociadas.
+     *
+     * @return void
+     */
     public function closePasswordModal()
     {
         $this->showPasswordModal = false;
@@ -294,11 +361,21 @@ class UserManager extends Component
         $this->generatedPasswordInfo = null;
     }
 
+    /**
+     * Genera una contraseña aleatoria de 8 caracteres para asignarla al usuario.
+     *
+     * @return void
+     */
     public function generateRandomPassword()
     {
         $this->new_password = Str::random(8);
     }
 
+    /**
+     * Valida y guarda la nueva contraseña del usuario, almacenando los datos para su envío o copia.
+     *
+     * @return void
+     */
     public function saveNewPassword()
     {
         $this->validate([
@@ -328,6 +405,12 @@ class UserManager extends Component
 
     // ==================== ELIMINACIÓN ====================
 
+    /**
+     * Elimina un usuario del sistema impidiendo que el administrador actual elimine su propia cuenta.
+     *
+     * @param int|string $userId Identificador del usuario a eliminar.
+     * @return void
+     */
     public function deleteUser($userId)
     {
         $user = User::find($userId);
@@ -344,6 +427,11 @@ class UserManager extends Component
         }
     }
 
+    /**
+     * Filtra los usuarios por rol y término de búsqueda y renderiza la vista de gestión de usuarios.
+     *
+     * @return \Illuminate\Contracts\View\View
+     */
     public function render()
     {
         $query = User::orderBy('name', 'asc');

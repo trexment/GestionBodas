@@ -9,6 +9,9 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
+/**
+ * Servicio para la importación, análisis y sincronización de leads procedentes de ferias nupciales (La Rioja Bridal Market).
+ */
 class BridalFairLeadService
 {
     /**

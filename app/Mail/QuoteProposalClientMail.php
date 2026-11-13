@@ -13,6 +13,9 @@ use App\Models\Quote;
 use App\Models\Setting;
 use Barryvdh\DomPDF\Facade\Pdf;
 
+/**
+ * Correo enviado al cliente con la propuesta económica de presupuesto y el dossier PDF adjunto.
+ */
 class QuoteProposalClientMail extends Mailable
 {
     use Queueable, SerializesModels;
@@ -25,6 +28,9 @@ class QuoteProposalClientMail extends Mailable
     public string $portalUrl;
     public string $quotePortalUrl;
 
+    /**
+     * Inicializa el correo con el evento, el presupuesto y los enlaces al portal del cliente.
+     */
     public function __construct(Event $event, Quote $quote)
     {
         $this->event = $event;
@@ -36,6 +42,9 @@ class QuoteProposalClientMail extends Mailable
         $this->quotePortalUrl = $this->quote->public_url;
     }
 
+    /**
+     * Define el sobre del correo con el asunto de la propuesta de presupuesto.
+     */
     public function envelope(): Envelope
     {
         $eventDate = $this->event->event_date ? \Carbon\Carbon::parse($this->event->event_date)->format('d/m/Y') : 'Por definir';
@@ -45,6 +54,9 @@ class QuoteProposalClientMail extends Mailable
         );
     }
 
+    /**
+     * Define la vista Blade que renderiza la propuesta enviada al cliente.
+     */
     public function content(): Content
     {
         return new Content(
@@ -52,6 +64,9 @@ class QuoteProposalClientMail extends Mailable
         );
     }
 
+    /**
+     * Genera y adjunta el archivo PDF del presupuesto al correo electrónico.
+     */
     public function attachments(): array
     {
         $attachments = [];

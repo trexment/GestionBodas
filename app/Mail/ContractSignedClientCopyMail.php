@@ -11,6 +11,9 @@ use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Str;
 
+/**
+ * Correo enviado al cliente con la copia en PDF de su contrato firmado digitalmente.
+ */
 class ContractSignedClientCopyMail extends Mailable
 {
     use Queueable, SerializesModels;
@@ -20,6 +23,9 @@ class ContractSignedClientCopyMail extends Mailable
     public $brand;
     public $renderedData;
 
+    /**
+     * Inicializa el correo a partir del contrato firmado y los datos de marca.
+     */
     public function __construct(Contract $contract)
     {
         $this->contract = $contract;
@@ -28,6 +34,9 @@ class ContractSignedClientCopyMail extends Mailable
         $this->brand = Setting::getBrandInfo($brandKey);
     }
 
+    /**
+     * Construye el mensaje y adjunta el documento PDF del contrato firmado.
+     */
     public function build()
     {
         $this->contract->load(['event.client', 'event.quotes.items']);

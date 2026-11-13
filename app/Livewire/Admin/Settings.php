@@ -11,6 +11,9 @@ use App\Services\MusicSearchService;
 use App\Services\SpotifyService;
 use Illuminate\Support\Facades\Storage;
 
+/**
+ * Componente Livewire para la configuración global del sistema, perfiles de marca, tarifas, contratos, plantillas de dossier e integraciones externas (Spotify, Drive, IMAP, SMTP, WhatsApp).
+ */
 class Settings extends Component
 {
     use WithFileUploads;
@@ -280,6 +283,11 @@ class Settings extends Component
     public $whatsappQrInstance = null;
     public $whatsappQrPerson = null;
 
+    /**
+     * Comprueba en cada petición que el usuario autenticado tenga rol de administrador.
+     *
+     * @return void
+     */
     public function boot()
     {
         if (!auth()->check() || auth()->user()->role !== 'admin') {
@@ -287,6 +295,11 @@ class Settings extends Component
         }
     }
 
+    /**
+     * Inicializa el componente cargando todos los parámetros de configuración, tarifas, plantillas e integraciones desde la base de datos.
+     *
+     * @return void
+     */
     public function mount()
     {
         if (auth()->user()->role !== 'admin') {
@@ -568,6 +581,12 @@ class Settings extends Component
         $this->admin_notification_phones_nunez = Setting::get('admin_notification_phones_nunez', $this->admin_notification_phones ?: '+34 622 63 47 90, +34 674 37 89 93');
     }
 
+    /**
+     * Carga en el editor de contratos una plantilla predefinida según su clave.
+     *
+     * @param string $presetKey Clave de la plantilla de contrato.
+     * @return void
+     */
     public function loadPreset($presetKey)
     {
         $presets = ContractTemplateService::presets();
@@ -580,11 +599,23 @@ class Settings extends Component
         }
     }
 
+    /**
+     * Inserta una variable dinámica al final del cuerpo de la plantilla de contrato.
+     *
+     * @param string $variable Nombre o marcador de la variable a insertar.
+     * @return void
+     */
     public function insertVariable($variable)
     {
         $this->contract_body .= ' ' . $variable;
     }
 
+    /**
+     * Carga en los campos del editor los textos e información de una plantilla predefinida de dossier comercial.
+     *
+     * @param string $presetKey Clave de la plantilla de dossier.
+     * @return void
+     */
     public function loadDossierPreset($presetKey)
     {
         $presets = DossierTemplateService::presets();
@@ -612,6 +643,12 @@ class Settings extends Component
         }
     }
 
+    /**
+     * Elimina una imagen almacenada de un bloque o banner del dossier comercial.
+     *
+     * @param string $slot Identificador del espacio de imagen ('photo1'..'photo4', 'banner', 'block1'..'block3').
+     * @return void
+     */
     public function deleteDossierImage($slot)
     {
         $keysMap = [
@@ -643,6 +680,11 @@ class Settings extends Component
         session()->flash('message', 'Foto eliminada correctamente.');
     }
 
+    /**
+     * Guarda las credenciales de Spotify y comprueba la conexión con su API.
+     *
+     * @return void
+     */
     public function testSpotify()
     {
         Setting::set('spotify_client_id', $this->spotify_client_id);
@@ -650,6 +692,11 @@ class Settings extends Component
         $this->spotifyConnectionStatus = MusicSearchService::testSpotifyConnection();
     }
 
+    /**
+     * Guarda las credenciales de Tidal y comprueba la conexión con su API.
+     *
+     * @return void
+     */
     public function testTidal()
     {
         Setting::set('tidal_client_id', $this->tidal_client_id);
@@ -657,6 +704,11 @@ class Settings extends Component
         $this->tidalConnectionStatus = MusicSearchService::testTidalConnection();
     }
 
+    /**
+     * Guarda los datos del servidor FotosEventosQR y verifica la conectividad con su API.
+     *
+     * @return void
+     */
     public function testFotosQrConnection()
     {
         $cleanUrl = rtrim(trim((string) $this->fotos_qr_base_url), '/') ?: \App\Services\FotosEventosQrService::DEFAULT_BASE_URL;
@@ -667,6 +719,13 @@ class Settings extends Component
         $this->fotosQrConnectionStatus = \App\Services\FotosEventosQrService::testConnection($cleanUrl, $cleanKey);
     }
 
+    /**
+     * Guarda automáticamente los cambios realizados sobre un proveedor de fotomatón/360º cuando se edita alguna de sus propiedades.
+     *
+     * @param mixed $value Nuevo valor modificado.
+     * @param string $key Ruta de la propiedad modificada dentro del arreglo.
+     * @return void
+     */
     public function updatedPhotoboothProviders($value, $key): void
     {
         $parts = explode('.', (string)$key);
@@ -676,6 +735,13 @@ class Settings extends Component
         }
     }
 
+    /**
+     * Activa o desactiva un servicio específico (fotomatón, plataforma 360º, fuente de chocolate, etc.) para un proveedor externo.
+     *
+     * @param string $providerKey Clave del proveedor.
+     * @param string $serviceFlag Nombre del indicador booleano del servicio.
+     * @return void
+     */
     public function toggleProviderService(string $providerKey, string $serviceFlag): void
     {
         if (!isset($this->photobooth_providers[$providerKey])) {
@@ -697,6 +763,11 @@ class Settings extends Component
         Setting::saveSinglePhotoboothProvider($providerKey, $this->photobooth_providers[$providerKey]);
     }
 
+    /**
+     * Registra un nuevo proveedor externo de fotomatón y servicios adicionales en el catálogo.
+     *
+     * @return void
+     */
     public function addPhotoboothProvider(): void
     {
         $name = trim($this->new_provider_name);
@@ -743,6 +814,12 @@ class Settings extends Component
         session()->flash('message', 'Nuevo proveedor "' . $name . '" añadido correctamente. Ahora puedes configurar sus servicios y tarifas.');
     }
 
+    /**
+     * Elimina un proveedor externo personalizado del catálogo (protegiendo los proveedores base).
+     *
+     * @param string $providerKey Clave del proveedor a eliminar.
+     * @return void
+     */
     public function deletePhotoboothProvider(string $providerKey): void
     {
         if (in_array($providerKey, ['logrono', 'vitoria'], true)) {
@@ -767,6 +844,11 @@ class Settings extends Component
         session()->flash('message', 'Proveedor "' . $removedName . '" eliminado.');
     }
 
+    /**
+     * Valida y guarda de forma persistente toda la configuración general, marcas, packs, servicios, plantillas, archivos e integraciones.
+     *
+     * @return void
+     */
     public function save()
     {
         $this->validate([
@@ -1099,6 +1181,11 @@ class Settings extends Component
         $this->dispatch('settings-saved');
     }
 
+    /**
+     * Guarda silenciosamente en la base de datos los ajustes de conexión e instancias del Gateway de WhatsApp.
+     *
+     * @return void
+     */
     public function saveWhatsAppSettingsQuietly()
     {
         Setting::set('whatsapp_gateway_enabled', $this->whatsapp_gateway_enabled ? '1' : '0');
@@ -1116,6 +1203,12 @@ class Settings extends Component
         Setting::set('admin_notification_phones', trim((string)$this->admin_notification_phones_nunez));
     }
 
+    /**
+     * Envía un mensaje de prueba de notificación automática por WhatsApp a los teléfonos de administración de la marca indicada.
+     *
+     * @param string $brand Marca a probar ('javnx' o 'nunez_and_son').
+     * @return void
+     */
     public function testAdminWhatsAppNotification(string $brand = 'javnx')
     {
         $this->saveWhatsAppSettingsQuietly();
@@ -1135,6 +1228,12 @@ class Settings extends Component
         }
     }
 
+    /**
+     * Verifica el estado de conexión de una instancia específica o de todas las instancias configuradas en el Gateway de WhatsApp.
+     *
+     * @param string|null $key Clave de la instancia a comprobar (o null para todas).
+     * @return void
+     */
     public function testWhatsAppGateway(?string $key = null)
     {
         $this->saveWhatsAppSettingsQuietly();
@@ -1154,6 +1253,12 @@ class Settings extends Component
         }
     }
 
+    /**
+     * Solicita al Gateway de WhatsApp el código QR de vinculación para la instancia indicada.
+     *
+     * @param string|null $key Clave de la instancia de WhatsApp.
+     * @return void
+     */
     public function fetchWhatsAppQrCode(?string $key = null)
     {
         $this->saveWhatsAppSettingsQuietly();
@@ -1202,6 +1307,12 @@ class Settings extends Component
         }
     }
 
+    /**
+     * Desconecta y cierra la sesión de una instancia activa de WhatsApp en el Gateway.
+     *
+     * @param string $key Clave de la instancia a desconectar.
+     * @return void
+     */
     public function disconnectWhatsAppInstance(string $key)
     {
         $this->saveWhatsAppSettingsQuietly();
@@ -1219,6 +1330,11 @@ class Settings extends Component
         }
     }
 
+    /**
+     * Cierra el modal de visualización del código QR de WhatsApp.
+     *
+     * @return void
+     */
     public function closeWhatsAppQrModal()
     {
         $this->whatsappQrBase64 = null;
@@ -1226,6 +1342,12 @@ class Settings extends Component
         $this->whatsappQrPerson = null;
     }
 
+    /**
+     * Guarda la configuración IMAP y comprueba la conexión del buzón de correo de la marca indicada.
+     *
+     * @param string $brandKey Clave de la marca ('nunez', 'javnx' o 'leugim').
+     * @return void
+     */
     public function testImapConnection(string $brandKey)
     {
         $this->saveImapSettings();
@@ -1235,6 +1357,11 @@ class Settings extends Component
         $this->imapTestStatus[$brandKey] = $result;
     }
 
+    /**
+     * Guarda los ajustes IMAP y ejecuta inmediatamente el escaneo de todos los buzones activos en busca de nuevos leads.
+     *
+     * @return void
+     */
     public function fetchImapLeadsNow()
     {
         $this->saveImapSettings();
@@ -1250,6 +1377,11 @@ class Settings extends Component
         }
     }
 
+    /**
+     * Almacena en la tabla de configuración los parámetros del servidor IMAP y las credenciales de cada buzón por marca.
+     *
+     * @return void
+     */
     protected function saveImapSettings()
     {
         Setting::set('imap_host', $this->imap_host);
@@ -1271,6 +1403,11 @@ class Settings extends Component
         Setting::set('imap_leugim_enabled', $this->imap_leugim_enabled ? '1' : '0');
     }
 
+    /**
+     * Desvincula la cuenta de usuario de Spotify eliminando sus tokens de acceso almacenados.
+     *
+     * @return void
+     */
     public function disconnectSpotify()
     {
         Setting::set('spotify_access_token', null);
@@ -1284,6 +1421,11 @@ class Settings extends Component
         session()->flash('message', 'Cuenta de Spotify desconectada correctamente.');
     }
 
+    /**
+     * Guarda las credenciales de Google Drive y sincroniza el catálogo musical con la carpeta configurada.
+     *
+     * @return void
+     */
     public function syncDriveLibrary()
     {
         Setting::set('google_drive_api_key', $this->google_drive_api_key);
@@ -1301,6 +1443,11 @@ class Settings extends Component
         }
     }
 
+    /**
+     * Envía un correo electrónico de prueba para verificar el funcionamiento de la configuración SMTP.
+     *
+     * @return void
+     */
     public function testSmtpConnection()
     {
         $this->validate([
@@ -1328,6 +1475,11 @@ class Settings extends Component
 
     public ?array $systemHealthReport = null;
 
+    /**
+     * Ejecuta la auditoría integral de salud del sistema verificando tablas, módulos, servicios y plantillas.
+     *
+     * @return void
+     */
     public function runSystemHealthDiagnostics(): void
     {
         if (!auth()->check() || auth()->user()->role !== 'admin') {
@@ -1342,11 +1494,21 @@ class Settings extends Component
         }
     }
 
+    /**
+     * Cierra el informe de diagnóstico de salud del sistema.
+     *
+     * @return void
+     */
     public function closeHealthDiagnostics(): void
     {
         $this->systemHealthReport = null;
     }
 
+    /**
+     * Renderiza la vista de configuración general de la empresa pasando las variables y plantillas disponibles.
+     *
+     * @return \Illuminate\Contracts\View\View
+     */
     public function render()
     {
         return view('livewire.admin.settings', [

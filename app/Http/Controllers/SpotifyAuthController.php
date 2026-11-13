@@ -7,10 +7,13 @@ use App\Services\SpotifyService;
 use App\Models\Setting;
 use Illuminate\Support\Facades\Cache;
 
+/**
+ * Controlador para la integración con Spotify, Apple Music, YouTube y streaming/descarga de audio.
+ */
 class SpotifyAuthController extends Controller
 {
     /**
-     * Redirect to Spotify OAuth Authorization Screen
+     * Redirige a la pantalla de autorización OAuth de Spotify.
      */
     public function connect()
     {
@@ -26,7 +29,7 @@ class SpotifyAuthController extends Controller
     }
 
     /**
-     * Handle OAuth Callback from Spotify
+     * Procesa la respuesta del callback OAuth de Spotify.
      */
     public function callback(Request $request)
     {
@@ -60,7 +63,7 @@ class SpotifyAuthController extends Controller
     }
 
     /**
-     * Disconnect Spotify User Account
+     * Desconecta la cuenta de usuario de Spotify configurada.
      */
     public function disconnect()
     {
@@ -71,13 +74,16 @@ class SpotifyAuthController extends Controller
             ->with('message', 'Cuenta de Spotify desconectada correctamente.');
     }
 
+    /**
+     * Comprueba si el usuario autenticado forma parte del equipo (administrador, DJ o asistente).
+     */
     protected static function isStaffUser(): bool
     {
         return auth()->check() && in_array(auth()->user()->role, ['admin', 'dj', 'assistant'], true);
     }
 
     /**
-     * API Endpoint for Spotify Web Playback SDK
+     * Endpoint API para obtener el token del reproductor Spotify Web Playback SDK.
      */
     public function getToken()
     {
@@ -113,7 +119,7 @@ class SpotifyAuthController extends Controller
     }
 
     /**
-     * API Endpoint for Apple Music MusicKit JS
+     * Endpoint API para obtener el token de desarrollador de Apple Music MusicKit JS.
      */
     public function getAppleMusicToken()
     {
@@ -126,7 +132,7 @@ class SpotifyAuthController extends Controller
     }
 
     /**
-     * API Endpoint to find YouTube Video ID for full song streaming
+     * Endpoint API para localizar el ID de vídeo de YouTube para reproducción de canciones completas.
      */
     public function getYoutubeVideoId(Request $request)
     {
@@ -151,7 +157,7 @@ class SpotifyAuthController extends Controller
     }
 
     /**
-     * API Endpoint to resolve audio stream, preview, cover and video ID for any track
+     * Endpoint API para resolver stream de audio, vista previa, carátula e ID de vídeo de una canción.
      */
     public function resolveTrack(Request $request)
     {
@@ -229,7 +235,7 @@ class SpotifyAuthController extends Controller
     }
 
     /**
-     * Helper to find YouTube Video ID across multiple sources
+     * Busca el ID de vídeo de YouTube de una canción consultando múltiples fuentes.
      */
     public static function searchYoutubeVideoId(string $query): ?string
     {
@@ -312,7 +318,7 @@ class SpotifyAuthController extends Controller
     }
 
     /**
-     * Download or proxy direct audio MP3 stream for DJ / Client
+     * Descarga o actúa como proxy del archivo de audio MP3 para el DJ o el cliente.
      */
     public function downloadAudio(\App\Models\EventMusicRequest $musicRequest)
     {
@@ -403,7 +409,7 @@ class SpotifyAuthController extends Controller
     }
 
     /**
-     * Proxy streaming of Google Drive audio directly to HTML5 audio players
+     * Retransmite mediante proxy archivos de audio alojados en Google Drive para reproductores HTML5.
      */
     public function streamGoogleDriveAudio(string $fileId)
     {

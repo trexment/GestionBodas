@@ -4,6 +4,9 @@ namespace App\Livewire\Traits;
 
 use App\Services\DocumentValidationService;
 
+/**
+ * Trait reutilizable para componentes Livewire que gestionan validación en tiempo real y sugerencia de corrección de DNI / NIE / CIF.
+ */
 trait HandlesDniValidation
 {
     /**

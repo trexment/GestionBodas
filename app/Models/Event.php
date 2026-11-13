@@ -6,6 +6,9 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
+/**
+ * Modelo principal que representa un evento musical o boda y concentra su operativa, horarios, finanzas y equipo.
+ */
 class Event extends Model
 {
     use HasFactory;
@@ -69,6 +72,9 @@ class Event extends Model
     protected static bool $hasGuestTokenColumn = false;
     protected static bool $hasStaffTokenColumn = false;
 
+    /**
+     * Comprueba y asegura que las columnas guest_token y staff_token existan en la tabla events.
+     */
     protected static function ensureTokenColumnsExist(): void
     {
         if (static::$tokensSchemaChecked) {
@@ -99,6 +105,9 @@ class Event extends Model
         }
     }
 
+    /**
+     * Registra el evento de creación del modelo para inicializar los tokens de cliente, invitados y personal.
+     */
     protected static function boot()
     {
         parent::boot();
@@ -119,6 +128,9 @@ class Event extends Model
         });
     }
 
+    /**
+     * Obtiene el token de acceso principal del evento, generándolo si estuviera vacío.
+     */
     public function getTokenAttribute($value)
     {
         return $this->ensureTokenValue('token', $value, 32);
@@ -203,6 +215,9 @@ class Event extends Model
         return $this->ensureTokenValue('staff_token', $value, 40);
     }
 
+    /**
+     * Asegura que la columna de token indicada tenga un valor aleatorio válido y lo persiste silenciosamente si falta.
+     */
     protected function ensureTokenValue(string $column, $value, int $length): string
     {
         if (empty($value)) {
@@ -228,56 +243,89 @@ class Event extends Model
             || hash_equals((string) $this->staff_token, $provided);
     }
 
+    /**
+     * Relación con el usuario cliente titular del evento.
+     */
     public function client()
     {
         return $this->belongsTo(User::class, 'client_id');
     }
 
+    /**
+     * Relación con el DJ titular asignado al evento.
+     */
     public function dj()
     {
         return $this->belongsTo(User::class, 'dj_id');
     }
 
+    /**
+     * Relación con el asistente técnico principal asignado al evento.
+     */
     public function assistant()
     {
         return $this->belongsTo(User::class, 'assistant_id');
     }
 
+    /**
+     * Relación muchos a muchos con todos los asistentes técnicos asignados al evento.
+     */
     public function assistants()
     {
         return $this->belongsToMany(User::class, 'event_assistants', 'event_id', 'user_id')->withTimestamps();
     }
 
+    /**
+     * Relación con los presupuestos emitidos para el evento.
+     */
     public function quotes()
     {
         return $this->hasMany(Quote::class);
     }
 
+    /**
+     * Relación con los contratos generados para el evento.
+     */
     public function contracts()
     {
         return $this->hasMany(Contract::class);
     }
 
+    /**
+     * Relación con las facturas y recibos emitidos para el evento.
+     */
     public function invoices()
     {
         return $this->hasMany(Invoice::class);
     }
 
+    /**
+     * Relación con los mensajes de WhatsApp registrados en el historial del evento.
+     */
     public function whatsappMessages()
     {
         return $this->hasMany(WhatsAppMessage::class)->orderBy('created_at', 'asc')->orderBy('id', 'asc');
     }
 
+    /**
+     * Relación con los dossiers asociados al evento.
+     */
     public function dossiers()
     {
         return $this->hasMany(Dossier::class);
     }
 
+    /**
+     * Relación con las listas de reproducción (playlists) del evento.
+     */
     public function playlists()
     {
         return $this->hasMany(Playlist::class);
     }
 
+    /**
+     * Relación muchos a muchos con el equipamiento técnico asignado en la hoja de carga del evento.
+     */
     public function equipment()
     {
         return $this->belongsToMany(Equipment::class, 'event_equipment')
@@ -285,21 +333,33 @@ class Event extends Model
                     ->withTimestamps();
     }
 
+    /**
+     * Relación con las peticiones musicales y canciones de la escaleta del evento.
+     */
     public function musicRequests()
     {
         return $this->hasMany(EventMusicRequest::class)->orderBy('order')->orderBy('id');
     }
 
+    /**
+     * Relación con las reuniones programadas o realizadas con los clientes del evento.
+     */
     public function meetings()
     {
         return $this->hasMany(ClientMeeting::class)->orderBy('meeting_date', 'asc');
     }
 
+    /**
+     * Relación con el historial de pistas reproducidas en la sesión DJ del evento.
+     */
     public function djHistories()
     {
         return $this->hasMany(EventDjHistory::class)->orderBy('order', 'asc');
     }
 
+    /**
+     * Relación con las reservas y pagos a proveedores externos (fotomatón, plataforma 360º, etc.) del evento.
+     */
     public function providerBookings()
     {
         EventProviderBooking::ensureTableExists();
@@ -1134,6 +1194,9 @@ class Event extends Model
         return 'nunez_and_son';
     }
 
+    /**
+     * Devuelve el nombre comercial legible de la marca asignada al evento.
+     */
     public function getBrandLabelAttribute(): string
     {
         if ($this->brand_clean === 'javnx') return 'JAVNX DJ';
@@ -1141,6 +1204,9 @@ class Event extends Model
         return 'Núñez and Son';
     }
 
+    /**
+     * Devuelve el icono representativo de la marca comercial asignada al evento.
+     */
     public function getBrandIconAttribute(): string
     {
         if ($this->brand_clean === 'javnx') return '🎧';
@@ -1148,6 +1214,9 @@ class Event extends Model
         return '👑';
     }
 
+    /**
+     * Devuelve la configuración e información completa de la marca asignada al evento.
+     */
     public function getBrandInfoAttribute(): array
     {
         return Setting::getBrandInfo($this->brand_clean);
@@ -1733,6 +1802,9 @@ class Event extends Model
         return self::getCategoriesForEventType($this->event_type_clean);
     }
 
+    /**
+     * Devuelve el catálogo de categorías o fases musicales según el tipo de evento indicado.
+     */
     public static function getCategoriesForEventType(?string $eventType = 'boda'): array
     {
         $type = mb_strtolower(trim((string)$eventType));

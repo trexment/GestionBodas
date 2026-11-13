@@ -11,6 +11,9 @@ use App\Models\Event;
 use App\Models\Quote;
 use App\Models\Setting;
 
+/**
+ * Correo de aviso enviado a los administradores cuando un cliente solicita un presupuesto online.
+ */
 class NewQuoteRequestAdminMail extends Mailable
 {
     use Queueable, SerializesModels;
@@ -25,6 +28,9 @@ class NewQuoteRequestAdminMail extends Mailable
     public string $eventSchedule;
     public bool $needsPriorSetup;
 
+    /**
+     * Inicializa el correo con el evento, el presupuesto generado y los detalles solicitados por el cliente.
+     */
     public function __construct(
         Event $event,
         Quote $quote,
@@ -47,6 +53,9 @@ class NewQuoteRequestAdminMail extends Mailable
         $this->adminUrl = route('admin.events.show', $event->id);
     }
 
+    /**
+     * Define el sobre del correo con el asunto de la nueva solicitud de presupuesto.
+     */
     public function envelope(): Envelope
     {
         $clientName = $this->event->client ? $this->event->client->name : 'Nuevo Cliente';
@@ -58,6 +67,9 @@ class NewQuoteRequestAdminMail extends Mailable
         );
     }
 
+    /**
+     * Define la vista del contenido del correo para los administradores.
+     */
     public function content(): Content
     {
         return new Content(
@@ -65,6 +77,9 @@ class NewQuoteRequestAdminMail extends Mailable
         );
     }
 
+    /**
+     * Devuelve la lista de archivos adjuntos del correo.
+     */
     public function attachments(): array
     {
         return [];

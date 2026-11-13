@@ -7,6 +7,9 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
+/**
+ * Servicio de localización automática de teléfonos y datos de contacto de fincas, bodegas, hoteles y restaurantes.
+ */
 class VenueLookupService
 {
     /**
@@ -395,6 +398,9 @@ class VenueLookupService
         return null;
     }
 
+    /**
+     * Descarga una página web y extrae el primer número de teléfono español válido encontrado en su contenido HTML.
+     */
     protected static function scrapeSingleUrlForPhone(string $url): ?string
     {
         try {

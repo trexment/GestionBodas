@@ -7,6 +7,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
+/**
+ * Modelo que gestiona las reservas, costes y pagos (señal y liquidación) a proveedores externos por evento.
+ */
 class EventProviderBooking extends Model
 {
     use HasFactory;
@@ -44,6 +47,9 @@ class EventProviderBooking extends Model
 
     protected static bool $schemaChecked = false;
 
+    /**
+     * Verifica y crea automáticamente la tabla event_provider_bookings si aún no existe en la base de datos.
+     */
     public static function ensureTableExists(): void
     {
         if (static::$schemaChecked) {
@@ -78,11 +84,17 @@ class EventProviderBooking extends Model
         }
     }
 
+    /**
+     * Relación con el evento al que corresponde la reserva del proveedor.
+     */
     public function event()
     {
         return $this->belongsTo(Event::class);
     }
 
+    /**
+     * Formatea el código de método de pago en una etiqueta legible en español.
+     */
     public static function formatMethodLabel(?string $method): string
     {
         return match ($method) {
@@ -95,6 +107,9 @@ class EventProviderBooking extends Model
         };
     }
 
+    /**
+     * Devuelve el icono asociado al método de pago indicado.
+     */
     public static function formatMethodIcon(?string $method): string
     {
         return match ($method) {
@@ -106,26 +121,41 @@ class EventProviderBooking extends Model
         };
     }
 
+    /**
+     * Devuelve la etiqueta legible del método de pago de la señal al proveedor.
+     */
     public function getDepositMethodLabelAttribute(): string
     {
         return self::formatMethodLabel($this->deposit_payment_method);
     }
 
+    /**
+     * Devuelve el icono del método de pago de la señal al proveedor.
+     */
     public function getDepositMethodIconAttribute(): string
     {
         return self::formatMethodIcon($this->deposit_payment_method);
     }
 
+    /**
+     * Devuelve la etiqueta legible del método de pago de la liquidación final al proveedor.
+     */
     public function getFinalMethodLabelAttribute(): string
     {
         return self::formatMethodLabel($this->final_payment_method);
     }
 
+    /**
+     * Devuelve el icono del método de pago de la liquidación final al proveedor.
+     */
     public function getFinalMethodIconAttribute(): string
     {
         return self::formatMethodIcon($this->final_payment_method);
     }
 
+    /**
+     * Calcula el importe total abonado al proveedor sumando señal y liquidación final.
+     */
     public function getTotalPaidAttribute(): float
     {
         $dep = ($this->deposit_paid && (float) $this->deposit_amount > 0) ? (float) $this->deposit_amount : 0.0;
@@ -133,12 +163,18 @@ class EventProviderBooking extends Model
         return round($dep + $fin, 2);
     }
 
+    /**
+     * Calcula el importe pendiente de pago al proveedor.
+     */
     public function getPendingAmountAttribute(): float
     {
         $cost = max((float) $this->provider_total_cost, $this->total_paid);
         return max(0.0, round($cost - $this->total_paid, 2));
     }
 
+    /**
+     * Determina la clave de estado de pago al proveedor ('paid', 'deposit_paid' o 'unpaid').
+     */
     public function getStatusKeyAttribute(): string
     {
         $totalPaid = $this->total_paid;
@@ -154,6 +190,9 @@ class EventProviderBooking extends Model
         return 'unpaid'; // Pendiente de pagar señal al proveedor
     }
 
+    /**
+     * Devuelve la etiqueta descriptiva del estado de pago al proveedor.
+     */
     public function getStatusLabelAttribute(): string
     {
         return match ($this->status_key) {

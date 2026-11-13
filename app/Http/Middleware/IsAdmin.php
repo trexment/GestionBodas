@@ -7,6 +7,9 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Illuminate\Support\Facades\Auth;
 
+/**
+ * Middleware de control de acceso que restringe las rutas del panel a usuarios con rol de administrador o personal (DJ / asistente).
+ */
 class IsAdmin
 {
     /**

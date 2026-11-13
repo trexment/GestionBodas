@@ -9,6 +9,9 @@ use App\Models\Quote;
 use App\Models\Setting;
 use Illuminate\Support\Str;
 
+/**
+ * Componente Livewire público para el configurador y solicitador interactivo de presupuestos a medida por tipo de evento.
+ */
 class QuoteCalculator extends Component
 {
     // Contact Info
@@ -30,6 +33,9 @@ class QuoteCalculator extends Component
     public $custom_service_description = '';
     public $is_submitted = false;
 
+    /**
+     * Devuelve el catálogo de tipos de evento soportados con sus textos, etiquetas y descripciones de servicios.
+     */
     public static function getEventTypes(): array
     {
         return [
@@ -228,6 +234,9 @@ class QuoteCalculator extends Component
         ];
     }
 
+    /**
+     * Cambia el tipo de evento activo y actualiza las etiquetas de los servicios principales.
+     */
     public function setEventType($type)
     {
         $types = self::getEventTypes();
@@ -238,11 +247,17 @@ class QuoteCalculator extends Component
         $this->updateServiceLabels();
     }
 
+    /**
+     * Hook de Livewire que sincroniza los textos de los servicios al cambiar la propiedad event_type.
+     */
     public function updatedEventType()
     {
         $this->updateServiceLabels();
     }
 
+    /**
+     * Actualiza los nombres, iconos y descripciones de los bloques de servicio según el tipo de evento seleccionado.
+     */
     public function updateServiceLabels()
     {
         $types = self::getEventTypes();
@@ -280,6 +295,9 @@ class QuoteCalculator extends Component
         }
     }
 
+    /**
+     * Inicializa el configurador de presupuestos precargando opcionalmente los datos de un evento existente e inicializando el catálogo de servicios.
+     */
     public function mount(?string $evento = null)
     {
         $initialType = request()->get('tipo', 'boda');
@@ -512,6 +530,9 @@ class QuoteCalculator extends Component
         return Setting::getDjPackForHours($hours);
     }
 
+    /**
+     * Ajusta el número de horas del bloque principal de DJ y sincroniza los efectos incluidos en el pack.
+     */
     public function setDjHours(int $hours)
     {
         $this->services['dj']['quantity'] = max(2, min(9, $hours));
@@ -524,6 +545,9 @@ class QuoteCalculator extends Component
         $this->syncPackEffects();
     }
 
+    /**
+     * Activa o desactiva un servicio del configurador y sincroniza packs combinados o regalos asociados.
+     */
     public function toggleService(string $key)
     {
         if (!isset($this->services[$key])) {
@@ -566,6 +590,9 @@ class QuoteCalculator extends Component
         }
     }
 
+    /**
+     * Activa automáticamente el Pack Dúo cuando el cliente selecciona tanto Fotomatón como Plataforma 360º.
+     */
     protected function autoActivatePackDuo(): void
     {
         if (!isset($this->services['pack_duo_360'])) {
@@ -580,6 +607,9 @@ class QuoteCalculator extends Component
         $this->services['video_360']['selected'] = false;
     }
 
+    /**
+     * Sincroniza los efectos incluidos en el pack cuando se actualiza alguna propiedad del bloque DJ.
+     */
     public function updatedServices($value, $key)
     {
         if (str_starts_with($key, 'dj.')) {
@@ -587,6 +617,9 @@ class QuoteCalculator extends Component
         }
     }
 
+    /**
+     * Establece el número de máquinas de fuego frío seleccionadas y marca el servicio como activo.
+     */
     public function setColdSparksQuantity(int $quantity)
     {
         $this->services['cold_sparks']['quantity'] = max(1, min(10, $quantity));
@@ -594,12 +627,18 @@ class QuoteCalculator extends Component
         $this->services['cold_sparks']['manually_toggled'] = true;
     }
 
+    /**
+     * Establece la cantidad de horas adicionales seleccionadas y activa dicho servicio.
+     */
     public function setExtraHoursQuantity(int $quantity)
     {
         $this->services['extra_hours']['quantity'] = max(1, min(6, $quantity));
         $this->services['extra_hours']['selected'] = true;
     }
 
+    /**
+     * Establece la duración en horas del Pack Dúo (Fotomatón + Plataforma 360º) y desmarca las opciones individuales.
+     */
     public function setPackDuoHours(int $hours)
     {
         if (!isset($this->services['pack_duo_360'])) {
@@ -615,6 +654,9 @@ class QuoteCalculator extends Component
         }
     }
 
+    /**
+     * Establece la duración en horas del servicio de Fotomatón y activa el Pack Dúo si Plataforma 360º también está activa.
+     */
     public function setPhotoboothHours(int $hours)
     {
         if (!isset($this->services['photobooth'])) {
@@ -632,6 +674,9 @@ class QuoteCalculator extends Component
         }
     }
 
+    /**
+     * Establece la duración en horas del servicio de Plataforma 360º y activa el Pack Dúo si Fotomatón también está activo.
+     */
     public function setVideo360Hours(int $hours)
     {
         if (!isset($this->services['video_360'])) {
@@ -649,11 +694,17 @@ class QuoteCalculator extends Component
         }
     }
 
+    /**
+     * Unifica la selección separada de Fotomatón y Plataforma 360º activando el Pack Dúo conjunto.
+     */
     public function applyPackDuoFromSeparate()
     {
         $this->autoActivatePackDuo();
     }
 
+    /**
+     * Configura el número de fuentes y las horas de servicio para la Mesa Dulce con Fuente de Chocolate.
+     */
     public function setChocolateFountainOption(int $fountains, int $hours)
     {
         if (!isset($this->services['chocolate_fountain'])) {
@@ -664,6 +715,9 @@ class QuoteCalculator extends Component
         $this->services['chocolate_fountain']['selected'] = true;
     }
 
+    /**
+     * Activa o desactiva el suplemento de rincón de gofres dentro de la Mesa Dulce con Fuente de Chocolate.
+     */
     public function toggleChocolateWaffleCorner()
     {
         if (!isset($this->services['chocolate_fountain'])) {
@@ -673,6 +727,9 @@ class QuoteCalculator extends Component
         $this->services['chocolate_fountain']['selected'] = true;
     }
 
+    /**
+     * Establece las horas de servicio para la Estación/Carrito de Gofres en directo.
+     */
     public function setWaffleCartHours(int $hours)
     {
         if (!isset($this->services['waffle_cart'])) {
@@ -739,6 +796,9 @@ class QuoteCalculator extends Component
         $this->setDjHours(min(9, $totalHours));
     }
 
+    /**
+     * Sincroniza la inclusión gratuita de máquina de humo, fuego frío y álbum QR según el Pack DJ seleccionado.
+     */
     public function syncPackEffects()
     {
         if (empty($this->services['dj']['selected'])) {
@@ -781,12 +841,18 @@ class QuoteCalculator extends Component
         $this->syncPhotoQrGift();
     }
 
+    /**
+     * Determina si el Modo Feria (con promoción especial de tarifas y regalo de Álbum QR) se encuentra activo.
+     */
     public function getIsFairModeActiveProperty(): bool
     {
         $fairConfig = \App\Services\GeneralTariffDossierService::getConfig();
         return !empty($fairConfig['fair_mode']['enabled']);
     }
 
+    /**
+     * Sincroniza si el Álbum de Fotos QR se incluye de regalo por promoción de feria o por contratar Ceremonia/Cóctel.
+     */
     public function syncPhotoQrGift(): void
     {
         if (!isset($this->services['photo_qr'])) {
@@ -815,6 +881,9 @@ class QuoteCalculator extends Component
         }
     }
 
+    /**
+     * Valida y procesa la solicitud de presupuesto, creando o actualizando el cliente, el evento, el borrador de presupuesto y las notificaciones.
+     */
     public function submitRequest()
     {
         // Las acciones Livewire van por /livewire/update y no pasan por el throttle de la ruta GET
@@ -1711,6 +1780,9 @@ class QuoteCalculator extends Component
         $this->is_submitted = true;
     }
 
+    /**
+     * Renderiza la vista pública del configurador de presupuestos.
+     */
     public function render()
     {
         $dossierCfg = \App\Services\GeneralTariffDossierService::getConfig();

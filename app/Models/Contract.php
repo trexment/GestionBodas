@@ -6,6 +6,9 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
+/**
+ * Modelo que representa el contrato de prestación de servicios asociado a un evento.
+ */
 class Contract extends Model
 {
     use HasFactory;
@@ -40,6 +43,9 @@ class Contract extends Model
         'consent_rrss' => 'boolean',
     ];
 
+    /**
+     * Registra los eventos del ciclo de vida del modelo para autogenerar token y número de contrato al crear.
+     */
     protected static function boot()
     {
         parent::boot();
@@ -91,6 +97,9 @@ class Contract extends Model
         return 'CTR-' . str_pad($this->id ?? 1, 5, '0', STR_PAD_LEFT);
     }
 
+    /**
+     * Relación con el evento al que pertenece este contrato.
+     */
     public function event()
     {
         return $this->belongsTo(Event::class);

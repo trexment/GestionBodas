@@ -4,6 +4,9 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 
+/**
+ * Proveedor principal de servicios de la aplicación: fuerza HTTPS en producción y verifica la integridad del esquema de base de datos en el arranque.
+ */
 class AppServiceProvider extends ServiceProvider
 {
     /**

@@ -5,6 +5,9 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * Modelo que representa una pista reproducida en el historial de sesión DJ de un evento.
+ */
 class EventDjHistory extends Model
 {
     use HasFactory;
@@ -29,11 +32,17 @@ class EventDjHistory extends Model
         'bpm' => 'decimal:1',
     ];
 
+    /**
+     * Relación con el evento al que pertenece este registro del historial DJ.
+     */
     public function event()
     {
         return $this->belongsTo(Event::class);
     }
 
+    /**
+     * Relación con la petición musical coincidente del evento, si existe.
+     */
     public function matchedRequest()
     {
         return $this->belongsTo(EventMusicRequest::class, 'matched_request_id');

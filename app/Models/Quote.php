@@ -5,6 +5,9 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * Modelo que representa una propuesta económica o presupuesto vinculado a un evento.
+ */
 class Quote extends Model
 {
     use HasFactory;
@@ -39,11 +42,17 @@ class Quote extends Model
 
     protected static bool $schemaChecked = false;
 
+    /**
+     * Inicializa el modelo verificando la existencia de las columnas de respuesta de presupuesto.
+     */
     protected static function booted(): void
     {
         static::EnsureQuoteResponseColumns();
     }
 
+    /**
+     * Verifica y añade en caliente las columnas de respuesta y notas en la tabla quotes si no existen.
+     */
     public static function EnsureQuoteResponseColumns(): void
     {
         if (static::$schemaChecked) {
@@ -72,6 +81,9 @@ class Quote extends Model
         }
     }
 
+    /**
+     * Construye y devuelve la URL pública amigable para que el cliente consulte y acepte el presupuesto.
+     */
     public function getPublicUrlAttribute(): string
     {
         if (!$this->event || empty($this->event->token)) {
@@ -94,11 +106,17 @@ class Quote extends Model
         ]);
     }
 
+    /**
+     * Relación con el evento al que pertenece el presupuesto.
+     */
     public function event()
     {
         return $this->belongsTo(Event::class);
     }
 
+    /**
+     * Relación con las líneas o conceptos desglosados del presupuesto.
+     */
     public function items()
     {
         return $this->hasMany(QuoteItem::class);
@@ -343,6 +361,9 @@ class Quote extends Model
         return 0.00;
     }
 
+    /**
+     * Devuelve la clave normalizada de la marca comercial asociada al presupuesto.
+     */
     public function getBrandCleanAttribute(): string
     {
         if (!empty($this->attributes['brand'])) {
@@ -360,6 +381,9 @@ class Quote extends Model
         return 'nunez_and_son';
     }
 
+    /**
+     * Devuelve la información completa de la marca comercial asociada al presupuesto.
+     */
     public function getBrandInfoAttribute(): array
     {
         return Setting::getBrandInfo($this->brand_clean);

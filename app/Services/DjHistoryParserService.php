@@ -6,6 +6,9 @@ use App\Models\Event;
 use App\Models\EventDjHistory;
 use App\Models\EventMusicRequest;
 
+/**
+ * Servicio para analizar e importar historiales de sesiones DJ (Rekordbox, VirtualDJ, Serato, Traktor, M3U, CSV o texto) y cruzarlos con peticiones.
+ */
 class DjHistoryParserService
 {
     /**
@@ -418,6 +421,9 @@ class DjHistoryParserService
         return null;
     }
 
+    /**
+     * Normaliza una cadena de texto en minúsculas sin acentos ni caracteres especiales para comparaciones difusas.
+     */
     protected function normalizeString(string $str): string
     {
         $str = mb_strtolower(trim($str));

@@ -2,6 +2,9 @@
 
 namespace App\Services;
 
+/**
+ * Servicio de consulta de códigos postales españoles para resolver automáticamente localidad y provincia.
+ */
 class PostalCodeService
 {
     /**
@@ -329,6 +332,9 @@ class PostalCodeService
         '52001' => 'Melilla',
     ];
 
+    /**
+     * Busca la localidad y provincia asociadas a un código postal español de 5 dígitos.
+     */
     public static function lookup($postalCode): array
     {
         $code = trim((string)$postalCode);

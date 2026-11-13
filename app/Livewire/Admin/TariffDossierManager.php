@@ -10,6 +10,9 @@ use Illuminate\Support\Facades\Storage;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 
+/**
+ * Componente Livewire para la edición, previsualización, exportación en PDF y envío por WhatsApp del Dossier General de Tarifas (incluyendo el Modo Feria de Novios).
+ */
 class TariffDossierManager extends Component
 {
     use WithFileUploads;
@@ -42,6 +45,11 @@ class TariffDossierManager extends Component
     public string $fair_lead_date = '';
     public string $fair_lead_location = '';
 
+    /**
+     * Inicializa el componente cargando la configuración del dossier de tarifas, sincronizando campos auxiliares de texto y preparando la vista previa de WhatsApp.
+     *
+     * @return void
+     */
     public function mount(): void
     {
         $this->config = GeneralTariffDossierService::getConfig();
@@ -58,6 +66,11 @@ class TariffDossierManager extends Component
         $this->refreshWhatsAppPreview();
     }
 
+    /**
+     * Convierte los arreglos de datos de la configuración en cadenas de texto multilínea para su edición cómoda en formularios.
+     *
+     * @return void
+     */
     protected function syncTextHelpersFromConfig(): void
     {
         $this->about_facts_text = implode("\n", $this->config['about_facts'] ?? []);
@@ -67,6 +80,11 @@ class TariffDossierManager extends Component
         }
     }
 
+    /**
+     * Sincroniza los textos multilínea editados por el usuario de vuelta al arreglo estructurado de configuración del dossier.
+     *
+     * @return void
+     */
     protected function syncConfigFromTextHelpers(): void
     {
         $this->config['about_facts'] = array_values(array_filter(
@@ -84,6 +102,11 @@ class TariffDossierManager extends Component
         }
     }
 
+    /**
+     * Procesa, comprime y guarda automáticamente la imagen subida para la sección «Quiénes somos».
+     *
+     * @return void
+     */
     public function updatedAboutPhotoUpload(): void
     {
         if ($this->about_photo_upload) {
@@ -97,6 +120,11 @@ class TariffDossierManager extends Component
         }
     }
 
+    /**
+     * Procesa, comprime y guarda automáticamente la imagen personalizada subida para la portada del dossier.
+     *
+     * @return void
+     */
     public function updatedCoverCustomPhotoUpload(): void
     {
         if ($this->cover_custom_photo_upload) {
@@ -110,6 +138,13 @@ class TariffDossierManager extends Component
         }
     }
 
+    /**
+     * Procesa, comprime y asigna una nueva fotografía subida a un espacio específico de la galería del dossier.
+     *
+     * @param mixed $value Archivo subido.
+     * @param int|string $index Índice del elemento dentro de la galería.
+     * @return void
+     */
     public function updatedGalleryUploads($value, $index): void
     {
         if (!empty($this->gallery_uploads[$index])) {
@@ -124,6 +159,11 @@ class TariffDossierManager extends Component
         }
     }
 
+    /**
+     * Añade un nuevo espacio vacío para fotografía en la galería del dossier (hasta un máximo de 12).
+     *
+     * @return void
+     */
     public function addGallerySlot(): void
     {
         if (count($this->config['gallery_photos'] ?? []) >= 12) {
@@ -138,6 +178,12 @@ class TariffDossierManager extends Component
         ];
     }
 
+    /**
+     * Elimina un espacio de fotografía de la galería según su índice y guarda la configuración.
+     *
+     * @param int $index Índice de la foto en la galería.
+     * @return void
+     */
     public function removeGallerySlot(int $index): void
     {
         if (isset($this->config['gallery_photos'][$index])) {
@@ -146,18 +192,33 @@ class TariffDossierManager extends Component
         }
     }
 
+    /**
+     * Elimina la fotografía personalizada de portada del dossier.
+     *
+     * @return void
+     */
     public function clearCoverCustomPhoto(): void
     {
         $this->config['cover_custom_photo'] = null;
         $this->save(false);
     }
 
+    /**
+     * Elimina la fotografía de la sección «Quiénes somos» del dossier.
+     *
+     * @return void
+     */
     public function clearAboutPhoto(): void
     {
         $this->config['about_photo'] = null;
         $this->save(false);
     }
 
+    /**
+     * Añade un nuevo paso vacío al listado de metodología de trabajo del dossier.
+     *
+     * @return void
+     */
     public function addWorkStep(): void
     {
         $this->config['work_steps'][] = [
@@ -167,6 +228,11 @@ class TariffDossierManager extends Component
         ];
     }
 
+    /**
+     * Aplica la plantilla recomendada de 7 pasos de trabajo al dossier y guarda los cambios.
+     *
+     * @return void
+     */
     public function applySevenWorkStepsPreset(): void
     {
         $this->config['work_steps'] = GeneralTariffDossierService::getRecommendedSevenWorkSteps();
@@ -174,6 +240,11 @@ class TariffDossierManager extends Component
         session()->flash('dossier_saved', '✅ Aplicada la estructura recomendada de 7 pasos (Consulta y disponibilidad → Propuesta → Reserva con señal en el paso 3).');
     }
 
+    /**
+     * Aplica la plantilla compacta de pasos de trabajo al dossier y guarda los cambios.
+     *
+     * @return void
+     */
     public function applyCompactWorkStepsPreset(): void
     {
         $this->config['work_steps'] = GeneralTariffDossierService::getRecommendedCompactWorkSteps();
@@ -181,6 +252,11 @@ class TariffDossierManager extends Component
         session()->flash('dossier_saved', '✅ Aplicada la versión compacta uniendo «Consulta y propuesta» en el Paso 1.');
     }
 
+    /**
+     * Actualiza las descripciones de los packs con textos orientativos de sonido e iluminación adaptados al espacio.
+     *
+     * @return void
+     */
     public function applyOrientativeLightingToPacks(): void
     {
         $this->syncConfigFromTextHelpers();
@@ -202,6 +278,12 @@ class TariffDossierManager extends Component
         session()->flash('dossier_saved', '✅ Aplicada la descripción de iluminación y sonido orientativos según el espacio en los packs.');
     }
 
+    /**
+     * Elimina un paso de la metodología de trabajo según su índice, manteniendo al menos uno.
+     *
+     * @param int $index Índice del paso a eliminar.
+     * @return void
+     */
     public function removeWorkStep(int $index): void
     {
         if (count($this->config['work_steps']) <= 1) {
@@ -210,6 +292,11 @@ class TariffDossierManager extends Component
         array_splice($this->config['work_steps'], $index, 1);
     }
 
+    /**
+     * Añade un nuevo servicio extra vacío a la lista de extras del dossier.
+     *
+     * @return void
+     */
     public function addExtra(): void
     {
         $this->config['extras'][] = [
@@ -219,6 +306,12 @@ class TariffDossierManager extends Component
         ];
     }
 
+    /**
+     * Sincroniza la lista de servicios extras y sus precios a partir de los ajustes generales de presupuestos y del proveedor indicado.
+     *
+     * @param string|null $providerKey Clave del proveedor de zona ('logrono', 'vitoria', etc.).
+     * @return void
+     */
     public function syncExtrasFromStoredQuotes(?string $providerKey = null): void
     {
         $this->config['extras'] = GeneralTariffDossierService::getRecommendedExtras($providerKey);
@@ -228,6 +321,12 @@ class TariffDossierManager extends Component
         session()->flash('dossier_saved', "✅ Precios y descripciones orientativas de Extras sincronizados desde los Ajustes de Presupuestos ({$zoneLabel}).");
     }
 
+    /**
+     * Elimina un servicio extra de la lista según su índice.
+     *
+     * @param int $index Índice del servicio extra a eliminar.
+     * @return void
+     */
     public function removeExtra(int $index): void
     {
         if (isset($this->config['extras'][$index])) {
@@ -235,6 +334,11 @@ class TariffDossierManager extends Component
         }
     }
 
+    /**
+     * Añade una nueva reseña vacía de clientes al dossier (hasta un máximo de 5).
+     *
+     * @return void
+     */
     public function addReview(): void
     {
         if (count($this->config['reviews'] ?? []) >= 5) {
@@ -249,6 +353,12 @@ class TariffDossierManager extends Component
         ];
     }
 
+    /**
+     * Elimina una reseña de clientes del dossier según su índice.
+     *
+     * @param int $index Índice de la reseña a eliminar.
+     * @return void
+     */
     public function removeReview(int $index): void
     {
         if (isset($this->config['reviews'][$index])) {
@@ -256,6 +366,12 @@ class TariffDossierManager extends Component
         }
     }
 
+    /**
+     * Sincroniza los textos auxiliares y guarda la configuración completa del Dossier General de Tarifas.
+     *
+     * @param bool $flash Indica si debe mostrarse un mensaje de confirmación en sesión.
+     * @return void
+     */
     public function save(bool $flash = true): void
     {
         $this->syncConfigFromTextHelpers();
@@ -267,6 +383,11 @@ class TariffDossierManager extends Component
         }
     }
 
+    /**
+     * Valida la configuración del dossier y redirige a la ruta de generación y descarga del PDF si cumple todos los requisitos.
+     *
+     * @return mixed
+     */
     public function exportPdf()
     {
         $this->save(false);
@@ -285,6 +406,11 @@ class TariffDossierManager extends Component
         ]);
     }
 
+    /**
+     * Guarda los cambios actuales, actualiza el mensaje de vista previa y abre el modal de envío por WhatsApp.
+     *
+     * @return void
+     */
     public function openSendModal(): void
     {
         $this->save(false);
@@ -292,6 +418,11 @@ class TariffDossierManager extends Component
         $this->showSendModal = true;
     }
 
+    /**
+     * Activa o desactiva el Modo Feria de Novios en la configuración del dossier y guarda el estado.
+     *
+     * @return void
+     */
     public function toggleFairMode(): void
     {
         $current = !empty($this->config['fair_mode']['enabled']);
@@ -306,6 +437,12 @@ class TariffDossierManager extends Component
         }
     }
 
+    /**
+     * Calcula y aplica precios promocionales simulados para el Modo Feria sin alterar los precios base de los packs.
+     *
+     * @param string $preset Tipo de cálculo promocional ('fixed_equal', 'percent_15_equal', 'fixed_minus_20').
+     * @return void
+     */
     public function applyFairPricingPreset(string $preset = 'fixed_equal'): void
     {
         $this->syncConfigFromTextHelpers();
@@ -343,12 +480,23 @@ class TariffDossierManager extends Component
         session()->flash('dossier_saved', '✅ Precios simulados de Feria calculados sin modificar tus precios reales.');
     }
 
+    /**
+     * Abre el modal a pantalla completa con el código QR del tipo indicado para mostrar en el stand de feria.
+     *
+     * @param string $type Tipo de enlace QR ('pdf', 'presentation' o 'quote').
+     * @return void
+     */
     public function openFullscreenQr(string $type = 'pdf'): void
     {
         $this->fullscreenQrType = in_array($type, ['pdf', 'presentation', 'quote'], true) ? $type : 'pdf';
         $this->showFullscreenQrModal = true;
     }
 
+    /**
+     * Crea opcionalmente un cliente y evento de seguimiento cuando se envía el dossier a una pareja atendida en feria.
+     *
+     * @return int|null Identificador del evento existente o recién creado.
+     */
     protected function maybeCreateFairLeadEvent(): ?int
     {
         if (!$this->save_as_fair_lead || !empty($this->selected_event_id)) {
@@ -401,6 +549,12 @@ class TariffDossierManager extends Component
         }
     }
 
+    /**
+     * Autocompleta el nombre y teléfono del destinatario cuando se selecciona un evento existente en el modal de envío.
+     *
+     * @param mixed $val Identificador del evento seleccionado.
+     * @return void
+     */
     public function updatedSelectedEventId($val): void
     {
         if ($val) {
@@ -417,16 +571,31 @@ class TariffDossierManager extends Component
         $this->refreshWhatsAppPreview();
     }
 
+    /**
+     * Actualiza la vista previa del mensaje de WhatsApp cuando cambia el nombre del destinatario.
+     *
+     * @return void
+     */
     public function updatedRecipientName(): void
     {
         $this->refreshWhatsAppPreview();
     }
 
+    /**
+     * Actualiza la vista previa del mensaje de WhatsApp cuando cambia el nombre del remitente.
+     *
+     * @return void
+     */
     public function updatedSenderName(): void
     {
         $this->refreshWhatsAppPreview();
     }
 
+    /**
+     * Regenera el texto del mensaje de WhatsApp para enviar el dossier con los enlaces e información actuales.
+     *
+     * @return void
+     */
     public function refreshWhatsAppPreview(): void
     {
         $this->whatsapp_preview_message = GeneralTariffDossierService::buildWhatsAppMessage(
@@ -437,6 +606,11 @@ class TariffDossierManager extends Component
         );
     }
 
+    /**
+     * Registra opcionalmente el lead de feria y abre WhatsApp Web o la aplicación con el mensaje del dossier preparado.
+     *
+     * @return void
+     */
     public function sendViaWhatsAppWeb(): void
     {
         $this->maybeCreateFairLeadEvent();
@@ -444,6 +618,11 @@ class TariffDossierManager extends Component
         $this->dispatch('open-whatsapp-link', url: $url);
     }
 
+    /**
+     * Envía el mensaje con el dossier directamente a través del Gateway de WhatsApp (Evolution API) y registra el lead si procede.
+     *
+     * @return void
+     */
     public function sendDirectEvolutionWhatsApp(): void
     {
         if (empty(trim($this->recipient_phone))) {
@@ -481,12 +660,22 @@ class TariffDossierManager extends Component
         }
     }
 
+    /**
+     * Obtiene el informe de validación de los requisitos del dossier antes de su exportación.
+     *
+     * @return array<string, mixed>
+     */
     public function getValidationReportProperty(): array
     {
         $this->syncConfigFromTextHelpers();
         return GeneralTariffDossierService::validateConfig($this->config);
     }
 
+    /**
+     * Valida el estado actual del dossier y renderiza la vista de administración del Dossier General de Tarifas.
+     *
+     * @return \Illuminate\Contracts\View\View
+     */
     public function render()
     {
         $this->syncConfigFromTextHelpers();

@@ -200,6 +200,9 @@ class QrPosterPdfService
         ];
     }
 
+    /**
+     * Genera la clave de configuración única para almacenar el diseño del cartel QR de un evento.
+     */
     public static function posterSettingKey(Event $event): string
     {
         return 'event_photo_qr_poster_' . $event->id;
@@ -513,6 +516,9 @@ class QrPosterPdfService
         return self::titleCaseName($parts[0]);
     }
 
+    /**
+     * Formatea una fecha YYYY-MM-DD en formato largo en español (por ejemplo, "15 de Junio de 2027").
+     */
     public static function formatSpanishDate(?string $ymd): string
     {
         $ymd = trim((string) $ymd);
@@ -677,6 +683,9 @@ class QrPosterPdfService
     // MOTOR QR ISO/IEC 18004 (NIVELES H & M)
     // =========================================================================
 
+    /**
+     * Inicializa las tablas de exponenciales y logaritmos del Cuerpo de Galois GF(256) para la codificación Reed-Solomon.
+     */
     private static function initGf(): void
     {
         if (self::$gfReady) {
@@ -699,6 +708,9 @@ class QrPosterPdfService
         self::$gfReady = true;
     }
 
+    /**
+     * Realiza la multiplicación de dos elementos en el Cuerpo de Galois GF(256).
+     */
     private static function gfMul(int $a, int $b): int
     {
         if ($a === 0 || $b === 0) {
@@ -832,6 +844,9 @@ class QrPosterPdfService
         ];
     }
 
+    /**
+     * Determina si las coordenadas indicadas corresponden a alguno de los tres patrones buscadores (ojos) de las esquinas del QR.
+     */
     private static function isInFinderEye(int $r, int $c, int $size): bool
     {
         return ($r >= 0 && $r <= 6 && $c >= 0 && $c <= 6)
@@ -839,6 +854,9 @@ class QrPosterPdfService
             || ($r >= $size - 7 && $r < $size && $c >= 0 && $c <= 6);
     }
 
+    /**
+     * Determina si un módulo se encuentra dentro del área circular central reservada para el medallón de iniciales.
+     */
     private static function isInCenterMedallion(int $r, int $c, int $size, bool $hasMedallion): bool
     {
         if (!$hasMedallion) {
@@ -1046,6 +1064,9 @@ class QrPosterPdfService
         $modules[$size - 8][8] = 1;
     }
 
+    /**
+     * Evalúa la condición booleana de inversión de bit para una de las 8 máscaras estándar ISO/IEC 18004.
+     */
     private static function maskCondition(int $mask, int $r, int $c): bool
     {
         return match ($mask) {
@@ -1390,17 +1411,26 @@ class QrPosterPdfService
         return $out;
     }
 
+    /**
+     * Genera los comandos PDF para dibujar una línea discontinua de guía de corte entre tarjetas.
+     */
     private static function renderCutLine(float $x1Mm, float $y1Mm, float $x2Mm, float $y2Mm, float $pageHPt): string
     {
         return "q\n0.78 0.82 0.87 RG\n0.45 w\n[4 4] 0 d\n" . self::cmdLine($x1Mm, $y1Mm, $x2Mm, $y2Mm, $pageHPt) . "Q\n";
     }
 
+    /**
+     * Devuelve el comando PDF de color de relleno RGB a partir de un código hexadecimal.
+     */
     private static function cmdFillRgb(string $hex): string
     {
         [$r, $g, $b] = self::hexToRgbFloats($hex);
         return sprintf("%.4F %.4F %.4F rg\n", $r, $g, $b);
     }
 
+    /**
+     * Devuelve el comando PDF de color de trazo RGB a partir de un código hexadecimal.
+     */
     private static function cmdStrokeRgb(string $hex): string
     {
         [$r, $g, $b] = self::hexToRgbFloats($hex);
@@ -1424,6 +1454,9 @@ class QrPosterPdfService
         ];
     }
 
+    /**
+     * Genera el comando vectorial PDF para trazar un segmento recto entre dos puntos expresados en milímetros.
+     */
     private static function cmdLine(float $x1Mm, float $y1Mm, float $x2Mm, float $y2Mm, float $pageHPt): string
     {
         return sprintf(
@@ -1435,6 +1468,9 @@ class QrPosterPdfService
         );
     }
 
+    /**
+     * Genera los comandos vectoriales PDF para dibujar un rectángulo con esquinas redondeadas mediante curvas Bézier.
+     */
     private static function cmdRoundedRect(float $xMm, float $yMm, float $wMm, float $hMm, float $rMm, float $pageHPt, string $op): string
     {
         $x = $xMm * self::MM;
@@ -1466,6 +1502,9 @@ class QrPosterPdfService
         );
     }
 
+    /**
+     * Genera los comandos vectoriales PDF para dibujar un círculo mediante cuatro arcos Bézier cúbicos.
+     */
     private static function cmdCircle(float $cxMm, float $cyMm, float $rMm, float $pageHPt, string $op): string
     {
         $cx = $cxMm * self::MM;
@@ -1484,6 +1523,9 @@ class QrPosterPdfService
         );
     }
 
+    /**
+     * Genera los comandos vectoriales PDF para dibujar un rombo decorativo centrado en las coordenadas indicadas.
+     */
     private static function cmdDiamond(float $cxMm, float $cyMm, float $rxMm, float $ryMm, float $pageHPt, string $op): string
     {
         $cx = $cxMm * self::MM;
@@ -1501,6 +1543,9 @@ class QrPosterPdfService
         );
     }
 
+    /**
+     * Genera el comando PDF para escribir una línea de texto centrada horizontalmente respecto a la coordenada X dada.
+     */
     private static function cmdCenteredText(string $utf8Text, float $cxMm, float $baselineYMm, string $fontRef, float $fontSizePt, float $pageHPt): string
     {
         $clean = self::sanitizePrintableText($utf8Text);
@@ -1548,6 +1593,9 @@ class QrPosterPdfService
         return array_slice($lines, 0, $maxLines);
     }
 
+    /**
+     * Calcula la anchura estimada en milímetros de una cadena de texto según la fuente y tamaño en puntos.
+     */
     private static function measureTextMm(string $utf8Text, string $fontRef, float $fontSizePt): float
     {
         $clean = self::sanitizePrintableText($utf8Text);
@@ -1564,6 +1612,9 @@ class QrPosterPdfService
         return (($totalUnits / 1000.0) * $fontSizePt) / self::MM;
     }
 
+    /**
+     * Devuelve el ancho métrico (en milésimas de em) de un carácter para las fuentes estándar Times o Helvetica.
+     */
     private static function charWidthUnits(string $ch, bool $serif, bool $bold): int
     {
         $baseMap = [
@@ -1646,6 +1697,9 @@ class QrPosterPdfService
         return $table[$c] ?? 550;
     }
 
+    /**
+     * Limpia el texto UTF-8 eliminando emojis fuera del plano básico y normalizando espacios y saltos de línea.
+     */
     private static function sanitizePrintableText(string $utf8): string
     {
         $clean = (string) preg_replace('/[\x{10000}-\x{10FFFF}]/u', '', $utf8);
@@ -1653,6 +1707,9 @@ class QrPosterPdfService
         return trim((string) preg_replace('/\s{2,}/u', ' ', $clean));
     }
 
+    /**
+     * Convierte una cadena UTF-8 a la codificación de un solo byte WinAnsi (CP1252) utilizada por las fuentes base de PDF.
+     */
     private static function utf8ToWinAnsi(string $utf8): string
     {
         static $cp1252Extras = [
@@ -1681,11 +1738,17 @@ class QrPosterPdfService
         return $out;
     }
 
+    /**
+     * Escapa los caracteres especiales de literales de texto PDF (barras invertidas y paréntesis).
+     */
     private static function escapePdfLiteral(string $winAnsi): string
     {
         return str_replace(['\\', '(', ')'], ['\\\\', '\\(', '\\)'], $winAnsi);
     }
 
+    /**
+     * Ensambla la estructura completa del archivo PDF 1.4 con su catálogo de objetos, fuentes, flujo comprimido y tabla xref.
+     */
     private static function assemblePdfDocument(string $contentStream, float $pageWPt, float $pageHPt, string $docTitle): string
     {
         $compressed = function_exists('gzcompress') ? gzcompress($contentStream, 6) : false;
@@ -1741,6 +1804,9 @@ class QrPosterPdfService
         return $pdf;
     }
 
+    /**
+     * Formatea un nombre propio capitalizando la inicial de cada palabra salvo preposiciones intermedias.
+     */
     private static function titleCaseName(string $name): string
     {
         $words = preg_split('/\s+/u', trim($name)) ?: [$name];
@@ -1757,6 +1823,9 @@ class QrPosterPdfService
         return implode(' ', $res);
     }
 
+    /**
+     * Extrae la primera letra alfabética de una cadena y la devuelve en mayúscula.
+     */
     private static function firstLetterUpper(string $str): string
     {
         if (preg_match('/(\p{L})/u', $str, $m)) {

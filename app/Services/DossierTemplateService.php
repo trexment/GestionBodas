@@ -2,8 +2,14 @@
 
 namespace App\Services;
 
+/**
+ * Servicio que define los textos por defecto y preajustes temáticos para los dossieres comerciales de eventos.
+ */
 class DossierTemplateService
 {
+    /**
+     * Devuelve los valores de texto predeterminados para las secciones del dossier comercial.
+     */
     public static function getDefaults(): array
     {
         return [
@@ -38,6 +44,9 @@ class DossierTemplateService
         ];
     }
 
+    /**
+     * Devuelve los preajustes de contenido del dossier según el tipo de celebración (bodas, eventos corporativos, fiestas).
+     */
     public static function presets(): array
     {
         return [

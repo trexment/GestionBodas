@@ -10,6 +10,9 @@ use App\Services\AppNotificationService;
 use App\Services\EvolutionWhatsAppService;
 use Illuminate\Support\Facades\Schema;
 
+/**
+ * Componente Livewire público para que el cliente consulte su propuesta económica online y pueda aceptarla o rechazarla.
+ */
 class QuoteResponse extends Component
 {
     use \App\Livewire\Traits\ThrottlesGuestActions;
@@ -26,6 +29,9 @@ class QuoteResponse extends Component
     public string $rejection_reason = '';
     public string $selected_reason_tag = '';
 
+    /**
+     * Inicializa la vista de la propuesta localizando el evento y el presupuesto activo a partir del token o slug público.
+     */
     public function mount(string $token)
     {
         $this->token = $token;
@@ -79,6 +85,9 @@ class QuoteResponse extends Component
         }
     }
 
+    /**
+     * Cambia el presupuesto visualizado cuando el evento dispone de varias propuestas alternativas.
+     */
     public function selectQuote(int $quoteId): void
     {
         $found = $this->event->quotes->firstWhere('id', $quoteId);
@@ -91,6 +100,9 @@ class QuoteResponse extends Component
         }
     }
 
+    /**
+     * Muestra el cuadro de confirmación para aceptar la propuesta online.
+     */
     public function openAcceptBox(): void
     {
         if (!$this->quote || in_array($this->quote->status, ['accepted', 'rejected'], true)) {
@@ -100,6 +112,9 @@ class QuoteResponse extends Component
         $this->resetValidation();
     }
 
+    /**
+     * Muestra el formulario para indicar el motivo de rechazo de la propuesta.
+     */
     public function openRejectBox(): void
     {
         if (!$this->quote || in_array($this->quote->status, ['accepted', 'rejected'], true)) {
@@ -109,12 +124,18 @@ class QuoteResponse extends Component
         $this->resetValidation();
     }
 
+    /**
+     * Cancela la acción de aceptación o rechazo en curso y vuelve al modo de lectura.
+     */
     public function cancelAction(): void
     {
         $this->actionMode = 'view';
         $this->resetValidation();
     }
 
+    /**
+     * Selecciona una etiqueta rápida de motivo de rechazo y la asigna al campo de texto si procede.
+     */
     public function pickRejectionTag(string $tagText): void
     {
         $this->selected_reason_tag = $tagText;
@@ -129,6 +150,9 @@ class QuoteResponse extends Component
         $this->resetErrorBag('rejection_reason');
     }
 
+    /**
+     * Registra la aceptación online del presupuesto, descarta propuestas alternativas, confirma el evento y notifica a los administradores.
+     */
     public function acceptQuoteOnline(): void
     {
         if (!$this->quote || !$this->event || in_array($this->quote->status, ['accepted', 'rejected'], true)) {
@@ -255,6 +279,9 @@ class QuoteResponse extends Component
         session()->flash('quote_response_success', '¡Muchas gracias! Hemos registrado la aceptación de vuestro presupuesto y actualizado el estado de vuestro evento.');
     }
 
+    /**
+     * Registra el rechazo online del presupuesto junto con el motivo indicado, actualiza el estado del evento y notifica a los administradores.
+     */
     public function rejectQuoteOnline(): void
     {
         if (!$this->quote || !$this->event || in_array($this->quote->status, ['accepted', 'rejected'], true)) {
@@ -393,6 +420,9 @@ class QuoteResponse extends Component
         session()->flash('quote_response_rejected', 'Hemos registrado tu respuesta y el motivo indicado. ¡Muchas gracias por tu tiempo!');
     }
 
+    /**
+     * Renderiza la vista pública de respuesta al presupuesto con los datos bancarios y de marca.
+     */
     public function render()
     {
         $brandKey = $this->quote ? $this->quote->brand_clean : ($this->event ? $this->event->brand_clean : 'nunez_and_son');

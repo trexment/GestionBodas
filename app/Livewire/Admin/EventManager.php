@@ -9,6 +9,9 @@ use App\Models\Quote;
 use App\Models\QuoteItem;
 use App\Livewire\Traits\HandlesDniValidation;
 
+/**
+ * Componente Livewire para la gestión integral de eventos, presupuestos iniciales, sincronización de leads IMAP, seguimiento comercial e importación de ferias de novios.
+ */
 class EventManager extends Component
 {
     use HandlesDniValidation;
@@ -53,6 +56,12 @@ class EventManager extends Component
     public bool $show_completed = false;
     public bool $show_cancelled = false;
 
+    /**
+     * Establece el filtro de estado de los eventos y activa la visibilidad de completados o cancelados si aplica.
+     *
+     * @param string $status Estado a filtrar.
+     * @return void
+     */
     public function setStatusFilter($status)
     {
         $this->status_filter = $status;
@@ -63,6 +72,11 @@ class EventManager extends Component
         }
     }
 
+    /**
+     * Alterna la visualización de eventos completados en el listado principal.
+     *
+     * @return void
+     */
     public function toggleShowCompleted()
     {
         $this->show_completed = !$this->show_completed;
@@ -71,6 +85,11 @@ class EventManager extends Component
         }
     }
 
+    /**
+     * Alterna la visualización de eventos cancelados o rechazados en el listado principal.
+     *
+     * @return void
+     */
     public function toggleShowCancelled()
     {
         $this->show_cancelled = !$this->show_cancelled;
@@ -108,6 +127,11 @@ class EventManager extends Component
         'assistant_ids.*' => 'exists:users,id',
     ];
 
+    /**
+     * Inicializa el componente sincronizando automáticamente posibles leads de correo y cargando eventos y personal.
+     *
+     * @return void
+     */
     public function mount()
     {
         if (auth()->check() && in_array(auth()->user()->role, ['admin', 'dj'])) {
@@ -120,6 +144,11 @@ class EventManager extends Component
         $this->loadStaff();
     }
 
+    /**
+     * Ejecuta manualmente la sincronización de todos los buzones IMAP activos para importar nuevas solicitudes de eventos.
+     *
+     * @return void
+     */
     public function syncEmailLeads()
     {
         try {
@@ -141,6 +170,11 @@ class EventManager extends Component
         }
     }
 
+    /**
+     * Carga las listas de clientes, DJs y asistentes disponibles para su asignación a eventos.
+     *
+     * @return void
+     */
     public function loadStaff()
     {
         $this->clients = User::where('role', 'client')->orderBy('name')->get();
@@ -148,6 +182,11 @@ class EventManager extends Component
         $this->assistants = User::whereIn('role', ['assistant', 'dj', 'admin'])->orderBy('name')->get();
     }
 
+    /**
+     * Carga los eventos de la base de datos según los permisos y asignaciones del usuario autenticado.
+     *
+     * @return void
+     */
     public function loadEvents()
     {
         $user = auth()->user();
@@ -172,6 +211,11 @@ class EventManager extends Component
         }
     }
 
+    /**
+     * Reinicia el formulario y abre el modal para crear un nuevo evento.
+     *
+     * @return void
+     */
     public function openCreateModal()
     {
         if (!in_array(auth()->user()->role, ['admin', 'dj'])) {
@@ -192,6 +236,12 @@ class EventManager extends Component
         $this->showCreateModal = true;
     }
 
+    /**
+     * Ajusta el tipo de evento si se cambia a una marca que no tiene habilitado el servicio de videógrafo.
+     *
+     * @param mixed $value Clave de la marca seleccionada.
+     * @return void
+     */
     public function updatedBrand($value)
     {
         if ($this->event_type === 'video' && !\App\Models\Setting::isVideoServiceEnabled($value)) {
@@ -199,6 +249,12 @@ class EventManager extends Component
         }
     }
 
+    /**
+     * Carga los datos de un evento existente en el formulario y abre el modal de edición.
+     *
+     * @param int|string $eventId Identificador del evento a editar.
+     * @return void
+     */
     public function openEditModal($eventId)
     {
         if (!in_array(auth()->user()->role, ['admin', 'dj'])) {
@@ -239,17 +295,33 @@ class EventManager extends Component
         $this->showCreateModal = true;
     }
 
+    /**
+     * Valida y completa automáticamente la letra del DNI del segundo miembro de la pareja.
+     *
+     * @param mixed $value Valor del DNI/NIE introducido.
+     * @return void
+     */
     public function updatedPartnerDni($value)
     {
         $this->validateAndCompleteDni('partner_dni', $value);
     }
 
+    /**
+     * Cierra el modal de creación o edición de eventos.
+     *
+     * @return void
+     */
     public function closeCreateModal()
     {
         $this->showCreateModal = false;
         $this->editing_event_id = null;
     }
 
+    /**
+     * Valida y guarda un evento nuevo o existente, creando el cliente o presupuesto inicial si fuera necesario.
+     *
+     * @return void
+     */
     public function saveEvent()
     {
         $this->validate();
@@ -392,6 +464,12 @@ class EventManager extends Component
         }
     }
 
+    /**
+     * Elimina permanentemente un evento y todas sus relaciones asociadas, registrando su huella para evitar su reimportación por IMAP.
+     *
+     * @param int|string $eventId Identificador del evento a eliminar.
+     * @return void
+     */
     public function deleteEvent($eventId)
     {
         if (auth()->user()->role !== 'admin') {
@@ -442,6 +520,13 @@ class EventManager extends Component
     public $confirmingFollowupMailtoUrl = '';
     public $confirmingFollowupHasPhone = false;
 
+    /**
+     * Abre el modal de seguimiento comercial cargando las plantillas recomendadas para el evento indicado.
+     *
+     * @param int $eventId Identificador del evento.
+     * @param string|null $templateKey Clave de la plantilla inicial opcional.
+     * @return void
+     */
     public function promptFollowup(int $eventId, ?string $templateKey = null)
     {
         $event = Event::with('client')->find($eventId);
@@ -460,6 +545,12 @@ class EventManager extends Component
         $this->selectFollowupTemplate($key);
     }
 
+    /**
+     * Selecciona una plantilla de seguimiento comercial y carga sus textos y enlaces.
+     *
+     * @param string $key Clave de la plantilla seleccionada.
+     * @return void
+     */
     public function selectFollowupTemplate(string $key)
     {
         $this->confirmingFollowupSelectedKey = $key;
@@ -471,6 +562,11 @@ class EventManager extends Component
         }
     }
 
+    /**
+     * Envía el mensaje de seguimiento directamente por correo electrónico al cliente y registra la comunicación en el evento.
+     *
+     * @return void
+     */
     public function sendDirectFollowupEmail()
     {
         if (!$this->confirmingFollowupEventId) return;
@@ -507,6 +603,11 @@ class EventManager extends Component
         }
     }
 
+    /**
+     * Confirma que el seguimiento ha sido enviado manualmente, anotándolo en el evento y reiniciando el contador de días.
+     *
+     * @return void
+     */
     public function confirmFollowupSent()
     {
         if (!$this->confirmingFollowupEventId) return;
@@ -526,6 +627,12 @@ class EventManager extends Component
         $this->loadEvents();
     }
 
+    /**
+     * Marca el evento en seguimiento como respondido por el cliente y cambia su estado a borrador, confirmado o en espera.
+     *
+     * @param string $newStatus Nuevo estado del evento ('draft', 'confirmed' o 'on_hold').
+     * @return void
+     */
     public function markAsResponded(string $newStatus = 'draft')
     {
         if (!$this->confirmingFollowupEventId) return;
@@ -572,11 +679,22 @@ class EventManager extends Component
         $this->loadEvents();
     }
 
+    /**
+     * Cierra el modal de seguimiento comercial sin aplicar cambios.
+     *
+     * @return void
+     */
     public function cancelFollowup()
     {
         $this->confirmingFollowupEventId = null;
     }
 
+    /**
+     * Coloca directamente un evento en estado En Espera ('on_hold') e inicia su contador de pausa.
+     *
+     * @param int $eventId Identificador del evento.
+     * @return void
+     */
     public function putEventOnHold(int $eventId)
     {
         $event = Event::find($eventId);
@@ -620,6 +738,11 @@ class EventManager extends Component
     public string $fairMessageTemplate = '';
     public string $fairEmailSubject = '';
 
+    /**
+     * Abre el modal de importación y difusión masiva para ferias de novios, inicializando plantillas y analizando el CSV.
+     *
+     * @return void
+     */
     public function openFairModal(): void
     {
         if (!in_array(auth()->user()->role, ['admin', 'dj'])) {
@@ -652,16 +775,32 @@ class EventManager extends Component
         $this->showFairModal = true;
     }
 
+    /**
+     * Cierra el modal de importación y difusión de feria de novios.
+     *
+     * @return void
+     */
     public function closeFairModal(): void
     {
         $this->showFairModal = false;
     }
 
+    /**
+     * Alterna la visualización del editor de texto CSV en bruto dentro del modal de feria.
+     *
+     * @return void
+     */
     public function toggleFairCsvEditor(): void
     {
         $this->fairShowCsvEditor = !$this->fairShowCsvEditor;
     }
 
+    /**
+     * Establece el remitente de WhatsApp para los envíos masivos de la feria.
+     *
+     * @param string $sender Identificador del remitente ('miguel', 'fran' o 'ezequiel').
+     * @return void
+     */
     public function setFairSenderBrand(string $sender): void
     {
         if (in_array($sender, ['miguel', 'fran', 'ezequiel'], true)) {
@@ -669,6 +808,11 @@ class EventManager extends Component
         }
     }
 
+    /**
+     * Restablece la plantilla de mensaje y el asunto de correo de feria a sus valores predeterminados.
+     *
+     * @return void
+     */
     public function resetFairTemplate(): void
     {
         $this->fairMessageTemplate = \App\Services\BridalFairLeadService::getDefaultFairTemplate();
@@ -676,11 +820,22 @@ class EventManager extends Component
         $this->fairEmailSubject = "💍 Promoción Especial La Rioja Bridal Market + Dossier Tarifas 2027 - {$companyName}";
     }
 
+    /**
+     * Cambia el filtro activo para las filas importadas de la feria de novios.
+     *
+     * @param string $filter Filtro a aplicar ('all', 'with_date', 'with_phone', 'only_email', 'music_interest', 'pending').
+     * @return void
+     */
     public function setFairFilter(string $filter): void
     {
         $this->fairFilter = $filter;
     }
 
+    /**
+     * Procesa el contenido CSV de la feria y enriquece cada fila con el estado de envíos previos de WhatsApp y correo.
+     *
+     * @return void
+     */
     public function parseFairCsvInput(): void
     {
         $parsed = \App\Services\BridalFairLeadService::parseFairCsv($this->fairRawCsv, $this->fairName);
@@ -719,6 +874,12 @@ class EventManager extends Component
         $this->fairRows = $parsed;
     }
 
+    /**
+     * Alterna la selección de una fila concreta del listado de contactos de la feria.
+     *
+     * @param int $index Índice de la fila en el arreglo.
+     * @return void
+     */
     public function toggleFairRow(int $index): void
     {
         if (isset($this->fairRows[$index])) {
@@ -726,6 +887,12 @@ class EventManager extends Component
         }
     }
 
+    /**
+     * Selecciona o deselecciona todas las filas de la feria que coincidan con el filtro actual.
+     *
+     * @param bool $select True para seleccionar, false para deseleccionar.
+     * @return void
+     */
     public function selectAllFairRows(bool $select): void
     {
         foreach ($this->fairRows as $idx => $row) {
@@ -735,6 +902,12 @@ class EventManager extends Component
         }
     }
 
+    /**
+     * Evalúa si una fila del listado de feria cumple con el filtro activo.
+     *
+     * @param array<string, mixed> $row Datos de la fila a evaluar.
+     * @return bool
+     */
     protected function doesFairRowMatchFilter(array $row): bool
     {
         return match ($this->fairFilter) {
@@ -747,6 +920,11 @@ class EventManager extends Component
         };
     }
 
+    /**
+     * Importa como clientes y eventos todos los contactos seleccionados en el listado de la feria de novios.
+     *
+     * @return void
+     */
     public function importSelectedFairLeads(): void
     {
         if (!auth()->check() || !in_array(auth()->user()->role, ['admin', 'dj'], true)) {
@@ -791,6 +969,12 @@ class EventManager extends Component
         );
     }
 
+    /**
+     * Envía el mensaje promocional de feria por WhatsApp (API o enlace directo) al contacto ubicado en el índice indicado.
+     *
+     * @param int $index Índice del contacto en la lista de feria.
+     * @return void
+     */
     public function sendFairSingleWhatsApp(int $index): void
     {
         if (!auth()->check() || !in_array(auth()->user()->role, ['admin', 'dj'], true)) {
@@ -874,6 +1058,12 @@ class EventManager extends Component
         }
     }
 
+    /**
+     * Envía por correo electrónico la propuesta promocional de feria al contacto indicado y registra el envío en su evento.
+     *
+     * @param int $index Índice del contacto en la lista de feria.
+     * @return void
+     */
     public function sendFairSingleEmail(int $index): void
     {
         if (!auth()->check() || !in_array(auth()->user()->role, ['admin', 'dj'], true)) {
@@ -933,6 +1123,11 @@ class EventManager extends Component
         }
     }
 
+    /**
+     * Realiza el envío masivo por correo electrónico a todos los contactos seleccionados de la feria que aún no lo hayan recibido.
+     *
+     * @return void
+     */
     public function sendFairBulkEmails(): void
     {
         if (!auth()->check() || !in_array(auth()->user()->role, ['admin', 'dj'], true)) {
@@ -1002,6 +1197,12 @@ class EventManager extends Component
         }
     }
 
+    /**
+     * Envía un lote de mensajes de WhatsApp promocionales de feria a los contactos seleccionados pendientes.
+     *
+     * @param int $batchSize Tamaño máximo del lote por ejecución.
+     * @return void
+     */
     public function sendFairBulkWhatsAppBatch(int $batchSize = 10): void
     {
         if (!auth()->check() || !in_array(auth()->user()->role, ['admin', 'dj'], true)) {
@@ -1107,6 +1308,11 @@ class EventManager extends Component
         }
     }
 
+    /**
+     * Calcula los contadores por estado, aplica los filtros de visibilidad y renderiza la vista de gestión de eventos.
+     *
+     * @return \Illuminate\Contracts\View\View
+     */
     public function render()
     {
         $user = auth()->user();

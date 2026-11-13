@@ -7,6 +7,9 @@ use Illuminate\Support\Facades\Cache;
 use App\Models\Setting;
 use Carbon\Carbon;
 
+/**
+ * Servicio de integración con la API Web de Spotify para autenticación OAuth, búsqueda de catálogo y creación/exportación de playlists.
+ */
 class SpotifyService
 {
     /**
@@ -44,6 +47,9 @@ class SpotifyService
         return 'https://accounts.spotify.com/authorize?' . http_build_query($params);
     }
 
+    /**
+     * Genera y almacena en sesión un token aleatorio anti-CSRF para el flujo OAuth de Spotify.
+     */
     protected static function issueOAuthState(): string
     {
         $state = \Illuminate\Support\Str::random(40);

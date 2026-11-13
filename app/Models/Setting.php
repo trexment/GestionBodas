@@ -5,6 +5,9 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * Modelo que almacena y gestiona los parámetros de configuración global, marcas, tarifas y proveedores del sistema.
+ */
 class Setting extends Model
 {
     use HasFactory;
@@ -12,7 +15,7 @@ class Setting extends Model
     protected $fillable = ['key', 'value'];
 
     /**
-     * Get a setting value by key.
+     * Obtiene el valor de un ajuste de configuración por su clave.
      */
     public static function get($key, $default = null)
     {
@@ -21,7 +24,7 @@ class Setting extends Model
     }
 
     /**
-     * Set a setting value by key.
+     * Establece o actualiza el valor de un ajuste de configuración por su clave.
      */
     public static function set($key, $value)
     {
@@ -32,7 +35,7 @@ class Setting extends Model
     }
 
     /**
-     * Get the absolute filesystem path for the company logo (used in PDFs).
+     * Obtiene la ruta absoluta en el sistema de archivos para el logotipo de la empresa (usado en PDFs).
      */
     public static function getLogoPathForPdf()
     {
@@ -62,7 +65,7 @@ class Setting extends Model
     }
 
     /**
-     * Get the public URL for the company logo.
+     * Obtiene la URL pública del logotipo de la empresa.
      */
     public static function getLogoUrl()
     {
@@ -88,7 +91,7 @@ class Setting extends Model
     }
 
     /**
-     * Get the absolute filesystem path for the company signature / stamp (used in PDFs).
+     * Obtiene la ruta absoluta en el sistema de archivos para la firma o sello de la empresa (usado en PDFs).
      */
     public static function getCompanySignaturePathForPdf(?string $brandKey = null): ?string
     {
@@ -125,7 +128,7 @@ class Setting extends Model
     }
 
     /**
-     * Get the public URL for the company signature / stamp.
+     * Obtiene la URL pública para la firma o sello de la empresa.
      */
     public static function getCompanySignatureUrl(?string $brandKey = null): ?string
     {
@@ -157,7 +160,7 @@ class Setting extends Model
     }
 
     /**
-     * Get the dynamic favicon URL.
+     * Obtiene la URL dinámica del icono (favicon) de la aplicación.
      */
     public static function getFaviconUrl()
     {
@@ -165,7 +168,7 @@ class Setting extends Model
     }
 
     /**
-     * Get the company name with default fallback.
+     * Obtiene el nombre comercial de la empresa con valor por defecto.
      */
     public static function getCompanyName($default = 'Núñez and Son')
     {
@@ -173,7 +176,7 @@ class Setting extends Model
     }
 
     /**
-     * Get the company subtitle with default fallback.
+     * Obtiene el subtítulo o eslogan de la empresa con valor por defecto.
      */
     public static function getCompanySubtitle($default = 'Sound in Motion')
     {
@@ -181,7 +184,7 @@ class Setting extends Model
     }
 
     /**
-     * Get list of available brand profiles.
+     * Devuelve la lista de perfiles de marca comercial disponibles en la plataforma.
      */
     public static function getAvailableBrands(): array
     {
@@ -205,10 +208,7 @@ class Setting extends Model
     }
 
     /**
-     * Get the detected brand key based on the current request domain / host.
-     * e.g., app.javnxdj.com or javnxdj.com -> 'javnx'
-     *       magoleugim.es or leugim -> 'mago_leugim'
-     *       otherwise default_brand or 'nunez_and_son'
+     * Detecta la clave de marca activa en función del dominio o host de la petición actual.
      */
     public static function getDetectedBrand(): string
     {
@@ -247,8 +247,7 @@ class Setting extends Model
     }
 
     /**
-    /**
-     * Corrige automáticamente la errata antigua del teléfono de Fran (622 62 47 90 -> 622 63 47 90)
+     * Obtiene la configuración activa del modo Feria de Novios.
      */
     public static function getFairModeConfig(): array
     {
@@ -258,6 +257,9 @@ class Setting extends Model
             : \App\Services\GeneralTariffDossierService::getDefaultFairModeConfig();
     }
 
+    /**
+     * Corrige automáticamente la errata antigua del teléfono de Fran (622 62 47 90 -> 622 63 47 90).
+     */
     public static function fixLegacyTypoPhone(?string $val, ?string $settingKeyToUpdate = null): string
     {
         $str = (string) $val;
@@ -278,7 +280,7 @@ class Setting extends Model
     }
 
     /**
-     * Get details for a specific brand profile ('nunez_and_son' | 'javnx' | 'mago_leugim')
+     * Obtiene los datos completos de identidad corporativa para una marca específica ('nunez_and_son' | 'javnx' | 'mago_leugim').
      */
     public static function getBrandInfo(?string $brandKey = null): array
     {
@@ -522,9 +524,7 @@ class Setting extends Model
     }
 
     /**
-     * Get the public website URL (auto-detects domain or uses custom setting).
-     * e.g., app.javnxdj.com -> https://javnxdj.com
-     *       app.nunezandson.com -> https://nunezandson.com
+     * Obtiene la URL de la web pública (detectando el dominio principal o usando el ajuste configurado).
      */
     public static function getPublicWebsiteUrl()
     {
@@ -561,7 +561,7 @@ class Setting extends Model
     }
 
     /**
-     * Get Cocktail + Restaurant combined pack settings and calculation.
+     * Obtiene la configuración y el cálculo de descuento para el pack combinado de Cóctel + Banquete.
      */
     public static function getCocktailRestaurantPackInfo($cocktailPrice = null, $restaurantPrice = null)
     {
@@ -609,7 +609,7 @@ class Setting extends Model
     }
 
     /**
-     * Get DJ Pack resolution and pricing based on requested hours.
+     * Resuelve el pack de DJ aplicable y su precio total en función de las horas solicitadas.
      */
     public static function getDjPackForHours(int $hours): array
     {
@@ -831,6 +831,10 @@ class Setting extends Model
         return $merged;
     }
 
+    /**
+     * Obtiene el catálogo completo de proveedores externos (Fotomatón, Plataforma 360º, Pack Dúo, Fuente de Chocolate, Chuches y Gofres),
+     * migrando si es necesario a registros individuales por proveedor en la base de datos.
+     */
     public static function getPhotoboothProviders(): array
     {
         $defaults = self::getDefaultPhotoboothProvidersDefinitions();

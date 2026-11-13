@@ -10,6 +10,9 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
+/**
+ * Componente Livewire para la administración de clientes y parejas, detección/fusión de duplicados y limpieza de contactos spam.
+ */
 class ClientManager extends Component
 {
     use HandlesDniValidation;
@@ -59,6 +62,11 @@ class ClientManager extends Component
         'edit_dni' => null,
     ];
 
+    /**
+     * Verifica en cada petición que el usuario autenticado tenga rol de administrador.
+     *
+     * @return void
+     */
     public function boot()
     {
         if (!auth()->check() || auth()->user()->role !== 'admin') {
@@ -66,6 +74,11 @@ class ClientManager extends Component
         }
     }
 
+    /**
+     * Inicializa el componente asegurando el acceso exclusivo para administradores.
+     *
+     * @return void
+     */
     public function mount()
     {
         if (auth()->user()->role !== 'admin') {
@@ -75,6 +88,11 @@ class ClientManager extends Component
 
     // ==================== CREACIÓN ====================
 
+    /**
+     * Limpia el formulario y abre el modal de creación de un nuevo cliente.
+     *
+     * @return void
+     */
     public function openCreateModal()
     {
         $this->resetValidation();
@@ -82,6 +100,11 @@ class ClientManager extends Component
         $this->showCreateModal = true;
     }
 
+    /**
+     * Cierra el modal de creación de cliente y reinicia las advertencias de duplicidad.
+     *
+     * @return void
+     */
     public function closeCreateModal()
     {
         $this->showCreateModal = false;
@@ -91,16 +114,34 @@ class ClientManager extends Component
         ];
     }
 
+    /**
+     * Comprueba si ya existe un cliente con el mismo nombre al actualizar el campo nombre en creación.
+     *
+     * @param mixed $value Nombre introducido.
+     * @return void
+     */
     public function updatedName($value)
     {
         $this->checkDuplicate('name', $value);
     }
 
+    /**
+     * Comprueba si ya existe un cliente con el mismo teléfono al actualizar el campo teléfono en creación.
+     *
+     * @param mixed $value Teléfono introducido.
+     * @return void
+     */
     public function updatedPhone($value)
     {
         $this->checkDuplicate('phone', $value);
     }
 
+    /**
+     * Autocompleta la localidad y provincia a partir del código postal introducido en el formulario de creación.
+     *
+     * @param mixed $value Código postal introducido.
+     * @return void
+     */
     public function updatedPostalCode($value)
     {
         $lookup = PostalCodeService::lookup($value);
@@ -112,28 +153,60 @@ class ClientManager extends Component
         }
     }
 
+    /**
+     * Valida/completa la letra del DNI y verifica si ya está registrado por otro cliente durante la creación.
+     *
+     * @param mixed $value DNI/NIE introducido.
+     * @return void
+     */
     public function updatedDni($value)
     {
         $this->validateAndCompleteDni('dni', $value);
         $this->checkDuplicate('dni', $this->dni);
     }
 
+    /**
+     * Comprueba posibles duplicados cuando se modifica el nombre en el formulario de edición.
+     *
+     * @param mixed $value Nombre editado.
+     * @return void
+     */
     public function updatedEditName($value)
     {
         $this->checkDuplicate('edit_name', $value, $this->editing_client_id);
     }
 
+    /**
+     * Comprueba posibles duplicados cuando se modifica el teléfono en el formulario de edición.
+     *
+     * @param mixed $value Teléfono editado.
+     * @return void
+     */
     public function updatedEditPhone($value)
     {
         $this->checkDuplicate('edit_phone', $value, $this->editing_client_id);
     }
 
+    /**
+     * Valida/completa el DNI y comprueba duplicados al modificarlo en el formulario de edición.
+     *
+     * @param mixed $value DNI/NIE editado.
+     * @return void
+     */
     public function updatedEditDni($value)
     {
         $this->validateAndCompleteDni('edit_dni', $value);
         $this->checkDuplicate('edit_dni', $this->edit_dni, $this->editing_client_id);
     }
 
+    /**
+     * Verifica si un valor de nombre, teléfono o DNI ya pertenece a otro cliente y registra una advertencia visual.
+     *
+     * @param string $field Nombre del campo evaluado.
+     * @param string|null $value Valor a comprobar.
+     * @param int|null $ignoreId ID del cliente actual a excluir de la búsqueda.
+     * @return void
+     */
     protected function checkDuplicate(string $field, ?string $value, ?int $ignoreId = null): void
     {
         $this->duplicateWarnings[$field] = null;
@@ -181,6 +254,11 @@ class ClientManager extends Component
         }
     }
 
+    /**
+     * Valida los datos y guarda un nuevo cliente en la base de datos evitando duplicados de DNI, teléfono o nombre.
+     *
+     * @return void
+     */
     public function saveClient()
     {
         $this->validate([
@@ -260,6 +338,12 @@ class ClientManager extends Component
 
     // ==================== EDICIÓN COMPLETA ====================
 
+    /**
+     * Carga los datos de un cliente existente y abre el modal de edición.
+     *
+     * @param int|string $clientId Identificador del cliente a editar.
+     * @return void
+     */
     public function openEditModal($clientId)
     {
         $this->resetValidation();
@@ -287,12 +371,23 @@ class ClientManager extends Component
         $this->showEditModal = true;
     }
 
+    /**
+     * Cierra el modal de edición de cliente y limpia el estado de edición.
+     *
+     * @return void
+     */
     public function closeEditModal()
     {
         $this->showEditModal = false;
         $this->editing_client_id = null;
     }
 
+    /**
+     * Autocompleta la localidad y provincia al modificar el código postal en el formulario de edición.
+     *
+     * @param mixed $value Código postal introducido.
+     * @return void
+     */
     public function updatedEditPostalCode($value)
     {
         $lookup = PostalCodeService::lookup($value);
@@ -304,6 +399,11 @@ class ClientManager extends Component
         }
     }
 
+    /**
+     * Valida y actualiza la ficha completa del cliente seleccionado.
+     *
+     * @return void
+     */
     public function updateClient()
     {
         $client = User::find($this->editing_client_id);
@@ -389,6 +489,12 @@ class ClientManager extends Component
 
     // ==================== CAMBIO RÁPIDO DE CONTRASEÑA ====================
 
+    /**
+     * Abre el modal para cambiar o generar rápidamente una contraseña para el cliente indicado.
+     *
+     * @param int|string $clientId Identificador del cliente.
+     * @return void
+     */
     public function openPasswordModal($clientId)
     {
         $this->resetValidation();
@@ -402,6 +508,11 @@ class ClientManager extends Component
         $this->showPasswordModal = true;
     }
 
+    /**
+     * Cierra el modal de cambio rápido de contraseña y limpia los datos temporales.
+     *
+     * @return void
+     */
     public function closePasswordModal()
     {
         $this->showPasswordModal = false;
@@ -410,11 +521,21 @@ class ClientManager extends Component
         $this->generatedPasswordInfo = null;
     }
 
+    /**
+     * Genera una cadena aleatoria de 8 caracteres para asignarla como nueva contraseña.
+     *
+     * @return void
+     */
     public function generateRandomPassword()
     {
         $this->new_password = Str::random(8);
     }
 
+    /**
+     * Valida y guarda la nueva contraseña del cliente, preparando el resumen de credenciales generadas.
+     *
+     * @return void
+     */
     public function saveNewPassword()
     {
         $this->validate([
@@ -444,6 +565,12 @@ class ClientManager extends Component
 
     // ==================== ELIMINAR CLIENTE ====================
 
+    /**
+     * Elimina un cliente de la base de datos a partir de su identificador.
+     *
+     * @param int|string $clientId Identificador del cliente a eliminar.
+     * @return void
+     */
     public function deleteClient($clientId)
     {
         $client = User::where('role', 'client')->find($clientId);
@@ -456,6 +583,11 @@ class ClientManager extends Component
 
     // ==================== LIMPIEZA DE CONTACTOS SPAM / SIN EVENTOS ====================
 
+    /**
+     * Elimina eventos huérfanos y cuentas de clientes detectadas como spam o importadas por error sin eventos asociados.
+     *
+     * @return void
+     */
     public function cleanSpamContacts()
     {
         // 1. Eliminar eventos de spam huérfanos si se hubiesen generado
@@ -497,6 +629,11 @@ class ClientManager extends Component
         }
     }
 
+    /**
+     * Elimina todos los usuarios con rol de cliente que no tienen ningún evento asignado.
+     *
+     * @return void
+     */
     public function cleanAllWithoutEvents()
     {
         $deleted = User::where('role', 'client')
@@ -508,6 +645,11 @@ class ClientManager extends Component
 
     // ==================== FUSIÓN Y RESOLUCIÓN DE DUPLICADOS ====================
 
+    /**
+     * Detecta y fusiona automáticamente fichas de clientes duplicadas por teléfono, DNI o nombre, reasignando sus eventos y contratos.
+     *
+     * @return void
+     */
     public function mergeDuplicates()
     {
         $allClients = User::where('role', 'client')
@@ -590,6 +732,11 @@ class ClientManager extends Component
         }
     }
 
+    /**
+     * Filtra la lista de clientes según criterios de búsqueda y pertenencia a eventos, y renderiza la vista.
+     *
+     * @return \Illuminate\Contracts\View\View
+     */
     public function render()
     {
         // Estadísticas para las pestañas de filtro

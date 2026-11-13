@@ -13,10 +13,13 @@ use App\Services\QrPosterPdfService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 
+/**
+ * Controlador encargado de la generación y descarga de documentos PDF, vistas de presentación y reportes Excel.
+ */
 class PdfController extends Controller
 {
     /**
-     * Verify that the requester is an authorized staff member or possesses a valid event/contract token.
+     * Verifica que el solicitante sea personal autorizado o posea un token válido de evento o contrato.
      */
     protected function authorizePdfAccess(?Event $event = null, ?string $contractToken = null): void
     {
@@ -58,6 +61,9 @@ class PdfController extends Controller
         abort(403, 'Acceso denegado: Se requiere autenticación o token de acceso válido.');
     }
 
+    /**
+     * Genera y descarga el PDF de una factura o recibo de pago.
+     */
     public function downloadInvoice(Invoice $invoice)
     {
         $this->authorizePdfAccess($invoice->event);
@@ -95,6 +101,9 @@ class PdfController extends Controller
         return $pdf->download($filenamePrefix . \Illuminate\Support\Str::slug($invoice->invoice_number) . '.pdf');
     }
 
+    /**
+     * Genera y descarga el PDF de un presupuesto o dossier personalizado para el evento.
+     */
     public function downloadQuote(Quote $quote)
     {
         $this->authorizePdfAccess($quote->event);
@@ -121,6 +130,9 @@ class PdfController extends Controller
         return $pdf->download($filename);
     }
     
+    /**
+     * Genera y descarga el PDF del contrato de un evento.
+     */
     public function downloadContract(Contract $contract)
     {
         $this->authorizePdfAccess($contract->event, $contract->token);
@@ -139,6 +151,9 @@ class PdfController extends Controller
         return $pdf->download($filename);
     }
 
+    /**
+     * Genera y descarga el PDF de la hoja de carga de equipamiento técnico del evento.
+     */
     public function downloadPackingList(Event $event)
     {
         $this->authorizePdfAccess($event);
@@ -159,6 +174,9 @@ class PdfController extends Controller
         return $pdf->download('hoja_de_carga_' . \Illuminate\Support\Str::slug($event->name) . '.pdf');
     }
 
+    /**
+     * Genera y descarga el PDF de la escaleta musical y peticiones de canciones del evento.
+     */
     public function downloadMusicEscaleta(Event $event)
     {
         $this->authorizePdfAccess($event);
@@ -179,6 +197,9 @@ class PdfController extends Controller
         return $pdf->download('escaleta_musical_' . \Illuminate\Support\Str::slug($event->name) . '.pdf');
     }
 
+    /**
+     * Genera y descarga el PDF con el historial de canciones reproducidas en la sesión DJ del evento.
+     */
     public function downloadDjHistory(Event $event)
     {
         $this->authorizePdfAccess($event);

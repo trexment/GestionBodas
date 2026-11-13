@@ -8,6 +8,9 @@ use App\Models\EventMusicRequest;
 use App\Services\MusicSearchService;
 use App\Services\RemoteAudioUrlGuard;
 
+/**
+ * Componente Livewire del Modo Cabina DJ para el control en vivo de la escaleta, peticiones musicales, listas negras y notas del evento.
+ */
 class DjBoothMode extends Component
 {
     public $event;
@@ -74,6 +77,13 @@ class DjBoothMode extends Component
         ['text' => 'Conexión a internet / datos de respaldo para peticiones en vivo', 'done' => false],
     ];
 
+    /**
+     * Inicializa el Modo Cabina cargando el evento mediante su identificador o token de personal y verificando permisos.
+     *
+     * @param mixed $event Instancia o identificador del evento.
+     * @param string|null $token Token de acceso directo para el personal del evento.
+     * @return void
+     */
     public function mount($event = null, $token = null)
     {
         if ($token) {
@@ -120,11 +130,21 @@ class DjBoothMode extends Component
         }
     }
 
+    /**
+     * Reinicia la paginación de pads al modificar el término de búsqueda.
+     *
+     * @return void
+     */
     public function updatedSearch()
     {
         $this->padPage = 1;
     }
 
+    /**
+     * Ejecuta la búsqueda en vivo de canciones en el catálogo universal cuando cambia la consulta.
+     *
+     * @return void
+     */
     public function updatedMusicSearchQuery()
     {
         if (strlen(trim($this->musicSearchQuery)) >= 2) {
@@ -134,6 +154,12 @@ class DjBoothMode extends Component
         }
     }
 
+    /**
+     * Rellena los campos del formulario de nueva canción con los datos de una pista seleccionada del buscador.
+     *
+     * @param array<string, mixed> $track Datos de la pista musical seleccionada.
+     * @return void
+     */
     public function selectTrackFromSearch($track)
     {
         $this->new_title = $track['title'] ?? '';
@@ -146,6 +172,12 @@ class DjBoothMode extends Component
         $this->musicSearchQuery = '';
     }
 
+    /**
+     * Cambia la pestaña activa del Modo Cabina y reinicia la paginación y búsqueda.
+     *
+     * @param string $tab Nombre de la pestaña a activar.
+     * @return void
+     */
     public function setTab($tab)
     {
         $this->activeTab = $tab;
@@ -153,6 +185,12 @@ class DjBoothMode extends Component
         $this->search = '';
     }
 
+    /**
+     * Filtra las canciones mostradas según la fase o momento del evento seleccionado.
+     *
+     * @param string $phase Fase del evento ('all', 'coctel', 'banquete', 'baile', 'ceremonia', 'guest').
+     * @return void
+     */
     public function setPhase($phase)
     {
         $this->selectedPhase = $phase;
@@ -160,6 +198,12 @@ class DjBoothMode extends Component
         $this->showChangeMomentModal = false;
     }
 
+    /**
+     * Abre el modal para añadir una nueva canción preconfigurando la categoría y momento según la fase indicada.
+     *
+     * @param string|null $phase Fase del evento opcional.
+     * @return void
+     */
     public function openAddModalForPhase($phase = null)
     {
         $target = $phase ?: $this->selectedPhase;
@@ -182,6 +226,12 @@ class DjBoothMode extends Component
         $this->showAddModal = true;
     }
 
+    /**
+     * Cambia el modo de agrupación de los pads ('grouped' por momentos o 'flat' continuo).
+     *
+     * @param string $mode Modo de agrupación.
+     * @return void
+     */
     public function setGroupingMode($mode)
     {
         $this->groupingMode = $mode;
@@ -189,12 +239,24 @@ class DjBoothMode extends Component
         $this->padPage = 1;
     }
 
+    /**
+     * Establece el modo de visualización del repertorio ('pads' o 'list').
+     *
+     * @param string $mode Modo de vista.
+     * @return void
+     */
     public function setViewMode($mode)
     {
         $this->viewMode = $mode;
         $this->padPage = 1;
     }
 
+    /**
+     * Avanza a la siguiente página de pads si existen más páginas disponibles.
+     *
+     * @param int $totalPages Número total de páginas.
+     * @return void
+     */
     public function nextPage($totalPages)
     {
         if ($this->padPage < $totalPages) {
@@ -202,6 +264,11 @@ class DjBoothMode extends Component
         }
     }
 
+    /**
+     * Retrocede a la página anterior de pads.
+     *
+     * @return void
+     */
     public function prevPage()
     {
         if ($this->padPage > 1) {
@@ -209,6 +276,12 @@ class DjBoothMode extends Component
         }
     }
 
+    /**
+     * Alterna el estado de reproducción ('playing', 'paused', 'played') de una petición musical.
+     *
+     * @param int|string $requestId Identificador de la petición musical.
+     * @return void
+     */
     public function togglePlay($requestId)
     {
         $req = EventMusicRequest::where('event_id', $this->event->id)->find($requestId);
@@ -232,6 +305,13 @@ class DjBoothMode extends Component
         $this->event->load('musicRequests');
     }
 
+    /**
+     * Asigna un estado específico a una petición musical del evento.
+     *
+     * @param int|string $requestId Identificador de la petición musical.
+     * @param string $status Nuevo estado a establecer.
+     * @return void
+     */
     public function setStatus($requestId, $status)
     {
         $req = EventMusicRequest::where('event_id', $this->event->id)->find($requestId);
@@ -246,6 +326,12 @@ class DjBoothMode extends Component
         }
     }
 
+    /**
+     * Elimina una petición musical del evento actual.
+     *
+     * @param int|string $requestId Identificador de la petición musical.
+     * @return void
+     */
     public function deleteRequest($requestId)
     {
         $req = EventMusicRequest::where('event_id', $this->event->id)->find($requestId);
@@ -255,6 +341,11 @@ class DjBoothMode extends Component
         }
     }
 
+    /**
+     * Valida y añade una nueva canción o petición musical al repertorio del evento.
+     *
+     * @return void
+     */
     public function addRequest()
     {
         $this->validate([
@@ -284,6 +375,11 @@ class DjBoothMode extends Component
         session()->flash('booth_message', 'Canción añadida correctamente.');
     }
 
+    /**
+     * Ordena automáticamente las canciones del evento según la prioridad cronológica habitual de los momentos de una boda.
+     *
+     * @return void
+     */
     public function generateEscaleta()
     {
         $priorityMoments = [
@@ -327,6 +423,12 @@ class DjBoothMode extends Component
         session()->flash('booth_message', '✨ Escaleta cronológica generada con éxito.');
     }
 
+    /**
+     * Sube una posición en el orden de la escaleta el momento o canción indicado.
+     *
+     * @param int|string $requestId Identificador de la petición musical.
+     * @return void
+     */
     public function moveMomentUp($requestId)
     {
         $current = EventMusicRequest::where('event_id', $this->event->id)->find($requestId);
@@ -345,6 +447,12 @@ class DjBoothMode extends Component
         }
     }
 
+    /**
+     * Baja una posición en el orden de la escaleta el momento o canción indicado.
+     *
+     * @param int|string $requestId Identificador de la petición musical.
+     * @return void
+     */
     public function moveMomentDown($requestId)
     {
         $current = EventMusicRequest::where('event_id', $this->event->id)->find($requestId);
@@ -363,6 +471,11 @@ class DjBoothMode extends Component
         }
     }
 
+    /**
+     * Añade un nuevo momento especial con su canción y hora prevista a la escaleta del evento.
+     *
+     * @return void
+     */
     public function addMoment()
     {
         $this->validate([
@@ -389,12 +502,23 @@ class DjBoothMode extends Component
         session()->flash('booth_message', 'Momento añadido a la escaleta.');
     }
 
+    /**
+     * Guarda las notas de cabina del DJ en el registro del evento.
+     *
+     * @return void
+     */
     public function saveNotes()
     {
         $this->event->update(['notes' => $this->dj_notes]);
         session()->flash('booth_message', 'Notas del DJ guardadas correctamente.');
     }
 
+    /**
+     * Alterna el estado de completado de un elemento de la lista de comprobación (checklist) de cabina.
+     *
+     * @param int $index Índice de la tarea en el checklist.
+     * @return void
+     */
     public function toggleChecklist($index)
     {
         if (isset($this->checklist[$index])) {
@@ -402,6 +526,13 @@ class DjBoothMode extends Component
         }
     }
 
+    /**
+     * Determina si una petición musical pertenece a una fase concreta del evento según su categoría o momento.
+     *
+     * @param mixed $item Instancia de la petición musical.
+     * @param string $phase Fase a comprobar ('all', 'guest', 'coctel', 'banquete', 'baile', 'ceremonia').
+     * @return bool
+     */
     private function matchItemPhase($item, string $phase): bool
     {
         if ($phase === 'all') return true;
@@ -447,6 +578,11 @@ class DjBoothMode extends Component
         return false;
     }
 
+    /**
+     * Filtra, agrupa y pagina las peticiones musicales del evento y renderiza la interfaz del Modo Cabina DJ.
+     *
+     * @return \Illuminate\Contracts\View\View
+     */
     public function render()
     {
         if ($this->event) {
@@ -552,11 +688,23 @@ class DjBoothMode extends Component
         ])->layout('components.layouts.wide-guest');
     }
 
+    /**
+     * Cambia la lista de éxitos (Top Charts) seleccionada para explorar.
+     *
+     * @param string $type Identificador del listado de éxitos.
+     * @return void
+     */
     public function setTopChartType($type)
     {
         $this->topChartType = $type;
     }
 
+    /**
+     * Añade una canción del ranking de éxitos actual al repertorio del evento mediante su índice en la lista.
+     *
+     * @param int $index Posición de la canción en el listado Top Charts.
+     * @return void
+     */
     public function addTopTrackToCurrentEventByIndex(int $index)
     {
         $topTracks = MusicSearchService::getTopCharts($this->topChartType, 50);
@@ -574,6 +722,17 @@ class DjBoothMode extends Component
         );
     }
 
+    /**
+     * Registra una canción procedente del ranking de éxitos directamente en la categoría de baile del evento actual.
+     *
+     * @param string $title Título de la canción.
+     * @param string $artist Artista de la canción.
+     * @param string $spotifyUrl Enlace a Spotify.
+     * @param string $appleUrl Enlace a Apple Music.
+     * @param string $youtubeUrl Enlace a YouTube.
+     * @param string $previewUrl URL de preescucha de audio.
+     * @return void
+     */
     public function addTopTrackToCurrentEvent($title, $artist, $spotifyUrl = '', $appleUrl = '', $youtubeUrl = '', $previewUrl = '')
     {
         $maxOrder = $this->event->musicRequests()->max('order') ?: 0;
