@@ -359,5 +359,79 @@
             </tbody>
         </table>
     @endif
+
+    <!-- TABLA 3: RESERVAS Y PAGOS A EMPRESA PROVEEDORA (FOTOMATÓN / PLATAFORMA 360º) -->
+    @if(!empty($providerRows) && count($providerRows) > 0)
+        @php
+            $pKpis = $kpis['provider_summary'] ?? [];
+        @endphp
+        <div class="section-heading" style="margin-top: 12px;">3. Reservas y Pagos a Proveedor: Fotomatón y Plataforma 360º ({{ count($providerRows) }} eventos)</div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th style="width: 18%;">Evento / Fecha</th>
+                    <th style="width: 18%;">Empresa / Servicio Contratado</th>
+                    <th style="width: 9%;" class="text-right">Coste Total</th>
+                    <th style="width: 18%;">1º Pago: Señal Reserva (Fecha y Método)</th>
+                    <th style="width: 18%;">2º Pago: Resto / Final (Fecha y Método)</th>
+                    <th style="width: 9%;" class="text-right">Total Pagado</th>
+                    <th style="width: 10%;" class="text-right">Falta por Pagar</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($providerRows as $pRow)
+                    @php
+                        $ev = $pRow['event'];
+                        $prov = $pRow['prov'];
+                    @endphp
+                    <tr>
+                        <td>
+                            <div class="font-bold">{{ $ev->name }}</div>
+                            <div class="text-muted">Fecha: {{ $ev->event_date ? $ev->event_date->format('d/m/Y') : 'Sin fecha' }}</div>
+                        </td>
+                        <td>
+                            <div class="font-bold">{{ $prov['provider_name'] }}</div>
+                            <div class="text-muted">{{ $prov['service_description'] }}</div>
+                        </td>
+                        <td class="text-right font-bold">{{ number_format($prov['provider_total_cost'], 2, ',', '.') }} €</td>
+                        <td>
+                            @if($prov['deposit_paid'] && $prov['deposit_amount'] > 0)
+                                <span class="text-green">{{ number_format($prov['deposit_amount'], 2, ',', '.') }} €</span>
+                                — <strong>{{ $prov['deposit_method_label'] }}</strong>
+                                @if($prov['deposit_date'])
+                                    <span class="text-muted">({{ \Carbon\Carbon::parse($prov['deposit_date'])->format('d/m/Y') }})</span>
+                                @endif
+                            @else
+                                <span class="text-amber">Sin pagar señal</span>
+                            @endif
+                        </td>
+                        <td>
+                            @if($prov['final_paid'] && $prov['final_amount'] > 0)
+                                <span class="text-blue">{{ number_format($prov['final_amount'], 2, ',', '.') }} €</span>
+                                — <strong>{{ $prov['final_method_label'] }}</strong>
+                                @if($prov['final_date'])
+                                    <span class="text-muted">({{ \Carbon\Carbon::parse($prov['final_date'])->format('d/m/Y') }})</span>
+                                @endif
+                            @else
+                                <span class="text-muted">—</span>
+                            @endif
+                        </td>
+                        <td class="text-right text-green">{{ number_format($prov['total_paid'], 2, ',', '.') }} €</td>
+                        <td class="text-right {{ $prov['pending_amount'] > 0 ? 'text-amber' : 'text-muted' }}">
+                            {{ number_format($prov['pending_amount'], 2, ',', '.') }} €
+                        </td>
+                    </tr>
+                @endforeach
+                <tr class="total-row">
+                    <td colspan="2">TOTALES PROVEEDOR FOTOMATÓN / 360º ({{ count($providerRows) }} EVENTOS)</td>
+                    <td class="text-right">{{ number_format($pKpis['total_cost'] ?? 0, 2, ',', '.') }} €</td>
+                    <td>Señales: {{ number_format($pKpis['deposits_paid'] ?? 0, 2, ',', '.') }} €</td>
+                    <td>Liquidaciones: {{ number_format($pKpis['finals_paid'] ?? 0, 2, ',', '.') }} €</td>
+                    <td class="text-right text-green">{{ number_format($pKpis['total_paid'] ?? 0, 2, ',', '.') }} €</td>
+                    <td class="text-right text-amber">{{ number_format($pKpis['total_pending'] ?? 0, 2, ',', '.') }} €</td>
+                </tr>
+            </tbody>
+        </table>
+    @endif
 </body>
 </html>

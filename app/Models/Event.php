@@ -300,6 +300,175 @@ class Event extends Model
         return $this->hasMany(EventDjHistory::class)->orderBy('order', 'asc');
     }
 
+    public function providerBookings()
+    {
+        EventProviderBooking::ensureTableExists();
+        return $this->hasMany(EventProviderBooking::class)->orderBy('id', 'asc');
+    }
+
+    /**
+     * Detecta si el evento incluye Fotomatón, Plataforma 360º u otros servicios de proveedor externo
+     * y devuelve el estado de la reserva y pagos al proveedor (Señal + Liquidación final).
+     */
+    public function getExternalProviderSummaryAttribute(): array
+    {
+        EventProviderBooking::ensureTableExists();
+
+        $bookings = collect();
+        try {
+            $bookings = $this->relationLoaded('providerBookings')
+                ? $this->providerBookings
+                : $this->providerBookings()->get();
+        } catch (\Throwable $e) {
+            $bookings = collect();
+        }
+
+        $quotes = $this->relationLoaded('quotes') ? $this->quotes : $this->quotes()->with('items')->get();
+        $activeQuote = $quotes->where('status', 'accepted')->sortByDesc('id')->first()
+            ?? $quotes->where('status', '!=', 'rejected')->sortByDesc('id')->first()
+            ?? $quotes->sortByDesc('id')->first();
+
+        $detectedNames = [];
+        $detectedClientPrice = 0.0;
+        $hasPhotobooth = false;
+        $has360 = false;
+
+        if ($activeQuote) {
+            $items = $activeQuote->relationLoaded('items') ? $activeQuote->items : $activeQuote->items()->get();
+            foreach ($items as $item) {
+                $name = (string) ($item->service_name ?? '');
+                $desc = (string) ($item->description ?? '');
+                $combined = mb_strtolower($name . ' ' . $desc);
+
+                // Ignorar el Álbum QR de fotos de invitados
+                if (str_contains($combined, 'álbum de fotos qr') || str_contains($combined, 'album de fotos qr') || str_contains($combined, 'carteles pdf')) {
+                    continue;
+                }
+
+                $isPb = str_contains($combined, 'fotomaton') || str_contains($combined, 'fotomatón') || str_contains($combined, 'photobooth');
+                $is360 = str_contains($combined, '360') || str_contains($combined, 'plataforma');
+                $isDuo = str_contains($combined, 'pack dúo') || str_contains($combined, 'pack duo');
+                $isSweet = str_contains($combined, 'fuente de chocolate') || str_contains($combined, 'mesa de chuches') || str_contains($combined, 'candy bar') || str_contains($combined, 'carrito de gofres');
+
+                if ($isPb || $is360 || $isDuo || $isSweet) {
+                    if ((float) ($item->total_price ?? 0) < 0) {
+                        // Línea de descuento asociada
+                        $detectedClientPrice += (float) $item->total_price;
+                        continue;
+                    }
+                    $detectedNames[] = trim($name);
+                    $detectedClientPrice += (float) ($item->total_price ?? 0);
+                    if ($isPb || $isDuo) {
+                        $hasPhotobooth = true;
+                    }
+                    if ($is360 || $isDuo) {
+                        $has360 = true;
+                    }
+                }
+            }
+        }
+
+        // Si no estaba en líneas pero se menciona en notas de solicitud online
+        if (empty($detectedNames) && !empty($this->notes)) {
+            $notesLower = mb_strtolower((string) $this->notes);
+            if (str_contains($notesLower, 'fotomaton') || str_contains($notesLower, 'fotomatón')) {
+                $hasPhotobooth = true;
+            }
+            if (str_contains($notesLower, 'plataforma 360') || str_contains($notesLower, 'video 360') || str_contains($notesLower, 'vídeo 360')) {
+                $has360 = true;
+            }
+            if ($hasPhotobooth && $has360) {
+                $detectedNames[] = 'Fotomatón + Plataforma 360º';
+            } elseif ($hasPhotobooth) {
+                $detectedNames[] = 'Fotomatón';
+            } elseif ($has360) {
+                $detectedNames[] = 'Plataforma 360º';
+            }
+        }
+
+        $detectedServiceText = implode(' + ', array_unique(array_filter($detectedNames)));
+        $suggestedDeposit = ($hasPhotobooth && $has360) ? 200.0 : (($hasPhotobooth || $has360 || !empty($detectedNames)) ? 100.0 : 100.0);
+
+        // Sugerir proveedor según ubicación (Vitoria/Álava vs Logroño/La Rioja)
+        $locLower = mb_strtolower((string) ($this->location ?? ''));
+        $suggestedProviderKey = (str_contains($locLower, 'vitoria') || str_contains($locLower, 'álava') || str_contains($locLower, 'alava') || str_contains($locLower, 'bilbao'))
+            ? 'vitoria'
+            : 'logrono';
+        $providersCatalog = Setting::getPhotoboothProviders();
+        $suggestedProviderName = $providersCatalog[$suggestedProviderKey]['name'] ?? ($suggestedProviderKey === 'vitoria' ? 'Vitoria (FotomatonCheese)' : 'Logroño');
+
+        $primaryBooking = $bookings->first();
+
+        $serviceLabel = $primaryBooking?->service_description ?: ($detectedServiceText ?: 'Fotomatón / Plataforma 360º');
+        $providerName = $primaryBooking?->provider_name ?: $suggestedProviderName;
+        $providerKey = $primaryBooking?->provider_key ?: $suggestedProviderKey;
+        $clientPrice = ($primaryBooking && (float) $primaryBooking->client_price > 0)
+            ? (float) $primaryBooking->client_price
+            : max(0.0, round($detectedClientPrice, 2));
+        $providerTotalCost = $primaryBooking ? (float) $primaryBooking->provider_total_cost : $clientPrice;
+
+        $depositPaid = $primaryBooking ? (bool) $primaryBooking->deposit_paid && (float) $primaryBooking->deposit_amount > 0 : false;
+        $depositAmount = $depositPaid ? (float) $primaryBooking->deposit_amount : 0.0;
+        $depositDate = $primaryBooking?->deposit_paid_at;
+        $depositMethod = $primaryBooking?->deposit_payment_method;
+        $depositMethodLabel = EventProviderBooking::formatMethodLabel($depositMethod);
+        $depositMethodIcon = EventProviderBooking::formatMethodIcon($depositMethod);
+
+        $finalPaid = $primaryBooking ? (bool) $primaryBooking->final_paid && (float) $primaryBooking->final_amount > 0 : false;
+        $finalAmount = $finalPaid ? (float) $primaryBooking->final_amount : 0.0;
+        $finalDate = $primaryBooking?->final_paid_at;
+        $finalMethod = $primaryBooking?->final_payment_method;
+        $finalMethodLabel = EventProviderBooking::formatMethodLabel($finalMethod);
+        $finalMethodIcon = EventProviderBooking::formatMethodIcon($finalMethod);
+
+        $totalPaidToProvider = round($depositAmount + $finalAmount, 2);
+        $effectiveCost = max($providerTotalCost, $totalPaidToProvider);
+        $pendingToProvider = max(0.0, round($effectiveCost - $totalPaidToProvider, 2));
+
+        if ($totalPaidToProvider > 0 && ($pendingToProvider <= 0.05 && ($effectiveCost > 0 || $finalPaid))) {
+            $status = 'paid';
+            $statusLabel = '✅ Todo Pagado al Proveedor';
+        } elseif ($totalPaidToProvider > 0) {
+            $status = 'deposit_paid';
+            $statusLabel = '🟢 Señal Pagada (Falta Resto)';
+        } else {
+            $status = 'unpaid';
+            $statusLabel = '⏳ Pendiente de Pagar Señal';
+        }
+
+        return [
+            'has_external_service' => $bookings->isNotEmpty() || $detectedServiceText !== '',
+            'has_saved_booking' => $primaryBooking !== null,
+            'booking_id' => $primaryBooking?->id,
+            'booking' => $primaryBooking,
+            'provider_key' => $providerKey,
+            'provider_name' => $providerName,
+            'service_description' => $serviceLabel,
+            'detected_services' => $detectedServiceText,
+            'client_price' => $clientPrice,
+            'provider_total_cost' => $effectiveCost,
+            'suggested_deposit' => $suggestedDeposit,
+            'deposit_paid' => $depositPaid,
+            'deposit_amount' => $depositAmount,
+            'deposit_date' => $depositDate,
+            'deposit_method' => $depositMethod,
+            'deposit_method_label' => $depositMethodLabel,
+            'deposit_method_icon' => $depositMethodIcon,
+            'final_paid' => $finalPaid,
+            'final_amount' => $finalAmount,
+            'final_date' => $finalDate,
+            'final_method' => $finalMethod,
+            'final_method_label' => $finalMethodLabel,
+            'final_method_icon' => $finalMethodIcon,
+            'total_paid' => $totalPaidToProvider,
+            'pending_amount' => $pendingToProvider,
+            'paid_percentage' => $effectiveCost > 0 ? min(100, (int) round(($totalPaidToProvider / $effectiveCost) * 100)) : ($totalPaidToProvider > 0 ? 100 : 0),
+            'status' => $status,
+            'status_label' => $statusLabel,
+            'notes' => $primaryBooking?->notes ?? '',
+        ];
+    }
+
     /**
      * Etiqueta legible del estado del evento
      */

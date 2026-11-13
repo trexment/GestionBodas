@@ -33,6 +33,14 @@
                         <span>🧾</span>
                         <span>Libro de Cobros ({{ count($ledgerRows) }})</span>
                     </button>
+                    <button
+                        type="button"
+                        wire:click="$set('viewMode', 'providers')"
+                        class="px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1.5 {{ $viewMode === 'providers' ? 'bg-purple-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white' }}"
+                    >
+                        <span>📸</span>
+                        <span>Pagos Fotomatón / 360º ({{ count($providerRows) }})</span>
+                    </button>
                 </div>
 
                 <!-- Botón Exportar Excel (.xlsx) -->
@@ -354,6 +362,31 @@
                                                     {{ $ev->status_label }}
                                                 </span>
                                             </div>
+                                            @php
+                                                $evProv = $ev->external_provider_summary;
+                                            @endphp
+                                            @if($evProv['has_external_service'])
+                                                <div class="mt-1.5">
+                                                    <button
+                                                        type="button"
+                                                        wire:click="openProviderModal({{ $ev->id }}, 'deposit')"
+                                                        class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold border transition cursor-pointer {{ $evProv['status'] === 'paid' ? 'bg-emerald-50 text-emerald-800 border-emerald-300' : ($evProv['status'] === 'deposit_paid' ? 'bg-purple-50 text-purple-800 border-purple-300' : 'bg-amber-50 text-amber-800 border-amber-300') }}"
+                                                        title="Pulsar para gestionar reserva y pagos a la empresa de Fotomatón / 360º"
+                                                    >
+                                                        <span>📸</span>
+                                                        <span>
+                                                            @if($evProv['status'] === 'paid')
+                                                                Fotomatón/360º: Pagado ({{ number_format($evProv['total_paid'], 0, ',', '.') }}€)
+                                                            @elseif($evProv['status'] === 'deposit_paid')
+                                                                Fotomatón/360º: Señal {{ number_format($evProv['deposit_amount'], 0, ',', '.') }}€ · Falta {{ number_format($evProv['pending_amount'], 0, ',', '.') }}€
+                                                            @else
+                                                                Fotomatón/360º: Reserva pendiente
+                                                            @endif
+                                                        </span>
+                                                        <span>✏️</span>
+                                                    </button>
+                                                </div>
+                                            @endif
                                         </div>
                                     </div>
                                 </td>
@@ -532,7 +565,7 @@
                 </table>
             </div>
         </div>
-    @else
+    @elseif($viewMode === 'ledger')
         <!-- ========================================================== -->
         <!-- VISTA 2: LIBRO CRONOLÓGICO DE COBROS, SEÑALES Y FACTURAS   -->
         <!-- ========================================================== -->
@@ -679,6 +712,299 @@
                 </table>
             </div>
         </div>
+    @else
+        <!-- ==================================================================== -->
+        <!-- VISTA 3: RESERVAS Y PAGOS A PROVEEDOR (FOTOMATÓN Y PLATAFORMA 360º)  -->
+        <!-- ==================================================================== -->
+        @php
+            $pKpis = $kpis['provider_summary'] ?? [];
+        @endphp
+        <div class="space-y-4">
+            <!-- Resumen de Pagos a la Empresa de Fotomatón / 360º -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-white dark:bg-slate-900 rounded-2xl border border-purple-200 dark:border-purple-900/60 p-4 shadow-xs">
+                    <span class="text-[11px] font-extrabold uppercase tracking-wider text-purple-700 dark:text-purple-400 block">
+                        📸 Eventos con Fotomatón / 360º
+                    </span>
+                    <div class="text-2xl font-black text-slate-900 dark:text-white mt-1.5">
+                        {{ $pKpis['events_count'] ?? 0 }} eventos
+                    </div>
+                    <div class="text-[11px] text-slate-500 mt-1">
+                        Coste total proveedor: <strong class="text-slate-800 dark:text-slate-200">{{ number_format($pKpis['total_cost'] ?? 0, 2, ',', '.') }} €</strong>
+                    </div>
+                </div>
+
+                <div class="bg-white dark:bg-slate-900 rounded-2xl border border-emerald-200 dark:border-emerald-900/60 p-4 shadow-xs">
+                    <span class="text-[11px] font-extrabold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 block">
+                        🟢 Señales de Reserva Pagadas
+                    </span>
+                    <div class="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1.5">
+                        {{ number_format($pKpis['deposits_paid'] ?? 0, 2, ',', '.') }} €
+                    </div>
+                    <div class="text-[11px] text-slate-500 mt-1">
+                        En <strong>{{ ($pKpis['events_deposit_paid_count'] ?? 0) + ($pKpis['events_fully_paid_count'] ?? 0) }}</strong> eventos reservados
+                    </div>
+                </div>
+
+                <div class="bg-white dark:bg-slate-900 rounded-2xl border border-blue-200 dark:border-blue-900/60 p-4 shadow-xs">
+                    <span class="text-[11px] font-extrabold uppercase tracking-wider text-blue-700 dark:text-blue-400 block">
+                        ✅ Total Pagado al Proveedor
+                    </span>
+                    <div class="text-2xl font-black text-blue-600 dark:text-blue-400 mt-1.5">
+                        {{ number_format($pKpis['total_paid'] ?? 0, 2, ',', '.') }} €
+                    </div>
+                    <div class="text-[11px] text-slate-500 mt-1">
+                        Liquidaciones finales: <strong>{{ number_format($pKpis['finals_paid'] ?? 0, 2, ',', '.') }} €</strong> ({{ $pKpis['events_fully_paid_count'] ?? 0 }} ev.)
+                    </div>
+                </div>
+
+                <div class="bg-white dark:bg-slate-900 rounded-2xl border border-amber-200 dark:border-amber-900/60 p-4 shadow-xs">
+                    <span class="text-[11px] font-extrabold uppercase tracking-wider text-amber-700 dark:text-amber-400 block">
+                        ⏳ Falta por Pagar al Proveedor
+                    </span>
+                    <div class="text-2xl font-black text-amber-600 dark:text-amber-400 mt-1.5">
+                        {{ number_format($pKpis['total_pending'] ?? 0, 2, ',', '.') }} €
+                    </div>
+                    <div class="text-[11px] text-slate-500 mt-1">
+                        Pendiente de liquidar en <strong>{{ ($pKpis['events_deposit_paid_count'] ?? 0) + ($pKpis['events_unpaid_count'] ?? 0) }}</strong> eventos
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabla de Reservas y Pagos a Proveedor (Fotomatón / 360º) -->
+            <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden">
+                <div class="px-5 py-3.5 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 bg-purple-50/50 dark:bg-slate-950/60">
+                    <div>
+                        <h3 class="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
+                            <span>📸</span>
+                            <span>Control de Reservas y Pagos a Empresa de Fotomatón y Plataforma 360º ({{ count($providerRows) }})</span>
+                        </h3>
+                        <p class="text-[11px] text-slate-500 mt-0.5">
+                            Se detectan automáticamente los eventos que llevan Fotomatón o Plataforma 360º en su presupuesto. Anota aquí la señal que pagas al proveedor y el pago final cuando toque liquidarlo.
+                        </p>
+                    </div>
+                    <button
+                        type="button"
+                        wire:click="openProviderModal(null, 'deposit')"
+                        class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-extrabold shadow-xs transition cursor-pointer"
+                    >
+                        <span>➕</span>
+                        <span>Añadir Reserva Fotomatón / 360º</span>
+                    </button>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-slate-200 dark:border-slate-800 text-[10px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-950">
+                                <th class="py-3 px-4">Evento / Fecha</th>
+                                <th class="py-3 px-3">Empresa / Servicio Contratado</th>
+                                <th class="py-3 px-3 text-right">Total Proveedor</th>
+                                <th class="py-3 px-4">1º Pago: Señal Reserva a Empresa</th>
+                                <th class="py-3 px-4">2º Pago: Liquidación / Resto a Empresa</th>
+                                <th class="py-3 px-3 text-right">Total Pagado</th>
+                                <th class="py-3 px-3 text-right">Falta por Pagar</th>
+                                <th class="py-3 px-3 text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
+                            @forelse($providerRows as $pRow)
+                                @php
+                                    /** @var \App\Models\Event $ev */
+                                    $ev = $pRow['event'];
+                                    $prov = $pRow['prov'];
+                                @endphp
+                                <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition">
+                                    <!-- Evento -->
+                                    <td class="py-3.5 px-4 align-top">
+                                        <a href="{{ route('admin.events.show', $ev->id) }}" class="font-black text-slate-900 dark:text-white hover:text-indigo-600 block">
+                                            {{ $ev->event_type_icon }} {{ $ev->name }}
+                                        </a>
+                                        <div class="text-[11px] text-slate-500 mt-0.5">
+                                            📅 {{ $ev->event_date ? $ev->event_date->format('d/m/Y') : 'Sin fecha' }}
+                                            &bull; 📍 {{ $ev->location ?: 'Por definir' }}
+                                        </div>
+                                        <div class="text-[11px] text-slate-400">
+                                            👤 {{ $ev->client?->name ?? 'Sin cliente' }}
+                                        </div>
+                                    </td>
+
+                                    <!-- Empresa Proveedora y Servicio -->
+                                    <td class="py-3.5 px-3 align-top">
+                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-purple-100 dark:bg-purple-950 text-purple-800 dark:text-purple-300 text-[10px] font-black">
+                                            🏢 {{ $prov['provider_name'] }}
+                                        </span>
+                                        <div class="font-bold text-slate-800 dark:text-slate-200 mt-1 leading-snug">
+                                            {{ $prov['service_description'] }}
+                                        </div>
+                                        @if(!empty($prov['notes']))
+                                            <div class="text-[11px] text-slate-500 italic mt-0.5">
+                                                📝 {{ $prov['notes'] }}
+                                            </div>
+                                        @endif
+                                    </td>
+
+                                    <!-- Coste Total Proveedor -->
+                                    <td class="py-3.5 px-3 text-right align-top font-black text-slate-900 dark:text-white whitespace-nowrap">
+                                        {{ number_format($prov['provider_total_cost'], 2, ',', '.') }} €
+                                        @if($prov['client_price'] > 0 && abs($prov['client_price'] - $prov['provider_total_cost']) > 0.05)
+                                            <div class="text-[10px] text-slate-400 font-normal">
+                                                PVP Cliente: {{ number_format($prov['client_price'], 2, ',', '.') }} €
+                                            </div>
+                                        @endif
+                                    </td>
+
+                                    <!-- 1º Pago: Señal pagada al proveedor -->
+                                    <td class="py-3.5 px-4 align-top">
+                                        @if($prov['deposit_paid'] && $prov['deposit_amount'] > 0)
+                                            <div class="p-2 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/70 space-y-1">
+                                                <div class="flex items-center justify-between gap-2">
+                                                    <span class="font-black text-emerald-700 dark:text-emerald-300 text-xs">
+                                                        ✅ {{ number_format($prov['deposit_amount'], 2, ',', '.') }} €
+                                                    </span>
+                                                    <button
+                                                        type="button"
+                                                        wire:click="openProviderModal({{ $ev->id }}, 'deposit')"
+                                                        class="text-[11px] text-emerald-700 hover:underline font-bold cursor-pointer"
+                                                        title="Editar señal pagada al proveedor"
+                                                    >
+                                                        ✏️
+                                                    </button>
+                                                </div>
+                                                <div class="flex flex-wrap items-center gap-1.5 text-[11px] text-slate-600 dark:text-slate-300">
+                                                    <span class="inline-flex items-center gap-1 font-bold bg-white dark:bg-slate-900 px-1.5 py-0.5 rounded border border-emerald-200 dark:border-emerald-800">
+                                                        <span>{{ $prov['deposit_method_icon'] }}</span>
+                                                        <span>{{ $prov['deposit_method_label'] }}</span>
+                                                    </span>
+                                                    @if($prov['deposit_date'])
+                                                        <span class="text-slate-500">
+                                                            📅 {{ \Carbon\Carbon::parse($prov['deposit_date'])->format('d/m/Y') }}
+                                                        </span>
+                                                    @endif
+                                                </div>
+                                            </div>
+                                        @else
+                                            <div class="flex items-center justify-between gap-2">
+                                                <span class="text-[11px] text-amber-700 dark:text-amber-400 font-semibold">
+                                                    ⏳ Sin reservar ({{ number_format($prov['suggested_deposit'], 0, ',', '.') }}€ sug.)
+                                                </span>
+                                                <button
+                                                    type="button"
+                                                    wire:click="openProviderModal({{ $ev->id }}, 'deposit')"
+                                                    class="px-2.5 py-1 rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-[10px] font-bold transition cursor-pointer shadow-2xs"
+                                                >
+                                                    + Anotar Señal
+                                                </button>
+                                            </div>
+                                        @endif
+                                    </td>
+
+                                    <!-- 2º Pago: Liquidación / Resto al proveedor -->
+                                    <td class="py-3.5 px-4 align-top">
+                                        @if($prov['final_paid'] && $prov['final_amount'] > 0)
+                                            <div class="p-2 rounded-xl bg-blue-50/70 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/70 space-y-1">
+                                                <div class="flex items-center justify-between gap-2">
+                                                    <span class="font-black text-blue-700 dark:text-blue-300 text-xs">
+                                                        ✅ {{ number_format($prov['final_amount'], 2, ',', '.') }} €
+                                                    </span>
+                                                    <button
+                                                        type="button"
+                                                        wire:click="openProviderModal({{ $ev->id }}, 'final')"
+                                                        class="text-[11px] text-blue-700 hover:underline font-bold cursor-pointer"
+                                                    >
+                                                        ✏️
+                                                    </button>
+                                                </div>
+                                                <div class="flex flex-wrap items-center gap-1.5 text-[11px] text-slate-600 dark:text-slate-300">
+                                                    <span class="inline-flex items-center gap-1 font-bold bg-white dark:bg-slate-900 px-1.5 py-0.5 rounded border border-blue-200 dark:border-blue-800">
+                                                        <span>{{ $prov['final_method_icon'] }}</span>
+                                                        <span>{{ $prov['final_method_label'] }}</span>
+                                                    </span>
+                                                    @if($prov['final_date'])
+                                                        <span class="text-slate-500">
+                                                            📅 {{ \Carbon\Carbon::parse($prov['final_date'])->format('d/m/Y') }}
+                                                        </span>
+                                                    @endif
+                                                </div>
+                                            </div>
+                                        @elseif($prov['pending_amount'] > 0)
+                                            <div class="flex items-center justify-between gap-2">
+                                                <span class="text-[11px] text-slate-500">
+                                                    Faltan <strong>{{ number_format($prov['pending_amount'], 2, ',', '.') }} €</strong>
+                                                </span>
+                                                <button
+                                                    type="button"
+                                                    wire:click="openProviderModal({{ $ev->id }}, 'final')"
+                                                    class="px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-[10px] font-bold transition cursor-pointer"
+                                                >
+                                                    + Pagar Resto
+                                                </button>
+                                            </div>
+                                        @else
+                                            <span class="text-[11px] text-slate-400">—</span>
+                                        @endif
+                                    </td>
+
+                                    <!-- Total Pagado al Proveedor -->
+                                    <td class="py-3.5 px-3 text-right align-top whitespace-nowrap">
+                                        <div class="font-black text-sm {{ $prov['total_paid'] > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400' }}">
+                                            {{ number_format($prov['total_paid'], 2, ',', '.') }} €
+                                        </div>
+                                        <span class="text-[10px] font-bold text-slate-400">{{ $prov['paid_percentage'] }}% pagado</span>
+                                    </td>
+
+                                    <!-- Falta por Pagar al Proveedor -->
+                                    <td class="py-3.5 px-3 text-right align-top whitespace-nowrap">
+                                        @if($prov['pending_amount'] > 0)
+                                            <span class="font-black text-amber-600 dark:text-amber-400">
+                                                {{ number_format($prov['pending_amount'], 2, ',', '.') }} €
+                                            </span>
+                                        @elseif($prov['total_paid'] > 0)
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 text-[10px] font-black">
+                                                ¡Liquidado!
+                                            </span>
+                                        @else
+                                            <span class="text-slate-400">—</span>
+                                        @endif
+                                    </td>
+
+                                    <!-- Acciones -->
+                                    <td class="py-3.5 px-3 text-center align-top whitespace-nowrap">
+                                        <div class="inline-flex items-center gap-1">
+                                            <button
+                                                type="button"
+                                                wire:click="openProviderModal({{ $ev->id }}, 'deposit')"
+                                                class="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 text-slate-700 dark:text-slate-200 text-[11px] font-bold transition cursor-pointer"
+                                                title="Editar reserva y pagos al proveedor"
+                                            >
+                                                ✏️ Editar
+                                            </button>
+                                            @if(!empty($prov['booking_id']))
+                                                <button
+                                                    type="button"
+                                                    wire:click="deleteProviderBooking({{ $prov['booking_id'] }})"
+                                                    wire:confirm="¿Seguro que deseas borrar los datos de pago a proveedor de este evento?"
+                                                    class="px-2 py-1 rounded-lg text-rose-600 hover:bg-rose-50 text-[11px] font-bold transition cursor-pointer"
+                                                    title="Eliminar anotación"
+                                                >
+                                                    🗑️
+                                                </button>
+                                            @endif
+                                        </div>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="8" class="py-10 text-center text-slate-400 text-xs">
+                                        No hay eventos con Fotomatón o Plataforma 360º en los filtros actuales. Pulsa «➕ Añadir Reserva Fotomatón / 360º» para anotar uno manualmente.
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
     @endif
 
     <!-- MODAL RÁPIDO PARA ANOTAR O EDITAR SEÑAL / COBRO FINAL -->
@@ -745,6 +1071,167 @@
                     </button>
                     <button type="button" wire:click="saveQuickPayment" class="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black shadow-sm cursor-pointer">
                         💾 Guardar Cobro
+                    </button>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    <!-- MODAL PARA REGISTRAR / EDITAR RESERVA Y PAGOS A EMPRESA DE FOTOMATÓN / 360º -->
+    @if($showProviderModal)
+        <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-xs p-4 overflow-y-auto">
+            <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 max-w-xl w-full p-6 shadow-2xl space-y-4 my-8">
+                <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                    <div>
+                        <h4 class="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
+                            <span>📸</span>
+                            <span>Reserva y Pagos a Proveedor (Fotomatón / 360º)</span>
+                        </h4>
+                        <p class="text-xs text-purple-600 dark:text-purple-400 font-bold mt-0.5">
+                            Anota la señal que le pagas para reservar y el resto cuando liquides el evento
+                        </p>
+                    </div>
+                    <button type="button" wire:click="closeProviderModal" class="text-slate-400 hover:text-slate-700 text-lg font-bold cursor-pointer">&times;</button>
+                </div>
+
+                <div class="space-y-4 text-xs">
+                    <!-- Selección de Evento -->
+                    <div>
+                        <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Evento *</label>
+                        <select wire:model.live="provEventId" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 p-2.5 font-bold">
+                            @foreach($allEventsList as $evOpt)
+                                <option value="{{ $evOpt->id }}">
+                                    {{ $evOpt->name }} ({{ $evOpt->event_date ? $evOpt->event_date->format('d/m/Y') : 'Sin fecha' }})
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <!-- Proveedor y Servicio -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Empresa Proveedora *</label>
+                            <div class="flex gap-1.5 mb-1.5">
+                                <button type="button" wire:click="$set('provKey', 'logrono')" class="px-2.5 py-1 rounded-lg text-[11px] font-bold border cursor-pointer {{ $provKey === 'logrono' ? 'bg-purple-600 text-white border-purple-600' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200' }}">
+                                    🏢 Logroño
+                                </button>
+                                <button type="button" wire:click="$set('provKey', 'vitoria')" class="px-2.5 py-1 rounded-lg text-[11px] font-bold border cursor-pointer {{ $provKey === 'vitoria' ? 'bg-purple-600 text-white border-purple-600' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200' }}">
+                                    🧀 Vitoria (Cheese)
+                                </button>
+                            </div>
+                            <input type="text" wire:model="provName" placeholder="Nombre de la empresa..." class="w-full rounded-xl border border-slate-300 dark:border-slate-700 p-2 font-bold">
+                        </div>
+
+                        <div>
+                            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Total a Pagar a la Empresa (€) *</label>
+                            <input type="number" step="0.01" wire:model.live="provTotalCost" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 p-2.5 font-black text-sm mt-6">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Servicio Contratado (Fotomatón, 360º, Pack Dúo...) *</label>
+                        <div class="flex flex-wrap gap-1.5 mb-1.5">
+                            <button type="button" wire:click="$set('provService', 'Fotomatón')" class="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[10px] font-bold hover:bg-purple-100 cursor-pointer">📸 Fotomatón</button>
+                            <button type="button" wire:click="$set('provService', 'Plataforma 360º')" class="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[10px] font-bold hover:bg-purple-100 cursor-pointer">🎥 Plataforma 360º</button>
+                            <button type="button" wire:click="$set('provService', 'Pack Dúo: Fotomatón + Plataforma 360º')" class="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[10px] font-bold hover:bg-purple-100 cursor-pointer">✨ Pack Dúo (Fotomatón + 360º)</button>
+                        </div>
+                        <input type="text" wire:model="provService" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 p-2.5 font-semibold">
+                    </div>
+
+                    <!-- BLOQUE 1: SEÑAL DE RESERVA A LA EMPRESA -->
+                    <div class="p-3.5 rounded-2xl border {{ $provDepositPaid ? 'bg-emerald-50/60 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-800' : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800' }} space-y-2.5">
+                        <div class="flex items-center justify-between">
+                            <label class="flex items-center gap-2 font-black text-slate-900 dark:text-white cursor-pointer">
+                                <input type="checkbox" wire:model.live="provDepositPaid" class="rounded border-slate-300 text-emerald-600">
+                                <span>1º PAGO: Señal de Reserva Pagada a la Empresa</span>
+                            </label>
+                            <div class="flex gap-1">
+                                <button type="button" wire:click="$set('provDepositAmount', 100)" class="px-2 py-0.5 rounded bg-white dark:bg-slate-800 border border-slate-200 text-[10px] font-bold cursor-pointer">100 €</button>
+                                <button type="button" wire:click="$set('provDepositAmount', 200)" class="px-2 py-0.5 rounded bg-white dark:bg-slate-800 border border-slate-200 text-[10px] font-bold cursor-pointer">200 €</button>
+                            </div>
+                        </div>
+
+                        @if($provDepositPaid)
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                                <div>
+                                    <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Importe Señal (€)</label>
+                                    <input type="number" step="0.01" wire:model.live="provDepositAmount" class="w-full rounded-xl border border-slate-300 p-2 font-black">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Fecha de Pago</label>
+                                    <input type="date" wire:model="provDepositDate" class="w-full rounded-xl border border-slate-300 p-2 font-bold">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Método de Pago</label>
+                                    <select wire:model="provDepositMethod" class="w-full rounded-xl border border-slate-300 p-2 font-bold">
+                                        <option value="bizum">📱 Bizum</option>
+                                        <option value="transfer">🏦 Transferencia</option>
+                                        <option value="cash">💵 Efectivo</option>
+                                        <option value="card">💳 Tarjeta</option>
+                                    </select>
+                                </div>
+                            </div>
+                        @endif
+                    </div>
+
+                    <!-- BLOQUE 2: RESTO / LIQUIDACIÓN FINAL A LA EMPRESA -->
+                    @php
+                        $calcPendingToProv = max(0, (float)$provTotalCost - ($provDepositPaid ? (float)$provDepositAmount : 0) - ($provFinalPaid ? (float)$provFinalAmount : 0));
+                    @endphp
+                    <div class="p-3.5 rounded-2xl border {{ $provFinalPaid ? 'bg-blue-50/60 dark:bg-blue-950/30 border-blue-300 dark:border-blue-800' : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800' }} space-y-2.5">
+                        <div class="flex items-center justify-between">
+                            <label class="flex items-center gap-2 font-black text-slate-900 dark:text-white cursor-pointer">
+                                <input type="checkbox" wire:model.live="provFinalPaid" class="rounded border-slate-300 text-blue-600">
+                                <span>2º PAGO: Liquidación / Resto Pagado a la Empresa</span>
+                            </label>
+                            <button
+                                type="button"
+                                wire:click="fillProviderRemaining"
+                                class="px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold cursor-pointer"
+                            >
+                                ⚡ Liquidar Resto ({{ number_format(max(0, (float)$provTotalCost - ($provDepositPaid ? (float)$provDepositAmount : 0)), 2, ',', '.') }} €)
+                            </button>
+                        </div>
+
+                        @if($provFinalPaid)
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                                <div>
+                                    <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Importe Resto (€)</label>
+                                    <input type="number" step="0.01" wire:model.live="provFinalAmount" class="w-full rounded-xl border border-slate-300 p-2 font-black">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Fecha Pago Final</label>
+                                    <input type="date" wire:model="provFinalDate" class="w-full rounded-xl border border-slate-300 p-2 font-bold">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Método de Pago</label>
+                                    <select wire:model="provFinalMethod" class="w-full rounded-xl border border-slate-300 p-2 font-bold">
+                                        <option value="transfer">🏦 Transferencia</option>
+                                        <option value="bizum">📱 Bizum</option>
+                                        <option value="cash">💵 Efectivo</option>
+                                        <option value="card">💳 Tarjeta</option>
+                                    </select>
+                                </div>
+                            </div>
+                        @else
+                            <div class="text-[11px] text-amber-700 dark:text-amber-300 font-bold">
+                                ⏳ Queda pendiente de pagarle a la empresa: <strong>{{ number_format($calcPendingToProv, 2, ',', '.') }} €</strong>
+                            </div>
+                        @endif
+                    </div>
+
+                    <div>
+                        <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Notas / Referencia Reserva (Opcional)</label>
+                        <input type="text" wire:model="provNotes" placeholder="Ej: Reservado con Águeda por WhatsApp, montaje a las 20:00..." class="w-full rounded-xl border border-slate-300 dark:border-slate-700 p-2.5">
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                    <button type="button" wire:click="closeProviderModal" class="px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300 cursor-pointer">
+                        Cancelar
+                    </button>
+                    <button type="button" wire:click="saveProviderBooking" class="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-black shadow-sm cursor-pointer">
+                        💾 Guardar Reserva y Pagos
                     </button>
                 </div>
             </div>

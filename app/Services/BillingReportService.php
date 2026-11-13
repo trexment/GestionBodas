@@ -34,13 +34,16 @@ class BillingReportService
             $dateTo = (clone $dateFrom)->addMonths(2)->endOfMonth()->endOfDay();
         }
 
-        $events = Event::with(['client', 'quotes', 'invoices'])
+        \App\Models\EventProviderBooking::ensureTableExists();
+
+        $events = Event::with(['client', 'quotes.items', 'invoices', 'providerBookings'])
             ->orderByDesc('event_date')
             ->orderByDesc('id')
             ->get();
 
         $filteredEvents = [];
         $ledgerRows = [];
+        $providerRows = [];
 
         // Acumuladores de KPIs
         $kpis = [
@@ -68,6 +71,17 @@ class BillingReportService
                 'invoices_total' => 0.0,
                 'receipts_count' => 0,
                 'receipts_total' => 0.0,
+            ],
+            'provider_summary' => [
+                'events_count' => 0,
+                'total_cost' => 0.0,
+                'deposits_paid' => 0.0,
+                'finals_paid' => 0.0,
+                'total_paid' => 0.0,
+                'total_pending' => 0.0,
+                'events_deposit_paid_count' => 0,
+                'events_fully_paid_count' => 0,
+                'events_unpaid_count' => 0,
             ],
         ];
 
@@ -258,7 +272,68 @@ class BillingReportService
                     }
                 }
             }
+
+            // 6. Control de Reservas y Pagos a Proveedores Externos (Fotomatón / Plataforma 360º)
+            $prov = $event->external_provider_summary;
+            if ($prov['has_external_service']) {
+                $provDateMatches = true;
+                $evDateForProv = $event->event_date ? Carbon::parse($event->event_date) : null;
+                $payDateForProv = $prov['final_date']
+                    ? Carbon::parse($prov['final_date'])
+                    : ($prov['deposit_date'] ? Carbon::parse($prov['deposit_date']) : $evDateForProv);
+                $refDate = ($dateBasis === 'event_date') ? $evDateForProv : ($payDateForProv ?: $evDateForProv);
+
+                if ($year !== 'all' && is_numeric($year)) {
+                    if (!$refDate || (int) $refDate->year !== (int) $year) {
+                        $provDateMatches = false;
+                    }
+                }
+                if ($dateFrom && (!$refDate || $refDate->lt($dateFrom))) {
+                    $provDateMatches = false;
+                }
+                if ($dateTo && (!$refDate || $refDate->gt($dateTo))) {
+                    $provDateMatches = false;
+                }
+
+                if ($paymentMethod !== 'all') {
+                    $depM = $prov['deposit_method'] ?? '';
+                    $finM = $prov['final_method'] ?? '';
+                    if ($depM !== $paymentMethod && $finM !== $paymentMethod) {
+                        $provDateMatches = false;
+                    }
+                }
+
+                if ($provDateMatches) {
+                    $providerRows[] = [
+                        'event' => $event,
+                        'fb' => $fb,
+                        'prov' => $prov,
+                    ];
+
+                    $kpis['provider_summary']['events_count']++;
+                    $kpis['provider_summary']['total_cost'] += (float) $prov['provider_total_cost'];
+                    $kpis['provider_summary']['deposits_paid'] += (float) $prov['deposit_amount'];
+                    $kpis['provider_summary']['finals_paid'] += (float) $prov['final_amount'];
+                    $kpis['provider_summary']['total_paid'] += (float) $prov['total_paid'];
+                    $kpis['provider_summary']['total_pending'] += (float) $prov['pending_amount'];
+
+                    if ($prov['status'] === 'paid') {
+                        $kpis['provider_summary']['events_fully_paid_count']++;
+                    } elseif ($prov['status'] === 'deposit_paid') {
+                        $kpis['provider_summary']['events_deposit_paid_count']++;
+                    } else {
+                        $kpis['provider_summary']['events_unpaid_count']++;
+                    }
+                }
+            }
         }
+
+        // Ordenar providerRows por fecha de evento ascendente (próximos primero) o más recientes
+        usort($providerRows, function ($a, $b) {
+            $evA = $a['event']->event_date ? Carbon::parse($a['event']->event_date)->timestamp : 0;
+            $evB = $b['event']->event_date ? Carbon::parse($b['event']->event_date)->timestamp : 0;
+            return $evB <=> $evA;
+        });
 
         // Ordenar el Libro de Cobros por fecha de pago descendente
         usort($ledgerRows, function ($a, $b) {
@@ -288,6 +363,7 @@ class BillingReportService
             'filters' => $filters,
             'events_rows' => $filteredEvents,
             'ledger_rows' => $ledgerRows,
+            'provider_rows' => $providerRows,
             'kpis' => $kpis,
         ];
     }
@@ -469,7 +545,78 @@ class BillingReportService
             '',
         ];
 
-        // Hoja 3: Resumen Ejecutivo e Ingresos por Método de Pago
+        // Hoja 3: Reservas y Pagos a Empresa Fotomatón / Plataforma 360º
+        $providerRows = $reportData['provider_rows'] ?? [];
+        $provKpis = $kpis['provider_summary'] ?? [];
+
+        $sheetProvRows = [];
+        $sheetProvRows[] = [
+            'ID Evento',
+            'Evento',
+            'Fecha Evento',
+            'Cliente',
+            'Empresa / Proveedor',
+            'Servicio (Fotomatón / 360º)',
+            'Total a Pagar Proveedor (€)',
+            '1º Pago: Señal Pagada (€)',
+            'Fecha Pago Señal',
+            'Método Pago Señal',
+            '2º Pago: Resto Pagado (€)',
+            'Fecha Pago Resto',
+            'Método Pago Resto',
+            'Total Pagado a Proveedor (€)',
+            'Pendiente de Pagar a Proveedor (€)',
+            'Estado Reserva Proveedor',
+            'Observaciones',
+        ];
+
+        foreach ($providerRows as $pRow) {
+            /** @var \App\Models\Event $ev */
+            $ev = $pRow['event'];
+            $prov = $pRow['prov'];
+
+            $sheetProvRows[] = [
+                (int) $ev->id,
+                (string) $ev->name,
+                $ev->event_date ? $ev->event_date->format('d/m/Y') : 'Sin fecha',
+                (string) ($ev->client?->name ?? 'Sin cliente'),
+                (string) ($prov['provider_name'] ?? ''),
+                (string) ($prov['service_description'] ?? ''),
+                round((float) ($prov['provider_total_cost'] ?? 0), 2),
+                round((float) ($prov['deposit_amount'] ?? 0), 2),
+                $prov['deposit_date'] ? Carbon::parse($prov['deposit_date'])->format('d/m/Y') : '-',
+                $prov['deposit_paid'] ? (string) ($prov['deposit_method_label'] ?? '-') : '-',
+                round((float) ($prov['final_amount'] ?? 0), 2),
+                $prov['final_date'] ? Carbon::parse($prov['final_date'])->format('d/m/Y') : '-',
+                $prov['final_paid'] ? (string) ($prov['final_method_label'] ?? '-') : '-',
+                round((float) ($prov['total_paid'] ?? 0), 2),
+                round((float) ($prov['pending_amount'] ?? 0), 2),
+                (string) ($prov['status_label'] ?? ''),
+                (string) ($prov['notes'] ?? ''),
+            ];
+        }
+
+        $sheetProvRows[] = [
+            '',
+            'TOTALES PROVEEDOR (' . count($providerRows) . ' eventos)',
+            '',
+            '',
+            '',
+            '',
+            round((float) ($provKpis['total_cost'] ?? 0), 2),
+            round((float) ($provKpis['deposits_paid'] ?? 0), 2),
+            '',
+            '',
+            round((float) ($provKpis['finals_paid'] ?? 0), 2),
+            '',
+            '',
+            round((float) ($provKpis['total_paid'] ?? 0), 2),
+            round((float) ($provKpis['total_pending'] ?? 0), 2),
+            '',
+            '',
+        ];
+
+        // Hoja 4: Resumen Ejecutivo e Ingresos por Método de Pago
         $sheet3Rows = [
             ['Indicador / Concepto', 'Nº Registros', 'Importe (€)'],
             ['Total Contratado / Presupuestado', (int) ($kpis['events_count'] ?? 0), round((float) ($kpis['total_agreed'] ?? 0), 2)],
@@ -488,11 +635,19 @@ class BillingReportService
             ['IVA Repercutido en Facturas', (int) ($kpis['tax_summary']['invoices_count'] ?? 0), round((float) ($kpis['tax_summary']['invoices_tax'] ?? 0), 2)],
             ['Total Facturas Oficiales (Con IVA)', (int) ($kpis['tax_summary']['invoices_count'] ?? 0), round((float) ($kpis['tax_summary']['invoices_total'] ?? 0), 2)],
             ['Total Recibos y Señales (Sin IVA)', (int) ($kpis['tax_summary']['receipts_count'] ?? 0), round((float) ($kpis['tax_summary']['receipts_total'] ?? 0), 2)],
+            ['---', '', ''],
+            ['PAGOS A PROVEEDOR (FOTOMATÓN / PLATAFORMA 360º)', 'Eventos', 'Importe (€)'],
+            ['Coste Total Proveedor Fotomatón / 360º', (int) ($provKpis['events_count'] ?? 0), round((float) ($provKpis['total_cost'] ?? 0), 2)],
+            ['Señales de Reserva Pagadas al Proveedor', (int) ($provKpis['events_deposit_paid_count'] ?? 0) + (int) ($provKpis['events_fully_paid_count'] ?? 0), round((float) ($provKpis['deposits_paid'] ?? 0), 2)],
+            ['Liquidaciones / Restos Pagados al Proveedor', (int) ($provKpis['events_fully_paid_count'] ?? 0), round((float) ($provKpis['finals_paid'] ?? 0), 2)],
+            ['Total Pagado a Proveedor Fotomatón / 360º', (int) ($provKpis['events_count'] ?? 0), round((float) ($provKpis['total_paid'] ?? 0), 2)],
+            ['Pendiente de Pagar a Proveedor Fotomatón / 360º', (int) ($provKpis['events_unpaid_count'] ?? 0) + (int) ($provKpis['events_deposit_paid_count'] ?? 0), round((float) ($provKpis['total_pending'] ?? 0), 2)],
         ];
 
         return self::buildMultiSheetXlsxFile([
             'Control por Eventos' => $sheet1Rows,
             'Libro de Cobros y Facturas' => $sheet2Rows,
+            'Reservas Fotomaton y 360' => $sheetProvRows,
             'Resumen de Ingresos' => $sheet3Rows,
         ]);
     }

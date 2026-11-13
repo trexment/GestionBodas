@@ -37,6 +37,24 @@ class BillingManager extends Component
     public string $quickNotes = '';
     public bool $quickGenerateReceipt = true;
 
+    // Modal para Registrar / Editar Reserva y Pagos a Proveedor (Fotomatón / Plataforma 360º)
+    public bool $showProviderModal = false;
+    public ?int $provEventId = null;
+    public string $provEventName = '';
+    public string $provKey = 'logrono';
+    public string $provName = 'Logroño';
+    public string $provService = 'Fotomatón + Plataforma 360º';
+    public $provTotalCost = 0;
+    public bool $provDepositPaid = true;
+    public $provDepositAmount = 100;
+    public string $provDepositDate = '';
+    public string $provDepositMethod = 'bizum';
+    public bool $provFinalPaid = false;
+    public $provFinalAmount = 0;
+    public string $provFinalDate = '';
+    public string $provFinalMethod = 'transfer';
+    public string $provNotes = '';
+
     public function mount()
     {
         if (!auth()->check() || auth()->user()->role !== 'admin') {
@@ -245,6 +263,156 @@ class BillingManager extends Component
         session()->flash('message', "Método de pago de {$invoice->invoice_number} actualizado.");
     }
 
+    // ==================== RESERVAS Y PAGOS A PROVEEDOR (FOTOMATÓN / 360º) ====================
+
+    public function openProviderModal(?int $eventId = null, string $focusStep = 'deposit')
+    {
+        \App\Models\EventProviderBooking::ensureTableExists();
+
+        if ($eventId) {
+            $event = Event::with(['quotes.items', 'providerBookings'])->find($eventId);
+        } else {
+            $event = Event::with(['quotes.items', 'providerBookings'])->orderByDesc('event_date')->first();
+        }
+
+        if (!$event) {
+            return;
+        }
+
+        $this->loadEventIntoProviderModal($event, $focusStep);
+        $this->showProviderModal = true;
+    }
+
+    public function updatedProvEventId($value)
+    {
+        if (!$value) {
+            return;
+        }
+        $event = Event::with(['quotes.items', 'providerBookings'])->find((int) $value);
+        if ($event) {
+            $this->loadEventIntoProviderModal($event, 'deposit');
+        }
+    }
+
+    public function updatedProvKey($value)
+    {
+        $catalog = \App\Models\Setting::getPhotoboothProviders();
+        if (isset($catalog[$value])) {
+            $this->provName = (string) ($catalog[$value]['name'] ?? ucfirst($value));
+        } elseif ($value === 'vitoria') {
+            $this->provName = 'Vitoria (FotomatonCheese)';
+        } elseif ($value === 'logrono') {
+            $this->provName = 'Logroño';
+        }
+    }
+
+    protected function loadEventIntoProviderModal(Event $event, string $focusStep = 'deposit'): void
+    {
+        $prov = $event->external_provider_summary;
+
+        $this->provEventId = $event->id;
+        $this->provEventName = $event->name;
+        $this->provKey = (string) ($prov['provider_key'] ?: 'logrono');
+        $this->provName = (string) ($prov['provider_name'] ?: 'Logroño');
+        $this->provService = (string) ($prov['service_description'] ?: 'Fotomatón / Plataforma 360º');
+        $this->provTotalCost = (float) ($prov['provider_total_cost'] > 0 ? $prov['provider_total_cost'] : ($prov['client_price'] > 0 ? $prov['client_price'] : 0));
+
+        $this->provDepositPaid = $focusStep === 'deposit' ? true : (bool) $prov['deposit_paid'];
+        $this->provDepositAmount = $prov['deposit_amount'] > 0 ? (float) $prov['deposit_amount'] : (float) ($prov['suggested_deposit'] ?: 100);
+        $this->provDepositDate = $prov['deposit_date'] ? Carbon::parse($prov['deposit_date'])->format('Y-m-d') : now()->format('Y-m-d');
+        $this->provDepositMethod = (string) ($prov['deposit_method'] ?: 'bizum');
+
+        if ($focusStep === 'final') {
+            $this->provFinalPaid = true;
+            $alreadyDep = $this->provDepositPaid ? (float) $this->provDepositAmount : 0.0;
+            $rem = max(0.0, round((float) $this->provTotalCost - $alreadyDep, 2));
+            $this->provFinalAmount = $prov['final_amount'] > 0 ? (float) $prov['final_amount'] : $rem;
+            $this->provFinalDate = $prov['final_date'] ? Carbon::parse($prov['final_date'])->format('Y-m-d') : now()->format('Y-m-d');
+            $this->provFinalMethod = (string) ($prov['final_method'] ?: 'transfer');
+        } else {
+            $this->provFinalPaid = (bool) $prov['final_paid'];
+            $this->provFinalAmount = (float) ($prov['final_amount'] ?? 0);
+            $this->provFinalDate = $prov['final_date'] ? Carbon::parse($prov['final_date'])->format('Y-m-d') : now()->format('Y-m-d');
+            $this->provFinalMethod = (string) ($prov['final_method'] ?: 'transfer');
+        }
+
+        $this->provNotes = (string) ($prov['notes'] ?? '');
+    }
+
+    public function fillProviderRemaining()
+    {
+        $dep = $this->provDepositPaid ? (float) $this->provDepositAmount : 0.0;
+        $this->provFinalPaid = true;
+        $this->provFinalAmount = max(0.0, round((float) $this->provTotalCost - $dep, 2));
+        if (empty($this->provFinalDate)) {
+            $this->provFinalDate = now()->format('Y-m-d');
+        }
+    }
+
+    public function closeProviderModal()
+    {
+        $this->showProviderModal = false;
+    }
+
+    public function saveProviderBooking()
+    {
+        \App\Models\EventProviderBooking::ensureTableExists();
+
+        $this->validate([
+            'provEventId' => 'required|integer|exists:events,id',
+            'provName' => 'required|string|max:150',
+            'provService' => 'required|string|max:255',
+            'provTotalCost' => 'required|numeric|min:0',
+            'provDepositAmount' => 'nullable|numeric|min:0',
+            'provFinalAmount' => 'nullable|numeric|min:0',
+        ]);
+
+        $event = Event::with('providerBookings')->find($this->provEventId);
+        if (!$event) {
+            $this->closeProviderModal();
+            return;
+        }
+
+        $depAmt = $this->provDepositPaid ? round((float) $this->provDepositAmount, 2) : 0.0;
+        $finAmt = $this->provFinalPaid ? round((float) $this->provFinalAmount, 2) : 0.0;
+
+        $data = [
+            'provider_key' => $this->provKey ?: 'logrono',
+            'provider_name' => trim($this->provName),
+            'service_description' => trim($this->provService),
+            'provider_total_cost' => round((float) $this->provTotalCost, 2),
+            'deposit_paid' => $this->provDepositPaid && $depAmt > 0,
+            'deposit_amount' => $depAmt,
+            'deposit_paid_at' => ($this->provDepositPaid && $depAmt > 0 && !empty($this->provDepositDate)) ? $this->provDepositDate : null,
+            'deposit_payment_method' => ($this->provDepositPaid && $depAmt > 0) ? $this->provDepositMethod : null,
+            'final_paid' => $this->provFinalPaid && $finAmt > 0,
+            'final_amount' => $finAmt,
+            'final_paid_at' => ($this->provFinalPaid && $finAmt > 0 && !empty($this->provFinalDate)) ? $this->provFinalDate : null,
+            'final_payment_method' => ($this->provFinalPaid && $finAmt > 0) ? $this->provFinalMethod : null,
+            'notes' => trim($this->provNotes) ?: null,
+        ];
+
+        $existing = $event->providerBookings->first();
+        if ($existing) {
+            $existing->update($data);
+        } else {
+            $event->providerBookings()->create($data);
+        }
+
+        $this->closeProviderModal();
+        session()->flash('message', "📸 Reserva y pagos de Fotomatón / 360º actualizados en '{$event->name}'.");
+    }
+
+    public function deleteProviderBooking(int $bookingId)
+    {
+        \App\Models\EventProviderBooking::ensureTableExists();
+        $booking = \App\Models\EventProviderBooking::find($bookingId);
+        if ($booking) {
+            $booking->delete();
+            session()->flash('message', "Registro de reserva a proveedor eliminado.");
+        }
+    }
+
     public function getActiveFiltersProperty(): array
     {
         return [
@@ -284,12 +452,18 @@ class BillingManager extends Component
 
         $exportQuery = http_build_query(array_filter($this->activeFilters, fn($v) => $v !== '' && $v !== null));
 
+        $allEventsList = Event::orderByDesc('event_date')
+            ->select('id', 'name', 'event_date')
+            ->get();
+
         return view('livewire.admin.billing-manager', [
             'eventsRows' => $report['events_rows'],
             'ledgerRows' => $report['ledger_rows'],
+            'providerRows' => $report['provider_rows'] ?? [],
             'kpis' => $report['kpis'],
             'availableYears' => $availableYears,
             'exportQuery' => $exportQuery,
+            'allEventsList' => $allEventsList,
         ])->layout('components.layouts.app', ['header' => 'Facturación y Control de Ingresos']);
     }
 }

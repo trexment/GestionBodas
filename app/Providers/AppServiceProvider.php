@@ -26,6 +26,7 @@ class AppServiceProvider extends ServiceProvider
         // Auto-migración segura en arranque si faltan tablas clave o columnas
         try {
             if (!\Illuminate\Support\Facades\Schema::hasTable('whatsapp_messages') 
+                || !\Illuminate\Support\Facades\Schema::hasTable('event_provider_bookings')
                 || !\Illuminate\Support\Facades\Schema::hasColumn('contracts', 'contract_number')
                 || !\Illuminate\Support\Facades\Schema::hasColumn('events', 'partner_name')
                 || !\Illuminate\Support\Facades\Schema::hasColumn('events', 'no_response_at')
