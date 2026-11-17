@@ -54,8 +54,9 @@ class EventMusicRequest extends Model
                 $needsApple = empty($request->apple_music_url) || str_contains($request->apple_music_url, 'music.apple.com/es/search');
                 $needsTidal = empty($request->tidal_url) || str_contains($request->tidal_url, 'listen.tidal.com/search');
                 $needsYoutube = empty($request->youtube_url) || str_contains($request->youtube_url, 'youtube.com/results');
+                $needsAudio = empty($request->audio_file);
 
-                if ($needsSpotify || $needsApple || $needsTidal || $needsYoutube) {
+                if ($needsSpotify || $needsApple || $needsTidal || $needsYoutube || $needsAudio) {
                     $meta = \App\Services\MusicSearchService::resolveTrackMetadata($title, $artist);
                     
                     if ($needsSpotify && !empty($meta['spotify_url'])) {
@@ -72,6 +73,12 @@ class EventMusicRequest extends Model
                     }
                     if (empty($request->audio_file) && !empty($meta['preview_url'])) {
                         $request->audio_file = $meta['preview_url'];
+                    }
+                    if (!empty($meta['detected_artist']) && empty($request->artist)) {
+                        $request->artist = $meta['detected_artist'];
+                    }
+                    if (!empty($meta['detected_title']) && empty($artist) && (str_contains($title, ' - ') || str_contains($title, ' — '))) {
+                        $request->title = $meta['detected_title'];
                     }
                 }
             }

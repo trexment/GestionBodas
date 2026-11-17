@@ -59,7 +59,15 @@ class MusicSearchService
                 }
             } catch (\Throwable $e) {}
 
-            // 1. iTunes / Apple Music Search API (Fast, Free, High-res album arts and 30s official audio previews)
+            // 1. Deezer API (Gratuita, sin credenciales, preescuchas de 30s en MP3 de 128kbps y carátulas HD)
+            try {
+                $deezerResults = self::searchDeezerApi($query, min($limit, 15));
+                if (!empty($deezerResults)) {
+                    $results = array_merge($results, $deezerResults);
+                }
+            } catch (\Throwable $e) {}
+
+            // 2. iTunes / Apple Music Search API (Rápida, pública, carátulas 600x600 y preescuchas)
             try {
                 $country = Setting::get('apple_music_country', 'es');
                 $response = Http::timeout(4)->get('https://itunes.apple.com/search', [
@@ -117,21 +125,29 @@ class MusicSearchService
                 // Ignore and try Spotify if configured
             }
 
-            // 2. Optional Spotify API enrichment if Client ID and Secret are configured
+            // 3. Opcional: Enriquecimiento con Spotify Web API si Client ID y Secret están configurados
             $spotifyResults = self::searchSpotifyApi($query, $limit);
             if (!empty($spotifyResults)) {
-                // Merge or prioritize Spotify results if available
-                $results = array_merge($spotifyResults, $results);
+                $results = array_merge($results, $spotifyResults);
             }
 
-            // Deduplicate by title + artist
+            // Desduplicar inteligentemente por título + artista preservando preescucha de audio y carátula
             $unique = [];
             $seen = [];
             foreach ($results as $r) {
-                $key = strtolower(trim($r['artist'] . '|' . $r['title']));
+                $key = self::normalizeMusicText($r['artist'] . '|' . $r['title'], true);
                 if (!isset($seen[$key])) {
-                    $seen[$key] = true;
+                    $seen[$key] = count($unique);
                     $unique[] = $r;
+                } else {
+                    $idx = $seen[$key];
+                    // Si el elemento ya guardado no tiene preview pero este duplicado sí, enriquecerlo
+                    if (empty($unique[$idx]['preview_url']) && !empty($r['preview_url'])) {
+                        $unique[$idx]['preview_url'] = $r['preview_url'];
+                    }
+                    if (empty($unique[$idx]['cover_url']) && !empty($r['cover_url'])) {
+                        $unique[$idx]['cover_url'] = $r['cover_url'];
+                    }
                 }
                 if (count($unique) >= $limit) {
                     break;
@@ -140,6 +156,70 @@ class MusicSearchService
 
             return $unique;
         });
+    }
+
+    /**
+     * Search directly in Deezer API (No API key needed, high-quality 30s MP3 preview audio and album covers)
+     */
+    public static function searchDeezerApi(string $query, int $limit = 10): array
+    {
+        $query = trim($query);
+        if (empty($query)) {
+            return [];
+        }
+
+        try {
+            $response = Http::timeout(4)->get('https://api.deezer.com/search', [
+                'q' => $query,
+                'limit' => $limit,
+            ]);
+
+            if ($response->successful()) {
+                $data = $response->json();
+                $items = $data['data'] ?? [];
+                $out = [];
+                foreach ($items as $item) {
+                    $title = $item['title'] ?? ($item['title_short'] ?? '');
+                    $artist = $item['artist']['name'] ?? 'Artista';
+                    $album = $item['album']['title'] ?? '';
+                    $cover = $item['album']['cover_big'] ?? ($item['album']['cover_medium'] ?? ($item['album']['cover'] ?? ''));
+                    $previewUrl = $item['preview'] ?? null;
+                    $deezerLink = $item['link'] ?? null;
+                    $durationSec = (int)($item['duration'] ?? 0);
+                    $durationMs = $durationSec * 1000;
+
+                    $searchQuery = urlencode($artist . ' ' . $title);
+                    $spotifyUrl = "https://open.spotify.com/search/{$searchQuery}";
+                    $spotifyUri = "spotify:search:" . rawurlencode($artist . ' ' . $title);
+                    $appleMusicUrl = "https://music.apple.com/es/search?term={$searchQuery}";
+
+                    $out[] = [
+                        'source' => 'deezer',
+                        'id' => 'dz_' . ($item['id'] ?? uniqid()),
+                        'title' => $title,
+                        'artist' => $artist,
+                        'album' => $album,
+                        'cover_url' => $cover,
+                        'preview_url' => $previewUrl,
+                        'duration_ms' => $durationMs,
+                        'duration_formatted' => gmdate($durationSec > 3600 ? 'H:i:s' : 'i:s', $durationSec),
+                        'spotify_url' => $spotifyUrl,
+                        'spotify_uri' => $spotifyUri,
+                        'apple_music_url' => $appleMusicUrl,
+                        'apple_music_uri' => "music://music.apple.com/search?term=" . $searchQuery,
+                        'tidal_url' => "https://listen.tidal.com/search?q={$searchQuery}",
+                        'tidal_uri' => "tidal://search?q=" . rawurlencode($artist . ' ' . $title),
+                        'youtube_url' => "https://www.youtube.com/results?search_query={$searchQuery}",
+                        'deezer_url' => $deezerLink,
+                    ];
+                }
+                return $out;
+            }
+        } catch (\Throwable $e) {
+            return [];
+        }
+
+        return [];
     }
 
     /**
@@ -259,7 +339,7 @@ class MusicSearchService
     }
 
     /**
-     * Evalúa qué tan bien coincide un resultado candidato (de Spotify o iTunes) con el título y artista pedidos.
+     * Evalúa qué tan bien coincide un resultado candidato (de Spotify, Deezer o iTunes) con el título y artista pedidos.
      * Devuelve < 0 si NO es la canción solicitada (ej. distinto artista o karaoke/tributo no pedido).
      */
     public static function scoreTrackCandidate(string $reqTitle, string $reqArtist, string $candTitle, string $candArtist): int
@@ -276,7 +356,7 @@ class MusicSearchService
         }
 
         // Penalizar versiones karaoke, tributo, ringtone o instrumentales si el usuario no las pidió explícitamente
-        $junkWords = ['karaoke', 'tribute', 'made famous', 'in the style of', 'ringtone', '8-bit', 'lullaby', 'cover version'];
+        $junkWords = ['karaoke', 'tribute', 'made famous', 'in the style of', 'ringtone', '8-bit', 'lullaby', 'cover version', 'instrumental version'];
         foreach ($junkWords as $junk) {
             if (str_contains($rawCandCombined, $junk) && !str_contains($rawReqCombined, $junk)) {
                 return -100;
@@ -294,14 +374,14 @@ class MusicSearchService
             $score += 30;
         } else {
             similar_text($normReqTitle, $normCandTitle, $pctTitle);
-            if ($pctTitle >= 78) {
+            if ($pctTitle >= 75) {
                 $score += 25;
             } else {
                 return -50; // El título no se parece
             }
         }
 
-        // 2. Evaluar Artista (si el usuario indicó artista, DEBE coincidir)
+        // 2. Evaluar Artista (si el usuario indicó artista, DEBE coincidir razonablemente)
         if ($normReqArtist !== '') {
             $artistParts = array_filter(preg_split('/\s*(?:,|&|\/|\by\b|\band\b|\bx\b)\s*/u', $normReqArtist) ?: [$normReqArtist]);
             $artistMatched = false;
@@ -322,13 +402,16 @@ class MusicSearchService
 
             if (!$artistMatched) {
                 similar_text($normReqArtist, $normCandArtist, $pctArtist);
-                if ($pctArtist >= 75) {
+                if ($pctArtist >= 70) {
                     $score += 30;
                 } else {
                     // Artista distinto al solicitado -> descartar para no poner otra canción con el mismo título
                     return -80;
                 }
             }
+        } else {
+            // Si no se especificó artista, bonificar ligeramente para priorizar resultados relevantes
+            $score += 15;
         }
 
         return $score;
@@ -340,170 +423,230 @@ class MusicSearchService
      */
     public static function resolveTrackMetadata(string $title, string $artist = '', bool $forceRefresh = false): array
     {
-        $title = trim($title);
-        $artist = trim($artist);
+        $rawTitle = trim($title);
+        $rawArtist = trim($artist);
 
-        // Si el artista viene vacío pero el título viene con formato "Artista - Canción", separarlos
-        if ($artist === '' && str_contains($title, ' - ')) {
-            $parts = explode(' - ', $title, 2);
-            $artist = trim($parts[0]);
-            $title = trim($parts[1]);
-        }
-
-        $query = trim($artist . ' ' . $title);
-
-        if (empty($query) || str_starts_with(mb_strtolower($title), 'estilos:')) {
+        if (empty($rawTitle) || str_starts_with(mb_strtolower($rawTitle), 'estilos:')) {
             return [
+                'is_drive_library' => false,
                 'spotify_url' => null,
                 'apple_music_url' => null,
+                'tidal_url' => null,
                 'youtube_url' => null,
                 'preview_url' => null,
                 'cover_url' => null,
+                'detected_title' => $rawTitle,
+                'detected_artist' => $rawArtist,
             ];
         }
 
-        $cacheKey = 'track_meta_v3_' . md5(mb_strtolower($artist . '|' . $title));
+        // Construir pares candidatos (título, artista) considerando posibles permutaciones y separadores
+        $candidatePairs = [];
+        $candidatePairs[] = ['title' => $rawTitle, 'artist' => $rawArtist];
+
+        if ($rawArtist === '') {
+            // Separador con guión o barra: "Artista - Canción" o "Canción - Artista"
+            if (preg_match('/^(.*?)\s*(?:[-–—\/|])\s*(.*)$/u', $rawTitle, $m)) {
+                $p1 = trim($m[1]);
+                $p2 = trim($m[2]);
+                if (!empty($p1) && !empty($p2)) {
+                    $candidatePairs[] = ['title' => $p1, 'artist' => $p2];
+                    $candidatePairs[] = ['title' => $p2, 'artist' => $p1];
+                }
+            }
+            // "Canción de Artista" o "Canción by Artista"
+            if (preg_match('/^(.*?)\s+(?:de|by)\s+(.*)$/iu', $rawTitle, $m)) {
+                $p1 = trim($m[1]);
+                $p2 = trim($m[2]);
+                if (!empty($p1) && !empty($p2)) {
+                    $candidatePairs[] = ['title' => $p1, 'artist' => $p2];
+                    $candidatePairs[] = ['title' => $p2, 'artist' => $p1];
+                }
+            }
+            // Paréntesis al final: "Canción (Artista)"
+            if (preg_match('/^(.*?)\s*[\(\[]([^\)\]]+)[\)\]]$/u', $rawTitle, $m)) {
+                $p1 = trim($m[1]);
+                $p2 = trim($m[2]);
+                if (!empty($p1) && !empty($p2)) {
+                    $candidatePairs[] = ['title' => $p1, 'artist' => $p2];
+                }
+            }
+        } else {
+            // Si el artista fue introducido pero podría estar invertido
+            $candidatePairs[] = ['title' => $rawArtist, 'artist' => $rawTitle];
+            if (preg_match('/^(.*?)\s*(?:[-–—\/|])\s*(.*)$/u', $rawTitle, $m)) {
+                $candidatePairs[] = ['title' => trim($m[1]), 'artist' => $rawArtist];
+                $candidatePairs[] = ['title' => trim($m[2]), 'artist' => $rawArtist];
+            }
+        }
+
+        $cacheKey = 'track_meta_v4_' . md5(mb_strtolower($rawArtist . '|' . $rawTitle));
         if ($forceRefresh) {
             Cache::forget($cacheKey);
         }
 
-        return Cache::remember($cacheKey, 86400, function () use ($query, $title, $artist) {
-            $spotifyUrl = null;
-            $appleMusicUrl = null;
-            $youtubeUrl = null;
-            $previewUrl = null;
-            $coverUrl = null;
-            $isDriveLibrary = false;
-
+        return Cache::remember($cacheKey, 86400, function () use ($candidatePairs, $rawTitle, $rawArtist) {
             // 0. Prioridad 1: Comprobar si la canción exacta está en la Biblioteca General de Google Drive
-            $driveTrack = \App\Services\CloudMusicStorageService::findInDriveLibrary($title, $artist);
-            if ($driveTrack && !empty($driveTrack->audio_url)) {
-                $previewUrl = $driveTrack->audio_url;
-                $spotifyUrl = $driveTrack->spotify_url;
-                $appleMusicUrl = $driveTrack->apple_music_url;
-                $youtubeUrl = $driveTrack->youtube_url;
-                $isDriveLibrary = true;
+            foreach ($candidatePairs as $pair) {
+                $driveTrack = \App\Services\CloudMusicStorageService::findInDriveLibrary($pair['title'], $pair['artist']);
+                if ($driveTrack && !empty($driveTrack->audio_url)) {
+                    return [
+                        'is_drive_library' => true,
+                        'spotify_url' => $driveTrack->spotify_url,
+                        'apple_music_url' => $driveTrack->apple_music_url,
+                        'tidal_url' => $driveTrack->tidal_url,
+                        'youtube_url' => $driveTrack->youtube_url,
+                        'preview_url' => $driveTrack->audio_url,
+                        'cover_url' => null,
+                        'detected_title' => $driveTrack->title ?: $pair['title'],
+                        'detected_artist' => $driveTrack->artist ?: $pair['artist'],
+                    ];
+                }
             }
 
-            // 1. Buscar en Spotify API evaluando los mejores candidatos por coincidencia de Título + Artista
-            $cleanedTitle = trim((string) preg_replace('/\s*[\(\[].*?[\)\]]/u', '', $title)) ?: $title;
-            $spotifyQueries = array_values(array_unique(array_filter([
-                $artist !== '' ? "track:{$cleanedTitle} artist:{$artist}" : null,
-                $query,
-            ])));
+            $bestCandidate = null;
+            $bestScore = -1;
+            $bestPair = $candidatePairs[0];
 
-            $bestSpotifyItem = null;
-            $bestSpotifyScore = -1;
+            // 1. Probar Deezer API (Gratuita, sin claves, preescuchas de 30s en MP3 fiable y carátulas HD)
+            foreach ($candidatePairs as $pair) {
+                $q = trim(($pair['artist'] ? $pair['artist'] . ' ' : '') . $pair['title']);
+                if (empty($q)) continue;
 
-            foreach ($spotifyQueries as $spQ) {
-                $spotifyResults = self::searchSpotifyApi($spQ, 8);
-                foreach ($spotifyResults as $cand) {
-                    $sc = self::scoreTrackCandidate($title, $artist, (string) ($cand['title'] ?? ''), (string) ($cand['artist'] ?? ''));
-                    if ($sc > $bestSpotifyScore) {
-                        $bestSpotifyScore = $sc;
-                        $bestSpotifyItem = $cand;
+                $deezerResults = self::searchDeezerApi($q, 8);
+                foreach ($deezerResults as $cand) {
+                    $sc = self::scoreTrackCandidate($pair['title'], $pair['artist'], (string)($cand['title'] ?? ''), (string)($cand['artist'] ?? ''));
+                    if ($sc > $bestScore) {
+                        $bestScore = $sc;
+                        $bestCandidate = $cand;
+                        $bestPair = [
+                            'title' => $cand['title'] ?? $pair['title'],
+                            'artist' => $cand['artist'] ?? $pair['artist'],
+                        ];
                     }
                 }
-                if ($bestSpotifyScore >= 90) {
+                if ($bestScore >= 90) {
                     break;
                 }
             }
 
-            if ($bestSpotifyItem && $bestSpotifyScore >= 30) {
-                if (!$spotifyUrl) {
-                    $spotifyUrl = $bestSpotifyItem['spotify_url'] ?? null;
-                }
-                if (!$coverUrl) {
-                    $coverUrl = $bestSpotifyItem['cover_url'] ?? null;
-                }
-                if (!$previewUrl && !empty($bestSpotifyItem['preview_url'])) {
-                    $previewUrl = $bestSpotifyItem['preview_url'];
+            // 2. Probar iTunes / Apple Music si Deezer no superó score 90 o no tenía preview
+            if ($bestScore < 90 || empty($bestCandidate['preview_url'])) {
+                foreach ($candidatePairs as $pair) {
+                    $cleanedTitle = trim((string) preg_replace('/\s*[\(\[].*?[\)\]]/u', '', $pair['title'])) ?: $pair['title'];
+                    $searchTerms = array_values(array_unique(array_filter([
+                        trim(($pair['artist'] ? $pair['artist'] . ' ' : '') . $pair['title']),
+                        $cleanedTitle,
+                    ])));
+
+                    foreach ($searchTerms as $term) {
+                        try {
+                            $country = Setting::get('apple_music_country', 'es');
+                            $res = Http::timeout(4)->get('https://itunes.apple.com/search', [
+                                'term' => $term,
+                                'media' => 'music',
+                                'entity' => 'song',
+                                'country' => $country,
+                                'limit' => 12,
+                            ]);
+
+                            if ($res->successful()) {
+                                $json = $res->json();
+                                foreach (($json['results'] ?? []) as $it) {
+                                    $sc = self::scoreTrackCandidate(
+                                        $pair['title'],
+                                        $pair['artist'],
+                                        (string) ($it['trackName'] ?? ''),
+                                        (string) ($it['artistName'] ?? '')
+                                    );
+                                    if ($sc > $bestScore) {
+                                        $bestScore = $sc;
+                                        $cover = $it['artworkUrl100'] ?? '';
+                                        if ($cover) {
+                                            $cover = str_replace(['100x100bb.jpg', '100x100bb.png'], '600x600bb.jpg', $cover);
+                                        }
+                                        $bestCandidate = [
+                                            'source' => 'apple_music',
+                                            'title' => $it['trackName'] ?? '',
+                                            'artist' => $it['artistName'] ?? '',
+                                            'album' => $it['collectionName'] ?? '',
+                                            'cover_url' => $cover,
+                                            'preview_url' => $it['previewUrl'] ?? null,
+                                            'apple_music_url' => $it['trackViewUrl'] ?? null,
+                                        ];
+                                        $bestPair = [
+                                            'title' => $it['trackName'] ?? $pair['title'],
+                                            'artist' => $it['artistName'] ?? $pair['artist'],
+                                        ];
+                                    }
+                                }
+                                if ($bestScore >= 90 && !empty($bestCandidate['preview_url'])) {
+                                    break 2;
+                                }
+                            }
+                        } catch (\Throwable $e) {}
+                    }
                 }
             }
 
-            // 2. Buscar en iTunes / Apple Music verificando que Título y Artista correspondan a la canción pedida
-            $searchTerms = array_values(array_unique(array_filter([
-                $query,
-                trim($artist . ' ' . $cleanedTitle),
-                $artist === '' ? $cleanedTitle : null,
+            // 3. Probar Spotify API para obtener enlaces directos externos si hay credenciales
+            $spotifyUrl = null;
+            $resolvedArtist = $bestPair['artist'] ?: $rawArtist;
+            $resolvedTitle = $bestPair['title'] ?: $rawTitle;
+
+            $spotifyQueries = array_values(array_unique(array_filter([
+                $resolvedArtist !== '' ? "track:{$resolvedTitle} artist:{$resolvedArtist}" : null,
+                trim($resolvedArtist . ' ' . $resolvedTitle),
             ])));
 
-            $bestItunesItem = null;
-            $bestItunesScore = -1;
-
-            foreach ($searchTerms as $term) {
-                try {
-                    $country = Setting::get('apple_music_country', 'es');
-                    $res = Http::timeout(4)->get('https://itunes.apple.com/search', [
-                        'term' => $term,
-                        'media' => 'music',
-                        'entity' => 'song',
-                        'country' => $country,
-                        'limit' => 15,
-                    ]);
-
-                    if ($res->successful()) {
-                        $json = $res->json();
-                        foreach (($json['results'] ?? []) as $it) {
-                            $sc = self::scoreTrackCandidate(
-                                $title,
-                                $artist,
-                                (string) ($it['trackName'] ?? ''),
-                                (string) ($it['artistName'] ?? '')
-                            );
-                            if ($sc > $bestItunesScore) {
-                                $bestItunesScore = $sc;
-                                $bestItunesItem = $it;
-                            }
+            foreach ($spotifyQueries as $spQ) {
+                $spotifyResults = self::searchSpotifyApi($spQ, 6);
+                foreach ($spotifyResults as $spTrack) {
+                    $sc = self::scoreTrackCandidate($resolvedTitle, $resolvedArtist, (string)($spTrack['title'] ?? ''), (string)($spTrack['artist'] ?? ''));
+                    if ($sc >= 30) {
+                        $spotifyUrl = $spTrack['spotify_url'] ?? null;
+                        if (empty($bestCandidate['cover_url']) && !empty($spTrack['cover_url'])) {
+                            $bestCandidate['cover_url'] = $spTrack['cover_url'];
                         }
-                        if ($bestItunesScore >= 90) {
-                            break;
+                        if (empty($bestCandidate['preview_url']) && !empty($spTrack['preview_url'])) {
+                            $bestCandidate['preview_url'] = $spTrack['preview_url'];
                         }
+                        break 2;
                     }
-                } catch (\Throwable $e) {}
-            }
-
-            if ($bestItunesItem && $bestItunesScore >= 30) {
-                if (!$previewUrl && !empty($bestItunesItem['previewUrl'])) {
-                    $previewUrl = $bestItunesItem['previewUrl'];
-                }
-                if (!$appleMusicUrl && !empty($bestItunesItem['trackViewUrl'])) {
-                    $appleMusicUrl = $bestItunesItem['trackViewUrl'];
-                }
-                if (!$coverUrl && !empty($bestItunesItem['artworkUrl100'])) {
-                    $coverUrl = str_replace('100x100bb.jpg', '600x600bb.jpg', $bestItunesItem['artworkUrl100']);
                 }
             }
 
-            // 3. Search direct YouTube Video ID as secondary fallback for rare tracks
+            // 4. Buscar YouTube Video ID
+            $youtubeUrl = null;
+            $searchFull = trim($resolvedArtist . ' ' . $resolvedTitle);
             try {
-                $ytVideoId = \App\Http\Controllers\SpotifyAuthController::searchYoutubeVideoId($query);
+                $ytVideoId = \App\Http\Controllers\SpotifyAuthController::searchYoutubeVideoId($searchFull);
                 if ($ytVideoId) {
                     $youtubeUrl = "https://www.youtube.com/watch?v={$ytVideoId}";
                 }
             } catch (\Throwable $e) {}
 
-            // Fallbacks if not exact link found
-            $encodedQuery = urlencode($query);
-            $tidalUrl = "https://listen.tidal.com/search?q={$encodedQuery}";
+            // Construir enlaces de fallback si no se encontraron enlaces directos
+            $encodedQuery = urlencode($searchFull);
             if (empty($spotifyUrl)) {
                 $spotifyUrl = "https://open.spotify.com/search/{$encodedQuery}";
             }
-            if (empty($appleMusicUrl)) {
-                $appleMusicUrl = "https://music.apple.com/es/search?term={$encodedQuery}";
-            }
+            $appleMusicUrl = $bestCandidate['apple_music_url'] ?? "https://music.apple.com/es/search?term={$encodedQuery}";
+            $tidalUrl = "https://listen.tidal.com/search?q={$encodedQuery}";
             if (empty($youtubeUrl)) {
                 $youtubeUrl = "https://www.youtube.com/results?search_query={$encodedQuery}";
             }
 
             return [
-                'is_drive_library' => $isDriveLibrary,
+                'is_drive_library' => false,
                 'spotify_url' => $spotifyUrl,
                 'apple_music_url' => $appleMusicUrl,
                 'tidal_url' => $tidalUrl,
                 'youtube_url' => $youtubeUrl,
-                'preview_url' => $previewUrl,
-                'cover_url' => $coverUrl,
+                'preview_url' => $bestCandidate['preview_url'] ?? null,
+                'cover_url' => $bestCandidate['cover_url'] ?? null,
+                'detected_title' => $bestScore >= 25 ? $resolvedTitle : $rawTitle,
+                'detected_artist' => $bestScore >= 25 ? $resolvedArtist : $rawArtist,
             ];
         });
     }

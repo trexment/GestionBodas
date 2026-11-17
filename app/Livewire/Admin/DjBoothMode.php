@@ -167,7 +167,7 @@ class DjBoothMode extends Component
         $this->new_spotify_url = $track['spotify_url'] ?? '';
         $this->new_apple_music_url = $track['apple_music_url'] ?? '';
         $this->new_youtube_url = $track['youtube_url'] ?? '';
-        $this->new_audio_file = !empty($track['is_drive_library']) ? ($track['preview_url'] ?? '') : '';
+        $this->new_audio_file = !empty($track['preview_url']) ? $track['preview_url'] : '';
         $this->musicSearchResults = [];
         $this->musicSearchQuery = '';
     }
@@ -424,51 +424,86 @@ class DjBoothMode extends Component
     }
 
     /**
-     * Sube una posición en el orden de la escaleta el momento o canción indicado.
+     * Sube una posición en el orden de la escaleta el momento o canción indicado respetando la fase activa.
      *
      * @param int|string $requestId Identificador de la petición musical.
      * @return void
      */
     public function moveMomentUp($requestId)
     {
-        $current = EventMusicRequest::where('event_id', $this->event->id)->find($requestId);
-        if (!$current) return;
-
-        $previous = EventMusicRequest::where('event_id', $this->event->id)
-            ->where('order', '<', $current->order)
-            ->orderBy('order', 'desc')
-            ->first();
-
-        if ($previous) {
-            $temp = $current->order;
-            $current->update(['order' => $previous->order]);
-            $previous->update(['order' => $temp]);
-            $this->event->load('musicRequests');
-        }
+        $this->reorderBoothSong($requestId, 'up');
     }
 
     /**
-     * Baja una posición en el orden de la escaleta el momento o canción indicado.
+     * Baja una posición en el orden de la escaleta el momento o canción indicado respetando la fase activa.
      *
      * @param int|string $requestId Identificador de la petición musical.
      * @return void
      */
     public function moveMomentDown($requestId)
     {
-        $current = EventMusicRequest::where('event_id', $this->event->id)->find($requestId);
-        if (!$current) return;
+        $this->reorderBoothSong($requestId, 'down');
+    }
 
-        $next = EventMusicRequest::where('event_id', $this->event->id)
-            ->where('order', '>', $current->order)
-            ->orderBy('order', 'asc')
-            ->first();
+    /**
+     * Reordena secuencialmente una canción dentro de la fase visible y normaliza los órdenes del evento.
+     *
+     * @param int|string $requestId
+     * @param string $direction 'up' o 'down'
+     * @return void
+     */
+    protected function reorderBoothSong($requestId, string $direction): void
+    {
+        $target = EventMusicRequest::where('event_id', $this->event->id)->find($requestId);
+        if (!$target) return;
 
-        if ($next) {
-            $temp = $current->order;
-            $current->update(['order' => $next->order]);
-            $next->update(['order' => $temp]);
-            $this->event->load('musicRequests');
+        $allSongs = EventMusicRequest::where('event_id', $this->event->id)
+            ->orderBy('order')
+            ->orderBy('id')
+            ->get();
+
+        $phase = $this->selectedPhase ?? 'all';
+        $scoped = ($phase !== 'all')
+            ? $allSongs->filter(fn($s) => $this->isItemInPhase($s, $phase))->values()
+            : $allSongs->values();
+
+        $currentIndex = $scoped->search(fn($item) => $item->id === $target->id);
+        if ($currentIndex === false) return;
+
+        $swapIndex = ($direction === 'up') ? $currentIndex - 1 : $currentIndex + 1;
+        if ($swapIndex < 0 || $swapIndex >= $scoped->count()) return;
+
+        $other = $scoped->get($swapIndex);
+
+        $scoped[$currentIndex] = $other;
+        $scoped[$swapIndex] = $target;
+
+        if ($phase === 'all') {
+            foreach ($scoped as $idx => $s) {
+                $newOrder = ($idx + 1) * 10;
+                if ($s->order !== $newOrder) {
+                    $s->update(['order' => $newOrder]);
+                }
+            }
+        } else {
+            $scopedIndex = 0;
+            $newOrderedList = collect();
+            foreach ($allSongs as $s) {
+                if ($this->isItemInPhase($s, $phase)) {
+                    $newOrderedList->push($scoped[$scopedIndex++]);
+                } else {
+                    $newOrderedList->push($s);
+                }
+            }
+            foreach ($newOrderedList as $idx => $s) {
+                $newOrder = ($idx + 1) * 10;
+                if ($s->order !== $newOrder) {
+                    $s->update(['order' => $newOrder]);
+                }
+            }
         }
+
+        $this->event->load('musicRequests');
     }
 
     /**

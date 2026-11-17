@@ -2390,7 +2390,7 @@ class EventShow extends Component
         $this->req_apple_music_url = $track['apple_music_url'] ?? '';
         $this->req_tidal_url = $track['tidal_url'] ?? '';
         $this->req_youtube_url = $track['youtube_url'] ?? '';
-        if (!empty($track['is_drive_library']) && !empty($track['preview_url'])) {
+        if (!empty($track['preview_url'])) {
             $this->existing_audio_file = $track['preview_url'];
         } else {
             $this->existing_audio_file = null;
@@ -2497,11 +2497,20 @@ class EventShow extends Component
         if (!empty($meta['youtube_url'])) {
             $this->req_youtube_url = $meta['youtube_url'];
         }
-        if (!empty($meta['is_drive_library']) && !empty($meta['preview_url'])) {
+        if (!empty($meta['tidal_url'])) {
+            $this->req_tidal_url = $meta['tidal_url'];
+        }
+        if (!empty($meta['preview_url'])) {
             $this->existing_audio_file = $meta['preview_url'];
         }
+        if (!empty($meta['detected_title']) && empty($this->req_artist)) {
+            $this->req_title = $meta['detected_title'];
+        }
+        if (!empty($meta['detected_artist']) && empty($this->req_artist)) {
+            $this->req_artist = $meta['detected_artist'];
+        }
 
-        session()->flash('music_modal_message', '✨ Enlaces de Spotify, Apple Music y YouTube completados.');
+        session()->flash('music_modal_message', '✨ Enlaces de plataformas, metadatos y preescucha completados.');
     }
 
     /**
@@ -2529,11 +2538,17 @@ class EventShow extends Component
             if (!empty($meta['tidal_url'])) {
                 $updates['tidal_url'] = $meta['tidal_url'];
             }
+            if (!empty($meta['detected_title']) && empty($song->artist)) {
+                $updates['title'] = $meta['detected_title'];
+            }
+            if (!empty($meta['detected_artist']) && empty($song->artist)) {
+                $updates['artist'] = $meta['detected_artist'];
+            }
 
             // Si no tiene archivo local subido manualmente, actualizamos o limpiamos la previsualización remota
             $isRemoteOrEmptyAudio = empty($song->audio_file) || str_starts_with($song->audio_file, 'http://') || str_starts_with($song->audio_file, 'https://');
-            if ($isRemoteOrEmptyAudio) {
-                $updates['audio_file'] = $meta['preview_url'] ?? null;
+            if ($isRemoteOrEmptyAudio && !empty($meta['preview_url'])) {
+                $updates['audio_file'] = $meta['preview_url'];
             }
 
             if (!empty($updates)) {
@@ -2567,10 +2582,16 @@ class EventShow extends Component
         if (!empty($meta['tidal_url'])) {
             $updates['tidal_url'] = $meta['tidal_url'];
         }
+        if (!empty($meta['detected_title']) && empty($song->artist)) {
+            $updates['title'] = $meta['detected_title'];
+        }
+        if (!empty($meta['detected_artist']) && empty($song->artist)) {
+            $updates['artist'] = $meta['detected_artist'];
+        }
 
         $isRemoteOrEmptyAudio = empty($song->audio_file) || str_starts_with($song->audio_file, 'http://') || str_starts_with($song->audio_file, 'https://');
-        if ($isRemoteOrEmptyAudio) {
-            $updates['audio_file'] = $meta['preview_url'] ?? null;
+        if ($isRemoteOrEmptyAudio && !empty($meta['preview_url'])) {
+            $updates['audio_file'] = $meta['preview_url'];
         }
 
         if (!empty($updates)) {
@@ -2578,7 +2599,7 @@ class EventShow extends Component
         }
 
         $this->event->load('musicRequests');
-        session()->flash('music_message', "✨ Audio y enlaces de Spotify/Apple Music recalculados y corregidos para '{$song->title}'.");
+        session()->flash('music_message', "✨ Audio y enlaces recalculados y corregidos para '{$song->title}'.");
     }
 
     /**
@@ -2780,32 +2801,66 @@ class EventShow extends Component
     }
 
     /**
-     * Cambia la posición de orden de una canción hacia arriba o hacia abajo dentro de la escaleta musical.
+     * Cambia la posición de orden de una canción hacia arriba o hacia abajo dentro de la categoría visible de la escaleta musical.
      */
     public function moveSongOrder($songId, $direction)
     {
-        $song = $this->event->musicRequests()->findOrFail($songId);
-        if ($direction === 'up') {
-            $prev = EventMusicRequest::where('event_id', $this->event->id)
-                ->where('order', '<', $song->order)
-                ->orderBy('order', 'desc')
-                ->first();
-            if ($prev) {
-                $temp = $song->order;
-                $song->update(['order' => $prev->order]);
-                $prev->update(['order' => $temp]);
+        $targetSong = $this->event->musicRequests()->findOrFail($songId);
+        
+        // Obtener todas las canciones del evento ordenadas por 'order' asc y luego 'id' asc
+        $allSongs = $this->event->musicRequests()->orderBy('order')->orderBy('id')->get();
+        
+        // Si hay una categoría activa seleccionada, la reordenación se realiza dentro de esa categoría
+        $category = ($this->music_active_category && $this->music_active_category !== 'all') 
+            ? $this->music_active_category 
+            : null;
+            
+        $scopedSongs = $category 
+            ? $allSongs->where('category', $category)->values() 
+            : $allSongs->values();
+
+        $currentIndex = $scopedSongs->search(fn($item) => $item->id === $targetSong->id);
+        if ($currentIndex === false) {
+            return;
+        }
+
+        $swapIndex = ($direction === 'up') ? $currentIndex - 1 : $currentIndex + 1;
+        if ($swapIndex < 0 || $swapIndex >= $scopedSongs->count()) {
+            return;
+        }
+
+        $otherSong = $scopedSongs->get($swapIndex);
+
+        // Intercambiar posiciones en la colección filtrada
+        $scopedSongs[$currentIndex] = $otherSong;
+        $scopedSongs[$swapIndex] = $targetSong;
+
+        if (!$category) {
+            foreach ($scopedSongs as $idx => $s) {
+                $newOrder = ($idx + 1) * 10;
+                if ($s->order !== $newOrder) {
+                    $s->update(['order' => $newOrder]);
+                }
             }
-        } elseif ($direction === 'down') {
-            $next = EventMusicRequest::where('event_id', $this->event->id)
-                ->where('order', '>', $song->order)
-                ->orderBy('order', 'asc')
-                ->first();
-            if ($next) {
-                $temp = $song->order;
-                $song->update(['order' => $next->order]);
-                $next->update(['order' => $temp]);
+        } else {
+            // Reconstruir la lista completa del evento manteniendo el orden de las demás categorías
+            $scopedIndex = 0;
+            $newOrderedList = collect();
+            foreach ($allSongs as $s) {
+                if ($s->category === $category) {
+                    $newOrderedList->push($scopedSongs[$scopedIndex++]);
+                } else {
+                    $newOrderedList->push($s);
+                }
+            }
+            foreach ($newOrderedList as $idx => $s) {
+                $newOrder = ($idx + 1) * 10;
+                if ($s->order !== $newOrder) {
+                    $s->update(['order' => $newOrder]);
+                }
             }
         }
+
         $this->event->load('musicRequests');
     }
 

@@ -251,9 +251,14 @@
                                     </td>
                                     <td class="px-4 py-3 whitespace-nowrap">
                                         @if($track->audio_url)
-                                            <audio controls preload="none" class="h-7 w-48 rounded">
-                                                <source src="{{ $track->audio_url }}" type="audio/mpeg">
-                                            </audio>
+                                            <audio 
+                                                src="{{ $track->audio_url }}" 
+                                                controls 
+                                                preload="none" 
+                                                wire:key="lib-track-audio-{{ $track->id }}-{{ md5($track->audio_url ?? '') }}" 
+                                                class="h-7 w-48 rounded"
+                                                onplay="document.querySelectorAll('audio').forEach(el => { if (el !== this) el.pause(); })"
+                                            ></audio>
                                         @else
                                             <span class="text-gray-400 text-[11px] italic">Sin audio local</span>
                                         @endif
@@ -610,9 +615,13 @@
                         <!-- AUDIO PREVIEW & ENLACES EXTERNOS -->
                         <div class="flex items-center gap-2 self-start sm:self-center shrink-0">
                             @if(!empty($track['preview_url']))
-                                <audio controls preload="none" class="h-7 w-32 max-w-[130px]">
-                                    <source src="{{ $track['preview_url'] }}" type="audio/mpeg">
-                                </audio>
+                                <audio 
+                                    src="{{ $track['preview_url'] }}" 
+                                    controls 
+                                    preload="none" 
+                                    class="h-7 w-32 max-w-[130px]"
+                                    onplay="document.querySelectorAll('audio').forEach(el => { if (el !== this) el.pause(); })"
+                                ></audio>
                             @endif
 
                             @if(!empty($track['spotify_url']))

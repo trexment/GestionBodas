@@ -3561,7 +3561,7 @@
 
         {{-- MÚSICA Y MOMENTOS --}}
         @if($activeTab == 'music')
-            <div wire:poll.3s="refreshMusicRequests">
+            <div wire:poll.visible.20s="refreshMusicRequests">
                 <!-- Cabecera de Peticiones y Escaleta -->
                 <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 gap-4 border-b pb-4">
                     <div>
@@ -4120,7 +4120,7 @@
                 @if($filteredMusicRequests->count() > 0)
                     <div class="space-y-4">
                         @foreach($filteredMusicRequests as $song)
-                            <div class="bg-gray-900 text-white rounded-xl p-4 sm:p-5 shadow-md border border-gray-800 transition hover:border-gray-700">
+                            <div wire:key="song-card-{{ $song->id }}" class="bg-gray-900 text-white rounded-xl p-4 sm:p-5 shadow-md border border-gray-800 transition hover:border-gray-700">
                                 
                                 <!-- Fila Superior: Título, Artista, Momento y Acciones -->
                                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 mb-3">
@@ -4217,10 +4217,15 @@
                                             @if($song->audio_url)
                                                 <div class="flex flex-col gap-1">
                                                     <div class="flex items-center gap-2">
-                                                        <audio controls class="w-full h-8 rounded" style="filter: invert(0.85);" preload="metadata">
-                                                            <source src="{{ $song->audio_url }}" type="audio/mpeg">
-                                                            <source src="{{ $song->audio_url }}" type="audio/mp4">
-                                                            <source src="{{ $song->audio_url }}" type="audio/aac">
+                                                        <audio 
+                                                            src="{{ $song->audio_url }}" 
+                                                            controls 
+                                                            preload="none" 
+                                                            wire:key="song-audio-{{ $song->id }}-{{ md5($song->audio_url ?? '') }}" 
+                                                            class="w-full h-8 rounded" 
+                                                            style="filter: invert(0.85);" 
+                                                            onplay="document.querySelectorAll('audio').forEach(el => { if (el !== this) el.pause(); })"
+                                                        >
                                                             Tu navegador no soporta el reproductor de audio.
                                                         </audio>
                                                     </div>
@@ -7548,9 +7553,38 @@
                                                         <div class="text-[11px] text-gray-500 truncate">{{ $track['artist'] }}</div>
                                                     </div>
                                                 </div>
-                                                <span class="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full whitespace-nowrap">
-                                                    Seleccionar ↵
-                                                </span>
+                                                <div class="flex items-center gap-2 shrink-0">
+                                                    @if(!empty($track['preview_url']))
+                                                        <button 
+                                                            type="button" 
+                                                            @click.stop="
+                                                                let audio = document.getElementById('search-preview-player');
+                                                                if (!audio) {
+                                                                    audio = document.createElement('audio');
+                                                                    audio.id = 'search-preview-player';
+                                                                    document.body.appendChild(audio);
+                                                                }
+                                                                if (audio.src === '{{ $track['preview_url'] }}' && !audio.paused) {
+                                                                    audio.pause();
+                                                                    $el.innerText = '▶ Escuchar';
+                                                                } else {
+                                                                    document.querySelectorAll('audio').forEach(a => a.pause());
+                                                                    document.querySelectorAll('.preview-btn').forEach(b => b.innerText = '▶ Escuchar');
+                                                                    audio.src = '{{ $track['preview_url'] }}';
+                                                                    audio.play();
+                                                                    $el.innerText = '⏸ Pausar';
+                                                                }
+                                                            " 
+                                                            class="preview-btn text-[10px] font-bold text-amber-700 bg-amber-100 hover:bg-amber-200 px-2 py-1 rounded-md transition"
+                                                            title="Escuchar 30s de preescucha"
+                                                        >
+                                                            ▶ Escuchar
+                                                        </button>
+                                                    @endif
+                                                    <span class="text-[10px] font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-2 py-1 rounded-full whitespace-nowrap">
+                                                        Seleccionar ↵
+                                                    </span>
+                                                </div>
                                             </div>
                                         @endforeach
                                     </div>
