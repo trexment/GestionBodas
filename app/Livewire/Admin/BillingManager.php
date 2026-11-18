@@ -978,7 +978,11 @@ class BillingManager extends Component
      */
     public function addPartnerRow()
     {
+        if (!is_array($this->partnersList)) {
+            $this->partnersList = [];
+        }
         $this->partnersList[] = ['name' => '', 'percentage' => 0.0];
+        $this->partnersList = array_values($this->partnersList);
     }
 
     /**

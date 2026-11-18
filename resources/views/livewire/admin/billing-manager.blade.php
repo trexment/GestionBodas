@@ -1602,7 +1602,7 @@
     @if($viewMode === 'settlement')
         @php
             $sData = $kpis['settlement_summary'] ?? [];
-            $partnersList = $sData['partners'] ?? [];
+            $settlementPartners = $sData['partners'] ?? [];
         @endphp
         <div class="space-y-6">
             <!-- CABECERA Y BOTÓN DE CONFIGURACIÓN -->
@@ -1718,8 +1718,8 @@
                 </div>
 
                 <!-- TARJETAS DINÁMICAS POR SOCIO (FRAN, MIGUEL, EZEQUIEL...) + FONDO COMÚN -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-{{ min(4, count($partnersList) + 1) }} gap-4">
-                    @foreach($partnersList as $pRow)
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-{{ min(4, count($settlementPartners) + 1) }} gap-4">
+                    @foreach($settlementPartners as $pRow)
                         @php
                             $pName = $pRow['name'];
                             $pCol = (float)($pRow['collected_in_hand'] ?? ($sData['collected_by_partner'][$pName] ?? 0));
@@ -1796,8 +1796,8 @@
             </div>
 
             <!-- TARJETAS DESTACADAS DE LIQUIDACIÓN POR SOCIO -->
-            <div class="grid grid-cols-1 md:grid-cols-{{ min(3, max(2, count($partnersList))) }} gap-5">
-                @forelse($partnersList as $partner)
+            <div class="grid grid-cols-1 md:grid-cols-{{ min(3, max(2, count($settlementPartners))) }} gap-5">
+                @forelse($settlementPartners as $partner)
                     <div class="bg-white dark:bg-slate-900 rounded-3xl border-2 border-slate-200 dark:border-slate-800 p-6 shadow-sm hover:shadow-md transition relative overflow-hidden">
                         <!-- Banda superior decorativa -->
                         <div class="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
@@ -1922,7 +1922,7 @@
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100 dark:divide-slate-800/60">
-                            @foreach($partnersList as $partner)
+                            @foreach($settlementPartners as $partner)
                                 <tr>
                                     <td class="py-3 px-4 font-black text-slate-900 dark:text-white whitespace-nowrap">
                                         👤 {{ $partner['name'] }}
@@ -1970,16 +1970,16 @@
                                     {{ number_format($sData['net_profit'] ?? 0, 2, ',', '.') }} €
                                 </td>
                                 <td class="py-3.5 px-3 text-right text-amber-600 dark:text-amber-400 whitespace-nowrap">
-                                    {{ number_format(array_sum(array_column($partnersList, 'material_reimbursement')), 2, ',', '.') }} €
+                                    {{ number_format(array_sum(array_column($settlementPartners, 'material_reimbursement')), 2, ',', '.') }} €
                                 </td>
                                 <td class="py-3.5 px-3 text-right text-purple-600 dark:text-purple-400 whitespace-nowrap">
-                                    {{ number_format(array_sum(array_column($partnersList, 'provider_reimbursement')), 2, ',', '.') }} €
+                                    {{ number_format(array_sum(array_column($settlementPartners, 'provider_reimbursement')), 2, ',', '.') }} €
                                 </td>
                                 <td class="py-3.5 px-3 text-right text-emerald-600 dark:text-emerald-400 text-sm whitespace-nowrap">
-                                    {{ number_format(array_sum(array_column($partnersList, 'total_to_receive')), 2, ',', '.') }} €
+                                    {{ number_format(array_sum(array_column($settlementPartners, 'total_to_receive')), 2, ',', '.') }} €
                                 </td>
                                 <td class="py-3.5 px-3 text-right text-indigo-600 dark:text-indigo-400 whitespace-nowrap">
-                                    {{ number_format(array_sum(array_column($partnersList, 'collected_in_hand')), 2, ',', '.') }} €
+                                    {{ number_format(array_sum(array_column($settlementPartners, 'collected_in_hand')), 2, ',', '.') }} €
                                 </td>
                                 <td class="py-3.5 px-3"></td>
                             </tr>
@@ -2716,7 +2716,7 @@
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         <button
                             type="button"
-                            wire:click="setPartnersPreset('3_partners')"
+                            wire:click.prevent="setPartnersPreset('3_partners')"
                             class="px-2.5 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-indigo-300 dark:border-indigo-700 hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-600 text-indigo-900 dark:text-indigo-200 text-[11px] font-black transition cursor-pointer text-left flex items-center gap-1.5 shadow-2xs"
                         >
                             <span>👥</span>
@@ -2724,7 +2724,7 @@
                         </button>
                         <button
                             type="button"
-                            wire:click="setPartnersPreset('2_partners')"
+                            wire:click.prevent="setPartnersPreset('2_partners')"
                             class="px-2.5 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 hover:bg-slate-800 hover:text-white dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-[11px] font-black transition cursor-pointer text-left flex items-center gap-1.5 shadow-2xs"
                         >
                             <span>👥</span>
@@ -2734,14 +2734,15 @@
                 </div>
 
                 @php
-                    $sumPct = array_sum(array_map(fn($p) => (float)($p['percentage'] ?? 0), $partnersList));
+                    $mPartners = $this->partnersList;
+                    $sumPct = array_sum(array_map(fn($p) => (float)($p['percentage'] ?? 0), $mPartners));
                     $isExact100 = abs($sumPct - 100.0) < 0.01;
                 @endphp
 
                 <div class="space-y-3 text-xs">
                     <div class="space-y-2">
-                        @foreach($partnersList as $idx => $prtRow)
-                            <div class="flex items-center gap-2 bg-slate-50 dark:bg-slate-950/60 p-2.5 rounded-2xl border border-slate-200 dark:border-slate-800">
+                        @foreach($this->partnersList as $idx => $prtRow)
+                            <div wire:key="partner-modal-row-{{ $idx }}" class="flex items-center gap-2 bg-slate-50 dark:bg-slate-950/60 p-2.5 rounded-2xl border border-slate-200 dark:border-slate-800">
                                 <div class="w-7 h-7 rounded-xl bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 flex items-center justify-center font-black shrink-0">
                                     {{ $idx + 1 }}
                                 </div>
@@ -2763,10 +2764,10 @@
                                     >
                                     <span class="font-black text-slate-500">%</span>
                                 </div>
-                                @if(count($partnersList) > 1)
+                                @if(count($this->partnersList) > 1)
                                     <button
                                         type="button"
-                                        wire:click="removePartnerRow({{ $idx }})"
+                                        wire:click.prevent="removePartnerRow({{ $idx }})"
                                         class="p-2 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950 rounded-xl transition cursor-pointer"
                                         title="Eliminar socio"
                                     >
@@ -2780,7 +2781,7 @@
                     <div class="flex items-center justify-between pt-1">
                         <button
                             type="button"
-                            wire:click="addPartnerRow"
+                            wire:click.prevent="addPartnerRow"
                             class="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950 text-indigo-700 dark:text-indigo-300 font-bold text-xs transition cursor-pointer inline-flex items-center gap-1"
                         >
                             <span>➕</span>
