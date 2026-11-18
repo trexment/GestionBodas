@@ -652,8 +652,6 @@ class BillingManager extends Component
         $this->closeProviderModal();
         session()->flash('message', "📸 Gasto y pagos de proveedor ({$data['provider_name']} - Pagado por {$data['paid_by']}) guardados en '{$event->name}'.");
     }
-        session()->flash('message', "📸 Reserva y pagos de Fotomatón / 360º actualizados en '{$event->name}'.");
-    }
 
     /**
      * Elimina un registro de reserva a proveedor externo.
