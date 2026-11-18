@@ -246,6 +246,40 @@
         </tr>
     </table>
 
+    @php
+        $matSummary = $kpis['material_summary'] ?? [];
+        $settlementSummary = $kpis['settlement_summary'] ?? [];
+        $settlementPartners = $settlementSummary['partners'] ?? [];
+    @endphp
+    <!-- MINI-BARRA DE REPARTO ENTRE SOCIOS Y GASTO DE MATERIAL -->
+    <table class="kpi-table" style="margin-top: -4px; margin-bottom: 12px;">
+        <tr>
+            <td class="kpi-box" style="width: 25%; border-left: 3px solid #0284c7; background: #f0f9ff;">
+                <div class="kpi-label" style="color: #0369a1;">Compras de Material / Equipamiento</div>
+                <div class="kpi-value" style="color: #0284c7;">{{ number_format($matSummary['total_amount'] ?? 0, 2, ',', '.') }} €</div>
+                <div class="kpi-sub">{{ $matSummary['total_count'] ?? 0 }} compras deducibles</div>
+            </td>
+            <td class="kpi-spacer"></td>
+            <td class="kpi-box" style="width: 30%; border-left: 3px solid #16a34a; background: #f0fdf4;">
+                <div class="kpi-label" style="color: #15803d;">Beneficio Neto a Repartir</div>
+                <div class="kpi-value" style="color: #16a34a;">{{ number_format($settlementSummary['net_profit'] ?? 0, 2, ',', '.') }} €</div>
+                <div class="kpi-sub">Cobrado - Proveedores ({{ number_format($settlementSummary['provider_expenses'] ?? 0, 2, ',', '.') }} €) - Material ({{ number_format($matSummary['total_amount'] ?? 0, 2, ',', '.') }} €)</div>
+            </td>
+            <td class="kpi-spacer"></td>
+            <td class="kpi-box" style="width: 43.4%; border-left: 3px solid #4f46e5; background: #eef2ff;">
+                <div class="kpi-label" style="color: #4338ca;">Liquidación y Reparto entre Socios (Total a Percibir)</div>
+                <div class="kpi-sub" style="margin-top: 4px; font-size: 7.5pt; color: #1e1b4b;">
+                    @foreach($settlementPartners as $p)
+                        <strong style="color: #4338ca;">{{ $p['name'] }}:</strong>
+                        <span style="font-weight: bold; font-size: 9pt; color: #15803d;">{{ number_format($p['total_to_receive'], 2, ',', '.') }} €</span>
+                        <span style="color: #64748b; font-size: 6.5pt;">(Beneficio {{ $p['percentage'] }}%: {{ number_format($p['profit_share'], 2, ',', '.') }} € @if($p['reimbursement'] > 0) + Reembolso material adelantado: {{ number_format($p['reimbursement'], 2, ',', '.') }} € @endif)</span>
+                        @if(!$loop->last) &nbsp;|&nbsp; @endif
+                    @endforeach
+                </div>
+            </td>
+        </tr>
+    </table>
+
     <!-- TABLA 1: DESGLOSE POR EVENTOS (QUIÉN HA PAGADO, FECHA, MÉTODO Y PENDIENTE) -->
     <div class="section-heading">1. Control de Pagos por Evento ({{ count($eventsRows) }} eventos)</div>
     <table class="data-table">
@@ -487,5 +521,131 @@
             </tbody>
         </table>
     @endif
+
+    <!-- TABLA 4: COMPRAS Y GASTOS DE MATERIAL TÉCNICO Y FUNGIBLE -->
+    @if(!empty($materialRows) && count($materialRows) > 0)
+        <div class="section-heading" style="margin-top: 14px;">4. Compras y Gastos de Material Deducibles ({{ count($materialRows) }} compras)</div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th style="width: 9%;">Fecha</th>
+                    <th style="width: 25%;">Concepto / Descripción</th>
+                    <th style="width: 14%;">Categoría</th>
+                    <th style="width: 14%;">Tienda / Proveedor</th>
+                    <th style="width: 12%;">Evento / Temp.</th>
+                    <th style="width: 12%;">Pagado Por</th>
+                    <th style="width: 14%;" class="text-right">Importe (€)</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($materialRows as $mat)
+                    @php $cat = $mat->category_info; @endphp
+                    <tr>
+                        <td>{{ $mat->purchase_date ? $mat->purchase_date->format('d/m/Y') : '-' }}</td>
+                        <td>
+                            <div class="font-bold">{{ $mat->concept }}</div>
+                            @if($mat->notes)
+                                <div class="text-muted">{{ $mat->notes }}</div>
+                            @endif
+                        </td>
+                        <td>{{ $cat['icon'] }} {{ $cat['label'] }}</td>
+                        <td>{{ $mat->supplier ?: '-' }}</td>
+                        <td>{{ $mat->event ? $mat->event->name : ($mat->season ? 'Temp. ' . $mat->season : 'General') }}</td>
+                        <td>
+                            <span class="font-bold" style="color: {{ in_array(strtolower($mat->paid_by), ['fran', 'miguel']) ? '#4338ca' : '#047857' }};">
+                                {{ $mat->paid_by }}
+                            </span>
+                        </td>
+                        <td class="text-right font-bold text-red">{{ number_format($mat->amount, 2, ',', '.') }} €</td>
+                    </tr>
+                @endforeach
+                <tr class="total-row">
+                    <td colspan="6">TOTAL COMPRAS Y GASTOS DE MATERIAL ({{ count($materialRows) }} REGISTROS)</td>
+                    <td class="text-right text-red">-{{ number_format($matSummary['total_amount'] ?? 0, 2, ',', '.') }} €</td>
+                </tr>
+            </tbody>
+        </table>
+    @endif
+
+    <!-- TABLA 5: CUADRO DE LIQUIDACIÓN Y REPARTO ENTRE SOCIOS -->
+    <div class="section-heading" style="margin-top: 14px;">5. Liquidación y Reparto de Beneficios entre Socios</div>
+    <table style="width: 100%; border-collapse: separate; border-spacing: 0; margin-bottom: 8px;">
+        <tr>
+            <!-- Columna Izquierda: Cuenta de Resultados -->
+            <td style="width: 48%; vertical-align: top;">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th colspan="2">Cuenta de Resultados del Período / Temporada</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>(+) Total Ingresos Cobrados de Clientes</td>
+                            <td class="text-right font-bold text-green">{{ number_format($settlementSummary['total_collected'] ?? 0, 2, ',', '.') }} €</td>
+                        </tr>
+                        <tr>
+                            <td>(-) Gastos Proveedores Externos (Fotomatón / 360º)</td>
+                            <td class="text-right font-bold text-red">-{{ number_format($settlementSummary['provider_expenses'] ?? 0, 2, ',', '.') }} €</td>
+                        </tr>
+                        <tr>
+                            <td>(-) Compras de Material y Equipamiento Deducibles</td>
+                            <td class="text-right font-bold text-red">-{{ number_format($settlementSummary['material_expenses'] ?? 0, 2, ',', '.') }} €</td>
+                        </tr>
+                        <tr class="total-row" style="background-color: #f0fdf4;">
+                            <td style="font-weight: bold; color: #15803d;">(=) BENEFICIO NETO DISPONIBLE A REPARTIR</td>
+                            <td class="text-right font-bold" style="font-size: 9.5pt; color: #15803d;">
+                                {{ number_format($settlementSummary['net_profit'] ?? 0, 2, ',', '.') }} €
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </td>
+            <td style="width: 4%;"></td>
+            <!-- Columna Derecha: Cuadro de Reparto por Socio -->
+            <td style="width: 48%; vertical-align: top;">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Socio</th>
+                            <th>Cuota %</th>
+                            <th class="text-right">Beneficio Neto</th>
+                            <th class="text-right">Reembolso Material</th>
+                            <th class="text-right">TOTAL A PERCIBIR</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @php
+                            $sumB = 0; $sumR = 0; $sumF = 0;
+                        @endphp
+                        @foreach($settlementPartners as $p)
+                            @php
+                                $sumB += (float)$p['profit_share'];
+                                $sumR += (float)$p['reimbursement'];
+                                $sumF += (float)$p['total_to_receive'];
+                            @endphp
+                            <tr>
+                                <td class="font-bold" style="color: #4338ca;">{{ $p['name'] }}</td>
+                                <td>{{ number_format($p['percentage'], 2, ',', '.') }}%</td>
+                                <td class="text-right">{{ number_format($p['profit_share'], 2, ',', '.') }} €</td>
+                                <td class="text-right font-bold" style="color: {{ $p['reimbursement'] > 0 ? '#b45309' : '#94a3b8' }};">
+                                    {{ $p['reimbursement'] > 0 ? '+' . number_format($p['reimbursement'], 2, ',', '.') . ' €' : '—' }}
+                                </td>
+                                <td class="text-right font-bold text-green" style="font-size: 8.5pt;">
+                                    {{ number_format($p['total_to_receive'], 2, ',', '.') }} €
+                                </td>
+                            </tr>
+                        @endforeach
+                        <tr class="total-row">
+                            <td colspan="2">TOTAL REPARTO</td>
+                            <td class="text-right">{{ number_format($sumB, 2, ',', '.') }} €</td>
+                            <td class="text-right">{{ number_format($sumR, 2, ',', '.') }} €</td>
+                            <td class="text-right text-green" style="font-size: 9pt;">{{ number_format($sumF, 2, ',', '.') }} €</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </td>
+        </tr>
+    </table>
 </body>
 </html>

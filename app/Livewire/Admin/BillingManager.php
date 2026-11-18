@@ -61,6 +61,25 @@ class BillingManager extends Component
     public string $provFinalMethod = 'transfer';
     public string $provNotes = '';
 
+    // Modal para Registrar / Editar Compra de Material
+    public bool $showMaterialModal = false;
+    public ?int $materialExpenseId = null;
+    public string $matConcept = '';
+    public string $matCategory = 'general';
+    public $matAmount = 0;
+    public string $matPurchaseDate = '';
+    public string $matPaidBy = 'Fran';
+    public string $matPaymentMethod = 'card';
+    public string $matSupplier = '';
+    public ?int $matEventId = null;
+    public string $matSeason = '';
+    public string $matInvoiceNumber = '';
+    public string $matNotes = '';
+
+    // Modal para Configurar Socios y Porcentajes de Reparto
+    public bool $showPartnersModal = false;
+    public array $partnersList = [];
+
     /**
      * Inicializa el componente comprobando el rol de administrador y estableciendo la fecha actual para cobros rápidos.
      *
@@ -559,6 +578,213 @@ class BillingManager extends Component
         }
     }
 
+    // ==================== GASTOS Y COMPRAS DE MATERIAL ====================
+
+    /**
+     * Abre el modal para registrar una nueva compra de material o editar una existente.
+     *
+     * @param int|null $id Identificador del gasto si se edita.
+     * @return void
+     */
+    public function openMaterialModal(?int $id = null)
+    {
+        \App\Models\MaterialExpense::ensureTableExists();
+        $this->resetValidation();
+        $this->materialExpenseId = $id;
+
+        if ($id) {
+            $mat = \App\Models\MaterialExpense::find($id);
+            if ($mat) {
+                $this->matConcept = $mat->concept;
+                $this->matCategory = $mat->category ?: 'general';
+                $this->matAmount = (float) $mat->amount;
+                $this->matPurchaseDate = $mat->purchase_date ? $mat->purchase_date->format('Y-m-d') : now()->format('Y-m-d');
+                $this->matPaidBy = $mat->paid_by ?: 'Fran';
+                $this->matPaymentMethod = $mat->payment_method ?: 'card';
+                $this->matSupplier = (string) ($mat->supplier ?? '');
+                $this->matEventId = $mat->event_id;
+                $this->matSeason = (string) ($mat->season ?? ($this->season !== 'all' ? $this->season : date('Y')));
+                $this->matInvoiceNumber = (string) ($mat->invoice_number ?? '');
+                $this->matNotes = (string) ($mat->notes ?? '');
+            }
+        } else {
+            $this->matConcept = '';
+            $this->matCategory = 'general';
+            $this->matAmount = 0;
+            $this->matPurchaseDate = now()->format('Y-m-d');
+            $this->matPaidBy = 'Fran';
+            $this->matPaymentMethod = 'card';
+            $this->matSupplier = '';
+            $this->matEventId = null;
+            $this->matSeason = $this->season !== 'all' ? $this->season : date('Y');
+            $this->matInvoiceNumber = '';
+            $this->matNotes = '';
+        }
+
+        $this->showMaterialModal = true;
+    }
+
+    /**
+     * Cierra el modal de compra de material.
+     *
+     * @return void
+     */
+    public function closeMaterialModal()
+    {
+        $this->showMaterialModal = false;
+        $this->materialExpenseId = null;
+    }
+
+    /**
+     * Valida y guarda la compra de material o gasto deducible.
+     *
+     * @return void
+     */
+    public function saveMaterialExpense()
+    {
+        \App\Models\MaterialExpense::ensureTableExists();
+
+        $this->validate([
+            'matConcept' => 'required|string|max:255',
+            'matAmount' => 'required|numeric|min:0.01',
+            'matPurchaseDate' => 'required|date',
+            'matPaidBy' => 'required|string|max:100',
+            'matCategory' => 'required|string|max:50',
+            'matPaymentMethod' => 'required|string|max:50',
+            'matEventId' => 'nullable|integer|exists:events,id',
+            'matSeason' => 'nullable|string|max:10',
+        ]);
+
+        $seasonVal = $this->matSeason;
+        if (empty($seasonVal) && !empty($this->matPurchaseDate)) {
+            $seasonVal = Carbon::parse($this->matPurchaseDate)->format('Y');
+        }
+
+        $data = [
+            'event_id' => $this->matEventId ?: null,
+            'season' => $seasonVal,
+            'concept' => trim($this->matConcept),
+            'category' => $this->matCategory,
+            'amount' => round((float) $this->matAmount, 2),
+            'purchase_date' => $this->matPurchaseDate,
+            'paid_by' => trim($this->matPaidBy),
+            'payment_method' => $this->matPaymentMethod,
+            'supplier' => trim($this->matSupplier) ?: null,
+            'invoice_number' => trim($this->matInvoiceNumber) ?: null,
+            'notes' => trim($this->matNotes) ?: null,
+        ];
+
+        if ($this->materialExpenseId) {
+            $mat = \App\Models\MaterialExpense::find($this->materialExpenseId);
+            if ($mat) {
+                $mat->update($data);
+                session()->flash('message', "🛠️ Gasto de material '{$mat->concept}' actualizado correctamente.");
+            }
+        } else {
+            \App\Models\MaterialExpense::create($data);
+            session()->flash('message', "🛠️ Compra de material '{$data['concept']}' (" . number_format($data['amount'], 2, ',', '.') . " €) registrada con éxito.");
+        }
+
+        $this->closeMaterialModal();
+    }
+
+    /**
+     * Elimina un registro de compra de material.
+     *
+     * @param int $id
+     * @return void
+     */
+    public function deleteMaterialExpense(int $id)
+    {
+        $mat = \App\Models\MaterialExpense::find($id);
+        if ($mat) {
+            $mat->delete();
+            session()->flash('message', "Gasto de material eliminado.");
+        }
+    }
+
+    // ==================== CONFIGURACIÓN DE SOCIOS Y LIQUIDACIÓN ====================
+
+    /**
+     * Abre el modal para configurar los socios y sus porcentajes de liquidación.
+     *
+     * @return void
+     */
+    public function openPartnersModal()
+    {
+        $this->resetValidation();
+        $this->partnersList = \App\Models\Setting::getSettlementPartners();
+        $this->showPartnersModal = true;
+    }
+
+    /**
+     * Cierra el modal de socios.
+     *
+     * @return void
+     */
+    public function closePartnersModal()
+    {
+        $this->showPartnersModal = false;
+    }
+
+    /**
+     * Añade una fila para un nuevo socio en el formulario.
+     *
+     * @return void
+     */
+    public function addPartnerRow()
+    {
+        $this->partnersList[] = ['name' => '', 'percentage' => 0.0];
+    }
+
+    /**
+     * Elimina una fila de socio del formulario.
+     *
+     * @param int $index
+     * @return void
+     */
+    public function removePartnerRow(int $index)
+    {
+        if (isset($this->partnersList[$index])) {
+            unset($this->partnersList[$index]);
+            $this->partnersList = array_values($this->partnersList);
+        }
+    }
+
+    /**
+     * Valida y guarda los socios y sus porcentajes para el reparto de beneficios.
+     *
+     * @return void
+     */
+    public function savePartnersSettings()
+    {
+        $totalPct = 0;
+        $cleaned = [];
+
+        foreach ($this->partnersList as $p) {
+            $name = trim((string)($p['name'] ?? ''));
+            $pct = round((float)($p['percentage'] ?? 0), 2);
+            if ($name !== '') {
+                $cleaned[] = ['name' => $name, 'percentage' => $pct];
+                $totalPct += $pct;
+            }
+        }
+
+        if (empty($cleaned)) {
+            $this->addError('partnersList', 'Debe haber al menos un socio configurado.');
+            return;
+        }
+
+        if (abs($totalPct - 100.0) > 0.5) {
+            $this->addError('partnersList', "La suma de porcentajes debe ser exactamente 100% (actualmente suma {$totalPct}%).");
+            return;
+        }
+
+        \App\Models\Setting::setSettlementPartners($cleaned);
+        $this->closePartnersModal();
+        session()->flash('message', "⚙️ Configuración de socios y porcentajes de liquidación guardada.");
+    }
+
     /**
      * Obtiene el arreglo de filtros activos aplicados actualmente en el panel de facturación.
      *
@@ -629,7 +855,9 @@ class BillingManager extends Component
             'eventsRows' => $report['events_rows'],
             'ledgerRows' => $report['ledger_rows'],
             'providerRows' => $report['provider_rows'] ?? [],
+            'materialRows' => $report['material_rows'] ?? [],
             'kpis' => $report['kpis'],
+            'partners' => \App\Models\Setting::getSettlementPartners(),
             'availableYears' => $availableYears,
             'availableSeasons' => $availableSeasons,
             'seasonCounts' => $seasonCounts,

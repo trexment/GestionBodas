@@ -1032,5 +1032,33 @@ class Setting extends Model
         }
         return $providers['logrono'] ?? reset($providers);
     }
+
+    /**
+     * Obtiene la lista de socios y sus porcentajes para el reparto de beneficios en la liquidación.
+     */
+    public static function getSettlementPartners(): array
+    {
+        $raw = self::get('billing_settlement_partners');
+        if (!empty($raw)) {
+            $decoded = is_array($raw) ? $raw : json_decode((string)$raw, true);
+            if (is_array($decoded) && !empty($decoded)) {
+                return $decoded;
+            }
+        }
+
+        // Por defecto: Fran (50%) y Miguel (50%)
+        return [
+            ['name' => 'Fran', 'percentage' => 50.0],
+            ['name' => 'Miguel', 'percentage' => 50.0],
+        ];
+    }
+
+    /**
+     * Guarda la lista de socios y porcentajes para el reparto de beneficios.
+     */
+    public static function setSettlementPartners(array $partners): void
+    {
+        self::set('billing_settlement_partners', json_encode(array_values($partners), JSON_UNESCAPED_UNICODE));
+    }
 }
 

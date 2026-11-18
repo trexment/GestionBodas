@@ -606,6 +606,7 @@ class PdfController extends Controller
             'eventsRows' => $report['events_rows'],
             'ledgerRows' => $report['ledger_rows'],
             'providerRows' => $report['provider_rows'] ?? [],
+            'materialRows' => $report['material_rows'] ?? [],
             'kpis' => $report['kpis'],
         ])->setPaper('a4', 'landscape');
 

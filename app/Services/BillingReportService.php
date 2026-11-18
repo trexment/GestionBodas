@@ -39,6 +39,7 @@ class BillingReportService
         }
 
         \App\Models\EventProviderBooking::ensureTableExists();
+        \App\Models\MaterialExpense::ensureTableExists();
 
         $events = Event::with(['client', 'quotes.items', 'invoices', 'providerBookings'])
             ->orderByDesc('event_date')
@@ -392,11 +393,87 @@ class BillingReportService
             return $evB <=> $evA;
         });
 
+        // 7. Carga y cálculo de Gastos y Compras de Material
+        $materialQuery = \App\Models\MaterialExpense::with('event')->orderByDesc('purchase_date')->orderByDesc('id');
+
+        if ($season !== 'all' && is_numeric($season)) {
+            $materialQuery->where(function($q) use ($season) {
+                $q->where('season', $season)
+                  ->orWhereYear('purchase_date', (int) $season);
+            });
+        } elseif ($year !== 'all' && is_numeric($year)) {
+            $materialQuery->whereYear('purchase_date', (int) $year);
+        }
+
+        if ($dateFrom) {
+            $materialQuery->where('purchase_date', '>=', $dateFrom->format('Y-m-d'));
+        }
+        if ($dateTo) {
+            $materialQuery->where('purchase_date', '<=', $dateTo->format('Y-m-d'));
+        }
+        if ($paymentMethod !== 'all') {
+            $materialQuery->where('payment_method', $paymentMethod);
+        }
+
+        $materialRows = $materialQuery->get();
+        $totalMaterial = 0.0;
+        $materialByPaidBy = [];
+        $materialByCategory = [];
+
+        foreach ($materialRows as $mat) {
+            $amt = (float) $mat->amount;
+            $totalMaterial += $amt;
+            $pBy = trim((string)($mat->paid_by ?: 'Fran'));
+            $materialByPaidBy[$pBy] = ($materialByPaidBy[$pBy] ?? 0.0) + $amt;
+            $cat = $mat->category ?: 'general';
+            $materialByCategory[$cat] = ($materialByCategory[$cat] ?? 0.0) + $amt;
+        }
+
+        $kpis['material_summary'] = [
+            'total_count' => $materialRows->count(),
+            'total_amount' => round($totalMaterial, 2),
+            'by_paid_by' => $materialByPaidBy,
+            'by_category' => $materialByCategory,
+        ];
+
+        // 8. Liquidación y Reparto entre Socios
+        $providerExpensesDeducted = (float) ($kpis['provider_cost_in_events'] > 0 ? $kpis['provider_cost_in_events'] : ($kpis['provider_summary']['total_cost'] ?? 0.0));
+        $totalCollected = (float) $kpis['total_collected'];
+        $netProfit = max(0.0, round($totalCollected - $providerExpensesDeducted - $totalMaterial, 2));
+
+        $partners = \App\Models\Setting::getSettlementPartners();
+        $partnersSettlement = [];
+
+        foreach ($partners as $partner) {
+            $pName = trim((string)($partner['name'] ?? 'Socio'));
+            $pPct = (float) ($partner['percentage'] ?? 50.0);
+            $pShare = round($netProfit * ($pPct / 100), 2);
+            $pReimbursement = round((float) ($materialByPaidBy[$pName] ?? 0.0), 2);
+            $pTotalToReceive = round($pShare + $pReimbursement, 2);
+
+            $partnersSettlement[] = [
+                'name' => $pName,
+                'percentage' => $pPct,
+                'profit_share' => $pShare,
+                'reimbursement' => $pReimbursement,
+                'total_to_receive' => $pTotalToReceive,
+            ];
+        }
+
+        $kpis['settlement_summary'] = [
+            'total_collected' => round($totalCollected, 2),
+            'provider_expenses' => round($providerExpensesDeducted, 2),
+            'material_expenses' => round($totalMaterial, 2),
+            'net_profit' => $netProfit,
+            'partners' => $partnersSettlement,
+        ];
+
         return [
             'filters' => $filters,
             'events_rows' => $filteredEvents,
             'ledger_rows' => $ledgerRows,
             'provider_rows' => $providerRows,
+            'material_rows' => $materialRows,
             'kpis' => $kpis,
         ];
     }
@@ -674,15 +751,114 @@ class BillingReportService
             '',
         ];
 
-        // Hoja 4: Resumen Ejecutivo e Ingresos por Método de Pago
+        // Hoja 4: Compras y Gastos de Material Técnico y Fungible
+        $materialRows = $reportData['material_rows'] ?? [];
+        $matSummary = $kpis['material_summary'] ?? [];
+
+        $sheetMaterialRows = [];
+        $sheetMaterialRows[] = [
+            'ID Gasto',
+            'Fecha Compra',
+            'Concepto / Descripción',
+            'Categoría',
+            'Proveedor / Comercio',
+            'Temporada',
+            'Evento Asociado',
+            'Pagado Por (Socio/Caja)',
+            'Método de Pago',
+            'Nº Factura / Ticket',
+            'Importe (€)',
+            'Notas / Observaciones',
+        ];
+
+        foreach ($materialRows as $mRow) {
+            $catInfo = $mRow->category_info;
+            $evName = $mRow->event ? $mRow->event->name : 'Gasto General';
+            $sheetMaterialRows[] = [
+                (int) $mRow->id,
+                $mRow->purchase_date ? $mRow->purchase_date->format('d/m/Y') : '-',
+                (string) $mRow->concept,
+                (string) ($catInfo['label'] ?? ucfirst($mRow->category)),
+                (string) ($mRow->supplier ?? '-'),
+                (string) ($mRow->season ?? '-'),
+                $evName,
+                (string) ($mRow->paid_by ?? 'Fran'),
+                (string) $mRow->payment_method_label,
+                (string) ($mRow->invoice_number ?? '-'),
+                round((float) $mRow->amount, 2),
+                (string) ($mRow->notes ?? ''),
+            ];
+        }
+
+        $sheetMaterialRows[] = [
+            '',
+            'TOTAL COMPRAS DE MATERIAL (' . count($materialRows) . ' compras)',
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
+            round((float) ($matSummary['total_amount'] ?? 0), 2),
+            '',
+        ];
+
+        // Hoja 5: Liquidación y Reparto entre Socios
+        $settlement = $kpis['settlement_summary'] ?? [];
+        $partners = $settlement['partners'] ?? [];
+
+        $sheetSettlementRows = [
+            ['CUENTA DE RESULTADOS Y BENEFICIO NETO DISPONIBLE', '', 'Importe (€)'],
+            ['(+) Total Ingresos Cobrados de Clientes', '', round((float) ($settlement['total_collected'] ?? 0), 2)],
+            ['(-) Gastos de Proveedores Externos (Fotomatón / 360º)', '', round((float) ($settlement['provider_expenses'] ?? 0), 2)],
+            ['(-) Compras y Gastos de Material Deducibles', '', round((float) ($settlement['material_expenses'] ?? 0), 2)],
+            ['(=) BENEFICIO NETO DISPONIBLE A REPARTIR', '', round((float) ($settlement['net_profit'] ?? 0), 2)],
+            ['---', '', ''],
+            ['CUADRO DE LIQUIDACIÓN Y REPARTO ENTRE SOCIOS', '', ''],
+            ['Socio / Destinatario', '% Participación', 'Cuota de Beneficio (€)', 'Reembolso Material Adelantado (€)', 'TOTAL NETO A PERCIBIR (€)'],
+        ];
+
+        $totBenefit = 0.0;
+        $totReimb = 0.0;
+        $totFinal = 0.0;
+
+        foreach ($partners as $p) {
+            $share = round((float) ($p['profit_share'] ?? 0), 2);
+            $reimb = round((float) ($p['reimbursement'] ?? 0), 2);
+            $final = round((float) ($p['total_to_receive'] ?? 0), 2);
+
+            $totBenefit += $share;
+            $totReimb += $reimb;
+            $totFinal += $final;
+
+            $sheetSettlementRows[] = [
+                (string) ($p['name'] ?? 'Socio'),
+                round((float) ($p['percentage'] ?? 0), 2) . '%',
+                $share,
+                $reimb,
+                $final,
+            ];
+        }
+
+        $sheetSettlementRows[] = [
+            'TOTALES LIQUIDACIÓN',
+            '100.00%',
+            round($totBenefit, 2),
+            round($totReimb, 2),
+            round($totFinal, 2),
+        ];
+
+        // Hoja 6: Resumen Ejecutivo e Ingresos por Método de Pago
         $sheet3Rows = [
             ['Indicador / Concepto', 'Nº Registros', 'Importe (€)'],
             ['Total Contratado / Presupuestado', (int) ($kpis['events_count'] ?? 0), round((float) ($kpis['total_agreed'] ?? 0), 2)],
             ['Total Ingresado / Cobrado de Clientes', (int) ($kpis['events_with_payment_count'] ?? 0), round((float) ($kpis['total_collected'] ?? 0), 2)],
             ['Total Pendiente de Cobro de Clientes', (int) ($kpis['events_partial_count'] ?? 0) + (int) ($kpis['events_unpaid_count'] ?? 0), round((float) ($kpis['total_pending'] ?? 0), 2)],
             ['Gasto Total Proveedores (Fotomatón / 360º)', (int) ($kpis['provider_events_in_table_count'] ?? 0), round((float) ($kpis['provider_cost_in_events'] ?? 0), 2)],
-            ['Neto Eventos (Total Contratado - Gasto Proveedores)', (int) ($kpis['events_count'] ?? 0), round((float) ($kpis['net_agreed_after_providers'] ?? 0), 2)],
-            ['Caja Neta Actual (Cobrado Clientes - Pagado Proveedores)', (int) ($kpis['events_with_payment_count'] ?? 0), round((float) ($kpis['net_collected_after_providers'] ?? 0), 2)],
+            ['Gasto Total Compras de Material y Equipos', (int) ($matSummary['total_count'] ?? 0), round((float) ($matSummary['total_amount'] ?? 0), 2)],
+            ['Beneficio Neto Disponible a Repartir', (int) count($partners), round((float) ($settlement['net_profit'] ?? 0), 2)],
             ['---', '', ''],
             ['DESGLOSE POR MÉTODO DE PAGO', 'Nº Cobros', 'Total Cobrado (€)'],
             ['Bizum', (int) ($kpis['by_method']['bizum']['count'] ?? 0), round((float) ($kpis['by_method']['bizum']['amount'] ?? 0), 2)],
@@ -691,25 +867,30 @@ class BillingReportService
             ['Tarjeta / TPV', (int) ($kpis['by_method']['card']['count'] ?? 0), round((float) ($kpis['by_method']['card']['amount'] ?? 0), 2)],
             ['Otros / No especificado', (int) ($kpis['by_method']['other']['count'] ?? 0), round((float) ($kpis['by_method']['other']['amount'] ?? 0), 2)],
             ['---', '', ''],
-            ['DESGLOSE FISCAL (FACTURAS CON IVA vs RECIBOS)', 'Documentos', 'Importe (€)'],
-            ['Base Imponible en Facturas', (int) ($kpis['tax_summary']['invoices_count'] ?? 0), round((float) ($kpis['tax_summary']['invoices_base'] ?? 0), 2)],
-            ['IVA Repercutido en Facturas', (int) ($kpis['tax_summary']['invoices_count'] ?? 0), round((float) ($kpis['tax_summary']['invoices_tax'] ?? 0), 2)],
-            ['Total Facturas Oficiales (Con IVA)', (int) ($kpis['tax_summary']['invoices_count'] ?? 0), round((float) ($kpis['tax_summary']['invoices_total'] ?? 0), 2)],
-            ['Total Recibos y Señales (Sin IVA)', (int) ($kpis['tax_summary']['receipts_count'] ?? 0), round((float) ($kpis['tax_summary']['receipts_total'] ?? 0), 2)],
-            ['---', '', ''],
-            ['PAGOS A PROVEEDOR (FOTOMATÓN / PLATAFORMA 360º)', 'Eventos', 'Importe (€)'],
-            ['PVP Fotomatón / 360º en Presupuestos de Clientes', (int) ($provKpis['events_count'] ?? 0), round((float) ($provKpis['total_client_price'] ?? 0), 2)],
-            ['Coste Total Proveedor Fotomatón / 360º', (int) ($provKpis['events_count'] ?? 0), round((float) ($provKpis['total_cost'] ?? 0), 2)],
-            ['Señales de Reserva Pagadas al Proveedor', (int) ($provKpis['events_deposit_paid_count'] ?? 0) + (int) ($provKpis['events_fully_paid_count'] ?? 0), round((float) ($provKpis['deposits_paid'] ?? 0), 2)],
-            ['Liquidaciones / Restos Pagados al Proveedor', (int) ($provKpis['events_fully_paid_count'] ?? 0), round((float) ($provKpis['finals_paid'] ?? 0), 2)],
-            ['Total Pagado a Proveedor Fotomatón / 360º', (int) ($provKpis['events_count'] ?? 0), round((float) ($provKpis['total_paid'] ?? 0), 2)],
-            ['Pendiente de Pagar a Proveedor Fotomatón / 360º', (int) ($provKpis['events_unpaid_count'] ?? 0) + (int) ($provKpis['events_deposit_paid_count'] ?? 0), round((float) ($provKpis['total_pending'] ?? 0), 2)],
+            ['LIQUIDACIÓN POR SOCIO (BENEFICIO + REEMBOLSO MATERIAL)', 'Cuota %', 'Total a Percibir (€)'],
         ];
+
+        foreach ($partners as $p) {
+            $sheet3Rows[] = [
+                (string) ($p['name'] ?? 'Socio'),
+                round((float) ($p['percentage'] ?? 0), 2) . '%',
+                round((float) ($p['total_to_receive'] ?? 0), 2),
+            ];
+        }
+
+        $sheet3Rows[] = ['---', '', ''];
+        $sheet3Rows[] = ['DESGLOSE FISCAL (FACTURAS CON IVA vs RECIBOS)', 'Documentos', 'Importe (€)'];
+        $sheet3Rows[] = ['Base Imponible en Facturas', (int) ($kpis['tax_summary']['invoices_count'] ?? 0), round((float) ($kpis['tax_summary']['invoices_base'] ?? 0), 2)];
+        $sheet3Rows[] = ['IVA Repercutido en Facturas', (int) ($kpis['tax_summary']['invoices_count'] ?? 0), round((float) ($kpis['tax_summary']['invoices_tax'] ?? 0), 2)];
+        $sheet3Rows[] = ['Total Facturas Oficiales (Con IVA)', (int) ($kpis['tax_summary']['invoices_count'] ?? 0), round((float) ($kpis['tax_summary']['invoices_total'] ?? 0), 2)];
+        $sheet3Rows[] = ['Total Recibos y Señales (Sin IVA)', (int) ($kpis['tax_summary']['receipts_count'] ?? 0), round((float) ($kpis['tax_summary']['receipts_total'] ?? 0), 2)];
 
         return self::buildMultiSheetXlsxFile([
             'Control por Eventos' => $sheet1Rows,
             'Libro de Cobros y Facturas' => $sheet2Rows,
             'Reservas Fotomaton y 360' => $sheetProvRows,
+            'Compras y Gastos Material' => $sheetMaterialRows,
+            'Reparto y Liquidacion' => $sheetSettlementRows,
             'Resumen de Ingresos' => $sheet3Rows,
         ]);
     }
