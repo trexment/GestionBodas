@@ -31,6 +31,7 @@ class EventProviderBooking extends Model
         'final_amount',
         'final_paid_at',
         'final_payment_method',
+        'paid_by',
         'notes',
     ];
 
@@ -75,9 +76,16 @@ class EventProviderBooking extends Model
                     $table->decimal('final_amount', 10, 2)->default(0);
                     $table->date('final_paid_at')->nullable();
                     $table->string('final_payment_method', 50)->nullable();
+                    $table->string('paid_by', 100)->nullable()->default('Fran');
                     $table->text('notes')->nullable();
                     $table->timestamps();
                 });
+            } else {
+                if (!Schema::hasColumn('event_provider_bookings', 'paid_by')) {
+                    Schema::table('event_provider_bookings', function (Blueprint $table) {
+                        $table->string('paid_by', 100)->nullable()->default('Fran')->after('final_payment_method');
+                    });
+                }
             }
         } catch (\Throwable $e) {
             // Silencioso si no hay permisos de DDL en este instante

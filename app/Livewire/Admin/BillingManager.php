@@ -39,10 +39,12 @@ class BillingManager extends Component
     public string $quickMethod = 'bizum';
     public string $quickDate = '';
     public string $quickNotes = '';
+    public string $quickCollectedBy = 'Fran';
     public bool $quickGenerateReceipt = true;
 
     // Modal para Registrar / Editar Reserva y Pagos a Proveedor (Fotomatón / Plataforma 360º)
     public bool $showProviderModal = false;
+    public ?int $provBookingId = null;
     public ?int $provEventId = null;
     public string $provEventName = '';
     public string $provKey = 'logrono';
@@ -59,6 +61,7 @@ class BillingManager extends Component
     public $provFinalAmount = 0;
     public string $provFinalDate = '';
     public string $provFinalMethod = 'transfer';
+    public string $provPaidBy = 'Fran';
     public string $provNotes = '';
 
     // Modal para Registrar / Editar Compra de Material
@@ -175,6 +178,7 @@ class BillingManager extends Component
             $this->quickDate = $fb['deposit_date']
                 ? Carbon::parse($fb['deposit_date'])->format('Y-m-d')
                 : now()->format('Y-m-d');
+            $this->quickCollectedBy = (string) ($event->deposit_collected_by ?: ($fb['deposit_collected_by'] ?: 'Fran'));
             $this->quickNotes = (string) ($event->deposit_notes ?? '');
             $this->quickGenerateReceipt = true;
         } else {
@@ -183,6 +187,7 @@ class BillingManager extends Component
             $this->quickDate = $fb['final_paid_date']
                 ? Carbon::parse($fb['final_paid_date'])->format('Y-m-d')
                 : now()->format('Y-m-d');
+            $this->quickCollectedBy = (string) ($fb['final_collected_by'] ?: 'Fran');
             $this->quickNotes = '';
             $this->quickGenerateReceipt = true;
         }
@@ -243,6 +248,7 @@ class BillingManager extends Component
                 'deposit_paid_amount' => $amount,
                 'deposit_payment_method' => $this->quickMethod,
                 'deposit_paid_at' => $this->quickDate,
+                'deposit_collected_by' => $this->quickCollectedBy ?: 'Fran',
                 'deposit_notes' => $this->quickNotes,
             ]);
 
@@ -261,6 +267,7 @@ class BillingManager extends Component
                         'issue_date' => $this->quickDate,
                         'status' => 'paid',
                         'payment_method' => $this->quickMethod,
+                        'collected_by' => $this->quickCollectedBy ?: 'Fran',
                         'notes' => $noteText,
                     ]);
                 } else {
@@ -276,12 +283,13 @@ class BillingManager extends Component
                         'issue_date' => $this->quickDate,
                         'status' => 'paid',
                         'payment_method' => $this->quickMethod,
+                        'collected_by' => $this->quickCollectedBy ?: 'Fran',
                         'notes' => $noteText,
                     ]);
                 }
             }
 
-            session()->flash('message', "✅ Señal de " . number_format($amount, 2, ',', '.') . " € ({$methodLabel}) guardada en '{$event->name}'.");
+            session()->flash('message', "✅ Señal de " . number_format($amount, 2, ',', '.') . " € ({$methodLabel} - Cobrado por {$this->quickCollectedBy}) guardada en '{$event->name}'.");
         } else {
             if ($amount > 0) {
                 $nextNum = Invoice::nextNumber('recibo');
@@ -298,11 +306,12 @@ class BillingManager extends Component
                     'issue_date' => $this->quickDate,
                     'status' => 'paid',
                     'payment_method' => $this->quickMethod,
+                    'collected_by' => $this->quickCollectedBy ?: 'Fran',
                     'notes' => $noteText,
                 ]);
             }
 
-            session()->flash('message', "✅ Cobro final de " . number_format($amount, 2, ',', '.') . " € ({$methodLabel}) registrado en '{$event->name}'.");
+            session()->flash('message', "✅ Cobro final de " . number_format($amount, 2, ',', '.') . " € ({$methodLabel} - Cobrado por {$this->quickCollectedBy}) registrado en '{$event->name}'.");
         }
 
         $this->closeQuickPaymentModal();
@@ -359,9 +368,10 @@ class BillingManager extends Component
      *
      * @param int|null $eventId Identificador del evento (o null para usar el más reciente).
      * @param string $focusStep Paso inicial en el que enfocar ('deposit' o 'final').
+     * @param int|null $bookingId Identificador de una reserva específica a editar si existe.
      * @return void
      */
-    public function openProviderModal(?int $eventId = null, string $focusStep = 'deposit')
+    public function openProviderModal(?int $eventId = null, string $focusStep = 'deposit', ?int $bookingId = null)
     {
         \App\Models\EventProviderBooking::ensureTableExists();
 
@@ -375,7 +385,8 @@ class BillingManager extends Component
             return;
         }
 
-        $this->loadEventIntoProviderModal($event, $focusStep);
+        $this->provBookingId = $bookingId;
+        $this->loadEventIntoProviderModal($event, $focusStep, $bookingId);
         $this->showProviderModal = true;
     }
 
@@ -392,6 +403,7 @@ class BillingManager extends Component
         }
         $event = Event::with(['quotes.items', 'providerBookings'])->find((int) $value);
         if ($event) {
+            $this->provBookingId = null;
             $this->loadEventIntoProviderModal($event, 'deposit');
         }
     }
@@ -411,6 +423,8 @@ class BillingManager extends Component
             $this->provName = 'Vitoria (FotomatonCheese)';
         } elseif ($value === 'logrono') {
             $this->provName = 'Logroño';
+        } elseif ($value === 'artistamente') {
+            $this->provName = 'Artístamente';
         }
     }
 
@@ -419,41 +433,113 @@ class BillingManager extends Component
      *
      * @param Event $event Instancia del evento.
      * @param string $focusStep Paso a destacar ('deposit' o 'final').
+     * @param int|null $bookingId Identificador de una reserva específica.
      * @return void
      */
-    protected function loadEventIntoProviderModal(Event $event, string $focusStep = 'deposit'): void
+    protected function loadEventIntoProviderModal(Event $event, string $focusStep = 'deposit', ?int $bookingId = null): void
     {
         $prov = $event->external_provider_summary;
 
+        $booking = $bookingId
+            ? $event->providerBookings->firstWhere('id', $bookingId)
+            : $event->providerBookings->first();
+
+        $this->provBookingId = $booking?->id;
         $this->provEventId = $event->id;
         $this->provEventName = $event->name;
-        $this->provKey = (string) ($prov['provider_key'] ?: 'logrono');
-        $this->provName = (string) ($prov['provider_name'] ?: 'Logroño');
-        $this->provService = (string) ($prov['service_description'] ?: 'Fotomatón / Plataforma 360º');
-        $this->provClientPrice = (float) ($prov['client_price'] ?? 0);
+        $this->provKey = (string) ($booking?->provider_key ?: ($prov['provider_key'] ?: 'logrono'));
+        $this->provName = (string) ($booking?->provider_name ?: ($prov['provider_name'] ?: 'Logroño'));
+        $this->provService = (string) ($booking?->service_description ?: ($prov['service_description'] ?: 'Fotomatón / Plataforma 360º'));
+        $this->provClientPrice = (float) ($booking ? $booking->client_price : ($prov['client_price'] ?? 0));
         $this->provDetectedItemsText = (string) ($prov['detected_services_with_prices'] ?: ($prov['detected_services'] ?? ''));
-        $this->provTotalCost = (float) ($prov['provider_total_cost'] > 0 ? $prov['provider_total_cost'] : ($prov['client_price'] > 0 ? $prov['client_price'] : 0));
+        $this->provTotalCost = (float) ($booking ? $booking->provider_total_cost : ($prov['provider_total_cost'] > 0 ? $prov['provider_total_cost'] : ($prov['client_price'] > 0 ? $prov['client_price'] : 0)));
 
-        $this->provDepositPaid = $focusStep === 'deposit' ? true : (bool) $prov['deposit_paid'];
-        $this->provDepositAmount = $prov['deposit_amount'] > 0 ? (float) $prov['deposit_amount'] : (float) ($prov['suggested_deposit'] ?: 100);
-        $this->provDepositDate = $prov['deposit_date'] ? Carbon::parse($prov['deposit_date'])->format('Y-m-d') : now()->format('Y-m-d');
-        $this->provDepositMethod = (string) ($prov['deposit_method'] ?: 'bizum');
+        $depPaid = $booking ? (bool)$booking->deposit_paid : (bool)$prov['deposit_paid'];
+        $depAmt = $booking ? (float)$booking->deposit_amount : (float)$prov['deposit_amount'];
+        $this->provDepositPaid = $focusStep === 'deposit' ? true : $depPaid;
+        $this->provDepositAmount = $depAmt > 0 ? $depAmt : (float) ($prov['suggested_deposit'] ?: 100);
+        $this->provDepositDate = ($booking?->deposit_paid_at ?: $prov['deposit_date']) ? Carbon::parse($booking?->deposit_paid_at ?: $prov['deposit_date'])->format('Y-m-d') : now()->format('Y-m-d');
+        $this->provDepositMethod = (string) (($booking?->deposit_payment_method ?: $prov['deposit_method']) ?: 'bizum');
+
+        $finPaid = $booking ? (bool)$booking->final_paid : (bool)$prov['final_paid'];
+        $finAmt = $booking ? (float)$booking->final_amount : (float)($prov['final_amount'] ?? 0);
 
         if ($focusStep === 'final') {
             $this->provFinalPaid = true;
             $alreadyDep = $this->provDepositPaid ? (float) $this->provDepositAmount : 0.0;
             $rem = max(0.0, round((float) $this->provTotalCost - $alreadyDep, 2));
-            $this->provFinalAmount = $prov['final_amount'] > 0 ? (float) $prov['final_amount'] : $rem;
-            $this->provFinalDate = $prov['final_date'] ? Carbon::parse($prov['final_date'])->format('Y-m-d') : now()->format('Y-m-d');
-            $this->provFinalMethod = (string) ($prov['final_method'] ?: 'transfer');
+            $this->provFinalAmount = $finAmt > 0 ? $finAmt : $rem;
+            $this->provFinalDate = ($booking?->final_paid_at ?: $prov['final_date']) ? Carbon::parse($booking?->final_paid_at ?: $prov['final_date'])->format('Y-m-d') : now()->format('Y-m-d');
+            $this->provFinalMethod = (string) (($booking?->final_payment_method ?: $prov['final_method']) ?: 'transfer');
         } else {
-            $this->provFinalPaid = (bool) $prov['final_paid'];
-            $this->provFinalAmount = (float) ($prov['final_amount'] ?? 0);
-            $this->provFinalDate = $prov['final_date'] ? Carbon::parse($prov['final_date'])->format('Y-m-d') : now()->format('Y-m-d');
-            $this->provFinalMethod = (string) ($prov['final_method'] ?: 'transfer');
+            $this->provFinalPaid = $finPaid;
+            $this->provFinalAmount = $finAmt;
+            $this->provFinalDate = ($booking?->final_paid_at ?: $prov['final_date']) ? Carbon::parse($booking?->final_paid_at ?: $prov['final_date'])->format('Y-m-d') : now()->format('Y-m-d');
+            $this->provFinalMethod = (string) (($booking?->final_payment_method ?: $prov['final_method']) ?: 'transfer');
         }
 
-        $this->provNotes = (string) ($prov['notes'] ?? '');
+        $this->provPaidBy = (string) ($booking?->paid_by ?: ($prov['paid_by'] ?: 'Fran'));
+        $this->provNotes = (string) ($booking?->notes ?: ($prov['notes'] ?? ''));
+    }
+
+    /**
+     * Aplica un preset rápido para rellenar proveedor y concepto (Artístamente, Fotomatón, etc.).
+     *
+     * @param string $preset Clave del preset ('artistamente', 'photobooth', 'photobooth_vitoria').
+     * @return void
+     */
+    public function applyProviderPreset(string $preset): void
+    {
+        if ($preset === 'artistamente') {
+            $this->provKey = 'artistamente';
+            $this->provName = 'Artístamente';
+            $this->provService = 'Alta en plataforma / Gestión de artistas';
+            $this->provClientPrice = 0.0;
+            $this->provTotalCost = 50.0;
+            $this->provDepositPaid = false;
+            $this->provDepositAmount = 0.0;
+            $this->provFinalPaid = true;
+            $this->provFinalAmount = 50.0;
+            $this->provFinalDate = now()->format('Y-m-d');
+            $this->provFinalMethod = 'transfer';
+            $this->provPaidBy = 'Fran';
+        } elseif ($preset === 'photobooth_vitoria') {
+            $this->provKey = 'vitoria';
+            $this->provName = 'Vitoria (FotomatonCheese)';
+            $this->provService = 'Fotomatón / Plataforma 360º';
+            $this->syncProviderFromQuote();
+        } elseif ($preset === 'photobooth') {
+            $this->provKey = 'logrono';
+            $this->provName = 'Logroño';
+            $this->provService = 'Fotomatón / Plataforma 360º';
+            $this->syncProviderFromQuote();
+        }
+    }
+
+    /**
+     * Prepara el formulario del modal para añadir un nuevo proveedor adicional al evento.
+     *
+     * @return void
+     */
+    public function resetProviderModalForNewBooking(): void
+    {
+        $this->provBookingId = null;
+        $this->provKey = 'artistamente';
+        $this->provName = 'Artístamente';
+        $this->provService = 'Alta en plataforma / Gestión de artistas';
+        $this->provClientPrice = 0.0;
+        $this->provDetectedItemsText = '';
+        $this->provTotalCost = 50.0;
+        $this->provDepositPaid = false;
+        $this->provDepositAmount = 0.0;
+        $this->provDepositDate = now()->format('Y-m-d');
+        $this->provDepositMethod = 'transfer';
+        $this->provFinalPaid = true;
+        $this->provFinalAmount = 50.0;
+        $this->provFinalDate = now()->format('Y-m-d');
+        $this->provFinalMethod = 'transfer';
+        $this->provPaidBy = 'Fran';
+        $this->provNotes = '';
     }
 
     /**
@@ -505,6 +591,7 @@ class BillingManager extends Component
     public function closeProviderModal()
     {
         $this->showProviderModal = false;
+        $this->provBookingId = null;
     }
 
     /**
@@ -548,10 +635,14 @@ class BillingManager extends Component
             'final_amount' => $finAmt,
             'final_paid_at' => ($this->provFinalPaid && $finAmt > 0 && !empty($this->provFinalDate)) ? $this->provFinalDate : null,
             'final_payment_method' => ($this->provFinalPaid && $finAmt > 0) ? $this->provFinalMethod : null,
+            'paid_by' => $this->provPaidBy ?: 'Fran',
             'notes' => trim($this->provNotes) ?: null,
         ];
 
-        $existing = $event->providerBookings->first();
+        $existing = $this->provBookingId
+            ? $event->providerBookings()->find($this->provBookingId)
+            : $event->providerBookings->first();
+
         if ($existing) {
             $existing->update($data);
         } else {
@@ -559,6 +650,8 @@ class BillingManager extends Component
         }
 
         $this->closeProviderModal();
+        session()->flash('message', "📸 Gasto y pagos de proveedor ({$data['provider_name']} - Pagado por {$data['paid_by']}) guardados en '{$event->name}'.");
+    }
         session()->flash('message', "📸 Reserva y pagos de Fotomatón / 360º actualizados en '{$event->name}'.");
     }
 

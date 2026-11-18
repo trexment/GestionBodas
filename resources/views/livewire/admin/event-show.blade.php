@@ -2479,19 +2479,30 @@
                                         @if($evProvSummary['has_external_service'])
                                             <div class="p-3 rounded-xl border {{ $evProvSummary['status'] === 'paid' ? 'bg-emerald-50/60 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800' : ($evProvSummary['status'] === 'deposit_paid' ? 'bg-purple-50/60 dark:bg-purple-950/30 border-purple-200 dark:border-purple-800' : 'bg-amber-50/60 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800') }} space-y-2 mt-1">
                                                 <div class="flex flex-wrap items-center justify-between gap-2">
-                                                    <div class="flex items-center gap-1.5">
+                                                    <div class="flex flex-wrap items-center gap-1.5">
                                                         <span class="text-sm">📸</span>
                                                         <span class="text-[11px] font-black uppercase tracking-wider text-slate-800 dark:text-white">
                                                             Reserva a Proveedor ({{ $evProvSummary['provider_name'] }}): {{ $evProvSummary['service_description'] }}
                                                         </span>
+                                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-black {{ $evProvSummary['paid_by'] === 'Fran' ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/60 dark:text-indigo-200' : ($evProvSummary['paid_by'] === 'Miguel' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/60 dark:text-purple-200' : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-200') }}">
+                                                            👤 Pagado por: {{ $evProvSummary['paid_by'] }}
+                                                        </span>
                                                     </div>
-                                                    <div class="flex items-center gap-1.5">
+                                                    <div class="flex flex-wrap items-center gap-1.5">
+                                                        <button
+                                                            type="button"
+                                                            wire:click="resetProviderBookingForNew"
+                                                            class="px-2 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold transition cursor-pointer shadow-2xs"
+                                                            title="Añadir otro gasto o proveedor externo (ej. Artístamente)"
+                                                        >
+                                                            ➕ Otro Proveedor
+                                                        </button>
                                                         <button
                                                             type="button"
                                                             wire:click="openProviderBookingModal('deposit')"
                                                             class="px-2.5 py-1 rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-[10px] font-bold transition cursor-pointer shadow-2xs"
                                                         >
-                                                            {{ $evProvSummary['deposit_paid'] ? '✏️ Editar Pagos Proveedor' : '+ Anotar Señal Proveedor' }}
+                                                            {{ $evProvSummary['deposit_paid'] ? '✏️ Editar Pagos' : '+ Anotar Señal' }}
                                                         </button>
                                                         @if($evProvSummary['deposit_paid'] && $evProvSummary['pending_amount'] > 0)
                                                             <button
@@ -2561,16 +2572,47 @@
                                                         @endif
                                                     </div>
                                                 </div>
+
+                                                @if($event->providerBookings && $event->providerBookings->count() > 1)
+                                                    <div class="mt-2 space-y-1.5 pt-2 border-t border-slate-200 dark:border-slate-800">
+                                                        <span class="text-[10px] font-black uppercase text-slate-400 block">Desglose de Proveedores Asociados ({{ $event->providerBookings->count() }}):</span>
+                                                        <div class="space-y-1">
+                                                            @foreach($event->providerBookings as $bk)
+                                                                <div class="flex items-center justify-between p-2 rounded-lg bg-white/80 dark:bg-slate-900/80 text-[11px] border border-slate-200 dark:border-slate-800">
+                                                                    <div class="flex flex-wrap items-center gap-2">
+                                                                        <span class="font-black text-slate-800 dark:text-slate-200">{{ $bk->provider_name }}:</span>
+                                                                        <span class="text-slate-500">{{ $bk->service_description }}</span>
+                                                                        <span class="text-[10px] px-1.5 py-0.5 rounded font-bold {{ ($bk->paid_by ?? 'Fran') === 'Fran' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300' : (($bk->paid_by ?? '') === 'Miguel' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300') }}">
+                                                                            👤 {{ $bk->paid_by ?: 'Fran' }}
+                                                                        </span>
+                                                                    </div>
+                                                                    <div class="flex items-center gap-2">
+                                                                        <span class="font-black text-slate-700 dark:text-slate-300">{{ number_format($bk->provider_total_cost, 2, ',', '.') }} €</span>
+                                                                        <button type="button" wire:click="openProviderBookingModal('deposit', {{ $bk->id }})" class="text-[10px] font-bold text-indigo-600 hover:underline cursor-pointer">✏️ Editar</button>
+                                                                    </div>
+                                                                </div>
+                                                            @endforeach
+                                                        </div>
+                                                    </div>
+                                                @endif
                                             </div>
                                         @else
-                                            <div class="flex justify-end pt-1">
+                                            <div class="flex flex-wrap items-center justify-end gap-2 pt-1">
                                                 <button
                                                     type="button"
                                                     wire:click="openProviderBookingModal('deposit')"
                                                     class="text-[11px] font-bold text-purple-600 dark:text-purple-400 hover:underline cursor-pointer flex items-center gap-1"
                                                 >
                                                     <span>📸</span>
-                                                    <span>+ Anotar reserva / pago a proveedor (Fotomatón / 360º)</span>
+                                                    <span>+ Anotar reserva / proveedor (Fotomatón / 360º)</span>
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    wire:click="resetProviderBookingForNew"
+                                                    class="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer flex items-center gap-1"
+                                                >
+                                                    <span>🎭</span>
+                                                    <span>+ Gasto Artístamente / Otro</span>
                                                 </button>
                                             </div>
                                         @endif
@@ -8575,6 +8617,28 @@
                     @error('deposit_method_input') <span class="text-rose-600 text-[11px] block font-bold mt-1">{{ $message }}</span> @enderror
                 </div>
 
+                <!-- Quién Cobró la Señal (Cuentas Separadas) -->
+                <div>
+                    <label class="block font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[11px] mb-1.5">
+                        ¿Quién cobró esta señal? (Cuenta receptora) *
+                    </label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <label class="flex items-center justify-center gap-1.5 p-2 rounded-xl border text-center cursor-pointer transition {{ $deposit_collected_by_input === 'Fran' ? 'bg-indigo-50 border-indigo-500 text-indigo-900 font-black ring-1 ring-indigo-500 dark:bg-indigo-950/60 dark:text-indigo-200' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-300' }}">
+                            <input type="radio" wire:model.live="deposit_collected_by_input" value="Fran" class="sr-only">
+                            <span>👤 Fran</span>
+                        </label>
+                        <label class="flex items-center justify-center gap-1.5 p-2 rounded-xl border text-center cursor-pointer transition {{ $deposit_collected_by_input === 'Miguel' ? 'bg-purple-50 border-purple-500 text-purple-900 font-black ring-1 ring-purple-500 dark:bg-purple-950/60 dark:text-purple-200' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-300' }}">
+                            <input type="radio" wire:model.live="deposit_collected_by_input" value="Miguel" class="sr-only">
+                            <span>👤 Miguel</span>
+                        </label>
+                        <label class="flex items-center justify-center gap-1.5 p-2 rounded-xl border text-center cursor-pointer transition {{ $deposit_collected_by_input === 'Cuenta Conjunta' ? 'bg-emerald-50 border-emerald-500 text-emerald-900 font-black ring-1 ring-emerald-500 dark:bg-emerald-950/60 dark:text-emerald-200' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-300' }}">
+                            <input type="radio" wire:model.live="deposit_collected_by_input" value="Cuenta Conjunta" class="sr-only">
+                            <span>🏦 Conjunta</span>
+                        </label>
+                    </div>
+                    <span class="text-[10px] text-slate-400 block mt-1">Permite el arqueo automático entre cuentas de socios en el panel de facturación.</span>
+                </div>
+
                 <!-- Fecha del Pago -->
                 <div>
                     <label class="block font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[11px] mb-1">
@@ -8726,6 +8790,27 @@
                         @error('final_payment_method') <span class="text-rose-600 text-[11px] block font-bold mt-1">{{ $message }}</span> @enderror
                     </div>
 
+                    <!-- Quién Cobró la Liquidación (Cuentas Separadas) -->
+                    <div>
+                        <label class="block font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[11px] mb-1.5">
+                            ¿Quién cobró este dinero? (Cuenta o Efectivo en mano) *
+                        </label>
+                        <div class="grid grid-cols-3 gap-2">
+                            <label class="flex items-center justify-center gap-1.5 p-2 rounded-xl border text-center cursor-pointer transition {{ $final_payment_collected_by_input === 'Fran' ? 'bg-indigo-50 border-indigo-500 text-indigo-900 font-black ring-1 ring-indigo-500 dark:bg-indigo-950/60 dark:text-indigo-200' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-300' }}">
+                                <input type="radio" wire:model.live="final_payment_collected_by_input" value="Fran" class="sr-only">
+                                <span>👤 Fran</span>
+                            </label>
+                            <label class="flex items-center justify-center gap-1.5 p-2 rounded-xl border text-center cursor-pointer transition {{ $final_payment_collected_by_input === 'Miguel' ? 'bg-purple-50 border-purple-500 text-purple-900 font-black ring-1 ring-purple-500 dark:bg-purple-950/60 dark:text-purple-200' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-300' }}">
+                                <input type="radio" wire:model.live="final_payment_collected_by_input" value="Miguel" class="sr-only">
+                                <span>👤 Miguel</span>
+                            </label>
+                            <label class="flex items-center justify-center gap-1.5 p-2 rounded-xl border text-center cursor-pointer transition {{ $final_payment_collected_by_input === 'Cuenta Conjunta' ? 'bg-emerald-50 border-emerald-500 text-emerald-900 font-black ring-1 ring-emerald-500 dark:bg-emerald-950/60 dark:text-emerald-200' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-300' }}">
+                                <input type="radio" wire:model.live="final_payment_collected_by_input" value="Cuenta Conjunta" class="sr-only">
+                                <span>🏦 Conjunta</span>
+                            </label>
+                        </div>
+                    </div>
+
                     <!-- Fecha de Cobro -->
                     <div>
                         <label class="block font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
@@ -8809,6 +8894,39 @@
             </div>
 
             <div class="space-y-4 text-xs">
+                <!-- Plantillas Rápidas -->
+                <div class="p-3 rounded-2xl bg-purple-50/70 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 space-y-2">
+                    <div class="flex items-center justify-between text-[11px] font-black text-purple-900 dark:text-purple-300">
+                        <span>⚡ Plantillas Rápidas de Gasto / Proveedor:</span>
+                        <button type="button" wire:click="resetProviderBookingForNew" class="text-[10px] text-purple-700 dark:text-purple-400 font-bold hover:underline cursor-pointer">
+                            ➕ Añadir Otro Gasto Adicional
+                        </button>
+                    </div>
+                    <div class="flex flex-wrap gap-1.5">
+                        <button
+                            type="button"
+                            wire:click="applyEventProviderPreset('artistamente')"
+                            class="px-2.5 py-1 rounded-xl border text-[11px] font-bold transition cursor-pointer {{ $prov_key === 'artistamente' ? 'bg-purple-600 text-white border-purple-600' : 'bg-white dark:bg-slate-900 border-purple-300 text-purple-800 dark:text-purple-300 hover:bg-purple-100' }}"
+                        >
+                            🎭 Artístamente (Alta / Gestión)
+                        </button>
+                        <button
+                            type="button"
+                            wire:click="applyEventProviderPreset('photobooth')"
+                            class="px-2.5 py-1 rounded-xl border text-[11px] font-bold transition cursor-pointer {{ $prov_key === 'logrono' ? 'bg-purple-600 text-white border-purple-600' : 'bg-white dark:bg-slate-900 border-slate-300 text-slate-700 dark:text-slate-300 hover:bg-slate-100' }}"
+                        >
+                            🏢 Fotomatón Logroño
+                        </button>
+                        <button
+                            type="button"
+                            wire:click="applyEventProviderPreset('photobooth_vitoria')"
+                            class="px-2.5 py-1 rounded-xl border text-[11px] font-bold transition cursor-pointer {{ $prov_key === 'vitoria' ? 'bg-purple-600 text-white border-purple-600' : 'bg-white dark:bg-slate-900 border-slate-300 text-slate-700 dark:text-slate-300 hover:bg-slate-100' }}"
+                        >
+                            🧀 Fotomatón Vitoria (Cheese)
+                        </button>
+                    </div>
+                </div>
+
                 @if($prov_client_price > 0 || !empty($prov_detected_items_text))
                     <div class="p-3 rounded-2xl bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 flex flex-wrap items-center justify-between gap-2">
                         <div>
@@ -8836,12 +8954,15 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                         <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Empresa Proveedora *</label>
-                        <div class="flex gap-1.5 mb-1.5">
+                        <div class="flex flex-wrap gap-1.5 mb-1.5">
                             <button type="button" wire:click="$set('prov_key', 'logrono')" class="px-2.5 py-1 rounded-lg text-[11px] font-bold border cursor-pointer {{ $prov_key === 'logrono' ? 'bg-purple-600 text-white border-purple-600' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200' }}">
                                 🏢 Logroño
                             </button>
                             <button type="button" wire:click="$set('prov_key', 'vitoria')" class="px-2.5 py-1 rounded-lg text-[11px] font-bold border cursor-pointer {{ $prov_key === 'vitoria' ? 'bg-purple-600 text-white border-purple-600' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200' }}">
                                 🧀 Vitoria (Cheese)
+                            </button>
+                            <button type="button" wire:click="applyEventProviderPreset('artistamente')" class="px-2.5 py-1 rounded-lg text-[11px] font-bold border cursor-pointer {{ $prov_key === 'artistamente' ? 'bg-purple-600 text-white border-purple-600' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200' }}">
+                                🎭 Artístamente
                             </button>
                         </div>
                         <input type="text" wire:model="prov_name" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 p-2 font-bold">
@@ -8859,8 +8980,40 @@
                         <button type="button" wire:click="$set('prov_service', 'Fotomatón')" class="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[10px] font-bold hover:bg-purple-100 cursor-pointer">📸 Fotomatón</button>
                         <button type="button" wire:click="$set('prov_service', 'Plataforma 360º')" class="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[10px] font-bold hover:bg-purple-100 cursor-pointer">🎥 Plataforma 360º</button>
                         <button type="button" wire:click="$set('prov_service', 'Pack Dúo: Fotomatón + Plataforma 360º')" class="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[10px] font-bold hover:bg-purple-100 cursor-pointer">✨ Pack Dúo (Fotomatón + 360º)</button>
+                        <button type="button" wire:click="$set('prov_service', 'Alta en plataforma / Gestión de artistas')" class="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[10px] font-bold hover:bg-purple-100 cursor-pointer">🎭 Artístamente</button>
                     </div>
                     <input type="text" wire:model="prov_service" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 p-2.5 font-semibold">
+                </div>
+
+                <!-- Quién pagó a este proveedor de su propio bolsillo -->
+                <div>
+                    <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">¿Quién pagó este gasto/proveedor de su bolsillo? *</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button
+                            type="button"
+                            wire:click="$set('prov_paid_by', 'Fran')"
+                            class="p-2.5 rounded-xl border text-center font-bold text-xs transition cursor-pointer {{ $prov_paid_by === 'Fran' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100' }}"
+                        >
+                            👤 Fran
+                        </button>
+                        <button
+                            type="button"
+                            wire:click="$set('prov_paid_by', 'Miguel')"
+                            class="p-2.5 rounded-xl border text-center font-bold text-xs transition cursor-pointer {{ $prov_paid_by === 'Miguel' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100' }}"
+                        >
+                            👤 Miguel
+                        </button>
+                        <button
+                            type="button"
+                            wire:click="$set('prov_paid_by', 'Caja Común / Empresa')"
+                            class="p-2.5 rounded-xl border text-center font-bold text-xs transition cursor-pointer {{ $prov_paid_by === 'Caja Común / Empresa' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100' }}"
+                        >
+                            🏦 Caja Común
+                        </button>
+                    </div>
+                    <p class="text-[10px] text-slate-400 mt-1">
+                        * Si un socio pagó al proveedor de su bolsillo (ej. alta en Artístamente), se le suma como reembolso a percibir en el arqueo de socios.
+                    </p>
                 </div>
 
                 <!-- 1º Pago: Señal -->

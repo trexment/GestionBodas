@@ -326,6 +326,9 @@
                         @if($fb['deposit_paid'] && $fb['deposit_amount'] > 0)
                             <span class="text-green">{{ number_format($fb['deposit_amount'], 2, ',', '.') }} €</span>
                             — <strong>{{ $fb['deposit_method_label'] }}</strong>
+                            @if(!empty($fb['deposit_collected_by']))
+                                <span style="font-size: 6.8pt; color: #4338ca; font-weight: bold;">[{{ $fb['deposit_collected_by'] }}]</span>
+                            @endif
                             @if($fb['deposit_date'])
                                 <span class="text-muted">({{ \Carbon\Carbon::parse($fb['deposit_date'])->format('d/m/Y') }})</span>
                             @endif
@@ -338,6 +341,9 @@
                             <span class="text-blue">{{ number_format($fb['final_paid_amount'], 2, ',', '.') }} €</span>
                             @if($fb['final_method_label'])
                                 — <strong>{{ $fb['final_method_label'] }}</strong>
+                            @endif
+                            @if(!empty($fb['final_collected_by']))
+                                <span style="font-size: 6.8pt; color: #4338ca; font-weight: bold;">[{{ $fb['final_collected_by'] }}]</span>
                             @endif
                             @if($fb['final_paid_date'])
                                 <span class="text-muted">({{ \Carbon\Carbon::parse($fb['final_paid_date'])->format('d/m/Y') }})</span>
@@ -426,7 +432,12 @@
                             {{ $item['client_name'] }}
                             @if(!empty($item['client_dni'])) <span class="text-muted">({{ $item['client_dni'] }})</span> @endif
                         </td>
-                        <td class="font-bold">{{ $item['method_label'] }}</td>
+                        <td class="font-bold">
+                            {{ $item['method_label'] }}
+                            @if(!empty($item['collected_by']))
+                                <div style="font-size: 6.8pt; color: #4338ca; font-weight: bold;">👤 {{ $item['collected_by'] }}</div>
+                            @endif
+                        </td>
                         <td class="text-right text-muted">
                             @if(($item['document_type'] ?? '') === 'factura')
                                 {{ number_format($item['base_amount'], 2, ',', '.') }} € + {{ number_format($item['tax_amount'], 2, ',', '.') }} €
@@ -476,6 +487,9 @@
                         <td>
                             <div class="font-bold">{{ $prov['provider_name'] }}</div>
                             <div class="text-muted">{{ $prov['service_description'] }}</div>
+                            @if(!empty($prov['paid_by']))
+                                <div style="font-size: 6.8pt; color: #4338ca; font-weight: bold;">👤 Pagado por: {{ $prov['paid_by'] }}</div>
+                            @endif
                         </td>
                         <td class="text-right font-bold" style="color: #7e22ce;">
                             {{ ($prov['client_price'] ?? 0) > 0 ? number_format($prov['client_price'], 2, ',', '.') . ' €' : '—' }}
@@ -610,7 +624,7 @@
                             <th>Socio</th>
                             <th>Cuota %</th>
                             <th class="text-right">Beneficio Neto</th>
-                            <th class="text-right">Reembolso Material</th>
+                            <th class="text-right">Reembolsos Gastos</th>
                             <th class="text-right">TOTAL A PERCIBIR</th>
                         </tr>
                     </thead>
@@ -620,16 +634,20 @@
                         @endphp
                         @foreach($settlementPartners as $p)
                             @php
+                                $reimb = (float)($p['total_reimbursement'] ?? $p['reimbursement']);
                                 $sumB += (float)$p['profit_share'];
-                                $sumR += (float)$p['reimbursement'];
+                                $sumR += $reimb;
                                 $sumF += (float)$p['total_to_receive'];
                             @endphp
                             <tr>
                                 <td class="font-bold" style="color: #4338ca;">{{ $p['name'] }}</td>
                                 <td>{{ number_format($p['percentage'], 2, ',', '.') }}%</td>
                                 <td class="text-right">{{ number_format($p['profit_share'], 2, ',', '.') }} €</td>
-                                <td class="text-right font-bold" style="color: {{ $p['reimbursement'] > 0 ? '#b45309' : '#94a3b8' }};">
-                                    {{ $p['reimbursement'] > 0 ? '+' . number_format($p['reimbursement'], 2, ',', '.') . ' €' : '—' }}
+                                <td class="text-right font-bold" style="color: {{ $reimb > 0 ? '#b45309' : '#94a3b8' }};">
+                                    {{ $reimb > 0 ? '+' . number_format($reimb, 2, ',', '.') . ' €' : '—' }}
+                                    @if(!empty($p['provider_reimbursement']) && $p['provider_reimbursement'] > 0)
+                                        <div style="font-size: 6pt; color: #6b21a8; font-weight: normal;">(Prov: {{ number_format($p['provider_reimbursement'], 2, ',', '.') }}€)</div>
+                                    @endif
                                 </td>
                                 <td class="text-right font-bold text-green" style="font-size: 8.5pt;">
                                     {{ number_format($p['total_to_receive'], 2, ',', '.') }} €
@@ -647,5 +665,49 @@
             </td>
         </tr>
     </table>
+
+    <!-- BLOQUE AUDITOR DE ARQUEO ENTRE CUENTAS SEPARADAS Y TRANSFERENCIA ENTRE SOCIOS -->
+    @if(!empty($settlementSummary['transfer_instruction']))
+        <div style="margin-top: 6px; padding: 6px 10px; background-color: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 6px;">
+            <div style="font-size: 8pt; font-weight: bold; color: #1e293b; margin-bottom: 4px;">
+                🏦 ARQUEO DE CUENTAS BANCARIAS SEPARADAS & AJUSTE ENTRE SOCIOS:
+            </div>
+            <table class="data-table" style="margin-bottom: 5px;">
+                <thead>
+                    <tr>
+                        <th style="width: 16%;">Socio</th>
+                        <th style="width: 18%;" class="text-right">Cobrado en Cuenta / Mano</th>
+                        <th style="width: 18%;" class="text-right">Reembolsos Gastos</th>
+                        <th style="width: 16%;" class="text-right">Cuota Beneficio</th>
+                        <th style="width: 16%;" class="text-right">Total a Percibir</th>
+                        <th style="width: 16%;" class="text-right">Saldo de Ajuste</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($settlementPartners as $p)
+                        <tr>
+                            <td class="font-bold" style="color: #4338ca;">{{ $p['name'] }}</td>
+                            <td class="text-right font-bold">{{ number_format($p['collected_in_hand'] ?? 0, 2, ',', '.') }} €</td>
+                            <td class="text-right" style="color: #b45309;">+{{ number_format($p['total_reimbursement'] ?? ($p['reimbursement'] ?? 0), 2, ',', '.') }} €</td>
+                            <td class="text-right">{{ number_format($p['profit_share'] ?? 0, 2, ',', '.') }} €</td>
+                            <td class="text-right font-bold text-green">{{ number_format($p['total_to_receive'] ?? 0, 2, ',', '.') }} €</td>
+                            <td class="text-right font-bold" style="color: {{ ($p['balance_diff'] ?? 0) > 0 ? '#b91c1c' : '#15803d' }};">
+                                {{ ($p['balance_diff'] ?? 0) > 0 ? '+' : '' }}{{ number_format($p['balance_diff'] ?? 0, 2, ',', '.') }} €
+                                <div style="font-size: 6pt; font-weight: normal; color: #64748b;">
+                                    {{ ($p['balance_diff'] ?? 0) > 0 ? 'Cobró de más' : 'Cobró de menos' }}
+                                </div>
+                            </td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+            <div style="padding: 5px 8px; background-color: #ecfdf5; border: 1px solid #6ee7b7; border-radius: 4px; font-size: 7.5pt; font-weight: bold; color: #065f46;">
+                👉 INSTRUCCIÓN DE AJUSTE BANCARIO: {{ $settlementSummary['transfer_instruction'] }}
+                @if(!empty($settlementSummary['joint_collected']) && $settlementSummary['joint_collected'] > 0)
+                    <span style="font-weight: normal; color: #047857;">&bull; En Cuenta Conjunta: {{ number_format($settlementSummary['joint_collected'], 2, ',', '.') }} €</span>
+                @endif
+            </div>
+        </div>
+    @endif
 </body>
 </html>

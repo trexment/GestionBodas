@@ -131,6 +131,7 @@ class EventShow extends Component
     public $deposit_amount_input;
     public $deposit_method_input = 'bizum'; // bizum, transfer, cash, card, other
     public $deposit_date_input;
+    public $deposit_collected_by_input = 'Fran';
     public $deposit_notes_input = '';
     public $generate_receipt_checkbox = true;
     public $target_status = 'confirmed';
@@ -140,11 +141,13 @@ class EventShow extends Component
     public $final_payment_amount;
     public $final_payment_method = 'cash'; // cash, bizum, transfer, card, other
     public $final_payment_date;
+    public $final_payment_collected_by_input = 'Fran';
     public $final_payment_notes = '';
     public $generate_final_receipt_checkbox = true;
 
-    // Reserva y Pagos a Empresa Proveedora (Fotomatón / Plataforma 360º)
+    // Reserva y Pagos a Empresa Proveedora (Fotomatón / Plataforma 360º / Artístamente)
     public $showProviderBookingModal = false;
+    public $prov_booking_id = null;
     public $prov_key = 'logrono';
     public $prov_name = 'Logroño';
     public $prov_service = 'Fotomatón / Plataforma 360º';
@@ -159,6 +162,7 @@ class EventShow extends Component
     public $prov_final_amount = 0;
     public $prov_final_date;
     public $prov_final_method = 'transfer';
+    public $prov_paid_by = 'Fran';
     public $prov_notes = '';
 
     // Presupuestos & Packs
@@ -1161,6 +1165,7 @@ class EventShow extends Component
             $this->deposit_amount_input = (float)$this->event->deposit_paid_amount;
             $this->deposit_method_input = $this->event->deposit_payment_method ?: 'bizum';
             $this->deposit_date_input = $this->event->deposit_paid_at ? \Carbon\Carbon::parse($this->event->deposit_paid_at)->format('Y-m-d') : now()->format('Y-m-d');
+            $this->deposit_collected_by_input = (string) ($this->event->deposit_collected_by ?: 'Fran');
             $this->deposit_notes_input = $this->event->deposit_notes ?: '';
         } else {
             // Sugerir la señal estipulada en la última propuesta
@@ -1181,6 +1186,7 @@ class EventShow extends Component
             }
             $this->deposit_method_input = 'bizum';
             $this->deposit_date_input = now()->format('Y-m-d');
+            $this->deposit_collected_by_input = (string) ($this->event->deposit_collected_by ?: 'Fran');
             $this->deposit_notes_input = '';
         }
 
@@ -1223,6 +1229,7 @@ class EventShow extends Component
             'deposit_paid_amount' => $amount,
             'deposit_payment_method' => $this->deposit_method_input,
             'deposit_paid_at' => $this->deposit_date_input,
+            'deposit_collected_by' => $this->deposit_collected_by_input ?: 'Fran',
             'deposit_notes' => $this->deposit_notes_input,
         ]);
 
@@ -1252,6 +1259,7 @@ class EventShow extends Component
                     'issue_date' => $this->deposit_date_input,
                     'status' => 'paid',
                     'payment_method' => $this->deposit_method_input,
+                    'collected_by' => $this->deposit_collected_by_input ?: 'Fran',
                     'notes' => $noteText,
                 ]);
             } else {
@@ -1267,6 +1275,7 @@ class EventShow extends Component
                     'issue_date' => $this->deposit_date_input,
                     'status' => 'paid',
                     'payment_method' => $this->deposit_method_input,
+                    'collected_by' => $this->deposit_collected_by_input ?: 'Fran',
                     'notes' => $noteText,
                 ]);
             }
@@ -1315,6 +1324,7 @@ class EventShow extends Component
         $this->final_payment_amount = $remaining;
         $this->final_payment_method = 'cash';
         $this->final_payment_date = now()->format('Y-m-d');
+        $this->final_payment_collected_by_input = 'Fran';
         $this->final_payment_notes = '';
         $this->generate_final_receipt_checkbox = true;
         $this->showFinalPaymentModal = true;
@@ -1376,6 +1386,7 @@ class EventShow extends Component
                 'issue_date' => $this->final_payment_date,
                 'status' => 'paid',
                 'payment_method' => $this->final_payment_method,
+                'collected_by' => $this->final_payment_collected_by_input ?: 'Fran',
                 'notes' => "Liquidación final del evento cobrada vía {$methodLabel} el " . \Carbon\Carbon::parse($this->final_payment_date)->format('d/m/Y') . ($this->final_payment_notes ? " ({$this->final_payment_notes})" : ""),
             ]);
             $this->event->load('invoices');
@@ -1388,41 +1399,109 @@ class EventShow extends Component
     }
 
     /**
-     * Abre el modal de gestión de reserva y pagos a la empresa proveedora externa (Fotomatón / Plataforma 360º),
+     * Abre el modal de gestión de reserva y pagos a la empresa proveedora externa (Fotomatón / Plataforma 360º / Artístamente),
      * precargando los servicios detectados en el presupuesto y los pagos de señal o liquidación.
      */
-    public function openProviderBookingModal(string $focusStep = 'deposit')
+    public function openProviderBookingModal(string $focusStep = 'deposit', ?int $bookingId = null)
     {
         \App\Models\EventProviderBooking::ensureTableExists();
+        $this->event->load('providerBookings');
         $prov = $this->event->external_provider_summary;
 
-        $this->prov_key = (string) ($prov['provider_key'] ?: 'logrono');
-        $this->prov_name = (string) ($prov['provider_name'] ?: 'Logroño');
-        $this->prov_service = (string) ($prov['service_description'] ?: 'Fotomatón / Plataforma 360º');
-        $this->prov_client_price = (float) ($prov['client_price'] ?? 0);
-        $this->prov_detected_items_text = (string) ($prov['detected_services_with_prices'] ?: ($prov['detected_services'] ?? ''));
-        $this->prov_total_cost = (float) ($prov['provider_total_cost'] > 0 ? $prov['provider_total_cost'] : ($prov['client_price'] > 0 ? $prov['client_price'] : 0));
+        $booking = $bookingId
+            ? $this->event->providerBookings->firstWhere('id', $bookingId)
+            : $this->event->providerBookings->first();
 
-        $this->prov_deposit_paid = $focusStep === 'deposit' ? true : (bool) $prov['deposit_paid'];
-        $this->prov_deposit_amount = $prov['deposit_amount'] > 0 ? (float) $prov['deposit_amount'] : (float) ($prov['suggested_deposit'] ?: 100);
-        $this->prov_deposit_date = $prov['deposit_date'] ? \Carbon\Carbon::parse($prov['deposit_date'])->format('Y-m-d') : now()->format('Y-m-d');
-        $this->prov_deposit_method = (string) ($prov['deposit_method'] ?: 'bizum');
+        $this->prov_booking_id = $booking?->id;
+        $this->prov_key = (string) ($booking?->provider_key ?: ($prov['provider_key'] ?: 'logrono'));
+        $this->prov_name = (string) ($booking?->provider_name ?: ($prov['provider_name'] ?: 'Logroño'));
+        $this->prov_service = (string) ($booking?->service_description ?: ($prov['service_description'] ?: 'Fotomatón / Plataforma 360º'));
+        $this->prov_client_price = (float) ($booking ? $booking->client_price : ($prov['client_price'] ?? 0));
+        $this->prov_detected_items_text = (string) ($prov['detected_services_with_prices'] ?: ($prov['detected_services'] ?? ''));
+        $this->prov_total_cost = (float) ($booking ? $booking->provider_total_cost : ($prov['provider_total_cost'] > 0 ? $prov['provider_total_cost'] : ($prov['client_price'] > 0 ? $prov['client_price'] : 0)));
+
+        $depPaid = $booking ? (bool)$booking->deposit_paid : (bool)$prov['deposit_paid'];
+        $depAmt = $booking ? (float)$booking->deposit_amount : (float)$prov['deposit_amount'];
+        $this->prov_deposit_paid = $focusStep === 'deposit' ? true : $depPaid;
+        $this->prov_deposit_amount = $depAmt > 0 ? $depAmt : (float) ($prov['suggested_deposit'] ?: 100);
+        $this->prov_deposit_date = ($booking?->deposit_paid_at ?: $prov['deposit_date']) ? \Carbon\Carbon::parse($booking?->deposit_paid_at ?: $prov['deposit_date'])->format('Y-m-d') : now()->format('Y-m-d');
+        $this->prov_deposit_method = (string) (($booking?->deposit_payment_method ?: $prov['deposit_method']) ?: 'bizum');
+
+        $finPaid = $booking ? (bool)$booking->final_paid : (bool)$prov['final_paid'];
+        $finAmt = $booking ? (float)$booking->final_amount : (float)($prov['final_amount'] ?? 0);
 
         if ($focusStep === 'final') {
             $this->prov_final_paid = true;
             $alreadyDep = $this->prov_deposit_paid ? (float) $this->prov_deposit_amount : 0.0;
             $rem = max(0.0, round((float) $this->prov_total_cost - $alreadyDep, 2));
-            $this->prov_final_amount = $prov['final_amount'] > 0 ? (float) $prov['final_amount'] : $rem;
-            $this->prov_final_date = $prov['final_date'] ? \Carbon\Carbon::parse($prov['final_date'])->format('Y-m-d') : now()->format('Y-m-d');
-            $this->prov_final_method = (string) ($prov['final_method'] ?: 'transfer');
+            $this->prov_final_amount = $finAmt > 0 ? $finAmt : $rem;
+            $this->prov_final_date = ($booking?->final_paid_at ?: $prov['final_date']) ? \Carbon\Carbon::parse($booking?->final_paid_at ?: $prov['final_date'])->format('Y-m-d') : now()->format('Y-m-d');
+            $this->prov_final_method = (string) (($booking?->final_payment_method ?: $prov['final_method']) ?: 'transfer');
         } else {
-            $this->prov_final_paid = (bool) $prov['final_paid'];
-            $this->prov_final_amount = (float) ($prov['final_amount'] ?? 0);
-            $this->prov_final_date = $prov['final_date'] ? \Carbon\Carbon::parse($prov['final_date'])->format('Y-m-d') : now()->format('Y-m-d');
-            $this->prov_final_method = (string) ($prov['final_method'] ?: 'transfer');
+            $this->prov_final_paid = $finPaid;
+            $this->prov_final_amount = $finAmt;
+            $this->prov_final_date = ($booking?->final_paid_at ?: $prov['final_date']) ? \Carbon\Carbon::parse($booking?->final_paid_at ?: $prov['final_date'])->format('Y-m-d') : now()->format('Y-m-d');
+            $this->prov_final_method = (string) (($booking?->final_payment_method ?: $prov['final_method']) ?: 'transfer');
         }
 
-        $this->prov_notes = (string) ($prov['notes'] ?? '');
+        $this->prov_paid_by = (string) ($booking?->paid_by ?: ($prov['paid_by'] ?: 'Fran'));
+        $this->prov_notes = (string) ($booking?->notes ?: ($prov['notes'] ?? ''));
+        $this->showProviderBookingModal = true;
+    }
+
+    /**
+     * Aplica un preset rápido al proveedor en el evento (Artístamente, Fotomatón, etc.).
+     */
+    public function applyEventProviderPreset(string $preset): void
+    {
+        if ($preset === 'artistamente') {
+            $this->prov_key = 'artistamente';
+            $this->prov_name = 'Artístamente';
+            $this->prov_service = 'Alta en plataforma / Gestión de artistas';
+            $this->prov_client_price = 0.0;
+            $this->prov_total_cost = 50.0;
+            $this->prov_deposit_paid = false;
+            $this->prov_deposit_amount = 0.0;
+            $this->prov_final_paid = true;
+            $this->prov_final_amount = 50.0;
+            $this->prov_final_date = now()->format('Y-m-d');
+            $this->prov_final_method = 'transfer';
+            $this->prov_paid_by = 'Fran';
+        } elseif ($preset === 'photobooth_vitoria') {
+            $this->prov_key = 'vitoria';
+            $this->prov_name = 'Vitoria (FotomatonCheese)';
+            $this->prov_service = 'Fotomatón / Plataforma 360º';
+            $this->syncProviderFromQuoteInEvent();
+        } elseif ($preset === 'photobooth') {
+            $this->prov_key = 'logrono';
+            $this->prov_name = 'Logroño';
+            $this->prov_service = 'Fotomatón / Plataforma 360º';
+            $this->syncProviderFromQuoteInEvent();
+        }
+    }
+
+    /**
+     * Prepara el formulario para añadir un nuevo proveedor adicional al evento.
+     */
+    public function resetProviderBookingForNew(): void
+    {
+        $this->prov_booking_id = null;
+        $this->prov_key = 'artistamente';
+        $this->prov_name = 'Artístamente';
+        $this->prov_service = 'Alta en plataforma / Gestión de artistas';
+        $this->prov_client_price = 0.0;
+        $this->prov_detected_items_text = '';
+        $this->prov_total_cost = 50.0;
+        $this->prov_deposit_paid = false;
+        $this->prov_deposit_amount = 0.0;
+        $this->prov_deposit_date = now()->format('Y-m-d');
+        $this->prov_deposit_method = 'transfer';
+        $this->prov_final_paid = true;
+        $this->prov_final_amount = 50.0;
+        $this->prov_final_date = now()->format('Y-m-d');
+        $this->prov_final_method = 'transfer';
+        $this->prov_paid_by = 'Fran';
+        $this->prov_notes = '';
         $this->showProviderBookingModal = true;
     }
 
@@ -1457,6 +1536,8 @@ class EventShow extends Component
             $this->prov_name = 'Vitoria (FotomatonCheese)';
         } elseif ($value === 'logrono') {
             $this->prov_name = 'Logroño';
+        } elseif ($value === 'artistamente') {
+            $this->prov_name = 'Artístamente';
         }
     }
 
@@ -1480,6 +1561,7 @@ class EventShow extends Component
     public function closeProviderBookingModal()
     {
         $this->showProviderBookingModal = false;
+        $this->prov_booking_id = null;
     }
 
     /**
@@ -1515,10 +1597,14 @@ class EventShow extends Component
             'final_amount' => $finAmt,
             'final_paid_at' => ($this->prov_final_paid && $finAmt > 0 && !empty($this->prov_final_date)) ? $this->prov_final_date : null,
             'final_payment_method' => ($this->prov_final_paid && $finAmt > 0) ? $this->prov_final_method : null,
+            'paid_by' => $this->prov_paid_by ?: 'Fran',
             'notes' => trim((string) $this->prov_notes) ?: null,
         ];
 
-        $existing = $this->event->providerBookings()->first();
+        $existing = $this->prov_booking_id
+            ? $this->event->providerBookings()->find($this->prov_booking_id)
+            : $this->event->providerBookings()->first();
+
         if ($existing) {
             $existing->update($data);
         } else {
@@ -1526,10 +1612,11 @@ class EventShow extends Component
         }
 
         $this->showProviderBookingModal = false;
+        $this->prov_booking_id = null;
         $this->event->load('providerBookings');
         $this->event->refresh();
 
-        session()->flash('message', "📸 Reserva y pagos al proveedor de Fotomatón / 360º guardados correctamente.");
+        session()->flash('message', "📸 Gasto y pagos a proveedor ({$data['provider_name']} - Pagado por {$data['paid_by']}) guardados correctamente.");
     }
 
     /**

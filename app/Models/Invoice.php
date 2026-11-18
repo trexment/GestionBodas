@@ -26,7 +26,29 @@ class Invoice extends Model
         'pdf_path',
         'notes',
         'payment_method',
+        'collected_by',
     ];
+
+    protected static bool $schemaChecked = false;
+
+    /**
+     * Verifica y añade la columna collected_by si no existe en la tabla invoices.
+     */
+    public static function ensureColumnsExist(): void
+    {
+        if (static::$schemaChecked) {
+            return;
+        }
+        static::$schemaChecked = true;
+
+        try {
+            if (\Illuminate\Support\Facades\Schema::hasTable('invoices') && !\Illuminate\Support\Facades\Schema::hasColumn('invoices', 'collected_by')) {
+                \Illuminate\Support\Facades\Schema::table('invoices', function (\Illuminate\Database\Schema\Blueprint $table) {
+                    $table->string('collected_by', 100)->nullable()->default('Fran')->after('payment_method');
+                });
+            }
+        } catch (\Throwable $e) {}
+    }
 
     protected $casts = [
         'issue_date' => 'date',

@@ -585,6 +585,11 @@
                                                     <span>{{ $fb['deposit_method_icon'] }}</span>
                                                     <span>{{ $fb['deposit_method_label'] }}</span>
                                                 </span>
+                                                @if(!empty($fb['deposit_collected_by']))
+                                                    <span class="inline-flex items-center gap-1 font-extrabold px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 text-[10px]" title="Cobrado en cuenta de {{ $fb['deposit_collected_by'] }}">
+                                                        👤 {{ $fb['deposit_collected_by'] }}
+                                                    </span>
+                                                @endif
                                                 @if($fb['deposit_date'])
                                                     <span class="text-slate-500">
                                                         📅 {{ \Carbon\Carbon::parse($fb['deposit_date'])->format('d/m/Y') }}
@@ -622,6 +627,11 @@
                                                     <span class="inline-flex items-center gap-1 font-bold bg-white dark:bg-slate-900 px-1.5 py-0.5 rounded border border-blue-200 dark:border-blue-800">
                                                         <span>{{ $fb['final_method_icon'] }}</span>
                                                         <span>{{ $fb['final_method_label'] }}</span>
+                                                    </span>
+                                                @endif
+                                                @if(!empty($fb['final_collected_by']))
+                                                    <span class="inline-flex items-center gap-1 font-extrabold px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 text-[10px]" title="Cobrado en cuenta de {{ $fb['final_collected_by'] }}">
+                                                        👤 {{ $fb['final_collected_by'] }}
                                                     </span>
                                                 @endif
                                                 @if($fb['final_paid_date'])
@@ -858,11 +868,16 @@
 
                                 <!-- Documento y Concepto -->
                                 <td class="py-3 px-3">
-                                    <div class="flex items-center gap-1.5">
+                                    <div class="flex items-center gap-1.5 flex-wrap">
                                         <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase {{ ($item['document_type'] ?? '') === 'factura' ? 'bg-blue-100 text-blue-800' : 'bg-emerald-100 text-emerald-800' }}">
                                             {{ ($item['document_type'] ?? '') === 'factura' ? '📄 FACTURA' : '🧾 RECIBO / SEÑAL' }}
                                         </span>
                                         <span class="font-mono font-black text-slate-900 dark:text-white">{{ $item['document_number'] }}</span>
+                                        @if(!empty($item['collected_by']))
+                                            <span class="inline-flex items-center gap-1 font-extrabold px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 text-[10px]" title="Cobrado por {{ $item['collected_by'] }}">
+                                                👤 {{ $item['collected_by'] }}
+                                            </span>
+                                        @endif
                                     </div>
                                     <div class="text-[11px] text-slate-500 mt-0.5">
                                         {{ $item['concept'] }}
@@ -1034,19 +1049,19 @@
                     <div>
                         <h3 class="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
                             <span>📸</span>
-                            <span>Control de Reservas y Pagos a Empresa de Fotomatón y Plataforma 360º ({{ count($providerRows) }})</span>
+                            <span>Control de Proveedores Externos (Fotomatón, 360º, Artístamente...) ({{ count($providerRows) }})</span>
                         </h3>
                         <p class="text-[11px] text-slate-500 mt-0.5">
-                            Se detectan automáticamente los eventos que llevan Fotomatón o Plataforma 360º en su presupuesto. Anota aquí la señal que pagas al proveedor y el pago final cuando toque liquidarlo.
+                            Detecta automáticamente los servicios externos contratados (Fotomatón, 360º, altas en Artístamente...). Controla señales, liquidaciones y qué socio lo adelantó de su bolsillo.
                         </p>
                     </div>
                     <button
                         type="button"
-                        wire:click="openProviderModal(null, 'deposit')"
+                        wire:click="openProviderModal(null, 'deposit'); resetProviderModalForNewBooking();"
                         class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-extrabold shadow-xs transition cursor-pointer"
                     >
                         <span>➕</span>
-                        <span>Añadir Reserva Fotomatón / 360º</span>
+                        <span>Añadir Proveedor / Gasto Externo</span>
                     </button>
                 </div>
 
@@ -1089,12 +1104,30 @@
 
                                     <!-- Empresa Proveedora y Servicio -->
                                     <td class="py-3.5 px-3 align-top">
-                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-purple-100 dark:bg-purple-950 text-purple-800 dark:text-purple-300 text-[10px] font-black">
-                                            🏢 {{ $prov['provider_name'] }}
-                                        </span>
+                                        <div class="flex flex-wrap items-center gap-1.5">
+                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-purple-100 dark:bg-purple-950 text-purple-800 dark:text-purple-300 text-[10px] font-black">
+                                                🏢 {{ $prov['provider_name'] }}
+                                            </span>
+                                            @if(!empty($prov['paid_by']))
+                                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 text-[10px] font-bold" title="Abonado por {{ $prov['paid_by'] }}">
+                                                    👤 Pagado por: {{ $prov['paid_by'] }}
+                                                </span>
+                                            @endif
+                                        </div>
                                         <div class="font-bold text-slate-800 dark:text-slate-200 mt-1 leading-snug">
                                             {{ $prov['service_description'] }}
                                         </div>
+                                        @if(($prov['bookings_count'] ?? 0) > 1)
+                                            <div class="mt-2 space-y-1">
+                                                @foreach($prov['bookings'] as $b)
+                                                    <div class="flex items-center justify-between text-[10px] bg-slate-50 dark:bg-slate-950 p-1.5 rounded-lg border border-slate-200 dark:border-slate-800">
+                                                        <span class="font-bold text-slate-700 dark:text-slate-300">{{ $b->provider_name }}: {{ $b->service_description }} ({{ number_format($b->provider_total_cost, 2, ',', '.') }} €)</span>
+                                                        <span class="font-bold text-indigo-600 dark:text-indigo-400">👤 {{ $b->paid_by ?: 'Fran' }}</span>
+                                                        <button type="button" wire:click="openProviderModal({{ $ev->id }}, 'final', {{ $b->id }})" class="text-purple-600 dark:text-purple-400 hover:underline font-bold cursor-pointer" title="Editar este gasto">✏️</button>
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        @endif
                                         @if(!empty($prov['notes']))
                                             <div class="text-[11px] text-slate-500 italic mt-0.5">
                                                 📝 {{ $prov['notes'] }}
@@ -1243,6 +1276,14 @@
                                                 title="Editar reserva y pagos al proveedor"
                                             >
                                                 ✏️ Editar
+                                            </button>
+                                            <button
+                                                type="button"
+                                                wire:click="openProviderModal({{ $ev->id }}, 'final', null); resetProviderModalForNewBooking();"
+                                                class="px-2 py-1 rounded-lg bg-purple-50 dark:bg-purple-950/40 hover:bg-purple-100 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 text-[10px] font-bold transition cursor-pointer"
+                                                title="Añadir otro gasto o proveedor a este evento (ej: Artístamente, saxo...)"
+                                            >
+                                                ➕ Otro
                                             </button>
                                             @if(!empty($prov['booking_id']))
                                                 <button
@@ -1598,6 +1639,107 @@
                 </div>
             </div>
 
+            <!-- ARQUEO DE CUENTAS SEPARADAS Y AJUSTE DE TRANSFERENCIAS ENTRE SOCIOS -->
+            @php
+                $tInst = $sData['transfer_instruction'] ?? null;
+                $colFran = (float)($sData['collected_by_partner']['Fran'] ?? 0);
+                $colMiguel = (float)($sData['collected_by_partner']['Miguel'] ?? 0);
+                $colJoint = (float)($sData['joint_collected'] ?? 0);
+            @endphp
+            <div class="bg-gradient-to-br from-slate-900 to-indigo-950 text-white rounded-3xl border border-indigo-800/60 p-6 shadow-lg space-y-5">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-indigo-800/60 pb-4">
+                    <div>
+                        <span class="text-[10px] font-black uppercase tracking-wider text-indigo-300 bg-indigo-950 px-2.5 py-1 rounded-lg border border-indigo-700/60">
+                            🏦 Cuentas Separadas & Arqueo de Caja
+                        </span>
+                        <h4 class="text-base font-black text-white mt-1.5 flex items-center gap-2">
+                            <span>⚖️</span>
+                            <span>Ajuste de Cuentas y Transferencias entre Socios</span>
+                        </h4>
+                        <p class="text-xs text-indigo-200/80 mt-0.5">
+                            ¿Cuánto dinero tiene cada socio en su cuenta o Bizum vs. lo que le corresponde tras gastos adelantados?
+                        </p>
+                    </div>
+                    <div class="flex items-center gap-2 bg-indigo-950/80 px-3.5 py-2 rounded-2xl border border-indigo-700/60">
+                        <span class="text-xs text-indigo-200">Total cobrado:</span>
+                        <span class="font-black text-emerald-400 text-sm">{{ number_format($sData['total_collected'] ?? 0, 2, ',', '.') }} €</span>
+                    </div>
+                </div>
+
+                <!-- 3 TARJETAS: FRAN, MIGUEL Y CUENTA CONJUNTA -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <!-- Dinero en cuenta Fran -->
+                    <div class="p-4 rounded-2xl bg-indigo-900/40 border border-indigo-700/50">
+                        <div class="flex items-center justify-between text-xs text-indigo-300 font-bold">
+                            <span>👤 Cuenta / Bizum Fran</span>
+                            <span class="text-[10px] bg-indigo-800/80 px-2 py-0.5 rounded text-white">En mano</span>
+                        </div>
+                        <div class="text-2xl font-black text-white mt-1.5">
+                            {{ number_format($colFran, 2, ',', '.') }} €
+                        </div>
+                        <p class="text-[10px] text-indigo-300/80 mt-1">Cobros de eventos ingresados a Fran</p>
+                    </div>
+
+                    <!-- Dinero en cuenta Miguel -->
+                    <div class="p-4 rounded-2xl bg-indigo-900/40 border border-indigo-700/50">
+                        <div class="flex items-center justify-between text-xs text-indigo-300 font-bold">
+                            <span>👤 Cuenta / Bizum Miguel</span>
+                            <span class="text-[10px] bg-indigo-800/80 px-2 py-0.5 rounded text-white">En mano</span>
+                        </div>
+                        <div class="text-2xl font-black text-white mt-1.5">
+                            {{ number_format($colMiguel, 2, ',', '.') }} €
+                        </div>
+                        <p class="text-[10px] text-indigo-300/80 mt-1">Cobros de eventos ingresados a Miguel</p>
+                    </div>
+
+                    <!-- Cuenta Conjunta -->
+                    <div class="p-4 rounded-2xl bg-indigo-900/40 border border-indigo-700/50">
+                        <div class="flex items-center justify-between text-xs text-indigo-300 font-bold">
+                            <span>🏦 Cuenta Conjunta / Empresa</span>
+                            <span class="text-[10px] bg-emerald-800/80 px-2 py-0.5 rounded text-emerald-200">Común</span>
+                        </div>
+                        <div class="text-2xl font-black text-emerald-400 mt-1.5">
+                            {{ number_format($colJoint, 2, ',', '.') }} €
+                        </div>
+                        <p class="text-[10px] text-indigo-300/80 mt-1">Dinero ya centralizado en caja común</p>
+                    </div>
+                </div>
+
+                <!-- INSTRUCCIÓN DIRECTA DE TRANSFERENCIA -->
+                @if(!empty($tInst['has_transfer']))
+                    <div class="p-4.5 rounded-2xl bg-emerald-950/70 border-2 border-emerald-500/80 text-white flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-12 h-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center text-2xl font-black shadow-md shrink-0">
+                                💸
+                            </div>
+                            <div>
+                                <span class="text-[10px] font-black uppercase tracking-wider text-emerald-300 block">
+                                    INSTRUCCIÓN DE AJUSTE EXACTO
+                                </span>
+                                <div class="text-sm sm:text-base font-black text-white mt-0.5">
+                                    {{ $tInst['text'] }}
+                                </div>
+                                <p class="text-[11px] text-emerald-200/80 mt-0.5">
+                                    Realizando esta transferencia de <strong>{{ number_format($tInst['amount'], 2, ',', '.') }} €</strong>, las cuentas quedan cuadradas al céntimo (50/50 de beneficio y gastos reembolsados).
+                                </p>
+                            </div>
+                        </div>
+                        <div class="text-right shrink-0">
+                            <span class="px-3.5 py-1.5 rounded-xl bg-emerald-500 text-slate-950 text-xs font-black shadow-sm">
+                                Transferir {{ number_format($tInst['amount'], 2, ',', '.') }} €
+                            </span>
+                        </div>
+                    </div>
+                @else
+                    <div class="p-4 rounded-2xl bg-indigo-950/80 border border-indigo-700/60 text-indigo-200 text-xs flex items-center gap-3">
+                        <span class="text-xl">✅</span>
+                        <div>
+                            <strong>Cuentas cuadradas:</strong> {{ $tInst['text'] ?? 'No se requiere transferencia de ajuste entre socios en este período.' }}
+                        </div>
+                    </div>
+                @endif
+            </div>
+
             <!-- TARJETAS DESTACADAS DE LIQUIDACIÓN POR SOCIO -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                 @forelse($partnersList as $partner)
@@ -1617,9 +1759,19 @@
                                     </span>
                                 </div>
                             </div>
-                            <span class="px-2.5 py-1 rounded-xl bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 text-xs font-black">
-                                Listo para liquidar
-                            </span>
+                            @if(($partner['balance_diff'] ?? 0) > 0.05)
+                                <span class="px-2.5 py-1 rounded-xl bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 text-xs font-black">
+                                    Debe transferir {{ number_format($partner['balance_diff'], 2, ',', '.') }} €
+                                </span>
+                            @elseif(($partner['balance_diff'] ?? 0) < -0.05)
+                                <span class="px-2.5 py-1 rounded-xl bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 text-xs font-black">
+                                    Debe recibir {{ number_format(abs($partner['balance_diff']), 2, ',', '.') }} €
+                                </span>
+                            @else
+                                <span class="px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-black">
+                                    En paz (0,00 €)
+                                </span>
+                            @endif
                         </div>
 
                         <!-- Desglose de importes -->
@@ -1633,16 +1785,34 @@
 
                             <div class="flex items-center justify-between">
                                 <span class="text-slate-500 dark:text-slate-400 flex items-center gap-1">
-                                    <span>🛠️ Reembolso material adelantado:</span>
+                                    <span>🛠️ Reembolso compras material:</span>
                                 </span>
                                 <strong class="text-amber-600 dark:text-amber-400 font-bold text-sm">
-                                    +{{ number_format($partner['reimbursement'], 2, ',', '.') }} €
+                                    +{{ number_format($partner['material_reimbursement'] ?? $partner['reimbursement'] ?? 0, 2, ',', '.') }} €
                                 </strong>
                             </div>
 
-                            @if($partner['reimbursement'] > 0)
+                            @if(($partner['provider_reimbursement'] ?? 0) > 0)
+                                <div class="flex items-center justify-between">
+                                    <span class="text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                                        <span>🎭 Reembolso proveedores adelantados (Artístamente, etc.):</span>
+                                    </span>
+                                    <strong class="text-purple-600 dark:text-purple-400 font-bold text-sm">
+                                        +{{ number_format($partner['provider_reimbursement'], 2, ',', '.') }} €
+                                    </strong>
+                                </div>
+                            @endif
+
+                            <div class="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
+                                <span class="text-slate-500 dark:text-slate-400 font-semibold">💵 Cobrado físicamente en su cuenta / Bizum:</span>
+                                <strong class="text-indigo-600 dark:text-indigo-400 font-extrabold text-sm">
+                                    {{ number_format($partner['collected_in_hand'] ?? 0, 2, ',', '.') }} €
+                                </strong>
+                            </div>
+
+                            @if(($partner['reimbursement'] ?? 0) > 0)
                                 <div class="text-[10px] text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 p-2 rounded-xl">
-                                    💡 Se le reembolsan <strong>{{ number_format($partner['reimbursement'], 2, ',', '.') }} €</strong> por compras que pagó de su bolsillo para la empresa.
+                                    💡 Se le reembolsan <strong>{{ number_format($partner['reimbursement'], 2, ',', '.') }} €</strong> por gastos que adelantó de su bolsillo (material y proveedores).
                                 </div>
                             @endif
                         </div>
@@ -1680,51 +1850,74 @@
                         <thead>
                             <tr class="border-b border-slate-200 dark:border-slate-800 text-[10px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-950">
                                 <th class="py-3 px-4">Socio</th>
-                                <th class="py-3 px-3 text-center">% Reparto</th>
+                                <th class="py-3 px-2 text-center">% Reparto</th>
                                 <th class="py-3 px-3 text-right">Beneficio Neto</th>
-                                <th class="py-3 px-3 text-right">Reembolso Material</th>
-                                <th class="py-3 px-4 text-right">TOTAL A LIQUIDAR</th>
-                                <th class="py-3 px-3 text-center">Estado</th>
+                                <th class="py-3 px-3 text-right">Reemb. Material</th>
+                                <th class="py-3 px-3 text-right">Reemb. Proveedores</th>
+                                <th class="py-3 px-3 text-right">TOTAL A PERCIBIR</th>
+                                <th class="py-3 px-3 text-right">Cobrado en Mano</th>
+                                <th class="py-3 px-3 text-center">Ajuste de Arqueo</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100 dark:divide-slate-800/60">
                             @foreach($partnersList as $partner)
                                 <tr>
-                                    <td class="py-3 px-4 font-black text-slate-900 dark:text-white">
+                                    <td class="py-3 px-4 font-black text-slate-900 dark:text-white whitespace-nowrap">
                                         👤 {{ $partner['name'] }}
                                     </td>
-                                    <td class="py-3 px-3 text-center font-bold text-slate-600 dark:text-slate-300">
+                                    <td class="py-3 px-2 text-center font-bold text-slate-600 dark:text-slate-300">
                                         {{ $partner['percentage'] }}%
                                     </td>
-                                    <td class="py-3 px-3 text-right font-bold text-slate-800 dark:text-slate-200">
+                                    <td class="py-3 px-3 text-right font-bold text-slate-800 dark:text-slate-200 whitespace-nowrap">
                                         {{ number_format($partner['profit_share'], 2, ',', '.') }} €
                                     </td>
-                                    <td class="py-3 px-3 text-right font-bold text-amber-600 dark:text-amber-400">
-                                        {{ number_format($partner['reimbursement'], 2, ',', '.') }} €
+                                    <td class="py-3 px-3 text-right font-bold text-amber-600 dark:text-amber-400 whitespace-nowrap">
+                                        {{ number_format($partner['material_reimbursement'] ?? 0, 2, ',', '.') }} €
                                     </td>
-                                    <td class="py-3 px-4 text-right font-black text-sm text-emerald-600 dark:text-emerald-400">
+                                    <td class="py-3 px-3 text-right font-bold text-purple-600 dark:text-purple-400 whitespace-nowrap">
+                                        {{ number_format($partner['provider_reimbursement'] ?? 0, 2, ',', '.') }} €
+                                    </td>
+                                    <td class="py-3 px-3 text-right font-black text-sm text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
                                         {{ number_format($partner['total_to_receive'], 2, ',', '.') }} €
                                     </td>
-                                    <td class="py-3 px-3 text-center">
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800">
-                                            Pendiente de transferir
-                                        </span>
+                                    <td class="py-3 px-3 text-right font-extrabold text-indigo-600 dark:text-indigo-400 whitespace-nowrap">
+                                        {{ number_format($partner['collected_in_hand'] ?? 0, 2, ',', '.') }} €
+                                    </td>
+                                    <td class="py-3 px-3 text-center whitespace-nowrap">
+                                        @if(($partner['balance_diff'] ?? 0) > 0.05)
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-800">
+                                                Transfiere {{ number_format($partner['balance_diff'], 2, ',', '.') }} €
+                                            </span>
+                                        @elseif(($partner['balance_diff'] ?? 0) < -0.05)
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800">
+                                                Recibe {{ number_format(abs($partner['balance_diff']), 2, ',', '.') }} €
+                                            </span>
+                                        @else
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black bg-slate-100 text-slate-700">
+                                                En paz (0,00 €)
+                                            </span>
+                                        @endif
                                     </td>
                                 </tr>
                             @endforeach
                         </tbody>
                         <tfoot>
                             <tr class="border-t-2 border-slate-300 dark:border-slate-700 bg-slate-100/90 dark:bg-slate-950 font-black text-xs text-slate-900 dark:text-white">
-                                <td class="py-3.5 px-4">TOTALES LIQUIDACIÓN</td>
-                                <td class="py-3.5 px-3 text-center">100%</td>
-                                <td class="py-3.5 px-3 text-right text-indigo-700 dark:text-indigo-300">
+                                <td class="py-3.5 px-4" colspan="2">TOTALES AUDITORÍA</td>
+                                <td class="py-3.5 px-3 text-right text-indigo-700 dark:text-indigo-300 whitespace-nowrap">
                                     {{ number_format($sData['net_profit'] ?? 0, 2, ',', '.') }} €
                                 </td>
-                                <td class="py-3.5 px-3 text-right text-amber-600 dark:text-amber-400">
-                                    {{ number_format(array_sum(array_column($partnersList, 'reimbursement')), 2, ',', '.') }} €
+                                <td class="py-3.5 px-3 text-right text-amber-600 dark:text-amber-400 whitespace-nowrap">
+                                    {{ number_format(array_sum(array_column($partnersList, 'material_reimbursement')), 2, ',', '.') }} €
                                 </td>
-                                <td class="py-3.5 px-4 text-right text-emerald-600 dark:text-emerald-400 text-sm">
+                                <td class="py-3.5 px-3 text-right text-purple-600 dark:text-purple-400 whitespace-nowrap">
+                                    {{ number_format(array_sum(array_column($partnersList, 'provider_reimbursement')), 2, ',', '.') }} €
+                                </td>
+                                <td class="py-3.5 px-3 text-right text-emerald-600 dark:text-emerald-400 text-sm whitespace-nowrap">
                                     {{ number_format(array_sum(array_column($partnersList, 'total_to_receive')), 2, ',', '.') }} €
+                                </td>
+                                <td class="py-3.5 px-3 text-right text-indigo-600 dark:text-indigo-400 whitespace-nowrap">
+                                    {{ number_format(array_sum(array_column($partnersList, 'collected_in_hand')), 2, ',', '.') }} €
                                 </td>
                                 <td class="py-3.5 px-3"></td>
                             </tr>
@@ -1784,6 +1977,37 @@
                         </div>
                     </div>
 
+                    <!-- Quién cobró este dinero -->
+                    <div>
+                        <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">¿Quién cobró este dinero? *</label>
+                        <div class="grid grid-cols-3 gap-2">
+                            <button
+                                type="button"
+                                wire:click="$set('quickCollectedBy', 'Fran')"
+                                class="p-2.5 rounded-xl border text-center font-bold text-xs transition cursor-pointer {{ $quickCollectedBy === 'Fran' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100' }}"
+                            >
+                                👤 Fran
+                            </button>
+                            <button
+                                type="button"
+                                wire:click="$set('quickCollectedBy', 'Miguel')"
+                                class="p-2.5 rounded-xl border text-center font-bold text-xs transition cursor-pointer {{ $quickCollectedBy === 'Miguel' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100' }}"
+                            >
+                                👤 Miguel
+                            </button>
+                            <button
+                                type="button"
+                                wire:click="$set('quickCollectedBy', 'Cuenta Conjunta')"
+                                class="p-2.5 rounded-xl border text-center font-bold text-xs transition cursor-pointer {{ $quickCollectedBy === 'Cuenta Conjunta' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100' }}"
+                            >
+                                🏦 Conjunta
+                            </button>
+                        </div>
+                        <p class="text-[10px] text-slate-400 mt-1">
+                            * Se registrará en su cuenta para el arqueo y ajuste automático de transferencias entre socios.
+                        </p>
+                    </div>
+
                     <div>
                         <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Notas / Observaciones (Opcional)</label>
                         <input type="text" wire:model="quickNotes" placeholder="Ej: Pagado por el novio, Bizum recibido..." class="w-full rounded-xl border border-slate-300 dark:border-slate-700 p-2.5">
@@ -1809,7 +2033,7 @@
         </div>
     @endif
 
-    <!-- MODAL PARA REGISTRAR / EDITAR RESERVA Y PAGOS A EMPRESA DE FOTOMATÓN / 360º -->
+    <!-- MODAL PARA REGISTRAR / EDITAR RESERVA Y PAGOS A EMPRESA DE FOTOMATÓN / 360º / ARTÍSTAMENTE -->
     @if($showProviderModal)
         <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-xs p-4 overflow-y-auto">
             <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 max-w-xl w-full p-6 shadow-2xl space-y-4 my-8">
@@ -1817,16 +2041,49 @@
                     <div>
                         <h4 class="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
                             <span>📸</span>
-                            <span>Reserva y Pagos a Proveedor (Fotomatón / 360º)</span>
+                            <span>Reserva y Pagos a Proveedor (Fotomatón / 360º / Artístamente)</span>
                         </h4>
                         <p class="text-xs text-purple-600 dark:text-purple-400 font-bold mt-0.5">
-                            Anota la señal que le pagas para reservar y el resto cuando liquides el evento
+                            Anota los costes de proveedores y quién lo pagó de su bolsillo para descontarlo y reembolsarlo
                         </p>
                     </div>
                     <button type="button" wire:click="closeProviderModal" class="text-slate-400 hover:text-slate-700 text-lg font-bold cursor-pointer">&times;</button>
                 </div>
 
                 <div class="space-y-4 text-xs">
+                    <!-- Plantillas rápidas -->
+                    <div class="p-3 rounded-2xl bg-purple-50/70 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 space-y-2">
+                        <div class="flex items-center justify-between text-[11px] font-black text-purple-900 dark:text-purple-300">
+                            <span>⚡ Plantillas Rápidas:</span>
+                            <button type="button" wire:click="resetProviderModalForNewBooking" class="text-[10px] text-purple-700 dark:text-purple-400 font-bold hover:underline cursor-pointer">
+                                ➕ Nuevo Gasto Adicional
+                            </button>
+                        </div>
+                        <div class="flex flex-wrap gap-1.5">
+                            <button
+                                type="button"
+                                wire:click="applyProviderPreset('artistamente')"
+                                class="px-2.5 py-1 rounded-xl border text-[11px] font-bold transition cursor-pointer {{ $provKey === 'artistamente' ? 'bg-purple-600 text-white border-purple-600' : 'bg-white dark:bg-slate-900 border-purple-300 text-purple-800 dark:text-purple-300 hover:bg-purple-100' }}"
+                            >
+                                🎭 Artístamente (Alta / Gestión)
+                            </button>
+                            <button
+                                type="button"
+                                wire:click="applyProviderPreset('photobooth')"
+                                class="px-2.5 py-1 rounded-xl border text-[11px] font-bold transition cursor-pointer {{ $provKey === 'logrono' ? 'bg-purple-600 text-white border-purple-600' : 'bg-white dark:bg-slate-900 border-slate-300 text-slate-700 dark:text-slate-300 hover:bg-slate-100' }}"
+                            >
+                                🏢 Fotomatón Logroño
+                            </button>
+                            <button
+                                type="button"
+                                wire:click="applyProviderPreset('photobooth_vitoria')"
+                                class="px-2.5 py-1 rounded-xl border text-[11px] font-bold transition cursor-pointer {{ $provKey === 'vitoria' ? 'bg-purple-600 text-white border-purple-600' : 'bg-white dark:bg-slate-900 border-slate-300 text-slate-700 dark:text-slate-300 hover:bg-slate-100' }}"
+                            >
+                                🧀 Fotomatón Vitoria (Cheese)
+                            </button>
+                        </div>
+                    </div>
+
                     <!-- Selección de Evento -->
                     <div>
                         <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Evento *</label>
@@ -1867,12 +2124,15 @@
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
                             <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Empresa Proveedora *</label>
-                            <div class="flex gap-1.5 mb-1.5">
+                            <div class="flex flex-wrap gap-1.5 mb-1.5">
                                 <button type="button" wire:click="$set('provKey', 'logrono')" class="px-2.5 py-1 rounded-lg text-[11px] font-bold border cursor-pointer {{ $provKey === 'logrono' ? 'bg-purple-600 text-white border-purple-600' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200' }}">
                                     🏢 Logroño
                                 </button>
                                 <button type="button" wire:click="$set('provKey', 'vitoria')" class="px-2.5 py-1 rounded-lg text-[11px] font-bold border cursor-pointer {{ $provKey === 'vitoria' ? 'bg-purple-600 text-white border-purple-600' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200' }}">
                                     🧀 Vitoria (Cheese)
+                                </button>
+                                <button type="button" wire:click="applyProviderPreset('artistamente')" class="px-2.5 py-1 rounded-lg text-[11px] font-bold border cursor-pointer {{ $provKey === 'artistamente' ? 'bg-purple-600 text-white border-purple-600' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200' }}">
+                                    🎭 Artístamente
                                 </button>
                             </div>
                             <input type="text" wire:model="provName" placeholder="Nombre de la empresa..." class="w-full rounded-xl border border-slate-300 dark:border-slate-700 p-2 font-bold">
@@ -1885,13 +2145,45 @@
                     </div>
 
                     <div>
-                        <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Servicio Contratado (Fotomatón, 360º, Pack Dúo...) *</label>
+                        <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Servicio Contratado (Fotomatón, 360º, Pack Dúo, Artístamente...) *</label>
                         <div class="flex flex-wrap gap-1.5 mb-1.5">
                             <button type="button" wire:click="$set('provService', 'Fotomatón')" class="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[10px] font-bold hover:bg-purple-100 cursor-pointer">📸 Fotomatón</button>
                             <button type="button" wire:click="$set('provService', 'Plataforma 360º')" class="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[10px] font-bold hover:bg-purple-100 cursor-pointer">🎥 Plataforma 360º</button>
-                            <button type="button" wire:click="$set('provService', 'Pack Dúo: Fotomatón + Plataforma 360º')" class="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[10px] font-bold hover:bg-purple-100 cursor-pointer">✨ Pack Dúo (Fotomatón + 360º)</button>
+                            <button type="button" wire:click="$set('provService', 'Pack Dúo: Fotomatón + Plataforma 360º')" class="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[10px] font-bold hover:bg-purple-100 cursor-pointer">✨ Pack Dúo</button>
+                            <button type="button" wire:click="$set('provService', 'Alta en plataforma / Gestión de artistas')" class="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[10px] font-bold hover:bg-purple-100 cursor-pointer">🎭 Alta Artístamente</button>
                         </div>
                         <input type="text" wire:model="provService" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 p-2.5 font-semibold">
+                    </div>
+
+                    <!-- Quién pagó a este proveedor de su propio bolsillo -->
+                    <div>
+                        <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">¿Quién pagó este proveedor de su propio bolsillo? *</label>
+                        <div class="grid grid-cols-3 gap-2">
+                            <button
+                                type="button"
+                                wire:click="$set('provPaidBy', 'Fran')"
+                                class="p-2.5 rounded-xl border text-center font-bold text-xs transition cursor-pointer {{ $provPaidBy === 'Fran' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100' }}"
+                            >
+                                👤 Fran
+                            </button>
+                            <button
+                                type="button"
+                                wire:click="$set('provPaidBy', 'Miguel')"
+                                class="p-2.5 rounded-xl border text-center font-bold text-xs transition cursor-pointer {{ $provPaidBy === 'Miguel' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100' }}"
+                            >
+                                👤 Miguel
+                            </button>
+                            <button
+                                type="button"
+                                wire:click="$set('provPaidBy', 'Caja Común / Empresa')"
+                                class="p-2.5 rounded-xl border text-center font-bold text-xs transition cursor-pointer {{ $provPaidBy === 'Caja Común / Empresa' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100' }}"
+                            >
+                                🏦 Caja Común
+                            </button>
+                        </div>
+                        <p class="text-[10px] text-slate-400 mt-1">
+                            * Si un socio pagó al proveedor de su bolsillo (ej. alta en Artístamente o señal de fotomatón), se le sumará íntegro como reembolso a percibir en la liquidación.
+                        </p>
                     </div>
 
                     <!-- BLOQUE 1: SEÑAL DE RESERVA A LA EMPRESA -->

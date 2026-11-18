@@ -38,6 +38,7 @@ class Event extends Model
         'deposit_paid',
         'deposit_paid_amount',
         'deposit_payment_method',
+        'deposit_collected_by',
         'deposit_paid_at',
         'deposit_notes',
         'token',
@@ -98,6 +99,12 @@ class Event extends Model
                     });
                     static::$hasGuestTokenColumn = true;
                     static::$hasStaffTokenColumn = true;
+                }
+
+                if (!\Illuminate\Support\Facades\Schema::hasColumn('events', 'deposit_collected_by')) {
+                    \Illuminate\Support\Facades\Schema::table('events', function (\Illuminate\Database\Schema\Blueprint $table) {
+                        $table->string('deposit_collected_by', 100)->nullable()->default('Fran')->after('deposit_payment_method');
+                    });
                 }
             }
         } catch (\Throwable $e) {
@@ -518,50 +525,119 @@ class Event extends Model
 
         $primaryBooking = $bookings->first();
 
-        $serviceLabel = ($primaryBooking && !empty($primaryBooking->service_description) && $primaryBooking->service_description !== 'Fotomatón / Plataforma 360º')
-            ? $primaryBooking->service_description
-            : ($detectedServiceText ?: ($primaryBooking?->service_description ?: 'Fotomatón / Plataforma 360º'));
-        $providerName = $primaryBooking?->provider_name ?: $suggestedProviderName;
-        $providerKey = $primaryBooking?->provider_key ?: $suggestedProviderKey;
+        if ($bookings->count() > 1) {
+            $totalCost = 0.0;
+            $totalDeposit = 0.0;
+            $totalFinal = 0.0;
+            $totalPaidToProvider = 0.0;
+            $servicesList = [];
+            $providersList = [];
+            $paidByList = [];
 
-        // El precio pasado al cliente (client_price) se detecta siempre automáticamente del presupuesto si existe (> 0)
-        $detectedClientPrice = max(0.0, round($detectedClientPrice, 2));
-        $clientPrice = $detectedClientPrice > 0
-            ? $detectedClientPrice
-            : (($primaryBooking && (float) $primaryBooking->client_price > 0) ? (float) $primaryBooking->client_price : 0.0);
+            foreach ($bookings as $b) {
+                $bCost = (float) $b->provider_total_cost;
+                $bDep = ($b->deposit_paid && (float) $b->deposit_amount > 0) ? (float) $b->deposit_amount : 0.0;
+                $bFin = ($b->final_paid && (float) $b->final_amount > 0) ? (float) $b->final_amount : 0.0;
+                $bPaid = round($bDep + $bFin, 2);
+                $bEffectiveCost = max($bCost, $bPaid);
 
-        // El coste de proveedor usa el guardado si es > 0, o por defecto el precio detectado en el presupuesto del cliente
-        $providerTotalCost = ($primaryBooking && (float) $primaryBooking->provider_total_cost > 0)
-            ? (float) $primaryBooking->provider_total_cost
-            : $clientPrice;
+                $totalCost += $bEffectiveCost;
+                $totalDeposit += $bDep;
+                $totalFinal += $bFin;
+                $totalPaidToProvider += $bPaid;
 
-        $depositPaid = $primaryBooking ? (bool) $primaryBooking->deposit_paid && (float) $primaryBooking->deposit_amount > 0 : false;
-        $depositAmount = $depositPaid ? (float) $primaryBooking->deposit_amount : 0.0;
-        $depositDate = $primaryBooking?->deposit_paid_at;
-        $depositMethod = $primaryBooking?->deposit_payment_method;
-        $depositMethodLabel = EventProviderBooking::formatMethodLabel($depositMethod);
-        $depositMethodIcon = EventProviderBooking::formatMethodIcon($depositMethod);
+                if ($b->service_description) {
+                    $servicesList[] = $b->service_description;
+                }
+                if ($b->provider_name) {
+                    $providersList[] = $b->provider_name;
+                }
+                if ($b->paid_by) {
+                    $paidByList[] = $b->paid_by;
+                }
+            }
 
-        $finalPaid = $primaryBooking ? (bool) $primaryBooking->final_paid && (float) $primaryBooking->final_amount > 0 : false;
-        $finalAmount = $finalPaid ? (float) $primaryBooking->final_amount : 0.0;
-        $finalDate = $primaryBooking?->final_paid_at;
-        $finalMethod = $primaryBooking?->final_payment_method;
-        $finalMethodLabel = EventProviderBooking::formatMethodLabel($finalMethod);
-        $finalMethodIcon = EventProviderBooking::formatMethodIcon($finalMethod);
+            $serviceLabel = implode(' + ', array_unique($servicesList)) ?: ($primaryBooking?->service_description ?: 'Servicios Externos');
+            $providerName = implode(', ', array_unique($providersList)) ?: ($primaryBooking?->provider_name ?: $suggestedProviderName);
+            $providerKey = $primaryBooking?->provider_key ?: $suggestedProviderKey;
+            $clientPrice = max((float)$detectedClientPrice, (float)$bookings->sum('client_price'));
+            $effectiveCost = max($totalCost, $totalPaidToProvider);
+            $pendingToProvider = max(0.0, round($effectiveCost - $totalPaidToProvider, 2));
 
-        $totalPaidToProvider = round($depositAmount + $finalAmount, 2);
-        $effectiveCost = max($providerTotalCost, $totalPaidToProvider);
-        $pendingToProvider = max(0.0, round($effectiveCost - $totalPaidToProvider, 2));
+            $depositPaid = $totalDeposit > 0;
+            $depositAmount = $totalDeposit;
+            $depositDate = $primaryBooking?->deposit_paid_at;
+            $depositMethod = $primaryBooking?->deposit_payment_method;
+            $depositMethodLabel = EventProviderBooking::formatMethodLabel($depositMethod);
+            $depositMethodIcon = EventProviderBooking::formatMethodIcon($depositMethod);
 
-        if ($totalPaidToProvider > 0 && ($pendingToProvider <= 0.05 && ($effectiveCost > 0 || $finalPaid))) {
-            $status = 'paid';
-            $statusLabel = '✅ Todo Pagado al Proveedor';
-        } elseif ($totalPaidToProvider > 0) {
-            $status = 'deposit_paid';
-            $statusLabel = '🟢 Señal Pagada (Falta Resto)';
+            $finalPaid = $totalFinal > 0;
+            $finalAmount = $totalFinal;
+            $finalDate = $primaryBooking?->final_paid_at;
+            $finalMethod = $primaryBooking?->final_payment_method;
+            $finalMethodLabel = EventProviderBooking::formatMethodLabel($finalMethod);
+            $finalMethodIcon = EventProviderBooking::formatMethodIcon($finalMethod);
+
+            if ($totalPaidToProvider > 0 && ($pendingToProvider <= 0.05 && $effectiveCost > 0)) {
+                $status = 'paid';
+                $statusLabel = '✅ Todo Pagado a Proveedores';
+            } elseif ($totalPaidToProvider > 0) {
+                $status = 'deposit_paid';
+                $statusLabel = '🟢 Parte Pagada (Falta Resto)';
+            } else {
+                $status = 'unpaid';
+                $statusLabel = '⏳ Pendiente de Pago';
+            }
+
+            $primaryPaidBy = implode(', ', array_unique($paidByList)) ?: 'Fran';
         } else {
-            $status = 'unpaid';
-            $statusLabel = '⏳ Pendiente de Pagar Señal';
+            $serviceLabel = ($primaryBooking && !empty($primaryBooking->service_description) && $primaryBooking->service_description !== 'Fotomatón / Plataforma 360º')
+                ? $primaryBooking->service_description
+                : ($detectedServiceText ?: ($primaryBooking?->service_description ?: 'Fotomatón / Plataforma 360º'));
+            $providerName = $primaryBooking?->provider_name ?: $suggestedProviderName;
+            $providerKey = $primaryBooking?->provider_key ?: $suggestedProviderKey;
+
+            // El precio pasado al cliente (client_price) se detecta siempre automáticamente del presupuesto si existe (> 0)
+            $detectedClientPrice = max(0.0, round($detectedClientPrice, 2));
+            $clientPrice = $detectedClientPrice > 0
+                ? $detectedClientPrice
+                : (($primaryBooking && (float) $primaryBooking->client_price > 0) ? (float) $primaryBooking->client_price : 0.0);
+
+            // El coste de proveedor usa el guardado si es > 0, o por defecto el precio detectado en el presupuesto del cliente
+            $providerTotalCost = ($primaryBooking && (float) $primaryBooking->provider_total_cost > 0)
+                ? (float) $primaryBooking->provider_total_cost
+                : $clientPrice;
+
+            $depositPaid = $primaryBooking ? (bool) $primaryBooking->deposit_paid && (float) $primaryBooking->deposit_amount > 0 : false;
+            $depositAmount = $depositPaid ? (float) $primaryBooking->deposit_amount : 0.0;
+            $depositDate = $primaryBooking?->deposit_paid_at;
+            $depositMethod = $primaryBooking?->deposit_payment_method;
+            $depositMethodLabel = EventProviderBooking::formatMethodLabel($depositMethod);
+            $depositMethodIcon = EventProviderBooking::formatMethodIcon($depositMethod);
+
+            $finalPaid = $primaryBooking ? (bool) $primaryBooking->final_paid && (float) $primaryBooking->final_amount > 0 : false;
+            $finalAmount = $finalPaid ? (float) $primaryBooking->final_amount : 0.0;
+            $finalDate = $primaryBooking?->final_paid_at;
+            $finalMethod = $primaryBooking?->final_payment_method;
+            $finalMethodLabel = EventProviderBooking::formatMethodLabel($finalMethod);
+            $finalMethodIcon = EventProviderBooking::formatMethodIcon($finalMethod);
+
+            $totalPaidToProvider = round($depositAmount + $finalAmount, 2);
+            $effectiveCost = max($providerTotalCost, $totalPaidToProvider);
+            $pendingToProvider = max(0.0, round($effectiveCost - $totalPaidToProvider, 2));
+
+            if ($totalPaidToProvider > 0 && ($pendingToProvider <= 0.05 && ($effectiveCost > 0 || $finalPaid))) {
+                $status = 'paid';
+                $statusLabel = '✅ Todo Pagado al Proveedor';
+            } elseif ($totalPaidToProvider > 0) {
+                $status = 'deposit_paid';
+                $statusLabel = '🟢 Señal Pagada (Falta Resto)';
+            } else {
+                $status = 'unpaid';
+                $statusLabel = '⏳ Pendiente de Pagar Señal';
+            }
+
+            $primaryPaidBy = $primaryBooking?->paid_by ?: 'Fran';
         }
 
         return [
@@ -595,6 +671,9 @@ class Event extends Model
             'paid_percentage' => $effectiveCost > 0 ? min(100, (int) round(($totalPaidToProvider / $effectiveCost) * 100)) : ($totalPaidToProvider > 0 ? 100 : 0),
             'status' => $status,
             'status_label' => $statusLabel,
+            'paid_by' => $primaryPaidBy,
+            'bookings_count' => $bookings->count(),
+            'bookings' => $bookings,
             'notes' => $primaryBooking?->notes ?? '',
         ];
     }
@@ -943,6 +1022,8 @@ class Event extends Model
             default => '💶',
         };
 
+        $depositCollectedBy = $this->deposit_collected_by ?: ($signalInvoice?->collected_by ?? 'Fran');
+
         // Resto de documentos pagados (liquidación final o facturas adicionales)
         $otherPaidInvoices = $invoices->filter(function ($inv) use ($signalInvoice) {
             if ($inv->status !== 'paid') {
@@ -1041,6 +1122,7 @@ class Event extends Model
                 'method_label' => $depositMethodLabel,
                 'method_icon' => $depositMethodIcon,
                 'status' => 'paid',
+                'collected_by' => $depositCollectedBy,
                 'notes' => $this->deposit_notes ?: ($signalInvoice?->notes ?? 'Señal de reserva registrada en el evento'),
             ];
         }
@@ -1065,6 +1147,7 @@ class Event extends Model
                 'method_label' => $inv->payment_method_label,
                 'method_icon' => $inv->payment_method_icon,
                 'status' => $inv->status,
+                'collected_by' => $inv->collected_by ?: ($this->deposit_collected_by ?: 'Fran'),
                 'notes' => $inv->notes,
             ];
         }
@@ -1094,12 +1177,14 @@ class Event extends Model
             'deposit_method' => $depositMethod,
             'deposit_method_label' => $depositMethodLabel,
             'deposit_method_icon' => $depositMethodIcon,
+            'deposit_collected_by' => $depositCollectedBy,
             'signal_invoice' => $signalInvoice,
             'final_paid_amount' => $finalPaidAmount,
             'final_paid_date' => $finalPaidDate,
             'final_method' => $finalMethod,
             'final_method_label' => $finalMethodLabel,
             'final_method_icon' => $finalMethodIcon,
+            'final_collected_by' => $lastFinalInv?->collected_by ?? ($this->deposit_collected_by ?: 'Fran'),
             'total_paid' => round($totalPaid, 2),
             'pending_amount' => $pendingAmount,
             'paid_percentage' => $effectiveQuoteTotal > 0 ? min(100, (int) round(($totalPaid / $effectiveQuoteTotal) * 100)) : ($totalPaid > 0 ? 100 : 0),
