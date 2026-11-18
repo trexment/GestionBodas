@@ -138,167 +138,120 @@
     @endphp
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6 gap-3.5">
         <!-- 1. TOTAL INGRESADO / COBRADO -->
-        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-emerald-200 dark:border-emerald-900/60 p-4 shadow-xs relative overflow-hidden">
-            <div class="flex items-center justify-between gap-2">
-                <span class="text-xs font-black uppercase tracking-tight text-emerald-700 dark:text-emerald-400 whitespace-nowrap truncate">
-                    ✅ Total Cobrado
-                </span>
-                <span class="text-[10px] font-black px-2 py-0.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/70 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 shrink-0 whitespace-nowrap">
-                    {{ $kpis['events_with_payment_count'] }} ev.
-                </span>
+        <x-ui.stat-card
+            label="Total Cobrado"
+            value="{{ number_format($kpis['total_collected'], 2, ',', '.') }} €"
+            variant="emerald"
+            icon="💶"
+        >
+            <div class="flex items-center justify-between text-[11px]">
+                <span>Señales: <strong class="text-slate-800 dark:text-slate-200">{{ number_format($kpis['total_deposits_collected'], 2, ',', '.') }} €</strong></span>
+                <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 font-bold">{{ $kpis['events_with_payment_count'] }} ev.</span>
             </div>
-            <div class="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-2">
-                {{ number_format($kpis['total_collected'], 2, ',', '.') }} €
+            <div class="flex items-center justify-between text-[11px]">
+                <span>Resto: <strong class="text-slate-800 dark:text-slate-200">{{ number_format($kpis['total_finals_collected'], 2, ',', '.') }} €</strong></span>
             </div>
-            <div class="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800 space-y-1 text-[11px] text-slate-500 dark:text-slate-400">
-                <div class="flex items-center justify-between">
-                    <span>Señales: <strong class="text-slate-800 dark:text-slate-200">{{ number_format($kpis['total_deposits_collected'], 2, ',', '.') }} €</strong></span>
-                </div>
-                <div class="flex items-center justify-between">
-                    <span>Resto: <strong class="text-slate-800 dark:text-slate-200">{{ number_format($kpis['total_finals_collected'], 2, ',', '.') }} €</strong></span>
-                </div>
-            </div>
-        </div>
+        </x-ui.stat-card>
 
         <!-- 2. PENDIENTE DE COBRO -->
-        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-amber-200 dark:border-amber-900/60 p-4 shadow-xs">
-            <div class="flex items-center justify-between gap-2">
-                <span class="text-xs font-black uppercase tracking-tight text-amber-700 dark:text-amber-400 whitespace-nowrap truncate">
-                    ⏳ Pendiente Cobro
-                </span>
-                <span class="text-[10px] font-black px-2 py-0.5 rounded-lg bg-amber-50 dark:bg-amber-950/70 border border-amber-300 dark:border-amber-800 text-amber-800 dark:text-amber-300 shrink-0 whitespace-nowrap">
-                    {{ $kpis['events_partial_count'] + $kpis['events_unpaid_count'] }} pend.
-                </span>
+        <x-ui.stat-card
+            label="Pendiente Cobro"
+            value="{{ number_format($kpis['total_pending'], 2, ',', '.') }} €"
+            variant="amber"
+            icon="⏳"
+        >
+            <div class="flex items-center justify-between text-[11px]">
+                <span>Total acordado:</span>
+                <strong class="text-slate-700 dark:text-slate-300">{{ number_format($kpis['total_agreed'], 2, ',', '.') }} €</strong>
             </div>
-            <div class="text-2xl font-black text-amber-600 dark:text-amber-400 mt-2">
-                {{ number_format($kpis['total_pending'], 2, ',', '.') }} €
+            <div class="flex items-center justify-between text-[10px] text-slate-400">
+                <span>Liquidados 100%: <strong>{{ $kpis['events_fully_paid_count'] }}</strong></span>
+                <span>{{ $kpis['events_partial_count'] + $kpis['events_unpaid_count'] }} pend.</span>
             </div>
-            <div class="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800 space-y-1 text-[11px] text-slate-500 dark:text-slate-400">
-                <div class="flex items-center justify-between">
-                    <span>Volumen total:</span>
-                    <strong class="text-slate-700 dark:text-slate-300">{{ number_format($kpis['total_agreed'], 2, ',', '.') }} €</strong>
-                </div>
-                <div class="flex items-center justify-between text-[10px] text-slate-400">
-                    <span>Liquidados 100%: <strong>{{ $kpis['events_fully_paid_count'] }}</strong></span>
-                </div>
-            </div>
-        </div>
+        </x-ui.stat-card>
 
         <!-- 3. GASTO DE PROVEEDORES (FOTOMATÓN / 360º) -->
-        <div
+        <x-ui.stat-card
             wire:click="$set('viewMode', 'providers')"
-            class="bg-white dark:bg-slate-900 rounded-2xl border border-purple-200 dark:border-purple-900/60 p-4 shadow-xs hover:border-purple-400 transition cursor-pointer"
-            title="Haz clic para ver o editar reservas y pagos de Fotomatón y Plataforma 360º"
+            class="cursor-pointer"
+            label="Proveedores (Fotomatón/360)"
+            value="{{ number_format($pSummary['total_cost'] ?? 0, 2, ',', '.') }} €"
+            variant="purple"
+            icon="📸"
         >
-            <div class="flex items-center justify-between gap-2">
-                <span class="text-xs font-black uppercase tracking-tight text-purple-700 dark:text-purple-400 whitespace-nowrap truncate">
-                    📸 Proveedores
-                </span>
-                <span class="text-[10px] font-black px-2 py-0.5 rounded-lg bg-purple-50 dark:bg-purple-950/70 border border-purple-300 dark:border-purple-800 text-purple-800 dark:text-purple-300 shrink-0 whitespace-nowrap">
-                    {{ $pSummary['events_count'] ?? 0 }} ev.
-                </span>
+            <div class="flex items-center justify-between text-[11px]">
+                <span>Pagado: <strong class="text-emerald-600 dark:text-emerald-400">{{ number_format($pSummary['total_paid'] ?? 0, 2, ',', '.') }} €</strong></span>
+                <span class="text-[10px] font-bold text-purple-700 dark:text-purple-300">{{ $pSummary['events_count'] ?? 0 }} ev.</span>
             </div>
-            <div class="text-2xl font-black text-purple-600 dark:text-purple-400 mt-2">
-                {{ number_format($pSummary['total_cost'] ?? 0, 2, ',', '.') }} €
+            <div class="flex items-center justify-between text-[11px]">
+                <span>Pendiente: <strong class="text-amber-600 dark:text-amber-400">{{ number_format($pSummary['total_pending'] ?? 0, 2, ',', '.') }} €</strong></span>
             </div>
-            <div class="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800 space-y-1 text-[11px] text-slate-500 dark:text-slate-400">
-                <div class="flex items-center justify-between">
-                    <span>Pagado: <strong class="text-emerald-600 dark:text-emerald-400">{{ number_format($pSummary['total_paid'] ?? 0, 2, ',', '.') }} €</strong></span>
-                </div>
-                <div class="flex items-center justify-between">
-                    <span>Falta: <strong class="text-amber-600 dark:text-amber-400">{{ number_format($pSummary['total_pending'] ?? 0, 2, ',', '.') }} €</strong></span>
-                </div>
-            </div>
-        </div>
+        </x-ui.stat-card>
 
         <!-- 4. GASTO MATERIAL DEDUCIBLE -->
-        <div
+        <x-ui.stat-card
             wire:click="$set('viewMode', 'materials')"
-            class="bg-white dark:bg-slate-900 rounded-2xl border border-amber-200 dark:border-amber-900/60 p-4 shadow-xs hover:border-amber-400 transition cursor-pointer"
-            title="Haz clic para ver o registrar compras de material para eventos (cables, altavoces, pirotecnia, atrezzo...)"
+            class="cursor-pointer"
+            label="Gasto Material"
+            value="{{ number_format($mSummary['total_amount'] ?? 0, 2, ',', '.') }} €"
+            variant="amber"
+            icon="🛠️"
         >
-            <div class="flex items-center justify-between gap-2">
-                <span class="text-xs font-black uppercase tracking-tight text-amber-700 dark:text-amber-400 whitespace-nowrap truncate">
-                    🛠️ Gasto Material
-                </span>
-                <span class="text-[10px] font-black px-2 py-0.5 rounded-lg bg-amber-50 dark:bg-amber-950/70 border border-amber-300 dark:border-amber-800 text-amber-800 dark:text-amber-300 shrink-0 whitespace-nowrap">
-                    {{ $mSummary['total_count'] ?? 0 }} compras
-                </span>
+            <div class="flex items-center justify-between text-[11px] text-amber-700 dark:text-amber-300 font-bold">
+                <span>Deducible en reparto</span>
+                <span>{{ $mSummary['total_count'] ?? 0 }} compras</span>
             </div>
-            <div class="text-2xl font-black text-amber-600 dark:text-amber-400 mt-2">
-                {{ number_format($mSummary['total_amount'] ?? 0, 2, ',', '.') }} €
+            <div class="text-[10px] text-slate-400 truncate">
+                @if(!empty($mSummary['by_paid_by']))
+                    @foreach($mSummary['by_paid_by'] as $pName => $pAmt)
+                        <span class="mr-1.5">{{ $pName }}: <strong>{{ number_format($pAmt, 0, ',', '.') }}€</strong></span>
+                    @endforeach
+                @else
+                    <span>Sin compras aún</span>
+                @endif
             </div>
-            <div class="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800 space-y-1 text-[11px] text-slate-500 dark:text-slate-400">
-                <div class="flex items-center justify-between text-amber-700 dark:text-amber-300 font-bold">
-                    <span>Deducible en reparto</span>
-                    <span>100%</span>
-                </div>
-                <div class="text-[10px] text-slate-400 truncate">
-                    @if(!empty($mSummary['by_paid_by']))
-                        @foreach($mSummary['by_paid_by'] as $pName => $pAmt)
-                            <span class="mr-1.5">{{ $pName }}: <strong>{{ number_format($pAmt, 0, ',', '.') }}€</strong></span>
-                        @endforeach
-                    @else
-                        <span>Sin compras aún</span>
-                    @endif
-                </div>
-            </div>
-        </div>
+        </x-ui.stat-card>
 
         <!-- 5. BENEFICIO NETO DISPONIBLE PARA REPARTO -->
-        <div
+        <x-ui.stat-card
             wire:click="$set('viewMode', 'settlement')"
-            class="bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-teal-500/10 dark:from-emerald-950/40 dark:to-teal-950/30 rounded-2xl border-2 border-emerald-400 dark:border-emerald-600 p-4 shadow-sm hover:shadow-md transition cursor-pointer relative"
-            title="Haz clic para ver el desglose exacto de liquidación y cuánto cobra cada socio"
+            class="cursor-pointer ring-1 ring-emerald-400/50"
+            label="Beneficio Neto"
+            value="{{ number_format($sSummary['net_profit'] ?? 0, 2, ',', '.') }} €"
+            variant="emerald"
+            icon="⚖️"
         >
-            <div class="flex items-center justify-between gap-2">
-                <span class="text-xs font-black uppercase tracking-tight text-emerald-800 dark:text-emerald-300 whitespace-nowrap truncate">
-                    ⚖️ Beneficio Neto
-                </span>
-                <span class="text-[10px] font-black px-2 py-0.5 rounded-lg bg-emerald-600 text-white shrink-0 whitespace-nowrap">
-                    Reparto ➔
-                </span>
+            <div class="flex items-center justify-between text-[10px] font-bold text-emerald-700 dark:text-emerald-300">
+                <span>Cobrado - Prov. - Material</span>
+                <span class="text-indigo-600 dark:text-indigo-400">Ver Reparto ➔</span>
             </div>
-            <div class="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-2">
-                {{ number_format($sSummary['net_profit'] ?? 0, 2, ',', '.') }} €
+            <div class="text-[10px] font-semibold text-slate-500 dark:text-slate-400 truncate">
+                @foreach($sSummary['partners'] ?? [] as $prt)
+                    <span class="mr-1.5">{{ $prt['name'] }}: <strong class="text-emerald-700 dark:text-emerald-300">{{ number_format($prt['total_to_receive'], 0, ',', '.') }}€</strong></span>
+                @endforeach
             </div>
-            <div class="mt-2 pt-2 border-t border-emerald-200 dark:border-emerald-800/80 space-y-1 text-[11px] text-slate-600 dark:text-slate-300">
-                <div class="flex items-center justify-between font-bold text-[10px] text-emerald-700 dark:text-emerald-300">
-                    <span>Cobrado - Prov. - Material</span>
-                </div>
-                <div class="text-[10px] font-semibold text-slate-500 dark:text-slate-400 truncate">
-                    @foreach($sSummary['partners'] ?? [] as $prt)
-                        <span class="mr-1.5">{{ $prt['name'] }}: <strong class="text-emerald-700 dark:text-emerald-300">{{ number_format($prt['total_to_receive'], 0, ',', '.') }}€</strong></span>
-                    @endforeach
-                </div>
-            </div>
-        </div>
+        </x-ui.stat-card>
 
         <!-- 6. DESGLOSE FACTURAS (IVA) vs RECIBOS -->
-        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-xs">
-            <div class="flex items-center justify-between gap-2">
-                <span class="text-xs font-black uppercase tracking-tight text-slate-600 dark:text-slate-300 whitespace-nowrap truncate">
-                    🧾 Facturas vs Recibos
-                </span>
-                <span class="text-[10px] font-black px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 shrink-0 whitespace-nowrap">
-                    Fiscal
-                </span>
+        <x-ui.stat-card
+            label="Facturas vs Recibos"
+            value="{{ number_format(($kpis['tax_summary']['invoices_total'] ?? 0) + ($kpis['tax_summary']['receipts_total'] ?? 0), 2, ',', '.') }} €"
+            variant="neutral"
+            icon="🧾"
+        >
+            <div class="flex items-center justify-between text-[11px]">
+                <span class="text-slate-500 dark:text-slate-400">Facturas ({{ $kpis['tax_summary']['invoices_count'] }}):</span>
+                <strong class="text-blue-600 dark:text-blue-400">{{ number_format($kpis['tax_summary']['invoices_total'], 2, ',', '.') }} €</strong>
             </div>
-            <div class="mt-2 space-y-1 text-xs">
-                <div class="flex items-center justify-between">
-                    <span class="text-slate-500 dark:text-slate-400">📄 Facturas ({{ $kpis['tax_summary']['invoices_count'] }}):</span>
-                    <strong class="text-blue-600 dark:text-blue-400">{{ number_format($kpis['tax_summary']['invoices_total'], 2, ',', '.') }} €</strong>
-                </div>
-                <div class="flex items-center justify-between text-[11px] text-slate-400">
-                    <span>Base: {{ number_format($kpis['tax_summary']['invoices_base'], 2, ',', '.') }} €</span>
-                    <span>IVA: {{ number_format($kpis['tax_summary']['invoices_tax'], 2, ',', '.') }} €</span>
-                </div>
-                <div class="flex items-center justify-between pt-1 border-t border-slate-100 dark:border-slate-800">
-                    <span class="text-slate-500 dark:text-slate-400">🧾 Recibos:</span>
-                    <strong class="text-emerald-600 dark:text-emerald-400">{{ number_format($kpis['tax_summary']['receipts_total'], 2, ',', '.') }} €</strong>
-                </div>
+            <div class="flex items-center justify-between text-[10px] text-slate-400">
+                <span>Base: {{ number_format($kpis['tax_summary']['invoices_base'], 2, ',', '.') }} €</span>
+                <span>IVA: {{ number_format($kpis['tax_summary']['invoices_tax'], 2, ',', '.') }} €</span>
             </div>
-        </div>
+            <div class="flex items-center justify-between text-[11px] pt-1 border-t border-slate-100 dark:border-slate-800">
+                <span class="text-slate-500 dark:text-slate-400">Recibos:</span>
+                <strong class="text-emerald-600 dark:text-emerald-400">{{ number_format($kpis['tax_summary']['receipts_total'], 2, ',', '.') }} €</strong>
+            </div>
+        </x-ui.stat-card>
     </div>
 
     <!-- DESGLOSE INTERACTIVO POR MÉTODO DE PAGO (1 CLIC PARA FILTRAR) -->
@@ -1606,7 +1559,7 @@
         @endphp
         <div class="space-y-6">
             <!-- CABECERA Y BOTÓN DE CONFIGURACIÓN -->
-            <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                 <div>
                     <h3 class="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
                         <span>⚖️</span>
@@ -1616,14 +1569,38 @@
                         Cálculo automático y transparente de beneficios netos. El dinero efectivamente cobrado se limpia restando los costes a proveedores (Fotomatón/360º) y compras de material. A cada socio se le abona su cuota (%) más el reembolso de las compras adelantadas de su propio bolsillo.
                     </p>
                 </div>
-                <button
-                    type="button"
-                    wire:click="openPartnersModal"
-                    class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-900 text-xs font-black shadow-sm transition cursor-pointer shrink-0"
-                >
-                    <span>⚙️</span>
-                    <span>Configurar Socios y %</span>
-                </button>
+                <div class="flex flex-wrap items-center gap-2.5">
+                    <!-- Selector de Eventos a Repartir -->
+                    <div class="inline-flex items-center bg-slate-100 dark:bg-slate-950 p-1 rounded-xl border border-slate-200 dark:border-slate-800 text-xs gap-1">
+                        <button
+                            type="button"
+                            wire:click="$set('eventStatus', 'completed')"
+                            class="px-2.5 py-1.5 rounded-lg font-bold transition cursor-pointer flex items-center gap-1 {{ $eventStatus === 'completed' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white' }}"
+                            title="Calcular beneficios únicamente de eventos ya completados/realizados"
+                        >
+                            <span>🎯</span>
+                            <span>Solo Realizados (Completados)</span>
+                        </button>
+                        <button
+                            type="button"
+                            wire:click="$set('eventStatus', 'active')"
+                            class="px-2.5 py-1.5 rounded-lg font-bold transition cursor-pointer flex items-center gap-1 {{ $eventStatus === 'active' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white' }}"
+                            title="Calcular beneficios incluyendo señales cobradas de eventos futuros"
+                        >
+                            <span>🌐</span>
+                            <span>Todos con Cobros (Señales + Resto)</span>
+                        </button>
+                    </div>
+
+                    <button
+                        type="button"
+                        wire:click="openPartnersModal"
+                        class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-900 text-xs font-black shadow-sm transition cursor-pointer shrink-0"
+                    >
+                        <span>⚙️</span>
+                        <span>Configurar Socios y %</span>
+                    </button>
+                </div>
             </div>
 
             <!-- CUENTA DE RESULTADOS: CASCADA DE INGRESOS Y GASTOS -->
@@ -1994,832 +1971,11 @@
         </div>
     @endif
 
-    <!-- MODAL RÁPIDO PARA ANOTAR O EDITAR SEÑAL / COBRO FINAL -->
-    @if($showQuickPaymentModal)
-        <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-xs p-4">
-            <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 max-w-md w-full p-6 shadow-2xl space-y-4">
-                <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-                    <div>
-                        <h4 class="text-base font-black text-slate-900 dark:text-white">
-                            {{ $quickPaymentType === 'deposit' ? '💳 Registrar / Editar Señal de Reserva' : '💶 Registrar Cobro Final / Liquidación' }}
-                        </h4>
-                        <p class="text-xs text-indigo-600 dark:text-indigo-400 font-bold mt-0.5">
-                            {{ $quickEventName }}
-                        </p>
-                    </div>
-                    <button type="button" wire:click="closeQuickPaymentModal" class="text-slate-400 hover:text-slate-700 text-lg font-bold cursor-pointer">&times;</button>
-                </div>
-
-                <div class="space-y-3 text-xs">
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Importe Cobrado (€) *</label>
-                            <input type="number" step="0.01" wire:model="quickAmount" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 p-2.5 font-black text-sm">
-                            @error('quickAmount') <span class="text-rose-600 text-[11px] font-bold">{{ $message }}</span> @enderror
-                        </div>
-                        <div>
-                            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Fecha de Cobro *</label>
-                            <input type="date" wire:model="quickDate" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 p-2.5 font-bold">
-                            @error('quickDate') <span class="text-rose-600 text-[11px] font-bold">{{ $message }}</span> @enderror
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Método de Pago *</label>
-                        <div class="grid grid-cols-2 gap-2">
-                            @foreach(['bizum' => '📱 Bizum', 'transfer' => '🏦 Transferencia', 'cash' => '💵 Efectivo', 'card' => '💳 Tarjeta / TPV'] as $mVal => $mText)
-                                <button
-                                    type="button"
-                                    wire:click="$set('quickMethod', '{{ $mVal }}')"
-                                    class="p-2.5 rounded-xl border text-left font-bold transition cursor-pointer {{ $quickMethod === $mVal ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300' }}"
-                                >
-                                    {{ $mText }}
-                                </button>
-                            @endforeach
-                        </div>
-                    </div>
-
-                    <!-- Quién cobró este dinero -->
-                    <div>
-                        <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">¿Quién cobró este dinero? *</label>
-                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                            <button
-                                type="button"
-                                wire:click="$set('quickCollectedBy', 'Fran')"
-                                class="p-2.5 rounded-xl border text-center font-bold text-xs transition cursor-pointer {{ $quickCollectedBy === 'Fran' ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100' }}"
-                            >
-                                👤 Fran
-                            </button>
-                            <button
-                                type="button"
-                                wire:click="$set('quickCollectedBy', 'Miguel')"
-                                class="p-2.5 rounded-xl border text-center font-bold text-xs transition cursor-pointer {{ $quickCollectedBy === 'Miguel' ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100' }}"
-                            >
-                                👤 Miguel
-                            </button>
-                            <button
-                                type="button"
-                                wire:click="$set('quickCollectedBy', 'Ezequiel')"
-                                class="p-2.5 rounded-xl border text-center font-bold text-xs transition cursor-pointer {{ $quickCollectedBy === 'Ezequiel' ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100' }}"
-                            >
-                                👤 Ezequiel
-                            </button>
-                            <button
-                                type="button"
-                                wire:click="$set('quickCollectedBy', 'Cuenta Conjunta / Fondo Común')"
-                                class="p-2.5 rounded-xl border text-center font-bold text-xs transition cursor-pointer {{ in_array($quickCollectedBy, ['Cuenta Conjunta', 'Cuenta Conjunta / Fondo Común', 'Fondo Común', 'Empresa'], true) ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm' : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100' }}"
-                            >
-                                🏦 Fondo Común
-                            </button>
-                        </div>
-                        <p class="text-[10px] text-slate-400 mt-1">
-                            * Selecciona <strong>Fondo Común</strong> si el dinero se destinó a material, cenas de empresa o caja compartida (no se sumará a la cuenta personal de ningún socio).
-                        </p>
-                    </div>
-
-                    <div>
-                        <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Notas / Observaciones (Opcional)</label>
-                        <input type="text" wire:model="quickNotes" placeholder="Ej: Pagado por el novio, Bizum recibido..." class="w-full rounded-xl border border-slate-300 dark:border-slate-700 p-2.5">
-                    </div>
-
-                    @if($quickPaymentType === 'deposit')
-                        <label class="flex items-center gap-2 pt-1 cursor-pointer">
-                            <input type="checkbox" wire:model="quickGenerateReceipt" class="rounded border-slate-300 text-indigo-600">
-                            <span class="text-slate-600 dark:text-slate-300 font-semibold">Generar / actualizar Recibo de pago automáticamente</span>
-                        </label>
-                    @endif
-                </div>
-
-                <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
-                    <button type="button" wire:click="closeQuickPaymentModal" class="px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300 cursor-pointer">
-                        Cancelar
-                    </button>
-                    <button type="button" wire:click="saveQuickPayment" class="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black shadow-sm cursor-pointer">
-                        💾 Guardar Cobro
-                    </button>
-                </div>
-            </div>
-        </div>
-    @endif
-
-    <!-- MODAL PARA REGISTRAR / EDITAR RESERVA Y PAGOS A EMPRESA DE FOTOMATÓN / 360º / ARTÍSTAMENTE -->
-    @if($showProviderModal)
-        <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-xs p-4 overflow-y-auto">
-            <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 max-w-2xl w-full shadow-2xl my-auto overflow-hidden flex flex-col max-h-[92vh]">
-                <!-- CABECERA FIJA -->
-                <div class="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0 bg-white dark:bg-slate-900">
-                    <div>
-                        <h4 class="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
-                            <span>📸</span>
-                            <span>Reserva y Pagos a Proveedor (Fotomatón / 360º / Artístamente)</span>
-                        </h4>
-                        <p class="text-xs text-purple-600 dark:text-purple-400 font-bold mt-0.5">
-                            Anota los costes de proveedores y quién lo pagó de su bolsillo para descontarlo y reembolsarlo
-                        </p>
-                    </div>
-                    <button type="button" wire:click="closeProviderModal" class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 flex items-center justify-center font-bold text-base transition cursor-pointer">&times;</button>
-                </div>
-
-                <!-- CUERPO SCROLLABLE -->
-                <div class="p-6 space-y-4.5 overflow-y-auto text-xs flex-1">
-                    <!-- Plantillas rápidas -->
-                    <div class="p-3.5 rounded-2xl bg-purple-50/70 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800/80 space-y-2">
-                        <div class="flex items-center justify-between text-[11px] font-black text-purple-900 dark:text-purple-300">
-                            <span class="flex items-center gap-1.5">
-                                <span>⚡</span>
-                                <span>Plantillas Rápidas de Gasto / Proveedor:</span>
-                            </span>
-                            <button type="button" wire:click="resetProviderModalForNewBooking" class="text-[11px] text-purple-700 dark:text-purple-400 font-bold hover:underline cursor-pointer flex items-center gap-1">
-                                <span>➕</span>
-                                <span>Nuevo Gasto Adicional</span>
-                            </button>
-                        </div>
-                        <div class="flex flex-wrap gap-2">
-                            <button
-                                type="button"
-                                wire:click="applyProviderPreset('artistamente')"
-                                class="px-2.5 py-1 rounded-xl border text-[11px] font-bold transition cursor-pointer {{ $provKey === 'artistamente' ? 'bg-purple-600 text-white border-purple-600 shadow-sm' : 'bg-white dark:bg-slate-900 border-purple-300 text-purple-800 dark:text-purple-300 hover:bg-purple-100 dark:hover:bg-purple-900/50' }}"
-                            >
-                                🎭 Artístamente (Alta / Gestión)
-                            </button>
-                            <button
-                                type="button"
-                                wire:click="applyProviderPreset('photobooth')"
-                                class="px-2.5 py-1 rounded-xl border text-[11px] font-bold transition cursor-pointer {{ $provKey === 'logrono' ? 'bg-purple-600 text-white border-purple-600 shadow-sm' : 'bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800' }}"
-                            >
-                                🏢 Fotomatón Logroño
-                            </button>
-                            <button
-                                type="button"
-                                wire:click="applyProviderPreset('photobooth_vitoria')"
-                                class="px-2.5 py-1 rounded-xl border text-[11px] font-bold transition cursor-pointer {{ $provKey === 'vitoria' ? 'bg-purple-600 text-white border-purple-600 shadow-sm' : 'bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800' }}"
-                            >
-                                🧀 Fotomatón Vitoria (Cheese)
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Selección de Evento -->
-                    <div>
-                        <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Evento *</label>
-                        <select wire:model.live="provEventId" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 p-2.5 font-bold text-slate-900 dark:text-white">
-                            @foreach($allEventsList as $evOpt)
-                                <option value="{{ $evOpt->id }}">
-                                    {{ $evOpt->name }} ({{ $evOpt->event_date ? $evOpt->event_date->format('d/m/Y') : 'Sin fecha' }})
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
-
-                    @if($provClientPrice > 0 || !empty($provDetectedItemsText))
-                        <div class="p-3.5 rounded-2xl bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 flex flex-wrap items-center justify-between gap-2">
-                            <div>
-                                <div class="text-[11px] font-black text-indigo-800 dark:text-indigo-300">
-                                    💶 Detectado en el presupuesto del cliente: {{ number_format((float)$provClientPrice, 2, ',', '.') }} €
-                                </div>
-                                @if(!empty($provDetectedItemsText))
-                                    <div class="text-[10px] text-indigo-600 dark:text-indigo-400 font-semibold mt-0.5">
-                                        {{ $provDetectedItemsText }}
-                                    </div>
-                                @endif
-                            </div>
-                            @if($provClientPrice > 0 && abs((float)$provTotalCost - (float)$provClientPrice) > 0.05)
-                                <button
-                                    type="button"
-                                    wire:click="syncProviderFromQuote"
-                                    class="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold transition cursor-pointer shrink-0"
-                                >
-                                    🔄 Usar {{ number_format((float)$provClientPrice, 2, ',', '.') }} €
-                                </button>
-                            @endif
-                        </div>
-                    @endif
-
-                    <!-- Proveedor y Gasto Total: Perfectamente alineados en 2 columnas simétricas -->
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 items-start">
-                        <div>
-                            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Empresa Proveedora *</label>
-                            <input type="text" wire:model="provName" placeholder="Ej: Fotomatón Logroño / Artístamente..." class="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 p-2.5 font-bold text-slate-900 dark:text-white">
-                        </div>
-
-                        <div>
-                            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Total a Pagar / Factura Proveedor (€) *</label>
-                            <input type="number" step="0.01" wire:model.live="provTotalCost" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 p-2.5 font-black text-sm text-purple-700 dark:text-purple-300">
-                        </div>
-                    </div>
-
-                    <!-- Servicio Contratado -->
-                    <div>
-                        <div class="flex items-center justify-between mb-1">
-                            <label class="block font-bold text-slate-700 dark:text-slate-300">Servicio Contratado *</label>
-                            <span class="text-[10px] text-slate-400">Atajos rápidos:</span>
-                        </div>
-                        <div class="flex flex-wrap gap-1.5 mb-2">
-                            <button type="button" wire:click="$set('provService', 'Fotomatón')" class="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-[11px] font-bold hover:bg-purple-100 dark:hover:bg-purple-900/40 text-slate-700 dark:text-slate-300 transition cursor-pointer">📸 Fotomatón</button>
-                            <button type="button" wire:click="$set('provService', 'Plataforma 360º')" class="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-[11px] font-bold hover:bg-purple-100 dark:hover:bg-purple-900/40 text-slate-700 dark:text-slate-300 transition cursor-pointer">🎥 Plataforma 360º</button>
-                            <button type="button" wire:click="$set('provService', 'Pack Dúo: Fotomatón + Plataforma 360º')" class="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-[11px] font-bold hover:bg-purple-100 dark:hover:bg-purple-900/40 text-slate-700 dark:text-slate-300 transition cursor-pointer">✨ Pack Dúo (Fotomatón + 360º)</button>
-                            <button type="button" wire:click="$set('provService', 'Alta en plataforma / Gestión de artistas')" class="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-[11px] font-bold hover:bg-purple-100 dark:hover:bg-purple-900/40 text-slate-700 dark:text-slate-300 transition cursor-pointer">🎭 Artístamente</button>
-                        </div>
-                        <input type="text" wire:model="provService" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 p-2.5 font-semibold text-slate-900 dark:text-white">
-                    </div>
-
-                    <!-- Quién pagó a este proveedor de su propio bolsillo -->
-                    <div>
-                        <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">¿Quién pagó este proveedor de su propio bolsillo? *</label>
-                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                            <button
-                                type="button"
-                                wire:click="$set('provPaidBy', 'Fran')"
-                                class="p-2.5 rounded-xl border text-center font-bold text-xs transition cursor-pointer {{ $provPaidBy === 'Fran' ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800' }}"
-                            >
-                                👤 Fran
-                            </button>
-                            <button
-                                type="button"
-                                wire:click="$set('provPaidBy', 'Miguel')"
-                                class="p-2.5 rounded-xl border text-center font-bold text-xs transition cursor-pointer {{ $provPaidBy === 'Miguel' ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800' }}"
-                            >
-                                👤 Miguel
-                            </button>
-                            <button
-                                type="button"
-                                wire:click="$set('provPaidBy', 'Ezequiel')"
-                                class="p-2.5 rounded-xl border text-center font-bold text-xs transition cursor-pointer {{ $provPaidBy === 'Ezequiel' ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800' }}"
-                            >
-                                👤 Ezequiel
-                            </button>
-                            <button
-                                type="button"
-                                wire:click="$set('provPaidBy', 'Caja Común / Empresa')"
-                                class="p-2.5 rounded-xl border text-center font-bold text-xs transition cursor-pointer {{ $provPaidBy === 'Caja Común / Empresa' ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm' : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800' }}"
-                            >
-                                🏦 Caja Común
-                            </button>
-                        </div>
-                        <p class="text-[10px] text-slate-400 mt-1">
-                            * Si un socio pagó al proveedor de su bolsillo (ej. alta en Artístamente o señal de fotomatón), se le sumará íntegro como reembolso a percibir en la liquidación.
-                        </p>
-                    </div>
-
-                    <!-- BLOQUE 1: SEÑAL DE RESERVA A LA EMPRESA -->
-                    <div class="p-3.5 rounded-2xl border {{ $provDepositPaid ? 'bg-emerald-50/60 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-800' : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800' }} space-y-2.5">
-                        <div class="flex items-center justify-between">
-                            <label class="flex items-center gap-2 font-black text-slate-900 dark:text-white cursor-pointer">
-                                <input type="checkbox" wire:model.live="provDepositPaid" class="rounded border-slate-300 text-emerald-600">
-                                <span>1º PAGO: Señal de Reserva Pagada a la Empresa</span>
-                            </label>
-                            <div class="flex gap-1">
-                                <button type="button" wire:click="$set('provDepositAmount', 100)" class="px-2 py-0.5 rounded bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-[10px] font-bold cursor-pointer">100 €</button>
-                                <button type="button" wire:click="$set('provDepositAmount', 200)" class="px-2 py-0.5 rounded bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-[10px] font-bold cursor-pointer">200 €</button>
-                            </div>
-                        </div>
-
-                        @if($provDepositPaid)
-                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                                <div>
-                                    <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Importe Señal (€)</label>
-                                    <input type="number" step="0.01" wire:model.live="provDepositAmount" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 p-2 font-black text-slate-900 dark:text-white">
-                                </div>
-                                <div>
-                                    <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Fecha de Pago</label>
-                                    <input type="date" wire:model="provDepositDate" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 p-2 font-bold text-slate-900 dark:text-white">
-                                </div>
-                                <div>
-                                    <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Método de Pago</label>
-                                    <select wire:model="provDepositMethod" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 p-2 font-bold text-slate-900 dark:text-white">
-                                        <option value="bizum">📱 Bizum</option>
-                                        <option value="transfer">🏦 Transferencia</option>
-                                        <option value="cash">💵 Efectivo</option>
-                                        <option value="card">💳 Tarjeta</option>
-                                    </select>
-                                </div>
-                            </div>
-                        @endif
-                    </div>
-
-                    <!-- BLOQUE 2: RESTO / LIQUIDACIÓN FINAL A LA EMPRESA -->
-                    @php
-                        $calcPendingToProv = max(0, (float)$provTotalCost - ($provDepositPaid ? (float)$provDepositAmount : 0) - ($provFinalPaid ? (float)$provFinalAmount : 0));
-                    @endphp
-                    <div class="p-3.5 rounded-2xl border {{ $provFinalPaid ? 'bg-blue-50/60 dark:bg-blue-950/30 border-blue-300 dark:border-blue-800' : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800' }} space-y-2.5">
-                        <div class="flex items-center justify-between">
-                            <label class="flex items-center gap-2 font-black text-slate-900 dark:text-white cursor-pointer">
-                                <input type="checkbox" wire:model.live="provFinalPaid" class="rounded border-slate-300 text-blue-600">
-                                <span>2º PAGO: Liquidación / Resto Pagado a la Empresa</span>
-                            </label>
-                            <button
-                                type="button"
-                                wire:click="fillProviderRemaining"
-                                class="px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold transition cursor-pointer"
-                            >
-                                ⚡ Liquidar Resto ({{ number_format(max(0, (float)$provTotalCost - ($provDepositPaid ? (float)$provDepositAmount : 0)), 2, ',', '.') }} €)
-                            </button>
-                        </div>
-
-                        @if($provFinalPaid)
-                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                                <div>
-                                    <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Importe Resto (€)</label>
-                                    <input type="number" step="0.01" wire:model.live="provFinalAmount" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 p-2 font-black text-slate-900 dark:text-white">
-                                </div>
-                                <div>
-                                    <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Fecha Pago Final</label>
-                                    <input type="date" wire:model="provFinalDate" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 p-2 font-bold text-slate-900 dark:text-white">
-                                </div>
-                                <div>
-                                    <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Método de Pago</label>
-                                    <select wire:model="provFinalMethod" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 p-2 font-bold text-slate-900 dark:text-white">
-                                        <option value="transfer">🏦 Transferencia</option>
-                                        <option value="bizum">📱 Bizum</option>
-                                        <option value="cash">💵 Efectivo</option>
-                                        <option value="card">💳 Tarjeta</option>
-                                    </select>
-                                </div>
-                            </div>
-                        @else
-                            <div class="text-[11px] text-amber-700 dark:text-amber-300 font-bold">
-                                ⏳ Queda pendiente de pagarle a la empresa: <strong>{{ number_format($calcPendingToProv, 2, ',', '.') }} €</strong>
-                            </div>
-                        @endif
-                    </div>
-
-                    <!-- BLOQUE DE LIQUIDACIÓN Y DEVOLUCIÓN DE ARTÍSTAMENTE / COOPERATIVA -->
-                    <div class="p-3.5 rounded-2xl border transition {{ $provHasRefund ? 'bg-amber-50/70 dark:bg-amber-950/30 border-amber-300 dark:border-amber-700' : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800' }} space-y-3">
-                        <div class="flex items-center justify-between">
-                            <label class="flex items-center gap-2 font-black text-slate-900 dark:text-white cursor-pointer">
-                                <input type="checkbox" wire:model.live="provHasRefund" class="rounded border-slate-300 text-amber-600">
-                                <span>🎭 ¿Hay Liquidación / Devolución de Cooperativa? (Artístamente)</span>
-                            </label>
-                            @if($provHasRefund)
-                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-200 dark:bg-amber-900 text-amber-900 dark:text-amber-200">
-                                    Se recupera dinero
-                                </span>
-                            @endif
-                        </div>
-
-                        @if($provHasRefund)
-                            <div class="space-y-3 pt-1 border-t border-amber-200 dark:border-amber-800/80">
-                                <p class="text-[11px] text-amber-800 dark:text-amber-300">
-                                    Al facturar con Artístamente pagamos la factura (ej. {{ number_format((float)$provTotalCost, 2, ',', '.') }} €), y tras deducir gestión y S.S., la cooperativa nos devuelve una cantidad que <strong>se añade al dinero a repartir</strong>.
-                                </p>
-
-                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    <div>
-                                        <label class="block text-[11px] font-black text-slate-800 dark:text-slate-200 mb-1">
-                                            💰 Importe Devuelto / Cobrado (€) *
-                                        </label>
-                                        <input type="number" step="0.01" wire:model.live="provRefundAmount" class="w-full rounded-xl border border-amber-300 dark:border-amber-700 bg-white dark:bg-slate-900 p-2.5 font-black text-base text-amber-600 dark:text-amber-400">
-                                        <span class="text-[10px] text-slate-500">Ej: 136,44 € devuelto según liquidación</span>
-                                    </div>
-
-                                    <div>
-                                        <label class="block text-[11px] font-black text-slate-800 dark:text-slate-200 mb-1">
-                                            🏦 ¿A qué cuenta bancaria ingresó Artístamente la devolución? *
-                                        </label>
-                                        <select wire:model.live="provRefundRecipient" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 p-2.5 font-bold text-xs">
-                                            <option value="50_50">👥 50% Fran / 50% Miguel (Mitad directamente a cada uno)</option>
-                                            <option value="fran">👤 Ingresado íntegro en banco de Fran (se divide en el arqueo final)</option>
-                                            <option value="miguel">👤 Ingresado íntegro en banco de Miguel (se divide en el arqueo final)</option>
-                                            <option value="ezequiel">👤 Ingresado íntegro en banco de Ezequiel (se divide en el arqueo final)</option>
-                                            <option value="joint">🏦 Cuenta Conjunta / Fondo Común</option>
-                                            <option value="custom">⚙️ Reparto Personalizado</option>
-                                        </select>
-                                        <span class="text-[10px] text-slate-500">El dinero devuelto se divide siempre al 50% entre ambos socios</span>
-                                    </div>
-                                </div>
-
-                                @if($provRefundRecipient === 'custom')
-                                    <div class="grid grid-cols-2 gap-3 p-2.5 rounded-xl bg-amber-100/60 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800">
-                                        <div>
-                                            <label class="block text-[10px] font-bold text-slate-700 dark:text-slate-300">Ingresado a Fran (€)</label>
-                                            <input type="number" step="0.01" wire:model.live="provRefundFranAmount" class="w-full rounded-lg border border-slate-300 p-1.5 font-bold text-xs">
-                                        </div>
-                                        <div>
-                                            <label class="block text-[10px] font-bold text-slate-700 dark:text-slate-300">Ingresado a Miguel (€)</label>
-                                            <input type="number" step="0.01" wire:model.live="provRefundMiguelAmount" class="w-full rounded-lg border border-slate-300 p-1.5 font-bold text-xs">
-                                        </div>
-                                    </div>
-                                @else
-                                    <div class="p-3 rounded-xl bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-800/60 text-xs space-y-1">
-                                        <div class="flex items-center justify-between">
-                                            <span class="text-slate-600 dark:text-slate-400 font-bold">Reparto de la devolución entre socios:</span>
-                                            <span class="px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-200 font-black text-[10px]">
-                                                Total Devuelto: {{ number_format((float)$provRefundAmount, 2, ',', '.') }} €
-                                            </span>
-                                        </div>
-                                        <div class="font-bold text-slate-900 dark:text-white text-xs pt-0.5">
-                                            @if($provRefundRecipient === '50_50')
-                                                Fran: <strong class="text-amber-600">{{ number_format((float)$provRefundFranAmount, 2, ',', '.') }} €</strong> &bull; Miguel: <strong class="text-amber-600">{{ number_format((float)$provRefundMiguelAmount, 2, ',', '.') }} €</strong> (50% exacto para cada uno)
-                                            @elseif($provRefundRecipient === 'fran')
-                                                Artístamente ingresó los <strong class="text-amber-600">{{ number_format((float)$provRefundAmount, 2, ',', '.') }} €</strong> en la cuenta de Fran &rarr; En el reparto le corresponden <strong class="text-emerald-600">{{ number_format((float)$provRefundAmount / 2, 2, ',', '.') }} €</strong> a Fran y <strong class="text-blue-600">{{ number_format((float)$provRefundAmount / 2, 2, ',', '.') }} €</strong> a Miguel (Fran transfiere su mitad a Miguel en el arqueo).
-                                            @elseif($provRefundRecipient === 'miguel')
-                                                Artístamente ingresó los <strong class="text-amber-600">{{ number_format((float)$provRefundAmount, 2, ',', '.') }} €</strong> en la cuenta de Miguel &rarr; En el reparto le corresponden <strong class="text-emerald-600">{{ number_format((float)$provRefundAmount / 2, 2, ',', '.') }} €</strong> a Miguel y <strong class="text-blue-600">{{ number_format((float)$provRefundAmount / 2, 2, ',', '.') }} €</strong> a Fran (Miguel transfiere su mitad a Fran en el arqueo).
-                                            @elseif($provRefundRecipient === 'ezequiel')
-                                                Artístamente ingresó los <strong class="text-amber-600">{{ number_format((float)$provRefundAmount, 2, ',', '.') }} €</strong> en la cuenta de Ezequiel &rarr; Se compensa equitativamente con la cuota de beneficio de cada socio en el arqueo general.
-                                            @elseif($provRefundRecipient === 'joint')
-                                                Ingresado en Cuenta Conjunta / Fondo Común (<strong class="text-emerald-600">{{ number_format((float)$provRefundAmount, 2, ',', '.') }} €</strong>) &rarr; Beneficio compartido para la caja común de la empresa.
-                                            @endif
-                                        </div>
-                                    </div>
-                                @endif
-
-                                @php
-                                    $netEventCost = max(0.0, round((float)$provTotalCost - (float)$provRefundAmount, 2));
-                                @endphp
-                                <div class="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 flex items-center justify-between text-xs">
-                                    <div>
-                                        <span class="font-black text-emerald-800 dark:text-emerald-300 block">
-                                            Coste Neto Real Asumido por el Evento:
-                                        </span>
-                                        <span class="text-[10px] text-emerald-700/80 dark:text-emerald-400">
-                                            Factura ({{ number_format((float)$provTotalCost, 2, ',', '.') }} €) - Devolución ({{ number_format((float)$provRefundAmount, 2, ',', '.') }} €)
-                                        </span>
-                                    </div>
-                                    <div class="text-lg font-black text-emerald-700 dark:text-emerald-300">
-                                        {{ number_format($netEventCost, 2, ',', '.') }} €
-                                    </div>
-                                </div>
-
-                                <details class="text-[11px] text-slate-600 dark:text-slate-400 pt-1">
-                                    <summary class="font-bold text-amber-700 dark:text-amber-400 cursor-pointer hover:underline">
-                                        📄 Ver desglose de retenciones y documentos de la liquidación (Opcional)
-                                    </summary>
-                                    <div class="mt-2.5 p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-2.5">
-                                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                                            <div>
-                                                <label class="block text-[10px] text-slate-500 font-bold">Gestión (€)</label>
-                                                <input type="number" step="0.01" wire:model.live="provManagementFee" class="w-full rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 p-1 font-semibold text-xs">
-                                            </div>
-                                            <div>
-                                                <label class="block text-[10px] text-slate-500 font-bold">Seg. Social (€)</label>
-                                                <input type="number" step="0.01" wire:model.live="provSocialSecurityFee" class="w-full rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 p-1 font-semibold text-xs">
-                                            </div>
-                                            <div>
-                                                <label class="block text-[10px] text-slate-500 font-bold">Retención IRPF (€)</label>
-                                                <input type="number" step="0.01" wire:model.live="provTaxFee" class="w-full rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 p-1 font-semibold text-xs">
-                                            </div>
-                                            <div>
-                                                <label class="block text-[10px] text-slate-500 font-bold">Cuota Alta (€)</label>
-                                                <input type="number" step="0.01" wire:model.live="provRegistrationFee" class="w-full rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 p-1 font-semibold text-xs">
-                                            </div>
-                                        </div>
-                                        <div class="flex items-center justify-between pt-1">
-                                            <button type="button" wire:click="calculateRefundFromFees" class="px-2 py-1 rounded bg-amber-600 text-white text-[10px] font-bold hover:bg-amber-700 cursor-pointer transition">
-                                                ⚡ Auto-calcular importe devuelto
-                                            </button>
-                                        </div>
-                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 border-t border-slate-200 dark:border-slate-800">
-                                            <div>
-                                                <label class="block text-[10px] text-slate-500 font-bold">Nº Liquidación Artístamente</label>
-                                                <input type="text" wire:model="provSettlementNumber" placeholder="Ej: EAM-322971" class="w-full rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 p-1 font-semibold text-xs">
-                                            </div>
-                                            <div>
-                                                <label class="block text-[10px] text-slate-500 font-bold">Nº Factura / Presupuesto</label>
-                                                <input type="text" wire:model="provInvoiceNumber" placeholder="Ej: PEV-322971-1" class="w-full rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 p-1 font-semibold text-xs">
-                                            </div>
-                                        </div>
-                                    </div>
-                                </details>
-                            </div>
-                        @endif
-                    </div>
-
-                    <div>
-                        <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Notas / Referencia Reserva (Opcional)</label>
-                        <input type="text" wire:model="provNotes" placeholder="Ej: Reservado con Águeda por WhatsApp, montaje a las 20:00..." class="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 p-2.5 text-slate-900 dark:text-white">
-                    </div>
-                </div>
-
-                <!-- PIE FIJO -->
-                <div class="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 flex items-center justify-end gap-3 shrink-0">
-                    <button type="button" wire:click="closeProviderModal" class="px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer">
-                        Cancelar
-                    </button>
-                    <button type="button" wire:click="saveProviderBooking" class="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-black shadow-sm transition cursor-pointer flex items-center gap-1.5">
-                        <span>💾</span>
-                        <span>Guardar Reserva y Pagos</span>
-                    </button>
-                </div>
-            </div>
-        </div>
-    @endif
-
     <!-- ========================================================== -->
-    <!-- MODAL PARA REGISTRAR / EDITAR COMPRA DE MATERIAL -->
+    <!-- MODALES MODULARIZADOS (CLEAN ARCHITECTURE) -->
     <!-- ========================================================== -->
-    @if($showMaterialModal)
-        <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-xs p-4 overflow-y-auto">
-            <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 max-w-lg w-full p-6 shadow-2xl space-y-4 my-8">
-                <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-                    <div>
-                        <h4 class="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
-                            <span>🛠️</span>
-                            <span>{{ $materialExpenseId ? 'Editar Compra de Material' : 'Registrar Compra de Material' }}</span>
-                        </h4>
-                        <p class="text-xs text-amber-600 dark:text-amber-400 font-bold mt-0.5">
-                            Gasto deducible antes del reparto. Se le reembolsa al socio que lo haya adelantado.
-                        </p>
-                    </div>
-                    <button type="button" wire:click="closeMaterialModal" class="text-slate-400 hover:text-slate-700 dark:hover:text-white text-lg font-bold cursor-pointer">&times;</button>
-                </div>
-
-                <div class="space-y-3.5 text-xs">
-                    <!-- Concepto -->
-                    <div>
-                        <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Concepto / Descripción del Material *</label>
-                        <input
-                            type="text"
-                            wire:model="matConcept"
-                            placeholder="Ej: Cable XLR 10m, Bobinas papel fotomatón, Foco LED RGB..."
-                            class="w-full rounded-xl border border-slate-300 dark:border-slate-700 p-2.5 font-bold"
-                        >
-                        @error('matConcept') <span class="text-rose-600 text-[11px] font-bold">{{ $message }}</span> @enderror
-                    </div>
-
-                    <!-- Importe y Fecha -->
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div>
-                            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Importe Total (€) *</label>
-                            <input
-                                type="number"
-                                step="0.01"
-                                wire:model="matAmount"
-                                placeholder="0,00"
-                                class="w-full rounded-xl border border-slate-300 dark:border-slate-700 p-2.5 font-black text-sm text-amber-600 dark:text-amber-400"
-                            >
-                            @error('matAmount') <span class="text-rose-600 text-[11px] font-bold">{{ $message }}</span> @enderror
-                        </div>
-                        <div>
-                            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Fecha de Compra *</label>
-                            <input
-                                type="date"
-                                wire:model="matPurchaseDate"
-                                class="w-full rounded-xl border border-slate-300 dark:border-slate-700 p-2.5 font-bold"
-                            >
-                            @error('matPurchaseDate') <span class="text-rose-600 text-[11px] font-bold">{{ $message }}</span> @enderror
-                        </div>
-                    </div>
-
-                    <!-- ¿Quién lo pagó? -->
-                    <div>
-                        <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">¿Quién lo pagó de su bolsillo / cuenta? *</label>
-                        <div class="flex flex-wrap gap-1.5 mb-1.5">
-                            @foreach($partners as $prtOpt)
-                                <button
-                                    type="button"
-                                    wire:click="$set('matPaidBy', '{{ $prtOpt['name'] }}')"
-                                    class="px-2.5 py-1 rounded-lg text-xs font-bold border cursor-pointer {{ $matPaidBy === $prtOpt['name'] ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700' }}"
-                                >
-                                    👤 {{ $prtOpt['name'] }}
-                                </button>
-                            @endforeach
-                            <button
-                                type="button"
-                                wire:click="$set('matPaidBy', 'Caja Común / Empresa')"
-                                class="px-2.5 py-1 rounded-lg text-xs font-bold border cursor-pointer {{ $matPaidBy === 'Caja Común / Empresa' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700' }}"
-                            >
-                                🏦 Caja Común / Empresa
-                            </button>
-                        </div>
-                        <input
-                            type="text"
-                            wire:model="matPaidBy"
-                            placeholder="Nombre del socio o pagador..."
-                            class="w-full rounded-xl border border-slate-300 dark:border-slate-700 p-2 font-bold"
-                        >
-                        <p class="text-[10px] text-slate-400 mt-1">
-                            * Si lo pagó un socio, se le sumará a su liquidación final como reembolso íntegro. Si fue de Caja Común, no genera reembolso individual.
-                        </p>
-                        @error('matPaidBy') <span class="text-rose-600 text-[11px] font-bold">{{ $message }}</span> @enderror
-                    </div>
-
-                    <!-- Categoría y Método de Pago -->
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div>
-                            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Categoría de Gasto *</label>
-                            <select wire:model="matCategory" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 p-2.5 font-bold">
-                                <option value="sound_lighting">🔊 Sonido e Iluminación</option>
-                                <option value="fx">🎆 Efectos Especiales (FX) / Fuego Frío</option>
-                                <option value="photobooth_360">📸 Fotomatón y Plataforma 360</option>
-                                <option value="it_cables">🔌 Informática y Cableado</option>
-                                <option value="fuel_transport">⛽ Combustible y Transporte</option>
-                                <option value="consumables">📦 Consumibles y Atrezzo</option>
-                                <option value="general">🛠️ Herramientas y General</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Método de Pago *</label>
-                            <select wire:model="matPaymentMethod" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 p-2.5 font-bold">
-                                <option value="card">💳 Tarjeta / TPV</option>
-                                <option value="transfer">🏦 Transferencia Bancaria</option>
-                                <option value="bizum">📱 Bizum</option>
-                                <option value="cash">💵 Efectivo</option>
-                                <option value="other">📝 Otro</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <!-- Proveedor y Nº Factura -->
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div>
-                            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Comercio / Proveedor</label>
-                            <input
-                                type="text"
-                                wire:model="matSupplier"
-                                placeholder="Ej: Amazon, Thomann, Leroy Merlin..."
-                                class="w-full rounded-xl border border-slate-300 dark:border-slate-700 p-2"
-                            >
-                        </div>
-                        <div>
-                            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Nº Factura / Ticket</label>
-                            <input
-                                type="text"
-                                wire:model="matInvoiceNumber"
-                                placeholder="Ej: FAC-2026-9812..."
-                                class="w-full rounded-xl border border-slate-300 dark:border-slate-700 p-2"
-                            >
-                        </div>
-                    </div>
-
-                    <!-- Evento o Temporada -->
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div>
-                            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Evento Asociado (Opcional)</label>
-                            <select wire:model="matEventId" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 p-2 font-semibold">
-                                <option value="">-- Gasto General de Temporada --</option>
-                                @foreach($allEventsList as $evOpt)
-                                    <option value="{{ $evOpt->id }}">
-                                        {{ $evOpt->name }} ({{ $evOpt->event_date ? $evOpt->event_date->format('d/m/Y') : '' }})
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Temporada (Año)</label>
-                            <input
-                                type="text"
-                                wire:model="matSeason"
-                                placeholder="Ej: 2026, 2027..."
-                                class="w-full rounded-xl border border-slate-300 dark:border-slate-700 p-2 font-bold"
-                            >
-                        </div>
-                    </div>
-
-                    <!-- Notas -->
-                    <div>
-                        <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Notas / Observaciones</label>
-                        <input
-                            type="text"
-                            wire:model="matNotes"
-                            placeholder="Ej: Repuesto urgente para la boda de Navarrete..."
-                            class="w-full rounded-xl border border-slate-300 dark:border-slate-700 p-2"
-                        >
-                    </div>
-                </div>
-
-                <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
-                    <button type="button" wire:click="closeMaterialModal" class="px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300 cursor-pointer">
-                        Cancelar
-                    </button>
-                    <button type="button" wire:click="saveMaterialExpense" class="px-5 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-black shadow-sm cursor-pointer">
-                        💾 Guardar Compra de Material
-                    </button>
-                </div>
-            </div>
-        </div>
-    @endif
-
-    <!-- ========================================================== -->
-    <!-- MODAL PARA CONFIGURAR SOCIOS Y REPARTO DE BENEFICIOS -->
-    <!-- ========================================================== -->
-    @if($showPartnersModal)
-        <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-xs p-4">
-            <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 max-w-md w-full p-6 shadow-2xl space-y-4">
-                <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-                    <div>
-                        <h4 class="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
-                            <span>⚙️</span>
-                            <span>Socios y Porcentajes de Reparto</span>
-                        </h4>
-                        <p class="text-xs text-slate-500 mt-0.5">
-                            Define los socios y qué porcentaje de beneficio le corresponde a cada uno.
-                        </p>
-                    </div>
-                    <button type="button" wire:click="closePartnersModal" class="text-slate-400 hover:text-slate-700 dark:hover:text-white text-lg font-bold cursor-pointer">&times;</button>
-                </div>
-
-                <!-- PLANTILLAS RÁPIDAS -->
-                <div class="space-y-1.5 p-3 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800">
-                    <span class="text-[10px] font-black uppercase tracking-wider text-indigo-700 dark:text-indigo-300 block">
-                        ⚡ Plantillas Rápidas de Socios:
-                    </span>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        <button
-                            type="button"
-                            wire:click.prevent="setPartnersPreset('3_partners')"
-                            class="px-2.5 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-indigo-300 dark:border-indigo-700 hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-600 text-indigo-900 dark:text-indigo-200 text-[11px] font-black transition cursor-pointer text-left flex items-center gap-1.5 shadow-2xs"
-                        >
-                            <span>👥</span>
-                            <span>3 Socios (Fran, Miguel, Ezequiel)</span>
-                        </button>
-                        <button
-                            type="button"
-                            wire:click.prevent="setPartnersPreset('2_partners')"
-                            class="px-2.5 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 hover:bg-slate-800 hover:text-white dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-[11px] font-black transition cursor-pointer text-left flex items-center gap-1.5 shadow-2xs"
-                        >
-                            <span>👥</span>
-                            <span>2 Socios (Fran 50% / Miguel 50%)</span>
-                        </button>
-                    </div>
-                </div>
-
-                @php
-                    $mPartners = $this->partnersList;
-                    $sumPct = array_sum(array_map(fn($p) => (float)($p['percentage'] ?? 0), $mPartners));
-                    $isExact100 = abs($sumPct - 100.0) < 0.01;
-                @endphp
-
-                <div class="space-y-3 text-xs">
-                    <div class="space-y-2">
-                        @foreach($this->partnersList as $idx => $prtRow)
-                            <div wire:key="partner-modal-row-{{ $idx }}" class="flex items-center gap-2 bg-slate-50 dark:bg-slate-950/60 p-2.5 rounded-2xl border border-slate-200 dark:border-slate-800">
-                                <div class="w-7 h-7 rounded-xl bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 flex items-center justify-center font-black shrink-0">
-                                    {{ $idx + 1 }}
-                                </div>
-                                <div class="flex-1">
-                                    <input
-                                        type="text"
-                                        wire:model="partnersList.{{ $idx }}.name"
-                                        placeholder="Nombre del socio..."
-                                        class="w-full rounded-xl border border-slate-300 dark:border-slate-700 p-2 font-bold text-xs"
-                                    >
-                                </div>
-                                <div class="w-24 flex items-center gap-1 shrink-0">
-                                    <input
-                                        type="number"
-                                        step="0.5"
-                                        wire:model.live="partnersList.{{ $idx }}.percentage"
-                                        placeholder="%"
-                                        class="w-full rounded-xl border border-slate-300 dark:border-slate-700 p-2 text-right font-black text-xs"
-                                    >
-                                    <span class="font-black text-slate-500">%</span>
-                                </div>
-                                @if(count($this->partnersList) > 1)
-                                    <button
-                                        type="button"
-                                        wire:click.prevent="removePartnerRow({{ $idx }})"
-                                        class="p-2 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950 rounded-xl transition cursor-pointer"
-                                        title="Eliminar socio"
-                                    >
-                                        🗑️
-                                    </button>
-                                @endif
-                            </div>
-                        @endforeach
-                    </div>
-
-                    <div class="flex items-center justify-between pt-1">
-                        <button
-                            type="button"
-                            wire:click.prevent="addPartnerRow"
-                            class="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950 text-indigo-700 dark:text-indigo-300 font-bold text-xs transition cursor-pointer inline-flex items-center gap-1"
-                        >
-                            <span>➕</span>
-                            <span>Añadir otro socio</span>
-                        </button>
-
-                        <div class="text-right">
-                            <span class="text-[11px] text-slate-500">Suma total:</span>
-                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-black {{ $isExact100 ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' : 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300' }}">
-                                {{ $sumPct }}% {{ $isExact100 ? '✔️' : '⚠️' }}
-                            </span>
-                        </div>
-                    </div>
-
-                    @if(!$isExact100)
-                        <div class="p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-300 text-[11px] font-bold">
-                            ⚠️ Los porcentajes deben sumar exactamente 100% (actualmente suman {{ $sumPct }}%).
-                        </div>
-                    @endif
-
-                    @error('partnersList')
-                        <div class="text-rose-600 text-xs font-bold">{{ $message }}</div>
-                    @enderror
-                </div>
-
-                <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
-                    <button type="button" wire:click="closePartnersModal" class="px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300 cursor-pointer">
-                        Cancelar
-                    </button>
-                    <button
-                        type="button"
-                        wire:click="savePartnersSettings"
-                        class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black shadow-sm cursor-pointer"
-                    >
-                        💾 Guardar Reparto
-                    </button>
-                </div>
-            </div>
-        </div>
-    @endif
+    @include('livewire.admin.billing.partials.modals.quick-payment-modal')
+    @include('livewire.admin.billing.partials.modals.provider-modal')
+    @include('livewire.admin.billing.partials.modals.material-modal')
+    @include('livewire.admin.billing.partials.modals.partners-modal')
 </div>

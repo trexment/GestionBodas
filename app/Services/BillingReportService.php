@@ -27,7 +27,7 @@ class BillingReportService
         $paymentMethod = $filters['payment_method'] ?? 'all'; // 'all' | 'bizum' | 'transfer' | 'cash' | 'card' | 'other'
         $docType = $filters['doc_type'] ?? 'all'; // 'all' | 'factura' | 'recibo'
         $brand = $filters['brand'] ?? 'all'; // 'all' | 'nunez_and_son' | 'javnx'
-        $eventStatusFilter = $filters['event_status'] ?? 'active'; // 'active' | 'confirmed_completed' | 'all'
+        $eventStatusFilter = $filters['event_status'] ?? 'active'; // 'active' | 'confirmed_completed' | 'completed' | 'all'
         $search = mb_strtolower(trim((string) ($filters['search'] ?? '')));
 
         // Si se selecciona trimestre con un año concreto, calcular el rango del trimestre si no hay date_from/date_to manual
@@ -121,7 +121,11 @@ class BillingReportService
             }
 
             // 2. Filtro por Estado del Evento
-            if ($eventStatusFilter === 'confirmed_completed') {
+            if ($eventStatusFilter === 'completed') {
+                if ($event->status !== 'completed') {
+                    continue;
+                }
+            } elseif ($eventStatusFilter === 'confirmed_completed') {
                 if (!in_array($event->status, ['confirmed', 'completed'], true) && $fb['total_paid'] <= 0) {
                     continue;
                 }
