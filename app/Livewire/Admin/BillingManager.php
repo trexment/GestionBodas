@@ -308,13 +308,9 @@ class BillingManager extends Component
             session()->flash('message', "✅ Señal de " . number_format($amount, 2, ',', '.') . " € ({$methodLabel} - Cobrado por {$this->quickCollectedBy}) guardada en '{$event->name}'.");
         } else {
             if ($amount > 0) {
-                $nextNum = Invoice::nextNumber('recibo');
                 $noteText = "Liquidación final del evento cobrada vía {$methodLabel} el " . Carbon::parse($this->quickDate)->format('d/m/Y') . ($this->quickNotes ? " ({$this->quickNotes})" : '');
 
                 $recData = [
-                    'quote_id' => $latestQuote?->id,
-                    'invoice_number' => $nextNum,
-                    'type' => 'recibo',
                     'amount' => $amount,
                     'tax' => 0.00,
                     'tax_rate' => 0.00,
@@ -326,13 +322,30 @@ class BillingManager extends Component
                 ];
 
                 if (\Illuminate\Support\Facades\Schema::hasColumn('invoices', 'collected_by')) {
-                    $recData['collected_by'] = $this->quickCollectedBy ?: 'Fran';
+                    $recData['collected_by'] = $this->quickCollectedBy ?: 'Cuenta Conjunta / Fondo Común';
                 }
 
-                $event->invoices()->create($recData);
+                // Buscar si ya existe un recibo de cobro final para este evento
+                $existingFinalInv = $event->invoices->first(function ($inv) {
+                    $n = mb_strtolower((string) ($inv->notes ?? ''));
+                    return (str_contains($n, 'liquidación') || str_contains($n, 'liquidacion') || str_contains($n, 'final')) && !str_contains($n, 'señal') && !str_contains($n, 'senal');
+                }) ?? $event->invoices->where('type', 'recibo')->first(function ($inv) {
+                    $n = mb_strtolower((string) ($inv->notes ?? ''));
+                    return !str_contains($n, 'señal') && !str_contains($n, 'senal');
+                });
+
+                if ($existingFinalInv) {
+                    $existingFinalInv->update($recData);
+                } else {
+                    $nextNum = Invoice::nextNumber('recibo');
+                    $recData['quote_id'] = $latestQuote?->id;
+                    $recData['invoice_number'] = $nextNum;
+                    $recData['type'] = 'recibo';
+                    $event->invoices()->create($recData);
+                }
             }
 
-            session()->flash('message', "✅ Cobro final de " . number_format($amount, 2, ',', '.') . " € ({$methodLabel} - Cobrado por {$this->quickCollectedBy}) registrado en '{$event->name}'.");
+            session()->flash('message', "✅ Cobro final de " . number_format($amount, 2, ',', '.') . " € ({$methodLabel} - Cobrado por {$this->quickCollectedBy}) guardado en '{$event->name}'.");
         }
 
         $this->closeQuickPaymentModal();

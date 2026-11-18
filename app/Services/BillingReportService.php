@@ -301,7 +301,7 @@ class BillingReportService
                         // Registrar quién cobró físicamente este importe (Fran, Miguel, Cuenta Conjunta...)
                         $cBy = trim((string)($mp['collected_by'] ?? ''));
                         if ($cBy === '') {
-                            $cBy = 'Fran';
+                            $cBy = 'Cuenta Conjunta / Fondo Común';
                         }
                         $collectedByPartner[$cBy] = ($collectedByPartner[$cBy] ?? 0.0) + $amt;
 
@@ -558,10 +558,11 @@ class BillingReportService
             ];
         }
 
-        // Dinero cobrado en Cuenta Conjunta / Empresa (incluyendo devoluciones si fueron a la cuenta conjunta)
+        // Dinero cobrado en Cuenta Conjunta / Empresa / Fondo Común (incluyendo devoluciones si fueron a la cuenta conjunta)
         $jointCollected = 0.0;
         foreach ($collectedByPartner as $cName => $cAmt) {
-            if (str_contains(mb_strtolower($cName), 'conjunt') || str_contains(mb_strtolower($cName), 'empresa')) {
+            $cNameLower = mb_strtolower((string)$cName);
+            if (str_contains($cNameLower, 'conjunt') || str_contains($cNameLower, 'empresa') || str_contains($cNameLower, 'comun') || str_contains($cNameLower, 'común') || str_contains($cNameLower, 'fondo')) {
                 $jointCollected += (float)$cAmt;
             }
         }

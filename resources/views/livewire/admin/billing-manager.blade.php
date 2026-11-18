@@ -586,9 +586,22 @@
                                                     <span>{{ $fb['deposit_method_label'] }}</span>
                                                 </span>
                                                 @if(!empty($fb['deposit_collected_by']))
-                                                    <span class="inline-flex items-center gap-1 font-extrabold px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 text-[10px]" title="Cobrado en cuenta de {{ $fb['deposit_collected_by'] }}">
-                                                        👤 {{ $fb['deposit_collected_by'] }}
-                                                    </span>
+                                                    @php
+                                                        $isDepJoint = str_contains(mb_strtolower($fb['deposit_collected_by']), 'conjunt') 
+                                                            || str_contains(mb_strtolower($fb['deposit_collected_by']), 'comun') 
+                                                            || str_contains(mb_strtolower($fb['deposit_collected_by']), 'común')
+                                                            || str_contains(mb_strtolower($fb['deposit_collected_by']), 'empresa')
+                                                            || str_contains(mb_strtolower($fb['deposit_collected_by']), 'fondo');
+                                                    @endphp
+                                                    @if($isDepJoint)
+                                                        <span class="inline-flex items-center gap-1 font-extrabold px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-[10px]" title="Fondo común / Caja de empresa">
+                                                            🏦 Fondo Común
+                                                        </span>
+                                                    @else
+                                                        <span class="inline-flex items-center gap-1 font-extrabold px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 text-[10px]" title="Cobrado en cuenta de {{ $fb['deposit_collected_by'] }}">
+                                                            👤 {{ $fb['deposit_collected_by'] }}
+                                                        </span>
+                                                    @endif
                                                 @endif
                                                 @if($fb['deposit_date'])
                                                     <span class="text-slate-500">
@@ -621,6 +634,14 @@
                                                 <span class="font-black text-blue-700 dark:text-blue-300 text-xs">
                                                     ✅ {{ number_format($fb['final_paid_amount'], 2, ',', '.') }} €
                                                 </span>
+                                                <button
+                                                    type="button"
+                                                    wire:click="openQuickPayment({{ $ev->id }}, 'final')"
+                                                    class="text-[11px] text-blue-700 dark:text-blue-400 hover:underline font-bold cursor-pointer"
+                                                    title="Editar importe, fecha, método o quién cobró este pago final"
+                                                >
+                                                    ✏️
+                                                </button>
                                             </div>
                                             <div class="flex flex-wrap items-center gap-1.5 text-[11px] text-slate-600 dark:text-slate-300">
                                                 @if($fb['final_method_label'])
@@ -630,9 +651,22 @@
                                                     </span>
                                                 @endif
                                                 @if(!empty($fb['final_collected_by']))
-                                                    <span class="inline-flex items-center gap-1 font-extrabold px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 text-[10px]" title="Cobrado en cuenta de {{ $fb['final_collected_by'] }}">
-                                                        👤 {{ $fb['final_collected_by'] }}
-                                                    </span>
+                                                    @php
+                                                        $isFinJoint = str_contains(mb_strtolower($fb['final_collected_by']), 'conjunt') 
+                                                            || str_contains(mb_strtolower($fb['final_collected_by']), 'comun') 
+                                                            || str_contains(mb_strtolower($fb['final_collected_by']), 'común')
+                                                            || str_contains(mb_strtolower($fb['final_collected_by']), 'empresa')
+                                                            || str_contains(mb_strtolower($fb['final_collected_by']), 'fondo');
+                                                    @endphp
+                                                    @if($isFinJoint)
+                                                        <span class="inline-flex items-center gap-1 font-extrabold px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-[10px]" title="Fondo común / Caja de empresa">
+                                                            🏦 Fondo Común
+                                                        </span>
+                                                    @else
+                                                        <span class="inline-flex items-center gap-1 font-extrabold px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 text-[10px]" title="Cobrado en cuenta de {{ $fb['final_collected_by'] }}">
+                                                            👤 {{ $fb['final_collected_by'] }}
+                                                        </span>
+                                                    @endif
                                                 @endif
                                                 @if($fb['final_paid_date'])
                                                     <span class="text-slate-500">
@@ -2008,27 +2042,27 @@
                             <button
                                 type="button"
                                 wire:click="$set('quickCollectedBy', 'Fran')"
-                                class="p-2.5 rounded-xl border text-center font-bold text-xs transition cursor-pointer {{ $quickCollectedBy === 'Fran' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100' }}"
+                                class="p-2.5 rounded-xl border text-center font-bold text-xs transition cursor-pointer {{ $quickCollectedBy === 'Fran' ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100' }}"
                             >
                                 👤 Fran
                             </button>
                             <button
                                 type="button"
                                 wire:click="$set('quickCollectedBy', 'Miguel')"
-                                class="p-2.5 rounded-xl border text-center font-bold text-xs transition cursor-pointer {{ $quickCollectedBy === 'Miguel' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100' }}"
+                                class="p-2.5 rounded-xl border text-center font-bold text-xs transition cursor-pointer {{ $quickCollectedBy === 'Miguel' ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100' }}"
                             >
                                 👤 Miguel
                             </button>
                             <button
                                 type="button"
-                                wire:click="$set('quickCollectedBy', 'Cuenta Conjunta')"
-                                class="p-2.5 rounded-xl border text-center font-bold text-xs transition cursor-pointer {{ $quickCollectedBy === 'Cuenta Conjunta' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100' }}"
+                                wire:click="$set('quickCollectedBy', 'Cuenta Conjunta / Fondo Común')"
+                                class="p-2.5 rounded-xl border text-center font-bold text-xs transition cursor-pointer {{ in_array($quickCollectedBy, ['Cuenta Conjunta', 'Cuenta Conjunta / Fondo Común', 'Fondo Común', 'Empresa'], true) ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm' : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100' }}"
                             >
-                                🏦 Conjunta
+                                🏦 Fondo Común
                             </button>
                         </div>
                         <p class="text-[10px] text-slate-400 mt-1">
-                            * Se registrará en su cuenta para el arqueo y ajuste automático de transferencias entre socios.
+                            * Selecciona <strong>Fondo Común</strong> si el dinero se destinó a material, cenas de empresa o caja compartida (no se sumará a la cuenta personal de ningún socio).
                         </p>
                     </div>
 
