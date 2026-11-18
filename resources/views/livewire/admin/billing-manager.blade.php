@@ -130,6 +130,8 @@
         </div>
     </div>
 
+    <!-- TARJETAS KPI GLOBALES Y FILTROS (SOLO EN EVENTOS Y LIBRO DE COBROS) -->
+    @if(in_array($viewMode, ['events', 'ledger'], true))
     <!-- TARJETAS KPI GLOBALES (INGRESOS, PENDIENTE, GASTO PROVEEDORES, MATERIAL, BENEFICIO NETO Y FISCALIDAD) -->
     @php
         $pSummary = $kpis['provider_summary'] ?? [];
@@ -421,6 +423,8 @@
             </button>
         </div>
     </div>
+
+    @endif
 
     <!-- ========================================================== -->
     <!-- VISTA 1: CONTROL DE PAGOS POR EVENTO (SEÑAL, RESTO, MÉTODO) -->
@@ -968,7 +972,7 @@
                 </table>
             </div>
         </div>
-    @else
+    @elseif($viewMode === 'providers')
         <!-- ==================================================================== -->
         <!-- VISTA 3: RESERVAS Y PAGOS A PROVEEDOR (FOTOMATÓN Y PLATAFORMA 360º)  -->
         <!-- ==================================================================== -->
@@ -1337,12 +1341,10 @@
                 </div>
             </div>
         </div>
-    @endif
-
+    @elseif($viewMode === 'materials')
     <!-- ========================================================== -->
     <!-- VISTA 4: COMPRAS Y GASTOS DE MATERIAL DEDUCIBLES -->
     <!-- ========================================================== -->
-    @if($viewMode === 'materials')
         @php
             $mKpis = $kpis['material_summary'] ?? [];
         @endphp
@@ -1547,12 +1549,10 @@
                 </table>
             </div>
         </div>
-    @endif
-
+    @elseif($viewMode === 'settlement')
     <!-- ========================================================== -->
     <!-- VISTA 5: REPARTO DE BENEFICIOS Y LIQUIDACIÓN ENTRE SOCIOS -->
     <!-- ========================================================== -->
-    @if($viewMode === 'settlement')
         @php
             $sData = $kpis['settlement_summary'] ?? [];
             $settlementPartners = $sData['partners'] ?? [];
@@ -1571,20 +1571,23 @@
                 </div>
                 <div class="flex flex-wrap items-center gap-2.5">
                     <!-- Selector de Eventos a Repartir -->
-                    <div class="inline-flex items-center bg-slate-100 dark:bg-slate-950 p-1 rounded-xl border border-slate-200 dark:border-slate-800 text-xs gap-1">
+                    <div class="flex flex-wrap items-center gap-2 bg-slate-100 dark:bg-slate-950 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-800 text-xs">
+                        <span class="text-[11px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 pl-2">
+                            Base de Cálculo:
+                        </span>
                         <button
                             type="button"
                             wire:click="$set('eventStatus', 'completed')"
-                            class="px-2.5 py-1.5 rounded-lg font-bold transition cursor-pointer flex items-center gap-1 {{ $eventStatus === 'completed' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white' }}"
+                            class="px-3 py-1.5 rounded-xl font-black transition cursor-pointer flex items-center gap-1.5 {{ $eventStatus === 'completed' ? 'bg-indigo-600 text-white shadow-sm ring-2 ring-indigo-400/40' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800' }}"
                             title="Calcular beneficios únicamente de eventos ya completados/realizados"
                         >
                             <span>🎯</span>
-                            <span>Solo Realizados (Completados)</span>
+                            <span>Solo Eventos Realizados (Completados)</span>
                         </button>
                         <button
                             type="button"
                             wire:click="$set('eventStatus', 'active')"
-                            class="px-2.5 py-1.5 rounded-lg font-bold transition cursor-pointer flex items-center gap-1 {{ $eventStatus === 'active' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white' }}"
+                            class="px-3 py-1.5 rounded-xl font-black transition cursor-pointer flex items-center gap-1.5 {{ $eventStatus === 'active' ? 'bg-indigo-600 text-white shadow-sm ring-2 ring-indigo-400/40' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800' }}"
                             title="Calcular beneficios incluyendo señales cobradas de eventos futuros"
                         >
                             <span>🌐</span>
