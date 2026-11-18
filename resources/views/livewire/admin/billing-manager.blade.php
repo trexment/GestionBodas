@@ -136,14 +136,14 @@
         $mSummary = $kpis['material_summary'] ?? [];
         $sSummary = $kpis['settlement_summary'] ?? [];
     @endphp
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3.5">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6 gap-3.5">
         <!-- 1. TOTAL INGRESADO / COBRADO -->
         <div class="bg-white dark:bg-slate-900 rounded-2xl border border-emerald-200 dark:border-emerald-900/60 p-4 shadow-xs relative overflow-hidden">
-            <div class="flex items-center justify-between">
-                <span class="text-[11px] font-extrabold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
+            <div class="flex items-center justify-between gap-2">
+                <span class="text-xs font-black uppercase tracking-tight text-emerald-700 dark:text-emerald-400 whitespace-nowrap truncate">
                     ✅ Total Cobrado
                 </span>
-                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300">
+                <span class="text-[10px] font-black px-2 py-0.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/70 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 shrink-0 whitespace-nowrap">
                     {{ $kpis['events_with_payment_count'] }} ev.
                 </span>
             </div>
@@ -162,11 +162,11 @@
 
         <!-- 2. PENDIENTE DE COBRO -->
         <div class="bg-white dark:bg-slate-900 rounded-2xl border border-amber-200 dark:border-amber-900/60 p-4 shadow-xs">
-            <div class="flex items-center justify-between">
-                <span class="text-[11px] font-extrabold uppercase tracking-wider text-amber-700 dark:text-amber-400">
+            <div class="flex items-center justify-between gap-2">
+                <span class="text-xs font-black uppercase tracking-tight text-amber-700 dark:text-amber-400 whitespace-nowrap truncate">
                     ⏳ Pendiente Cobro
                 </span>
-                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300">
+                <span class="text-[10px] font-black px-2 py-0.5 rounded-lg bg-amber-50 dark:bg-amber-950/70 border border-amber-300 dark:border-amber-800 text-amber-800 dark:text-amber-300 shrink-0 whitespace-nowrap">
                     {{ $kpis['events_partial_count'] + $kpis['events_unpaid_count'] }} pend.
                 </span>
             </div>
@@ -190,11 +190,11 @@
             class="bg-white dark:bg-slate-900 rounded-2xl border border-purple-200 dark:border-purple-900/60 p-4 shadow-xs hover:border-purple-400 transition cursor-pointer"
             title="Haz clic para ver o editar reservas y pagos de Fotomatón y Plataforma 360º"
         >
-            <div class="flex items-center justify-between">
-                <span class="text-[11px] font-extrabold uppercase tracking-wider text-purple-700 dark:text-purple-400">
+            <div class="flex items-center justify-between gap-2">
+                <span class="text-xs font-black uppercase tracking-tight text-purple-700 dark:text-purple-400 whitespace-nowrap truncate">
                     📸 Proveedores
                 </span>
-                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-purple-100 dark:bg-purple-950 text-purple-800 dark:text-purple-300">
+                <span class="text-[10px] font-black px-2 py-0.5 rounded-lg bg-purple-50 dark:bg-purple-950/70 border border-purple-300 dark:border-purple-800 text-purple-800 dark:text-purple-300 shrink-0 whitespace-nowrap">
                     {{ $pSummary['events_count'] ?? 0 }} ev.
                 </span>
             </div>
@@ -217,11 +217,11 @@
             class="bg-white dark:bg-slate-900 rounded-2xl border border-amber-200 dark:border-amber-900/60 p-4 shadow-xs hover:border-amber-400 transition cursor-pointer"
             title="Haz clic para ver o registrar compras de material para eventos (cables, altavoces, pirotecnia, atrezzo...)"
         >
-            <div class="flex items-center justify-between">
-                <span class="text-[11px] font-extrabold uppercase tracking-wider text-amber-700 dark:text-amber-400">
+            <div class="flex items-center justify-between gap-2">
+                <span class="text-xs font-black uppercase tracking-tight text-amber-700 dark:text-amber-400 whitespace-nowrap truncate">
                     🛠️ Gasto Material
                 </span>
-                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300">
+                <span class="text-[10px] font-black px-2 py-0.5 rounded-lg bg-amber-50 dark:bg-amber-950/70 border border-amber-300 dark:border-amber-800 text-amber-800 dark:text-amber-300 shrink-0 whitespace-nowrap">
                     {{ $mSummary['total_count'] ?? 0 }} compras
                 </span>
             </div>
@@ -251,11 +251,11 @@
             class="bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-teal-500/10 dark:from-emerald-950/40 dark:to-teal-950/30 rounded-2xl border-2 border-emerald-400 dark:border-emerald-600 p-4 shadow-sm hover:shadow-md transition cursor-pointer relative"
             title="Haz clic para ver el desglose exacto de liquidación y cuánto cobra cada socio"
         >
-            <div class="flex items-center justify-between">
-                <span class="text-[11px] font-extrabold uppercase tracking-wider text-emerald-800 dark:text-emerald-300">
+            <div class="flex items-center justify-between gap-2">
+                <span class="text-xs font-black uppercase tracking-tight text-emerald-800 dark:text-emerald-300 whitespace-nowrap truncate">
                     ⚖️ Beneficio Neto
                 </span>
-                <span class="text-[10px] font-black px-2 py-0.5 rounded-md bg-emerald-600 text-white">
+                <span class="text-[10px] font-black px-2 py-0.5 rounded-lg bg-emerald-600 text-white shrink-0 whitespace-nowrap">
                     Reparto ➔
                 </span>
             </div>
@@ -276,11 +276,13 @@
 
         <!-- 6. DESGLOSE FACTURAS (IVA) vs RECIBOS -->
         <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-xs">
-            <div class="flex items-center justify-between">
-                <span class="text-[11px] font-extrabold uppercase tracking-wider text-slate-600 dark:text-slate-300">
+            <div class="flex items-center justify-between gap-2">
+                <span class="text-xs font-black uppercase tracking-tight text-slate-600 dark:text-slate-300 whitespace-nowrap truncate">
                     🧾 Facturas vs Recibos
                 </span>
-                <span class="text-[10px] font-bold text-slate-400">Fiscal</span>
+                <span class="text-[10px] font-black px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 shrink-0 whitespace-nowrap">
+                    Fiscal
+                </span>
             </div>
             <div class="mt-2 space-y-1 text-xs">
                 <div class="flex items-center justify-between">
