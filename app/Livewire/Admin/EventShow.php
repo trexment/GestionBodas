@@ -1510,7 +1510,7 @@ class EventShow extends Component
         } elseif ($this->prov_refund_recipient === 'miguel') {
             $this->prov_refund_miguel_amount = $amt;
             $this->prov_refund_fran_amount = 0.0;
-        } elseif ($this->prov_refund_recipient === 'joint') {
+        } elseif ($this->prov_refund_recipient === 'joint' || $this->prov_refund_recipient === 'ezequiel') {
             $this->prov_refund_fran_amount = 0.0;
             $this->prov_refund_miguel_amount = 0.0;
         }
@@ -1531,7 +1531,7 @@ class EventShow extends Component
         } elseif ($value === 'miguel') {
             $this->prov_refund_miguel_amount = $amt;
             $this->prov_refund_fran_amount = 0.0;
-        } elseif ($value === 'joint') {
+        } elseif ($value === 'joint' || $value === 'ezequiel') {
             $this->prov_refund_fran_amount = 0.0;
             $this->prov_refund_miguel_amount = 0.0;
         }

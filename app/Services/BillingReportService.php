@@ -485,12 +485,16 @@ class BillingReportService
                     if ($b->has_refund && (float)$b->refund_amount > 0) {
                         $rFran = (float)$b->refund_fran_calculated;
                         $rMiguel = (float)$b->refund_miguel_calculated;
+                        $rEzequiel = (float)($b->refund_ezequiel_calculated ?? 0.0);
                         $rJoint = (float)$b->refund_joint_calculated;
                         if ($rFran > 0) {
                             $providerRefundReceivedByPartner['Fran'] = ($providerRefundReceivedByPartner['Fran'] ?? 0.0) + $rFran;
                         }
                         if ($rMiguel > 0) {
                             $providerRefundReceivedByPartner['Miguel'] = ($providerRefundReceivedByPartner['Miguel'] ?? 0.0) + $rMiguel;
+                        }
+                        if ($rEzequiel > 0) {
+                            $providerRefundReceivedByPartner['Ezequiel'] = ($providerRefundReceivedByPartner['Ezequiel'] ?? 0.0) + $rEzequiel;
                         }
                         if ($rJoint > 0) {
                             $jointRefundReceived += $rJoint;
@@ -505,12 +509,16 @@ class BillingReportService
                 if (!empty($evProv['has_refund']) && (float)($evProv['refund_amount'] ?? 0) > 0) {
                     $rFran = (float)($evProv['refund_fran_amount'] ?? 0);
                     $rMiguel = (float)($evProv['refund_miguel_amount'] ?? 0);
+                    $rEzequiel = (float)($evProv['refund_ezequiel_amount'] ?? 0);
                     $rJoint = (float)($evProv['refund_joint_amount'] ?? 0);
                     if ($rFran > 0) {
                         $providerRefundReceivedByPartner['Fran'] = ($providerRefundReceivedByPartner['Fran'] ?? 0.0) + $rFran;
                     }
                     if ($rMiguel > 0) {
                         $providerRefundReceivedByPartner['Miguel'] = ($providerRefundReceivedByPartner['Miguel'] ?? 0.0) + $rMiguel;
+                    }
+                    if ($rEzequiel > 0) {
+                        $providerRefundReceivedByPartner['Ezequiel'] = ($providerRefundReceivedByPartner['Ezequiel'] ?? 0.0) + $rEzequiel;
                     }
                     if ($rJoint > 0) {
                         $jointRefundReceived += $rJoint;
@@ -568,37 +576,56 @@ class BillingReportService
         }
         $jointCollected = round($jointCollected + $jointRefundReceived, 2);
 
-        // Instrucción de liquidación y transferencia directa entre socios
+        // Instrucción de liquidación y transferencias directas entre socios (soporta 2, 3 o N socios)
         $transferInstruction = null;
-        if (count($partnersSettlement) === 2) {
-            $p1 = $partnersSettlement[0];
-            $p2 = $partnersSettlement[1];
+        $instructionsList = [];
+        $debtors = [];
+        $creditors = [];
 
-            if ($p1['balance_diff'] > 0.05 && $p2['balance_diff'] < -0.05) {
-                $transferAmt = min($p1['balance_diff'], abs($p2['balance_diff']));
-                $transferInstruction = [
-                    'has_transfer' => true,
-                    'from' => $p1['name'],
-                    'to' => $p2['name'],
-                    'amount' => $transferAmt,
-                    'text' => "{$p1['name']} debe transferir " . number_format($transferAmt, 2, ',', '.') . " € a {$p2['name']} para quedar ambos en paz al {$p1['percentage']}% / {$p2['percentage']}%.",
-                ];
-            } elseif ($p2['balance_diff'] > 0.05 && $p1['balance_diff'] < -0.05) {
-                $transferAmt = min($p2['balance_diff'], abs($p1['balance_diff']));
-                $transferInstruction = [
-                    'has_transfer' => true,
-                    'from' => $p2['name'],
-                    'to' => $p1['name'],
-                    'amount' => $transferAmt,
-                    'text' => "{$p2['name']} debe transferir " . number_format($transferAmt, 2, ',', '.') . " € a {$p1['name']} para quedar ambos en paz al {$p2['percentage']}% / {$p1['percentage']}%.",
-                ];
-            } elseif (abs($p1['balance_diff']) <= 0.05 && abs($p2['balance_diff']) <= 0.05) {
-                $transferInstruction = [
-                    'has_transfer' => false,
-                    'amount' => 0.0,
-                    'text' => "Las cuentas entre {$p1['name']} y {$p2['name']} están perfectamente cuadradas (0,00 € de diferencia).",
+        foreach ($partnersSettlement as $p) {
+            $diff = (float)$p['balance_diff'];
+            if ($diff > 0.05) {
+                $debtors[] = ['name' => $p['name'], 'amount' => $diff];
+            } elseif ($diff < -0.05) {
+                $creditors[] = ['name' => $p['name'], 'amount' => abs($diff)];
+            }
+        }
+
+        $dIdx = 0;
+        $cIdx = 0;
+        while ($dIdx < count($debtors) && $cIdx < count($creditors)) {
+            $payAmt = min($debtors[$dIdx]['amount'], $creditors[$cIdx]['amount']);
+            if ($payAmt > 0.05) {
+                $instructionsList[] = [
+                    'from' => $debtors[$dIdx]['name'],
+                    'to' => $creditors[$cIdx]['name'],
+                    'amount' => round($payAmt, 2),
+                    'text' => "{$debtors[$dIdx]['name']} debe transferir " . number_format($payAmt, 2, ',', '.') . " € a {$creditors[$cIdx]['name']}.",
                 ];
             }
+            $debtors[$dIdx]['amount'] -= $payAmt;
+            $creditors[$cIdx]['amount'] -= $payAmt;
+            if ($debtors[$dIdx]['amount'] <= 0.05) $dIdx++;
+            if ($creditors[$cIdx]['amount'] <= 0.05) $cIdx++;
+        }
+
+        if (!empty($instructionsList)) {
+            $totalTransfer = array_sum(array_column($instructionsList, 'amount'));
+            $combinedText = implode(' • ', array_column($instructionsList, 'text'));
+            $transferInstruction = [
+                'has_transfer' => true,
+                'amount' => round($totalTransfer, 2),
+                'text' => $combinedText,
+                'list' => $instructionsList,
+            ];
+        } else {
+            $partnerNames = implode(', ', array_column($partnersSettlement, 'name'));
+            $transferInstruction = [
+                'has_transfer' => false,
+                'amount' => 0.0,
+                'text' => "Las cuentas entre {$partnerNames} están perfectamente cuadradas (0,00 € de diferencia).",
+                'list' => [],
+            ];
         }
 
         $kpis['settlement_summary'] = [

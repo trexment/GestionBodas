@@ -1717,36 +1717,29 @@
                     </div>
                 </div>
 
-                <!-- 3 TARJETAS: FRAN, MIGUEL Y CUENTA CONJUNTA -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <!-- Dinero en cuenta Fran -->
-                    <div class="p-4 rounded-2xl bg-indigo-900/40 border border-indigo-700/50">
-                        <div class="flex items-center justify-between text-xs text-indigo-300 font-bold">
-                            <span>👤 Cuenta / Bizum Fran</span>
-                            <span class="text-[10px] bg-indigo-800/80 px-2 py-0.5 rounded text-white">En mano</span>
+                <!-- TARJETAS DINÁMICAS POR SOCIO (FRAN, MIGUEL, EZEQUIEL...) + FONDO COMÚN -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-{{ min(4, count($partnersList) + 1) }} gap-4">
+                    @foreach($partnersList as $pRow)
+                        @php
+                            $pName = $pRow['name'];
+                            $pCol = (float)($pRow['collected_in_hand'] ?? ($sData['collected_by_partner'][$pName] ?? 0));
+                        @endphp
+                        <div class="p-4 rounded-2xl bg-indigo-900/40 border border-indigo-700/50">
+                            <div class="flex items-center justify-between text-xs text-indigo-300 font-bold">
+                                <span>👤 Cuenta / Bizum {{ $pName }}</span>
+                                <span class="text-[10px] bg-indigo-800/80 px-2 py-0.5 rounded text-white">En mano</span>
+                            </div>
+                            <div class="text-2xl font-black text-white mt-1.5">
+                                {{ number_format($pCol, 2, ',', '.') }} €
+                            </div>
+                            <p class="text-[10px] text-indigo-300/80 mt-1">Cobros de eventos ingresados a {{ $pName }}</p>
                         </div>
-                        <div class="text-2xl font-black text-white mt-1.5">
-                            {{ number_format($colFran, 2, ',', '.') }} €
-                        </div>
-                        <p class="text-[10px] text-indigo-300/80 mt-1">Cobros de eventos ingresados a Fran</p>
-                    </div>
+                    @endforeach
 
-                    <!-- Dinero en cuenta Miguel -->
+                    <!-- Cuenta Conjunta / Fondo Común -->
                     <div class="p-4 rounded-2xl bg-indigo-900/40 border border-indigo-700/50">
                         <div class="flex items-center justify-between text-xs text-indigo-300 font-bold">
-                            <span>👤 Cuenta / Bizum Miguel</span>
-                            <span class="text-[10px] bg-indigo-800/80 px-2 py-0.5 rounded text-white">En mano</span>
-                        </div>
-                        <div class="text-2xl font-black text-white mt-1.5">
-                            {{ number_format($colMiguel, 2, ',', '.') }} €
-                        </div>
-                        <p class="text-[10px] text-indigo-300/80 mt-1">Cobros de eventos ingresados a Miguel</p>
-                    </div>
-
-                    <!-- Cuenta Conjunta -->
-                    <div class="p-4 rounded-2xl bg-indigo-900/40 border border-indigo-700/50">
-                        <div class="flex items-center justify-between text-xs text-indigo-300 font-bold">
-                            <span>🏦 Cuenta Conjunta / Empresa</span>
+                            <span>🏦 Fondo Común / Empresa</span>
                             <span class="text-[10px] bg-emerald-800/80 px-2 py-0.5 rounded text-emerald-200">Común</span>
                         </div>
                         <div class="text-2xl font-black text-emerald-400 mt-1.5">
@@ -1763,21 +1756,32 @@
                             <div class="w-12 h-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center text-2xl font-black shadow-md shrink-0">
                                 💸
                             </div>
-                            <div>
+                            <div class="space-y-1">
                                 <span class="text-[10px] font-black uppercase tracking-wider text-emerald-300 block">
-                                    INSTRUCCIÓN DE AJUSTE EXACTO
+                                    INSTRUCCIÓN DE AJUSTE EXACTO ENTRE SOCIOS
                                 </span>
-                                <div class="text-sm sm:text-base font-black text-white mt-0.5">
-                                    {{ $tInst['text'] }}
-                                </div>
+                                @if(!empty($tInst['list']) && count($tInst['list']) > 1)
+                                    <div class="space-y-1 text-sm font-black text-white mt-0.5">
+                                        @foreach($tInst['list'] as $itemInst)
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-emerald-400">&bull;</span>
+                                                <span>{{ $itemInst['text'] }}</span>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                @else
+                                    <div class="text-sm sm:text-base font-black text-white mt-0.5">
+                                        {{ $tInst['text'] }}
+                                    </div>
+                                @endif
                                 <p class="text-[11px] text-emerald-200/80 mt-0.5">
-                                    Realizando esta transferencia de <strong>{{ number_format($tInst['amount'], 2, ',', '.') }} €</strong>, las cuentas quedan cuadradas al céntimo (50/50 de beneficio y gastos reembolsados).
+                                    Realizando estas transferencias de compensación, las cuentas de los socios quedan cuadradas al céntimo según sus porcentajes y gastos adelantados.
                                 </p>
                             </div>
                         </div>
                         <div class="text-right shrink-0">
                             <span class="px-3.5 py-1.5 rounded-xl bg-emerald-500 text-slate-950 text-xs font-black shadow-sm">
-                                Transferir {{ number_format($tInst['amount'], 2, ',', '.') }} €
+                                Total Ajuste: {{ number_format($tInst['amount'], 2, ',', '.') }} €
                             </span>
                         </div>
                     </div>
@@ -1792,7 +1796,7 @@
             </div>
 
             <!-- TARJETAS DESTACADAS DE LIQUIDACIÓN POR SOCIO -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div class="grid grid-cols-1 md:grid-cols-{{ min(3, max(2, count($partnersList))) }} gap-5">
                 @forelse($partnersList as $partner)
                     <div class="bg-white dark:bg-slate-900 rounded-3xl border-2 border-slate-200 dark:border-slate-800 p-6 shadow-sm hover:shadow-md transition relative overflow-hidden">
                         <!-- Banda superior decorativa -->
@@ -2038,7 +2042,7 @@
                     <!-- Quién cobró este dinero -->
                     <div>
                         <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">¿Quién cobró este dinero? *</label>
-                        <div class="grid grid-cols-3 gap-2">
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
                             <button
                                 type="button"
                                 wire:click="$set('quickCollectedBy', 'Fran')"
@@ -2052,6 +2056,13 @@
                                 class="p-2.5 rounded-xl border text-center font-bold text-xs transition cursor-pointer {{ $quickCollectedBy === 'Miguel' ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100' }}"
                             >
                                 👤 Miguel
+                            </button>
+                            <button
+                                type="button"
+                                wire:click="$set('quickCollectedBy', 'Ezequiel')"
+                                class="p-2.5 rounded-xl border text-center font-bold text-xs transition cursor-pointer {{ $quickCollectedBy === 'Ezequiel' ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100' }}"
+                            >
+                                👤 Ezequiel
                             </button>
                             <button
                                 type="button"
@@ -2215,7 +2226,7 @@
                     <!-- Quién pagó a este proveedor de su propio bolsillo -->
                     <div>
                         <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">¿Quién pagó este proveedor de su propio bolsillo? *</label>
-                        <div class="grid grid-cols-3 gap-2">
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
                             <button
                                 type="button"
                                 wire:click="$set('provPaidBy', 'Fran')"
@@ -2229,6 +2240,13 @@
                                 class="p-2.5 rounded-xl border text-center font-bold text-xs transition cursor-pointer {{ $provPaidBy === 'Miguel' ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800' }}"
                             >
                                 👤 Miguel
+                            </button>
+                            <button
+                                type="button"
+                                wire:click="$set('provPaidBy', 'Ezequiel')"
+                                class="p-2.5 rounded-xl border text-center font-bold text-xs transition cursor-pointer {{ $provPaidBy === 'Ezequiel' ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800' }}"
+                            >
+                                👤 Ezequiel
                             </button>
                             <button
                                 type="button"
@@ -2360,9 +2378,10 @@
                                         </label>
                                         <select wire:model.live="provRefundRecipient" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 p-2.5 font-bold text-xs">
                                             <option value="50_50">👥 50% Fran / 50% Miguel (Mitad directamente a cada uno)</option>
-                                            <option value="fran">👤 Ingresado íntegro en banco de Fran (se divide al 50% en el arqueo final)</option>
-                                            <option value="miguel">👤 Ingresado íntegro en banco de Miguel (se divide al 50% en el arqueo final)</option>
-                                            <option value="joint">🏦 Cuenta Conjunta / Empresa (beneficio 50% para ambos)</option>
+                                            <option value="fran">👤 Ingresado íntegro en banco de Fran (se divide en el arqueo final)</option>
+                                            <option value="miguel">👤 Ingresado íntegro en banco de Miguel (se divide en el arqueo final)</option>
+                                            <option value="ezequiel">👤 Ingresado íntegro en banco de Ezequiel (se divide en el arqueo final)</option>
+                                            <option value="joint">🏦 Cuenta Conjunta / Fondo Común</option>
                                             <option value="custom">⚙️ Reparto Personalizado</option>
                                         </select>
                                         <span class="text-[10px] text-slate-500">El dinero devuelto se divide siempre al 50% entre ambos socios</span>
@@ -2395,8 +2414,10 @@
                                                 Artístamente ingresó los <strong class="text-amber-600">{{ number_format((float)$provRefundAmount, 2, ',', '.') }} €</strong> en la cuenta de Fran &rarr; En el reparto le corresponden <strong class="text-emerald-600">{{ number_format((float)$provRefundAmount / 2, 2, ',', '.') }} €</strong> a Fran y <strong class="text-blue-600">{{ number_format((float)$provRefundAmount / 2, 2, ',', '.') }} €</strong> a Miguel (Fran transfiere su mitad a Miguel en el arqueo).
                                             @elseif($provRefundRecipient === 'miguel')
                                                 Artístamente ingresó los <strong class="text-amber-600">{{ number_format((float)$provRefundAmount, 2, ',', '.') }} €</strong> en la cuenta de Miguel &rarr; En el reparto le corresponden <strong class="text-emerald-600">{{ number_format((float)$provRefundAmount / 2, 2, ',', '.') }} €</strong> a Miguel y <strong class="text-blue-600">{{ number_format((float)$provRefundAmount / 2, 2, ',', '.') }} €</strong> a Fran (Miguel transfiere su mitad a Fran en el arqueo).
+                                            @elseif($provRefundRecipient === 'ezequiel')
+                                                Artístamente ingresó los <strong class="text-amber-600">{{ number_format((float)$provRefundAmount, 2, ',', '.') }} €</strong> en la cuenta de Ezequiel &rarr; Se compensa equitativamente con la cuota de beneficio de cada socio en el arqueo general.
                                             @elseif($provRefundRecipient === 'joint')
-                                                Ingresado en Cuenta Conjunta (<strong class="text-emerald-600">{{ number_format((float)$provRefundAmount, 2, ',', '.') }} €</strong>) &rarr; <strong class="text-amber-600">{{ number_format((float)$provRefundAmount / 2, 2, ',', '.') }} €</strong> de beneficio para Fran y <strong class="text-amber-600">{{ number_format((float)$provRefundAmount / 2, 2, ',', '.') }} €</strong> para Miguel.
+                                                Ingresado en Cuenta Conjunta / Fondo Común (<strong class="text-emerald-600">{{ number_format((float)$provRefundAmount, 2, ',', '.') }} €</strong>) &rarr; Beneficio compartido para la caja común de la empresa.
                                             @endif
                                         </div>
                                     </div>
@@ -2685,6 +2706,31 @@
                         </p>
                     </div>
                     <button type="button" wire:click="closePartnersModal" class="text-slate-400 hover:text-slate-700 dark:hover:text-white text-lg font-bold cursor-pointer">&times;</button>
+                </div>
+
+                <!-- PLANTILLAS RÁPIDAS -->
+                <div class="space-y-1.5 p-3 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800">
+                    <span class="text-[10px] font-black uppercase tracking-wider text-indigo-700 dark:text-indigo-300 block">
+                        ⚡ Plantillas Rápidas de Socios:
+                    </span>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <button
+                            type="button"
+                            wire:click="setPartnersPreset('3_partners')"
+                            class="px-2.5 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-indigo-300 dark:border-indigo-700 hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-600 text-indigo-900 dark:text-indigo-200 text-[11px] font-black transition cursor-pointer text-left flex items-center gap-1.5 shadow-2xs"
+                        >
+                            <span>👥</span>
+                            <span>3 Socios (Fran, Miguel, Ezequiel)</span>
+                        </button>
+                        <button
+                            type="button"
+                            wire:click="setPartnersPreset('2_partners')"
+                            class="px-2.5 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 hover:bg-slate-800 hover:text-white dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-[11px] font-black transition cursor-pointer text-left flex items-center gap-1.5 shadow-2xs"
+                        >
+                            <span>👥</span>
+                            <span>2 Socios (Fran 50% / Miguel 50%)</span>
+                        </button>
+                    </div>
                 </div>
 
                 @php

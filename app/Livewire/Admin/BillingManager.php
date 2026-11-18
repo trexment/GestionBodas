@@ -548,7 +548,7 @@ class BillingManager extends Component
         } elseif ($this->provRefundRecipient === 'miguel') {
             $this->provRefundMiguelAmount = $amt;
             $this->provRefundFranAmount = 0.0;
-        } elseif ($this->provRefundRecipient === 'joint') {
+        } elseif ($this->provRefundRecipient === 'joint' || $this->provRefundRecipient === 'ezequiel') {
             $this->provRefundFranAmount = 0.0;
             $this->provRefundMiguelAmount = 0.0;
         }
@@ -569,7 +569,7 @@ class BillingManager extends Component
         } elseif ($value === 'miguel') {
             $this->provRefundMiguelAmount = $amt;
             $this->provRefundFranAmount = 0.0;
-        } elseif ($value === 'joint') {
+        } elseif ($value === 'joint' || $value === 'ezequiel') {
             $this->provRefundFranAmount = 0.0;
             $this->provRefundMiguelAmount = 0.0;
         }
@@ -992,6 +992,28 @@ class BillingManager extends Component
         if (isset($this->partnersList[$index])) {
             unset($this->partnersList[$index]);
             $this->partnersList = array_values($this->partnersList);
+        }
+    }
+
+    /**
+     * Aplica una plantilla rápida de socios y porcentajes.
+     *
+     * @param string $type
+     * @return void
+     */
+    public function setPartnersPreset(string $type): void
+    {
+        if ($type === '3_partners') {
+            $this->partnersList = [
+                ['name' => 'Fran', 'percentage' => 33.33],
+                ['name' => 'Miguel', 'percentage' => 33.33],
+                ['name' => 'Ezequiel', 'percentage' => 33.34],
+            ];
+        } elseif ($type === '2_partners') {
+            $this->partnersList = [
+                ['name' => 'Fran', 'percentage' => 50.0],
+                ['name' => 'Miguel', 'percentage' => 50.0],
+            ];
         }
     }
 

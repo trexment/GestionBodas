@@ -1046,10 +1046,11 @@ class Setting extends Model
             }
         }
 
-        // Por defecto: Fran (50%) y Miguel (50%)
+        // Por defecto: Fran (33,33%), Miguel (33,33%) y Ezequiel (33,34%)
         return [
-            ['name' => 'Fran', 'percentage' => 50.0],
-            ['name' => 'Miguel', 'percentage' => 50.0],
+            ['name' => 'Fran', 'percentage' => 33.33],
+            ['name' => 'Miguel', 'percentage' => 33.33],
+            ['name' => 'Ezequiel', 'percentage' => 33.34],
         ];
     }
 

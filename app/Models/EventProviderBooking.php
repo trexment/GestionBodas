@@ -276,7 +276,7 @@ class EventProviderBooking extends Model
         }
         return match ($this->refund_recipient) {
             'fran' => (float) $this->refund_amount,
-            'miguel' => 0.0,
+            'miguel', 'ezequiel' => 0.0,
             'joint' => 0.0,
             'custom' => (float) $this->refund_fran_amount,
             default => round((float) $this->refund_amount / 2, 2), // 50_50
@@ -293,10 +293,24 @@ class EventProviderBooking extends Model
         }
         return match ($this->refund_recipient) {
             'miguel' => (float) $this->refund_amount,
-            'fran' => 0.0,
+            'fran', 'ezequiel' => 0.0,
             'joint' => 0.0,
             'custom' => (float) $this->refund_miguel_amount,
             default => round((float) $this->refund_amount - round((float) $this->refund_amount / 2, 2), 2), // resto de 50_50
+        };
+    }
+
+    /**
+     * Importe de devolución de Artístamente ingresado a Ezequiel.
+     */
+    public function getRefundEzequielCalculatedAttribute(): float
+    {
+        if (!$this->has_refund || (float) $this->refund_amount <= 0) {
+            return 0.0;
+        }
+        return match ($this->refund_recipient) {
+            'ezequiel' => (float) $this->refund_amount,
+            default => 0.0,
         };
     }
 
@@ -317,9 +331,10 @@ class EventProviderBooking extends Model
     public function getRefundRecipientLabelAttribute(): string
     {
         return match ($this->refund_recipient) {
-            'fran' => 'En banco de Fran (se reparte 50/50 con Miguel)',
-            'miguel' => 'En banco de Miguel (se reparte 50/50 con Fran)',
-            'joint' => 'Cuenta Conjunta (50/50 común)',
+            'fran' => 'En banco de Fran (se divide en el arqueo)',
+            'miguel' => 'En banco de Miguel (se divide en el arqueo)',
+            'ezequiel' => 'En banco de Ezequiel (se divide en el arqueo)',
+            'joint' => 'Cuenta Conjunta / Fondo Común',
             'custom' => 'Personalizado (' . number_format((float)$this->refund_fran_amount, 2, ',', '.') . '€ Fran / ' . number_format((float)$this->refund_miguel_amount, 2, ',', '.') . '€ Miguel)',
             default => 'Mitad a cada uno (50% Fran / 50% Miguel)',
         };

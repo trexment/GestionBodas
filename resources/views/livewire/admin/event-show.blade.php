@@ -8649,7 +8649,7 @@
                     <label class="block font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[11px] mb-1.5">
                         ¿Quién cobró esta señal? (Cuenta receptora) *
                     </label>
-                    <div class="grid grid-cols-3 gap-2">
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
                         <label class="flex items-center justify-center gap-1.5 p-2 rounded-xl border text-center cursor-pointer transition {{ $deposit_collected_by_input === 'Fran' ? 'bg-indigo-50 border-indigo-500 text-indigo-900 font-black ring-1 ring-indigo-500 dark:bg-indigo-950/60 dark:text-indigo-200' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-300' }}">
                             <input type="radio" wire:model.live="deposit_collected_by_input" value="Fran" class="sr-only">
                             <span>👤 Fran</span>
@@ -8658,9 +8658,13 @@
                             <input type="radio" wire:model.live="deposit_collected_by_input" value="Miguel" class="sr-only">
                             <span>👤 Miguel</span>
                         </label>
-                        <label class="flex items-center justify-center gap-1.5 p-2 rounded-xl border text-center cursor-pointer transition {{ $deposit_collected_by_input === 'Cuenta Conjunta' ? 'bg-emerald-50 border-emerald-500 text-emerald-900 font-black ring-1 ring-emerald-500 dark:bg-emerald-950/60 dark:text-emerald-200' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-300' }}">
+                        <label class="flex items-center justify-center gap-1.5 p-2 rounded-xl border text-center cursor-pointer transition {{ $deposit_collected_by_input === 'Ezequiel' ? 'bg-sky-50 border-sky-500 text-sky-900 font-black ring-1 ring-sky-500 dark:bg-sky-950/60 dark:text-sky-200' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-300' }}">
+                            <input type="radio" wire:model.live="deposit_collected_by_input" value="Ezequiel" class="sr-only">
+                            <span>👤 Ezequiel</span>
+                        </label>
+                        <label class="flex items-center justify-center gap-1.5 p-2 rounded-xl border text-center cursor-pointer transition {{ in_array($deposit_collected_by_input, ['Cuenta Conjunta', 'Cuenta Conjunta / Fondo Común', 'Fondo Común'], true) ? 'bg-emerald-50 border-emerald-500 text-emerald-900 font-black ring-1 ring-emerald-500 dark:bg-emerald-950/60 dark:text-emerald-200' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-300' }}">
                             <input type="radio" wire:model.live="deposit_collected_by_input" value="Cuenta Conjunta" class="sr-only">
-                            <span>🏦 Conjunta</span>
+                            <span>🏦 Fondo Común</span>
                         </label>
                     </div>
                     <span class="text-[10px] text-slate-400 block mt-1">Permite el arqueo automático entre cuentas de socios en el panel de facturación.</span>
@@ -8822,7 +8826,7 @@
                         <label class="block font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[11px] mb-1.5">
                             ¿Quién cobró este dinero? (Cuenta o Efectivo en mano) *
                         </label>
-                        <div class="grid grid-cols-3 gap-2">
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
                             <label class="flex items-center justify-center gap-1.5 p-2 rounded-xl border text-center cursor-pointer transition {{ $final_payment_collected_by_input === 'Fran' ? 'bg-indigo-50 border-indigo-500 text-indigo-900 font-black ring-1 ring-indigo-500 dark:bg-indigo-950/60 dark:text-indigo-200' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-300' }}">
                                 <input type="radio" wire:model.live="final_payment_collected_by_input" value="Fran" class="sr-only">
                                 <span>👤 Fran</span>
@@ -8831,9 +8835,13 @@
                                 <input type="radio" wire:model.live="final_payment_collected_by_input" value="Miguel" class="sr-only">
                                 <span>👤 Miguel</span>
                             </label>
-                            <label class="flex items-center justify-center gap-1.5 p-2 rounded-xl border text-center cursor-pointer transition {{ $final_payment_collected_by_input === 'Cuenta Conjunta' ? 'bg-emerald-50 border-emerald-500 text-emerald-900 font-black ring-1 ring-emerald-500 dark:bg-emerald-950/60 dark:text-emerald-200' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-300' }}">
+                            <label class="flex items-center justify-center gap-1.5 p-2 rounded-xl border text-center cursor-pointer transition {{ $final_payment_collected_by_input === 'Ezequiel' ? 'bg-sky-50 border-sky-500 text-sky-900 font-black ring-1 ring-sky-500 dark:bg-sky-950/60 dark:text-sky-200' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-300' }}">
+                                <input type="radio" wire:model.live="final_payment_collected_by_input" value="Ezequiel" class="sr-only">
+                                <span>👤 Ezequiel</span>
+                            </label>
+                            <label class="flex items-center justify-center gap-1.5 p-2 rounded-xl border text-center cursor-pointer transition {{ in_array($final_payment_collected_by_input, ['Cuenta Conjunta', 'Cuenta Conjunta / Fondo Común', 'Fondo Común'], true) ? 'bg-emerald-50 border-emerald-500 text-emerald-900 font-black ring-1 ring-emerald-500 dark:bg-emerald-950/60 dark:text-emerald-200' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-300' }}">
                                 <input type="radio" wire:model.live="final_payment_collected_by_input" value="Cuenta Conjunta" class="sr-only">
-                                <span>🏦 Conjunta</span>
+                                <span>🏦 Fondo Común</span>
                             </label>
                         </div>
                     </div>
@@ -9034,7 +9042,7 @@
                 <!-- Quién pagó a este proveedor de su propio bolsillo -->
                 <div>
                     <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">¿Quién pagó este gasto/proveedor de su bolsillo? *</label>
-                    <div class="grid grid-cols-3 gap-2">
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
                         <button
                             type="button"
                             wire:click="$set('prov_paid_by', 'Fran')"
@@ -9050,6 +9058,14 @@
                         >
                             <span>👤</span>
                             <span>Miguel</span>
+                        </button>
+                        <button
+                            type="button"
+                            wire:click="$set('prov_paid_by', 'Ezequiel')"
+                            class="p-2.5 rounded-xl border text-center font-bold text-xs transition cursor-pointer flex items-center justify-center gap-1.5 {{ $prov_paid_by === 'Ezequiel' ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs' : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800' }}"
+                        >
+                            <span>👤</span>
+                            <span>Ezequiel</span>
                         </button>
                         <button
                             type="button"
@@ -9182,9 +9198,10 @@
                                     </label>
                                     <select wire:model.live="prov_refund_recipient" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 p-2.5 font-bold text-xs text-slate-900 dark:text-white">
                                         <option value="50_50">👥 50% Fran / 50% Miguel (Mitad directamente a cada uno)</option>
-                                        <option value="fran">👤 Ingresado íntegro en banco de Fran (se divide al 50% en el arqueo final)</option>
-                                        <option value="miguel">👤 Ingresado íntegro en banco de Miguel (se divide al 50% en el arqueo final)</option>
-                                        <option value="joint">🏦 Cuenta Conjunta / Empresa (beneficio 50% para ambos)</option>
+                                        <option value="fran">👤 Ingresado íntegro en banco de Fran (se divide en el arqueo final)</option>
+                                        <option value="miguel">👤 Ingresado íntegro en banco de Miguel (se divide en el arqueo final)</option>
+                                        <option value="ezequiel">👤 Ingresado íntegro en banco de Ezequiel (se divide en el arqueo final)</option>
+                                        <option value="joint">🏦 Cuenta Conjunta / Empresa / Fondo Común</option>
                                         <option value="custom">⚙️ Reparto Personalizado</option>
                                     </select>
                                     <span class="text-[10px] text-slate-500">El dinero devuelto se divide siempre al 50% entre ambos socios</span>
@@ -9217,8 +9234,10 @@
                                             Artístamente ingresó los <strong class="text-amber-600">{{ number_format((float)$prov_refund_amount, 2, ',', '.') }} €</strong> en la cuenta de Fran &rarr; En el reparto le corresponden <strong class="text-emerald-600">{{ number_format((float)$prov_refund_amount / 2, 2, ',', '.') }} €</strong> a Fran y <strong class="text-blue-600">{{ number_format((float)$prov_refund_amount / 2, 2, ',', '.') }} €</strong> a Miguel (Fran transfiere su mitad a Miguel en el arqueo).
                                         @elseif($prov_refund_recipient === 'miguel')
                                             Artístamente ingresó los <strong class="text-amber-600">{{ number_format((float)$prov_refund_amount, 2, ',', '.') }} €</strong> en la cuenta de Miguel &rarr; En el reparto le corresponden <strong class="text-emerald-600">{{ number_format((float)$prov_refund_amount / 2, 2, ',', '.') }} €</strong> a Miguel y <strong class="text-blue-600">{{ number_format((float)$prov_refund_amount / 2, 2, ',', '.') }} €</strong> a Fran (Miguel transfiere su mitad a Fran en el arqueo).
+                                        @elseif($prov_refund_recipient === 'ezequiel')
+                                            Artístamente ingresó los <strong class="text-amber-600">{{ number_format((float)$prov_refund_amount, 2, ',', '.') }} €</strong> en la cuenta de Ezequiel &rarr; Se compensa con la cuota de beneficio de los socios en el arqueo general.
                                         @elseif($prov_refund_recipient === 'joint')
-                                            Ingresado en Cuenta Conjunta (<strong class="text-emerald-600">{{ number_format((float)$prov_refund_amount, 2, ',', '.') }} €</strong>) &rarr; <strong class="text-amber-600">{{ number_format((float)$prov_refund_amount / 2, 2, ',', '.') }} €</strong> de beneficio para Fran y <strong class="text-amber-600">{{ number_format((float)$prov_refund_amount / 2, 2, ',', '.') }} €</strong> para Miguel.
+                                            Ingresado en Cuenta Conjunta / Fondo Común (<strong class="text-emerald-600">{{ number_format((float)$prov_refund_amount, 2, ',', '.') }} €</strong>) &rarr; Beneficio compartido para la caja común de la empresa.
                                         @endif
                                     </div>
                                 </div>
