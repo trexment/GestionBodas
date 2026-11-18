@@ -9178,16 +9178,16 @@
 
                                 <div>
                                     <label class="block text-[11px] font-black text-slate-800 dark:text-slate-200 mb-1">
-                                        🏦 ¿A qué cuenta lo ingresaron? *
+                                        🏦 ¿A qué cuenta bancaria ingresó Artístamente la devolución? *
                                     </label>
                                     <select wire:model.live="prov_refund_recipient" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 p-2.5 font-bold text-xs text-slate-900 dark:text-white">
-                                        <option value="50_50">👥 50% Fran / 50% Miguel (Mitad a cada uno)</option>
-                                        <option value="fran">👤 100% en cuenta de Fran</option>
-                                        <option value="miguel">👤 100% en cuenta de Miguel</option>
-                                        <option value="joint">🏦 Cuenta Conjunta / Empresa</option>
+                                        <option value="50_50">👥 50% Fran / 50% Miguel (Mitad directamente a cada uno)</option>
+                                        <option value="fran">👤 Ingresado íntegro en banco de Fran (se divide al 50% en el arqueo final)</option>
+                                        <option value="miguel">👤 Ingresado íntegro en banco de Miguel (se divide al 50% en el arqueo final)</option>
+                                        <option value="joint">🏦 Cuenta Conjunta / Empresa (beneficio 50% para ambos)</option>
                                         <option value="custom">⚙️ Reparto Personalizado</option>
                                     </select>
-                                    <span class="text-[10px] text-slate-500">Determina el arqueo bancario entre socios</span>
+                                    <span class="text-[10px] text-slate-500">El dinero devuelto se divide siempre al 50% entre ambos socios</span>
                                 </div>
                             </div>
 
@@ -9203,19 +9203,24 @@
                                     </div>
                                 </div>
                             @else
-                                <div class="p-2.5 rounded-xl bg-white dark:bg-slate-950 border border-amber-200 dark:border-amber-800/60 flex items-center justify-between text-xs">
-                                    <span class="text-slate-600 dark:text-slate-400">Distribución de la devolución:</span>
-                                    <span class="font-bold text-slate-900 dark:text-white">
+                                <div class="p-3 rounded-xl bg-white dark:bg-slate-950 border border-amber-200 dark:border-amber-800/60 text-xs space-y-1">
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-slate-600 dark:text-slate-400 font-bold">Reparto de la devolución entre socios:</span>
+                                        <span class="px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-200 font-black text-[10px]">
+                                            Total Devuelto: {{ number_format((float)$prov_refund_amount, 2, ',', '.') }} €
+                                        </span>
+                                    </div>
+                                    <div class="font-bold text-slate-900 dark:text-white text-xs pt-0.5">
                                         @if($prov_refund_recipient === '50_50')
-                                            Fran: <strong class="text-amber-600">{{ number_format((float)$prov_refund_fran_amount, 2, ',', '.') }} €</strong> &bull; Miguel: <strong class="text-amber-600">{{ number_format((float)$prov_refund_miguel_amount, 2, ',', '.') }} €</strong>
+                                            Fran: <strong class="text-amber-600">{{ number_format((float)$prov_refund_fran_amount, 2, ',', '.') }} €</strong> &bull; Miguel: <strong class="text-amber-600">{{ number_format((float)$prov_refund_miguel_amount, 2, ',', '.') }} €</strong> (50% exacto para cada uno)
                                         @elseif($prov_refund_recipient === 'fran')
-                                            100% a Fran (<strong class="text-amber-600">{{ number_format((float)$prov_refund_amount, 2, ',', '.') }} €</strong>)
+                                            Artístamente ingresó los <strong class="text-amber-600">{{ number_format((float)$prov_refund_amount, 2, ',', '.') }} €</strong> en la cuenta de Fran &rarr; En el reparto le corresponden <strong class="text-emerald-600">{{ number_format((float)$prov_refund_amount / 2, 2, ',', '.') }} €</strong> a Fran y <strong class="text-blue-600">{{ number_format((float)$prov_refund_amount / 2, 2, ',', '.') }} €</strong> a Miguel (Fran transfiere su mitad a Miguel en el arqueo).
                                         @elseif($prov_refund_recipient === 'miguel')
-                                            100% a Miguel (<strong class="text-amber-600">{{ number_format((float)$prov_refund_amount, 2, ',', '.') }} €</strong>)
+                                            Artístamente ingresó los <strong class="text-amber-600">{{ number_format((float)$prov_refund_amount, 2, ',', '.') }} €</strong> en la cuenta de Miguel &rarr; En el reparto le corresponden <strong class="text-emerald-600">{{ number_format((float)$prov_refund_amount / 2, 2, ',', '.') }} €</strong> a Miguel y <strong class="text-blue-600">{{ number_format((float)$prov_refund_amount / 2, 2, ',', '.') }} €</strong> a Fran (Miguel transfiere su mitad a Fran en el arqueo).
                                         @elseif($prov_refund_recipient === 'joint')
-                                            100% a Cuenta Conjunta (<strong class="text-emerald-600">{{ number_format((float)$prov_refund_amount, 2, ',', '.') }} €</strong>)
+                                            Ingresado en Cuenta Conjunta (<strong class="text-emerald-600">{{ number_format((float)$prov_refund_amount, 2, ',', '.') }} €</strong>) &rarr; <strong class="text-amber-600">{{ number_format((float)$prov_refund_amount / 2, 2, ',', '.') }} €</strong> de beneficio para Fran y <strong class="text-amber-600">{{ number_format((float)$prov_refund_amount / 2, 2, ',', '.') }} €</strong> para Miguel.
                                         @endif
-                                    </span>
+                                    </div>
                                 </div>
                             @endif
 

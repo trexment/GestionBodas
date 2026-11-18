@@ -317,11 +317,11 @@ class EventProviderBooking extends Model
     public function getRefundRecipientLabelAttribute(): string
     {
         return match ($this->refund_recipient) {
-            'fran' => '100% Fran',
-            'miguel' => '100% Miguel',
-            'joint' => 'Cuenta Conjunta',
+            'fran' => 'En banco de Fran (se reparte 50/50 con Miguel)',
+            'miguel' => 'En banco de Miguel (se reparte 50/50 con Fran)',
+            'joint' => 'Cuenta Conjunta (50/50 común)',
             'custom' => 'Personalizado (' . number_format((float)$this->refund_fran_amount, 2, ',', '.') . '€ Fran / ' . number_format((float)$this->refund_miguel_amount, 2, ',', '.') . '€ Miguel)',
-            default => '50% Fran / 50% Miguel',
+            default => 'Mitad a cada uno (50% Fran / 50% Miguel)',
         };
     }
 }
