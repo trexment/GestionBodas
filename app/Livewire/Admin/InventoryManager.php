@@ -33,6 +33,7 @@ class InventoryManager extends Component
     public $categories = [
         'Sonido',
         'Iluminación',
+        'Efectos Especiales / FX',
         'Estructuras',
         'Cables',
         'DJ',

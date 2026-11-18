@@ -77,8 +77,31 @@
                                     @endif
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
-                                        {{ $item->category }}
+                                    @php
+                                        $catBadge = match($item->category) {
+                                            'Efectos Especiales / FX' => 'bg-amber-100 text-amber-900 border border-amber-300',
+                                            'Sonido' => 'bg-blue-100 text-blue-800',
+                                            'Iluminación' => 'bg-purple-100 text-purple-800',
+                                            'Fotomatón' => 'bg-pink-100 text-pink-800',
+                                            'DJ' => 'bg-indigo-100 text-indigo-800',
+                                            'Cables' => 'bg-slate-100 text-slate-800',
+                                            'Estructuras' => 'bg-zinc-100 text-zinc-800',
+                                            default => 'bg-gray-100 text-gray-800',
+                                        };
+                                        $catIcon = match($item->category) {
+                                            'Efectos Especiales / FX' => '🎆',
+                                            'Sonido' => '🔊',
+                                            'Iluminación' => '💡',
+                                            'Fotomatón' => '📸',
+                                            'DJ' => '🎧',
+                                            'Cables' => '🔌',
+                                            'Estructuras' => '🏗️',
+                                            default => '📦',
+                                        };
+                                    @endphp
+                                    <span class="px-2.5 py-0.5 inline-flex items-center gap-1 text-xs leading-5 font-bold rounded-full {{ $catBadge }}">
+                                        <span>{{ $catIcon }}</span>
+                                        <span>{{ $item->category }}</span>
                                     </span>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center">
@@ -171,7 +194,7 @@
                                 </select>
                             </div>
                             
-                            @if(in_array($category, ['Iluminación', 'Otros']))
+                            @if(in_array($category, ['Iluminación', 'Efectos Especiales / FX', 'Otros']))
                             <div class="bg-indigo-50 p-4 rounded-md border border-indigo-100">
                                 <div class="flex items-start">
                                     <div class="flex items-center h-5">

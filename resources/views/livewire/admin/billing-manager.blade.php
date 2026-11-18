@@ -2089,6 +2089,7 @@
                             <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Categoría de Gasto *</label>
                             <select wire:model="matCategory" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 p-2.5 font-bold">
                                 <option value="sound_lighting">🔊 Sonido e Iluminación</option>
+                                <option value="fx">🎆 Efectos Especiales (FX) / Fuego Frío</option>
                                 <option value="photobooth_360">📸 Fotomatón y Plataforma 360</option>
                                 <option value="it_cables">🔌 Informática y Cableado</option>
                                 <option value="fuel_transport">⛽ Combustible y Transporte</option>
