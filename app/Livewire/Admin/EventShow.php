@@ -1223,15 +1223,23 @@ class EventShow extends Component
         $amount = (float)$this->deposit_amount_input;
         $hasPaid = $amount > 0;
 
-        $this->event->update([
+        \App\Models\Event::ensureTokenColumnsExist();
+        \App\Models\Invoice::ensureColumnsExist();
+
+        $updateData = [
             'status' => $this->target_status ?: 'confirmed',
             'deposit_paid' => $hasPaid,
             'deposit_paid_amount' => $amount,
             'deposit_payment_method' => $this->deposit_method_input,
             'deposit_paid_at' => $this->deposit_date_input,
-            'deposit_collected_by' => $this->deposit_collected_by_input ?: 'Fran',
             'deposit_notes' => $this->deposit_notes_input,
-        ]);
+        ];
+
+        if (\Illuminate\Support\Facades\Schema::hasColumn('events', 'deposit_collected_by')) {
+            $updateData['deposit_collected_by'] = $this->deposit_collected_by_input ?: 'Fran';
+        }
+
+        $this->event->update($updateData);
 
         // Generar o actualizar recibo de cobro automático si está marcado y el importe es > 0
         if ($this->generate_receipt_checkbox && $hasPaid) {
@@ -1252,32 +1260,29 @@ class EventShow extends Component
                 return str_contains($n, 'señal') || str_contains($n, 'senal');
             });
 
+            $invData = [
+                'amount' => $amount,
+                'total' => $amount,
+                'issue_date' => $this->deposit_date_input,
+                'status' => 'paid',
+                'payment_method' => $this->deposit_method_input,
+                'notes' => $noteText,
+            ];
+
+            if (\Illuminate\Support\Facades\Schema::hasColumn('invoices', 'collected_by')) {
+                $invData['collected_by'] = $this->deposit_collected_by_input ?: 'Fran';
+            }
+
             if ($existingSignalInv) {
-                $existingSignalInv->update([
-                    'amount' => $amount,
-                    'total' => $amount,
-                    'issue_date' => $this->deposit_date_input,
-                    'status' => 'paid',
-                    'payment_method' => $this->deposit_method_input,
-                    'collected_by' => $this->deposit_collected_by_input ?: 'Fran',
-                    'notes' => $noteText,
-                ]);
+                $existingSignalInv->update($invData);
             } else {
                 $nextNum = \App\Models\Invoice::nextNumber('recibo');
-                $this->event->invoices()->create([
-                    'quote_id' => $latestQuote ? $latestQuote->id : null,
-                    'invoice_number' => $nextNum,
-                    'type' => 'recibo',
-                    'amount' => $amount,
-                    'tax' => 0.00,
-                    'tax_rate' => 0.00,
-                    'total' => $amount,
-                    'issue_date' => $this->deposit_date_input,
-                    'status' => 'paid',
-                    'payment_method' => $this->deposit_method_input,
-                    'collected_by' => $this->deposit_collected_by_input ?: 'Fran',
-                    'notes' => $noteText,
-                ]);
+                $invData['quote_id'] = $latestQuote ? $latestQuote->id : null;
+                $invData['invoice_number'] = $nextNum;
+                $invData['type'] = 'recibo';
+                $invData['tax'] = 0.00;
+                $invData['tax_rate'] = 0.00;
+                $this->event->invoices()->create($invData);
             }
             $this->event->load('invoices');
         }
@@ -1293,13 +1298,19 @@ class EventShow extends Component
      */
     public function removeDeposit()
     {
-        $this->event->update([
+        \App\Models\Event::ensureTokenColumnsExist();
+        $removeData = [
             'deposit_paid' => false,
             'deposit_paid_amount' => 0,
             'deposit_payment_method' => null,
             'deposit_paid_at' => null,
             'deposit_notes' => null,
-        ]);
+        ];
+        if (\Illuminate\Support\Facades\Schema::hasColumn('events', 'deposit_collected_by')) {
+            $removeData['deposit_collected_by'] = null;
+        }
+
+        $this->event->update($removeData);
 
         $this->showDepositModal = false;
         $this->event->refresh();
@@ -1375,7 +1386,8 @@ class EventShow extends Component
 
             $latestQuote = $this->event->quotes()->latest()->first();
 
-            $this->event->invoices()->create([
+            \App\Models\Invoice::ensureColumnsExist();
+            $invData = [
                 'quote_id' => $latestQuote ? $latestQuote->id : null,
                 'invoice_number' => $nextNum,
                 'type' => 'recibo',
@@ -1386,9 +1398,14 @@ class EventShow extends Component
                 'issue_date' => $this->final_payment_date,
                 'status' => 'paid',
                 'payment_method' => $this->final_payment_method,
-                'collected_by' => $this->final_payment_collected_by_input ?: 'Fran',
                 'notes' => "Liquidación final del evento cobrada vía {$methodLabel} el " . \Carbon\Carbon::parse($this->final_payment_date)->format('d/m/Y') . ($this->final_payment_notes ? " ({$this->final_payment_notes})" : ""),
-            ]);
+            ];
+
+            if (\Illuminate\Support\Facades\Schema::hasColumn('invoices', 'collected_by')) {
+                $invData['collected_by'] = $this->final_payment_collected_by_input ?: 'Fran';
+            }
+
+            $this->event->invoices()->create($invData);
             $this->event->load('invoices');
         }
 
@@ -1580,6 +1597,7 @@ class EventShow extends Component
             'prov_final_amount' => 'nullable|numeric|min:0',
         ]);
 
+        \App\Models\EventProviderBooking::ensureTableExists();
         $depAmt = $this->prov_deposit_paid ? round((float) $this->prov_deposit_amount, 2) : 0.0;
         $finAmt = $this->prov_final_paid ? round((float) $this->prov_final_amount, 2) : 0.0;
 
@@ -1597,9 +1615,12 @@ class EventShow extends Component
             'final_amount' => $finAmt,
             'final_paid_at' => ($this->prov_final_paid && $finAmt > 0 && !empty($this->prov_final_date)) ? $this->prov_final_date : null,
             'final_payment_method' => ($this->prov_final_paid && $finAmt > 0) ? $this->prov_final_method : null,
-            'paid_by' => $this->prov_paid_by ?: 'Fran',
             'notes' => trim((string) $this->prov_notes) ?: null,
         ];
+
+        if (\Illuminate\Support\Facades\Schema::hasColumn('event_provider_bookings', 'paid_by')) {
+            $data['paid_by'] = $this->prov_paid_by ?: 'Fran';
+        }
 
         $existing = $this->prov_booking_id
             ? $this->event->providerBookings()->find($this->prov_booking_id)

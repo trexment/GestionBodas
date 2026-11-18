@@ -82,14 +82,24 @@ class EventProviderBooking extends Model
                 });
             } else {
                 if (!Schema::hasColumn('event_provider_bookings', 'paid_by')) {
-                    Schema::table('event_provider_bookings', function (Blueprint $table) {
-                        $table->string('paid_by', 100)->nullable()->default('Fran')->after('final_payment_method');
-                    });
+                    try {
+                        Schema::table('event_provider_bookings', function (Blueprint $table) {
+                            $table->string('paid_by', 100)->nullable()->default('Fran')->after('final_payment_method');
+                        });
+                    } catch (\Throwable $ex) {
+                        \Illuminate\Support\Facades\DB::statement("ALTER TABLE `event_provider_bookings` ADD `paid_by` VARCHAR(100) NULL DEFAULT 'Fran' AFTER `final_payment_method`");
+                    }
                 }
             }
         } catch (\Throwable $e) {
             // Silencioso si no hay permisos de DDL en este instante
         }
+    }
+
+    protected static function boot()
+    {
+        parent::boot();
+        static::ensureTableExists();
     }
 
     /**

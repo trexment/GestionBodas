@@ -102,9 +102,13 @@ class Event extends Model
                 }
 
                 if (!\Illuminate\Support\Facades\Schema::hasColumn('events', 'deposit_collected_by')) {
-                    \Illuminate\Support\Facades\Schema::table('events', function (\Illuminate\Database\Schema\Blueprint $table) {
-                        $table->string('deposit_collected_by', 100)->nullable()->default('Fran')->after('deposit_payment_method');
-                    });
+                    try {
+                        \Illuminate\Support\Facades\Schema::table('events', function (\Illuminate\Database\Schema\Blueprint $table) {
+                            $table->string('deposit_collected_by', 100)->nullable()->default('Fran')->after('deposit_payment_method');
+                        });
+                    } catch (\Throwable $ex) {
+                        \Illuminate\Support\Facades\DB::statement("ALTER TABLE `events` ADD `deposit_collected_by` VARCHAR(100) NULL DEFAULT 'Fran' AFTER `deposit_payment_method`");
+                    }
                 }
             }
         } catch (\Throwable $e) {
@@ -118,6 +122,8 @@ class Event extends Model
     protected static function boot()
     {
         parent::boot();
+
+        static::ensureTokenColumnsExist();
         
         static::creating(function ($event) {
             static::ensureTokenColumnsExist();

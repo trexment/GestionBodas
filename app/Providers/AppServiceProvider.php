@@ -34,11 +34,29 @@ class AppServiceProvider extends ServiceProvider
                 || !\Illuminate\Support\Facades\Schema::hasColumn('events', 'partner_name')
                 || !\Illuminate\Support\Facades\Schema::hasColumn('events', 'no_response_at')
                 || !\Illuminate\Support\Facades\Schema::hasColumn('events', 'guest_token')
+                || !\Illuminate\Support\Facades\Schema::hasColumn('events', 'deposit_collected_by')
+                || !\Illuminate\Support\Facades\Schema::hasColumn('invoices', 'collected_by')
+                || !\Illuminate\Support\Facades\Schema::hasColumn('event_provider_bookings', 'paid_by')
                 || !\Illuminate\Support\Facades\Schema::hasColumn('quotes', 'rejection_reason')) {
                 \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
             }
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::warning("Auto-migration check failed: " . $e->getMessage());
+        }
+
+        // Asegurar columnas críticas en caliente mediante DDL directo
+        try {
+            if (\Illuminate\Support\Facades\Schema::hasTable('events') && !\Illuminate\Support\Facades\Schema::hasColumn('events', 'deposit_collected_by')) {
+                \Illuminate\Support\Facades\DB::statement("ALTER TABLE `events` ADD `deposit_collected_by` VARCHAR(100) NULL DEFAULT 'Fran' AFTER `deposit_payment_method`");
+            }
+            if (\Illuminate\Support\Facades\Schema::hasTable('invoices') && !\Illuminate\Support\Facades\Schema::hasColumn('invoices', 'collected_by')) {
+                \Illuminate\Support\Facades\DB::statement("ALTER TABLE `invoices` ADD `collected_by` VARCHAR(100) NULL DEFAULT 'Fran' AFTER `payment_method`");
+            }
+            if (\Illuminate\Support\Facades\Schema::hasTable('event_provider_bookings') && !\Illuminate\Support\Facades\Schema::hasColumn('event_provider_bookings', 'paid_by')) {
+                \Illuminate\Support\Facades\DB::statement("ALTER TABLE `event_provider_bookings` ADD `paid_by` VARCHAR(100) NULL DEFAULT 'Fran' AFTER `final_payment_method`");
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning("Direct column injection failed: " . $e->getMessage());
         }
     }
 }

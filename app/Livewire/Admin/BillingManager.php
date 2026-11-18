@@ -238,19 +238,27 @@ class BillingManager extends Component
         $latestQuote = $event->quotes->where('status', 'accepted')->sortByDesc('id')->first()
             ?? $event->quotes->sortByDesc('id')->first();
 
+        \App\Models\Event::ensureTokenColumnsExist();
+        \App\Models\Invoice::ensureColumnsExist();
+
         if ($this->quickPaymentType === 'deposit') {
             $hasPaid = $amount > 0;
             $newStatus = in_array($event->status, ['completed'], true) ? 'completed' : ($hasPaid ? 'confirmed' : $event->status);
 
-            $event->update([
+            $updateEvent = [
                 'status' => $newStatus,
                 'deposit_paid' => $hasPaid,
                 'deposit_paid_amount' => $amount,
                 'deposit_payment_method' => $this->quickMethod,
                 'deposit_paid_at' => $this->quickDate,
-                'deposit_collected_by' => $this->quickCollectedBy ?: 'Fran',
                 'deposit_notes' => $this->quickNotes,
-            ]);
+            ];
+
+            if (\Illuminate\Support\Facades\Schema::hasColumn('events', 'deposit_collected_by')) {
+                $updateEvent['deposit_collected_by'] = $this->quickCollectedBy ?: 'Fran';
+            }
+
+            $event->update($updateEvent);
 
             if ($this->quickGenerateReceipt && $hasPaid) {
                 $noteText = "Señal de reserva cobrada vía {$methodLabel} el " . Carbon::parse($this->quickDate)->format('d/m/Y') . ($this->quickNotes ? " ({$this->quickNotes})" : '');
@@ -260,32 +268,29 @@ class BillingManager extends Component
                     return str_contains($n, 'señal') || str_contains($n, 'senal');
                 });
 
+                $invData = [
+                    'amount' => $amount,
+                    'total' => $amount,
+                    'issue_date' => $this->quickDate,
+                    'status' => 'paid',
+                    'payment_method' => $this->quickMethod,
+                    'notes' => $noteText,
+                ];
+
+                if (\Illuminate\Support\Facades\Schema::hasColumn('invoices', 'collected_by')) {
+                    $invData['collected_by'] = $this->quickCollectedBy ?: 'Fran';
+                }
+
                 if ($existingSignalInv) {
-                    $existingSignalInv->update([
-                        'amount' => $amount,
-                        'total' => $amount,
-                        'issue_date' => $this->quickDate,
-                        'status' => 'paid',
-                        'payment_method' => $this->quickMethod,
-                        'collected_by' => $this->quickCollectedBy ?: 'Fran',
-                        'notes' => $noteText,
-                    ]);
+                    $existingSignalInv->update($invData);
                 } else {
                     $nextNum = Invoice::nextNumber('recibo');
-                    $event->invoices()->create([
-                        'quote_id' => $latestQuote?->id,
-                        'invoice_number' => $nextNum,
-                        'type' => 'recibo',
-                        'amount' => $amount,
-                        'tax' => 0.00,
-                        'tax_rate' => 0.00,
-                        'total' => $amount,
-                        'issue_date' => $this->quickDate,
-                        'status' => 'paid',
-                        'payment_method' => $this->quickMethod,
-                        'collected_by' => $this->quickCollectedBy ?: 'Fran',
-                        'notes' => $noteText,
-                    ]);
+                    $invData['quote_id'] = $latestQuote?->id;
+                    $invData['invoice_number'] = $nextNum;
+                    $invData['type'] = 'recibo';
+                    $invData['tax'] = 0.00;
+                    $invData['tax_rate'] = 0.00;
+                    $event->invoices()->create($invData);
                 }
             }
 
@@ -295,7 +300,7 @@ class BillingManager extends Component
                 $nextNum = Invoice::nextNumber('recibo');
                 $noteText = "Liquidación final del evento cobrada vía {$methodLabel} el " . Carbon::parse($this->quickDate)->format('d/m/Y') . ($this->quickNotes ? " ({$this->quickNotes})" : '');
 
-                $event->invoices()->create([
+                $recData = [
                     'quote_id' => $latestQuote?->id,
                     'invoice_number' => $nextNum,
                     'type' => 'recibo',
@@ -306,9 +311,14 @@ class BillingManager extends Component
                     'issue_date' => $this->quickDate,
                     'status' => 'paid',
                     'payment_method' => $this->quickMethod,
-                    'collected_by' => $this->quickCollectedBy ?: 'Fran',
                     'notes' => $noteText,
-                ]);
+                ];
+
+                if (\Illuminate\Support\Facades\Schema::hasColumn('invoices', 'collected_by')) {
+                    $recData['collected_by'] = $this->quickCollectedBy ?: 'Fran';
+                }
+
+                $event->invoices()->create($recData);
             }
 
             session()->flash('message', "✅ Cobro final de " . number_format($amount, 2, ',', '.') . " € ({$methodLabel} - Cobrado por {$this->quickCollectedBy}) registrado en '{$event->name}'.");
@@ -621,6 +631,8 @@ class BillingManager extends Component
         $depAmt = $this->provDepositPaid ? round((float) $this->provDepositAmount, 2) : 0.0;
         $finAmt = $this->provFinalPaid ? round((float) $this->provFinalAmount, 2) : 0.0;
 
+        \App\Models\EventProviderBooking::ensureTableExists();
+
         $data = [
             'provider_key' => $this->provKey ?: 'logrono',
             'provider_name' => trim($this->provName),
@@ -635,9 +647,12 @@ class BillingManager extends Component
             'final_amount' => $finAmt,
             'final_paid_at' => ($this->provFinalPaid && $finAmt > 0 && !empty($this->provFinalDate)) ? $this->provFinalDate : null,
             'final_payment_method' => ($this->provFinalPaid && $finAmt > 0) ? $this->provFinalMethod : null,
-            'paid_by' => $this->provPaidBy ?: 'Fran',
             'notes' => trim($this->provNotes) ?: null,
         ];
+
+        if (\Illuminate\Support\Facades\Schema::hasColumn('event_provider_bookings', 'paid_by')) {
+            $data['paid_by'] = $this->provPaidBy ?: 'Fran';
+        }
 
         $existing = $this->provBookingId
             ? $event->providerBookings()->find($this->provBookingId)

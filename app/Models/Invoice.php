@@ -43,11 +43,21 @@ class Invoice extends Model
 
         try {
             if (\Illuminate\Support\Facades\Schema::hasTable('invoices') && !\Illuminate\Support\Facades\Schema::hasColumn('invoices', 'collected_by')) {
-                \Illuminate\Support\Facades\Schema::table('invoices', function (\Illuminate\Database\Schema\Blueprint $table) {
-                    $table->string('collected_by', 100)->nullable()->default('Fran')->after('payment_method');
-                });
+                try {
+                    \Illuminate\Support\Facades\Schema::table('invoices', function (\Illuminate\Database\Schema\Blueprint $table) {
+                        $table->string('collected_by', 100)->nullable()->default('Fran')->after('payment_method');
+                    });
+                } catch (\Throwable $ex) {
+                    \Illuminate\Support\Facades\DB::statement("ALTER TABLE `invoices` ADD `collected_by` VARCHAR(100) NULL DEFAULT 'Fran' AFTER `payment_method`");
+                }
             }
         } catch (\Throwable $e) {}
+    }
+
+    protected static function boot()
+    {
+        parent::boot();
+        static::ensureColumnsExist();
     }
 
     protected $casts = [
