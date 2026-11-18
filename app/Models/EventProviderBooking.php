@@ -32,6 +32,17 @@ class EventProviderBooking extends Model
         'final_paid_at',
         'final_payment_method',
         'paid_by',
+        'has_refund',
+        'refund_amount',
+        'refund_recipient',
+        'refund_fran_amount',
+        'refund_miguel_amount',
+        'management_fee',
+        'social_security_fee',
+        'tax_fee',
+        'registration_fee',
+        'settlement_number',
+        'invoice_number',
         'notes',
     ];
 
@@ -44,6 +55,14 @@ class EventProviderBooking extends Model
         'final_paid' => 'boolean',
         'final_amount' => 'decimal:2',
         'final_paid_at' => 'date',
+        'has_refund' => 'boolean',
+        'refund_amount' => 'decimal:2',
+        'refund_fran_amount' => 'decimal:2',
+        'refund_miguel_amount' => 'decimal:2',
+        'management_fee' => 'decimal:2',
+        'social_security_fee' => 'decimal:2',
+        'tax_fee' => 'decimal:2',
+        'registration_fee' => 'decimal:2',
     ];
 
     protected static bool $schemaChecked = false;
@@ -88,6 +107,23 @@ class EventProviderBooking extends Model
                         });
                     } catch (\Throwable $ex) {
                         \Illuminate\Support\Facades\DB::statement("ALTER TABLE `event_provider_bookings` ADD `paid_by` VARCHAR(100) NULL DEFAULT 'Fran' AFTER `final_payment_method`");
+                    }
+                }
+                if (!Schema::hasColumn('event_provider_bookings', 'has_refund')) {
+                    try {
+                        \Illuminate\Support\Facades\DB::statement("ALTER TABLE `event_provider_bookings` ADD `has_refund` TINYINT(1) NOT NULL DEFAULT 0 AFTER `paid_by`");
+                        \Illuminate\Support\Facades\DB::statement("ALTER TABLE `event_provider_bookings` ADD `refund_amount` DECIMAL(10,2) NOT NULL DEFAULT 0 AFTER `has_refund`");
+                        \Illuminate\Support\Facades\DB::statement("ALTER TABLE `event_provider_bookings` ADD `refund_recipient` VARCHAR(50) NOT NULL DEFAULT '50_50' AFTER `refund_amount`");
+                        \Illuminate\Support\Facades\DB::statement("ALTER TABLE `event_provider_bookings` ADD `refund_fran_amount` DECIMAL(10,2) NOT NULL DEFAULT 0 AFTER `refund_recipient`");
+                        \Illuminate\Support\Facades\DB::statement("ALTER TABLE `event_provider_bookings` ADD `refund_miguel_amount` DECIMAL(10,2) NOT NULL DEFAULT 0 AFTER `refund_fran_amount`");
+                        \Illuminate\Support\Facades\DB::statement("ALTER TABLE `event_provider_bookings` ADD `management_fee` DECIMAL(10,2) NOT NULL DEFAULT 0 AFTER `refund_miguel_amount`");
+                        \Illuminate\Support\Facades\DB::statement("ALTER TABLE `event_provider_bookings` ADD `social_security_fee` DECIMAL(10,2) NOT NULL DEFAULT 0 AFTER `management_fee`");
+                        \Illuminate\Support\Facades\DB::statement("ALTER TABLE `event_provider_bookings` ADD `tax_fee` DECIMAL(10,2) NOT NULL DEFAULT 0 AFTER `social_security_fee`");
+                        \Illuminate\Support\Facades\DB::statement("ALTER TABLE `event_provider_bookings` ADD `registration_fee` DECIMAL(10,2) NOT NULL DEFAULT 0 AFTER `tax_fee`");
+                        \Illuminate\Support\Facades\DB::statement("ALTER TABLE `event_provider_bookings` ADD `settlement_number` VARCHAR(100) NULL AFTER `registration_fee`");
+                        \Illuminate\Support\Facades\DB::statement("ALTER TABLE `event_provider_bookings` ADD `invoice_number` VARCHAR(100) NULL AFTER `settlement_number`");
+                    } catch (\Throwable $ex) {
+                        // Silencioso
                     }
                 }
             }
@@ -217,6 +253,75 @@ class EventProviderBooking extends Model
             'paid' => '✅ Todo Pagado al Proveedor',
             'deposit_paid' => '🟢 Señal Pagada (Falta Resto)',
             default => '⏳ Pendiente de Pagar Señal',
+        };
+    }
+
+    /**
+     * Coste neto real asumido por el evento tras descontar la devolución/liquidación de cooperativa (Artístamente).
+     */
+    public function getNetCostAttribute(): float
+    {
+        $cost = (float) $this->provider_total_cost;
+        $refund = ($this->has_refund && (float) $this->refund_amount > 0) ? (float) $this->refund_amount : 0.0;
+        return max(0.0, round($cost - $refund, 2));
+    }
+
+    /**
+     * Importe de devolución de Artístamente ingresado a Fran.
+     */
+    public function getRefundFranCalculatedAttribute(): float
+    {
+        if (!$this->has_refund || (float) $this->refund_amount <= 0) {
+            return 0.0;
+        }
+        return match ($this->refund_recipient) {
+            'fran' => (float) $this->refund_amount,
+            'miguel' => 0.0,
+            'joint' => 0.0,
+            'custom' => (float) $this->refund_fran_amount,
+            default => round((float) $this->refund_amount / 2, 2), // 50_50
+        };
+    }
+
+    /**
+     * Importe de devolución de Artístamente ingresado a Miguel.
+     */
+    public function getRefundMiguelCalculatedAttribute(): float
+    {
+        if (!$this->has_refund || (float) $this->refund_amount <= 0) {
+            return 0.0;
+        }
+        return match ($this->refund_recipient) {
+            'miguel' => (float) $this->refund_amount,
+            'fran' => 0.0,
+            'joint' => 0.0,
+            'custom' => (float) $this->refund_miguel_amount,
+            default => round((float) $this->refund_amount - round((float) $this->refund_amount / 2, 2), 2), // resto de 50_50
+        };
+    }
+
+    /**
+     * Importe de devolución de Artístamente ingresado en Cuenta Conjunta.
+     */
+    public function getRefundJointCalculatedAttribute(): float
+    {
+        if (!$this->has_refund || (float) $this->refund_amount <= 0 || $this->refund_recipient !== 'joint') {
+            return 0.0;
+        }
+        return (float) $this->refund_amount;
+    }
+
+    /**
+     * Etiqueta amigable del destinatario de la devolución.
+     */
+    public function getRefundRecipientLabelAttribute(): string
+    {
+        return match ($this->refund_recipient) {
+            'fran' => '100% Fran',
+            'miguel' => '100% Miguel',
+            'joint' => 'Cuenta Conjunta',
+            'custom' => 'Personalizado (' . number_format((float)$this->refund_fran_amount, 2, ',', '.') . '€ Fran / ' . number_format((float)$this->refund_miguel_amount, 2, ',', '.') . '€ Miguel)',
+            default => '50% Fran / 50% Miguel',
         };
     }
 }

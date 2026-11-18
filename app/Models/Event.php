@@ -596,6 +596,22 @@ class Event extends Model
             }
 
             $primaryPaidBy = implode(', ', array_unique($paidByList)) ?: 'Fran';
+
+            $totalRefund = 0.0;
+            $refundFran = 0.0;
+            $refundMiguel = 0.0;
+            $refundJoint = 0.0;
+            $hasRefund = false;
+            foreach ($bookings as $b) {
+                if ($b->has_refund && (float) $b->refund_amount > 0) {
+                    $hasRefund = true;
+                    $totalRefund += (float) $b->refund_amount;
+                    $refundFran += (float) $b->refund_fran_calculated;
+                    $refundMiguel += (float) $b->refund_miguel_calculated;
+                    $refundJoint += (float) $b->refund_joint_calculated;
+                }
+            }
+            $netCost = max(0.0, round($effectiveCost - $totalRefund, 2));
         } else {
             $serviceLabel = ($primaryBooking && !empty($primaryBooking->service_description) && $primaryBooking->service_description !== 'Fotomatón / Plataforma 360º')
                 ? $primaryBooking->service_description
@@ -644,6 +660,13 @@ class Event extends Model
             }
 
             $primaryPaidBy = $primaryBooking?->paid_by ?: 'Fran';
+
+            $hasRefund = $primaryBooking ? (bool) $primaryBooking->has_refund && (float) $primaryBooking->refund_amount > 0 : false;
+            $totalRefund = $hasRefund ? (float) $primaryBooking->refund_amount : 0.0;
+            $refundFran = $hasRefund ? (float) $primaryBooking->refund_fran_calculated : 0.0;
+            $refundMiguel = $hasRefund ? (float) $primaryBooking->refund_miguel_calculated : 0.0;
+            $refundJoint = $hasRefund ? (float) $primaryBooking->refund_joint_calculated : 0.0;
+            $netCost = max(0.0, round($effectiveCost - $totalRefund, 2));
         }
 
         return [
@@ -678,6 +701,20 @@ class Event extends Model
             'status' => $status,
             'status_label' => $statusLabel,
             'paid_by' => $primaryPaidBy,
+            'has_refund' => $hasRefund,
+            'refund_amount' => $totalRefund,
+            'net_cost' => $netCost,
+            'refund_recipient' => $primaryBooking?->refund_recipient ?? '50_50',
+            'refund_recipient_label' => $primaryBooking?->refund_recipient_label ?? '50% Fran / 50% Miguel',
+            'refund_fran_amount' => $refundFran,
+            'refund_miguel_amount' => $refundMiguel,
+            'refund_joint_amount' => $refundJoint,
+            'management_fee' => (float) ($primaryBooking?->management_fee ?? 0),
+            'social_security_fee' => (float) ($primaryBooking?->social_security_fee ?? 0),
+            'tax_fee' => (float) ($primaryBooking?->tax_fee ?? 0),
+            'registration_fee' => (float) ($primaryBooking?->registration_fee ?? 0),
+            'settlement_number' => $primaryBooking?->settlement_number,
+            'invoice_number' => $primaryBooking?->invoice_number,
             'bookings_count' => $bookings->count(),
             'bookings' => $bookings,
             'notes' => $primaryBooking?->notes ?? '',

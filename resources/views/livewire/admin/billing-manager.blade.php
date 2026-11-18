@@ -1148,8 +1148,19 @@
                                     </td>
 
                                     <!-- Coste Total Proveedor -->
-                                    <td class="py-3.5 px-3 text-right align-top font-black text-purple-700 dark:text-purple-300 whitespace-nowrap">
-                                        {{ number_format($prov['provider_total_cost'], 2, ',', '.') }} €
+                                    <td class="py-3.5 px-3 text-right align-top font-black whitespace-nowrap">
+                                        <div class="text-purple-700 dark:text-purple-300">
+                                            {{ number_format($prov['provider_total_cost'], 2, ',', '.') }} €
+                                        </div>
+                                        @if(!empty($prov['has_refund']))
+                                            <div class="inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 rounded text-[10px] font-black bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300" title="Liquidación cooperativa que se suma al reparto">
+                                                <span>🎭</span>
+                                                <span>Dev: +{{ number_format($prov['refund_amount'], 2, ',', '.') }} €</span>
+                                            </div>
+                                            <div class="text-[10px] font-black text-emerald-600 dark:text-emerald-400 mt-0.5">
+                                                Neto: {{ number_format($prov['net_cost'], 2, ',', '.') }} €
+                                            </div>
+                                        @endif
                                     </td>
 
                                     <!-- 1º Pago: Señal pagada al proveedor -->
@@ -1605,12 +1616,18 @@
                     <div class="p-4 rounded-2xl bg-purple-50/70 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800/80">
                         <div class="flex items-center justify-between text-[11px] font-bold text-purple-800 dark:text-purple-300">
                             <span>(-) Gasto Proveedores</span>
-                            <span>Fotomatón / 360º</span>
+                            <span>Fotomatón / 360º / Artístamente</span>
                         </div>
                         <div class="text-xl font-black text-purple-700 dark:text-purple-300 mt-1.5">
                             -{{ number_format($sData['provider_expenses'] ?? 0, 2, ',', '.') }} €
                         </div>
-                        <p class="text-[10px] text-slate-500 mt-1">Coste empresa externa en los eventos</p>
+                        @if(!empty($sData['provider_refunds']) && $sData['provider_refunds'] > 0)
+                            <p class="text-[10px] text-amber-700 dark:text-amber-300 mt-1 font-bold">
+                                Facturas: {{ number_format($sData['gross_provider_expenses'] ?? 0, 2, ',', '.') }} € | Devoluciones: +{{ number_format($sData['provider_refunds'], 2, ',', '.') }} €
+                            </p>
+                        @else
+                            <p class="text-[10px] text-slate-500 mt-1">Coste neto externo en los eventos</p>
+                        @endif
                     </div>
 
                     <!-- 3. Gasto Material -->
@@ -1804,7 +1821,14 @@
                             @endif
 
                             <div class="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
-                                <span class="text-slate-500 dark:text-slate-400 font-semibold">💵 Cobrado físicamente en su cuenta / Bizum:</span>
+                                <div>
+                                    <span class="text-slate-500 dark:text-slate-400 font-semibold block">💵 Dinero total en su cuenta / Bizum:</span>
+                                    @if(($partner['refund_received'] ?? 0) > 0)
+                                        <span class="text-[10px] text-amber-600 dark:text-amber-400 font-semibold">
+                                            Clientes: {{ number_format($partner['client_collected'] ?? 0, 2, ',', '.') }} € &bull; Devolución Artístamente: +{{ number_format($partner['refund_received'], 2, ',', '.') }} €
+                                        </span>
+                                    @endif
+                                </div>
                                 <strong class="text-indigo-600 dark:text-indigo-400 font-extrabold text-sm">
                                     {{ number_format($partner['collected_in_hand'] ?? 0, 2, ',', '.') }} €
                                 </strong>
@@ -2264,6 +2288,139 @@
                         @else
                             <div class="text-[11px] text-amber-700 dark:text-amber-300 font-bold">
                                 ⏳ Queda pendiente de pagarle a la empresa: <strong>{{ number_format($calcPendingToProv, 2, ',', '.') }} €</strong>
+                            </div>
+                        @endif
+                    </div>
+
+                    <!-- BLOQUE DE LIQUIDACIÓN Y DEVOLUCIÓN DE ARTÍSTAMENTE / COOPERATIVA -->
+                    <div class="p-3.5 rounded-2xl border transition {{ $provHasRefund ? 'bg-amber-50/70 dark:bg-amber-950/30 border-amber-300 dark:border-amber-700' : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800' }} space-y-3">
+                        <div class="flex items-center justify-between">
+                            <label class="flex items-center gap-2 font-black text-slate-900 dark:text-white cursor-pointer">
+                                <input type="checkbox" wire:model.live="provHasRefund" class="rounded border-slate-300 text-amber-600">
+                                <span>🎭 ¿Hay Liquidación / Devolución de Cooperativa? (Artístamente)</span>
+                            </label>
+                            @if($provHasRefund)
+                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-200 dark:bg-amber-900 text-amber-900 dark:text-amber-200">
+                                    Se recupera dinero
+                                </span>
+                            @endif
+                        </div>
+
+                        @if($provHasRefund)
+                            <div class="space-y-3 pt-1 border-t border-amber-200 dark:border-amber-800/80">
+                                <p class="text-[11px] text-amber-800 dark:text-amber-300">
+                                    Al facturar con Artístamente pagamos la factura (ej. {{ number_format((float)$provTotalCost, 2, ',', '.') }} €), y tras deducir gestión y S.S., la cooperativa nos devuelve una cantidad que <strong>se añade al dinero a repartir</strong>.
+                                </p>
+
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="block text-[11px] font-black text-slate-800 dark:text-slate-200 mb-1">
+                                            💰 Importe Devuelto / Cobrado (€) *
+                                        </label>
+                                        <input type="number" step="0.01" wire:model.live="provRefundAmount" class="w-full rounded-xl border border-amber-300 dark:border-amber-700 bg-white dark:bg-slate-900 p-2.5 font-black text-base text-amber-600 dark:text-amber-400">
+                                        <span class="text-[10px] text-slate-500">Ej: 136,44 € devuelto según liquidación</span>
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-[11px] font-black text-slate-800 dark:text-slate-200 mb-1">
+                                            🏦 ¿A qué cuenta lo ingresaron? *
+                                        </label>
+                                        <select wire:model.live="provRefundRecipient" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 p-2.5 font-bold text-xs">
+                                            <option value="50_50">👥 50% Fran / 50% Miguel (Mitad a cada uno)</option>
+                                            <option value="fran">👤 100% en cuenta de Fran</option>
+                                            <option value="miguel">👤 100% en cuenta de Miguel</option>
+                                            <option value="joint">🏦 Cuenta Conjunta / Empresa</option>
+                                            <option value="custom">⚙️ Reparto Personalizado</option>
+                                        </select>
+                                        <span class="text-[10px] text-slate-500">Determina el arqueo bancario entre socios</span>
+                                    </div>
+                                </div>
+
+                                @if($provRefundRecipient === 'custom')
+                                    <div class="grid grid-cols-2 gap-3 p-2.5 rounded-xl bg-amber-100/60 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800">
+                                        <div>
+                                            <label class="block text-[10px] font-bold text-slate-700 dark:text-slate-300">Ingresado a Fran (€)</label>
+                                            <input type="number" step="0.01" wire:model.live="provRefundFranAmount" class="w-full rounded-lg border border-slate-300 p-1.5 font-bold text-xs">
+                                        </div>
+                                        <div>
+                                            <label class="block text-[10px] font-bold text-slate-700 dark:text-slate-300">Ingresado a Miguel (€)</label>
+                                            <input type="number" step="0.01" wire:model.live="provRefundMiguelAmount" class="w-full rounded-lg border border-slate-300 p-1.5 font-bold text-xs">
+                                        </div>
+                                    </div>
+                                @else
+                                    <div class="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-800/60 flex items-center justify-between text-xs">
+                                        <span class="text-slate-600 dark:text-slate-400">Distribución de la devolución:</span>
+                                        <span class="font-bold text-slate-900 dark:text-white">
+                                            @if($provRefundRecipient === '50_50')
+                                                Fran: <strong class="text-amber-600">{{ number_format((float)$provRefundFranAmount, 2, ',', '.') }} €</strong> &bull; Miguel: <strong class="text-amber-600">{{ number_format((float)$provRefundMiguelAmount, 2, ',', '.') }} €</strong>
+                                            @elseif($provRefundRecipient === 'fran')
+                                                100% a Fran (<strong class="text-amber-600">{{ number_format((float)$provRefundAmount, 2, ',', '.') }} €</strong>)
+                                            @elseif($provRefundRecipient === 'miguel')
+                                                100% a Miguel (<strong class="text-amber-600">{{ number_format((float)$provRefundAmount, 2, ',', '.') }} €</strong>)
+                                            @elseif($provRefundRecipient === 'joint')
+                                                100% a Cuenta Conjunta (<strong class="text-emerald-600">{{ number_format((float)$provRefundAmount, 2, ',', '.') }} €</strong>)
+                                            @endif
+                                        </span>
+                                    </div>
+                                @endif
+
+                                @php
+                                    $netEventCost = max(0.0, round((float)$provTotalCost - (float)$provRefundAmount, 2));
+                                @endphp
+                                <div class="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 flex items-center justify-between text-xs">
+                                    <div>
+                                        <span class="font-black text-emerald-800 dark:text-emerald-300 block">
+                                            Coste Neto Real Asumido por el Evento:
+                                        </span>
+                                        <span class="text-[10px] text-emerald-700/80 dark:text-emerald-400">
+                                            Factura ({{ number_format((float)$provTotalCost, 2, ',', '.') }} €) - Devolución ({{ number_format((float)$provRefundAmount, 2, ',', '.') }} €)
+                                        </span>
+                                    </div>
+                                    <div class="text-lg font-black text-emerald-700 dark:text-emerald-300">
+                                        {{ number_format($netEventCost, 2, ',', '.') }} €
+                                    </div>
+                                </div>
+
+                                <details class="text-[11px] text-slate-600 dark:text-slate-400 pt-1">
+                                    <summary class="font-bold text-amber-700 dark:text-amber-400 cursor-pointer hover:underline">
+                                        📄 Ver desglose de retenciones y documentos de la liquidación (Opcional)
+                                    </summary>
+                                    <div class="mt-2.5 p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-2.5">
+                                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                            <div>
+                                                <label class="block text-[10px] text-slate-500 font-bold">Gestión (€)</label>
+                                                <input type="number" step="0.01" wire:model.live="provManagementFee" class="w-full rounded border border-slate-300 p-1 font-semibold text-xs">
+                                            </div>
+                                            <div>
+                                                <label class="block text-[10px] text-slate-500 font-bold">Seg. Social (€)</label>
+                                                <input type="number" step="0.01" wire:model.live="provSocialSecurityFee" class="w-full rounded border border-slate-300 p-1 font-semibold text-xs">
+                                            </div>
+                                            <div>
+                                                <label class="block text-[10px] text-slate-500 font-bold">Retención IRPF (€)</label>
+                                                <input type="number" step="0.01" wire:model.live="provTaxFee" class="w-full rounded border border-slate-300 p-1 font-semibold text-xs">
+                                            </div>
+                                            <div>
+                                                <label class="block text-[10px] text-slate-500 font-bold">Cuota Alta (€)</label>
+                                                <input type="number" step="0.01" wire:model.live="provRegistrationFee" class="w-full rounded border border-slate-300 p-1 font-semibold text-xs">
+                                            </div>
+                                        </div>
+                                        <div class="flex items-center justify-between pt-1">
+                                            <button type="button" wire:click="calculateRefundFromFees" class="px-2 py-1 rounded bg-amber-600 text-white text-[10px] font-bold hover:bg-amber-700 cursor-pointer">
+                                                ⚡ Auto-calcular importe devuelto
+                                            </button>
+                                        </div>
+                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 border-t border-slate-200 dark:border-slate-800">
+                                            <div>
+                                                <label class="block text-[10px] text-slate-500 font-bold">Nº Liquidación Artístamente</label>
+                                                <input type="text" wire:model="provSettlementNumber" placeholder="Ej: EAM-322971" class="w-full rounded border border-slate-300 p-1 font-semibold text-xs">
+                                            </div>
+                                            <div>
+                                                <label class="block text-[10px] text-slate-500 font-bold">Nº Factura / Presupuesto</label>
+                                                <input type="text" wire:model="provInvoiceNumber" placeholder="Ej: PEV-322971-1" class="w-full rounded border border-slate-300 p-1 font-semibold text-xs">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </details>
                             </div>
                         @endif
                     </div>

@@ -86,6 +86,8 @@ class BillingReportService
                 'finals_paid' => 0.0,
                 'total_paid' => 0.0,
                 'total_pending' => 0.0,
+                'total_refund' => 0.0,
+                'total_net_cost' => 0.0,
                 'events_deposit_paid_count' => 0,
                 'events_fully_paid_count' => 0,
                 'events_unpaid_count' => 0,
@@ -95,6 +97,8 @@ class BillingReportService
             'provider_cost_in_events' => 0.0,
             'provider_paid_in_events' => 0.0,
             'provider_pending_in_events' => 0.0,
+            'provider_refund_in_events' => 0.0,
+            'provider_net_cost_in_events' => 0.0,
             'net_agreed_after_providers' => 0.0,
             'net_collected_after_providers' => 0.0,
         ];
@@ -278,6 +282,8 @@ class BillingReportService
                     $kpis['provider_cost_in_events'] += (float) ($prov['provider_total_cost'] ?? 0);
                     $kpis['provider_paid_in_events'] += (float) ($prov['total_paid'] ?? 0);
                     $kpis['provider_pending_in_events'] += (float) ($prov['pending_amount'] ?? 0);
+                    $kpis['provider_refund_in_events'] += (float) ($prov['refund_amount'] ?? 0);
+                    $kpis['provider_net_cost_in_events'] += (float) ($prov['net_cost'] ?? $prov['provider_total_cost'] ?? 0);
                 }
 
                 // Agregar los pagos que coinciden al Libro de Cobros y a los KPIs de ingresos cobrados
@@ -355,6 +361,8 @@ class BillingReportService
                     $kpis['provider_summary']['finals_paid'] += (float) $prov['final_amount'];
                     $kpis['provider_summary']['total_paid'] += (float) $prov['total_paid'];
                     $kpis['provider_summary']['total_pending'] += (float) $prov['pending_amount'];
+                    $kpis['provider_summary']['total_refund'] += (float) ($prov['refund_amount'] ?? 0);
+                    $kpis['provider_summary']['total_net_cost'] += (float) ($prov['net_cost'] ?? $prov['provider_total_cost']);
 
                     if ($prov['status'] === 'paid') {
                         $kpis['provider_summary']['events_fully_paid_count']++;
@@ -445,12 +453,20 @@ class BillingReportService
         ];
 
         // 8. Liquidación y Reparto entre Socios (con arqueo y ajuste de cuentas separadas)
-        $providerExpensesDeducted = (float) ($kpis['provider_cost_in_events'] > 0 ? $kpis['provider_cost_in_events'] : ($kpis['provider_summary']['total_cost'] ?? 0.0));
+        // El gasto neto de proveedores a descontar es: Coste Factura Proveedor - Devolución/Liquidación de Cooperativa (Artístamente)
+        $grossProviderCost = (float) ($kpis['provider_cost_in_events'] > 0 ? $kpis['provider_cost_in_events'] : ($kpis['provider_summary']['total_cost'] ?? 0.0));
+        $totalProviderRefunds = (float) ($kpis['provider_refund_in_events'] ?? 0.0);
+        $providerExpensesDeducted = max(0.0, round($grossProviderCost - $totalProviderRefunds, 2));
+
         $totalCollected = (float) $kpis['total_collected'];
         $netProfit = max(0.0, round($totalCollected - $providerExpensesDeducted - $totalMaterial, 2));
 
         // Acumular los gastos de proveedores pagados del bolsillo de cada socio (ej: Artístamente, Fotomatón, etc.)
+        // Y las devoluciones de cooperativa (Artístamente) ingresadas en cuenta bancaria de cada socio
         $providerPaidByPartner = [];
+        $providerRefundReceivedByPartner = [];
+        $jointRefundReceived = 0.0;
+
         foreach ($filteredEvents as $fEv) {
             $evProv = $fEv['prov'];
             if (!empty($evProv['bookings']) && $evProv['bookings']->count() > 0) {
@@ -465,10 +481,41 @@ class BillingReportService
                     if ($paid > 0) {
                         $providerPaidByPartner[$pBy] = ($providerPaidByPartner[$pBy] ?? 0.0) + $paid;
                     }
+
+                    if ($b->has_refund && (float)$b->refund_amount > 0) {
+                        $rFran = (float)$b->refund_fran_calculated;
+                        $rMiguel = (float)$b->refund_miguel_calculated;
+                        $rJoint = (float)$b->refund_joint_calculated;
+                        if ($rFran > 0) {
+                            $providerRefundReceivedByPartner['Fran'] = ($providerRefundReceivedByPartner['Fran'] ?? 0.0) + $rFran;
+                        }
+                        if ($rMiguel > 0) {
+                            $providerRefundReceivedByPartner['Miguel'] = ($providerRefundReceivedByPartner['Miguel'] ?? 0.0) + $rMiguel;
+                        }
+                        if ($rJoint > 0) {
+                            $jointRefundReceived += $rJoint;
+                        }
+                    }
                 }
-            } elseif (!empty($evProv['has_external_service']) && (float)($evProv['total_paid'] ?? 0) > 0) {
-                $pBy = trim((string)($evProv['paid_by'] ?: 'Fran'));
-                $providerPaidByPartner[$pBy] = ($providerPaidByPartner[$pBy] ?? 0.0) + (float)$evProv['total_paid'];
+            } elseif (!empty($evProv['has_external_service'])) {
+                if ((float)($evProv['total_paid'] ?? 0) > 0) {
+                    $pBy = trim((string)($evProv['paid_by'] ?: 'Fran'));
+                    $providerPaidByPartner[$pBy] = ($providerPaidByPartner[$pBy] ?? 0.0) + (float)$evProv['total_paid'];
+                }
+                if (!empty($evProv['has_refund']) && (float)($evProv['refund_amount'] ?? 0) > 0) {
+                    $rFran = (float)($evProv['refund_fran_amount'] ?? 0);
+                    $rMiguel = (float)($evProv['refund_miguel_amount'] ?? 0);
+                    $rJoint = (float)($evProv['refund_joint_amount'] ?? 0);
+                    if ($rFran > 0) {
+                        $providerRefundReceivedByPartner['Fran'] = ($providerRefundReceivedByPartner['Fran'] ?? 0.0) + $rFran;
+                    }
+                    if ($rMiguel > 0) {
+                        $providerRefundReceivedByPartner['Miguel'] = ($providerRefundReceivedByPartner['Miguel'] ?? 0.0) + $rMiguel;
+                    }
+                    if ($rJoint > 0) {
+                        $jointRefundReceived += $rJoint;
+                    }
+                }
             }
         }
 
@@ -484,8 +531,12 @@ class BillingReportService
             $pTotalReimb = round($pMatReimb + $pProvReimb, 2);
             $pTotalToReceive = round($pShare + $pTotalReimb, 2);
 
-            // Dinero cobrado físicamente por este socio en su propia cuenta / Bizum
-            $pCollectedInHand = round((float) ($collectedByPartner[$pName] ?? 0.0), 2);
+            // Dinero cobrado físicamente por este socio en su propia cuenta / Bizum de clientes
+            $pClientCollected = round((float) ($collectedByPartner[$pName] ?? 0.0), 2);
+            // Dinero devuelto por Artístamente / cooperativa que entró en la cuenta bancaria de este socio
+            $pRefundReceived = round((float) ($providerRefundReceivedByPartner[$pName] ?? 0.0), 2);
+            // Total dinero físico real en posesión del socio
+            $pCollectedInHand = round($pClientCollected + $pRefundReceived, 2);
 
             // Arqueo: Lo que tiene en mano menos lo que le corresponde percibir
             // > 0 => Tiene exceso de dinero en su cuenta (debe transferir)
@@ -500,19 +551,21 @@ class BillingReportService
                 'provider_reimbursement' => $pProvReimb,
                 'reimbursement' => $pTotalReimb,
                 'total_to_receive' => $pTotalToReceive,
+                'client_collected' => $pClientCollected,
+                'refund_received' => $pRefundReceived,
                 'collected_in_hand' => $pCollectedInHand,
                 'balance_diff' => $pBalanceDiff,
             ];
         }
 
-        // Dinero cobrado en Cuenta Conjunta / Empresa
+        // Dinero cobrado en Cuenta Conjunta / Empresa (incluyendo devoluciones si fueron a la cuenta conjunta)
         $jointCollected = 0.0;
         foreach ($collectedByPartner as $cName => $cAmt) {
             if (str_contains(mb_strtolower($cName), 'conjunt') || str_contains(mb_strtolower($cName), 'empresa')) {
                 $jointCollected += (float)$cAmt;
             }
         }
-        $jointCollected = round($jointCollected, 2);
+        $jointCollected = round($jointCollected + $jointRefundReceived, 2);
 
         // Instrucción de liquidación y transferencia directa entre socios
         $transferInstruction = null;
@@ -551,8 +604,12 @@ class BillingReportService
             'total_collected' => round($totalCollected, 2),
             'collected_by_partner' => $collectedByPartner,
             'joint_collected' => $jointCollected,
+            'gross_provider_expenses' => round($grossProviderCost, 2),
+            'provider_refunds' => round($totalProviderRefunds, 2),
             'provider_expenses' => round($providerExpensesDeducted, 2),
             'providers_by_paid_by' => $providerPaidByPartner,
+            'provider_refunds_by_partner' => $providerRefundReceivedByPartner,
+            'joint_refund' => round($jointRefundReceived, 2),
             'material_expenses' => round($totalMaterial, 2),
             'material_by_paid_by' => $materialByPaidBy,
             'net_profit' => $netProfit,
@@ -780,9 +837,11 @@ class BillingReportService
             'Fecha Evento',
             'Cliente',
             'Empresa / Proveedor',
-            'Servicio (Fotomatón / 360º)',
+            'Servicio (Fotomatón / 360º / Artístamente)',
             'PVP en Presupuesto Cliente (€)',
-            'Total a Pagar Proveedor (€)',
+            'Total Factura Proveedor (€)',
+            'Devolución Artístamente / Cooperativa (€)',
+            'Coste Neto Real (€)',
             '1º Pago: Señal Pagada (€)',
             'Fecha Pago Señal',
             'Método Pago Señal',
@@ -791,6 +850,7 @@ class BillingReportService
             'Método Pago Resto',
             'Total Pagado a Proveedor (€)',
             'Pendiente de Pagar a Proveedor (€)',
+            'Pagado Por',
             'Estado Reserva Proveedor',
             'Observaciones',
         ];
@@ -809,6 +869,8 @@ class BillingReportService
                 (string) ($prov['service_description'] ?? ''),
                 round((float) ($prov['client_price'] ?? 0), 2),
                 round((float) ($prov['provider_total_cost'] ?? 0), 2),
+                round((float) ($prov['refund_amount'] ?? 0), 2),
+                round((float) ($prov['net_cost'] ?? $prov['provider_total_cost'] ?? 0), 2),
                 round((float) ($prov['deposit_amount'] ?? 0), 2),
                 $prov['deposit_date'] ? Carbon::parse($prov['deposit_date'])->format('d/m/Y') : '-',
                 $prov['deposit_paid'] ? (string) ($prov['deposit_method_label'] ?? '-') : '-',
@@ -817,6 +879,7 @@ class BillingReportService
                 $prov['final_paid'] ? (string) ($prov['final_method_label'] ?? '-') : '-',
                 round((float) ($prov['total_paid'] ?? 0), 2),
                 round((float) ($prov['pending_amount'] ?? 0), 2),
+                (string) ($prov['paid_by'] ?? 'Fran'),
                 (string) ($prov['status_label'] ?? ''),
                 (string) ($prov['notes'] ?? ''),
             ];
@@ -831,6 +894,8 @@ class BillingReportService
             '',
             round((float) ($provKpis['total_client_price'] ?? 0), 2),
             round((float) ($provKpis['total_cost'] ?? 0), 2),
+            round((float) ($provKpis['total_refund'] ?? 0), 2),
+            round((float) ($provKpis['total_net_cost'] ?? $provKpis['total_cost'] ?? 0), 2),
             round((float) ($provKpis['deposits_paid'] ?? 0), 2),
             '',
             '',
@@ -839,6 +904,7 @@ class BillingReportService
             '',
             round((float) ($provKpis['total_paid'] ?? 0), 2),
             round((float) ($provKpis['total_pending'] ?? 0), 2),
+            '',
             '',
             '',
         ];
@@ -902,35 +968,55 @@ class BillingReportService
         $partners = $settlement['partners'] ?? [];
 
         $sheetSettlementRows = [
-            ['CUENTA DE RESULTADOS Y BENEFICIO NETO DISPONIBLE', '', 'Importe (€)'],
-            ['(+) Total Ingresos Cobrados de Clientes', '', round((float) ($settlement['total_collected'] ?? 0), 2)],
-            ['(-) Gastos de Proveedores Externos (Fotomatón / 360º)', '', round((float) ($settlement['provider_expenses'] ?? 0), 2)],
-            ['(-) Compras y Gastos de Material Deducibles', '', round((float) ($settlement['material_expenses'] ?? 0), 2)],
-            ['(=) BENEFICIO NETO DISPONIBLE A REPARTIR', '', round((float) ($settlement['net_profit'] ?? 0), 2)],
-            ['---', '', ''],
-            ['CUADRO DE LIQUIDACIÓN Y REPARTO ENTRE SOCIOS', '', ''],
-            ['Socio / Destinatario', '% Participación', 'Cuota de Beneficio (€)', 'Reembolso Material Adelantado (€)', 'TOTAL NETO A PERCIBIR (€)'],
+            ['CUENTA DE RESULTADOS Y BENEFICIO NETO DISPONIBLE', '', '', '', '', '', '', '', '', 'Importe (€)'],
+            ['(+) Total Ingresos Cobrados de Clientes', '', '', '', '', '', '', '', '', round((float) ($settlement['total_collected'] ?? 0), 2)],
+            ['(-) Gasto Bruto Facturas Proveedores (Artístamente / Fotomatón / 360)', '', '', '', '', '', '', '', '', round((float) ($settlement['gross_provider_expenses'] ?? $settlement['provider_expenses'] ?? 0), 2)],
+            ['(+) Devoluciones Cobradas de Artístamente / Cooperativas', '', '', '', '', '', '', '', '', round((float) ($settlement['provider_refunds'] ?? 0), 2)],
+            ['(=) Gasto Neto Real Proveedores Asumido', '', '', '', '', '', '', '', '', round((float) ($settlement['provider_expenses'] ?? 0), 2)],
+            ['(-) Compras y Gastos de Material Deducibles', '', '', '', '', '', '', '', '', round((float) ($settlement['material_expenses'] ?? 0), 2)],
+            ['(=) BENEFICIO NETO DISPONIBLE A REPARTIR', '', '', '', '', '', '', '', '', round((float) ($settlement['net_profit'] ?? 0), 2)],
+            ['---', '', '', '', '', '', '', '', '', ''],
+            ['CUADRO DE LIQUIDACIÓN Y ARQUEO ENTRE SOCIOS', '', '', '', '', '', '', '', '', ''],
+            ['Socio / Destinatario', '% Participación', 'Cuota Beneficio (€)', 'Reembolso Material (€)', 'Reembolso Prov. Adelantado (€)', 'TOTAL A PERCIBIR (€)', 'Cobros Clientes en Cuenta (€)', 'Devolución Artístamente (€)', 'Total Dinero en Mano (€)', 'Ajuste / Saldo (€)'],
         ];
 
         $totBenefit = 0.0;
-        $totReimb = 0.0;
+        $totMatReimb = 0.0;
+        $totProvReimb = 0.0;
         $totFinal = 0.0;
+        $totClientCol = 0.0;
+        $totRefundRec = 0.0;
+        $totInHand = 0.0;
 
         foreach ($partners as $p) {
             $share = round((float) ($p['profit_share'] ?? 0), 2);
-            $reimb = round((float) ($p['reimbursement'] ?? 0), 2);
+            $mReimb = round((float) ($p['material_reimbursement'] ?? 0), 2);
+            $prReimb = round((float) ($p['provider_reimbursement'] ?? 0), 2);
             $final = round((float) ($p['total_to_receive'] ?? 0), 2);
+            $clCol = round((float) ($p['client_collected'] ?? 0), 2);
+            $rfRec = round((float) ($p['refund_received'] ?? 0), 2);
+            $inHnd = round((float) ($p['collected_in_hand'] ?? 0), 2);
+            $balDiff = round((float) ($p['balance_diff'] ?? 0), 2);
 
             $totBenefit += $share;
-            $totReimb += $reimb;
+            $totMatReimb += $mReimb;
+            $totProvReimb += $prReimb;
             $totFinal += $final;
+            $totClientCol += $clCol;
+            $totRefundRec += $rfRec;
+            $totInHand += $inHnd;
 
             $sheetSettlementRows[] = [
                 (string) ($p['name'] ?? 'Socio'),
                 round((float) ($p['percentage'] ?? 0), 2) . '%',
                 $share,
-                $reimb,
+                $mReimb,
+                $prReimb,
                 $final,
+                $clCol,
+                $rfRec,
+                $inHnd,
+                $balDiff,
             ];
         }
 
@@ -938,9 +1024,19 @@ class BillingReportService
             'TOTALES LIQUIDACIÓN',
             '100.00%',
             round($totBenefit, 2),
-            round($totReimb, 2),
+            round($totMatReimb, 2),
+            round($totProvReimb, 2),
             round($totFinal, 2),
+            round($totClientCol, 2),
+            round($totRefundRec, 2),
+            round($totInHand, 2),
+            '',
         ];
+
+        if (!empty($settlement['transfer_instruction']['text'])) {
+            $sheetSettlementRows[] = ['---', '', '', '', '', '', '', '', '', ''];
+            $sheetSettlementRows[] = ['INSTRUCCIÓN DE AJUSTE BANCARIO:', $settlement['transfer_instruction']['text'], '', '', '', '', '', '', '', ''];
+        }
 
         // Hoja 6: Resumen Ejecutivo e Ingresos por Método de Pago
         $sheet3Rows = [

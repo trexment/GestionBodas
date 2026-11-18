@@ -164,6 +164,17 @@ class EventShow extends Component
     public $prov_final_method = 'transfer';
     public $prov_paid_by = 'Fran';
     public $prov_notes = '';
+    public $prov_has_refund = false;
+    public $prov_refund_amount = 0.0;
+    public $prov_refund_recipient = '50_50';
+    public $prov_refund_fran_amount = 0.0;
+    public $prov_refund_miguel_amount = 0.0;
+    public $prov_management_fee = 0.0;
+    public $prov_social_security_fee = 0.0;
+    public $prov_tax_fee = 0.0;
+    public $prov_registration_fee = 0.0;
+    public $prov_settlement_number = '';
+    public $prov_invoice_number = '';
 
     // Presupuestos & Packs
     public $quote_services = [
@@ -1463,7 +1474,81 @@ class EventShow extends Component
 
         $this->prov_paid_by = (string) ($booking?->paid_by ?: ($prov['paid_by'] ?: 'Fran'));
         $this->prov_notes = (string) ($booking?->notes ?: ($prov['notes'] ?? ''));
+
+        $this->prov_has_refund = $booking ? (bool) $booking->has_refund : (bool) ($prov['has_refund'] ?? false);
+        $this->prov_refund_amount = $booking ? (float) $booking->refund_amount : (float) ($prov['refund_amount'] ?? 0);
+        $this->prov_refund_recipient = $booking ? (string) ($booking->refund_recipient ?: '50_50') : (string) ($prov['refund_recipient'] ?? '50_50');
+        $this->prov_refund_fran_amount = $booking ? (float) $booking->refund_fran_amount : (float) ($prov['refund_fran_amount'] ?? 0);
+        $this->prov_refund_miguel_amount = $booking ? (float) $booking->refund_miguel_amount : (float) ($prov['refund_miguel_amount'] ?? 0);
+        $this->prov_management_fee = $booking ? (float) $booking->management_fee : (float) ($prov['management_fee'] ?? 0);
+        $this->prov_social_security_fee = $booking ? (float) $booking->social_security_fee : (float) ($prov['social_security_fee'] ?? 0);
+        $this->prov_tax_fee = $booking ? (float) $booking->tax_fee : (float) ($prov['tax_fee'] ?? 0);
+        $this->prov_registration_fee = $booking ? (float) $booking->registration_fee : (float) ($prov['registration_fee'] ?? 0);
+        $this->prov_settlement_number = (string) ($booking?->settlement_number ?? ($prov['settlement_number'] ?? ''));
+        $this->prov_invoice_number = (string) ($booking?->invoice_number ?? ($prov['invoice_number'] ?? ''));
+
+        if ($this->prov_has_refund && $this->prov_refund_amount > 0 && $this->prov_refund_fran_amount <= 0 && $this->prov_refund_miguel_amount <= 0 && $this->prov_refund_recipient === '50_50') {
+            $this->prov_refund_fran_amount = round($this->prov_refund_amount / 2, 2);
+            $this->prov_refund_miguel_amount = round($this->prov_refund_amount - $this->prov_refund_fran_amount, 2);
+        }
+
         $this->showProviderBookingModal = true;
+    }
+
+    /**
+     * Recalcula la distribución de la devolución al modificar el importe devuelto.
+     */
+    public function updatedProvRefundAmount($value): void
+    {
+        $amt = max(0.0, (float) $value);
+        if ($this->prov_refund_recipient === '50_50') {
+            $this->prov_refund_fran_amount = round($amt / 2, 2);
+            $this->prov_refund_miguel_amount = round($amt - $this->prov_refund_fran_amount, 2);
+        } elseif ($this->prov_refund_recipient === 'fran') {
+            $this->prov_refund_fran_amount = $amt;
+            $this->prov_refund_miguel_amount = 0.0;
+        } elseif ($this->prov_refund_recipient === 'miguel') {
+            $this->prov_refund_miguel_amount = $amt;
+            $this->prov_refund_fran_amount = 0.0;
+        } elseif ($this->prov_refund_recipient === 'joint') {
+            $this->prov_refund_fran_amount = 0.0;
+            $this->prov_refund_miguel_amount = 0.0;
+        }
+    }
+
+    /**
+     * Recalcula la distribución de la devolución al cambiar el destinatario.
+     */
+    public function updatedProvRefundRecipient($value): void
+    {
+        $amt = max(0.0, (float) $this->prov_refund_amount);
+        if ($value === '50_50') {
+            $this->prov_refund_fran_amount = round($amt / 2, 2);
+            $this->prov_refund_miguel_amount = round($amt - $this->prov_refund_fran_amount, 2);
+        } elseif ($value === 'fran') {
+            $this->prov_refund_fran_amount = $amt;
+            $this->prov_refund_miguel_amount = 0.0;
+        } elseif ($value === 'miguel') {
+            $this->prov_refund_miguel_amount = $amt;
+            $this->prov_refund_fran_amount = 0.0;
+        } elseif ($value === 'joint') {
+            $this->prov_refund_fran_amount = 0.0;
+            $this->prov_refund_miguel_amount = 0.0;
+        }
+    }
+
+    /**
+     * Calcula la devolución neta restando retenciones del total de factura a Artístamente.
+     */
+    public function calculateRefundFromFees(): void
+    {
+        $cost = (float) $this->prov_total_cost;
+        $fees = (float) $this->prov_management_fee
+            + (float) $this->prov_social_security_fee
+            + (float) $this->prov_tax_fee
+            + (float) $this->prov_registration_fee;
+        $this->prov_refund_amount = max(0.0, round($cost - $fees, 2));
+        $this->updatedProvRefundAmount($this->prov_refund_amount);
     }
 
     /**
@@ -1473,26 +1558,42 @@ class EventShow extends Component
     {
         if ($preset === 'artistamente') {
             $this->prov_key = 'artistamente';
-            $this->prov_name = 'Artístamente';
-            $this->prov_service = 'Alta en plataforma / Gestión de artistas';
-            $this->prov_client_price = 0.0;
-            $this->prov_total_cost = 50.0;
+            $this->prov_name = 'Artístamente (Events Branch S.L.)';
+            $this->prov_service = 'Facturación y Liquidación Cooperativa / Alta Artistas';
+            $this->prov_client_price = 242.0;
+            $this->prov_total_cost = 242.0;
             $this->prov_deposit_paid = false;
             $this->prov_deposit_amount = 0.0;
             $this->prov_final_paid = true;
-            $this->prov_final_amount = 50.0;
+            $this->prov_final_amount = 242.0;
             $this->prov_final_date = now()->format('Y-m-d');
             $this->prov_final_method = 'transfer';
             $this->prov_paid_by = 'Fran';
+            $this->prov_has_refund = true;
+            $this->prov_refund_amount = 136.44;
+            $this->prov_refund_recipient = '50_50';
+            $this->prov_refund_fran_amount = 68.22;
+            $this->prov_refund_miguel_amount = 68.22;
+            $this->prov_management_fee = 10.00;
+            $this->prov_social_security_fee = 39.31;
+            $this->prov_tax_fee = 14.24;
+            $this->prov_registration_fee = 0.00;
+            $this->prov_invoice_number = 'PEV-322971-1';
+            $this->prov_settlement_number = 'EAM-322971';
+            $this->prov_notes = 'Factura 242,00 € pagada a Artístamente. Liquidación neta devuelta: 136,44 € (Coste neto asumido por el evento: 105,56 €).';
         } elseif ($preset === 'photobooth_vitoria') {
             $this->prov_key = 'vitoria';
             $this->prov_name = 'Vitoria (FotomatonCheese)';
             $this->prov_service = 'Fotomatón / Plataforma 360º';
+            $this->prov_has_refund = false;
+            $this->prov_refund_amount = 0.0;
             $this->syncProviderFromQuoteInEvent();
         } elseif ($preset === 'photobooth') {
             $this->prov_key = 'logrono';
             $this->prov_name = 'Logroño';
             $this->prov_service = 'Fotomatón / Plataforma 360º';
+            $this->prov_has_refund = false;
+            $this->prov_refund_amount = 0.0;
             $this->syncProviderFromQuoteInEvent();
         }
     }
@@ -1504,21 +1605,32 @@ class EventShow extends Component
     {
         $this->prov_booking_id = null;
         $this->prov_key = 'artistamente';
-        $this->prov_name = 'Artístamente';
-        $this->prov_service = 'Alta en plataforma / Gestión de artistas';
-        $this->prov_client_price = 0.0;
+        $this->prov_name = 'Artístamente (Events Branch S.L.)';
+        $this->prov_service = 'Facturación y Liquidación Cooperativa / Alta Artistas';
+        $this->prov_client_price = 242.0;
         $this->prov_detected_items_text = '';
-        $this->prov_total_cost = 50.0;
+        $this->prov_total_cost = 242.0;
         $this->prov_deposit_paid = false;
         $this->prov_deposit_amount = 0.0;
         $this->prov_deposit_date = now()->format('Y-m-d');
         $this->prov_deposit_method = 'transfer';
         $this->prov_final_paid = true;
-        $this->prov_final_amount = 50.0;
+        $this->prov_final_amount = 242.0;
         $this->prov_final_date = now()->format('Y-m-d');
         $this->prov_final_method = 'transfer';
         $this->prov_paid_by = 'Fran';
-        $this->prov_notes = '';
+        $this->prov_has_refund = true;
+        $this->prov_refund_amount = 136.44;
+        $this->prov_refund_recipient = '50_50';
+        $this->prov_refund_fran_amount = 68.22;
+        $this->prov_refund_miguel_amount = 68.22;
+        $this->prov_management_fee = 10.00;
+        $this->prov_social_security_fee = 39.31;
+        $this->prov_tax_fee = 14.24;
+        $this->prov_registration_fee = 0.00;
+        $this->prov_invoice_number = 'PEV-322971-1';
+        $this->prov_settlement_number = 'EAM-322971';
+        $this->prov_notes = 'Factura 242,00 € pagada a Artístamente. Liquidación neta devuelta: 136,44 € (Coste neto asumido: 105,56 €).';
         $this->showProviderBookingModal = true;
     }
 
@@ -1620,6 +1732,20 @@ class EventShow extends Component
 
         if (\Illuminate\Support\Facades\Schema::hasColumn('event_provider_bookings', 'paid_by')) {
             $data['paid_by'] = $this->prov_paid_by ?: 'Fran';
+        }
+
+        if (\Illuminate\Support\Facades\Schema::hasColumn('event_provider_bookings', 'has_refund')) {
+            $data['has_refund'] = (bool) $this->prov_has_refund;
+            $data['refund_amount'] = $this->prov_has_refund ? round((float) $this->prov_refund_amount, 2) : 0.0;
+            $data['refund_recipient'] = $this->prov_refund_recipient ?: '50_50';
+            $data['refund_fran_amount'] = $this->prov_has_refund ? round((float) $this->prov_refund_fran_amount, 2) : 0.0;
+            $data['refund_miguel_amount'] = $this->prov_has_refund ? round((float) $this->prov_refund_miguel_amount, 2) : 0.0;
+            $data['management_fee'] = round((float) $this->prov_management_fee, 2);
+            $data['social_security_fee'] = round((float) $this->prov_social_security_fee, 2);
+            $data['tax_fee'] = round((float) $this->prov_tax_fee, 2);
+            $data['registration_fee'] = round((float) $this->prov_registration_fee, 2);
+            $data['settlement_number'] = trim((string) $this->prov_settlement_number) ?: null;
+            $data['invoice_number'] = trim((string) $this->prov_invoice_number) ?: null;
         }
 
         $existing = $this->prov_booking_id

@@ -494,7 +494,13 @@
                         <td class="text-right font-bold" style="color: #7e22ce;">
                             {{ ($prov['client_price'] ?? 0) > 0 ? number_format($prov['client_price'], 2, ',', '.') . ' €' : '—' }}
                         </td>
-                        <td class="text-right font-bold">{{ number_format($prov['provider_total_cost'], 2, ',', '.') }} €</td>
+                        <td class="text-right font-bold">
+                            {{ number_format($prov['provider_total_cost'], 2, ',', '.') }} €
+                            @if(!empty($prov['has_refund']))
+                                <div style="font-size: 6.5pt; color: #b45309; font-weight: bold;">Dev: +{{ number_format($prov['refund_amount'], 2, ',', '.') }} €</div>
+                                <div style="font-size: 6.5pt; color: #16a34a; font-weight: bold;">Neto: {{ number_format($prov['net_cost'], 2, ',', '.') }} €</div>
+                            @endif
+                        </td>
                         <td>
                             @if($prov['deposit_paid'] && $prov['deposit_amount'] > 0)
                                 <span class="text-green">{{ number_format($prov['deposit_amount'], 2, ',', '.') }} €</span>
@@ -599,9 +605,15 @@
                             <td class="text-right font-bold text-green">{{ number_format($settlementSummary['total_collected'] ?? 0, 2, ',', '.') }} €</td>
                         </tr>
                         <tr>
-                            <td>(-) Gastos Proveedores Externos (Fotomatón / 360º)</td>
+                            <td>(-) Gastos Proveedores Externos (Fotomatón / 360º / Artístamente)</td>
                             <td class="text-right font-bold text-red">-{{ number_format($settlementSummary['provider_expenses'] ?? 0, 2, ',', '.') }} €</td>
                         </tr>
+                        @if(!empty($settlementSummary['provider_refunds']) && $settlementSummary['provider_refunds'] > 0)
+                            <tr>
+                                <td style="padding-left: 12px; font-size: 6.8pt; color: #b45309;">&bull; Facturas brutas: {{ number_format($settlementSummary['gross_provider_expenses'] ?? 0, 2, ',', '.') }} €</td>
+                                <td class="text-right font-bold" style="font-size: 6.8pt; color: #b45309;">Devoluciones: +{{ number_format($settlementSummary['provider_refunds'], 2, ',', '.') }} €</td>
+                            </tr>
+                        @endif
                         <tr>
                             <td>(-) Compras de Material y Equipamiento Deducibles</td>
                             <td class="text-right font-bold text-red">-{{ number_format($settlementSummary['material_expenses'] ?? 0, 2, ',', '.') }} €</td>
@@ -687,7 +699,12 @@
                     @foreach($settlementPartners as $p)
                         <tr>
                             <td class="font-bold" style="color: #4338ca;">{{ $p['name'] }}</td>
-                            <td class="text-right font-bold">{{ number_format($p['collected_in_hand'] ?? 0, 2, ',', '.') }} €</td>
+                            <td class="text-right font-bold">
+                                {{ number_format($p['collected_in_hand'] ?? 0, 2, ',', '.') }} €
+                                @if(!empty($p['refund_received']) && $p['refund_received'] > 0)
+                                    <div style="font-size: 6pt; color: #b45309; font-weight: normal;">(Clientes: {{ number_format($p['client_collected'] ?? 0, 0, ',', '.') }}€ + Dev: {{ number_format($p['refund_received'], 0, ',', '.') }}€)</div>
+                                @endif
+                            </td>
                             <td class="text-right" style="color: #b45309;">+{{ number_format($p['total_reimbursement'] ?? ($p['reimbursement'] ?? 0), 2, ',', '.') }} €</td>
                             <td class="text-right">{{ number_format($p['profit_share'] ?? 0, 2, ',', '.') }} €</td>
                             <td class="text-right font-bold text-green">{{ number_format($p['total_to_receive'] ?? 0, 2, ',', '.') }} €</td>
@@ -702,7 +719,7 @@
                 </tbody>
             </table>
             <div style="padding: 5px 8px; background-color: #ecfdf5; border: 1px solid #6ee7b7; border-radius: 4px; font-size: 7.5pt; font-weight: bold; color: #065f46;">
-                👉 INSTRUCCIÓN DE AJUSTE BANCARIO: {{ $settlementSummary['transfer_instruction'] }}
+                👉 INSTRUCCIÓN DE AJUSTE BANCARIO: {{ is_array($settlementSummary['transfer_instruction'] ?? null) ? ($settlementSummary['transfer_instruction']['text'] ?? '') : ($settlementSummary['transfer_instruction'] ?? '') }}
                 @if(!empty($settlementSummary['joint_collected']) && $settlementSummary['joint_collected'] > 0)
                     <span style="font-weight: normal; color: #047857;">&bull; En Cuenta Conjunta: {{ number_format($settlementSummary['joint_collected'], 2, ',', '.') }} €</span>
                 @endif
