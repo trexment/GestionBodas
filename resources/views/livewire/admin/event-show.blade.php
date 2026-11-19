@@ -160,6 +160,13 @@
                         @endif
                     @endif
                 </button>
+                <a href="{{ route('guest.photo-screen', ['token' => $event->token]) }}"
+                   target="_blank"
+                   class="inline-flex items-center gap-1.5 bg-slate-900 dark:bg-slate-800 hover:bg-indigo-600 dark:hover:bg-indigo-600 text-white font-bold px-3 py-2 rounded-xl text-xs shadow-xs border border-slate-700/60 transition cursor-pointer"
+                   title="Abrir el código QR de fotos en grande en la tablet (Lenovo Tab) o pantalla de TV">
+                    <span>📺</span>
+                    <span>Pantalla QR Tablet</span>
+                </a>
                 <button type="button"
                         wire:click="toggleMuteNotifications"
                         title="{{ $isEventMuted ? 'Este evento tiene las alertas silenciadas. Pulsa para volver a recibir notificaciones de su conversación.' : 'Silenciar únicamente las alertas de este evento (no enviará notificaciones de WhatsApp, Email ni campana cuando hablen)' }}"
