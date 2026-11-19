@@ -60,6 +60,9 @@ Route::get('/guest/form/{token}', EventForm::class)->name('guest.form');
 // Public Client QR Photo Album Poster Designer (Live Visual Preview + Save + Print PDF)
 Route::get('/cartel-fotos/{token}', \App\Livewire\Guest\PhotoQrDesigner::class)->name('guest.photo-qr-designer');
 
+// Public Guest Photo QR Fullscreen / Tablet Display (Lenovo Tab 12 / TV Screen)
+Route::get('/pantalla-fotos/{token}', \App\Livewire\Guest\PhotoQrScreen::class)->name('guest.photo-screen');
+
 // Public Online Contract Review & Signature Portal
 Route::get('/contrato/{token}', ContractSign::class)->name('guest.contract');
 
@@ -194,6 +197,7 @@ Route::middleware('auth')->group(function () {
             Route::get('/events/{event}/packing-list/pdf', [PdfController::class, 'downloadPackingList'])->name('events.packing_list.pdf');
             Route::get('/events/{event}/music-escaleta/pdf', [PdfController::class, 'downloadMusicEscaleta'])->name('events.music_escaleta.pdf');
             Route::get('/events/{event}/photo-qr-poster.pdf', [PdfController::class, 'downloadPhotoQrPoster'])->name('events.photo-qr-poster.pdf');
+            Route::get('/events/{event}/pantalla-fotos', \App\Livewire\Guest\PhotoQrScreen::class)->name('events.photo-screen');
 
             // Real-time App Notifications Polling & Read State (WhatsApp inbound & Email Leads)
             Route::get('/notifications/poll', function (\Illuminate\Http\Request $request) {

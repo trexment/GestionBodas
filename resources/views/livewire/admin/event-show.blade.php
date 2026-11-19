@@ -1937,6 +1937,22 @@
                                 </button>
                             </div>
 
+                            <!-- Botón Destacado: Abrir en Pantalla Completa / Tablet (Lenovo Tab) -->
+                            <a href="{{ route('guest.photo-screen', ['token' => $event->token]) }}"
+                               target="_blank"
+                               class="w-full inline-flex items-center justify-between gap-3 px-4 py-3 rounded-2xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-700 hover:to-pink-700 text-white font-black text-xs shadow-md transition cursor-pointer group">
+                                <div class="flex items-center gap-2.5">
+                                    <span class="text-xl">📺</span>
+                                    <div class="text-left">
+                                        <span class="block font-black text-white text-xs">Modo Pantalla Completa / Tablet (Lenovo Tab)</span>
+                                        <span class="block text-[10px] text-white/80 font-medium">QR en grande con contador en vivo y pantalla siempre encendida (WakeLock)</span>
+                                    </div>
+                                </div>
+                                <span class="px-2.5 py-1 rounded-xl bg-white/20 text-white text-[10px] font-extrabold group-hover:bg-white/30 transition shrink-0">
+                                    Ver Pantalla ➔
+                                </span>
+                            </a>
+
                             <!-- Bloque Destacado: Descarga Directa y Personalizador de Carteles QR en PDF -->
                             <div class="rounded-2xl border border-amber-200 dark:border-amber-800/70 bg-gradient-to-br from-amber-50/90 via-orange-50/50 to-white dark:from-amber-950/30 dark:via-slate-900 dark:to-slate-900 p-3.5 space-y-2.5">
                                 <div class="flex items-center justify-between gap-2">

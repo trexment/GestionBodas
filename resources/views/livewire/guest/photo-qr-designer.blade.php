@@ -14,6 +14,10 @@
 
         @if($guestUrl !== '')
             <div class="flex flex-wrap items-center gap-2">
+                <a href="{{ route('guest.photo-screen', ['token' => $event->token]) }}" target="_blank"
+                   class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-black bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition">
+                    <span>📺 Modo Pantalla Tablet</span>
+                </a>
                 <button type="button"
                         @click="navigator.clipboard.writeText(@js($guestUrl)); copiedAlbumUrl = true; setTimeout(() => copiedAlbumUrl = false, 2200)"
                         class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-xs transition cursor-pointer">
