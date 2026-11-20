@@ -1882,6 +1882,20 @@
                                     Cerrar
                                 </button>
                             </div>
+
+                            <div x-data="{ openInitialRescue: false }" class="mt-2 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50/90 dark:bg-slate-800/60 p-3 text-left space-y-2">
+                                <button type="button" @click="openInitialRescue = !openInitialRescue" class="w-full flex items-center justify-between gap-2 text-left cursor-pointer">
+                                    <span class="text-xs font-bold text-slate-700 dark:text-slate-200">🛠️ ¿Ya tenías un QR impreso o carpeta de Drive creada?</span>
+                                    <span class="text-[11px] font-bold text-indigo-600 dark:text-indigo-400" x-text="openInitialRescue ? '▲ Ocultar' : '🔗 Vincular existente'"></span>
+                                </button>
+                                <div x-show="openInitialRescue" style="display: none;" class="pt-2 border-t border-slate-200 dark:border-slate-700 space-y-2">
+                                    <input type="text" wire:model="photoQrRescueSlugInput" placeholder="Dirección o código del QR impreso (ej: .../e/vidalia-y-omar-d8039)" class="w-full rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-900 dark:text-white text-xs py-1.5 px-2.5 font-mono">
+                                    <input type="text" wire:model="photoQrRescueDriveInput" placeholder="Enlace de carpeta Google Drive (opcional)" class="w-full rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-900 dark:text-white text-xs py-1.5 px-2.5 font-mono">
+                                    <button type="button" wire:click="savePhotoQrRescueLink" wire:loading.attr="disabled" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold py-2 px-4 rounded-xl text-xs shadow-sm transition cursor-pointer">
+                                        🔗 Vincular QR / Carpeta a este evento
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     @else
                         <!-- QR estilizado ya creado -->
@@ -2124,6 +2138,58 @@
                                 <a href="{{ $photoQrInfo['admin_url'] }}" target="_blank" rel="noopener" class="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold py-2.5 px-3 rounded-xl text-xs transition text-center">
                                     ⚙️ FotosEventosQR
                                 </a>
+                            </div>
+
+                            <!-- Bloque de Rescate en 1 Clic: Vincular un QR ya impreso con otro código o cambiar Carpeta de Google Drive -->
+                            <div x-data="{ openQrRescue: false }" class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50/90 dark:bg-slate-800/60 p-3 space-y-2.5">
+                                <button type="button" @click="openQrRescue = !openQrRescue" class="w-full flex items-center justify-between gap-2 text-left cursor-pointer">
+                                    <div class="flex items-center gap-2 min-w-0">
+                                        <span class="text-sm">🛠️</span>
+                                        <div class="min-w-0">
+                                            <span class="block text-xs font-extrabold text-slate-800 dark:text-slate-100">¿QR ya impreso con otro enlace o cambiar carpeta de Drive?</span>
+                                            <span class="block text-[10px] text-slate-500 dark:text-slate-400 truncate">Revincula en 1 clic un QR antiguo/impreso o una carpeta de Drive sin perder fotos</span>
+                                        </div>
+                                    </div>
+                                    <span class="text-[11px] font-bold text-indigo-700 dark:text-indigo-300 bg-white dark:bg-slate-900 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 shrink-0" x-text="openQrRescue ? '▲ Cerrar' : '🔗 Rescatar / Vincular'"></span>
+                                </button>
+
+                                <div x-show="openQrRescue" style="display: none;" class="pt-2 border-t border-slate-200 dark:border-slate-700 space-y-2">
+                                    <div>
+                                        <label class="block text-[10px] font-bold uppercase text-slate-600 dark:text-slate-300 mb-0.5">
+                                            Dirección o código del QR impreso (opcional)
+                                        </label>
+                                        <input type="text"
+                                               wire:model="photoQrRescueSlugInput"
+                                               placeholder="Ej: https://fotos.appinformaticas.com/e/vidalia-y-omar-d8039"
+                                               class="w-full rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-900 dark:text-white text-xs py-1.5 px-2.5 font-mono">
+                                        <span class="block text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                                            Si el cliente imprimió un QR con otro enlace, pégalo aquí: ambos códigos QR (el antiguo y el nuevo) quedarán activos apuntando a este álbum.
+                                        </span>
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-[10px] font-bold uppercase text-slate-600 dark:text-slate-300 mb-0.5">
+                                            Enlace de Carpeta de Google Drive (opcional)
+                                        </label>
+                                        <input type="text"
+                                               wire:model="photoQrRescueDriveInput"
+                                               placeholder="Ej: https://drive.google.com/drive/folders/1Pj1_cL7W..."
+                                               class="w-full rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-900 dark:text-white text-xs py-1.5 px-2.5 font-mono">
+                                        <span class="block text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                                            Déjalo vacío para mantener la carpeta actual o pega otra carpeta de tu Drive para conectarla e importar sus fotos.
+                                        </span>
+                                    </div>
+
+                                    <div class="flex justify-end pt-1">
+                                        <button type="button"
+                                                wire:click="savePhotoQrRescueLink"
+                                                wire:loading.attr="disabled"
+                                                class="bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold py-2 px-4 rounded-xl text-xs shadow-sm transition cursor-pointer">
+                                            <span wire:loading.remove wire:target="savePhotoQrRescueLink">🔗 Vincular QR / Carpeta y Sincronizar Fotos</span>
+                                            <span wire:loading wire:target="savePhotoQrRescueLink">Vinculando y sincronizando...</span>
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
 
                             <!-- Bloque Fin del Evento: Parar / Desactivar QR y Enviar Carpeta de Google Drive a los Novios -->

@@ -299,6 +299,8 @@ class EventShow extends Component
     public bool $photoQrAllowVideos = false;
     public ?array $photoQrLiveStats = null;
     public int $photoQrPosterKey = 0;
+    public string $photoQrRescueSlugInput = '';
+    public string $photoQrRescueDriveInput = '';
 
     /**
      * Verifica en cada petición de Livewire que el usuario autenticado tenga permisos sobre el evento
@@ -7390,6 +7392,38 @@ class EventShow extends Component
         $this->event->refresh();
         $this->photoQrPosterKey++;
         session()->flash('photo_qr_message', 'Diseño del cartel restaurado con los nombres y fecha actuales del evento.');
+    }
+
+    /**
+     * Vincula en 1 clic un código/URL de QR ya impreso y/o una carpeta de Google Drive existente con este evento.
+     */
+    public function savePhotoQrRescueLink(): void
+    {
+        if (!$this->event) {
+            return;
+        }
+
+        $res = \App\Services\FotosEventosQrService::rescueOrLinkPrintedQr(
+            $this->event,
+            $this->photoQrRescueSlugInput,
+            $this->photoQrRescueDriveInput
+        );
+
+        $this->event->refresh();
+        $this->showPhotoQrModal = true;
+
+        if (!empty($res['success'])) {
+            $this->photoQrLiveStats = $res['event'] ?? null;
+            $this->photoQrRescueSlugInput = '';
+            $this->photoQrRescueDriveInput = '';
+            $msg = $res['message'];
+            if (!empty($res['warning'])) {
+                $msg .= ' (' . $res['warning'] . ')';
+            }
+            session()->flash('photo_qr_message', $msg);
+        } else {
+            session()->flash('photo_qr_error', $res['message'] ?? 'No se pudo vincular el QR o la carpeta de Drive.');
+        }
     }
 
     /**

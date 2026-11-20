@@ -350,6 +350,28 @@ class FotosEventosQrService
     }
 
     /**
+     * Extrae el slug limpio tanto si el usuario pega una URL completa (/e/slug o ?s=slug) como solo el código.
+     */
+    public static function extractSlugFromUrlOrCode(?string $raw): string
+    {
+        $val = trim((string) $raw);
+        if ($val === '') {
+            return '';
+        }
+
+        if (preg_match('#/e/([a-zA-Z0-9_-]+)#', $val, $m)) {
+            return strtolower($m[1]);
+        }
+        if (preg_match('/[?&]s=([a-zA-Z0-9_-]+)/', $val, $m)) {
+            return strtolower($m[1]);
+        }
+
+        $clean = strtolower($val);
+        $clean = (string) preg_replace('/[^a-z0-9_-]+/', '-', $clean);
+        return trim($clean, '-');
+    }
+
+    /**
      * Crea (o recupera si ya existía) el evento y su carpeta de Google Drive en FotosEventosQR.
      */
     public static function createOrSyncEventAlbum(Event $event, array $options = []): array
@@ -371,15 +393,17 @@ class FotosEventosQrService
         }
 
         $accentColor = ($event->brand_clean ?? '') === 'javnx' ? '#6366f1' : '#d97706';
+        $requestedSlug = !empty($options['slug'])
+            ? self::extractSlugFromUrlOrCode((string) $options['slug'])
+            : ($existing['slug'] ?? '');
+        $driveFolderUrl = trim((string) ($options['drive_folder_url'] ?? ''));
 
         try {
-            $response = Http::withHeaders([
-                'X-Api-Key' => self::getApiKey(),
-                'Accept' => 'application/json',
-            ])->timeout(25)->post(self::endpointUrl(), [
+            $payload = [
                 'action' => 'create_or_get',
                 'external_ref' => 'em-event-' . $event->id,
-                'slug' => $existing['slug'] ?? '',
+                'slug' => $requestedSlug,
+                'force_slug' => !empty($options['force_slug']),
                 'title' => $event->name,
                 'subtitle' => $subtitle,
                 'event_date' => $dateStr,
@@ -388,7 +412,16 @@ class FotosEventosQrService
                 'allow_downloads' => array_key_exists('allow_downloads', $options) ? (bool) $options['allow_downloads'] : true,
                 'share_drive_album' => !empty($options['share_drive_album']),
                 'allow_videos' => !empty($options['allow_videos']),
-            ]);
+                'sync_drive_files' => !empty($options['sync_drive_files']),
+            ];
+            if ($driveFolderUrl !== '') {
+                $payload['drive_folder_url'] = $driveFolderUrl;
+            }
+
+            $response = Http::withHeaders([
+                'X-Api-Key' => self::getApiKey(),
+                'Accept' => 'application/json',
+            ])->timeout(25)->post(self::endpointUrl(), $payload);
 
             $json = $response->json();
             if (!$response->successful() || !is_array($json) || empty($json['ok']) || empty($json['event'])) {
@@ -416,6 +449,52 @@ class FotosEventosQrService
                 'message' => 'Error de conexión con FotosEventosQR: ' . $e->getMessage(),
             ];
         }
+    }
+
+    /**
+     * Permite rescatar o vincular en 1 clic una dirección de QR ya impresa por el cliente y/o una carpeta de Google Drive existente.
+     */
+    public static function rescueOrLinkPrintedQr(Event $event, ?string $printedQrUrlOrSlug, ?string $driveFolderUrl = null): array
+    {
+        $slug = self::extractSlugFromUrlOrCode($printedQrUrlOrSlug);
+        $driveUrl = trim((string) $driveFolderUrl);
+
+        if ($slug === '' && $driveUrl === '') {
+            return [
+                'success' => false,
+                'message' => 'Introduce la dirección o código del QR impreso y/o el enlace de la carpeta de Google Drive.',
+            ];
+        }
+
+        if ($driveUrl !== '' && !str_contains($driveUrl, 'drive.google.com') && !preg_match('/^[a-zA-Z0-9_-]{18,}$/', $driveUrl)) {
+            return [
+                'success' => false,
+                'message' => 'El enlace de Google Drive debe ser una URL válida de carpeta (https://drive.google.com/drive/folders/...).',
+            ];
+        }
+
+        if ($driveUrl !== '' && !str_starts_with($driveUrl, 'http')) {
+            $driveUrl = 'https://drive.google.com/drive/folders/' . $driveUrl;
+        }
+
+        $res = self::createOrSyncEventAlbum($event, [
+            'slug' => $slug !== '' ? $slug : null,
+            'force_slug' => $slug !== '',
+            'drive_folder_url' => $driveUrl !== '' ? $driveUrl : null,
+            'sync_drive_files' => true,
+            'share_drive_album' => true,
+            'allow_videos' => true,
+        ]);
+
+        if (!empty($res['success'])) {
+            $finalGuestUrl = $res['event']['guest_url'] ?? '';
+            $photosCount = (int) ($res['event']['photos_count'] ?? 0);
+            $res['message'] = '🔗 ¡Código QR vinculado y activado correctamente'
+                . ($finalGuestUrl !== '' ? " ({$finalGuestUrl})" : '')
+                . ($photosCount > 0 ? " · {$photosCount} fotos sincronizadas en el álbum!" : '!');
+        }
+
+        return $res;
     }
 
     /**
