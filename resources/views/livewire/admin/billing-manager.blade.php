@@ -55,7 +55,15 @@
                         class="px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1.5 {{ $viewMode === 'settlement' ? 'bg-emerald-600 text-white shadow-xs ring-1 ring-emerald-400' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white' }}"
                     >
                         <span>⚖️</span>
-                        <span>Reparto y Liquidación</span>
+                        <span>Reparto Global</span>
+                    </button>
+                    <button
+                        type="button"
+                        wire:click="$set('viewMode', 'event_settlement')"
+                        class="px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1.5 {{ $viewMode === 'event_settlement' ? 'bg-indigo-600 text-white shadow-xs ring-1 ring-indigo-400' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white' }}"
+                    >
+                        <span>📑</span>
+                        <span>Desglose por Evento ({{ count($eventsRows) }})</span>
                     </button>
                 </div>
 
@@ -1597,6 +1605,16 @@
 
                     <button
                         type="button"
+                        wire:click="$set('viewMode', 'event_settlement')"
+                        class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black shadow-sm transition cursor-pointer shrink-0"
+                        title="Ver desglose detallado de reparto evento a evento"
+                    >
+                        <span>📑</span>
+                        <span>Ver Desglose por Evento</span>
+                    </button>
+
+                    <button
+                        type="button"
                         wire:click="openPartnersModal"
                         class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-900 text-xs font-black shadow-sm transition cursor-pointer shrink-0"
                     >
@@ -1972,6 +1990,8 @@
                 </div>
             </div>
         </div>
+    @elseif($viewMode === 'event_settlement')
+        @include('livewire.admin.billing.partials.event-settlement-view')
     @endif
 
     <!-- ========================================================== -->

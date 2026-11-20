@@ -632,6 +632,171 @@ class BillingReportService
             ];
         }
 
+        // 9. Desglose detallado de Liquidación y Reparto Evento a Evento
+        $evSettlementTotals = [
+            'total_collected' => 0.0,
+            'total_provider_costs' => 0.0,
+            'total_material_costs' => 0.0,
+            'total_costs' => 0.0,
+            'total_net_profit' => 0.0,
+            'total_joint_fund' => 0.0,
+            'total_partner_profit' => 0.0,
+            'by_partner' => [],
+        ];
+        foreach ($partners as $p) {
+            $pName = trim((string)($p['name'] ?? 'Socio'));
+            $evSettlementTotals['by_partner'][$pName] = [
+                'name' => $pName,
+                'percentage' => (float)($p['percentage'] ?? 50.0),
+                'profit_share' => 0.0,
+                'reimbursements' => 0.0,
+                'total_to_receive' => 0.0,
+                'collected_in_hand' => 0.0,
+                'balance_diff' => 0.0,
+            ];
+        }
+
+        foreach ($filteredEvents as &$evItem) {
+            $ev = $evItem['event'];
+            $evFb = $evItem['fb'];
+            $evProv = $evItem['prov'] ?? [];
+
+            // 1. Material asignado a este evento
+            $evMaterials = $materialRows->filter(fn($m) => (int) $m->event_id === (int) $ev->id);
+            $evMaterialCost = (float) $evMaterials->sum('amount');
+            $evMaterialByPaidBy = [];
+            foreach ($evMaterials as $em) {
+                $pBy = trim((string)($em->paid_by ?: 'Fran'));
+                $evMaterialByPaidBy[$pBy] = ($evMaterialByPaidBy[$pBy] ?? 0.0) + (float) $em->amount;
+            }
+
+            // 2. Proveedores externos (Fotomatón / 360º / Artístamente)
+            $hasExtService = !empty($evProv['has_external_service']);
+            $evGrossProvCost = $hasExtService ? (float) ($evProv['provider_total_cost'] ?? 0.0) : 0.0;
+            $evProvRefund = $hasExtService ? (float) ($evProv['refund_amount'] ?? 0.0) : 0.0;
+            $evNetProvCost = max(0.0, round($evGrossProvCost - $evProvRefund, 2));
+            $evProvPaid = $hasExtService ? (float) ($evProv['total_paid'] ?? 0.0) : 0.0;
+            $evProvPaidBy = $hasExtService ? trim((string)($evProv['paid_by'] ?: 'Fran')) : null;
+
+            // 3. Ingresos cobrados en este evento
+            $evTotalCollected = (float) ($evFb['total_paid'] ?? 0.0);
+            $evCollectedByPartner = [];
+            foreach ($evFb['payments_list'] as $pay) {
+                if (($pay['status'] ?? '') === 'paid') {
+                    $cBy = trim((string)($pay['collected_by'] ?? ''));
+                    if ($cBy === '') {
+                        $cBy = 'Cuenta Conjunta / Fondo Común';
+                    }
+                    $evCollectedByPartner[$cBy] = ($evCollectedByPartner[$cBy] ?? 0.0) + (float) $pay['total'];
+                }
+            }
+
+            // 4. Comprobar si el cobro fue a Fondo Común
+            $jointAmt = 0.0;
+            foreach ($evCollectedByPartner as $cName => $cAmt) {
+                $cNameLower = mb_strtolower((string)$cName);
+                if (str_contains($cNameLower, 'conjunt') || str_contains($cNameLower, 'empresa') || str_contains($cNameLower, 'comun') || str_contains($cNameLower, 'común') || str_contains($cNameLower, 'fondo')) {
+                    $jointAmt += (float) $cAmt;
+                }
+            }
+            $isFondoComun = ($evTotalCollected > 0 && abs($jointAmt - $evTotalCollected) < 0.05);
+
+            // 5. Costes totales y Beneficio Neto del evento
+            $evTotalCost = round($evNetProvCost + $evMaterialCost, 2);
+            $evNetProfit = max(0.0, round($evTotalCollected - $evTotalCost, 2));
+
+            // 6. Desglose individual para cada socio
+            $evPartners = [];
+            foreach ($partners as $partner) {
+                $pName = trim((string)($partner['name'] ?? 'Socio'));
+                $pPct = (float) ($partner['percentage'] ?? 50.0);
+
+                if ($isFondoComun) {
+                    $pShare = 0.0; // Se destina 100% al fondo común de empresa / cena / material
+                } else {
+                    $pShare = round($evNetProfit * ($pPct / 100), 2);
+                }
+
+                $pMatReimb = (float) ($evMaterialByPaidBy[$pName] ?? 0.0);
+                $pProvReimb = ($evProvPaidBy === $pName && $evProvPaid > 0) ? $evProvPaid : 0.0;
+                $pTotalToReceive = round($pShare + $pMatReimb + $pProvReimb, 2);
+                $pInHand = (float) ($evCollectedByPartner[$pName] ?? 0.0);
+                $pBalanceDiff = round($pInHand - $pTotalToReceive, 2);
+
+                $evPartners[] = [
+                    'name' => $pName,
+                    'percentage' => $pPct,
+                    'profit_share' => $pShare,
+                    'material_reimbursement' => $pMatReimb,
+                    'provider_reimbursement' => $pProvReimb,
+                    'total_to_receive' => $pTotalToReceive,
+                    'collected_in_hand' => $pInHand,
+                    'balance_diff' => $pBalanceDiff,
+                ];
+
+                if (isset($evSettlementTotals['by_partner'][$pName])) {
+                    $evSettlementTotals['by_partner'][$pName]['profit_share'] += $pShare;
+                    $evSettlementTotals['by_partner'][$pName]['reimbursements'] += ($pMatReimb + $pProvReimb);
+                    $evSettlementTotals['by_partner'][$pName]['total_to_receive'] += $pTotalToReceive;
+                    $evSettlementTotals['by_partner'][$pName]['collected_in_hand'] += $pInHand;
+                    $evSettlementTotals['by_partner'][$pName]['balance_diff'] += $pBalanceDiff;
+                }
+            }
+
+            // Explicación en lenguaje humano
+            $humanExplanation = '';
+            if ($evTotalCollected <= 0) {
+                $humanExplanation = 'Sin cobros registrados aún en este evento.';
+            } elseif ($isFondoComun) {
+                $humanExplanation = "Importe cobrado (" . number_format($evTotalCollected, 2, ',', '.') . " €) destinado íntegramente a Fondo Común / Empresa (0,00 € a repartir a cuentas personales).";
+            } else {
+                $parts = [];
+                foreach ($evPartners as $ep) {
+                    $parts[] = "{$ep['name']} ({$ep['percentage']}%): " . number_format($ep['profit_share'], 2, ',', '.') . " €";
+                }
+                $humanExplanation = "Beneficio neto de " . number_format($evNetProfit, 2, ',', '.') . " € repartido entre " . implode(', ', $parts) . ".";
+            }
+
+            $evItem['settlement'] = [
+                'total_collected' => round($evTotalCollected, 2),
+                'collected_by_partner' => $evCollectedByPartner,
+                'is_fondo_comun' => $isFondoComun,
+                'joint_collected' => round($jointAmt, 2),
+                'has_provider' => $hasExtService,
+                'provider_service' => $evProv['service_name'] ?? 'Fotomatón / 360º',
+                'provider_gross_cost' => round($evGrossProvCost, 2),
+                'provider_refund' => round($evProvRefund, 2),
+                'provider_net_cost' => round($evNetProvCost, 2),
+                'provider_paid' => round($evProvPaid, 2),
+                'provider_paid_by' => $evProvPaidBy,
+                'has_material' => $evMaterialCost > 0,
+                'material_cost' => round($evMaterialCost, 2),
+                'material_by_paid_by' => $evMaterialByPaidBy,
+                'material_items' => $evMaterials,
+                'total_costs' => round($evTotalCost, 2),
+                'net_profit' => round($evNetProfit, 2),
+                'partners' => $evPartners,
+                'explanation' => $humanExplanation,
+                'quote_total' => (float) ($evFb['quote_total'] ?? 0.0),
+                'pending_amount' => (float) ($evFb['pending_amount'] ?? 0.0),
+                'staff_names' => $ev->staff_names_list ?? ($ev->dj?->name ?: 'DJ Titular'),
+            ];
+
+            $evSettlementTotals['total_collected'] += $evTotalCollected;
+            $evSettlementTotals['total_provider_costs'] += $evNetProvCost;
+            $evSettlementTotals['total_material_costs'] += $evMaterialCost;
+            $evSettlementTotals['total_costs'] += $evTotalCost;
+            $evSettlementTotals['total_net_profit'] += $evNetProfit;
+            if ($isFondoComun) {
+                $evSettlementTotals['total_joint_fund'] += $evNetProfit;
+            } else {
+                $evSettlementTotals['total_partner_profit'] += $evNetProfit;
+            }
+        }
+        unset($evItem);
+
+        $kpis['events_settlement_totals'] = $evSettlementTotals;
+
         $kpis['settlement_summary'] = [
             'total_collected' => round($totalCollected, 2),
             'collected_by_partner' => $collectedByPartner,

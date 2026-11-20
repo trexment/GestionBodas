@@ -352,6 +352,60 @@ class BillingManager extends Component
     }
 
     /**
+     * Actualiza rápidamente el socio recaudador o asigna un pago / evento a Fondo Común.
+     *
+     * @param int $eventId Identificador del evento.
+     * @param string $paymentType 'deposit' | 'final' | 'all'
+     * @param string $newCollector 'Fran' | 'Miguel' | 'Ezequiel' | 'Cuenta Conjunta / Fondo Común'
+     * @return void
+     */
+    public function setPaymentCollector(int $eventId, string $paymentType, string $newCollector): void
+    {
+        $event = Event::with('invoices')->find($eventId);
+        if (!$event) {
+            return;
+        }
+
+        \App\Models\Event::ensureTokenColumnsExist();
+        \App\Models\Invoice::ensureColumnsExist();
+
+        $collectorName = trim($newCollector) ?: 'Cuenta Conjunta / Fondo Común';
+
+        if (in_array($paymentType, ['deposit', 'all'], true)) {
+            if (\Illuminate\Support\Facades\Schema::hasColumn('events', 'deposit_collected_by')) {
+                $event->update(['deposit_collected_by' => $collectorName]);
+            }
+            $signalInv = $event->invoices->first(function ($inv) {
+                $n = mb_strtolower((string) ($inv->notes ?? ''));
+                return str_contains($n, 'señal') || str_contains($n, 'senal') || str_contains($n, 'reserva');
+            });
+            if ($signalInv && \Illuminate\Support\Facades\Schema::hasColumn('invoices', 'collected_by')) {
+                $signalInv->update(['collected_by' => $collectorName]);
+            }
+        }
+
+        if (in_array($paymentType, ['final', 'all'], true)) {
+            $finalInvs = $event->invoices->filter(function ($inv) {
+                $n = mb_strtolower((string) ($inv->notes ?? ''));
+                return !str_contains($n, 'señal') && !str_contains($n, 'senal');
+            });
+
+            if (\Illuminate\Support\Facades\Schema::hasColumn('invoices', 'collected_by')) {
+                foreach ($finalInvs as $inv) {
+                    $inv->update(['collected_by' => $collectorName]);
+                }
+            }
+
+            // Si no tiene facturas/recibos creados pero el evento tiene deposit_collected_by
+            if ($event->invoices->isEmpty() && \Illuminate\Support\Facades\Schema::hasColumn('events', 'deposit_collected_by')) {
+                $event->update(['deposit_collected_by' => $collectorName]);
+            }
+        }
+
+        session()->flash('message', "✅ Recaudador actualizado a '{$collectorName}' en '{$event->name}'.");
+    }
+
+    /**
      * Alterna el estado de una factura o recibo entre cobrado ('paid') y pendiente ('unpaid').
      *
      * @param int $invoiceId Identificador de la factura o recibo.
