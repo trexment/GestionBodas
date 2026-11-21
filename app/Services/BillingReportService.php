@@ -779,7 +779,7 @@ class BillingReportService
                 'explanation' => $humanExplanation,
                 'quote_total' => (float) ($evFb['quote_total'] ?? 0.0),
                 'pending_amount' => (float) ($evFb['pending_amount'] ?? 0.0),
-                'staff_names' => $ev->staff_names_list ?? ($ev->dj?->name ?: 'DJ Titular'),
+                'staff_names' => $ev->staff_names_text ?? ($ev->dj?->name ?: 'DJ Titular'),
             ];
 
             $evSettlementTotals['total_collected'] += $evTotalCollected;

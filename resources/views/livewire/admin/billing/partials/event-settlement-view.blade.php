@@ -194,7 +194,7 @@
                     <!-- Enlace directo a la ficha del evento -->
                     <div class="flex items-center gap-2 shrink-0">
                         <a
-                            href="{{ route('events.show', $ev->id) }}"
+                            href="{{ route('admin.events.show', $ev->id) }}"
                             target="_blank"
                             class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition flex items-center gap-1"
                             title="Abrir ficha completa del evento"

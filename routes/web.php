@@ -160,6 +160,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/spotify/disconnect', [SpotifyAuthController::class, 'disconnect'])->name('spotify.disconnect');
 
         // Alias without prefix
+        Route::get('/admin/events/{event}', EventShow::class)->name('events.show');
         Route::get('/admin/events/{event}/live', DjBoothMode::class)->name('events.live');
 
         Route::prefix('admin')->name('admin.')->group(function () {
