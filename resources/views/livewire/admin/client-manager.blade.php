@@ -83,26 +83,41 @@
     <!-- BARRA DE BÚSQUEDA Y TOTALES -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div class="text-xs font-bold text-slate-600 dark:text-slate-400">
-            Mostrando: <strong class="text-slate-900 dark:text-white text-sm">{{ $clients->count() }}</strong>
+            Mostrando: <strong class="text-slate-900 dark:text-white text-sm">{{ $clients->firstItem() ?? 0 }}-{{ $clients->lastItem() ?? 0 }}</strong> de <strong class="text-slate-900 dark:text-white text-sm">{{ $clients->total() }}</strong> clientes
             @if($filterEvents === 'with_events')
-                <span class="text-emerald-600 dark:text-emerald-400 font-semibold">(clientes con eventos activos)</span>
+                <span class="text-emerald-600 dark:text-emerald-400 font-semibold">(con eventos)</span>
             @elseif($filterEvents === 'without_events')
-                <span class="text-amber-600 dark:text-amber-400 font-semibold">(contactos sin eventos)</span>
+                <span class="text-amber-600 dark:text-amber-400 font-semibold">(sin eventos)</span>
             @endif
         </div>
 
-        <div class="relative w-full sm:w-80">
-            <input 
-                type="text" 
-                wire:model.live.debounce.250ms="search" 
-                placeholder="🔍 Buscar cliente por nombre, tlf, DNI, ciudad..." 
-                class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-xs text-slate-800 dark:text-white p-2.5 pl-3 shadow-xs focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-            >
-            @if($search)
-                <button type="button" wire:click="$set('search', '')" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs">
-                    ✕
-                </button>
-            @endif
+        <div class="flex items-center gap-2.5">
+            <div class="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 shrink-0">
+                <span class="font-medium hidden sm:inline">Pág:</span>
+                <select 
+                    wire:model.live="perPage" 
+                    class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-xs text-slate-800 dark:text-white py-2 px-2.5 shadow-xs focus:ring-2 focus:ring-emerald-500 cursor-pointer"
+                    title="Clientes por página"
+                >
+                    <option value="25">25 / pág</option>
+                    <option value="50">50 / pág</option>
+                    <option value="100">100 / pág</option>
+                </select>
+            </div>
+
+            <div class="relative w-full sm:w-72">
+                <input 
+                    type="text" 
+                    wire:model.live.debounce.250ms="search" 
+                    placeholder="🔍 Buscar por nombre, tlf, DNI, ciudad..." 
+                    class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-xs text-slate-800 dark:text-white p-2.5 pl-3 shadow-xs focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                >
+                @if($search)
+                    <button type="button" wire:click="$set('search', '')" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs">
+                        ✕
+                    </button>
+                @endif
+            </div>
         </div>
     </div>
 
@@ -249,6 +264,12 @@
                 </tbody>
             </table>
         </div>
+
+        @if($clients->hasPages())
+            <div class="px-5 py-3.5 border-t border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/40">
+                {{ $clients->links() }}
+            </div>
+        @endif
     </div>
 
     <!-- ==================== MODAL DE CREACIÓN DE CLIENTE ==================== -->

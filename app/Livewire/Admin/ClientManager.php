@@ -3,6 +3,7 @@
 namespace App\Livewire\Admin;
 
 use Livewire\Component;
+use Livewire\WithPagination;
 use App\Models\User;
 use App\Services\PostalCodeService;
 use App\Livewire\Traits\HandlesDniValidation;
@@ -15,9 +16,27 @@ use Illuminate\Validation\Rule;
  */
 class ClientManager extends Component
 {
+    use WithPagination;
     use HandlesDniValidation;
+
     public $search = '';
     public $filterEvents = 'all'; // 'all', 'with_events', 'without_events'
+    public $perPage = 25;
+
+    public function updatedSearch()
+    {
+        $this->resetPage();
+    }
+
+    public function updatedFilterEvents()
+    {
+        $this->resetPage();
+    }
+
+    public function updatedPerPage()
+    {
+        $this->resetPage();
+    }
 
     // Formulario de Creación de Cliente
     public $name;
@@ -770,7 +789,7 @@ class ClientManager extends Component
             });
         }
 
-        $clients = $query->get();
+        $clients = $query->paginate((int)$this->perPage);
 
         return view('livewire.admin.client-manager', [
             'clients' => $clients,
