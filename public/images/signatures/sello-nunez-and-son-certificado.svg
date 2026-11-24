@@ -1,0 +1,26 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 850 360" width="850" height="360">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Great+Vibes&amp;family=Montserrat:wght@600;800&amp;display=swap');
+      .rect-head { font-family: 'Montserrat', Arial, sans-serif; font-size: 13px; font-weight: 800; fill: #142d5f; letter-spacing: 2px; text-anchor: middle; }
+      .rect-sig { font-family: 'Great Vibes', 'Edwardian Script ITC', cursive; font-size: 96px; fill: #142d5f; text-anchor: middle; }
+      .rect-foot { font-family: 'Montserrat', Arial, sans-serif; font-size: 10px; font-weight: 700; fill: #142d5f; letter-spacing: 3px; text-anchor: middle; }
+    </style>
+  </defs>
+  <!-- Marcos -->
+  <rect x="25" y="25" width="800" height="310" rx="18" fill="none" stroke="#142d5f" stroke-width="3.5" />
+  <rect x="35" y="35" width="780" height="290" rx="12" fill="none" stroke="#142d5f" stroke-width="1.2" stroke-dasharray="5,4" />
+  
+  <!-- Cabecera -->
+  <text x="425" y="65" class="rect-head">✔  DOCUMENTO EXPEDIDO Y CONFORME  •  NÚÑEZ AND SON</text>
+  <line x1="60" y1="80" x2="790" y2="80" stroke="#142d5f" stroke-width="2" />
+
+  <!-- Firma Central -->
+  <text x="425" y="195" class="rect-sig">Núñez and Son</text>
+  <path d="M 160 230 C 310 260, 530 210, 710 180 C 755 170, 750 215, 680 245" 
+        fill="none" stroke="#142d5f" stroke-width="3.5" stroke-linecap="round"/>
+
+  <!-- Pie -->
+  <line x1="60" y1="275" x2="790" y2="275" stroke="#142d5f" stroke-width="2" />
+  <text x="425" y="302" class="rect-foot">PRODUCCIÓN DE EVENTOS MUSICALES  •  VALIDEZ LEGAL Y CONTRACTUAL</text>
+</svg>

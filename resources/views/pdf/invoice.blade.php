@@ -378,6 +378,18 @@
                             Régimen General de IVA. Factura emitida con arreglo a la normativa tributaria vigente.
                         </div>
                     @endif
+
+                    @php
+                        $sigPath = \App\Models\Setting::getCompanySignaturePathForPdf($brandKey ?? null);
+                    @endphp
+                    @if(!empty($sigPath) && file_exists($sigPath))
+                        <div style="margin-top: 6px; padding-top: 5px; border-top: 1px dashed #cbd5e1; text-align: right;">
+                            <span style="font-size: 6pt; color: #64748b; font-weight: bold; text-transform: uppercase; display: block; margin-bottom: 2px;">
+                                Firma y Conformidad del Emisor
+                            </span>
+                            <img src="{{ $sigPath }}" style="max-height: 44px; max-width: 140px; display: inline-block;" alt="Firma Emisor">
+                        </div>
+                    @endif
                 </div>
             </td>
 

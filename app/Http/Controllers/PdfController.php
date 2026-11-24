@@ -94,6 +94,7 @@ class PdfController extends Controller
             'client' => $invoice->event ? $invoice->event->client : null,
             'quote' => $invoice->quote,
             'company' => $company,
+            'brandKey' => $brandKey,
         ];
 
         $pdf = Pdf::loadView('pdf.invoice', $data);

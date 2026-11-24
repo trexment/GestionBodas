@@ -1,0 +1,36 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" width="600" height="600">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Great+Vibes&amp;family=Montserrat:wght@700;800&amp;display=swap');
+      .stamp-text { font-family: 'Montserrat', Arial, sans-serif; font-size: 15px; font-weight: 800; fill: #1b3f7a; letter-spacing: 2px; }
+      .sig-stamp { font-family: 'Great Vibes', 'Edwardian Script ITC', cursive; font-size: 82px; fill: #1b3f7a; }
+      .sub-badge { font-family: 'Montserrat', Arial, sans-serif; font-size: 11px; font-weight: 800; fill: #1b3f7a; letter-spacing: 2px; text-anchor: middle; }
+    </style>
+    <path id="circleTop" d="M 78 300 A 222 222 0 0 1 522 300" />
+    <path id="circleBottom" d="M 522 300 A 222 222 0 0 1 78 300" />
+  </defs>
+  <g transform="rotate(-3.5 300 300)">
+    <!-- Aros concéntricos -->
+    <circle cx="300" cy="300" r="265" fill="none" stroke="#1b3f7a" stroke-width="5" />
+    <circle cx="300" cy="300" r="252" fill="none" stroke="#1b3f7a" stroke-width="1.5" />
+    <circle cx="300" cy="300" r="195" fill="none" stroke="#1b3f7a" stroke-width="1.5" stroke-dasharray="4,4" />
+    <circle cx="300" cy="300" r="185" fill="none" stroke="#1b3f7a" stroke-width="2" />
+    
+    <!-- Texto en arco superior e inferior -->
+    <text class="stamp-text"><textPath href="#circleTop" startOffset="50%" text-anchor="middle">★ NÚÑEZ AND SON • SOUND IN MOTION ★</textPath></text>
+    <text class="stamp-text"><textPath href="#circleBottom" startOffset="50%" text-anchor="middle">DIRECCIÓN &amp; CONFORMIDAD</textPath></text>
+
+    <!-- Estrellas decorativas -->
+    <text x="300" y="195" text-anchor="middle" font-size="18" fill="#1b3f7a">★   ★   ★</text>
+
+    <!-- Firma manuscrita -->
+    <text x="300" y="275" text-anchor="middle" class="sig-stamp">Núñez &amp; Son</text>
+    <path d="M 150 320 C 260 355, 380 310, 470 280 C 500 265, 490 310, 440 340" 
+          fill="none" stroke="#1b3f7a" stroke-width="3.5" stroke-linecap="round"/>
+
+    <!-- Etiqueta de validez -->
+    <line x1="190" y1="365" x2="410" y2="365" stroke="#1b3f7a" stroke-width="1.5" />
+    <text x="300" y="382" class="sub-badge">FIRMA AUTORIZADA</text>
+    <text x="300" y="398" class="sub-badge" style="font-size: 8px; font-weight: 600; opacity: 0.85;">EXPEDIDO Y CERTIFICADO</text>
+  </g>
+</svg>

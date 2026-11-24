@@ -104,6 +104,11 @@ class Setting extends Model
         }
 
         if (!$sig) {
+            if (empty($brandKey) || $brandKey === 'nunez_and_son') {
+                if (file_exists(public_path('images/signatures/grafo-nunez-and-son-caligrafico.png'))) {
+                    return public_path('images/signatures/grafo-nunez-and-son-caligrafico.png');
+                }
+            }
             return null;
         }
 
@@ -141,6 +146,11 @@ class Setting extends Model
         }
 
         if (!$sig) {
+            if (empty($brandKey) || $brandKey === 'nunez_and_son') {
+                if (file_exists(public_path('images/signatures/grafo-nunez-and-son-caligrafico.png'))) {
+                    return public_path('images/signatures/grafo-nunez-and-son-caligrafico.png');
+                }
+            }
             return null;
         }
 

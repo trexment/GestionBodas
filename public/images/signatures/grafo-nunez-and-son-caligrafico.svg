@@ -1,0 +1,18 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 360" width="1000" height="360">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Great+Vibes&amp;family=Montserrat:wght@700&amp;display=swap');
+      .sig-text { font-family: 'Great Vibes', 'Edwardian Script ITC', 'Brush Script MT', cursive; font-size: 110px; fill: #16386d; font-weight: normal; }
+      .sub-text { font-family: 'Montserrat', Arial, sans-serif; font-size: 13px; font-weight: 700; fill: #475569; letter-spacing: 7px; text-anchor: middle; }
+    </style>
+  </defs>
+  <!-- Firma Principal Caligráfica -->
+  <text x="120" y="165" class="sig-text">Núñez and Son</text>
+  <!-- Rúbrica dinámica de pluma estilográfica -->
+  <path d="M 120 235 C 270 285, 490 235, 730 180 C 810 155, 840 195, 770 240 C 730 265, 710 255, 740 235 C 800 205, 860 200, 890 210" 
+        fill="none" stroke="#16386d" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Punto final de rúbrica -->
+  <circle cx="905" cy="210" r="4.5" fill="#16386d" />
+  <!-- Subtexto Corporativo -->
+  <text x="500" y="295" class="sub-text">NÚÑEZ AND SON • SOUND IN MOTION</text>
+</svg>
