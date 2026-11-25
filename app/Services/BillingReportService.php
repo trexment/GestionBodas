@@ -763,7 +763,10 @@ class BillingReportService
                 'is_fondo_comun' => $isFondoComun,
                 'joint_collected' => round($jointAmt, 2),
                 'has_provider' => $hasExtService,
-                'provider_service' => $evProv['service_name'] ?? 'Fotomatón / 360º',
+                'provider_service' => (!empty($evProv['service_description']) && $evProv['service_description'] !== 'Fotomatón / Plataforma 360º')
+                    ? $evProv['service_description']
+                    : (!empty($evProv['provider_name']) ? $evProv['provider_name'] : ($evProv['service_description'] ?? 'Fotomatón / 360º')),
+                'provider_name' => $evProv['provider_name'] ?? null,
                 'provider_gross_cost' => round($evGrossProvCost, 2),
                 'provider_refund' => round($evProvRefund, 2),
                 'provider_net_cost' => round($evNetProvCost, 2),

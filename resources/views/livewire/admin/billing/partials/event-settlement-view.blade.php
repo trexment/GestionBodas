@@ -94,7 +94,7 @@
                 -{{ number_format($evTotals['total_costs'] ?? 0, 2, ',', '.') }} €
             </div>
             <p class="text-[10px] text-slate-500 mt-0.5">
-                Fotomatón: {{ number_format($evTotals['total_provider_costs'] ?? 0, 2, ',', '.') }}€ · Material: {{ number_format($evTotals['total_material_costs'] ?? 0, 2, ',', '.') }}€
+                Proveedores: {{ number_format($evTotals['total_provider_costs'] ?? 0, 2, ',', '.') }}€ · Material: {{ number_format($evTotals['total_material_costs'] ?? 0, 2, ',', '.') }}€
             </p>
         </div>
 
@@ -237,9 +237,21 @@
 
                             <!-- Costes Proveedor Externo -->
                             @if(!empty($sett['has_provider']))
+                                @php
+                                    $pName = trim((string)($sett['provider_name'] ?? ''));
+                                    $pService = trim((string)($sett['provider_service'] ?? ''));
+                                    $pTitle = $pService ?: ($pName ?: 'Proveedor Externo');
+                                    if ($pTitle === 'Fotomatón / Plataforma 360º' && !empty($pName) && !str_contains(mb_strtolower($pName), 'logroño') && !str_contains(mb_strtolower($pName), 'vitoria')) {
+                                        $pTitle = $pName;
+                                    }
+                                    $pTitleLower = mb_strtolower($pTitle);
+                                    $pIcon = (str_contains($pTitleLower, 'artist') || str_contains($pTitleLower, 'artíst'))
+                                        ? '🎨'
+                                        : ((str_contains($pTitleLower, 'foto') || str_contains($pTitleLower, '360')) ? '📸' : '💼');
+                                @endphp
                                 <div class="pt-2 border-t border-slate-200 dark:border-slate-800">
                                     <div class="flex items-center justify-between text-purple-700 dark:text-purple-300 font-semibold">
-                                        <span>📸 {{ $sett['provider_service'] ?? 'Fotomatón' }}:</span>
+                                        <span>{{ $pIcon }} {{ $pTitle }}:</span>
                                         <span>-{{ number_format($sett['provider_net_cost'] ?? 0, 2, ',', '.') }} €</span>
                                     </div>
                                     @if($sett['provider_paid'] > 0)
