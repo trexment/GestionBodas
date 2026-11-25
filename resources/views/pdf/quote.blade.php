@@ -1203,6 +1203,201 @@
         </div>
     </div>
 
+    @if($quote->is_custom)
+    <!-- ==========================================
+         PÁGINA 3 (A MEDIDA): FICHA TÉCNICA Y PRODUCCIÓN PERSONALIZADA
+         ========================================== -->
+    <div class="page">
+        <!-- Cabecera Azul Marino -->
+        <div class="page-header-banner">
+            <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                    <td style="vertical-align: middle;">
+                        <div class="page-header-sub">PRODUCCIÓN Y COBERTURA A MEDIDA &bull; {{ mb_strtoupper($companyName) }}</div>
+                        <div class="page-header-title">Ficha Técnica y Configuración para Vuestro Evento</div>
+                    </td>
+                    @if($quote->is_recommended)
+                    <td style="width: 160px; text-align: right; vertical-align: middle;">
+                        <div style="background-color: #eab308; color: #0f172a; font-size: 7pt; font-weight: 900; text-transform: uppercase; padding: 4px 8px; border-radius: 4px; display: inline-block; letter-spacing: 0.5px;">
+                            &#9733; PROPUESTA RECOMENDADA
+                        </div>
+                    </td>
+                    @endif
+                </tr>
+            </table>
+        </div>
+
+        <div class="page-content">
+            <p class="intro-lead" style="margin-bottom: 10px;">
+                Hemos diseñado esta propuesta personalizada ajustando cada servicio, horario y equipamiento técnico a los momentos de vuestra celebración. A continuación os detallamos la cobertura acordada y las opciones disponibles:
+            </p>
+
+            <!-- 1. BLOQUE PRINCIPAL: MOMENTOS PREVIOS Y FIESTA CONTRATADOS -->
+            <div style="margin-bottom: 5px; font-size: 7.5pt; font-weight: 800; color: #0f172a; text-transform: uppercase; letter-spacing: 0.5px;">
+                1. Momentos Musicales y Fiesta Incluidos en Vuestra Propuesta:
+            </div>
+            
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px;">
+                <tr>
+                    @php
+                        $momentItems = $quote->items->where('item_type', 'moment');
+                        $partyItem = $quote->items->firstWhere('item_type', 'party');
+                    @endphp
+                    <!-- Columna Momentos Previos -->
+                    <td style="width: 50%; vertical-align: top; padding-right: 5px;">
+                        <div style="background-color: #f8fafc; border: 1px solid #cbd5e1; border-top: 3px solid #1e3a8a; border-radius: 6px; padding: 8px 10px; min-height: 110px;">
+                            <div style="font-size: 7pt; font-weight: 800; text-transform: uppercase; color: #1e3a8a; margin-bottom: 4px;">
+                                &#9835; Momentos Previos Seleccionados
+                            </div>
+                            @if($momentItems->isNotEmpty())
+                                <ul style="margin: 0; padding-left: 14px; font-size: 7pt; color: #334155; line-height: 1.4;">
+                                    @foreach($momentItems as $mItem)
+                                        <li style="margin-bottom: 3px;">
+                                            <strong style="color: #0f172a;">{{ $mItem->service_name }}:</strong>
+                                            <span>{{ $mItem->description ?: 'Sonorización y ambientación musical adaptada.' }}</span>
+                                        </li>
+                                    @endforeach
+                                </ul>
+                            @else
+                                <div style="font-size: 7pt; color: #64748b; font-style: italic; margin-top: 6px;">
+                                    Propuesta enfocada exclusivamente en la sesión de fiesta y barra libre.
+                                </div>
+                            @endif
+                        </div>
+                    </td>
+
+                    <!-- Columna Fiesta / Barra Libre -->
+                    <td style="width: 50%; vertical-align: top; padding-left: 5px;">
+                        <div style="background-color: #f8fafc; border: 1px solid #cbd5e1; border-top: 3px solid #f59e0b; border-radius: 6px; padding: 8px 10px; min-height: 110px;">
+                            <div style="font-size: 7pt; font-weight: 800; text-transform: uppercase; color: #b45309; margin-bottom: 4px;">
+                                &#127911; Barra Libre & Fiesta con DJ
+                            </div>
+                            @if($partyItem)
+                                <div style="font-size: 11pt; font-weight: 900; color: #0f172a; margin-bottom: 2px;">
+                                    {{ $quote->party_hours_formatted }} Horas de Sesión DJ
+                                </div>
+                                <div style="font-size: 7pt; color: #334155; line-height: 1.35; margin-bottom: 4px;">
+                                    {{ $partyItem->description ?: 'Sesión DJ profesional en directo con transiciones en tiempo real y animación de pista.' }}
+                                </div>
+                            @else
+                                <div style="font-size: 7pt; color: #64748b; font-style: italic;">
+                                    Servicio de fiesta no incluido en esta propuesta.
+                                </div>
+                            @endif
+                            <div style="background-color: #eff6ff; border: 1px solid #bfdbfe; border-radius: 4px; padding: 4px 6px; margin-top: 4px; font-size: 6.5pt; color: #1e40af;">
+                                <strong>&#9201; Tarifa Hora Extra:</strong> {{ number_format($quote->extra_hour_rate ?: 120, 2, ',', '.') }} €/h (ampliable directamente durante el evento).
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+
+            <!-- 2. EQUIPAMIENTO TÉCNICO Y LOGÍSTICA -->
+            <div style="margin-bottom: 5px; font-size: 7.5pt; font-weight: 800; color: #0f172a; text-transform: uppercase; letter-spacing: 0.5px;">
+                2. Equipamiento Técnico Asignado y Desplazamiento:
+            </div>
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px;">
+                <tr>
+                    <td style="width: 50%; vertical-align: top; padding-right: 5px;">
+                        <div style="background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px;">
+                            <div style="font-size: 7pt; font-weight: 800; text-transform: uppercase; color: #0f172a; margin-bottom: 3px;">
+                                &#128266; Producción Técnica Adaptada
+                            </div>
+                            <div style="font-size: 7pt; color: #334155; line-height: 1.35;">
+                                {{ $quote->effective_equipment_notes }}
+                            </div>
+                        </div>
+                    </td>
+                    <td style="width: 50%; vertical-align: top; padding-left: 5px;">
+                        <div style="background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px;">
+                            <div style="font-size: 7pt; font-weight: 800; text-transform: uppercase; color: #0f172a; margin-bottom: 3px;">
+                                &#128663; Desplazamiento y Transporte
+                            </div>
+                            <div style="font-size: 7pt; color: #334155; line-height: 1.35;">
+                                @if($quote->travel_km && (float)$quote->travel_km > 0)
+                                    {{ $quote->travel_km }} km ida y vuelta (primeros {{ $quote->travel_free_km ?: 100 }} km cortesía incluidos). Resto facturado a {{ number_format($quote->travel_rate ?: 0.26, 2, ',', '.') }} €/km.
+                                @else
+                                    Desplazamiento y logística incluidos en la zona de cobertura habitual (hasta 100 km ida/vuelta cortesía).
+                                @endif
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+
+            <!-- 3. EXTRAS INCLUIDOS Y OPCIONALES -->
+            @php
+                $includedExtras = $quote->items->where('item_status', 'included');
+                $optionalExtras = $quote->items->where('item_status', 'optional');
+            @endphp
+            <div style="margin-bottom: 5px; font-size: 7.5pt; font-weight: 800; color: #0f172a; text-transform: uppercase; letter-spacing: 0.5px;">
+                3. Efectos Especiales y Servicios Adicionales:
+            </div>
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 8px;">
+                <tr>
+                    <td style="width: 50%; vertical-align: top; padding-right: 5px;">
+                        <div style="background-color: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 6px; padding: 8px 10px; min-height: 70px;">
+                            <div style="font-size: 7pt; font-weight: 800; text-transform: uppercase; color: #065f46; margin-bottom: 3px;">
+                                &#10003; Servicios y Efectos Incluidos (0 €)
+                            </div>
+                            @if($includedExtras->isNotEmpty())
+                                <ul style="margin: 0; padding-left: 14px; font-size: 6.8pt; color: #047857; line-height: 1.35;">
+                                    @foreach($includedExtras as $incItem)
+                                        <li><strong>{{ $incItem->service_name }}:</strong> {{ $incItem->description ?: 'Incluido de cortesía en esta propuesta.' }}</li>
+                                    @endforeach
+                                </ul>
+                            @else
+                                <div style="font-size: 6.8pt; color: #065f46; font-style: italic;">
+                                    Montaje, desmontaje y microfonía inalámbrica incluidos en todos los servicios contratados.
+                                </div>
+                            @endif
+                        </div>
+                    </td>
+                    <td style="width: 50%; vertical-align: top; padding-left: 5px;">
+                        <div style="background-color: #faf5ff; border: 1px solid #e9d5ff; border-radius: 6px; padding: 8px 10px; min-height: 70px;">
+                            <div style="font-size: 7pt; font-weight: 800; text-transform: uppercase; color: #6b21a8; margin-bottom: 3px;">
+                                &#9733; Opciones Opcionales Disponibles
+                            </div>
+                            @if($optionalExtras->isNotEmpty())
+                                <ul style="margin: 0; padding-left: 14px; font-size: 6.8pt; color: #7e22ce; line-height: 1.35;">
+                                    @foreach($optionalExtras as $optItem)
+                                        <li>
+                                            <strong>{{ $optItem->service_name }} (+{{ number_format($optItem->price, 2, ',', '.') }} €):</strong>
+                                            <span>{{ $optItem->description ?: 'Opcional, integrable bajo petición.' }}</span>
+                                        </li>
+                                    @endforeach
+                                </ul>
+                            @else
+                                <div style="font-size: 6.8pt; color: #7e22ce; font-style: italic;">
+                                    Consultad con nosotros si deseáis añadir fuego frío, niebla baja, fotomatón o plataforma 360.
+                                </div>
+                            @endif
+                        </div>
+                    </td>
+                </tr>
+            </table>
+
+            <!-- 4. BANNER DE TRANQUILIDAD Y GARANTÍA -->
+            <div style="background-color: #0b1329; border: 1px solid #1e293b; border-radius: 8px; padding: 10px 14px; color: #ffffff; margin-top: 8px;">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tr>
+                        <td style="vertical-align: middle;">
+                            <div style="font-size: 6.5pt; text-transform: uppercase; letter-spacing: 1.5px; color: #eab308; font-weight: 800;">MÁXIMA TRANQUILIDAD Y SEGURIDAD</div>
+                            <div style="font-size: 9.5pt; font-weight: 800; color: #ffffff; margin-top: 2px;">Presupuesto Oficial, Contrato Legal y Cobertura Total</div>
+                            <div style="font-size: 6.8pt; color: #94a3b8; margin-top: 3px; line-height: 1.3;">
+                                Equipos de primer nivel revisados antes de cada actuación, seguro de responsabilidad civil y un equipo volcado en hacer vuestra celebración única.
+                            </div>
+                        </td>
+                        <td style="width: 130px; text-align: right; vertical-align: middle; border-left: 1px solid #1e293b; padding-left: 14px;">
+                            <div style="font-size: 13pt; line-height: 1; color: #eab308; font-weight: 900;">&#10003; 100%</div>
+                            <div style="font-size: 6.5pt; color: #eab308; font-weight: 800; text-transform: uppercase; margin-top: 3px;">Garantía de Fiesta</div>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+    @else
     <!-- ==========================================
          PÁGINA 3: CATÁLOGO DE PACKS Y PRODUCCIÓN TÉCNICA
          ========================================== -->
@@ -1370,6 +1565,7 @@
         </div>
     </div>
     @endif
+    @endif
 
     <!-- ==========================================
          PÁGINA 4: PRESUPUESTO PERSONALIZADO OFICIAL (EL PRESUPUESTO DE UNA PÁGINA)
@@ -1381,7 +1577,11 @@
                 <tr>
                     <td style="vertical-align: middle;">
                         <div class="page-header-sub">PRESUPUESTO PERSONALIZADO OFICIAL &bull; {{ mb_strtoupper($companyName) }}</div>
-                        <div class="page-header-title">Propuesta Económica para {{ $event->name }} &bull; #PRE-{{ str_pad($quote->id, 5, '0', STR_PAD_LEFT) }}</div>
+                        <div class="page-header-title">Propuesta Económica para {{ $event->name }} &bull; #PRE-{{ str_pad($quote->id, 5, '0', STR_PAD_LEFT) }}
+                            @if($quote->is_recommended)
+                                <span style="background-color: #eab308; color: #0f172a; font-size: 6.5pt; font-weight: 900; text-transform: uppercase; padding: 2px 6px; border-radius: 3px; margin-left: 6px; vertical-align: middle;">&#9733; RECOMENDADA</span>
+                            @endif
+                        </div>
                     </td>
                     @if($isSinglePage ?? false)
                         <td style="width: 110px; text-align: right; vertical-align: middle;">
@@ -1437,7 +1637,7 @@
                             $hasCeremonyOrCocktailInQuote = false;
                             $hasQrPhotosItemInQuote = false;
                         @endphp
-                        @forelse($quote->items as $item)
+                        @forelse($quote->items->where('item_status', '!=', 'optional') as $item)
                             @php
                                 $itemTitle = $item->service_name ?: ($item->concept ?: 'Servicio');
                                 $itemDesc = $item->description ?: $item->custom_note;
@@ -1614,6 +1814,35 @@
                     </tbody>
                 </table>
             </div>
+
+            @if($quote->optionalItems->isNotEmpty())
+                <!-- CUADRO DE EXTRAS OPCIONALES DISPONIBLES EN PÁGINA 4 -->
+                <div style="margin-bottom: 8px; background-color: #faf5ff; border: 1px solid #d8b4fe; border-radius: 6px; padding: 6px 10px;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <tr>
+                            <td style="font-size: 6.5pt; text-transform: uppercase; letter-spacing: 0.8px; color: #6b21a8; font-weight: 800;">
+                                &#9733; EXTRAS OPCIONALES DISPONIBLES (INTEGRABLES EN CUALQUIER MOMENTO ANTES DEL EVENTO):
+                            </td>
+                            <td style="text-align: right; font-size: 6.5pt; color: #7e22ce; font-style: italic;">
+                                No incluidos en el total inicial
+                            </td>
+                        </tr>
+                    </table>
+                    <table style="width: 100%; border-collapse: collapse; margin-top: 3px; font-size: 6.8pt; color: #581c87;">
+                        @foreach($quote->optionalItems as $optLine)
+                            <tr>
+                                <td style="padding: 1.5px 0; vertical-align: top;">
+                                    &bull; <strong>{{ $cleanPdf($optLine->service_name ?: $optLine->concept) }}:</strong>
+                                    <span>{{ $cleanPdf($optLine->description) }}</span>
+                                </td>
+                                <td style="text-align: right; font-weight: 800; padding: 1.5px 0; width: 85px; vertical-align: top; white-space: nowrap;">
+                                    +{{ number_format($optLine->price, 2, ',', '.') }} €
+                                </td>
+                            </tr>
+                        @endforeach
+                    </table>
+                </div>
+            @endif
 
             @if(!empty($quote->admin_notes))
                 <div style="margin-bottom: 8px; background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 7px 12px;">

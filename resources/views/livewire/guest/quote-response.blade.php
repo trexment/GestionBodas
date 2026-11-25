@@ -54,8 +54,13 @@
             <div class="bg-zinc-900 dark:bg-zinc-950 text-white px-6 py-7 sm:px-10 sm:py-8 border-b border-amber-500/30">
                 <div class="flex flex-col md:flex-row md:items-start justify-between gap-6">
                     <div>
-                        <div class="text-[11px] font-semibold uppercase tracking-[0.2em] text-amber-400/90 mb-1.5">
-                            {{ $brand['name'] ?? 'Núñez & Son' }} &bull; Propuesta Económica y de Producción
+                        <div class="text-[11px] font-semibold uppercase tracking-[0.2em] text-amber-400/90 mb-1.5 flex items-center gap-2 flex-wrap">
+                            <span>{{ $brand['name'] ?? 'Núñez & Son' }} &bull; Propuesta Económica y de Producción</span>
+                            @if($quote->is_recommended)
+                                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-400 text-slate-950 shadow-xs border border-amber-300">
+                                    ⭐ Opción Recomendada
+                                </span>
+                            @endif
                         </div>
                         <h1 class="text-2xl sm:text-3xl font-bold text-white tracking-tight">
                             {{ $event->name }}
@@ -201,6 +206,48 @@
                 </div>
             @endif
 
+            @if($quote->is_custom)
+                <!-- FICHA TÉCNICA DE LA PROPUESTA A MEDIDA -->
+                <div class="px-6 pt-6 sm:px-10">
+                    <div class="p-4 sm:p-5 rounded-2xl bg-amber-50/70 dark:bg-amber-950/20 border border-amber-300 dark:border-amber-800/60 space-y-3">
+                        <div class="flex items-center justify-between gap-2 flex-wrap">
+                            <span class="text-xs font-black uppercase text-amber-950 dark:text-amber-200 tracking-wider flex items-center gap-1.5">
+                                <span>📐</span> Ficha Técnica de Vuestra Configuración A Medida
+                            </span>
+                            @if($quote->is_recommended)
+                                <span class="text-[10px] font-black uppercase bg-amber-400 text-slate-950 px-2 py-0.5 rounded-full shadow-2xs">
+                                    ⭐ Opción Recomendada
+                                </span>
+                            @endif
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs pt-1">
+                            @if($quote->party_hours)
+                                <div class="bg-white/80 dark:bg-zinc-900/60 p-2.5 rounded-xl border border-amber-200 dark:border-amber-900/40">
+                                    <span class="text-zinc-500 dark:text-zinc-400 block text-[10px] uppercase font-bold">Fiesta / Barra Libre:</span>
+                                    <strong class="text-zinc-900 dark:text-white text-xs">{{ $quote->party_hours_formatted }}h de Sesión DJ</strong>
+                                </div>
+                            @endif
+                            <div class="bg-white/80 dark:bg-zinc-900/60 p-2.5 rounded-xl border border-amber-200 dark:border-amber-900/40">
+                                <span class="text-zinc-500 dark:text-zinc-400 block text-[10px] uppercase font-bold">Tarifa Hora Extra:</span>
+                                <strong class="text-zinc-900 dark:text-white text-xs">{{ number_format($quote->extra_hour_rate ?: 120, 2, ',', '.') }} €/h</strong>
+                                <span class="text-[10px] text-zinc-500 block">Ampliable en fiesta</span>
+                            </div>
+                            @if($quote->travel_km)
+                                <div class="bg-white/80 dark:bg-zinc-900/60 p-2.5 rounded-xl border border-amber-200 dark:border-amber-900/40">
+                                    <span class="text-zinc-500 dark:text-zinc-400 block text-[10px] uppercase font-bold">Desplazamiento:</span>
+                                    <strong class="text-zinc-900 dark:text-white text-xs">{{ $quote->travel_km }} km ida/vuelta</strong>
+                                    <span class="text-[10px] text-emerald-700 font-bold block">100 km cortesía incluidos</span>
+                                </div>
+                            @endif
+                            <div class="bg-white/80 dark:bg-zinc-900/60 p-2.5 rounded-xl border border-amber-200 dark:border-amber-900/40 {{ !$quote->travel_km ? 'sm:col-span-2' : '' }}">
+                                <span class="text-zinc-500 dark:text-zinc-400 block text-[10px] uppercase font-bold">Equipamiento Técnico:</span>
+                                <span class="text-zinc-800 dark:text-zinc-200 text-xs font-medium block">{{ $quote->effective_equipment_notes }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            @endif
+
             <!-- DESGLOSE DE SERVICIOS EN FORMATO TABLA EJECUTIVA -->
             <div class="px-6 py-6 sm:px-10 sm:py-8">
                 <div class="flex items-center justify-between pb-3 border-b-2 border-zinc-900 dark:border-zinc-700">
@@ -218,7 +265,7 @@
                     $hasQrPhotosItemOnline = false;
                 @endphp
                 <div class="divide-y divide-zinc-200 dark:divide-zinc-800">
-                    @foreach($quote->items as $item)
+                    @foreach($quote->items->where('item_status', '!=', 'optional') as $item)
                         @php
                             $lineTotal = (float)$item->price * (int)($item->quantity ?: 1);
                             $isDiscount = $lineTotal < 0;
@@ -310,6 +357,60 @@
                     @endif
                 </div>
 
+                @if($quote->optionalItems->isNotEmpty())
+                    <!-- SECCIÓN INTERACTIVA: EXTRAS OPCIONALES DISPONIBLES -->
+                    <div class="mt-8 pt-6 border-t-2 border-indigo-200 dark:border-indigo-900/60 space-y-4">
+                        <div>
+                            <h4 class="text-xs font-black uppercase tracking-widest text-indigo-950 dark:text-indigo-300 flex items-center gap-1.5">
+                                <span>✨</span> Extras Opcionales Disponibles para Vuestro Evento
+                            </h4>
+                            <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                                Podéis añadir o quitar cualquiera de estas opciones para calcular vuestro presupuesto antes de aceptarlo:
+                            </p>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            @foreach($quote->optionalItems as $optItem)
+                                @php
+                                    $isAdded = in_array($optItem->id, $selected_optional_item_ids, true);
+                                    $optPrice = (float)$optItem->price * (int)($optItem->quantity ?: 1);
+                                @endphp
+                                <div class="p-3.5 rounded-xl border transition flex flex-col justify-between gap-3 {{ $isAdded ? 'bg-emerald-50/70 dark:bg-emerald-950/30 border-emerald-400 ring-2 ring-emerald-300 shadow-xs' : 'bg-white dark:bg-zinc-800/80 border-zinc-200 dark:border-zinc-700 hover:border-indigo-300' }}">
+                                    <div class="space-y-1">
+                                        <div class="flex items-center justify-between gap-2">
+                                            <span class="font-bold text-sm text-zinc-900 dark:text-white">
+                                                {{ $optItem->service_name ?: $optItem->concept }}
+                                            </span>
+                                            <span class="text-xs font-black text-indigo-600 dark:text-indigo-400 shrink-0">
+                                                +{{ number_format($optPrice, 2, ',', '.') }} €
+                                            </span>
+                                        </div>
+                                        @if($optItem->description)
+                                            <p class="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
+                                                {{ $optItem->description }}
+                                            </p>
+                                        @endif
+                                    </div>
+
+                                    @if(in_array($quote->status, ['accepted', 'rejected'], true))
+                                        <span class="text-[11px] font-bold text-zinc-400">
+                                            {{ $isAdded ? '✓ Añadido a la contratación' : 'No seleccionado' }}
+                                        </span>
+                                    @else
+                                        <button type="button" wire:click="toggleOptionalItem({{ $optItem->id }})" class="w-full py-2 px-3 rounded-lg text-xs font-black transition cursor-pointer flex items-center justify-center gap-1.5 {{ $isAdded ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs' : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-800 dark:bg-zinc-700 dark:text-zinc-200' }}">
+                                            @if($isAdded)
+                                                <span>✓</span> <span>Añadido a la propuesta (Clic para quitar)</span>
+                                            @else
+                                                <span>+</span> <span>Añadir a mi propuesta (+{{ number_format($optPrice, 2, ',', '.') }} €)</span>
+                                            @endif
+                                        </button>
+                                    @endif
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
+
                 @if(!empty($quote->admin_notes))
                     <div class="mt-6 p-4 sm:p-5 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-800">
                         <div class="text-[11px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-1.5">
@@ -330,8 +431,15 @@
                                 {{ $quote->tax_label }} &bull; Desplazamiento, montaje y desmontaje incluidos
                             </span>
                         </div>
-                        <div class="text-2xl sm:text-3xl font-bold text-zinc-900 dark:text-white tabular-nums">
-                            {{ number_format((float)$quote->amount, 2, ',', '.') }} €
+                        <div class="text-right">
+                            @if(!empty($selected_optional_item_ids))
+                                <div class="text-xs text-indigo-600 dark:text-indigo-400 font-semibold mb-0.5">
+                                    Base: {{ number_format((float)$quote->amount, 2, ',', '.') }} € + Extras: {{ number_format($this->dynamic_optional_extras_total, 2, ',', '.') }} €
+                                </div>
+                            @endif
+                            <div class="text-2xl sm:text-3xl font-bold text-zinc-900 dark:text-white tabular-nums">
+                                {{ number_format($this->dynamic_total, 2, ',', '.') }} €
+                            </div>
                         </div>
                     </div>
 
@@ -339,13 +447,13 @@
                         <div class="flex items-center justify-between sm:justify-start sm:gap-3">
                             <span class="text-zinc-500 dark:text-zinc-400">Señal de reserva para bloqueo de fecha:</span>
                             <strong class="text-zinc-900 dark:text-white font-semibold">
-                                {{ $quote->signal_amount > 0 ? number_format($quote->signal_amount, 2, ',', '.') . ' € (' . $quote->signal_label . ')' : 'Sin señal previa (0,00 €)' }}
+                                {{ $this->dynamic_signal > 0 ? number_format($this->dynamic_signal, 2, ',', '.') . ' € (' . $quote->signal_label . ')' : 'Sin señal previa (0,00 €)' }}
                             </strong>
                         </div>
                         <div class="flex items-center justify-between sm:justify-end sm:gap-3">
                             <span class="text-zinc-500 dark:text-zinc-400">Importe restante a liquidar en el evento:</span>
                             <strong class="text-zinc-900 dark:text-white font-semibold">
-                                {{ number_format($quote->remaining_amount, 2, ',', '.') }} €
+                                {{ number_format($this->dynamic_remaining, 2, ',', '.') }} €
                             </strong>
                         </div>
                     </div>
@@ -393,7 +501,7 @@
                                     Confirmar Aceptación &bull; Propuesta #PRE-{{ str_pad($quote->id, 5, '0', STR_PAD_LEFT) }}
                                 </h4>
                                 <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-                                    Importe total: <strong class="text-zinc-900 dark:text-white">{{ number_format((float)$quote->amount, 2, ',', '.') }} €</strong> ({{ $quote->tax_label }})
+                                    Importe total: <strong class="text-zinc-900 dark:text-white">{{ number_format($this->dynamic_total, 2, ',', '.') }} €</strong> &bull; Señal: <strong class="text-zinc-900 dark:text-white">{{ number_format($this->dynamic_signal, 2, ',', '.') }} €</strong> ({{ $quote->tax_label }})
                                 </p>
                             </div>
 

@@ -20,7 +20,14 @@ class QuoteItem extends Model
         'service_name',
         'description',
         'price',
-        'quantity'
+        'quantity',
+        'item_status',
+        'item_type',
+    ];
+
+    protected $casts = [
+        'price' => 'decimal:2',
+        'quantity' => 'integer',
     ];
 
     /**
@@ -60,5 +67,29 @@ class QuoteItem extends Model
     public function quote()
     {
         return $this->belongsTo(Quote::class);
+    }
+
+    /**
+     * Indica si el concepto es un extra opcional no sumado al total obligatorio.
+     */
+    public function getIsOptionalAttribute(): bool
+    {
+        return ($this->item_status ?? 'normal') === 'optional';
+    }
+
+    /**
+     * Indica si el concepto está incluido en la propuesta (0 €).
+     */
+    public function getIsIncludedAttribute(): bool
+    {
+        return ($this->item_status ?? 'normal') === 'included';
+    }
+
+    /**
+     * Indica si el concepto es una partida contratada estándar.
+     */
+    public function getIsNormalAttribute(): bool
+    {
+        return ($this->item_status ?? 'normal') === 'normal';
     }
 }

@@ -29,6 +29,9 @@ class QuoteResponse extends Component
     public string $rejection_reason = '';
     public string $selected_reason_tag = '';
 
+    // Extras opcionales seleccionados por el cliente antes de la aceptación
+    public array $selected_optional_item_ids = [];
+
     /**
      * Inicializa la vista de la propuesta localizando el evento y el presupuesto activo a partir del token o slug público.
      */
@@ -96,6 +99,7 @@ class QuoteResponse extends Component
             $this->actionMode = 'view';
             $this->client_notes = (string) ($this->quote->client_notes ?? '');
             $this->rejection_reason = (string) ($this->quote->rejection_reason ?? '');
+            $this->selected_optional_item_ids = [];
             $this->resetValidation();
         }
     }
@@ -151,6 +155,111 @@ class QuoteResponse extends Component
     }
 
     /**
+     * Alterna la selección de un extra opcional por parte del cliente en la propuesta online.
+     */
+    public function toggleOptionalItem(int $itemId): void
+    {
+        if (!$this->quote || in_array($this->quote->status, ['accepted', 'rejected'], true)) {
+            return;
+        }
+        if (in_array($itemId, $this->selected_optional_item_ids, true)) {
+            $this->selected_optional_item_ids = array_values(array_filter($this->selected_optional_item_ids, fn($id) => $id !== $itemId));
+        } else {
+            $this->selected_optional_item_ids[] = $itemId;
+        }
+    }
+
+    /**
+     * Calcula la suma de extras opcionales seleccionados por el cliente.
+     */
+    public function getDynamicOptionalExtrasTotalProperty(): float
+    {
+        if (!$this->quote || empty($this->selected_optional_item_ids)) {
+            return 0.0;
+        }
+        $total = 0.0;
+        foreach ($this->quote->items as $item) {
+            if (in_array($item->id, $this->selected_optional_item_ids, true)) {
+                $total += (float)$item->price * (int)($item->quantity ?: 1);
+            }
+        }
+        return $total;
+    }
+
+    /**
+     * Total dinámico de la propuesta sumando los extras opcionales elegidos.
+     */
+    public function getDynamicTotalProperty(): float
+    {
+        if (!$this->quote) {
+            return 0.0;
+        }
+        $base = (float)$this->quote->amount;
+        $extras = $this->dynamic_optional_extras_total;
+        if ($extras <= 0) {
+            return $base;
+        }
+        if ($this->quote->tax_type === 'excluded') {
+            $taxRate = (float)($this->quote->tax_rate ?: 21.00);
+            return round($base + ($extras * (1 + ($taxRate / 100))), 2);
+        }
+        return round($base + $extras, 2);
+    }
+
+    /**
+     * Base imponible dinámica con los extras opcionales elegidos.
+     */
+    public function getDynamicSubtotalProperty(): float
+    {
+        if (!$this->quote) {
+            return 0.0;
+        }
+        $total = $this->dynamic_total;
+        $taxType = $this->quote->tax_type ?: 'included';
+        $taxRate = (float)($this->quote->tax_rate ?: 21.00);
+        if ($taxType === 'included') {
+            return round($total / (1 + ($taxRate / 100)), 2);
+        } elseif ($taxType === 'excluded') {
+            return round((float)$this->quote->subtotal_amount + $this->dynamic_optional_extras_total, 2);
+        }
+        return $total;
+    }
+
+    /**
+     * Cuota de IVA dinámica con los extras opcionales elegidos.
+     */
+    public function getDynamicTaxAmountProperty(): float
+    {
+        return max(0, round($this->dynamic_total - $this->dynamic_subtotal, 2));
+    }
+
+    /**
+     * Señal de reserva dinámica (40% por defecto) con los extras opcionales elegidos.
+     */
+    public function getDynamicSignalProperty(): float
+    {
+        if (!$this->quote) {
+            return 0.0;
+        }
+        $total = $this->dynamic_total;
+        if ($this->quote->deposit_type === 'none') {
+            return 0.0;
+        } elseif ($this->quote->deposit_type === 'percentage') {
+            $pct = (float)($this->quote->deposit_percentage ?: 40);
+            return round($total * ($pct / 100), 2);
+        }
+        return min((float)$this->quote->deposit_amount, $total);
+    }
+
+    /**
+     * Importe restante a pagar tras la señal dinámica.
+     */
+    public function getDynamicRemainingProperty(): float
+    {
+        return max(0, round($this->dynamic_total - $this->dynamic_signal, 2));
+    }
+
+    /**
      * Registra la aceptación online del presupuesto, descarta propuestas alternativas, confirma el evento y notifica a los administradores.
      */
     public function acceptQuoteOnline(): void
@@ -165,12 +274,30 @@ class QuoteResponse extends Component
 
         $notesClean = trim($this->client_notes);
 
-        $this->quote->update([
-            'status' => 'accepted',
-            'client_notes' => $notesClean ?: null,
-            'rejection_reason' => null,
-            'responded_at' => now(),
-        ]);
+        if (!empty($this->selected_optional_item_ids)) {
+            // Consolidar los extras opcionales elegidos pasándolos a 'normal'
+            \App\Models\QuoteItem::whereIn('id', $this->selected_optional_item_ids)
+                ->where('quote_id', $this->quote->id)
+                ->update(['item_status' => 'normal']);
+
+            $this->quote->update([
+                'amount' => $this->dynamic_total,
+                'subtotal_amount' => $this->dynamic_subtotal,
+                'tax_amount' => $this->dynamic_tax_amount,
+                'deposit_amount' => $this->dynamic_signal,
+                'status' => 'accepted',
+                'client_notes' => $notesClean ?: null,
+                'rejection_reason' => null,
+                'responded_at' => now(),
+            ]);
+        } else {
+            $this->quote->update([
+                'status' => 'accepted',
+                'client_notes' => $notesClean ?: null,
+                'rejection_reason' => null,
+                'responded_at' => now(),
+            ]);
+        }
 
         // Descartar automáticamente el resto de presupuestos pendientes del mismo evento
         $otherQuotesCount = $this->event->quotes()

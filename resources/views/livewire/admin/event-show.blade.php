@@ -4992,6 +4992,35 @@
                     $fairPromoInfo = $this->fair_promo_status_in_calculator;
                 @endphp
 
+                <!-- SELECTOR DE MODALIDAD: PACKS VS A MEDIDA -->
+                <div class="bg-white dark:bg-slate-900 border-2 border-indigo-200 dark:border-indigo-900/60 rounded-2xl p-3 shadow-xs">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-sm font-black uppercase text-slate-900 dark:text-white tracking-wider flex items-center gap-1.5">
+                                    <span>📐</span> Modalidad de Presupuesto:
+                                </span>
+                                <span class="text-[11px] font-bold px-2.5 py-0.5 rounded-full {{ $quote_builder_mode === 'custom' ? 'bg-amber-100 text-amber-800 border border-amber-300' : 'bg-indigo-100 text-indigo-800 border border-indigo-300' }}">
+                                    {{ $quote_builder_mode === 'custom' ? 'Presupuesto A Medida Activo' : 'Presupuesto por Packs Clásicos' }}
+                                </span>
+                            </div>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                {{ $quote_builder_mode === 'custom' ? 'Configuración modular por líneas: Momentos, Horas de fiesta, Kilometraje con 100km cortesía y Extras (normal / incluido / opcional).' : 'Configuración clásica basada en los packs comerciales predefinidos (Esencial, Signature, Deluxe Show).' }}
+                            </p>
+                        </div>
+
+                        <div class="inline-flex p-1 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shrink-0">
+                            <button type="button" wire:click="$set('quote_builder_mode', 'packs')" class="px-3.5 py-2 rounded-lg text-xs font-black transition cursor-pointer flex items-center gap-1.5 {{ $quote_builder_mode === 'packs' ? 'bg-indigo-600 text-white shadow-sm ring-1 ring-indigo-500' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900' }}">
+                                <span>📦</span> Packs Clásicos
+                            </button>
+                            <button type="button" wire:click="$set('quote_builder_mode', 'custom')" class="px-3.5 py-2 rounded-lg text-xs font-black transition cursor-pointer flex items-center gap-1.5 {{ $quote_builder_mode === 'custom' ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 shadow-sm ring-1 ring-amber-400 font-extrabold' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900' }}">
+                                <span>📐</span> Presupuesto A Medida
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                @if($quote_builder_mode === 'packs')
                 <!-- INDICADOR CLARO DE MODO FERIA / TARIFA EN ESTE PRESUPUESTO -->
                 <div class="rounded-2xl border p-3.5 shadow-xs transition {{ !empty($fairPromoInfo['applied_in_calculator']) ? 'bg-amber-50 border-amber-300 text-amber-950' : (!empty($fairPromoInfo['global_enabled']) || !empty($fairPromoInfo['event_came_from_fair']) ? 'bg-indigo-50 border-indigo-200 text-indigo-950' : 'bg-slate-50 border-slate-200 text-slate-800') }}">
                     <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
@@ -5211,6 +5240,7 @@
                         </div>
                     @endif
                 </div>
+                @endif
 
                 <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
                     <!-- CONFIGURADOR DE LÍNEAS DE PRESUPUESTO -->
@@ -5231,6 +5261,316 @@
                         @endif
 
                         <form wire:submit.prevent="{{ $editing_quote_id ? 'updateQuote' : 'createQuote' }}" class="space-y-3">
+                            
+                            @if($quote_builder_mode === 'custom')
+                                <!-- ============================================================== -->
+                                <!-- BLOQUES DEL CONFIGURADOR DE PRESUPUESTO A MEDIDA -->
+                                <!-- ============================================================== -->
+                                <div class="space-y-3">
+                                    <!-- 0. CABECERA A MEDIDA: RECOMENDADA Y EQUIPAMIENTO ADAPTADO -->
+                                    <div class="bg-gradient-to-r from-amber-500/15 via-indigo-500/10 to-purple-500/15 border-2 border-amber-400/80 rounded-2xl p-3.5 space-y-3 shadow-xs">
+                                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-xl">📐</span>
+                                                <div>
+                                                    <h6 class="text-xs font-black uppercase tracking-wider text-slate-900 flex items-center gap-1.5">
+                                                        <span>Presupuesto A Medida Personalizado</span>
+                                                    </h6>
+                                                    <p class="text-[11px] text-slate-600">Configuración modular adaptada a los momentos y necesidades del evento</p>
+                                                </div>
+                                            </div>
+                                            <label class="inline-flex items-center gap-2 cursor-pointer bg-white px-3 py-1.5 rounded-xl border {{ $custom_is_recommended ? 'border-amber-400 bg-amber-50 ring-2 ring-amber-300' : 'border-slate-300' }} shadow-2xs hover:bg-amber-50/50 transition shrink-0">
+                                                <input type="checkbox" wire:model.live="custom_is_recommended" class="rounded text-amber-600 focus:ring-amber-500 h-4 w-4">
+                                                <span class="text-xs font-black text-amber-950 flex items-center gap-1">
+                                                    <span>⭐</span> Marcar como Opción Recomendada
+                                                </span>
+                                            </label>
+                                        </div>
+
+                                        <!-- Campo de equipamiento técnico adaptado -->
+                                        <div class="bg-white p-2.5 rounded-xl border border-slate-200 space-y-1">
+                                            <label class="block text-[10px] font-black uppercase tracking-wider text-slate-700">
+                                                🔊 Equipamiento Técnico Asignado (Aparece en ficha técnica del dossier PDF y propuesta online):
+                                            </label>
+                                            <input type="text" wire:model.live="custom_equipment_notes" placeholder="Sonido e iluminación adaptados al espacio y número de invitados" class="w-full border-gray-300 rounded-lg p-2 text-xs font-bold text-slate-800 focus:ring-amber-500 focus:border-amber-500 bg-slate-50">
+                                        </div>
+                                    </div>
+
+                                    <!-- 1. MOMENTOS PREVIOS (CEREMONIA, CÓCTEL, BANQUETE) -->
+                                    <div class="bg-white rounded-xl border border-indigo-200 shadow-xs overflow-hidden">
+                                        <div class="p-3 bg-indigo-50/70 border-b border-indigo-100 flex items-center justify-between">
+                                            <span class="text-xs font-black uppercase text-indigo-950 tracking-wider flex items-center gap-1.5">
+                                                <span>🎶</span> 1. Momentos Previos (Ceremonia, Cóctel, Banquete)
+                                            </span>
+                                            <span class="text-[10px] text-indigo-700 font-bold bg-indigo-100/70 px-2 py-0.5 rounded-full">Precios y textos editables</span>
+                                        </div>
+                                        <div class="p-3 space-y-2.5">
+                                            @foreach($custom_moments as $mKey => $moment)
+                                                <div class="p-2.5 rounded-xl border transition {{ !empty($moment['selected']) ? 'bg-indigo-50/50 border-indigo-300 ring-1 ring-indigo-200' : 'border-gray-200 hover:bg-gray-50' }}">
+                                                    <div class="flex items-center justify-between gap-2">
+                                                        <label class="flex items-center gap-2.5 cursor-pointer flex-1 min-w-0">
+                                                            <input type="checkbox" wire:model.live="custom_moments.{{ $mKey }}.selected" class="rounded text-indigo-600 focus:ring-indigo-500 h-4 w-4 shrink-0">
+                                                            <div class="min-w-0 flex-1">
+                                                                <input type="text" wire:model.live="custom_moments.{{ $mKey }}.name" class="font-extrabold text-xs text-gray-900 border-0 bg-transparent p-0 focus:ring-0 focus:bg-white focus:border focus:border-indigo-400 rounded px-1 w-full" placeholder="Nombre del momento">
+                                                                <input type="text" wire:model.live="custom_moments.{{ $mKey }}.desc" class="text-[10px] text-gray-500 border-0 bg-transparent p-0 focus:ring-0 focus:bg-white focus:border focus:border-indigo-300 rounded px-1 w-full mt-0.5" placeholder="Descripción">
+                                                            </div>
+                                                        </label>
+                                                        <div class="flex items-center gap-1 shrink-0">
+                                                            <input type="number" step="0.01" wire:model.live="custom_moments.{{ $mKey }}.price" class="w-20 border border-gray-300 rounded-lg p-1.5 text-xs text-right font-black text-slate-800 focus:ring-indigo-500 focus:border-indigo-500 bg-white">
+                                                            <span class="text-xs font-bold text-gray-500">€</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    </div>
+
+                                    <!-- 2. FIESTA / BARRA LIBRE & HORA EXTRA INFORMATIVA -->
+                                    <div class="bg-white rounded-xl border border-indigo-200 shadow-xs overflow-hidden">
+                                        <div class="p-3 bg-indigo-50/70 border-b border-indigo-100 flex items-center justify-between">
+                                            <span class="text-xs font-black uppercase text-indigo-950 tracking-wider flex items-center gap-1.5">
+                                                <span>🎧</span> 2. Fiesta / Barra Libre & Horas Extra
+                                            </span>
+                                            <span class="text-[10px] text-indigo-700 font-bold bg-indigo-100/70 px-2 py-0.5 rounded-full">Admite medias horas (ej. 4,5h)</span>
+                                        </div>
+                                        <div class="p-3 space-y-3">
+                                            <div class="p-3 rounded-xl border {{ !empty($custom_party_enabled) ? 'bg-amber-50/40 border-amber-300 ring-1 ring-amber-200' : 'border-gray-200 bg-gray-50' }} space-y-2">
+                                                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                                    <label class="flex items-center gap-2 cursor-pointer">
+                                                        <input type="checkbox" wire:model.live="custom_party_enabled" class="rounded text-amber-600 focus:ring-amber-500 h-4 w-4">
+                                                        <span class="text-xs font-black text-slate-900">Incluir Fiesta / Barra Libre con DJ</span>
+                                                    </label>
+                                                    <div class="flex items-center gap-2">
+                                                        <div class="flex items-center gap-1">
+                                                            <label class="text-[11px] font-bold text-slate-600">Duración:</label>
+                                                            <input type="number" step="0.5" min="1" max="12" wire:model.live="custom_party_hours" class="w-16 border border-gray-300 rounded-lg p-1 text-xs text-center font-black focus:ring-amber-500 bg-white">
+                                                            <span class="text-xs font-bold text-slate-600">h</span>
+                                                        </div>
+                                                        <div class="flex items-center gap-1">
+                                                            <label class="text-[11px] font-bold text-slate-600">Precio:</label>
+                                                            <input type="number" step="0.01" wire:model.live="custom_party_price" class="w-24 border border-gray-300 rounded-lg p-1.5 text-xs text-right font-black focus:ring-amber-500 bg-white">
+                                                            <span class="text-xs font-bold text-slate-600">€</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Botones rápidos de horas -->
+                                                <div class="flex items-center gap-1.5 flex-wrap pt-1">
+                                                    <span class="text-[10px] font-bold text-slate-500">Horas habituales:</span>
+                                                    @foreach([3, 3.5, 4, 4.5, 5, 5.5, 6] as $qH)
+                                                        <button type="button" wire:click="$set('custom_party_hours', {{ $qH }})" class="px-2 py-0.5 rounded text-[10px] font-bold transition cursor-pointer {{ (float)$custom_party_hours === (float)$qH ? 'bg-amber-500 text-slate-950 font-black' : 'bg-white border border-gray-300 text-slate-700 hover:bg-gray-100' }}">
+                                                            {{ str_replace('.', ',', (string)$qH) }}h
+                                                        </button>
+                                                    @endforeach
+                                                </div>
+
+                                                <input type="text" wire:model.live="custom_party_desc" placeholder="Descripción del servicio de fiesta" class="w-full border-gray-300 rounded-lg p-1.5 text-[11px] text-gray-700 focus:ring-amber-500 bg-white">
+                                            </div>
+
+                                            <!-- HORA EXTRA (INFORMATIVA) -->
+                                            <div class="p-2.5 rounded-xl bg-blue-50/70 border border-blue-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                                <div class="space-y-0.5">
+                                                    <div class="flex items-center gap-1.5">
+                                                        <span class="text-xs font-extrabold text-blue-950">⏱️ Tarifa Hora Extra de Fiesta:</span>
+                                                        <span class="text-[9px] font-black uppercase bg-blue-200 text-blue-900 px-1.5 py-0.2 rounded-full">Informativa</span>
+                                                    </div>
+                                                    <p class="text-[10px] text-blue-800">
+                                                        Precio por hora adicional si desean alargar el baile durante el evento. <strong>No suma al importe inicial</strong>.
+                                                    </p>
+                                                </div>
+                                                <div class="flex items-center gap-1 shrink-0">
+                                                    <input type="number" step="0.01" wire:model.live="custom_extra_hour_rate" class="w-20 border border-blue-300 rounded-lg p-1.5 text-xs text-right font-black text-blue-950 focus:ring-blue-500 bg-white">
+                                                    <span class="text-xs font-bold text-blue-900">€/h</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- 3. DESPLAZAMIENTO Y LOGÍSTICA (100 KM CORTESÍA) -->
+                                    <div class="bg-white rounded-xl border border-indigo-200 shadow-xs overflow-hidden">
+                                        <div class="p-3 bg-indigo-50/70 border-b border-indigo-100 flex items-center justify-between">
+                                            <span class="text-xs font-black uppercase text-indigo-950 tracking-wider flex items-center gap-1.5">
+                                                <span>🚗</span> 3. Desplazamiento y Logística
+                                            </span>
+                                            <span class="text-[10px] text-indigo-700 font-bold bg-indigo-100/70 px-2 py-0.5 rounded-full">Primeros 100 km ida/vuelta de cortesía</span>
+                                        </div>
+                                        <div class="p-3 space-y-3">
+                                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                                <label class="flex items-center gap-2 cursor-pointer">
+                                                    <input type="checkbox" wire:model.live="custom_travel_enabled" class="rounded text-indigo-600 focus:ring-indigo-500 h-4 w-4">
+                                                    <span class="text-xs font-black text-slate-900">Aplicar cargo por Desplazamiento</span>
+                                                </label>
+                                                @if($custom_travel_enabled)
+                                                    <div class="flex items-center gap-1.5">
+                                                        <span class="text-xs font-bold text-slate-600">Coste calculado:</span>
+                                                        <span class="text-sm font-black text-indigo-900 bg-indigo-100 px-2.5 py-0.5 rounded-lg border border-indigo-200">
+                                                            {{ number_format($this->custom_travel_cost, 2, ',', '.') }} €
+                                                        </span>
+                                                    </div>
+                                                @endif
+                                            </div>
+
+                                            @if($custom_travel_enabled)
+                                                <div class="grid grid-cols-1 sm:grid-cols-4 gap-2 pt-1">
+                                                    <div class="sm:col-span-2">
+                                                        <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Destino / Localidad:</label>
+                                                        <input type="text" wire:model.live="custom_travel_destination" placeholder="Ej: Vitoria, San Sebastián, Bilbao, Madrid..." class="w-full border-gray-300 rounded-lg p-1.5 text-xs focus:ring-indigo-500 bg-white">
+                                                    </div>
+                                                    <div>
+                                                        <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Km totales (I/V):</label>
+                                                        <div class="flex items-center gap-1">
+                                                            <input type="number" step="1" min="0" wire:model.live="custom_travel_km" class="w-full border-gray-300 rounded-lg p-1.5 text-xs text-right font-black focus:ring-indigo-500 bg-white">
+                                                            <span class="text-xs text-gray-500">km</span>
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Tarifa / km:</label>
+                                                        <div class="flex items-center gap-1">
+                                                            <input type="number" step="0.01" wire:model.live="custom_travel_rate" class="w-full border-gray-300 rounded-lg p-1.5 text-xs text-right font-black focus:ring-indigo-500 bg-white">
+                                                            <span class="text-xs text-gray-500">€</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Presets de destinos -->
+                                                <div class="flex items-center gap-1.5 flex-wrap pt-1">
+                                                    <span class="text-[10px] font-bold text-slate-500">Destinos comunes:</span>
+                                                    <button type="button" wire:click="setCustomTravelPreset('Vitoria-Gasteiz', 120)" class="px-2 py-0.5 rounded text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 cursor-pointer font-medium">Vitoria (120 km)</button>
+                                                    <button type="button" wire:click="setCustomTravelPreset('Pamplona', 180)" class="px-2 py-0.5 rounded text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 cursor-pointer font-medium">Pamplona (180 km)</button>
+                                                    <button type="button" wire:click="setCustomTravelPreset('Bilbao', 280)" class="px-2 py-0.5 rounded text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 cursor-pointer font-medium">Bilbao (280 km)</button>
+                                                    <button type="button" wire:click="setCustomTravelPreset('San Sebastián', 320)" class="px-2 py-0.5 rounded text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 cursor-pointer font-medium">San Sebastián (320 km)</button>
+                                                    <button type="button" wire:click="setCustomTravelPreset('Madrid', 560)" class="px-2 py-0.5 rounded text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 cursor-pointer font-medium">Madrid (560 km)</button>
+                                                </div>
+
+                                                <!-- Desglose de cálculo -->
+                                                @php
+                                                    $tKm = (float)$custom_travel_km;
+                                                    $fKm = (float)$custom_travel_free_km;
+                                                    $bKm = max(0, $tKm - $fKm);
+                                                    $r = (float)$custom_travel_rate;
+                                                @endphp
+                                                <div class="p-2.5 rounded-lg bg-slate-50 border border-slate-200 text-[11px] text-slate-700 space-y-1">
+                                                    <div class="font-bold text-slate-900 flex items-center justify-between">
+                                                        <span>Fórmula: max(0, {{ $tKm }} km − {{ $fKm }} km cortesía) × {{ number_format($r, 2, ',', '.') }} €/km</span>
+                                                        <span class="font-black text-indigo-950">{{ number_format($this->custom_travel_cost, 2, ',', '.') }} €</span>
+                                                    </div>
+                                                    @if($tKm > $fKm)
+                                                        <p class="text-[10px] text-slate-600">
+                                                            {{ $tKm }} km totales ida y vuelta &minus; {{ $fKm }} km cortesía = <strong>{{ $bKm }} km facturables</strong> &times; {{ number_format($r, 2, ',', '.') }} €/km = <strong>{{ number_format($this->custom_travel_cost, 2, ',', '.') }} €</strong>.
+                                                        </p>
+                                                    @else
+                                                        <p class="text-[10px] text-emerald-700 font-bold">
+                                                            ✓ Los {{ $tKm }} km quedan cubiertos dentro del radio de cortesía gratuito de {{ $fKm }} km (0,00 €).
+                                                        </p>
+                                                    @endif
+                                                </div>
+                                            @endif
+                                        </div>
+                                    </div>
+
+                                    <!-- 4. CATÁLOGO DE EXTRAS (NORMAL / INCLUIDO / OPCIONAL) -->
+                                    <div class="bg-white rounded-xl border border-indigo-200 shadow-xs overflow-hidden">
+                                        <div class="p-3 bg-indigo-50/70 border-b border-indigo-100 flex items-center justify-between">
+                                            <span class="text-xs font-black uppercase text-indigo-950 tracking-wider flex items-center gap-1.5">
+                                                <span>✨</span> 4. Catálogo de Extras y Efectos Especiales
+                                            </span>
+                                            <span class="text-[10px] text-indigo-700 font-bold bg-indigo-100/70 px-2 py-0.5 rounded-full">Normal / Incluido / Opcional</span>
+                                        </div>
+                                        <div class="p-3 space-y-2.5">
+                                            @foreach($custom_extras_catalog as $exKey => $exItem)
+                                                @php
+                                                    $isExSelected = !empty($exItem['selected']);
+                                                    $exStatus = $exItem['status'] ?? 'normal';
+                                                @endphp
+                                                <div class="p-2.5 rounded-xl border transition {{ $isExSelected ? ($exStatus === 'included' ? 'bg-emerald-50/50 border-emerald-300' : ($exStatus === 'optional' ? 'bg-purple-50/50 border-purple-300' : 'bg-indigo-50/50 border-indigo-300')) : 'border-gray-200 hover:bg-gray-50' }}">
+                                                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                                        <label class="flex items-center gap-2 cursor-pointer flex-1 min-w-0">
+                                                            <input type="checkbox" wire:model.live="custom_extras_catalog.{{ $exKey }}.selected" class="rounded text-indigo-600 focus:ring-indigo-500 h-4 w-4 shrink-0">
+                                                            <div class="min-w-0 flex-1">
+                                                                <div class="flex items-center gap-1.5 flex-wrap">
+                                                                    <span class="font-extrabold text-xs text-gray-900">{{ $exItem['name'] }}</span>
+                                                                    @if($isExSelected)
+                                                                        @if($exStatus === 'included')
+                                                                            <span class="text-[9px] font-black uppercase px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 border border-emerald-200">Incluido (0€)</span>
+                                                                        @elseif($exStatus === 'optional')
+                                                                            <span class="text-[9px] font-black uppercase px-1.5 py-0.2 rounded bg-purple-100 text-purple-800 border border-purple-200">Opcional cliente</span>
+                                                                        @else
+                                                                            <span class="text-[9px] font-black uppercase px-1.5 py-0.2 rounded bg-indigo-100 text-indigo-800 border border-indigo-200">Normal (Contratado)</span>
+                                                                        @endif
+                                                                    @endif
+                                                                    @if($exKey === 'platform_360')
+                                                                        <span class="text-[9px] text-amber-700 bg-amber-100 px-1.5 py-0.2 rounded font-bold">Proveedora externa (precio editable)</span>
+                                                                    @endif
+                                                                </div>
+                                                                <p class="text-[10px] text-gray-500 truncate" title="{{ $exItem['desc'] }}">{{ $exItem['desc'] }}</p>
+                                                            </div>
+                                                        </label>
+
+                                                        <div class="flex items-center gap-1.5 shrink-0 pl-6 sm:pl-0">
+                                                            <select wire:model.live="custom_extras_catalog.{{ $exKey }}.status" class="border border-gray-300 rounded-lg p-1 text-xs font-bold bg-white focus:ring-indigo-500">
+                                                                <option value="normal">Normal (Suma)</option>
+                                                                <option value="included">Incluido (0 €)</option>
+                                                                <option value="optional">Opcional (Elige cliente)</option>
+                                                            </select>
+
+                                                            <div class="flex items-center gap-0.5">
+                                                                <input type="number" step="0.01" wire:model.live="custom_extras_catalog.{{ $exKey }}.price" class="w-20 border border-gray-300 rounded-lg p-1 text-xs text-right font-black focus:ring-indigo-500 bg-white {{ $exStatus === 'included' ? 'opacity-50 line-through' : '' }}">
+                                                                <span class="text-xs font-bold text-gray-500">€</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    </div>
+
+                                    <!-- 5. EXTRAS LIBRES PERSONALIZADOS -->
+                                    <div class="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
+                                        <div class="p-3 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
+                                            <span class="text-xs font-black uppercase text-gray-800 tracking-wider flex items-center gap-1.5">
+                                                <span>➕</span> 5. Otros Conceptos / Extras Libres Personalizados
+                                            </span>
+                                            <button type="button" wire:click="addCustomExtra" class="text-xs font-bold text-indigo-600 hover:text-indigo-800 hover:underline flex items-center gap-1 cursor-pointer">
+                                                <span>+ Añadir línea</span>
+                                            </button>
+                                        </div>
+                                        <div class="p-3 space-y-2.5">
+                                            @foreach($custom_extras as $index => $extra)
+                                                <div class="p-2.5 rounded-xl border border-gray-200 bg-gray-50/50 space-y-2">
+                                                    <div class="flex items-center justify-between gap-2">
+                                                        <span class="text-[10px] font-bold text-gray-500">Extra #{{ $index + 1 }}</span>
+                                                        @if(count($custom_extras) > 1)
+                                                            <button type="button" wire:click="removeCustomExtra({{ $index }})" class="text-rose-500 hover:text-rose-700 text-xs cursor-pointer">
+                                                                🗑️ Eliminar
+                                                            </button>
+                                                        @endif
+                                                    </div>
+                                                    <div class="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center">
+                                                        <div class="sm:col-span-5">
+                                                            <input type="text" wire:model.live="custom_extras.{{ $index }}.name" placeholder="Concepto (ej: Proyector, Iluminación decorativa...)" class="w-full border-gray-300 rounded-lg p-1.5 text-xs bg-white">
+                                                        </div>
+                                                        <div class="sm:col-span-4">
+                                                            <select wire:model.live="custom_extras.{{ $index }}.status" class="w-full border-gray-300 rounded-lg p-1.5 text-xs font-bold bg-white">
+                                                                <option value="normal">Normal (Suma)</option>
+                                                                <option value="included">Incluido (0 €)</option>
+                                                                <option value="optional">Opcional para cliente</option>
+                                                            </select>
+                                                        </div>
+                                                        <div class="sm:col-span-3 flex items-center gap-1">
+                                                            <input type="number" step="0.01" wire:model.live="custom_extras.{{ $index }}.price" placeholder="0.00" class="w-full border-gray-300 rounded-lg p-1.5 text-xs text-right font-black bg-white">
+                                                            <span class="text-xs text-gray-500">€</span>
+                                                        </div>
+                                                    </div>
+                                                    <input type="text" wire:model.live="custom_extras.{{ $index }}.desc" placeholder="Descripción adicional para el PDF y cliente..." class="w-full border-gray-300 rounded-lg p-1 text-[11px] text-gray-600 bg-white">
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                </div>
+                            @else
+                                <!-- ============================================================== -->
+                                <!-- BLOQUES DE PACKS TRADICIONALES (ESENCIAL, SIGNATURE, DELUXE...) -->
+                                <!-- ============================================================== -->
                             
                             <!-- BLOQUE DE ESPECTÁCULOS DE MAGIA (MAGO LEUGIM): ABIERTO ARRIBA SI LA MARCA ES MAGO LEUGIM, O DESPLEGABLE SI ES OTRA MARCA -->
                             <div x-data="{ openMagic: {{ ($isMagicBrand || $hasAnyMagicSelected) ? 'true' : 'false' }} }" class="bg-white rounded-xl border {{ $isMagicBrand ? 'border-purple-300 ring-1 ring-purple-200' : 'border-purple-200' }} shadow-xs overflow-hidden">
@@ -6478,6 +6818,8 @@
                                     </div>
                                 </div>
                             </div>
+
+                            @endif
 
                             @if($editing_quote_id)
                                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">

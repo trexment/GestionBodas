@@ -186,7 +186,9 @@ TEXT
     {
         $event = $contract->event;
         $client = $event ? $event->client : null;
-        $quote = $event ? $event->quotes()->latest()->first() : null;
+        $quote = $event
+            ? ($event->quotes()->where('status', 'accepted')->latest()->first() ?: $event->quotes()->latest()->first())
+            : null;
         $amount = $quote ? (float)$quote->amount : 0;
 
         if ($quote) {
@@ -215,9 +217,25 @@ TEXT
         $servicesList = [];
         if ($quote && $quote->items && $quote->items->count() > 0) {
             foreach ($quote->items as $item) {
+                // Las líneas opcionales no cuentan en amount, señal ni contrato
+                if (($item->item_status ?? 'normal') === 'optional') {
+                    continue;
+                }
                 $qtyStr = $item->quantity > 1 ? " ({$item->quantity}h/uds)" : "";
                 $descStr = $item->description ? " - {$item->description}" : "";
-                $servicesList[] = "• {$item->service_name}{$qtyStr}{$descStr} (" . number_format($item->price * $item->quantity, 2, ',', '.') . " €)";
+                $linePrice = (float)$item->price * (int)($item->quantity ?: 1);
+                $priceStr = (($item->item_status ?? 'normal') === 'included' || $linePrice == 0)
+                    ? " (Incluido)"
+                    : " (" . number_format($linePrice, 2, ',', '.') . " €)";
+                $servicesList[] = "• {$item->service_name}{$qtyStr}{$descStr}{$priceStr}";
+            }
+        }
+        if ($quote && ($quote->is_custom ?? false)) {
+            if (!empty($quote->equipment_notes)) {
+                $servicesList[] = "• Equipamiento técnico asignado: " . $quote->effective_equipment_notes;
+            }
+            if (!empty($quote->extra_hour_rate) && (float)$quote->extra_hour_rate > 0) {
+                $servicesList[] = "• Tarifa hora extra adicional sobre horario pactado: " . number_format((float)$quote->extra_hour_rate, 2, ',', '.') . " €/h";
             }
         }
         if (empty($servicesList) && $event && $event->notes) {

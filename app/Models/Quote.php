@@ -15,6 +15,16 @@ class Quote extends Model
     protected $fillable = [
         'event_id',
         'brand',
+        'quote_type',
+        'is_recommended',
+        'equipment_notes',
+        'party_hours',
+        'party_price',
+        'extra_hour_rate',
+        'travel_km',
+        'travel_free_km',
+        'travel_rate',
+        'travel_cost',
         'amount',
         'status',
         'rejection_reason',
@@ -33,6 +43,14 @@ class Quote extends Model
     ];
 
     protected $casts = [
+        'is_recommended' => 'boolean',
+        'party_hours' => 'decimal:1',
+        'party_price' => 'decimal:2',
+        'extra_hour_rate' => 'decimal:2',
+        'travel_km' => 'decimal:2',
+        'travel_free_km' => 'decimal:2',
+        'travel_rate' => 'decimal:2',
+        'travel_cost' => 'decimal:2',
         'payment_methods' => 'array',
         'tax_rate' => 'decimal:2',
         'subtotal_amount' => 'decimal:2',
@@ -72,6 +90,20 @@ class Quote extends Model
                 if (!\Illuminate\Support\Facades\Schema::hasColumn('quotes', 'admin_notes')) {
                     \Illuminate\Support\Facades\Schema::table('quotes', function (\Illuminate\Database\Schema\Blueprint $table) {
                         $table->text('admin_notes')->nullable()->after('status');
+                    });
+                }
+                if (!\Illuminate\Support\Facades\Schema::hasColumn('quotes', 'quote_type')) {
+                    \Illuminate\Support\Facades\Schema::table('quotes', function (\Illuminate\Database\Schema\Blueprint $table) {
+                        $table->string('quote_type', 30)->default('packs')->after('brand');
+                        $table->boolean('is_recommended')->default(false)->after('quote_type');
+                        $table->text('equipment_notes')->nullable()->after('is_recommended');
+                        $table->decimal('party_hours', 4, 1)->nullable()->after('equipment_notes');
+                        $table->decimal('party_price', 10, 2)->nullable()->after('party_hours');
+                        $table->decimal('extra_hour_rate', 10, 2)->default(120.00)->after('party_price');
+                        $table->decimal('travel_km', 8, 2)->nullable()->default(0)->after('extra_hour_rate');
+                        $table->decimal('travel_free_km', 8, 2)->default(100.00)->after('travel_km');
+                        $table->decimal('travel_rate', 8, 2)->default(0.26)->after('travel_free_km');
+                        $table->decimal('travel_cost', 10, 2)->default(0.00)->after('travel_rate');
                     });
                 }
                 \Illuminate\Support\Facades\DB::statement("ALTER TABLE `quotes` MODIFY COLUMN `status` VARCHAR(50) NOT NULL DEFAULT 'pending'");
@@ -120,6 +152,48 @@ class Quote extends Model
     public function items()
     {
         return $this->hasMany(QuoteItem::class);
+    }
+
+    /**
+     * Relación con las líneas contratadas o incluidas (excluye las opcionales no aceptadas).
+     */
+    public function activeItems()
+    {
+        return $this->hasMany(QuoteItem::class)->where('item_status', '!=', 'optional');
+    }
+
+    /**
+     * Relación con las líneas marcadas como extras opcionales a disposición del cliente.
+     */
+    public function optionalItems()
+    {
+        return $this->hasMany(QuoteItem::class)->where('item_status', 'optional');
+    }
+
+    /**
+     * Indica si el presupuesto es de tipo a medida (por líneas).
+     */
+    public function getIsCustomAttribute(): bool
+    {
+        return ($this->quote_type ?? 'packs') === 'custom';
+    }
+
+    /**
+     * Indica si el presupuesto es de tipo por packs tradicionales.
+     */
+    public function getIsPacksAttribute(): bool
+    {
+        return ($this->quote_type ?? 'packs') === 'packs';
+    }
+
+    /**
+     * Devuelve el texto descriptivo del equipamiento adaptado.
+     */
+    public function getEffectiveEquipmentNotesAttribute(): string
+    {
+        return !empty(trim((string)$this->equipment_notes))
+            ? trim((string)$this->equipment_notes)
+            : 'Sonido e iluminación adaptados al espacio y número de invitados';
     }
 
     /**
@@ -518,10 +592,13 @@ class Quote extends Model
                 }
             }
 
-            // Recalcular totales de la propuesta
-            $freshItems = $quote->items()->get();
+            // Recalcular totales de la propuesta (ignorando partidas opcionales no contratadas)
+            $freshItems = $quote->items()->where('item_status', '!=', 'optional')->get();
             $grossSum = 0.0;
             foreach ($freshItems as $fItem) {
+                if (($fItem->item_status ?? 'normal') === 'optional') {
+                    continue;
+                }
                 $grossSum += ((float)$fItem->price * (int)($fItem->quantity ?: 1));
             }
             $grossSum = max(0, round($grossSum, 2));

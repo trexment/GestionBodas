@@ -176,6 +176,99 @@ class EventShow extends Component
     public $prov_settlement_number = '';
     public $prov_invoice_number = '';
 
+    // Modo del Configurador de Presupuestos ('packs' = Tradicional por Packs | 'custom' = Presupuesto A Medida)
+    public $quote_builder_mode = 'packs';
+
+    // Presupuesto A Medida: Momentos
+    public $custom_moments = [
+        'ceremony' => [
+            'selected' => false,
+            'name' => 'Ceremonia',
+            'price' => 180.00,
+            'desc' => 'Sonorización de ceremonia civil o religiosa, microfonía inalámbrica para oficiante/lecturas y música para cada momento.',
+        ],
+        'cocktail' => [
+            'selected' => false,
+            'name' => 'Cóctel',
+            'price' => 150.00,
+            'desc' => 'Música ambiente y sonorización independiente de bienvenida durante el cóctel / aperitivo.',
+        ],
+        'banquet' => [
+            'selected' => false,
+            'name' => 'Banquete',
+            'price' => 150.00,
+            'desc' => 'Música ambiente de fondo, microfonía para discursos y sonorización de momentos emotivos (entrada, regalos, tarta).',
+        ],
+    ];
+
+    // Presupuesto A Medida: Fiesta / Barra Libre
+    public $custom_party_enabled = true;
+    public $custom_party_hours = 4.5;
+    public $custom_party_price = 700.00;
+    public $custom_party_desc = 'Sesión DJ profesional en directo durante la fiesta con equipamiento adaptado al espacio.';
+
+    // Presupuesto A Medida: Hora Extra Informativa (120 €/h por defecto)
+    public $custom_extra_hour_rate = 120.00;
+
+    // Presupuesto A Medida: Desplazamiento y Kilometraje (ida y vuelta)
+    public $custom_travel_enabled = false;
+    public $custom_travel_km = 0.0;
+    public $custom_travel_free_km = 100.0; // 100 km ida y vuelta de cortesía (50 km por trayecto)
+    public $custom_travel_rate = 0.26; // 0,26 €/km
+    public $custom_travel_destination = '';
+
+    // Presupuesto A Medida: Equipamiento asignado
+    public $custom_equipment_notes = 'Sonido e iluminación adaptados al espacio y número de invitados';
+
+    // Presupuesto A Medida: Alternativa recomendada
+    public $custom_is_recommended = false;
+
+    // Presupuesto A Medida: Catálogo de Extras
+    public $custom_extras_catalog = [
+        'cold_sparks' => [
+            'selected' => false,
+            'name' => 'Fuego frío / Chispas frías',
+            'price' => 60.00,
+            'status' => 'normal', // 'normal' | 'included' | 'optional'
+            'desc' => 'Efecto especial de fuego frío / chispas frías (2 máquinas de interior no inflamables) para momentos clave.',
+        ],
+        'low_fog' => [
+            'selected' => false,
+            'name' => 'Niebla baja',
+            'price' => 120.00,
+            'status' => 'normal',
+            'desc' => 'Efecto de niebla baja / nubes a ras de suelo para una apertura de baile nupcial de cuento.',
+        ],
+        'karaoke' => [
+            'selected' => false,
+            'name' => 'Karaoke interactivo',
+            'price' => 80.00,
+            'status' => 'normal',
+            'desc' => 'Karaoke interactivo en pantalla y micrófonos para cantar con los invitados.',
+        ],
+        'petal_launcher' => [
+            'selected' => false,
+            'name' => 'Lanzador de pétalos / cañones',
+            'price' => 60.00,
+            'status' => 'normal',
+            'desc' => 'Disparo de pétalos o confeti para la salida o inicio apoteósico del baile.',
+        ],
+        'photobooth' => [
+            'selected' => false,
+            'name' => 'Fotomatón',
+            'price' => 350.00,
+            'status' => 'normal',
+            'desc' => 'Fotomatón profesional con fotos impresas ilimitadas, atrezzo divertido y libro de firmas personalizado.',
+        ],
+        'platform_360' => [
+            'selected' => false,
+            'name' => 'Plataforma 360º',
+            'price' => 390.00,
+            'status' => 'normal',
+            'desc' => 'Plataforma de vídeo 360 con cámara lenta, efectos boomerang y atrezzo (gestionada por proveedora colaboradora externa).',
+        ],
+    ];
+
     // Presupuestos & Packs
     public $quote_services = [
         'pack_basic' => ['selected' => false, 'name' => 'Pack Esencial', 'price' => 600, 'hours' => 4, 'desc' => '4 horas de sesión DJ. Sonido profesional estéreo (2 altavoces de alta definición) + iluminación rítmica básica de pista (2 focos/efectos LED). Microfonía inalámbrica para discursos.'],
@@ -5368,11 +5461,79 @@ class EventShow extends Component
     }
 
     /**
+     * Calcula el coste de desplazamiento para el presupuesto a medida aplicando la fórmula:
+     * max(0, km_totales - km_cortesía) * tarifa_por_km. Mínimo 0 €.
+     */
+    public function getCustomTravelCostProperty(): float
+    {
+        if (!$this->custom_travel_enabled || (float)$this->custom_travel_km <= 0) {
+            return 0.0;
+        }
+        $billableKm = max(0, (float)$this->custom_travel_km - (float)$this->custom_travel_free_km);
+        return round($billableKm * (float)$this->custom_travel_rate, 2);
+    }
+
+    /**
+     * Asigna un destino predefinido con sus kilómetros de ida y vuelta en el configurador a medida.
+     */
+    public function setCustomTravelPreset(string $city, float $roundTripKm): void
+    {
+        $this->custom_travel_enabled = true;
+        $this->custom_travel_destination = $city;
+        $this->custom_travel_km = $roundTripKm;
+    }
+
+    /**
      * Propiedad computada que suma el importe bruto total de todos los packs, servicios, descuentos
      * y extras seleccionados en el configurador de presupuestos.
      */
     public function getCalculatedGrossTotalProperty()
     {
+        if ($this->quote_builder_mode === 'custom') {
+            $total = 0;
+
+            // 1. Momentos
+            foreach ($this->custom_moments as $m) {
+                if (!empty($m['selected'])) {
+                    $total += (float)($m['price'] ?? 0);
+                }
+            }
+
+            // 2. Fiesta / Barra libre
+            if (!empty($this->custom_party_enabled)) {
+                $total += (float)($this->custom_party_price ?? 0);
+            }
+
+            // 3. Desplazamiento
+            if (!empty($this->custom_travel_enabled)) {
+                $total += (float)$this->custom_travel_cost;
+            }
+
+            // 4. Extras de catálogo (solo suman los de estado 'normal'; 'included' es 0€ y 'optional' no suma al total inicial)
+            foreach ($this->custom_extras_catalog as $ex) {
+                if (!empty($ex['selected'])) {
+                    $st = $ex['status'] ?? 'normal';
+                    if ($st === 'normal') {
+                        $total += (float)($ex['price'] ?? 0);
+                    }
+                }
+            }
+
+            // 5. Extras personalizados libres
+            if (!empty($this->custom_extras)) {
+                foreach ($this->custom_extras as $extra) {
+                    if (!empty(trim($extra['name'] ?? '')) && empty($extra['consult'])) {
+                        $st = $extra['status'] ?? 'normal';
+                        if ($st === 'normal') {
+                            $total += (float)($extra['price'] ?: 0);
+                        }
+                    }
+                }
+            }
+
+            return $total;
+        }
+
         $total = 0;
 
         // Packs
@@ -5573,6 +5734,108 @@ class EventShow extends Component
     {
         $total = 0;
         $items = [];
+
+        if ($this->quote_builder_mode === 'custom') {
+            // 1. Momentos
+            foreach ($this->custom_moments as $k => $m) {
+                if (!empty($m['selected'])) {
+                    $p = (float)($m['price'] ?? 0);
+                    $items[] = [
+                        'service_name' => $m['name'],
+                        'description' => $m['desc'] ?? '',
+                        'price' => $p,
+                        'quantity' => 1,
+                        'item_type' => 'moment',
+                        'item_status' => 'normal',
+                    ];
+                    $total += $p;
+                }
+            }
+
+            // 2. Fiesta / Barra libre
+            if (!empty($this->custom_party_enabled)) {
+                $h = (float)$this->custom_party_hours;
+                $hFormatted = (floor($h) == $h) ? number_format($h, 0) : number_format($h, 1, ',', '.');
+                $p = (float)($this->custom_party_price ?? 0);
+                $items[] = [
+                    'service_name' => "Fiesta / Barra libre ({$hFormatted}h DJ)",
+                    'description' => $this->custom_party_desc ?: "Sesión DJ en directo durante la fiesta de {$hFormatted} horas con equipo adaptado.",
+                    'price' => $p,
+                    'quantity' => 1,
+                    'item_type' => 'party',
+                    'item_status' => 'normal',
+                ];
+                $total += $p;
+            }
+
+            // 3. Desplazamiento
+            if (!empty($this->custom_travel_enabled) && (float)$this->custom_travel_km > 0) {
+                $km = (float)$this->custom_travel_km;
+                $freeKm = (float)$this->custom_travel_free_km;
+                $cost = (float)$this->custom_travel_cost;
+                $billableKm = max(0, $km - $freeKm);
+                $destText = trim($this->custom_travel_destination) ? " hasta {$this->custom_travel_destination}" : "";
+                $desc = "Desplazamiento ida y vuelta ({$km} km{$destText}, primeros {$freeKm} km de cortesía incluidos sin coste, {$billableKm} km facturables a " . number_format($this->custom_travel_rate, 2, ',', '.') . " €/km).";
+
+                $items[] = [
+                    'service_name' => 'Desplazamiento y logística' . ($destText ? " ({$this->custom_travel_destination})" : ''),
+                    'description' => $desc,
+                    'price' => $cost,
+                    'quantity' => 1,
+                    'item_type' => 'travel',
+                    'item_status' => 'normal',
+                ];
+                $total += $cost;
+            }
+
+            // 4. Extras de catálogo
+            foreach ($this->custom_extras_catalog as $k => $ex) {
+                if (!empty($ex['selected'])) {
+                    $status = $ex['status'] ?? 'normal';
+                    $p = (float)($ex['price'] ?? 0);
+                    if ($status === 'included') {
+                        $p = 0.0;
+                    }
+                    $items[] = [
+                        'service_name' => $ex['name'],
+                        'description' => $ex['desc'] ?? '',
+                        'price' => $p,
+                        'quantity' => 1,
+                        'item_type' => 'extra',
+                        'item_status' => $status,
+                    ];
+                    if ($status === 'normal') {
+                        $total += $p;
+                    }
+                }
+            }
+
+            // 5. Extras libres adicionales
+            if (!empty($this->custom_extras)) {
+                foreach ($this->custom_extras as $extra) {
+                    if (!empty(trim($extra['name'] ?? '')) && empty($extra['consult'])) {
+                        $status = $extra['status'] ?? 'normal';
+                        $p = (float)($extra['price'] ?: 0);
+                        if ($status === 'included') {
+                            $p = 0.0;
+                        }
+                        $items[] = [
+                            'service_name' => trim($extra['name']),
+                            'description' => $extra['desc'] ?? '',
+                            'price' => $p,
+                            'quantity' => 1,
+                            'item_type' => 'extra',
+                            'item_status' => $status,
+                        ];
+                        if ($status === 'normal') {
+                            $total += $p;
+                        }
+                    }
+                }
+            }
+
+            return $items;
+        }
 
         // 1. Packs
         if (!empty($this->quote_services['pack_basic']['selected'])) {
@@ -5949,20 +6212,33 @@ class EventShow extends Component
         $subtotal = $this->calculated_subtotal;
         $taxAmount = $this->calculated_tax_amount;
         $finalTotal = $this->calculated_total;
+        $isCustom = ($this->quote_builder_mode === 'custom');
 
-        $quote = $this->event->quotes()->create([
+        $quotePayload = [
+            'quote_type' => $this->quote_builder_mode,
+            'is_recommended' => $isCustom ? (bool)$this->custom_is_recommended : false,
+            'equipment_notes' => $isCustom ? (trim($this->custom_equipment_notes) ?: 'Sonido e iluminación adaptados al espacio y número de invitados') : null,
+            'party_hours' => ($isCustom && $this->custom_party_enabled) ? (float)$this->custom_party_hours : null,
+            'party_price' => ($isCustom && $this->custom_party_enabled) ? (float)$this->custom_party_price : null,
+            'extra_hour_rate' => $isCustom ? (float)$this->custom_extra_hour_rate : 120.00,
+            'travel_km' => ($isCustom && $this->custom_travel_enabled) ? (float)$this->custom_travel_km : null,
+            'travel_free_km' => ($isCustom && $this->custom_travel_enabled) ? (float)$this->custom_travel_free_km : 100.00,
+            'travel_rate' => ($isCustom && $this->custom_travel_enabled) ? (float)$this->custom_travel_rate : 0.26,
+            'travel_cost' => ($isCustom && $this->custom_travel_enabled) ? (float)$this->custom_travel_cost : 0.00,
             'amount' => $finalTotal,
             'status' => 'pending',
             'admin_notes' => trim((string)$this->quote_admin_notes) ?: null,
-            'deposit_type' => $this->quote_deposit_type,
-            'deposit_percentage' => $this->quote_deposit_type === 'percentage' ? (float)$this->quote_deposit_percentage : ($this->quote_deposit_type === 'none' ? 0 : null),
+            'deposit_type' => $this->quote_deposit_type ?: 'percentage',
+            'deposit_percentage' => $this->quote_deposit_type === 'percentage' ? (float)($this->quote_deposit_percentage ?: 40) : ($this->quote_deposit_type === 'none' ? 0 : null),
             'deposit_amount' => $signal,
             'tax_type' => $this->quote_tax_type,
             'tax_rate' => (float)$this->quote_tax_rate,
             'subtotal_amount' => $subtotal,
             'tax_amount' => $taxAmount,
             'payment_methods' => $this->quote_payment_methods,
-        ]);
+        ];
+
+        $quote = $this->event->quotes()->create($quotePayload);
 
         foreach ($items as $item) {
             $quote->items()->create($item);
@@ -6002,19 +6278,32 @@ class EventShow extends Component
         $subtotal = $this->calculated_subtotal;
         $taxAmount = $this->calculated_tax_amount;
         $finalTotal = $this->calculated_total;
+        $isCustom = ($this->quote_builder_mode === 'custom');
 
-        $quote->update([
+        $quotePayload = [
+            'quote_type' => $this->quote_builder_mode,
+            'is_recommended' => $isCustom ? (bool)$this->custom_is_recommended : false,
+            'equipment_notes' => $isCustom ? (trim($this->custom_equipment_notes) ?: 'Sonido e iluminación adaptados al espacio y número de invitados') : null,
+            'party_hours' => ($isCustom && $this->custom_party_enabled) ? (float)$this->custom_party_hours : null,
+            'party_price' => ($isCustom && $this->custom_party_enabled) ? (float)$this->custom_party_price : null,
+            'extra_hour_rate' => $isCustom ? (float)$this->custom_extra_hour_rate : 120.00,
+            'travel_km' => ($isCustom && $this->custom_travel_enabled) ? (float)$this->custom_travel_km : null,
+            'travel_free_km' => ($isCustom && $this->custom_travel_enabled) ? (float)$this->custom_travel_free_km : 100.00,
+            'travel_rate' => ($isCustom && $this->custom_travel_enabled) ? (float)$this->custom_travel_rate : 0.26,
+            'travel_cost' => ($isCustom && $this->custom_travel_enabled) ? (float)$this->custom_travel_cost : 0.00,
             'amount' => $finalTotal,
             'admin_notes' => trim((string)$this->quote_admin_notes) ?: null,
-            'deposit_type' => $this->quote_deposit_type,
-            'deposit_percentage' => $this->quote_deposit_type === 'percentage' ? (float)$this->quote_deposit_percentage : ($this->quote_deposit_type === 'none' ? 0 : null),
+            'deposit_type' => $this->quote_deposit_type ?: 'percentage',
+            'deposit_percentage' => $this->quote_deposit_type === 'percentage' ? (float)($this->quote_deposit_percentage ?: 40) : ($this->quote_deposit_type === 'none' ? 0 : null),
             'deposit_amount' => $signal,
             'tax_type' => $this->quote_tax_type,
             'tax_rate' => (float)$this->quote_tax_rate,
             'subtotal_amount' => $subtotal,
             'tax_amount' => $taxAmount,
             'payment_methods' => $this->quote_payment_methods,
-        ]);
+        ];
+
+        $quote->update($quotePayload);
 
         $quote->items()->delete();
         foreach ($items as $item) {
@@ -6064,6 +6353,113 @@ class EventShow extends Component
         $this->quote_tax_type = $quote->tax_type ?: 'included';
         $this->quote_tax_rate = (float)($quote->tax_rate ?: 21.00);
         $this->quote_payment_methods = $quote->active_payment_methods;
+        $this->quote_admin_notes = $quote->admin_notes ?? '';
+
+        if ($quote->is_custom) {
+            $this->quote_builder_mode = 'custom';
+            $this->custom_is_recommended = (bool)$quote->is_recommended;
+            $this->custom_equipment_notes = $quote->effective_equipment_notes;
+            $this->custom_party_hours = $quote->party_hours ? (float)$quote->party_hours : 4.5;
+            $this->custom_party_price = $quote->party_price ? (float)$quote->party_price : 700.00;
+            $this->custom_party_enabled = ($quote->party_hours !== null && (float)$quote->party_hours > 0);
+            $this->custom_extra_hour_rate = $quote->extra_hour_rate ? (float)$quote->extra_hour_rate : 120.00;
+
+            if ($quote->travel_km && (float)$quote->travel_km > 0) {
+                $this->custom_travel_enabled = true;
+                $this->custom_travel_km = (float)$quote->travel_km;
+                $this->custom_travel_free_km = $quote->travel_free_km !== null ? (float)$quote->travel_free_km : 100.00;
+                $this->custom_travel_rate = $quote->travel_rate !== null ? (float)$quote->travel_rate : 0.26;
+            } else {
+                $this->custom_travel_enabled = false;
+                $this->custom_travel_km = 0.0;
+            }
+
+            // Reset custom moments
+            foreach ($this->custom_moments as $k => $m) {
+                $this->custom_moments[$k]['selected'] = false;
+            }
+            // Reset custom extras catalog
+            foreach ($this->custom_extras_catalog as $k => $ex) {
+                $this->custom_extras_catalog[$k]['selected'] = false;
+                $this->custom_extras_catalog[$k]['status'] = 'normal';
+            }
+            $this->custom_extras = [];
+
+            foreach ($quote->items as $item) {
+                $rawName = $item->service_name ?: ($item->concept ?: '');
+                $name = mb_strtolower($rawName);
+                $st = $item->item_status ?: 'normal';
+                $p = (float)($item->price ?: 0);
+
+                if (str_contains($name, 'ceremonia')) {
+                    $this->custom_moments['ceremony']['selected'] = true;
+                    $this->custom_moments['ceremony']['price'] = $p;
+                    if ($item->description) $this->custom_moments['ceremony']['desc'] = $item->description;
+                } elseif (str_contains($name, 'cóctel') || str_contains($name, 'coctel')) {
+                    $this->custom_moments['cocktail']['selected'] = true;
+                    $this->custom_moments['cocktail']['price'] = $p;
+                    if ($item->description) $this->custom_moments['cocktail']['desc'] = $item->description;
+                } elseif (str_contains($name, 'banquete')) {
+                    $this->custom_moments['banquet']['selected'] = true;
+                    $this->custom_moments['banquet']['price'] = $p;
+                    if ($item->description) $this->custom_moments['banquet']['desc'] = $item->description;
+                } elseif (str_contains($name, 'fiesta') || str_contains($name, 'barra libre')) {
+                    $this->custom_party_enabled = true;
+                    $this->custom_party_price = $p;
+                    if ($item->description) $this->custom_party_desc = $item->description;
+                } elseif (str_contains($name, 'desplazamiento') || str_contains($name, 'logística') || str_contains($name, 'logistica') || str_contains($name, 'kilometraje')) {
+                    $this->custom_travel_enabled = true;
+                    if (preg_match('/\((.*?)\)/', $rawName, $matches)) {
+                        $this->custom_travel_destination = trim($matches[1]);
+                    }
+                } elseif (str_contains($name, 'chispas') || str_contains($name, 'fuego frío') || str_contains($name, 'fuego frio') || str_contains($name, 'cold sparks')) {
+                    $this->custom_extras_catalog['cold_sparks']['selected'] = true;
+                    $this->custom_extras_catalog['cold_sparks']['status'] = $st;
+                    if ($st !== 'included') $this->custom_extras_catalog['cold_sparks']['price'] = $p;
+                } elseif (str_contains($name, 'niebla baja')) {
+                    $this->custom_extras_catalog['low_fog']['selected'] = true;
+                    $this->custom_extras_catalog['low_fog']['status'] = $st;
+                    if ($st !== 'included') $this->custom_extras_catalog['low_fog']['price'] = $p;
+                } elseif (str_contains($name, 'karaoke')) {
+                    $this->custom_extras_catalog['karaoke']['selected'] = true;
+                    $this->custom_extras_catalog['karaoke']['status'] = $st;
+                    if ($st !== 'included') $this->custom_extras_catalog['karaoke']['price'] = $p;
+                } elseif (str_contains($name, 'pétalos') || str_contains($name, 'petalos') || str_contains($name, 'lanzador') || str_contains($name, 'cañón') || str_contains($name, 'cañon')) {
+                    $this->custom_extras_catalog['petal_launcher']['selected'] = true;
+                    $this->custom_extras_catalog['petal_launcher']['status'] = $st;
+                    if ($st !== 'included') $this->custom_extras_catalog['petal_launcher']['price'] = $p;
+                } elseif (str_contains($name, 'fotomatón') || str_contains($name, 'fotomaton')) {
+                    $this->custom_extras_catalog['photobooth']['selected'] = true;
+                    $this->custom_extras_catalog['photobooth']['status'] = $st;
+                    if ($st !== 'included') $this->custom_extras_catalog['photobooth']['price'] = $p;
+                } elseif (str_contains($name, '360')) {
+                    $this->custom_extras_catalog['platform_360']['selected'] = true;
+                    $this->custom_extras_catalog['platform_360']['status'] = $st;
+                    if ($st !== 'included') $this->custom_extras_catalog['platform_360']['price'] = $p;
+                } else {
+                    $this->custom_extras[] = [
+                        'name' => trim($rawName),
+                        'price' => $p,
+                        'desc' => $item->description ?: '',
+                        'status' => $st,
+                        'consult' => false,
+                    ];
+                }
+            }
+
+            if (empty($this->custom_extras)) {
+                $this->custom_extras = [
+                    ['name' => '', 'price' => 0, 'desc' => '', 'status' => 'normal', 'consult' => false]
+                ];
+            }
+
+            if ($flash) {
+                session()->flash('quote_message', 'Propuesta A Medida #' . $quote->id . ' cargada en el configurador. Puedes realizar cambios y pulsar "Actualizar" o "Guardar como Nueva Versión".');
+            }
+            return;
+        }
+
+        $this->quote_builder_mode = 'packs';
 
         // Limpiar selección previa
         $this->selectPack('clear');
