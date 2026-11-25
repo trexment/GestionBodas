@@ -308,7 +308,7 @@ class EventShow extends Component
     public $travel_destination_label = '';
     public $travel_one_way_km = 0;
     public $travel_free_radius_km = 50;
-    public $travel_rate_per_km = 0.39;
+    public $travel_rate_per_km = 0.26;
     public $travel_deduct_free_radius = true;
     public $travel_long_distance_surcharge_enabled = false;
     public $travel_long_distance_surcharge = 75;
@@ -5118,8 +5118,20 @@ class EventShow extends Component
             if (!empty($resolved['surcharge'])) {
                 $this->travel_long_distance_surcharge = (int) $resolved['surcharge'];
             }
+
+            // También sincronizar con el modo A Medida si no se ha configurado expresamente
+            if (empty($this->custom_travel_destination)) {
+                $this->custom_travel_destination = $resolved['label'] ?: $query;
+            }
+            if ((float)$this->custom_travel_km <= 0) {
+                $this->custom_travel_km = (int)$resolved['km'] * 2;
+                if ((int)$resolved['km'] > 50) {
+                    $this->custom_travel_enabled = true;
+                }
+            }
+
             if ($showFlash) {
-                session()->flash('quote_message', "🗺️ Distancia calculada desde Logroño a {$this->travel_destination_label}: {$this->travel_one_way_km} km (solo ida).");
+                session()->flash('quote_message', "🗺️ Distancia calculada desde Logroño a {$this->travel_destination_label}: {$this->travel_one_way_km} km (solo ida) / " . ($this->travel_one_way_km * 2) . " km (ida y vuelta).");
             }
         } elseif ($showFlash) {
             session()->flash('quote_error', "No se pudo detectar automáticamente la distancia para «{$query}». Puedes introducir los km manualmente.");
@@ -5240,6 +5252,46 @@ class EventShow extends Component
             'santander' => ['label' => 'Santander (Cantabria)', 'km' => 235, 'surcharge' => 95],
             'laredo' => ['label' => 'Laredo (Cantabria)', 'km' => 185, 'surcharge' => 85],
 
+            // Huesca / Pirineo Aragonés
+            'era de los nogales' => ['label' => 'La Era de los Nogales (Sardas / Sabiñánigo, Huesca)', 'km' => 210, 'surcharge' => 85],
+            'nogales' => ['label' => 'La Era de los Nogales (Sardas / Sabiñánigo, Huesca)', 'km' => 210, 'surcharge' => 85],
+            'sardas' => ['label' => 'Sardas / Sabiñánigo (Huesca)', 'km' => 210, 'surcharge' => 85],
+            'sabiñanigo' => ['label' => 'Sabiñánigo (Huesca)', 'km' => 205, 'surcharge' => 85],
+            'sabinanigo' => ['label' => 'Sabiñánigo (Huesca)', 'km' => 205, 'surcharge' => 85],
+            'jaca' => ['label' => 'Jaca (Huesca)', 'km' => 200, 'surcharge' => 85],
+            'huesca' => ['label' => 'Huesca', 'km' => 215, 'surcharge' => 85],
+            'benasque' => ['label' => 'Benasque (Huesca)', 'km' => 310, 'surcharge' => 95],
+            'barbastro' => ['label' => 'Barbastro (Huesca)', 'km' => 265, 'surcharge' => 90],
+            'monzon' => ['label' => 'Monzón (Huesca)', 'km' => 255, 'surcharge' => 90],
+            'ainsa' => ['label' => 'Aínsa (Huesca)', 'km' => 280, 'surcharge' => 90],
+            'alquezar' => ['label' => 'Alquézar (Huesca)', 'km' => 250, 'surcharge' => 90],
+
+            // Zaragoza / Aragón
+            'zaragoza' => ['label' => 'Zaragoza', 'km' => 172, 'surcharge' => 80],
+            'tarazona' => ['label' => 'Tarazona (Zaragoza)', 'km' => 90, 'surcharge' => 0],
+            'borja' => ['label' => 'Borja (Zaragoza)', 'km' => 105, 'surcharge' => 50],
+            'calatayud' => ['label' => 'Calatayud (Zaragoza)', 'km' => 165, 'surcharge' => 80],
+            'ejea' => ['label' => 'Ejea de los Caballeros (Zaragoza)', 'km' => 125, 'surcharge' => 70],
+
+            // Madrid / Castilla y León / Cantabria
+            'madrid' => ['label' => 'Madrid', 'km' => 335, 'surcharge' => 95],
+            'valladolid' => ['label' => 'Valladolid', 'km' => 240, 'surcharge' => 90],
+            'palencia' => ['label' => 'Palencia', 'km' => 200, 'surcharge' => 85],
+            'segovia' => ['label' => 'Segovia', 'km' => 270, 'surcharge' => 90],
+            'santander' => ['label' => 'Santander (Cantabria)', 'km' => 235, 'surcharge' => 95],
+            'laredo' => ['label' => 'Laredo (Cantabria)', 'km' => 185, 'surcharge' => 85],
+            'torrelavega' => ['label' => 'Torrelavega (Cantabria)', 'km' => 240, 'surcharge' => 95],
+
+            // Fincas y bodegas destacadas del norte
+            'sancho el fuerte' => ['label' => 'Restaurante Sancho el Fuerte (Navarra)', 'km' => 45, 'surcharge' => 0],
+            'otazu' => ['label' => 'Señorío de Otazu (Navarra)', 'km' => 75, 'surcharge' => 0],
+            'monjardin' => ['label' => 'Castillo de Monjardín (Navarra)', 'km' => 38, 'surcharge' => 0],
+            'hika' => ['label' => 'Bodega Hika (Villabona, Gipuzkoa)', 'km' => 148, 'surcharge' => 75],
+            'zubieta' => ['label' => 'Palacio de Zubieta (Bizkaia)', 'km' => 140, 'surcharge' => 75],
+            'porton' => ['label' => 'Finca El Portón', 'km' => 15, 'surcharge' => 0],
+            'arretxe' => ['label' => 'Palacio Arretxe (Gipuzkoa)', 'km' => 150, 'surcharge' => 80],
+            'olma' => ['label' => 'Finca La Olma', 'km' => 55, 'surcharge' => 0],
+
             // La Rioja y Rioja Alavesa (<= 50 km incluidos gratis, salvo Ezcaray/Alfaro)
             'ezcaray' => ['label' => 'Ezcaray (La Rioja)', 'km' => 60, 'surcharge' => 0],
             'alfaro' => ['label' => 'Alfaro (La Rioja)', 'km' => 74, 'surcharge' => 0],
@@ -5277,6 +5329,13 @@ class EventShow extends Component
             'gipuzkoa' => ['label' => 'Gipuzkoa', 'km' => 150, 'surcharge' => 80],
             'guipuzcoa' => ['label' => 'Gipuzkoa', 'km' => 150, 'surcharge' => 80],
             'cantabria' => ['label' => 'Cantabria', 'km' => 210, 'surcharge' => 90],
+            'huesca' => ['label' => 'Huesca / Pirineos', 'km' => 215, 'surcharge' => 85],
+            'pirineo' => ['label' => 'Pirineo Aragonés', 'km' => 210, 'surcharge' => 85],
+            'aragon' => ['label' => 'Aragón', 'km' => 172, 'surcharge' => 80],
+            'madrid' => ['label' => 'Madrid', 'km' => 335, 'surcharge' => 95],
+            'valladolid' => ['label' => 'Valladolid', 'km' => 240, 'surcharge' => 90],
+            'palencia' => ['label' => 'Palencia', 'km' => 200, 'surcharge' => 85],
+            'segovia' => ['label' => 'Segovia', 'km' => 270, 'surcharge' => 90],
         ];
 
         // Antes de usar fallback genérico de provincia, intentamos geocodificar con OpenStreetMap + OSRM
@@ -5288,10 +5347,11 @@ class EventShow extends Component
                 $cacheKey = 'road_km_logrono_' . md5(mb_strtolower($cleanQuery, 'UTF-8'));
                 $osmResult = \Illuminate\Support\Facades\Cache::remember($cacheKey, now()->addDays(30), function () use ($cleanQuery) {
                     try {
-                        $geoResp = \Illuminate\Support\Facades\Http::timeout(2)
+                        $geoResp = \Illuminate\Support\Facades\Http::timeout(4)
                             ->withHeaders(['User-Agent' => 'NunezAndSonEventos/1.0 (info@nunezandson.com)'])
                             ->get('https://nominatim.openstreetmap.org/search', [
-                                'q' => $cleanQuery . ', España',
+                                'q' => $cleanQuery,
+                                'countrycodes' => 'es',
                                 'format' => 'json',
                                 'limit' => 1,
                             ]);
@@ -5303,7 +5363,7 @@ class EventShow extends Component
 
                             // Logroño: lat 42.4627, lon -2.4449
                             $routeUrl = "https://router.project-osrm.org/route/v1/driving/-2.4449,42.4627;{$lon},{$lat}?overview=false";
-                            $routeResp = \Illuminate\Support\Facades\Http::timeout(2)->get($routeUrl);
+                            $routeResp = \Illuminate\Support\Facades\Http::timeout(4)->get($routeUrl);
                             if ($routeResp->successful() && !empty($routeResp->json()['routes'][0]['distance'])) {
                                 $meters = (float) $routeResp->json()['routes'][0]['distance'];
                                 $km = (int) round($meters / 1000);
@@ -5329,6 +5389,31 @@ class EventShow extends Component
             } catch (\Throwable $e) {
                 // Ignorar cualquier fallo de caché o red
             }
+
+            // Si Nominatim no encuentra directamente la finca/restaurante por nombre,
+            // consultamos un buscador web para deducir el pueblo o municipio del lugar
+            try {
+                $searchResp = \Illuminate\Support\Facades\Http::timeout(3)
+                    ->withHeaders(['User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'])
+                    ->get('https://www.bing.com/search', [
+                        'q' => '"' . $cleanQuery . '"',
+                        'setlang' => 'es',
+                        'cc' => 'ES',
+                    ]);
+                if ($searchResp->successful()) {
+                    $snippetText = mb_strtolower(strip_tags($searchResp->body()), 'UTF-8');
+                    foreach ($knownLocations as $kw => $kd) {
+                        if (mb_strlen($kw) >= 4 && str_contains($snippetText, $kw)) {
+                            return [
+                                'label' => $cleanQuery . ' (' . $kd['label'] . ')',
+                                'km' => $kd['km'],
+                                'surcharge_enabled' => ($kd['surcharge'] ?? 0) > 0,
+                                'surcharge' => $kd['surcharge'] ?? 75,
+                            ];
+                        }
+                    }
+                }
+            } catch (\Throwable $e) {}
         }
 
         foreach ($provinceFallbacks as $provKey => $data) {

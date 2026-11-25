@@ -375,7 +375,7 @@
                                     {{ !empty(trim((string) ($config['packs_section_note'] ?? ''))) ? $config['packs_section_note'] : 'El equipamiento indicado en cada pack es orientativo; dimensionamos siempre la iluminación y el sonido según el tamaño y características del salón o finca para que luzca impecable.' }}
                                 </div>
                                 <div>
-                                    <strong class="text-amber-400">Desplazamiento:</strong> Incluido sin coste hasta 50 km desde Logroño (La Rioja y Rioja Alavesa). Para distancias superiores se aplica suplemento de kilometraje (0,39 €/km) y logística.
+                                    <strong class="text-amber-400">Desplazamiento:</strong> Incluido sin coste hasta 50 km desde Logroño (La Rioja y Rioja Alavesa). Para distancias superiores se aplica suplemento de kilometraje (0,26 €/km) y logística.
                                 </div>
                             </div>
                         </div>

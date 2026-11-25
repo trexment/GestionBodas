@@ -5439,7 +5439,11 @@
                                                     <button type="button" wire:click="setCustomTravelPreset('Pamplona', 180)" class="px-2 py-0.5 rounded text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 cursor-pointer font-medium">Pamplona (180 km)</button>
                                                     <button type="button" wire:click="setCustomTravelPreset('Bilbao', 280)" class="px-2 py-0.5 rounded text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 cursor-pointer font-medium">Bilbao (280 km)</button>
                                                     <button type="button" wire:click="setCustomTravelPreset('San Sebastián', 320)" class="px-2 py-0.5 rounded text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 cursor-pointer font-medium">San Sebastián (320 km)</button>
+                                                    <button type="button" wire:click="setCustomTravelPreset('La Era de los Nogales (Sardas/Sabiñánigo)', 420)" class="px-2 py-0.5 rounded text-[10px] bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 cursor-pointer font-bold">Sardas / Sabiñánigo (420 km)</button>
                                                     <button type="button" wire:click="setCustomTravelPreset('Madrid', 560)" class="px-2 py-0.5 rounded text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 cursor-pointer font-medium">Madrid (560 km)</button>
+                                                    @if(!empty($event->location))
+                                                        <button type="button" wire:click="autoDetectTravelFromEventLocation(true)" class="px-2 py-0.5 rounded text-[10px] bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-200 cursor-pointer font-bold" title="Auto-detectar distancia según {{ $event->location }}">🗺️ Auto-calcular desde ubicación</button>
+                                                    @endif
                                                 </div>
 
                                                 <!-- Desglose de cálculo -->
@@ -6645,7 +6649,7 @@
                             <div x-data="{ openTravel: {{ ($hasTravelExtraApplied || $travel_one_way_km > 0) ? 'true' : 'false' }} }" class="bg-white rounded-xl border border-amber-200 shadow-xs overflow-hidden">
                                 <button type="button" @click="openTravel = !openTravel" class="w-full flex items-center justify-between p-3 text-left bg-amber-50/60 hover:bg-amber-50 transition">
                                     <h6 class="text-xs font-black uppercase text-amber-900 tracking-wider flex items-center gap-1.5">
-                                        <span>🚐</span> Desplazamiento (> 50 km a 0,39 €/km) y Logística Fuera de Zona
+                                        <span>🚐</span> Desplazamiento (> 50 km a 0,26 €/km) y Logística Fuera de Zona
                                         @if($hasTravelExtraApplied)
                                             <span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 text-[10px] font-extrabold">Aplicado</span>
                                         @endif
@@ -6655,7 +6659,7 @@
 
                                 <div x-show="openTravel" class="p-3.5 pt-3 border-t border-amber-100 space-y-3 bg-amber-50/20">
                                     <div class="text-[11px] text-slate-600 leading-relaxed">
-                                        <strong>Regla base:</strong> Primeros <strong>50 km de radio desde Logroño</strong> (100 km ida y vuelta: La Rioja, Haro, Casalarreina, Santo Domingo, Calahorra y Rioja Alavesa) <strong>incluidos (0 €)</strong>. A partir de 50 km se calcula a <strong>0,39 €/km (ida y vuelta)</strong> + opción de suplemento de peajes/gestión/alta en salidas largas.
+                                        <strong>Regla base:</strong> Primeros <strong>50 km de radio desde Logroño</strong> (100 km ida y vuelta: La Rioja, Haro, Casalarreina, Santo Domingo, Calahorra y Rioja Alavesa) <strong>incluidos (0 €)</strong>. A partir de 50 km se calcula a <strong>0,26 €/km (ida y vuelta)</strong> + opción de suplemento de peajes/gestión/alta en salidas largas.
                                     </div>
 
                                     <!-- Botones rápidos de destinos habituales fuera de los 50 km -->
@@ -6678,6 +6682,9 @@
                                         </button>
                                         <button type="button" wire:click="setTravelPreset('San Sebastián / Gipuzkoa', 165, true, 85)" class="px-2 py-1 rounded-lg {{ (int) $travel_one_way_km === 165 ? 'bg-amber-100 text-amber-950 border-amber-400 font-extrabold' : 'bg-white hover:bg-amber-50 text-slate-700 border-slate-200 font-bold' }} border text-[11px] transition cursor-pointer">
                                             📍 Donostia (165 km + logística)
+                                        </button>
+                                        <button type="button" wire:click="setTravelPreset('La Era de los Nogales (Sardas / Sabiñánigo)', 210, true, 85)" class="px-2 py-1 rounded-lg {{ (int) $travel_one_way_km === 210 ? 'bg-amber-100 text-amber-950 border-amber-400 font-extrabold' : 'bg-white hover:bg-amber-50 text-slate-700 border-slate-200 font-bold' }} border text-[11px] transition cursor-pointer">
+                                            📍 Sabiñánigo / Sardas (210 km + logística)
                                         </button>
                                         @if(!empty($event->location))
                                             <button type="button" wire:click="autoDetectTravelFromEventLocation(true)" class="px-2 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-200 text-[11px] font-extrabold transition cursor-pointer" title="Detectar distancia automáticamente desde la ubicación del evento ({{ $event->location }})">
