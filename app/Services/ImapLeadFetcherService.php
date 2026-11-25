@@ -850,12 +850,20 @@ class ImapLeadFetcherService
         $defaultDj = User::whereIn('role', ['admin', 'dj'])->orderBy('id')->first();
 
         $leadSource = $leadData['source'] ?? 'Portal / Web';
+        $leadSourceLower = mb_strtolower($leadSource);
+        $leadSourceKey = 'email';
+        if (str_contains($leadSourceLower, 'bodas.net')) {
+            $leadSourceKey = 'bodas_net';
+        } elseif (str_contains($leadSourceLower, 'madrigal')) {
+            $leadSourceKey = 'madrigal';
+        }
 
         // 4. Crear Evento
         $event = Event::create([
             'name' => $eventName,
             'brand' => $brandKey,
             'event_type' => $leadData['event_type'],
+            'lead_source' => $leadSourceKey,
             'event_date' => $leadData['event_date'],
             'location' => $leadData['location'],
             'client_id' => $client ? $client->id : null,

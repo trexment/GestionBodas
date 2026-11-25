@@ -304,6 +304,25 @@
                         </div>
                     </div>
 
+                    <!-- Selector de Canal de Entrada / Procedencia del Lead -->
+                    <div class="relative" x-data="{ openSourceDropdown: false }">
+                        <button type="button" @click="openSourceDropdown = !openSourceDropdown" class="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-xl font-bold {{ $event->lead_source_info['badge_class'] ?? 'bg-fuchsia-50 text-fuchsia-800' }} shadow-2xs transition cursor-pointer" title="Canal de entrada / Procedencia del Lead">
+                            <span>{{ $event->lead_source_info['icon'] }}</span>
+                            <span>{{ $event->lead_source_info['label'] }}</span>
+                            <span class="text-[9px] opacity-70">▼</span>
+                        </button>
+                        <div x-show="openSourceDropdown" @click.away="openSourceDropdown = false" class="absolute right-0 lg:right-auto lg:left-0 mt-1.5 w-64 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl z-30 p-1.5 divide-y divide-slate-100 dark:divide-slate-800 text-xs max-h-72 overflow-y-auto animate-in fade-in zoom-in-95 duration-100" style="display: none;">
+                            <div class="space-y-0.5">
+                                @foreach(\App\Models\Event::LEAD_SOURCES as $sKey => $sDef)
+                                    <button type="button" wire:click="changeLeadSource('{{ $sKey }}')" @click="openSourceDropdown = false" class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold flex items-center gap-2 cursor-pointer {{ ($event->lead_source_info['key'] ?? '') === $sKey ? 'bg-fuchsia-50 dark:bg-fuchsia-950/50 text-fuchsia-900 dark:text-fuchsia-200 font-bold' : 'text-slate-700 dark:text-slate-300' }}">
+                                        <span>{{ $sDef['icon'] }}</span>
+                                        <span>{{ $sDef['label'] }}</span>
+                                    </button>
+                                @endforeach
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Selector ÚNICO de Estado del Evento -->
                     <div class="relative" x-data="{ openStatusDropdown: false }">
                         <button type="button" @click="openStatusDropdown = !openStatusDropdown" class="inline-flex items-center gap-1.5 text-xs px-3.5 py-1.5 rounded-xl font-black transition cursor-pointer shadow-2xs border {{ $event->status_badge_class }}" title="Cambiar estado del evento">
@@ -8344,17 +8363,27 @@
                             </div>
                         </div>
 
-                        <div>
-                            <label class="block font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1">Estado del Evento *</label>
-                            <select wire:model="event_edit_status" class="w-full border-gray-300 dark:border-slate-700 dark:bg-slate-950 dark:text-white rounded-xl text-sm font-bold p-2.5">
-                                <option value="draft">🟡 Borrador / En preparación</option>
-                                <option value="no_response">⏳ Sin Respuesta (Esperando cliente)</option>
-                                <option value="on_hold">⏸️ En Espera (El cliente avisará)</option>
-                                <option value="confirmed">🟢 Confirmado</option>
-                                <option value="completed">🔵 Finalizado / Realizado</option>
-                                <option value="rejected">❌ Rechazado (No acepta)</option>
-                                <option value="cancelled">🔴 Cancelado</option>
-                            </select>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1">Estado del Evento *</label>
+                                <select wire:model="event_edit_status" class="w-full border-gray-300 dark:border-slate-700 dark:bg-slate-950 dark:text-white rounded-xl text-sm font-bold p-2.5">
+                                    <option value="draft">🟡 Borrador / En preparación</option>
+                                    <option value="no_response">⏳ Sin Respuesta (Esperando cliente)</option>
+                                    <option value="on_hold">⏸️ En Espera (El cliente avisará)</option>
+                                    <option value="confirmed">🟢 Confirmado</option>
+                                    <option value="completed">🔵 Finalizado / Realizado</option>
+                                    <option value="rejected">❌ Rechazado (No acepta)</option>
+                                    <option value="cancelled">🔴 Cancelado</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1">🎯 Procedencia / Canal *</label>
+                                <select wire:model="event_edit_lead_source" class="w-full border-gray-300 dark:border-slate-700 dark:bg-slate-950 dark:text-white rounded-xl text-sm font-bold p-2.5">
+                                    @foreach(\App\Models\Event::LEAD_SOURCES as $sKey => $sDef)
+                                        <option value="{{ $sKey }}">{{ $sDef['icon'] }} {{ $sDef['label'] }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
                         </div>
 
                         <div>

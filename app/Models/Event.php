@@ -16,6 +16,7 @@ class Event extends Model
     protected $fillable = [
         'name',
         'event_type',
+        'lead_source',
         'brand',
         'event_date',
         'setup_date',
@@ -69,6 +70,89 @@ class Event extends Model
         'photo_qr_created_at' => 'datetime',
     ];
 
+    /**
+     * Canales / procedencias de captación de leads con sus metadatos visuales.
+     */
+    public const LEAD_SOURCES = [
+        'bodas_net' => [
+            'label' => 'Bodas.net',
+            'short_label' => 'Bodas.net',
+            'icon' => '💍',
+            'badge_class' => 'bg-pink-50 dark:bg-pink-950/60 text-pink-700 dark:text-pink-300 border-pink-200 dark:border-pink-800',
+            'active_class' => 'bg-pink-600 text-white shadow-xs',
+        ],
+        'web' => [
+            'label' => 'Web / Formulario',
+            'short_label' => 'Web',
+            'icon' => '🌐',
+            'badge_class' => 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800',
+            'active_class' => 'bg-indigo-600 text-white shadow-xs',
+        ],
+        'instagram' => [
+            'label' => 'Instagram',
+            'short_label' => 'Instagram',
+            'icon' => '📸',
+            'badge_class' => 'bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800',
+            'active_class' => 'bg-purple-600 text-white shadow-xs',
+        ],
+        'recomendacion' => [
+            'label' => 'Recomendación / Boca a boca',
+            'short_label' => 'Recomendación',
+            'icon' => '🗣️',
+            'badge_class' => 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
+            'active_class' => 'bg-emerald-600 text-white shadow-xs',
+        ],
+        'feria' => [
+            'label' => 'Feria de Novios',
+            'short_label' => 'Feria',
+            'icon' => '🎪',
+            'badge_class' => 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800',
+            'active_class' => 'bg-amber-600 text-white shadow-xs',
+        ],
+        'whatsapp' => [
+            'label' => 'WhatsApp directo',
+            'short_label' => 'WhatsApp',
+            'icon' => '💬',
+            'badge_class' => 'bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 border-teal-200 dark:border-teal-800',
+            'active_class' => 'bg-teal-600 text-white shadow-xs',
+        ],
+        'telefono' => [
+            'label' => 'Llamada / Teléfono',
+            'short_label' => 'Llamada',
+            'icon' => '📞',
+            'badge_class' => 'bg-cyan-50 dark:bg-cyan-950/60 text-cyan-700 dark:text-cyan-300 border-cyan-200 dark:border-cyan-800',
+            'active_class' => 'bg-cyan-600 text-white shadow-xs',
+        ],
+        'email' => [
+            'label' => 'Email directo',
+            'short_label' => 'Email',
+            'icon' => '✉️',
+            'badge_class' => 'bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800',
+            'active_class' => 'bg-blue-600 text-white shadow-xs',
+        ],
+        'madrigal' => [
+            'label' => 'Madrigal Marketing',
+            'short_label' => 'Madrigal',
+            'icon' => '🎯',
+            'badge_class' => 'bg-violet-50 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 border-violet-200 dark:border-violet-800',
+            'active_class' => 'bg-violet-600 text-white shadow-xs',
+        ],
+        'colaborador' => [
+            'label' => 'Colaborador / Finca',
+            'short_label' => 'Colaborador',
+            'icon' => '🤝',
+            'badge_class' => 'bg-orange-50 dark:bg-orange-950/60 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-800',
+            'active_class' => 'bg-orange-600 text-white shadow-xs',
+        ],
+        'otro' => [
+            'label' => 'Otro medio',
+            'short_label' => 'Otro',
+            'icon' => '🏷️',
+            'badge_class' => 'bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300 border-gray-200 dark:border-slate-700',
+            'active_class' => 'bg-gray-700 text-white shadow-xs',
+        ],
+    ];
+
     protected static bool $tokensSchemaChecked = false;
     protected static bool $hasGuestTokenColumn = false;
     protected static bool $hasStaffTokenColumn = false;
@@ -99,6 +183,16 @@ class Event extends Model
                     });
                     static::$hasGuestTokenColumn = true;
                     static::$hasStaffTokenColumn = true;
+                }
+
+                if (!\Illuminate\Support\Facades\Schema::hasColumn('events', 'lead_source')) {
+                    try {
+                        \Illuminate\Support\Facades\Schema::table('events', function (\Illuminate\Database\Schema\Blueprint $table) {
+                            $table->string('lead_source', 50)->nullable()->after('event_type');
+                        });
+                    } catch (\Throwable $ex) {
+                        \Illuminate\Support\Facades\DB::statement("ALTER TABLE `events` ADD `lead_source` VARCHAR(50) NULL AFTER `event_type`");
+                    }
                 }
 
                 if (!\Illuminate\Support\Facades\Schema::hasColumn('events', 'deposit_collected_by')) {
@@ -1302,6 +1396,56 @@ class Event extends Model
             'otro' => '🎉',
             default => '💍',
         };
+    }
+
+    /**
+     * Devuelve la información completa y metadatos visuales del canal de entrada del lead.
+     */
+    public function getLeadSourceInfoAttribute(): array
+    {
+        $sourceKey = $this->lead_source;
+        if (empty($sourceKey)) {
+            $notes = (string)$this->notes;
+            if (stripos($notes, 'bodas.net') !== false) {
+                $sourceKey = 'bodas_net';
+            } elseif (stripos($notes, 'madrigal') !== false) {
+                $sourceKey = 'madrigal';
+            } elseif (stripos($notes, 'VÍA WEB') !== false || stripos($notes, 'VIA WEB') !== false || stripos($notes, 'Formulario') !== false) {
+                $sourceKey = 'web';
+            } elseif (stripos($notes, 'feria') !== false || stripos($notes, 'Bridal Market') !== false) {
+                $sourceKey = 'feria';
+            } elseif (stripos($notes, 'VÍA EMAIL') !== false || stripos($notes, 'VIA EMAIL') !== false) {
+                $sourceKey = 'email';
+            } else {
+                $sourceKey = 'otro';
+            }
+        }
+
+        $def = self::LEAD_SOURCES[$sourceKey] ?? self::LEAD_SOURCES['otro'];
+        return [
+            'key' => $sourceKey,
+            'label' => $def['label'],
+            'short_label' => $def['short_label'] ?? $def['label'],
+            'icon' => $def['icon'],
+            'badge_class' => $def['badge_class'],
+            'active_class' => $def['active_class'],
+        ];
+    }
+
+    /**
+     * Etiqueta legible del canal de procedencia del lead.
+     */
+    public function getLeadSourceLabelAttribute(): string
+    {
+        return $this->lead_source_info['label'];
+    }
+
+    /**
+     * Icono representativo del canal de procedencia del lead.
+     */
+    public function getLeadSourceIconAttribute(): string
+    {
+        return $this->lead_source_info['icon'];
     }
 
     /**

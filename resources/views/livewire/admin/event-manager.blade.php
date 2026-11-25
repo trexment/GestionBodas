@@ -144,6 +144,35 @@
         </div>
     </div>
 
+    <!-- FILTRO RÁPIDO POR PROCEDENCIA / CANAL DE ENTRADA (LEAD SOURCE) -->
+    <div class="flex items-center gap-1.5 overflow-x-auto scrollbar-none pb-2 mb-4 w-full">
+        <span class="text-[11px] font-extrabold uppercase tracking-wider text-gray-400 dark:text-slate-500 shrink-0 mr-1 flex items-center gap-1">
+            <span>🎯</span> Canal:
+        </span>
+        <button type="button" wire:click="setSourceFilter('all')" class="px-2.5 py-1 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer {{ $source_filter === 'all' ? 'bg-fuchsia-600 text-white shadow-xs' : 'bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 border border-gray-200 dark:border-slate-700' }}">
+            Todos ({{ $sourceCounts['all'] ?? 0 }})
+        </button>
+        @foreach($leadSources as $sKey => $sDef)
+            @php
+                $sCount = $sourceCounts[$sKey] ?? 0;
+            @endphp
+            @if($sCount > 0 || $source_filter === $sKey)
+                <button type="button" wire:click="setSourceFilter('{{ $sKey }}')" class="px-2.5 py-1 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer flex items-center gap-1 {{ $source_filter === $sKey ? ($sDef['active_class'] ?? 'bg-indigo-600 text-white shadow-xs') : ($sDef['badge_class'] ?? 'bg-gray-50 border border-gray-200') }}">
+                    <span>{{ $sDef['icon'] }}</span>
+                    <span>{{ $sDef['short_label'] ?? $sDef['label'] }}</span>
+                    <span class="px-1.5 py-0.2 rounded-full text-[10px] {{ $source_filter === $sKey ? 'bg-white/20 text-white font-black' : 'font-extrabold opacity-80' }}">
+                        {{ $sCount }}
+                    </span>
+                </button>
+            @endif
+        @endforeach
+        @if($source_filter !== 'all')
+            <button type="button" wire:click="setSourceFilter('all')" class="text-[11px] text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 underline px-1 cursor-pointer" title="Limpiar filtro de canal">
+                ✕ Quitar filtro
+            </button>
+        @endif
+    </div>
+
     <!-- ========================================================== -->
     <!-- VISTA MÓVIL Y TABLET: TARJETAS RESPONSIVAS (< 1024px)      -->
     <!-- ========================================================== -->
@@ -166,6 +195,11 @@
                                 <span class="px-2 py-0.2 text-[10px] font-bold rounded-full border {{ $event->status_badge_class }}">
                                     {{ $event->status_icon }} {{ $event->status_label }}
                                 </span>
+                                @if($event->lead_source_info)
+                                    <span class="px-2 py-0.2 text-[10px] font-bold rounded-full border {{ $event->lead_source_info['badge_class'] }}" title="Canal: {{ $event->lead_source_info['label'] }}">
+                                        {{ $event->lead_source_info['icon'] }} {{ $event->lead_source_info['short_label'] }}
+                                    </span>
+                                @endif
                             </div>
                         </div>
                     </a>
@@ -330,6 +364,12 @@
                                     <span class="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold px-1.5 py-0.5 rounded-md">
                                         {{ $event->event_type_label }}
                                     </span>
+                                    @if($event->lead_source_info)
+                                        <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-md border inline-flex items-center gap-0.5 {{ $event->lead_source_info['badge_class'] }}" title="Canal: {{ $event->lead_source_info['label'] }}">
+                                            <span>{{ $event->lead_source_info['icon'] }}</span>
+                                            <span>{{ $event->lead_source_info['short_label'] }}</span>
+                                        </span>
+                                    @endif
                                     @if($event->dj)
                                         <span class="text-[10px] text-indigo-700 dark:text-indigo-400 font-semibold inline-flex items-center gap-0.5 truncate max-w-full">
                                             🎧 {{ $event->dj->name }}
@@ -483,7 +523,7 @@
                 <!-- Formulario con scroll vertical garantizado en móviles -->
                 <div class="p-5 overflow-y-auto flex-1 space-y-4">
                     <form wire:submit.prevent="saveEvent" id="createEventForm">
-                        <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 mb-3">
+                        <div class="grid grid-cols-1 sm:grid-cols-5 gap-3 mb-3">
                             <div class="sm:col-span-2">
                                 <label class="block text-gray-700 dark:text-slate-300 text-xs font-bold mb-1">Nombre del Evento *</label>
                                 <input type="text" wire:model="name" placeholder="Ej: Boda Laura y Carlos / Enlace Marta y Javier" class="border dark:border-slate-700 rounded-xl w-full py-2 px-3 text-gray-700 dark:text-slate-200 bg-white dark:bg-slate-800 text-sm focus:ring-indigo-500 focus:border-indigo-500 font-bold">
@@ -511,6 +551,15 @@
                                     <option value="otro">🎉 Fiesta / Otro</option>
                                 </select>
                                 @error('event_type') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 dark:text-slate-300 text-xs font-bold mb-1">🎯 Procedencia *</label>
+                                <select wire:model="lead_source" class="border dark:border-slate-700 rounded-xl w-full py-2 px-2 text-gray-700 dark:text-slate-200 text-xs font-bold focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-slate-800">
+                                    @foreach($leadSources as $srcKey => $srcDef)
+                                        <option value="{{ $srcKey }}">{{ $srcDef['icon'] }} {{ $srcDef['label'] }}</option>
+                                    @endforeach
+                                </select>
+                                @error('lead_source') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                             </div>
                         </div>
 

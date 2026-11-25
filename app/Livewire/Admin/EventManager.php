@@ -42,6 +42,7 @@ class EventManager extends Component
     public $assistant_id;
     public $assistant_ids = [];
     public $notes;
+    public $lead_source = 'bodas_net';
     
     public $editing_event_id = null;
     public $ceremony_time;
@@ -54,8 +55,20 @@ class EventManager extends Component
 
     public $showCreateModal = false;
     public $status_filter = 'all'; // all, no_response, draft, confirmed, completed, cancelled
+    public $source_filter = 'all'; // all, bodas_net, web, instagram, recomendacion, feria, etc.
     public bool $show_completed = false;
     public bool $show_cancelled = false;
+
+    /**
+     * Establece el filtro de procedencia / canal de entrada de los eventos.
+     *
+     * @param string $source Canal de entrada a filtrar.
+     * @return void
+     */
+    public function setSourceFilter($source)
+    {
+        $this->source_filter = $source;
+    }
 
     /**
      * Establece el filtro de estado de los eventos y activa la visibilidad de completados o cancelados si aplica.
@@ -103,6 +116,7 @@ class EventManager extends Component
         'name' => 'required|string|max:255',
         'brand' => 'nullable|string|in:nunez_and_son,javnx,mago_leugim',
         'event_type' => 'required|string|in:boda,video,empresa,cumpleanos,comunion,otro',
+        'lead_source' => 'nullable|string|max:50',
         'agreed_price' => 'nullable|numeric|min:0',
         'initial_status' => 'nullable|string|in:draft,confirmed',
         'new_client_name' => 'nullable|string|max:255',
@@ -226,9 +240,10 @@ class EventManager extends Component
         }
         $this->resetValidation();
         $this->editing_event_id = null;
-        $this->reset(['name', 'brand', 'event_type', 'event_date', 'setup_date', 'start_time', 'ceremony_time', 'cocktail_time', 'banquet_time', 'dance_start_time', 'dance_duration_hours', 'dance_end_time', 'max_end_time', 'location', 'client_id', 'partner_name', 'partner_phone', 'partner_email', 'partner_dni', 'dj_id', 'assistant_id', 'assistant_ids', 'notes', 'new_client_name', 'new_client_phone']);
+        $this->reset(['name', 'brand', 'event_type', 'lead_source', 'event_date', 'setup_date', 'start_time', 'ceremony_time', 'cocktail_time', 'banquet_time', 'dance_start_time', 'dance_duration_hours', 'dance_end_time', 'max_end_time', 'location', 'client_id', 'partner_name', 'partner_phone', 'partner_email', 'partner_dni', 'dj_id', 'assistant_id', 'assistant_ids', 'notes', 'new_client_name', 'new_client_phone']);
         $this->brand = \App\Models\Setting::getDetectedBrand();
         $this->event_type = 'boda';
+        $this->lead_source = 'bodas_net';
         $this->agreed_price = 250;
         $this->initial_status = 'confirmed';
         $this->dance_duration_hours = 4.0;
@@ -270,6 +285,7 @@ class EventManager extends Component
         $this->name = $event->name;
         $this->brand = $event->brand ?: 'nunez_and_son';
         $this->event_type = $event->event_type ?: 'boda';
+        $this->lead_source = $event->lead_source ?: ($event->lead_source_info['key'] ?? 'bodas_net');
         $this->event_date = $event->event_date ? $event->event_date->format('Y-m-d') : null;
         $this->setup_date = $event->setup_date ? \Carbon\Carbon::parse($event->setup_date)->format('Y-m-d') : null;
         $this->start_time = $event->start_time;
@@ -505,6 +521,7 @@ class EventManager extends Component
                 'name' => $this->name,
                 'brand' => $this->brand ?: 'nunez_and_son',
                 'event_type' => $this->event_type ?: 'boda',
+                'lead_source' => $this->lead_source ?: null,
                 'event_date' => $effectiveDate,
                 'location' => $effectiveLocation,
                 'client_id' => $this->client_id ?: null,
@@ -1493,11 +1510,29 @@ class EventManager extends Component
         })->count();
 
         if ($this->status_filter === 'all') {
-            $filteredEvents = $visiblePool->values();
+            $statusPool = $visiblePool;
         } elseif ($this->status_filter === 'cancelled') {
-            $filteredEvents = $allEvents->whereIn('status', ['cancelled', 'rejected'])->values();
+            $statusPool = $allEvents->whereIn('status', ['cancelled', 'rejected']);
         } else {
-            $filteredEvents = $allEvents->where('status', $this->status_filter)->values();
+            $statusPool = $allEvents->where('status', $this->status_filter);
+        }
+
+        // Conteo reactivo por procedencia / canal de entrada para el conjunto filtrado por estado
+        $sourceCounts = [
+            'all' => $statusPool->count(),
+        ];
+        foreach (\App\Models\Event::LEAD_SOURCES as $sKey => $sDef) {
+            $sourceCounts[$sKey] = $statusPool->filter(function ($ev) use ($sKey) {
+                return ($ev->lead_source_info['key'] ?? 'otro') === $sKey;
+            })->count();
+        }
+
+        if ($this->source_filter !== 'all') {
+            $filteredEvents = $statusPool->filter(function ($ev) {
+                return ($ev->lead_source_info['key'] ?? 'otro') === $this->source_filter;
+            })->values();
+        } else {
+            $filteredEvents = $statusPool->values();
         }
 
         $this->events = $filteredEvents;
@@ -1505,6 +1540,8 @@ class EventManager extends Component
         return view('livewire.admin.event-manager', [
             'events' => $filteredEvents,
             'statusCounts' => $statusCounts,
+            'sourceCounts' => $sourceCounts,
+            'leadSources' => \App\Models\Event::LEAD_SOURCES,
             'urgentNoResponseCount' => $urgentNoResponseCount,
             'expiredOnHoldCount' => $expiredOnHoldCount,
         ])->layout('components.layouts.app', ['header' => 'Gestión de Eventos']);

@@ -53,6 +53,7 @@ class EventShow extends Component
     public $event_edit_type;
     public $event_edit_brand;
     public $event_edit_status;
+    public $event_edit_lead_source;
     public $event_edit_notes;
 
     // Horarios del Evento y Baile
@@ -1217,6 +1218,18 @@ class EventShow extends Component
         }
         $brandLabel = $brand === 'javnx' ? 'JAVNX DJ' : ($brand === 'mago_leugim' ? 'Mago Leugim' : 'Núñez and Son');
         session()->flash('message', "Marca comercial del evento cambiada a: {$brandLabel} (servicios y tarifas adaptados)");
+    }
+
+    /**
+     * Cambia la procedencia o canal de entrada del lead en el evento.
+     */
+    public function changeLeadSource($source)
+    {
+        $this->event->update(['lead_source' => $source]);
+        $this->event->refresh();
+        $sourceDef = \App\Models\Event::LEAD_SOURCES[$source] ?? null;
+        $label = $sourceDef ? ($sourceDef['icon'] . ' ' . $sourceDef['label']) : $source;
+        session()->flash('message', "Canal de captación del evento actualizado a: {$label}");
     }
 
     /**
@@ -7075,6 +7088,7 @@ class EventShow extends Component
         $this->event_edit_type = $this->event->event_type_clean ?: 'boda';
         $this->event_edit_brand = $this->event->brand_clean ?: 'nunez_and_son';
         $this->event_edit_status = $this->event->status ?: 'draft';
+        $this->event_edit_lead_source = $this->event->lead_source ?: ($this->event->lead_source_info['key'] ?? 'bodas_net');
         $this->event_edit_notes = $this->event->notes;
         $this->showEditEventModal = true;
     }
@@ -7114,6 +7128,7 @@ class EventShow extends Component
             'event_edit_type' => 'required|string|in:boda,video,empresa,cumpleanos,comunion,otro',
             'event_edit_brand' => 'required|string|in:nunez_and_son,javnx,mago_leugim',
             'event_edit_status' => 'required|in:draft,no_response,on_hold,confirmed,completed,rejected,cancelled',
+            'event_edit_lead_source' => 'nullable|string|max:50',
             'event_edit_notes' => 'nullable|string',
         ]);
 
@@ -7127,6 +7142,7 @@ class EventShow extends Component
             'event_type' => $this->event_edit_type,
             'brand' => $this->event_edit_brand,
             'status' => $this->event_edit_status,
+            'lead_source' => $this->event_edit_lead_source ?: null,
             'notes' => $this->event_edit_notes,
         ];
 

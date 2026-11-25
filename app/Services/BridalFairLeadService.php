@@ -425,6 +425,7 @@ CSV;
             'name' => "Boda - {$name}",
             'brand' => $brand ?: 'nunez_and_son',
             'event_type' => 'boda',
+            'lead_source' => 'feria',
             'event_date' => $eventDate,
             'location' => $locationLabel,
             'client_id' => $client->id,

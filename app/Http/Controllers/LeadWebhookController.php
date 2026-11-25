@@ -225,6 +225,7 @@ class LeadWebhookController extends Controller
             'name' => $eventName,
             'brand' => $brandKey,
             'event_type' => $eventType,
+            'lead_source' => 'web',
             'event_date' => $eventDate,
             'location' => $location ?: 'Por definir',
             'client_id' => $client ? $client->id : null,
