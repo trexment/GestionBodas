@@ -570,7 +570,13 @@
                                     <label class="block text-gray-700 dark:text-slate-300 text-xs font-bold">Fecha del Evento</label>
                                     <span class="text-[10px] text-amber-600 dark:text-amber-400 font-semibold">Opcional si aún no tienen día</span>
                                 </div>
-                                <input type="date" wire:model="event_date" class="border dark:border-slate-700 rounded-xl w-full py-2 px-3 text-gray-700 dark:text-slate-200 text-sm focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-slate-800 font-bold">
+                                <input type="date" wire:model.live="event_date" class="border dark:border-slate-700 rounded-xl w-full py-2 px-3 text-gray-700 dark:text-slate-200 text-sm focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-slate-800 font-bold">
+                                @if(!empty($this->formatted_event_date))
+                                    <div class="mt-1 flex items-center gap-1.5 text-xs text-indigo-700 dark:text-indigo-300 font-bold bg-indigo-50 dark:bg-indigo-950/60 px-2.5 py-1 rounded-lg border border-indigo-200 dark:border-indigo-800">
+                                        <span>📅</span>
+                                        <span class="capitalize">{{ $this->formatted_event_date }}</span>
+                                    </div>
+                                @endif
                                 @error('event_date') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                             </div>
                             <div>
@@ -593,8 +599,14 @@
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div>
                                     <label class="block text-amber-900 dark:text-amber-300 text-xs font-bold mb-1">📅 Fecha Montaje</label>
-                                    <input type="date" wire:model="setup_date" class="border border-amber-300 dark:border-amber-700 rounded-xl w-full py-1.5 px-2 text-gray-700 dark:text-slate-200 text-xs bg-white dark:bg-slate-800">
-                                    <span class="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5 block">Opcional si es el mismo día</span>
+                                    <input type="date" wire:model.live="setup_date" class="border border-amber-300 dark:border-amber-700 rounded-xl w-full py-1.5 px-2 text-gray-700 dark:text-slate-200 text-xs bg-white dark:bg-slate-800">
+                                    @if(!empty($this->formatted_setup_date))
+                                        <div class="mt-1 text-[11px] font-bold text-amber-800 dark:text-amber-300 bg-amber-100/70 dark:bg-amber-950/60 px-2 py-0.5 rounded border border-amber-300 dark:border-amber-800">
+                                            <span>🛠️ {{ $this->formatted_setup_date }}</span>
+                                        </div>
+                                    @else
+                                        <span class="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5 block">Opcional si es el mismo día</span>
+                                    @endif
                                 </div>
                                 <div>
                                     <label class="block text-amber-900 dark:text-amber-300 text-xs font-bold mb-1">🚗 Hora Montaje (24h)</label>
@@ -618,22 +630,93 @@
                                 </div>
                             </div>
 
-                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2 border-t border-purple-200/60 dark:border-purple-900/60">
-                                <div>
-                                    <label class="block text-purple-900 dark:text-purple-300 text-xs font-bold mb-1">🎧 Inicio Baile (24h)</label>
-                                    <input type="time" wire:model="dance_start_time" class="border border-purple-200 dark:border-purple-800 rounded-xl w-full py-1.5 px-2 text-gray-700 dark:text-slate-200 text-xs font-bold bg-white dark:bg-slate-800">
-                                </div>
-                                <div>
-                                    <label class="block text-purple-900 dark:text-purple-300 text-xs font-bold mb-1">⏱️ Duración Baile</label>
-                                    <div class="relative">
-                                        <input type="number" step="0.5" min="1" max="24" wire:model="dance_duration_hours" class="border border-purple-200 dark:border-purple-800 rounded-xl w-full py-1.5 px-2 text-gray-700 dark:text-slate-200 text-xs font-bold bg-white dark:bg-slate-800 pr-6">
-                                        <span class="absolute right-2 top-1.5 text-[10px] text-gray-400 font-bold">h</span>
+                            <!-- Baile / Barra Libre (Con Fin Previsto, Presets y Detección 24h) -->
+                            <div class="pt-2 border-t border-purple-200/60 dark:border-purple-900/60 space-y-2">
+                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                    <div>
+                                        <label class="block text-purple-900 dark:text-purple-300 text-xs font-bold mb-1">🎧 Inicio Baile</label>
+                                        <input type="time" wire:model.live="dance_start_time" class="border border-purple-200 dark:border-purple-800 rounded-xl w-full py-1.5 px-2 text-gray-700 dark:text-slate-200 text-xs font-bold bg-white dark:bg-slate-800">
+                                    </div>
+                                    <div>
+                                        <label class="block text-purple-900 dark:text-purple-300 text-xs font-bold mb-1">⏱️ Duración</label>
+                                        <div class="relative">
+                                            <input type="number" step="0.5" min="1" max="24" wire:model.live="dance_duration_hours" class="border border-purple-200 dark:border-purple-800 rounded-xl w-full py-1.5 px-2 text-gray-700 dark:text-slate-200 text-xs font-bold bg-white dark:bg-slate-800 pr-5">
+                                            <span class="absolute right-2 top-1.5 text-[10px] text-gray-400 font-bold">h</span>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-purple-900 dark:text-purple-300 text-xs font-bold mb-1">🏁 Fin Previsto</label>
+                                        <input type="time" wire:model="dance_end_time" readonly class="border border-purple-200/80 dark:border-purple-800/80 rounded-xl w-full py-1.5 px-2 text-purple-900 dark:text-purple-200 text-xs font-black bg-purple-100/50 dark:bg-purple-950/60 cursor-not-allowed" title="Calculado automáticamente">
+                                    </div>
+                                    <div>
+                                        <label class="block text-purple-900 dark:text-purple-300 text-xs font-bold mb-1">🛑 Límite Finca</label>
+                                        <input type="time" wire:model.live="max_end_time" class="border border-purple-200 dark:border-purple-800 rounded-xl w-full py-1.5 px-2 text-gray-700 dark:text-slate-200 text-xs font-bold bg-white dark:bg-slate-800" title="Hora máxima permitida por la finca">
                                     </div>
                                 </div>
-                                <div>
-                                    <label class="block text-purple-900 dark:text-purple-300 text-xs font-bold mb-1">🛑 Límite / Hora Máx.</label>
-                                    <input type="time" wire:model="max_end_time" class="border border-purple-200 dark:border-purple-800 rounded-xl w-full py-1.5 px-2 text-gray-700 dark:text-slate-200 text-xs font-bold bg-white dark:bg-slate-800" title="Hora máxima permitida / Límite finca">
+
+                                <!-- Presets de 1 Clic -->
+                                <div class="bg-white/60 dark:bg-slate-900/60 p-2 rounded-xl border border-purple-100 dark:border-purple-900/40 space-y-1.5 text-[10px]">
+                                    <div class="flex flex-wrap items-center gap-1">
+                                        <span class="text-purple-800 dark:text-purple-300 font-bold">Inicio rápido:</span>
+                                        <button type="button" wire:click="setPresetDanceStartTime('18:00')" class="px-2 py-0.5 bg-purple-100 hover:bg-purple-200 dark:bg-purple-900/60 text-purple-900 dark:text-purple-200 rounded font-bold cursor-pointer transition">18:00 (Tarde)</button>
+                                        <button type="button" wire:click="setPresetDanceStartTime('23:30')" class="px-2 py-0.5 bg-purple-100 hover:bg-purple-200 dark:bg-purple-900/60 text-purple-900 dark:text-purple-200 rounded font-bold cursor-pointer transition">23:30 (Noche)</button>
+                                        <button type="button" wire:click="setPresetDanceStartTime('00:00')" class="px-2 py-0.5 bg-purple-100 hover:bg-purple-200 dark:bg-purple-900/60 text-purple-900 dark:text-purple-200 rounded font-bold cursor-pointer transition">00:00 (Medianoche)</button>
+                                        <button type="button" wire:click="setPresetDanceStartTime('00:30')" class="px-2 py-0.5 bg-purple-100 hover:bg-purple-200 dark:bg-purple-900/60 text-purple-900 dark:text-purple-200 rounded font-bold cursor-pointer transition">00:30</button>
+                                    </div>
+                                    <div class="flex flex-wrap items-center gap-1">
+                                        <span class="text-purple-800 dark:text-purple-300 font-bold">Duración:</span>
+                                        <button type="button" wire:click="setPresetDanceDuration(3)" class="px-2 py-0.5 bg-purple-100 hover:bg-purple-200 dark:bg-purple-900/60 text-purple-900 dark:text-purple-200 rounded font-bold cursor-pointer transition">3h</button>
+                                        <button type="button" wire:click="setPresetDanceDuration(4)" class="px-2 py-0.5 bg-purple-100 hover:bg-purple-200 dark:bg-purple-900/60 text-purple-900 dark:text-purple-200 rounded font-bold cursor-pointer transition">4h</button>
+                                        <button type="button" wire:click="setPresetDanceDuration(4.5)" class="px-2 py-0.5 bg-purple-100 hover:bg-purple-200 dark:bg-purple-900/60 text-purple-900 dark:text-purple-200 rounded font-bold cursor-pointer transition">4,5h</button>
+                                        <button type="button" wire:click="setPresetDanceDuration(5)" class="px-2 py-0.5 bg-purple-100 hover:bg-purple-200 dark:bg-purple-900/60 text-purple-900 dark:text-purple-200 rounded font-bold cursor-pointer transition">5h</button>
+                                        <button type="button" wire:click="setPresetDanceDuration(6)" class="px-2 py-0.5 bg-purple-100 hover:bg-purple-200 dark:bg-purple-900/60 text-purple-900 dark:text-purple-200 rounded font-bold cursor-pointer transition">6h</button>
+                                    </div>
+                                    <div class="flex flex-wrap items-center gap-1">
+                                        <span class="text-purple-800 dark:text-purple-300 font-bold">Límite finca:</span>
+                                        <button type="button" wire:click="setPresetMaxEndTime('00:30')" class="px-2 py-0.5 bg-purple-100 hover:bg-purple-200 dark:bg-purple-900/60 text-purple-900 dark:text-purple-200 rounded font-bold cursor-pointer transition">00:30</button>
+                                        <button type="button" wire:click="setPresetMaxEndTime('04:00')" class="px-2 py-0.5 bg-purple-100 hover:bg-purple-200 dark:bg-purple-900/60 text-purple-900 dark:text-purple-200 rounded font-bold cursor-pointer transition">04:00</button>
+                                        <button type="button" wire:click="setPresetMaxEndTime('05:00')" class="px-2 py-0.5 bg-purple-100 hover:bg-purple-200 dark:bg-purple-900/60 text-purple-900 dark:text-purple-200 rounded font-bold cursor-pointer transition">05:00</button>
+                                        <button type="button" wire:click="setPresetMaxEndTime('06:00')" class="px-2 py-0.5 bg-purple-100 hover:bg-purple-200 dark:bg-purple-900/60 text-purple-900 dark:text-purple-200 rounded font-bold cursor-pointer transition">06:00</button>
+                                        <button type="button" wire:click="setPresetMaxEndTime(null)" class="px-2 py-0.5 bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 text-gray-700 dark:text-slate-300 rounded font-bold cursor-pointer transition">Sin límite</button>
+                                    </div>
                                 </div>
+
+                                <!-- Avisos Inteligentes si se escribió hora en formato 12h (Mañana vs Tarde/Noche) -->
+                                @if(!empty($this->suggested_dance_start_time_pm))
+                                    <div class="p-2 bg-amber-50 dark:bg-amber-950/50 border border-amber-300 dark:border-amber-800 rounded-xl flex items-center justify-between text-xs gap-2">
+                                        <div class="flex items-center gap-1.5 text-amber-900 dark:text-amber-200 font-semibold">
+                                            <span>☀️</span>
+                                            <span>Has puesto <strong>{{ $dance_start_time }}</strong> (de la mañana). ¿Querías poner por la tarde?</span>
+                                        </div>
+                                        <button type="button" wire:click="fix12hTime('dance_start_time', '{{ $this->suggested_dance_start_time_pm }}')" class="px-2.5 py-1 bg-amber-600 hover:bg-amber-700 active:scale-95 text-white font-bold rounded-lg text-xs shadow-xs cursor-pointer transition shrink-0 whitespace-nowrap">
+                                            Cambiar a {{ $this->suggested_dance_start_time_pm }} (Tarde/Noche)
+                                        </button>
+                                    </div>
+                                @endif
+
+                                @if(!empty($this->suggested_max_end_time_am))
+                                    <div class="p-2 bg-amber-50 dark:bg-amber-950/50 border border-amber-300 dark:border-amber-800 rounded-xl flex items-center justify-between text-xs gap-2">
+                                        <div class="flex items-center gap-1.5 text-amber-900 dark:text-amber-200 font-semibold">
+                                            <span>☀️</span>
+                                            <span>Has puesto límite <strong>{{ $max_end_time }}</strong> (mediodía). ¿Querías poner medianoche / madrugada?</span>
+                                        </div>
+                                        <button type="button" wire:click="fix12hTime('max_end_time', '{{ $this->suggested_max_end_time_am }}')" class="px-2.5 py-1 bg-amber-600 hover:bg-amber-700 active:scale-95 text-white font-bold rounded-lg text-xs shadow-xs cursor-pointer transition shrink-0 whitespace-nowrap">
+                                            Cambiar a {{ $this->suggested_max_end_time_am }} (Madrugada)
+                                        </button>
+                                    </div>
+                                @endif
+
+                                @if(!empty($this->dance_schedule_summary))
+                                    <div class="p-2 bg-purple-100/70 dark:bg-purple-900/50 border border-purple-200 dark:border-purple-800 rounded-xl flex items-center justify-between text-xs text-purple-950 dark:text-purple-200 font-bold">
+                                        <span class="flex items-center gap-1.5">
+                                            <span>🎧</span>
+                                            <span>Horario Previsto:</span>
+                                        </span>
+                                        <span class="text-xs font-black text-purple-800 dark:text-purple-100 bg-white dark:bg-purple-950 px-2 py-0.5 rounded-lg border border-purple-200 dark:border-purple-800 shadow-2xs">
+                                            {{ $this->dance_schedule_summary }}
+                                        </span>
+                                    </div>
+                                @endif
                             </div>
                         </div>
 
@@ -737,7 +820,7 @@
                                 <div class="space-y-1 max-h-36 overflow-y-auto border border-amber-200 dark:border-amber-800/60 rounded-xl p-2 bg-white/80 dark:bg-slate-900/80">
                                     @foreach($assistants as $ast)
                                         <label class="flex items-center gap-2 p-1.5 rounded-lg cursor-pointer hover:bg-amber-50/60 dark:hover:bg-slate-800 transition text-xs font-semibold text-gray-800 dark:text-slate-200">
-                                            <input type="checkbox" wire:model="assistant_ids" value="{{ $ast->id }}" class="rounded text-amber-600 focus:ring-amber-500 border-gray-300 h-3.5 w-3.5">
+                                            <input type="checkbox" wire:model.live="assistant_ids" value="{{ $ast->id }}" class="rounded text-amber-600 focus:ring-amber-500 border-gray-300 h-3.5 w-3.5">
                                             <span class="flex-1 truncate">{{ $ast->name }}</span>
                                             <span class="text-[10px] px-1.5 py-0.2 rounded font-bold {{ $ast->role === 'assistant' ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300' : 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300' }}">{{ ucfirst($ast->role) }}</span>
                                         </label>

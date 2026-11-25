@@ -30,6 +30,7 @@ class EventManager extends Component
     public $start_time;
     public $dance_start_time;
     public $dance_duration_hours = 4.0;
+    public $dance_end_time;
     public $max_end_time;
     public $location;
     public $client_id;
@@ -114,6 +115,7 @@ class EventManager extends Component
         'banquet_time' => 'nullable|string|max:20',
         'dance_start_time' => 'nullable|string|max:20',
         'dance_duration_hours' => 'nullable|numeric|min:0.5|max:24',
+        'dance_end_time' => 'nullable|string|max:20',
         'max_end_time' => 'nullable|string|max:20',
         'location' => 'nullable|string|max:255',
         'client_id' => 'nullable|exists:users,id',
@@ -224,12 +226,13 @@ class EventManager extends Component
         }
         $this->resetValidation();
         $this->editing_event_id = null;
-        $this->reset(['name', 'brand', 'event_type', 'event_date', 'setup_date', 'start_time', 'ceremony_time', 'cocktail_time', 'banquet_time', 'dance_start_time', 'dance_duration_hours', 'max_end_time', 'location', 'client_id', 'partner_name', 'partner_phone', 'partner_email', 'partner_dni', 'dj_id', 'assistant_id', 'assistant_ids', 'notes', 'new_client_name', 'new_client_phone']);
+        $this->reset(['name', 'brand', 'event_type', 'event_date', 'setup_date', 'start_time', 'ceremony_time', 'cocktail_time', 'banquet_time', 'dance_start_time', 'dance_duration_hours', 'dance_end_time', 'max_end_time', 'location', 'client_id', 'partner_name', 'partner_phone', 'partner_email', 'partner_dni', 'dj_id', 'assistant_id', 'assistant_ids', 'notes', 'new_client_name', 'new_client_phone']);
         $this->brand = \App\Models\Setting::getDetectedBrand();
         $this->event_type = 'boda';
         $this->agreed_price = 250;
         $this->initial_status = 'confirmed';
         $this->dance_duration_hours = 4.0;
+        $this->dance_end_time = null;
         $this->dj_id = auth()->id(); // default current logged admin/dj
         $this->assistant_ids = [];
         $this->loadStaff();
@@ -275,6 +278,7 @@ class EventManager extends Component
         $this->banquet_time = $event->banquet_time;
         $this->dance_start_time = $event->dance_start_time;
         $this->dance_duration_hours = $event->dance_duration_hours ?: 4.0;
+        $this->dance_end_time = $event->dance_end_time ?: $event->calculated_dance_end_time;
         $this->max_end_time = $event->max_end_time;
         $this->location = $event->location;
         $this->client_id = $event->client_id;
@@ -315,6 +319,128 @@ class EventManager extends Component
     {
         $this->showCreateModal = false;
         $this->editing_event_id = null;
+    }
+
+    public function updatedDanceStartTime($value)
+    {
+        $this->recalculateDanceEndTime();
+    }
+
+    public function updatedDanceDurationHours($value)
+    {
+        $this->recalculateDanceEndTime();
+    }
+
+    public function recalculateDanceEndTime()
+    {
+        if (!empty($this->dance_start_time) && !empty($this->dance_duration_hours)) {
+            try {
+                $startClean = substr(trim((string)$this->dance_start_time), 0, 5);
+                if (preg_match('/^\d{1,2}:\d{2}$/', $startClean)) {
+                    $start = \Carbon\Carbon::createFromFormat('H:i', $startClean);
+                    $minutes = (int)((float)$this->dance_duration_hours * 60);
+                    $this->dance_end_time = $start->addMinutes($minutes)->format('H:i');
+                }
+            } catch (\Throwable $e) {}
+        }
+    }
+
+    public function setPresetDanceStartTime(string $time)
+    {
+        $this->dance_start_time = $time;
+        $this->recalculateDanceEndTime();
+    }
+
+    public function setPresetDanceDuration($hours)
+    {
+        $this->dance_duration_hours = (float)$hours;
+        $this->recalculateDanceEndTime();
+    }
+
+    public function setPresetMaxEndTime(?string $time)
+    {
+        $this->max_end_time = $time;
+    }
+
+    public function fix12hTime(string $field, string $targetTime)
+    {
+        if ($field === 'dance_start_time') {
+            $this->dance_start_time = $targetTime;
+            $this->recalculateDanceEndTime();
+        } elseif ($field === 'max_end_time') {
+            $this->max_end_time = $targetTime;
+        }
+    }
+
+    public function getSuggestedDanceStartTimePmProperty(): ?string
+    {
+        if (empty($this->dance_start_time)) return null;
+        $time = substr(trim((string)$this->dance_start_time), 0, 5);
+        if ($time >= '05:00' && $time <= '11:59') {
+            try {
+                return \Carbon\Carbon::createFromFormat('H:i', $time)->addHours(12)->format('H:i');
+            } catch (\Throwable $e) {}
+        }
+        return null;
+    }
+
+    public function getSuggestedMaxEndTimeAmProperty(): ?string
+    {
+        if (empty($this->max_end_time)) return null;
+        $time = substr(trim((string)$this->max_end_time), 0, 5);
+        if ($time >= '12:00' && $time <= '13:59') {
+            try {
+                return \Carbon\Carbon::createFromFormat('H:i', $time)->subHours(12)->format('H:i');
+            } catch (\Throwable $e) {}
+        }
+        return null;
+    }
+
+    public function getFormattedEventDateProperty(): ?string
+    {
+        if (empty($this->event_date)) return null;
+        try {
+            return \Carbon\Carbon::parse($this->event_date)->locale('es')->isoFormat('dddd, D [de] MMMM [de] YYYY');
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
+    public function getFormattedSetupDateProperty(): ?string
+    {
+        if (empty($this->setup_date)) return null;
+        try {
+            $setup = \Carbon\Carbon::parse($this->setup_date)->locale('es');
+            if (!empty($this->event_date)) {
+                $ev = \Carbon\Carbon::parse($this->event_date);
+                if ($setup->isSameDay($ev)) {
+                    return 'Mismo día (' . $setup->format('d/m/Y') . ')';
+                } elseif ($setup->isSameDay($ev->copy()->subDay())) {
+                    return 'Víspera (' . $setup->format('d/m/Y') . ')';
+                }
+            }
+            return $setup->isoFormat('dddd, D [de] MMMM [de] YYYY');
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
+    public function getDanceScheduleSummaryProperty(): ?string
+    {
+        if (empty($this->dance_start_time)) return null;
+        $start = substr((string)$this->dance_start_time, 0, 5) . ' h';
+        $end = $this->dance_end_time ? (substr((string)$this->dance_end_time, 0, 5) . ' h') : null;
+        $hours = $this->dance_duration_hours ? (rtrim(rtrim(number_format((float)$this->dance_duration_hours, 1, ',', '.'), '0'), ',') . 'h') : null;
+        $max = $this->max_end_time ? (substr((string)$this->max_end_time, 0, 5) . ' h') : null;
+
+        if ($end && $max && $end !== $max) {
+            return "De {$start} a {$end} ({$hours}, máx. {$max})";
+        } elseif ($end && $hours) {
+            return "De {$start} a {$end} ({$hours})";
+        } elseif ($end) {
+            return "De {$start} a {$end}";
+        }
+        return "Desde las {$start}" . ($hours ? " ({$hours})" : "");
     }
 
     /**
@@ -399,6 +525,7 @@ class EventManager extends Component
                 'banquet_time' => $this->banquet_time ?: null,
                 'dance_start_time' => $this->dance_start_time ?: null,
                 'dance_duration_hours' => $this->dance_duration_hours ? (float)$this->dance_duration_hours : null,
+                'dance_end_time' => $this->dance_end_time ?: null,
                 'max_end_time' => $this->max_end_time ?: null,
             ];
 

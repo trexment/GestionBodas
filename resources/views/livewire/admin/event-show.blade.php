@@ -7951,7 +7951,7 @@
                                 <div class="space-y-1 max-h-48 overflow-y-auto border border-amber-200 rounded-xl p-2 bg-amber-50/40">
                                     @foreach($allAssistants as $a)
                                         <label class="flex items-center gap-2.5 p-2 rounded-lg cursor-pointer hover:bg-white transition text-xs font-semibold text-gray-800 border border-transparent hover:border-amber-200 shadow-2xs">
-                                            <input type="checkbox" wire:model="assigned_assistant_ids" value="{{ $a->id }}" class="rounded text-amber-600 focus:ring-amber-500 border-gray-300 h-4 w-4">
+                                            <input type="checkbox" wire:model.live="assigned_assistant_ids" value="{{ $a->id }}" class="rounded text-amber-600 focus:ring-amber-500 border-gray-300 h-4 w-4">
                                             <div class="flex-1 min-w-0">
                                                 <div class="font-bold text-gray-900 truncate">{{ $a->name }}</div>
                                                 @if($a->phone)<div class="text-[10px] text-gray-500 font-normal">📞 {{ $a->phone }}</div>@endif
