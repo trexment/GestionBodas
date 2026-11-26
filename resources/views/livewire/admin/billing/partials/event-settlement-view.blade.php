@@ -345,6 +345,16 @@
                                                 </span>
                                             @endif
                                         </div>
+                                    @else
+                                        <div class="flex items-center justify-between text-[10px] text-amber-600 dark:text-amber-400 mt-1">
+                                            <span class="font-bold flex items-center gap-1">
+                                                <span>⏳</span>
+                                                <span>Coste previsto (Pendiente de pagar a empresa: {{ number_format($sett['provider_net_cost'] ?? 0, 2, ',', '.') }} €)</span>
+                                            </span>
+                                            <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-black bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                                                ⏳ Aún NO pagado (0 € restado de banco)
+                                            </span>
+                                        </div>
                                     @endif
                                 </div>
                             @endif
