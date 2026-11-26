@@ -436,7 +436,7 @@
                             <th class="py-3 px-4">2º Pago: Liquidación / Resto</th>
                             <th class="py-3 px-3 text-right">Total Cobrado</th>
                             <th class="py-3 px-3 text-right">Pendiente</th>
-                            <th class="py-3 px-4">📸 Gasto Proveedor / Neto</th>
+                            <th class="py-3 px-4">📸 Costes / Proveedor / Neto</th>
                             <th class="py-3 px-4">Facturas / Recibos</th>
                         </tr>
                     </thead>
@@ -448,7 +448,10 @@
                                 $fb = $row['fb'];
                                 $evProv = $row['prov'] ?? $ev->external_provider_summary;
                                 $evProvCost = !empty($evProv['has_external_service']) ? (float) ($evProv['provider_total_cost'] ?? 0) : 0.0;
-                                $evNetTotal = max(0, round((float) $fb['quote_total'] - $evProvCost, 2));
+                                $evMatItems = $row['material_items'] ?? collect();
+                                $evMatCost = (float) ($row['material_cost'] ?? 0);
+                                $totalCosts = round($evProvCost + $evMatCost, 2);
+                                $evNetTotal = max(0, round((float) $fb['quote_total'] - $totalCosts, 2));
                             @endphp
                             <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition">
                                 <!-- Evento y Fecha -->
@@ -494,8 +497,8 @@
                                         <div class="font-black text-slate-900 dark:text-white">
                                             {{ number_format($fb['quote_total'], 2, ',', '.') }} €
                                         </div>
-                                        @if($evProvCost > 0)
-                                            <div class="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 mt-0.5" title="Ingreso neto del evento descontando el gasto de Fotomatón / 360º ({{ number_format($evProvCost, 2, ',', '.') }} €)">
+                                        @if($totalCosts > 0)
+                                            <div class="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 mt-0.5" title="Ingreso neto del evento tras restar costes de proveedores y gastos de empresa (-{{ number_format($totalCosts, 2, ',', '.') }} €)">
                                                 💎 Neto: {{ number_format($evNetTotal, 2, ',', '.') }} €
                                             </div>
                                         @endif
@@ -617,14 +620,50 @@
                                                         <span class="inline-flex items-center gap-1 font-extrabold px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-[10px]" title="{{ $isFinCash ? 'Fondo Común en Efectivo / Caja física (no en banco)' : 'Fondo común en cuenta bancaria' }}">
                                                             {{ $isFinCash ? '💵 Fondo Común (Efectivo / Caja)' : '🏦 Fondo Común (Banco)' }}
                                                         </span>
-                                                        <button
-                                                            type="button"
-                                                            wire:click="openExpenseForEvent({{ $ev->id }}, {{ $fb['final_paid_amount'] }})"
-                                                            class="inline-flex items-center gap-0.5 text-[10px] text-amber-700 dark:text-amber-400 hover:underline font-bold cursor-pointer"
-                                                            title="Anotar en qué se va a gastar este dinero (Cena de Navidad, compras, etc.)"
-                                                        >
-                                                            🍽️ Anotar Gasto / Uso
-                                                        </button>
+                                                        @if($evMatItems->isNotEmpty())
+                                                            <div class="w-full mt-1.5 space-y-1">
+                                                                @foreach($evMatItems as $mItem)
+                                                                    <div class="p-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-[10px] space-y-0.5">
+                                                                        <div class="flex items-center justify-between font-extrabold text-amber-800 dark:text-amber-300 gap-1">
+                                                                            <span class="truncate max-w-[130px]" title="{{ $mItem->concept }}">
+                                                                                {{ $mItem->category === 'cena_empresa' ? '🥂' : '🛠️' }} {{ $mItem->concept }}
+                                                                            </span>
+                                                                            <span class="text-rose-600 dark:text-rose-400 font-black shrink-0">-{{ number_format($mItem->amount, 2, ',', '.') }} €</span>
+                                                                        </div>
+                                                                        <div class="flex items-center justify-between text-[9px] text-slate-500 pt-0.5 border-t border-amber-200/60 dark:border-amber-800/40">
+                                                                            <span class="truncate max-w-[100px]">{{ $mItem->supplier ?: $mItem->category_label }}</span>
+                                                                            <button
+                                                                                type="button"
+                                                                                wire:click="openMaterialModal({{ $mItem->id }})"
+                                                                                class="text-amber-700 dark:text-amber-400 font-bold hover:underline cursor-pointer"
+                                                                                title="Editar este gasto imputado"
+                                                                            >
+                                                                                ✏️ Editar
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+                                                                @endforeach
+                                                                @if($evMatCost < (float)$fb['final_paid_amount'])
+                                                                    <button
+                                                                        type="button"
+                                                                        wire:click="openExpenseForEvent({{ $ev->id }}, {{ max(0, round((float)$fb['final_paid_amount'] - $evMatCost, 2)) }})"
+                                                                        class="inline-flex items-center gap-0.5 text-[9px] text-amber-700 dark:text-amber-400 hover:underline font-bold cursor-pointer"
+                                                                        title="Anotar otro gasto con el resto (quedan {{ number_format(max(0, (float)$fb['final_paid_amount'] - $evMatCost), 2, ',', '.') }} €)"
+                                                                    >
+                                                                        ➕ Anotar otro gasto
+                                                                    </button>
+                                                                @endif
+                                                            </div>
+                                                        @else
+                                                            <button
+                                                                type="button"
+                                                                wire:click="openExpenseForEvent({{ $ev->id }}, {{ $fb['final_paid_amount'] }})"
+                                                                class="inline-flex items-center gap-0.5 text-[10px] text-amber-700 dark:text-amber-400 hover:underline font-bold cursor-pointer"
+                                                                title="Anotar en qué se va a gastar este dinero (Cena de Navidad, compras, etc.)"
+                                                            >
+                                                                🍽️ Anotar Gasto / Uso
+                                                            </button>
+                                                        @endif
                                                     @else
                                                         <span class="inline-flex items-center gap-1 font-extrabold px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 text-[10px]" title="Cobrado en cuenta de {{ $fb['final_collected_by'] }}">
                                                             👤 {{ $fb['final_collected_by'] }}
@@ -682,54 +721,87 @@
                                     @endif
                                 </td>
 
-                                <!-- Gasto Proveedor (Fotomatón / 360º) y Neto -->
+                                <!-- Gasto Proveedor / Costes Empresa y Neto -->
                                 <td class="py-3.5 px-4 align-top">
-                                    @if($evProv['has_external_service'])
-                                        <div class="p-2 rounded-xl border space-y-1 {{ $evProv['status'] === 'paid' ? 'bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800/70' : ($evProv['status'] === 'deposit_paid' ? 'bg-purple-50/60 dark:bg-purple-950/30 border-purple-200 dark:border-purple-800/70' : 'bg-amber-50/50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800/70') }}">
-                                            <div class="flex items-center justify-between gap-2">
-                                                <span class="text-[11px] font-black text-purple-700 dark:text-purple-300 truncate max-w-[155px]" title="{{ $evProv['service_description'] }} ({{ $evProv['provider_name'] }})">
-                                                    📸 Gasto: {{ number_format($evProv['provider_total_cost'], 2, ',', '.') }} €
-                                                </span>
-                                                <button
-                                                    type="button"
-                                                    wire:click="openProviderModal({{ $ev->id }}, 'deposit')"
-                                                    class="text-[11px] text-purple-700 dark:text-purple-400 hover:underline font-bold cursor-pointer shrink-0"
-                                                    title="Editar reserva y pagos a proveedor ({{ $evProv['provider_name'] }})"
-                                                >
-                                                    ✏️
-                                                </button>
-                                            </div>
-                                            @if(!empty($evProv['detected_from_quote']) && (float)($evProv['client_price'] ?? 0) > 0)
-                                                <div class="text-[10px] text-slate-500 dark:text-slate-400">
-                                                    PVP Cliente: <strong class="text-slate-700 dark:text-slate-200">{{ number_format($evProv['client_price'], 2, ',', '.') }} €</strong>
+                                    @if($evProv['has_external_service'] || $evMatCost > 0)
+                                        <div class="space-y-1.5">
+                                            @if($evProv['has_external_service'])
+                                                <div class="p-2 rounded-xl border space-y-1 {{ $evProv['status'] === 'paid' ? 'bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800/70' : ($evProv['status'] === 'deposit_paid' ? 'bg-purple-50/60 dark:bg-purple-950/30 border-purple-200 dark:border-purple-800/70' : 'bg-amber-50/50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800/70') }}">
+                                                    <div class="flex items-center justify-between gap-2">
+                                                        <span class="text-[11px] font-black text-purple-700 dark:text-purple-300 truncate max-w-[155px]" title="{{ $evProv['service_description'] }} ({{ $evProv['provider_name'] }})">
+                                                            📸 {{ $evProv['provider_name'] }}: -{{ number_format($evProv['provider_total_cost'], 2, ',', '.') }} €
+                                                        </span>
+                                                        <button
+                                                            type="button"
+                                                            wire:click="openProviderModal({{ $ev->id }}, 'deposit')"
+                                                            class="text-[11px] text-purple-700 dark:text-purple-400 hover:underline font-bold cursor-pointer shrink-0"
+                                                            title="Editar reserva y pagos a proveedor ({{ $evProv['provider_name'] }})"
+                                                        >
+                                                            ✏️
+                                                        </button>
+                                                    </div>
+                                                    @if(!empty($evProv['detected_from_quote']) && (float)($evProv['client_price'] ?? 0) > 0)
+                                                        <div class="text-[10px] text-slate-500 dark:text-slate-400">
+                                                            PVP Cliente: <strong class="text-slate-700 dark:text-slate-200">{{ number_format($evProv['client_price'], 2, ',', '.') }} €</strong>
+                                                        </div>
+                                                    @endif
+                                                    <div class="flex flex-wrap items-center justify-between gap-1 text-[10px] pt-0.5 border-t border-purple-200/50 dark:border-purple-800/40">
+                                                        @if($evProv['status'] === 'paid')
+                                                            <span class="font-bold text-emerald-700 dark:text-emerald-400">
+                                                                ✅ Pagado 100% ({{ number_format($evProv['total_paid'], 0, ',', '.') }}€)
+                                                            </span>
+                                                        @elseif($evProv['status'] === 'deposit_paid')
+                                                            <span class="font-bold text-emerald-700 dark:text-emerald-400">
+                                                                Señal: {{ number_format($evProv['deposit_amount'], 0, ',', '.') }}€
+                                                            </span>
+                                                            <button
+                                                                type="button"
+                                                                wire:click="openProviderModal({{ $ev->id }}, 'final')"
+                                                                class="font-bold text-amber-700 dark:text-amber-300 hover:underline cursor-pointer"
+                                                                title="Anotar liquidación pendiente al proveedor"
+                                                            >
+                                                                Falta: {{ number_format($evProv['pending_amount'], 0, ',', '.') }}€
+                                                            </button>
+                                                        @else
+                                                            <button
+                                                                type="button"
+                                                                wire:click="openProviderModal({{ $ev->id }}, 'deposit')"
+                                                                class="font-bold text-amber-700 dark:text-amber-300 hover:underline cursor-pointer"
+                                                            >
+                                                                ⏳ + Anotar Señal ({{ number_format($evProv['suggested_deposit'], 0, ',', '.') }}€)
+                                                            </button>
+                                                        @endif
+                                                    </div>
                                                 </div>
                                             @endif
-                                            <div class="flex flex-wrap items-center justify-between gap-1 text-[10px] pt-0.5 border-t border-purple-200/50 dark:border-purple-800/40">
-                                                @if($evProv['status'] === 'paid')
-                                                    <span class="font-bold text-emerald-700 dark:text-emerald-400">
-                                                        ✅ Pagado 100% ({{ number_format($evProv['total_paid'], 0, ',', '.') }}€)
-                                                    </span>
-                                                @elseif($evProv['status'] === 'deposit_paid')
-                                                    <span class="font-bold text-emerald-700 dark:text-emerald-400">
-                                                        Señal: {{ number_format($evProv['deposit_amount'], 0, ',', '.') }}€
-                                                    </span>
-                                                    <button
-                                                        type="button"
-                                                        wire:click="openProviderModal({{ $ev->id }}, 'final')"
-                                                        class="font-bold text-amber-700 dark:text-amber-300 hover:underline cursor-pointer"
-                                                        title="Anotar liquidación pendiente al proveedor"
-                                                    >
-                                                        Falta: {{ number_format($evProv['pending_amount'], 0, ',', '.') }}€
-                                                    </button>
-                                                @else
-                                                    <button
-                                                        type="button"
-                                                        wire:click="openProviderModal({{ $ev->id }}, 'deposit')"
-                                                        class="font-bold text-amber-700 dark:text-amber-300 hover:underline cursor-pointer"
-                                                    >
-                                                        ⏳ + Anotar Señal ({{ number_format($evProv['suggested_deposit'], 0, ',', '.') }}€)
-                                                    </button>
-                                                @endif
+
+                                            @if($evMatCost > 0)
+                                                <div class="p-2 rounded-xl bg-amber-50/60 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/70 space-y-1">
+                                                    <div class="flex items-center justify-between gap-1 text-[11px] font-black text-amber-800 dark:text-amber-300">
+                                                        <span class="truncate max-w-[145px]" title="Gastos de empresa o compras imputadas a este evento">
+                                                            🛠️ Gasto Empresa:
+                                                        </span>
+                                                        <span class="text-rose-600 dark:text-rose-400 font-black shrink-0">
+                                                            -{{ number_format($evMatCost, 2, ',', '.') }} €
+                                                        </span>
+                                                    </div>
+                                                    @foreach($evMatItems as $mItem)
+                                                        <div class="text-[10px] text-slate-600 dark:text-slate-300 truncate flex items-center justify-between" title="{{ $mItem->concept }}">
+                                                            <span class="truncate">&bull; {{ $mItem->concept }}</span>
+                                                            <button type="button" wire:click="openMaterialModal({{ $mItem->id }})" class="text-amber-700 dark:text-amber-400 text-[10px] hover:underline font-bold ml-1 cursor-pointer">✏️</button>
+                                                        </div>
+                                                    @endforeach
+                                                </div>
+                                            @endif
+
+                                            @php
+                                                $evNetResult = max(0, round((float) $fb['total_paid'] - $totalCosts, 2));
+                                            @endphp
+                                            <div class="px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800/80 flex items-center justify-between text-[10px] font-bold">
+                                                <span class="text-slate-500">💎 Margen Neto:</span>
+                                                <span class="{{ $evNetResult > 0 ? 'text-emerald-600 dark:text-emerald-400 font-black' : 'text-slate-400' }}">
+                                                    {{ number_format($evNetResult, 2, ',', '.') }} €
+                                                </span>
                                             </div>
                                         </div>
                                     @else

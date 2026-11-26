@@ -747,6 +747,8 @@ class BillingReportService
             // 1. Material asignado a este evento
             $evMaterials = $materialRows->filter(fn($m) => (int) $m->event_id === (int) $ev->id);
             $evMaterialCost = (float) $evMaterials->sum('amount');
+            $evItem['material_items'] = $evMaterials;
+            $evItem['material_cost'] = round($evMaterialCost, 2);
             $evMaterialByPaidBy = [];
             foreach ($evMaterials as $em) {
                 $pBy = trim((string)($em->paid_by ?: 'Fran'));
