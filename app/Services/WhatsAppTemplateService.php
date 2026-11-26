@@ -139,8 +139,13 @@ class WhatsAppTemplateService
         if ($sb === 'ezequiel') {
             return 'Ezequiel';
         }
-        if ($sb === 'miguel') {
+        if ($sb === 'miguel' || $sb === 'nunez' || $sb === 'nunez_and_son') {
             return 'Miguel';
+        }
+
+        // Si el evento tiene gestor asignado (ej: Miguel o Fran), tiene prioridad
+        if ($event && !empty($event->manager_name)) {
+            return $event->manager_name;
         }
 
         if (auth()->check() && auth()->user()) {
@@ -158,10 +163,6 @@ class WhatsAppTemplateService
             if ($uName !== '') {
                 return explode(' ', $uName)[0];
             }
-        }
-
-        if ($sb === 'nunez' || $sb === 'nunez_and_son') {
-            return 'Miguel';
         }
 
         return ($event && $event->brand_clean === 'javnx') ? 'Fran' : 'Miguel';

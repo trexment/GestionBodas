@@ -125,8 +125,9 @@
                     $inHand = (float)($p['collected_in_hand'] ?? 0);
                     $transferred = (float)($p['transferred_to_joint'] ?? 0);
                     $origCollected = (float)($p['original_collected'] ?? 0);
+                    $evBreakdown = (array)($p['events_breakdown'] ?? []);
                 @endphp
-                <div class="p-4 rounded-xl border {{ $diff > 0.05 ? 'bg-amber-50/40 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800' : ($diff < -0.05 ? 'bg-indigo-50/40 dark:bg-indigo-950/20 border-indigo-200 dark:border-indigo-800' : 'bg-slate-50/60 dark:bg-slate-950/40 border-slate-200 dark:border-slate-800') }} space-y-3">
+                <div x-data="{ showEvents: false }" class="p-4 rounded-xl border {{ $diff > 0.05 ? 'bg-amber-50/40 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800' : ($diff < -0.05 ? 'bg-indigo-50/40 dark:bg-indigo-950/20 border-indigo-200 dark:border-indigo-800' : 'bg-slate-50/60 dark:bg-slate-950/40 border-slate-200 dark:border-slate-800') }} space-y-3">
                     <div class="flex items-center justify-between">
                         <span class="text-sm font-black text-slate-900 dark:text-white flex items-center gap-1.5">
                             <span>👤</span> {{ $p['name'] }} ({{ $p['percentage'] }}%)
@@ -137,41 +138,78 @@
                             @elseif($diff < -0.05)
                                 Debe percibir: {{ number_format(abs($diff), 2, ',', '.') }} €
                             @else
-                                Cuentas saldadas
+                                ✅ Cuentas saldadas
                             @endif
                         </span>
                     </div>
 
                     <div class="space-y-1.5 pt-2 border-t border-slate-200/60 dark:border-slate-800 text-xs">
-                        <div class="flex items-center justify-between text-slate-500">
-                            <span>Cobrado de clientes:</span>
+                        <div class="flex items-center justify-between font-bold">
+                            <span class="text-slate-700 dark:text-slate-300">💼 Cuota asignada (Eventos):</span>
+                            <span class="text-emerald-600 dark:text-emerald-400 font-black">{{ number_format((float)($p['profit_share'] ?? 0), 2, ',', '.') }} €</span>
+                        </div>
+                        <div class="flex items-center justify-between pt-0.5 font-bold">
+                            <span class="text-slate-700 dark:text-slate-300">💵 Dinero real en mano:</span>
+                            <span class="{{ $inHand > 0 ? 'text-indigo-600 dark:text-indigo-400 font-black' : 'text-slate-500' }}">{{ number_format($inHand, 2, ',', '.') }} €</span>
+                        </div>
+                        <div class="flex items-center justify-between text-slate-500 text-[11px] pt-1 border-t border-slate-200/40 dark:border-slate-800">
+                            <span>Cobrado directo de clientes:</span>
                             <span class="font-bold text-slate-700 dark:text-slate-300">{{ number_format($origCollected, 2, ',', '.') }} €</span>
                         </div>
-                        <div class="flex items-center justify-between text-slate-500">
+                        <div class="flex items-center justify-between text-slate-500 text-[11px]">
                             <span>Traspasado a cuenta común:</span>
                             <span class="font-bold text-emerald-600 dark:text-emerald-400">-{{ number_format($transferred, 2, ',', '.') }} €</span>
                         </div>
-                        <div class="flex items-center justify-between pt-1 border-t border-slate-200/40 dark:border-slate-800 font-bold">
-                            <span class="text-slate-700 dark:text-slate-300">Dinero real en mano actual:</span>
-                            <span class="{{ $inHand > 0 ? 'text-indigo-600 dark:text-indigo-400 font-black' : 'text-slate-500' }}">{{ number_format($inHand, 2, ',', '.') }} €</span>
-                        </div>
 
-                        <div class="flex items-center justify-between text-slate-500 pt-1">
-                            <span>Gastos de bolsillo adelantados:</span>
-                            <span class="font-bold text-slate-700 dark:text-slate-300">{{ number_format($pendReimb + $doneReimb, 2, ',', '.') }} €</span>
-                        </div>
-                        <div class="flex items-center justify-between text-[11px] text-slate-400">
-                            <span>↳ Ya reembolsados por común:</span>
-                            <span class="font-bold text-emerald-600 dark:text-emerald-400">{{ number_format($doneReimb, 2, ',', '.') }} €</span>
-                        </div>
-                        <div class="flex items-center justify-between text-[11px]">
-                            <span class="text-amber-600 dark:text-amber-400 font-bold">↳ Pendientes de retorno:</span>
-                            <span class="font-extrabold text-amber-600 dark:text-amber-400">{{ number_format($pendReimb, 2, ',', '.') }} €</span>
-                        </div>
+                        @if(($pendReimb + $doneReimb) > 0)
+                            <div class="flex items-center justify-between text-slate-500 text-[11px] pt-1">
+                                <span>Gastos de bolsillo adelantados:</span>
+                                <span class="font-bold text-slate-700 dark:text-slate-300">{{ number_format($pendReimb + $doneReimb, 2, ',', '.') }} €</span>
+                            </div>
+                            @if($pendReimb > 0)
+                                <div class="flex items-center justify-between text-[11px] text-amber-600 dark:text-amber-400 font-bold">
+                                    <span>↳ Pendiente retorno por común:</span>
+                                    <span>+{{ number_format($pendReimb, 2, ',', '.') }} €</span>
+                                </div>
+                            @endif
+                        @endif
 
-                        <div class="flex items-center justify-between pt-1 border-t border-slate-200/40 dark:border-slate-800">
-                            <span class="text-[11px] text-slate-500">Cuota beneficio teórica:</span>
-                            <span class="font-black text-emerald-600 dark:text-emerald-400">{{ number_format((float)($p['profit_share'] ?? 0), 2, ',', '.') }} €</span>
+                        <!-- Botón desplegable para ver desglose de eventos -->
+                        <div class="pt-2 border-t border-slate-200/60 dark:border-slate-800">
+                            <button type="button" @click="showEvents = !showEvents" class="w-full py-1.5 px-2.5 rounded-lg bg-white hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between transition cursor-pointer shadow-2xs">
+                                <span class="flex items-center gap-1.5">
+                                    <span>📋</span>
+                                    <span>Ver eventos y servicios ({{ count($evBreakdown) }})</span>
+                                </span>
+                                <span x-text="showEvents ? '▲ Cerrar' : '▼ Ver'"></span>
+                            </button>
+
+                            <div x-show="showEvents" x-cloak class="mt-2 space-y-1.5 bg-white dark:bg-slate-900 p-2 rounded-xl border border-slate-200 dark:border-slate-800 shadow-inner text-[11px]" style="display: none;">
+                                @forelse($evBreakdown as $b)
+                                    <div class="p-2 rounded-lg bg-slate-50 dark:bg-slate-950/60 border border-slate-100 dark:border-slate-800/60 space-y-1">
+                                        <div class="flex items-center justify-between gap-1 font-bold">
+                                            <a href="{{ route('admin.events.show', $b['event_id']) }}" class="text-indigo-600 dark:text-indigo-400 hover:underline truncate" title="{{ $b['event_name'] }}">
+                                                {{ $b['event_name'] }}
+                                            </a>
+                                            <span class="text-[9px] px-1.5 py-0.5 rounded {{ $b['is_settled'] ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300' : 'bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300' }} font-black shrink-0">
+                                                {{ $b['is_settled'] ? '✓ Liquidado' : '⏳ Pendiente' }}
+                                            </span>
+                                        </div>
+                                        <div class="flex items-center justify-between text-slate-500 text-[10px]">
+                                            <span>Rol: <strong>{{ $b['role'] }}</strong></span>
+                                            <span class="text-slate-400">{{ $b['event_date'] }}</span>
+                                        </div>
+                                        <div class="flex items-center justify-between text-[10px] pt-0.5 border-t border-slate-200/40 dark:border-slate-800">
+                                            <span>Cuota: <strong class="text-slate-700 dark:text-slate-300">{{ number_format($b['profit_share'], 2, ',', '.') }} €</strong></span>
+                                            <span>En mano: <strong class="text-indigo-600 dark:text-indigo-400">{{ number_format($b['collected_in_hand'], 2, ',', '.') }} €</strong></span>
+                                        </div>
+                                    </div>
+                                @empty
+                                    <div class="text-center py-2 text-slate-400 text-[10px]">
+                                        Sin eventos asignados a este socio en esta temporada.
+                                    </div>
+                                @endforelse
+                            </div>
                         </div>
                     </div>
                 </div>

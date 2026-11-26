@@ -18,6 +18,7 @@ class Event extends Model
         'event_type',
         'lead_source',
         'brand',
+        'managed_by',
         'event_date',
         'setup_date',
         'start_time',
@@ -247,6 +248,16 @@ class Event extends Model
                     try {
                         \Illuminate\Support\Facades\Schema::table('events', function (\Illuminate\Database\Schema\Blueprint $table) {
                             $table->text('settlement_custom_split')->nullable()->after('settlement_notes');
+                        });
+                    } catch (\Throwable $ex) {
+                        // Tolerar
+                    }
+                }
+
+                if (!\Illuminate\Support\Facades\Schema::hasColumn('events', 'managed_by')) {
+                    try {
+                        \Illuminate\Support\Facades\Schema::table('events', function (\Illuminate\Database\Schema\Blueprint $table) {
+                            $table->string('managed_by', 50)->nullable()->after('brand');
                         });
                     } catch (\Throwable $ex) {
                         // Tolerar
@@ -1715,6 +1726,31 @@ class Event extends Model
     public function getBrandInfoAttribute(): array
     {
         return Setting::getBrandInfo($this->brand_clean);
+    }
+
+    /**
+     * Nombre del socio que gestiona/atiende comercialmente al cliente de este evento.
+     */
+    public function getManagerNameAttribute(): string
+    {
+        $m = trim((string)($this->attributes['managed_by'] ?? ''));
+        if ($m !== '') {
+            return $m;
+        }
+        return ($this->brand_clean === 'javnx') ? 'Fran' : 'Miguel';
+    }
+
+    /**
+     * Icono representativo del gestor del evento.
+     */
+    public function getManagerIconAttribute(): string
+    {
+        return match (mb_strtolower($this->manager_name)) {
+            'fran' => '🎧',
+            'miguel' => '👑',
+            'ezequiel' => '👥',
+            default => '👤',
+        };
     }
 
     /**

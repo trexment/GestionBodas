@@ -271,6 +271,43 @@
                         </div>
                     </div>
 
+                    <!-- Selector de Gestor / Atendido por (Miguel / Fran / Ezequiel) -->
+                    <div class="relative" x-data="{ openManagerDropdown: false }">
+                        <button type="button" @click="openManagerDropdown = !openManagerDropdown" class="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-xl font-bold bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/50 dark:hover:bg-purple-900/60 text-purple-900 dark:text-purple-200 border border-purple-300 dark:border-purple-800 shadow-2xs transition cursor-pointer" title="Cambiar quién atiende/gestiona este evento comercialmente">
+                            <span>{{ $event->manager_icon }}</span>
+                            <span>Atendido por: <strong>{{ $event->manager_name }}</strong></span>
+                            <span class="text-[9px] opacity-70">▼</span>
+                        </button>
+                        <div x-show="openManagerDropdown" @click.away="openManagerDropdown = false" x-cloak class="absolute right-0 lg:right-auto lg:left-0 mt-1.5 w-56 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl z-30 p-1.5 divide-y divide-slate-100 dark:divide-slate-800 text-xs animate-in fade-in zoom-in-95 duration-100" style="display: none;">
+                            <div class="px-2.5 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                Responsable del Cliente
+                            </div>
+                            <div class="space-y-0.5 pt-1">
+                                <button type="button" wire:click="updateManagedBy('Miguel')" @click="openManagerDropdown = false" class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold flex items-center justify-between cursor-pointer {{ $event->manager_name === 'Miguel' ? 'bg-purple-50 dark:bg-purple-950/50 text-purple-900 dark:text-purple-200 font-bold' : 'text-slate-700 dark:text-slate-300' }}">
+                                    <span class="flex items-center gap-2">
+                                        <span>👑</span>
+                                        <span>Miguel</span>
+                                    </span>
+                                    @if($event->manager_name === 'Miguel') <span>✓</span> @endif
+                                </button>
+                                <button type="button" wire:click="updateManagedBy('Fran')" @click="openManagerDropdown = false" class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold flex items-center justify-between cursor-pointer {{ $event->manager_name === 'Fran' ? 'bg-indigo-50 dark:bg-indigo-950/50 text-indigo-900 dark:text-indigo-200 font-bold' : 'text-slate-700 dark:text-slate-300' }}">
+                                    <span class="flex items-center gap-2">
+                                        <span>🎧</span>
+                                        <span>Fran</span>
+                                    </span>
+                                    @if($event->manager_name === 'Fran') <span>✓</span> @endif
+                                </button>
+                                <button type="button" wire:click="updateManagedBy('Ezequiel')" @click="openManagerDropdown = false" class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold flex items-center justify-between cursor-pointer {{ $event->manager_name === 'Ezequiel' ? 'bg-amber-50 dark:bg-amber-950/50 text-amber-900 dark:text-amber-200 font-bold' : 'text-slate-700 dark:text-slate-300' }}">
+                                    <span class="flex items-center gap-2">
+                                        <span>👥</span>
+                                        <span>Ezequiel</span>
+                                    </span>
+                                    @if($event->manager_name === 'Ezequiel') <span>✓</span> @endif
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Selector de Tipo de Evento -->
                     <div class="relative" x-data="{ openTypeDropdown: false }">
                         <button type="button" @click="openTypeDropdown = !openTypeDropdown" class="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-xl font-bold bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/50 dark:hover:bg-indigo-900/60 text-indigo-800 dark:text-indigo-200 border border-indigo-200 dark:border-indigo-800 shadow-2xs transition cursor-pointer" title="Cambiar tipo de evento">

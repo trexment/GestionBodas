@@ -609,65 +609,6 @@ class BillingReportService
         }
 
         $partners = \App\Models\Setting::getSettlementPartners();
-        $partnersSettlement = [];
-
-        foreach ($partners as $partner) {
-            $pName = trim((string)($partner['name'] ?? 'Socio'));
-            $pPct = (float) ($partner['percentage'] ?? 50.0);
-            $pShare = round($netProfit * ($pPct / 100), 2);
-
-            $pMatTotal = round((float) ($materialByPaidBy[$pName] ?? 0.0), 2);
-            $pMatReimbursed = round((float) ($materialReimbursedByPartner[$pName] ?? 0.0), 2);
-            $pMatPending = round((float) ($materialPendingByPartner[$pName] ?? 0.0), 2);
-
-            $pProvTotal = round((float) ($providerPaidByPartner[$pName] ?? 0.0), 2);
-            $pProvReimbursed = round((float) ($providerReimbursedByPartner[$pName] ?? 0.0), 2);
-            $pProvPending = round((float) ($providerPendingByPartner[$pName] ?? 0.0), 2);
-
-            $pTotalReimb = round($pMatTotal + $pProvTotal, 2);
-            $pTotalPendingReimb = round($pMatPending + $pProvPending, 2);
-            $pTotalAlreadyReimbursed = round($pMatReimbursed + $pProvReimbursed, 2);
-
-            // Lo que le corresponde percibir aún = Cuota de beneficio + Gastos adelantados que aún no se le han retornado
-            $pTotalToReceive = round($pShare + $pTotalPendingReimb, 2);
-
-            // Dinero cobrado físicamente por este socio que aún mantiene en su poder (excluyendo lo ya transferido a la común)
-            $pClientCollected = round((float) ($collectedByPartner[$pName] ?? 0.0), 2);
-            $pOriginalCollected = round((float) ($originalCollectedByPartner[$pName] ?? 0.0), 2);
-            $pTransferredToJoint = round((float) ($transferredByPartner[$pName] ?? 0.0), 2);
-
-            // Dinero devuelto por Artístamente / cooperativa que entró en la cuenta bancaria de este socio
-            $pRefundReceived = round((float) ($providerRefundReceivedByPartner[$pName] ?? 0.0), 2);
-            // Total dinero físico real en posesión del socio
-            $pCollectedInHand = round($pClientCollected + $pRefundReceived, 2);
-
-            // Arqueo: Lo que tiene en mano menos lo que le corresponde percibir
-            // > 0 => Tiene exceso de dinero en su cuenta (debe transferir a la común o socios)
-            // < 0 => Tiene defecto de dinero en su cuenta (debe recibir de la común o socios)
-            $pBalanceDiff = round($pCollectedInHand - $pTotalToReceive, 2);
-
-            $partnersSettlement[] = [
-                'name' => $pName,
-                'percentage' => $pPct,
-                'profit_share' => $pShare,
-                'material_reimbursement' => $pMatTotal,
-                'material_reimbursed' => $pMatReimbursed,
-                'material_pending' => $pMatPending,
-                'provider_reimbursement' => $pProvTotal,
-                'provider_reimbursed' => $pProvReimbursed,
-                'provider_pending' => $pProvPending,
-                'reimbursement' => $pTotalReimb,
-                'reimbursement_pending' => $pTotalPendingReimb,
-                'reimbursement_done' => $pTotalAlreadyReimbursed,
-                'total_to_receive' => $pTotalToReceive,
-                'client_collected' => $pClientCollected,
-                'original_collected' => $pOriginalCollected,
-                'transferred_to_joint' => $pTransferredToJoint,
-                'refund_received' => $pRefundReceived,
-                'collected_in_hand' => $pCollectedInHand,
-                'balance_diff' => $pBalanceDiff,
-            ];
-        }
 
         // Dinero cobrado en Cuenta Conjunta / Empresa / Fondo Común (incluyendo devoluciones si fueron a la cuenta conjunta)
         $jointCollected = 0.0;
@@ -678,58 +619,6 @@ class BillingReportService
             }
         }
         $jointCollected = round($jointCollected + $jointRefundReceived, 2);
-
-        // Instrucción de liquidación y transferencias directas entre socios (soporta 2, 3 o N socios)
-        $transferInstruction = null;
-        $instructionsList = [];
-        $debtors = [];
-        $creditors = [];
-
-        foreach ($partnersSettlement as $p) {
-            $diff = (float)$p['balance_diff'];
-            if ($diff > 0.05) {
-                $debtors[] = ['name' => $p['name'], 'amount' => $diff];
-            } elseif ($diff < -0.05) {
-                $creditors[] = ['name' => $p['name'], 'amount' => abs($diff)];
-            }
-        }
-
-        $dIdx = 0;
-        $cIdx = 0;
-        while ($dIdx < count($debtors) && $cIdx < count($creditors)) {
-            $payAmt = min($debtors[$dIdx]['amount'], $creditors[$cIdx]['amount']);
-            if ($payAmt > 0.05) {
-                $instructionsList[] = [
-                    'from' => $debtors[$dIdx]['name'],
-                    'to' => $creditors[$cIdx]['name'],
-                    'amount' => round($payAmt, 2),
-                    'text' => "{$debtors[$dIdx]['name']} debe transferir " . number_format($payAmt, 2, ',', '.') . " € a {$creditors[$cIdx]['name']}.",
-                ];
-            }
-            $debtors[$dIdx]['amount'] -= $payAmt;
-            $creditors[$cIdx]['amount'] -= $payAmt;
-            if ($debtors[$dIdx]['amount'] <= 0.05) $dIdx++;
-            if ($creditors[$cIdx]['amount'] <= 0.05) $cIdx++;
-        }
-
-        if (!empty($instructionsList)) {
-            $totalTransfer = array_sum(array_column($instructionsList, 'amount'));
-            $combinedText = implode(' • ', array_column($instructionsList, 'text'));
-            $transferInstruction = [
-                'has_transfer' => true,
-                'amount' => round($totalTransfer, 2),
-                'text' => $combinedText,
-                'list' => $instructionsList,
-            ];
-        } else {
-            $partnerNames = implode(', ', array_column($partnersSettlement, 'name'));
-            $transferInstruction = [
-                'has_transfer' => false,
-                'amount' => 0.0,
-                'text' => "Las cuentas entre {$partnerNames} están perfectamente cuadradas (0,00 € de diferencia).",
-                'list' => [],
-            ];
-        }
 
         // 9. Desglose detallado de Liquidación y Reparto Evento a Evento
         $evSettlementTotals = [
@@ -742,7 +631,20 @@ class BillingReportService
             'total_partner_profit' => 0.0,
             'by_partner' => [],
         ];
+        $partnerEventsBreakdown = [];
         foreach ($partners as $p) {
+            $pName = trim((string)($p['name'] ?? 'Socio'));
+            $evSettlementTotals['by_partner'][$pName] = [
+                'name' => $pName,
+                'percentage' => (float)($p['percentage'] ?? 50.0),
+                'profit_share' => 0.0,
+                'reimbursements' => 0.0,
+                'total_to_receive' => 0.0,
+                'collected_in_hand' => 0.0,
+                'balance_diff' => 0.0,
+            ];
+            $partnerEventsBreakdown[$pName] = [];
+        }
             $pName = trim((string)($p['name'] ?? 'Socio'));
             $evSettlementTotals['by_partner'][$pName] = [
                 'name' => $pName,
@@ -878,6 +780,7 @@ class BillingReportService
 
                     // Si está marcado como liquidado / cobrado por ese socio:
                     if ($isSettled) {
+                        $pInHand = $pTotalToReceive;
                         $pBalanceDiff = 0.0; // Ya cobró su parte exacta, saldo cuadrado
                     } else {
                         $pBalanceDiff = round($pInHand - $pTotalToReceive, 2);
@@ -894,6 +797,21 @@ class BillingReportService
                         'provider_assumed_cost' => $pProvAssumedCost,
                         'total_to_receive' => $pTotalToReceive,
                         'collected_in_hand' => $pInHand,
+                        'balance_diff' => $pBalanceDiff,
+                    ];
+
+                    $partnerEventsBreakdown[$pName][] = [
+                        'event_id' => $ev->id,
+                        'event_name' => $ev->name,
+                        'event_date' => $ev->event_date ? \Carbon\Carbon::parse($ev->event_date)->format('d/m/Y') : '',
+                        'role' => $pRole ?: ($isFondoComun ? 'Fondo Común Empresa' : ($pShare > 0 ? 'Servicio / Actuación' : 'Asistente')),
+                        'is_fondo_comun' => $isFondoComun,
+                        'profit_share' => $pShare,
+                        'provider_assumed_cost' => $pProvAssumedCost,
+                        'reimbursement' => ($pMatReimb + $pProvReimb),
+                        'total_to_receive' => $pTotalToReceive,
+                        'collected_in_hand' => $pInHand,
+                        'is_settled' => $isSettled,
                         'balance_diff' => $pBalanceDiff,
                     ];
 
@@ -932,21 +850,42 @@ class BillingReportService
                         $pShare = round($evNetProfit * ($pPct / 100), 2);
                     }
 
+                    $isSettled = ($ev->settlement_status === 'settled');
                     $pTotalToReceive = round($pShare + $pMatReimb + $pProvReimb, 2);
                     $pInHand = (float) ($evCollectedByPartner[$pName] ?? 0.0);
-                    $pBalanceDiff = round($pInHand - $pTotalToReceive, 2);
+                    if ($isSettled) {
+                        $pInHand = $pTotalToReceive;
+                        $pBalanceDiff = 0.0;
+                    } else {
+                        $pBalanceDiff = round($pInHand - $pTotalToReceive, 2);
+                    }
 
                     $evPartners[] = [
                         'name' => $pName,
                         'percentage' => $pPct,
                         'profit_share' => $pShare,
                         'role' => '',
-                        'is_settled' => false,
+                        'is_settled' => $isSettled,
                         'material_reimbursement' => $pMatReimb,
                         'provider_reimbursement' => $pProvReimb,
                         'provider_assumed_cost' => $pProvAssumedCost,
                         'total_to_receive' => $pTotalToReceive,
                         'collected_in_hand' => $pInHand,
+                        'balance_diff' => $pBalanceDiff,
+                    ];
+
+                    $partnerEventsBreakdown[$pName][] = [
+                        'event_id' => $ev->id,
+                        'event_name' => $ev->name,
+                        'event_date' => $ev->event_date ? \Carbon\Carbon::parse($ev->event_date)->format('d/m/Y') : '',
+                        'role' => $isFondoComun ? 'Fondo Común Empresa' : ($pShare > 0 ? 'Servicio / Actuación' : 'Asistente'),
+                        'is_fondo_comun' => $isFondoComun,
+                        'profit_share' => $pShare,
+                        'provider_assumed_cost' => $pProvAssumedCost,
+                        'reimbursement' => ($pMatReimb + $pProvReimb),
+                        'total_to_receive' => $pTotalToReceive,
+                        'collected_in_hand' => $pInHand,
+                        'is_settled' => $isSettled,
                         'balance_diff' => $pBalanceDiff,
                     ];
 
@@ -1042,6 +981,111 @@ class BillingReportService
         unset($evItem);
 
         $kpis['events_settlement_totals'] = $evSettlementTotals;
+
+        // 9.1. Arqueo y Liquidación Individual de Socios (basado en cuotas reales evento a evento)
+        $partnersSettlement = [];
+        foreach ($partners as $partner) {
+            $pName = trim((string)($partner['name'] ?? 'Socio'));
+            $pPct = (float) ($partner['percentage'] ?? 50.0);
+
+            $pTotals = $evSettlementTotals['by_partner'][$pName] ?? null;
+            $pShare = round((float)($pTotals['profit_share'] ?? 0.0), 2);
+            $pTotalToReceive = round((float)($pTotals['total_to_receive'] ?? 0.0), 2);
+            $pCollectedInHand = round((float)($pTotals['collected_in_hand'] ?? 0.0), 2);
+            $pBalanceDiff = round((float)($pTotals['balance_diff'] ?? 0.0), 2);
+
+            $pMatTotal = round((float) ($materialByPaidBy[$pName] ?? 0.0), 2);
+            $pMatReimbursed = round((float) ($materialReimbursedByPartner[$pName] ?? 0.0), 2);
+            $pMatPending = round((float) ($materialPendingByPartner[$pName] ?? 0.0), 2);
+
+            $pProvTotal = round((float) ($providerPaidByPartner[$pName] ?? 0.0), 2);
+            $pProvReimbursed = round((float) ($providerReimbursedByPartner[$pName] ?? 0.0), 2);
+            $pProvPending = round((float) ($providerPendingByPartner[$pName] ?? 0.0), 2);
+
+            $pTotalReimb = round($pMatTotal + $pProvTotal, 2);
+            $pTotalPendingReimb = round($pMatPending + $pProvPending, 2);
+            $pTotalAlreadyReimbursed = round($pMatReimbursed + $pProvReimbursed, 2);
+
+            $pOriginalCollected = round((float) ($originalCollectedByPartner[$pName] ?? 0.0), 2);
+            $pTransferredToJoint = round((float) ($transferredByPartner[$pName] ?? 0.0), 2);
+            $pClientCollected = round((float) ($collectedByPartner[$pName] ?? 0.0), 2);
+            $pRefundReceived = round((float) ($providerRefundReceivedByPartner[$pName] ?? 0.0), 2);
+
+            $partnersSettlement[] = [
+                'name' => $pName,
+                'percentage' => $pPct,
+                'profit_share' => $pShare,
+                'material_reimbursement' => $pMatTotal,
+                'material_reimbursed' => $pMatReimbursed,
+                'material_pending' => $pMatPending,
+                'provider_reimbursement' => $pProvTotal,
+                'provider_reimbursed' => $pProvReimbursed,
+                'provider_pending' => $pProvPending,
+                'reimbursement' => $pTotalReimb,
+                'reimbursement_pending' => $pTotalPendingReimb,
+                'reimbursement_done' => $pTotalAlreadyReimbursed,
+                'total_to_receive' => $pTotalToReceive,
+                'client_collected' => $pClientCollected,
+                'original_collected' => $pOriginalCollected,
+                'transferred_to_joint' => $pTransferredToJoint,
+                'refund_received' => $pRefundReceived,
+                'collected_in_hand' => $pCollectedInHand,
+                'balance_diff' => $pBalanceDiff,
+                'events_breakdown' => $partnerEventsBreakdown[$pName] ?? [],
+            ];
+        }
+
+        // Instrucción de liquidación y transferencias directas entre socios (soporta 2, 3 o N socios)
+        $transferInstruction = null;
+        $instructionsList = [];
+        $debtors = [];
+        $creditors = [];
+
+        foreach ($partnersSettlement as $p) {
+            $diff = (float)$p['balance_diff'];
+            if ($diff > 0.05) {
+                $debtors[] = ['name' => $p['name'], 'amount' => $diff];
+            } elseif ($diff < -0.05) {
+                $creditors[] = ['name' => $p['name'], 'amount' => abs($diff)];
+            }
+        }
+
+        $dIdx = 0;
+        $cIdx = 0;
+        while ($dIdx < count($debtors) && $cIdx < count($creditors)) {
+            $payAmt = min($debtors[$dIdx]['amount'], $creditors[$cIdx]['amount']);
+            if ($payAmt > 0.05) {
+                $instructionsList[] = [
+                    'from' => $debtors[$dIdx]['name'],
+                    'to' => $creditors[$cIdx]['name'],
+                    'amount' => round($payAmt, 2),
+                    'text' => "{$debtors[$dIdx]['name']} debe transferir " . number_format($payAmt, 2, ',', '.') . " € a {$creditors[$cIdx]['name']}.",
+                ];
+            }
+            $debtors[$dIdx]['amount'] -= $payAmt;
+            $creditors[$cIdx]['amount'] -= $payAmt;
+            if ($debtors[$dIdx]['amount'] <= 0.05) $dIdx++;
+            if ($creditors[$cIdx]['amount'] <= 0.05) $cIdx++;
+        }
+
+        if (!empty($instructionsList)) {
+            $totalTransfer = array_sum(array_column($instructionsList, 'amount'));
+            $combinedText = implode(' • ', array_column($instructionsList, 'text'));
+            $transferInstruction = [
+                'has_transfer' => true,
+                'amount' => round($totalTransfer, 2),
+                'text' => $combinedText,
+                'list' => $instructionsList,
+            ];
+        } else {
+            $partnerNames = implode(', ', array_column($partnersSettlement, 'name'));
+            $transferInstruction = [
+                'has_transfer' => false,
+                'amount' => 0.0,
+                'text' => "Las cuentas entre {$partnerNames} están perfectamente cuadradas (0,00 € de diferencia).",
+                'list' => [],
+            ];
+        }
 
         // 10. Cuenta Conjunta & Arqueo Continuo (Movimientos e Historial Bancario Teórico)
         $jointDirectInflows = 0.0;

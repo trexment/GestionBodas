@@ -200,6 +200,9 @@
                                         {{ $event->lead_source_info['icon'] }} {{ $event->lead_source_info['short_label'] }}
                                     </span>
                                 @endif
+                                <span class="px-2 py-0.2 text-[10px] font-bold rounded-full border bg-purple-50 dark:bg-purple-950/50 text-purple-900 dark:text-purple-200 border-purple-200 dark:border-purple-800" title="Atendido por {{ $event->manager_name }}">
+                                    {{ $event->manager_icon }} {{ $event->manager_name }}
+                                </span>
                             </div>
                         </div>
                     </a>
@@ -370,6 +373,10 @@
                                             <span>{{ $event->lead_source_info['short_label'] }}</span>
                                         </span>
                                     @endif
+                                    <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-md border inline-flex items-center gap-1 bg-purple-50 dark:bg-purple-950/50 text-purple-900 dark:text-purple-200 border-purple-200 dark:border-purple-800" title="Atendido por {{ $event->manager_name }}">
+                                        <span>{{ $event->manager_icon }}</span>
+                                        <span>{{ $event->manager_name }}</span>
+                                    </span>
                                     @if($event->dj)
                                         <span class="text-[10px] text-indigo-700 dark:text-indigo-400 font-semibold inline-flex items-center gap-0.5 truncate max-w-full">
                                             🎧 {{ $event->dj->name }}

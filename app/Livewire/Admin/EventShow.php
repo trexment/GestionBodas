@@ -843,7 +843,21 @@ class EventShow extends Component
                 $userBrand = 'miguel';
             }
         }
-        $this->whatsapp_sender_brand = $userBrand ?? (($this->event->brand_clean === 'javnx') ? 'fran' : 'miguel');
+        $eventManagerBrand = mb_strtolower((string)$this->event->manager_name);
+        $this->whatsapp_sender_brand = in_array($eventManagerBrand, ['miguel', 'fran', 'ezequiel'], true)
+            ? $eventManagerBrand
+            : ($userBrand ?? (($this->event->brand_clean === 'javnx') ? 'fran' : 'miguel'));
+    }
+
+    /**
+     * Actualiza el socio que atiende / gestiona este evento en 1 clic
+     */
+    public function updateManagedBy(string $manager): void
+    {
+        $this->event->update(['managed_by' => $manager]);
+        $this->whatsapp_sender_brand = mb_strtolower($manager);
+        $this->syncSenderSignatureInCurrentMessage();
+        session()->flash('message', "👤 Gestor del evento actualizado a {$manager}. Plantillas y WhatsApp sincronizados con su cuenta.");
     }
 
     public $showCancellationModal = false;
