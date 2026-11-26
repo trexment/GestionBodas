@@ -142,9 +142,47 @@
                 </button>
             </div>
             <p class="text-[10px] text-slate-400 mt-1">
-                * Si un socio pagó al proveedor de su bolsillo (ej. alta en Artístamente o señal de fotomatón), se le sumará íntegro como reembolso a percibir en la liquidación.
+                * Si es un coste asumido (ej. Artístamente), descuenta de su beneficio pactado. Si es un adelanto (ej. fotomatón), la empresa se lo devuelve íntegro.
             </p>
         </div>
+
+        <!-- Tratamiento del Coste en el Reparto de Socios -->
+        @if($provPaidBy !== 'Caja Común / Empresa')
+            <div class="p-3.5 rounded-2xl bg-purple-50/60 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800/80 space-y-2">
+                <label class="block font-bold text-slate-800 dark:text-slate-200 text-xs">
+                    ¿Cómo computar este gasto en el reparto de socios?
+                </label>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <button
+                        type="button"
+                        wire:click="$set('provReimbursementType', 'assumed')"
+                        class="p-2.5 rounded-xl border text-left transition cursor-pointer {{ $provReimbursementType === 'assumed' ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800' }}"
+                    >
+                        <div class="font-bold text-xs flex items-center gap-1.5">
+                            <span>👤</span>
+                            <span>Coste Asumido por {{ $provPaidBy }}</span>
+                        </div>
+                        <div class="text-[10px] mt-0.5 {{ $provReimbursementType === 'assumed' ? 'text-indigo-100' : 'text-slate-400' }}">
+                            Descuenta de su caché pactado de este evento (ej: Artístamente). Nadie se lo devuelve.
+                        </div>
+                    </button>
+
+                    <button
+                        type="button"
+                        wire:click="$set('provReimbursementType', 'reimbursable')"
+                        class="p-2.5 rounded-xl border text-left transition cursor-pointer {{ $provReimbursementType === 'reimbursable' ? 'bg-amber-600 text-white border-amber-600 shadow-sm' : 'bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800' }}"
+                    >
+                        <div class="font-bold text-xs flex items-center gap-1.5">
+                            <span>⏳</span>
+                            <span>Adelanto Reembolsable</span>
+                        </div>
+                        <div class="text-[10px] mt-0.5 {{ $provReimbursementType === 'reimbursable' ? 'text-amber-100' : 'text-slate-400' }}">
+                            La empresa se lo debe y se le devolverá de la cuenta común.
+                        </div>
+                    </button>
+                </div>
+            </div>
+        @endif
 
         <!-- BLOQUE 1: SEÑAL DE RESERVA A LA EMPRESA -->
         <div class="p-3.5 rounded-2xl border {{ $provDepositPaid ? 'bg-emerald-50/60 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-800' : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800' }} space-y-2.5">

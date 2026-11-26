@@ -32,6 +32,7 @@ class EventProviderBooking extends Model
         'final_paid_at',
         'final_payment_method',
         'paid_by',
+        'reimbursement_type', // 'assumed' (asumido por socio / descuenta de cuota) | 'reimbursable' (adelanto empresa) | 'reimbursed' (ya devuelto)
         'is_reimbursed',
         'reimbursed_at',
         'has_refund',
@@ -139,6 +140,15 @@ class EventProviderBooking extends Model
                     } catch (\Throwable $ex) {
                         \Illuminate\Support\Facades\DB::statement("ALTER TABLE `event_provider_bookings` ADD `is_reimbursed` TINYINT(1) NOT NULL DEFAULT 0 AFTER `paid_by`");
                         \Illuminate\Support\Facades\DB::statement("ALTER TABLE `event_provider_bookings` ADD `reimbursed_at` DATE NULL AFTER `is_reimbursed`");
+                    }
+                }
+                if (!Schema::hasColumn('event_provider_bookings', 'reimbursement_type')) {
+                    try {
+                        Schema::table('event_provider_bookings', function (Blueprint $table) {
+                            $table->string('reimbursement_type', 30)->default('assumed')->after('paid_by');
+                        });
+                    } catch (\Throwable $ex) {
+                        \Illuminate\Support\Facades\DB::statement("ALTER TABLE `event_provider_bookings` ADD `reimbursement_type` VARCHAR(30) NOT NULL DEFAULT 'assumed' AFTER `paid_by`");
                     }
                 }
             }

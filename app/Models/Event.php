@@ -867,6 +867,7 @@ class Event extends Model
             'status' => $status,
             'status_label' => $statusLabel,
             'paid_by' => $primaryPaidBy,
+            'reimbursement_type' => $primaryBooking?->reimbursement_type ?: (str_contains(mb_strtolower((string)($providerName . ' ' . $serviceLabel . ' ' . $providerKey)), 'artist') ? 'assumed' : (!empty($primaryBooking?->is_reimbursed) ? 'reimbursed' : 'reimbursable')),
             'is_reimbursed' => $primaryBooking ? (bool) ($primaryBooking->is_reimbursed ?? false) : false,
             'reimbursed_at' => $primaryBooking?->reimbursed_at,
             'is_partner_pocket' => !in_array(mb_strtolower(trim($primaryPaidBy)), ['caja común / empresa', 'caja comun / empresa', 'cuenta conjunta / fondo común', 'fondo común', 'fondo comun', 'empresa'], true),

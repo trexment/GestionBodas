@@ -292,13 +292,22 @@
                                         <div class="flex items-center justify-between text-[10px] text-slate-400">
                                             <span>Adelantado por: <strong>{{ $sett['provider_paid_by'] ?: 'Fran' }}</strong></span>
                                             @if(!empty($sett['provider_is_partner_pocket']) && !empty($sett['provider_booking_id']))
+                                                @php
+                                                    $rType = $sett['provider_reimbursement_type'] ?? 'assumed';
+                                                @endphp
                                                 <button
                                                     type="button"
                                                     wire:click="toggleProviderReimbursed({{ $sett['provider_booking_id'] }})"
-                                                    class="px-1.5 py-0.5 rounded text-[9px] font-black transition cursor-pointer border {{ !empty($sett['provider_is_reimbursed']) ? 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300' : 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950 dark:text-amber-300' }}"
-                                                    title="Pulsar para alternar si este gasto adelantado ya fue retornado por la cuenta común"
+                                                    class="px-1.5 py-0.5 rounded text-[9px] font-black transition cursor-pointer border {{ $rType === 'assumed' ? 'bg-indigo-100 text-indigo-800 border-indigo-300 dark:bg-indigo-950 dark:text-indigo-300' : (!empty($sett['provider_is_reimbursed']) ? 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300' : 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950 dark:text-amber-300') }}"
+                                                    title="Pulsar para alternar: 👤 Coste Asumido (-{{ number_format($sett['provider_paid'], 2, ',', '.') }}€) ➔ ⏳ Pendiente Retorno (+{{ number_format($sett['provider_paid'], 2, ',', '.') }}€) ➔ ✅ Reembolsado"
                                                 >
-                                                    {{ !empty($sett['provider_is_reimbursed']) ? '✅ Reembolsado' : '⏳ Pendiente Retorno' }}
+                                                    @if($rType === 'assumed')
+                                                        👤 Asumido por {{ $sett['provider_paid_by'] ?: 'Socio' }} (-{{ number_format($sett['provider_paid'], 2, ',', '.') }}€)
+                                                    @elseif(!empty($sett['provider_is_reimbursed']))
+                                                        ✅ Reembolsado (+{{ number_format($sett['provider_paid'], 2, ',', '.') }}€)
+                                                    @else
+                                                        ⏳ Pendiente Retorno (+{{ number_format($sett['provider_paid'], 2, ',', '.') }}€)
+                                                    @endif
                                                 </button>
                                             @endif
                                         </div>
@@ -527,13 +536,20 @@
                                             </span>
                                         </div>
 
-                                        <div class="flex items-center justify-between text-[10px] text-slate-500">
+                                        <div class="flex items-center justify-between text-[10px] text-slate-500 flex-wrap gap-1">
                                             <span>Cuota: {{ number_format($pRow['profit_share'], 2, ',', '.') }}€</span>
-                                            @if(($pRow['material_reimbursement'] + $pRow['provider_reimbursement']) > 0)
-                                                <span class="text-amber-600 dark:text-amber-400 font-bold">
-                                                    +{{ number_format($pRow['material_reimbursement'] + $pRow['provider_reimbursement'], 2, ',', '.') }}€ reemb.
-                                                </span>
-                                            @endif
+                                            <div class="flex items-center gap-1.5">
+                                                @if(($pRow['provider_assumed_cost'] ?? 0) > 0)
+                                                    <span class="text-indigo-600 dark:text-indigo-400 font-bold" title="Coste de proveedor asumido por este socio y descontado de su cuota">
+                                                        -{{ number_format($pRow['provider_assumed_cost'], 2, ',', '.') }}€ coste asumido
+                                                    </span>
+                                                @endif
+                                                @if(($pRow['material_reimbursement'] + $pRow['provider_reimbursement']) > 0)
+                                                    <span class="text-amber-600 dark:text-amber-400 font-bold">
+                                                        +{{ number_format($pRow['material_reimbursement'] + $pRow['provider_reimbursement'], 2, ',', '.') }}€ reemb.
+                                                    </span>
+                                                @endif
+                                            </div>
                                         </div>
 
                                         <!-- Situación de arqueo en este evento -->

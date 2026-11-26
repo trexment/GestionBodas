@@ -523,8 +523,18 @@ class BillingReportService
                         $paid = (float)$b->provider_total_cost;
                     }
                     if ($paid > 0) {
+                        $rType = $b->reimbursement_type ?? null;
+                        if (!$rType) {
+                            $pLower = mb_strtolower((string)($b->provider_name . ' ' . $b->service_description . ' ' . $b->provider_key));
+                            $rType = str_contains($pLower, 'artist') ? 'assumed' : (!empty($b->is_reimbursed) ? 'reimbursed' : 'reimbursable');
+                        }
+
                         $providerPaidByPartner[$pBy] = ($providerPaidByPartner[$pBy] ?? 0.0) + $paid;
-                        if (!empty($b->is_reimbursed)) {
+
+                        if ($rType === 'assumed') {
+                            // Gasto asumido por el socio de su propia cuota: la empresa NO se lo devuelve, no genera deuda de retorno
+                            $providerAssumedByPartner[$pBy] = ($providerAssumedByPartner[$pBy] ?? 0.0) + $paid;
+                        } elseif ($rType === 'reimbursed' || !empty($b->is_reimbursed)) {
                             $providerReimbursedByPartner[$pBy] = ($providerReimbursedByPartner[$pBy] ?? 0.0) + $paid;
                         } else {
                             $providerPendingByPartner[$pBy] = ($providerPendingByPartner[$pBy] ?? 0.0) + $paid;
@@ -815,8 +825,37 @@ class BillingReportService
                     }
 
                     $pMatReimb = (float) ($evMaterialByPaidBy[$pName] ?? 0.0);
-                    $pProvReimb = ($evProvPaidBy === $pName && $evProvPaid > 0) ? $evProvPaid : 0.0;
-                    $pTotalToReceive = round($pShare + $pMatReimb + $pProvReimb, 2);
+                    $evProvRType = $evProv['reimbursement_type'] ?? 'assumed';
+                    $isThisPartnerProv = ($evProvPaidBy === $pName && $evProvPaid > 0);
+
+                    $pProvAssumedCost = 0.0;
+                    $pProvReimb = 0.0;
+                    if ($isThisPartnerProv) {
+                        if ($evProvRType === 'assumed') {
+                            $pProvAssumedCost = $evProvPaid;
+                            $pProvReimb = 0.0;
+                        } else {
+                            $pProvAssumedCost = 0.0;
+                            $pProvReimb = $evProvPaid;
+                        }
+                    }
+
+                    if ($isFondoComun) {
+                        $pShare = 0.0;
+                        $pPct = 0.0;
+                        $pTotalToReceive = 0.0;
+                    } elseif ($splitMode === 'custom_amounts') {
+                        $pShare = round((float)($cp['amount'] ?? 0.0), 2);
+                        $pPct = $evTotalCollected > 0 ? round(($pShare / $evTotalCollected) * 100, 1) : (float)($cp['percentage'] ?? 0.0);
+                        // Si el coste es asumido por este socio, se DESCUENTA de su cuota pactada (ej. 600€ - 157,30€ = 442,70€)
+                        $pTotalToReceive = max(0.0, round($pShare - $pProvAssumedCost + $pMatReimb + $pProvReimb, 2));
+                    } else {
+                        // Porcentajes
+                        $pPct = (float)($cp['percentage'] ?? 0.0);
+                        $pShare = round($evNetProfit * ($pPct / 100), 2);
+                        $pTotalToReceive = round($pShare + $pMatReimb + $pProvReimb, 2);
+                    }
+
                     $pInHand = (float) ($evCollectedByPartner[$pName] ?? 0.0);
 
                     // Si está marcado como liquidado / cobrado por ese socio:
@@ -834,6 +873,7 @@ class BillingReportService
                         'is_settled' => $isSettled,
                         'material_reimbursement' => $pMatReimb,
                         'provider_reimbursement' => $pProvReimb,
+                        'provider_assumed_cost' => $pProvAssumedCost,
                         'total_to_receive' => $pTotalToReceive,
                         'collected_in_hand' => $pInHand,
                         'balance_diff' => $pBalanceDiff,
@@ -852,14 +892,28 @@ class BillingReportService
                     $pName = trim((string)($partner['name'] ?? 'Socio'));
                     $pPct = (float) ($partner['percentage'] ?? 50.0);
 
+                    $pMatReimb = (float) ($evMaterialByPaidBy[$pName] ?? 0.0);
+                    $evProvRType = $evProv['reimbursement_type'] ?? 'assumed';
+                    $isThisPartnerProv = ($evProvPaidBy === $pName && $evProvPaid > 0);
+
+                    $pProvAssumedCost = 0.0;
+                    $pProvReimb = 0.0;
+                    if ($isThisPartnerProv) {
+                        if ($evProvRType === 'assumed') {
+                            $pProvAssumedCost = $evProvPaid;
+                            $pProvReimb = 0.0;
+                        } else {
+                            $pProvAssumedCost = 0.0;
+                            $pProvReimb = $evProvPaid;
+                        }
+                    }
+
                     if ($isFondoComun) {
                         $pShare = 0.0; // Se destina 100% al fondo común de empresa / cena / material
                     } else {
                         $pShare = round($evNetProfit * ($pPct / 100), 2);
                     }
 
-                    $pMatReimb = (float) ($evMaterialByPaidBy[$pName] ?? 0.0);
-                    $pProvReimb = ($evProvPaidBy === $pName && $evProvPaid > 0) ? $evProvPaid : 0.0;
                     $pTotalToReceive = round($pShare + $pMatReimb + $pProvReimb, 2);
                     $pInHand = (float) ($evCollectedByPartner[$pName] ?? 0.0);
                     $pBalanceDiff = round($pInHand - $pTotalToReceive, 2);
@@ -872,6 +926,7 @@ class BillingReportService
                         'is_settled' => false,
                         'material_reimbursement' => $pMatReimb,
                         'provider_reimbursement' => $pProvReimb,
+                        'provider_assumed_cost' => $pProvAssumedCost,
                         'total_to_receive' => $pTotalToReceive,
                         'collected_in_hand' => $pInHand,
                         'balance_diff' => $pBalanceDiff,
@@ -896,7 +951,13 @@ class BillingReportService
             } elseif ($useCustomSplit) {
                 $parts = [];
                 foreach ($evPartners as $ep) {
-                    $parts[] = "{$ep['name']}: " . number_format($ep['profit_share'], 2, ',', '.') . " €" . ($ep['role'] ? " ({$ep['role']})" : "");
+                    $desc = "{$ep['name']}: " . number_format($ep['total_to_receive'], 2, ',', '.') . " €" . ($ep['role'] ? " ({$ep['role']})" : "");
+                    if (($ep['provider_assumed_cost'] ?? 0) > 0) {
+                        $desc .= " (" . number_format($ep['profit_share'], 2, ',', '.') . " € - " . number_format($ep['provider_assumed_cost'], 2, ',', '.') . " € coste asumido)";
+                    } elseif (($ep['material_reimbursement'] + $ep['provider_reimbursement']) > 0) {
+                        $desc .= " (+" . number_format($ep['material_reimbursement'] + $ep['provider_reimbursement'], 2, ',', '.') . " € reemb.)";
+                    }
+                    $parts[] = $desc;
                 }
                 $humanExplanation = "Reparto personalizado de este evento: " . implode(', ', $parts) . ".";
             } else {
@@ -929,6 +990,7 @@ class BillingReportService
                 'provider_net_cost' => round($evNetProvCost, 2),
                 'provider_paid' => round($evProvPaid, 2),
                 'provider_paid_by' => $evProvPaidBy,
+                'provider_reimbursement_type' => $evProv['reimbursement_type'] ?? 'assumed',
                 'provider_is_reimbursed' => !empty($evProv['is_reimbursed']),
                 'provider_reimbursed_at' => !empty($evProv['reimbursed_at']) ? \Carbon\Carbon::parse($evProv['reimbursed_at'])->format('d/m/Y') : null,
                 'provider_is_partner_pocket' => !empty($evProv['is_partner_pocket']),

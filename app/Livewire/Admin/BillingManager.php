@@ -66,6 +66,7 @@ class BillingManager extends Component
     public string $provFinalDate = '';
     public string $provFinalMethod = 'transfer';
     public string $provPaidBy = 'Fran';
+    public string $provReimbursementType = 'assumed';
     public string $provNotes = '';
     public bool $provHasRefund = false;
     public $provRefundAmount = 0;
@@ -608,6 +609,7 @@ class BillingManager extends Component
         }
 
         $this->provPaidBy = (string) ($booking?->paid_by ?: ($prov['paid_by'] ?: 'Fran'));
+        $this->provReimbursementType = (string) ($booking?->reimbursement_type ?: ($prov['reimbursement_type'] ?? 'assumed'));
         $this->provNotes = (string) ($booking?->notes ?: ($prov['notes'] ?? ''));
 
         $this->provHasRefund = $booking ? (bool) $booking->has_refund : (bool) ($prov['has_refund'] ?? false);
@@ -706,6 +708,7 @@ class BillingManager extends Component
             $this->provFinalDate = now()->format('Y-m-d');
             $this->provFinalMethod = 'transfer';
             $this->provPaidBy = 'Fran';
+            $this->provReimbursementType = 'assumed';
             $this->provHasRefund = true;
             $this->provRefundAmount = 136.44;
             $this->provRefundRecipient = '50_50';
@@ -759,6 +762,7 @@ class BillingManager extends Component
         $this->provFinalDate = now()->format('Y-m-d');
         $this->provFinalMethod = 'transfer';
         $this->provPaidBy = 'Fran';
+        $this->provReimbursementType = 'assumed';
         $this->provHasRefund = true;
         $this->provRefundAmount = 136.44;
         $this->provRefundRecipient = '50_50';
@@ -874,6 +878,19 @@ class BillingManager extends Component
 
         if (\Illuminate\Support\Facades\Schema::hasColumn('event_provider_bookings', 'paid_by')) {
             $data['paid_by'] = $this->provPaidBy ?: 'Fran';
+        }
+
+        if (\Illuminate\Support\Facades\Schema::hasColumn('event_provider_bookings', 'reimbursement_type')) {
+            $data['reimbursement_type'] = in_array($this->provReimbursementType, ['assumed', 'reimbursable', 'reimbursed'], true)
+                ? $this->provReimbursementType
+                : 'assumed';
+            if ($data['reimbursement_type'] === 'reimbursed') {
+                $data['is_reimbursed'] = true;
+                $data['reimbursed_at'] = now()->format('Y-m-d');
+            } elseif ($data['reimbursement_type'] === 'reimbursable') {
+                $data['is_reimbursed'] = false;
+                $data['reimbursed_at'] = null;
+            }
         }
 
         if (\Illuminate\Support\Facades\Schema::hasColumn('event_provider_bookings', 'has_refund')) {
@@ -1288,16 +1305,32 @@ class BillingManager extends Component
         $booking = \App\Models\EventProviderBooking::find($bookingId);
         if (!$booking) return;
 
-        $newVal = !((bool) ($booking->is_reimbursed ?? false));
-        $booking->update([
-            'is_reimbursed' => $newVal,
-            'reimbursed_at' => $newVal ? now()->format('Y-m-d') : null,
-        ]);
+        $current = (string) ($booking->reimbursement_type ?: (!empty($booking->is_reimbursed) ? 'reimbursed' : 'assumed'));
 
-        session()->flash('message', $newVal
-            ? "✅ Pago a proveedor '{$booking->provider_name}' marcado como REEMBOLSADO a {$booking->paid_by}."
-            : "⏳ Pago a proveedor '{$booking->provider_name}' marcado como PENDIENTE de retorno a {$booking->paid_by}."
-        );
+        if ($current === 'assumed') {
+            $booking->update([
+                'reimbursement_type' => 'reimbursable',
+                'is_reimbursed' => false,
+                'reimbursed_at' => null,
+            ]);
+            $msg = "⏳ Gasto a proveedor '{$booking->provider_name}' marcado como ADELANTO PENDIENTE DE RETORNO a {$booking->paid_by}.";
+        } elseif ($current === 'reimbursable') {
+            $booking->update([
+                'reimbursement_type' => 'reimbursed',
+                'is_reimbursed' => true,
+                'reimbursed_at' => now()->format('Y-m-d'),
+            ]);
+            $msg = "✅ Gasto a proveedor '{$booking->provider_name}' marcado como REEMBOLSADO a {$booking->paid_by}.";
+        } else {
+            $booking->update([
+                'reimbursement_type' => 'assumed',
+                'is_reimbursed' => false,
+                'reimbursed_at' => null,
+            ]);
+            $msg = "👤 Gasto a proveedor '{$booking->provider_name}' marcado como COSTE ASUMIDO por {$booking->paid_by} (descuenta de su cuota en este evento).";
+        }
+
+        session()->flash('message', $msg);
     }
 
     /**
