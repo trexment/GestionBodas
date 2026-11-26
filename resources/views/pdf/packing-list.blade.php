@@ -86,10 +86,15 @@
                     @endif
                 </td>
             </tr>
-            @if($event->clean_client_request_notes)
+            @if(!empty(trim((string)$event->packing_notes)))
+            <tr>
+                <td class="info-label">Notas de Montaje y Carga:</td>
+                <td class="info-val" colspan="3" style="color: #0f172a; font-weight: bold; white-space: pre-line;">{{ $event->packing_notes }}</td>
+            </tr>
+            @elseif(!empty($event->clean_client_request_notes))
             <tr>
                 <td class="info-label">Notas Generales:</td>
-                <td class="info-val" colspan="3" style="color: #b45309;">{{ $event->clean_client_request_notes }}</td>
+                <td class="info-val" colspan="3" style="color: #1e293b; white-space: pre-line;">{{ $event->clean_client_request_notes }}</td>
             </tr>
             @endif
         </table>

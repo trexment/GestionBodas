@@ -3,82 +3,78 @@
     $jaSummary = $kpis['joint_account_summary'] ?? [];
     $settSummary = $kpis['settlement_summary'] ?? [];
     $partnersList = $settSummary['partners'] ?? [];
+    $bankBalance = (float)($jaSummary['theoretical_bank_balance'] ?? 0);
+    $cashBalance = (float)($jaSummary['cash_balance'] ?? 0);
+    $totalAvailable = (float)($jaSummary['total_available_balance'] ?? 0);
+    $pendingDebts = (float)($jaSummary['pending_partner_debts'] ?? 0);
+    $freeBalance = (float)($jaSummary['available_free_balance'] ?? 0);
 @endphp
 
 <div class="space-y-6">
-    <!-- 1. TARJETAS KPI DE SALDO TEÓRICO Y SALUD DE LA CUENTA COMÚN -->
+    <!-- 1. TARJETAS KPI DE SALDO REAL: BANCO, CAJA EFECTIVO Y LIQUIDEZ TOTAL -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <!-- Saldo Teórico Actual en Banco -->
+        <!-- Saldo Real Actual en Banco -->
         <div class="bg-gradient-to-br from-emerald-600 to-teal-700 text-white rounded-2xl p-5 shadow-lg space-y-2 relative overflow-hidden sm:col-span-2 lg:col-span-1">
             <div class="flex items-center justify-between">
                 <span class="text-xs font-black uppercase tracking-wider text-emerald-100 flex items-center gap-1.5">
-                    <span>🏦</span> Saldo Teórico en Banco
+                    <span>🏦</span> Saldo en Banco
                 </span>
-                <span class="text-xs px-2 py-0.5 rounded-full bg-white/20 font-bold">Cuenta Conjunta</span>
+                <span class="text-xs px-2 py-0.5 rounded-full bg-white/20 font-bold">Cuenta Común</span>
             </div>
-            <div class="text-3xl font-black tracking-tight">
-                {{ number_format($jaSummary['theoretical_bank_balance'] ?? 0, 2, ',', '.') }} €
+            <div class="text-3xl font-black tracking-tight {{ $bankBalance < 0 ? 'text-rose-200' : '' }}">
+                {{ number_format($bankBalance, 2, ',', '.') }} €
             </div>
-            <p class="text-[11px] text-emerald-100/90 leading-tight">
-                Dinero que debería haber físicamente en la cuenta bancaria común tras sumar ingresos directos/traspasados y restar salidas efectivas.
-            </p>
-        </div>
-
-        <!-- Total Ingresos / Entradas -->
-        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4.5 shadow-xs space-y-2">
-            <div class="flex items-center justify-between text-xs font-bold text-slate-500 dark:text-slate-400">
-                <span class="flex items-center gap-1.5"><span>📥</span> Total Entradas</span>
-                <span class="text-[10px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full">Ingresos</span>
-            </div>
-            <div class="text-2xl font-black text-slate-900 dark:text-white">
-                {{ number_format($jaSummary['total_inflows'] ?? 0, 2, ',', '.') }} €
-            </div>
-            <div class="space-y-0.5 text-[10px] text-slate-500 pt-1 border-t border-slate-100 dark:border-slate-800">
+            <div class="space-y-1 text-[11px] text-emerald-100/90 pt-1 border-t border-white/20">
                 <div class="flex justify-between">
-                    <span>Cobros directos en banco:</span>
-                    <strong class="text-slate-700 dark:text-slate-300">{{ number_format($jaSummary['direct_inflows'] ?? 0, 2, ',', '.') }} €</strong>
+                    <span>Entradas Banco (Cobros + Señales):</span>
+                    <strong>+{{ number_format($jaSummary['bank_inflows'] ?? 0, 2, ',', '.') }} €</strong>
                 </div>
                 <div class="flex justify-between">
-                    <span>Señales traspasadas a común:</span>
-                    <strong class="text-emerald-600 dark:text-emerald-400">{{ number_format($jaSummary['transferred_inflows'] ?? 0, 2, ',', '.') }} €</strong>
+                    <span>Salidas Banco (Compras + Proveedores):</span>
+                    <strong>-{{ number_format($jaSummary['bank_outflows'] ?? 0, 2, ',', '.') }} €</strong>
                 </div>
-                @if(($jaSummary['refund_inflows'] ?? 0) > 0)
-                    <div class="flex justify-between">
-                        <span>Devoluciones proveedor:</span>
-                        <strong class="text-teal-600 dark:text-teal-400">{{ number_format($jaSummary['refund_inflows'], 2, ',', '.') }} €</strong>
-                    </div>
-                @endif
             </div>
         </div>
 
-        <!-- Total Salidas Reales -->
+        <!-- Bote / Caja de Efectivo de la Empresa -->
         <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4.5 shadow-xs space-y-2">
             <div class="flex items-center justify-between text-xs font-bold text-slate-500 dark:text-slate-400">
-                <span class="flex items-center gap-1.5"><span>📤</span> Total Salidas Pagadas</span>
-                <span class="text-[10px] font-black text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 px-2 py-0.5 rounded-full">Gastos</span>
+                <span class="flex items-center gap-1.5"><span>💵</span> Bote Efectivo</span>
+                <span class="text-[10px] font-black text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full">Caja Empresa</span>
             </div>
-            <div class="text-2xl font-black text-rose-600 dark:text-rose-400">
-                -{{ number_format($jaSummary['total_outflows'] ?? 0, 2, ',', '.') }} €
+            <div class="text-2xl font-black {{ $cashBalance >= 0 ? 'text-slate-900 dark:text-white' : 'text-rose-600' }}">
+                {{ number_format($cashBalance, 2, ',', '.') }} €
             </div>
             <div class="space-y-0.5 text-[10px] text-slate-500 pt-1 border-t border-slate-100 dark:border-slate-800">
                 <div class="flex justify-between">
-                    <span>Gastos Empresa, Cenas y Material:</span>
-                    <strong class="text-slate-700 dark:text-slate-300">{{ number_format($jaSummary['direct_material'] ?? 0, 2, ',', '.') }} €</strong>
+                    <span>Cobros en efectivo fondo común:</span>
+                    <strong class="text-emerald-600 dark:text-emerald-400">+{{ number_format($jaSummary['cash_inflows'] ?? 0, 2, ',', '.') }} €</strong>
                 </div>
                 <div class="flex justify-between">
-                    <span>Proveedores pagados por banco:</span>
-                    <strong class="text-slate-700 dark:text-slate-300">{{ number_format($jaSummary['direct_provider'] ?? 0, 2, ',', '.') }} €</strong>
+                    <span>Gastos pagados en efectivo:</span>
+                    <strong class="text-rose-600 dark:text-rose-400">-{{ number_format($jaSummary['cash_outflows'] ?? 0, 2, ',', '.') }} €</strong>
+                </div>
+            </div>
+        </div>
+
+        <!-- Liquidez Total Disponible (Banco + Caja) -->
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4.5 shadow-xs space-y-2">
+            <div class="flex items-center justify-between text-xs font-bold text-slate-500 dark:text-slate-400">
+                <span class="flex items-center gap-1.5"><span>💰</span> Total Disponible</span>
+                <span class="text-[10px] font-black text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/60 px-2 py-0.5 rounded-full">Banco + Caja</span>
+            </div>
+            <div class="text-2xl font-black text-indigo-600 dark:text-indigo-400">
+                {{ number_format($totalAvailable, 2, ',', '.') }} €
+            </div>
+            <div class="space-y-0.5 text-[10px] text-slate-500 pt-1 border-t border-slate-100 dark:border-slate-800">
+                <div class="flex justify-between">
+                    <span>En Cuenta Bancaria:</span>
+                    <strong class="text-slate-700 dark:text-slate-300">{{ number_format($bankBalance, 2, ',', '.') }} €</strong>
                 </div>
                 <div class="flex justify-between">
-                    <span>Reembolsos pagados a socios:</span>
-                    <strong class="text-amber-600 dark:text-amber-400">{{ number_format(($jaSummary['reimbursed_material'] ?? 0) + ($jaSummary['reimbursed_provider'] ?? 0), 2, ',', '.') }} €</strong>
+                    <span>En Caja de Efectivo:</span>
+                    <strong class="text-slate-700 dark:text-slate-300">{{ number_format($cashBalance, 2, ',', '.') }} €</strong>
                 </div>
-                @if(($jaSummary['settled_profits_distributed'] ?? 0) > 0)
-                    <div class="flex justify-between">
-                        <span>Beneficios ya liquidados:</span>
-                        <strong class="text-indigo-600 dark:text-indigo-400">{{ number_format($jaSummary['settled_profits_distributed'], 2, ',', '.') }} €</strong>
-                    </div>
-                @endif
             </div>
         </div>
 
@@ -89,16 +85,16 @@
                 <span class="text-[10px] font-black text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 px-2 py-0.5 rounded-full">A Devolver</span>
             </div>
             <div class="text-2xl font-black text-amber-600 dark:text-amber-400">
-                {{ number_format($jaSummary['pending_partner_debts'] ?? 0, 2, ',', '.') }} €
+                {{ number_format($pendingDebts, 2, ',', '.') }} €
             </div>
             <div class="pt-1 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
-                <span class="text-[11px] text-slate-500">💎 Remanente Libre:</span>
-                <strong class="text-xs font-black {{ ($jaSummary['available_free_balance'] ?? 0) >= 0 ? 'text-teal-600 dark:text-teal-400' : 'text-rose-600' }}">
-                    {{ number_format($jaSummary['available_free_balance'] ?? 0, 2, ',', '.') }} €
+                <span class="text-[11px] text-slate-500 font-semibold">💎 Remanente Libre:</span>
+                <strong class="text-xs font-black {{ $freeBalance >= 0 ? 'text-teal-600 dark:text-teal-400' : 'text-rose-600' }}">
+                    {{ number_format($freeBalance, 2, ',', '.') }} €
                 </strong>
             </div>
             <p class="text-[9px] text-slate-400">
-                * Gastos que los socios pagaron de su bolsillo y la cuenta común aún les debe reembolsar.
+                * Gastos que los socios pagaron de su bolsillo y la empresa aún les debe reembolsar.
             </p>
         </div>
     </div>
@@ -141,32 +137,31 @@
                             @elseif($diff < -0.05)
                                 Debe percibir: {{ number_format(abs($diff), 2, ',', '.') }} €
                             @else
-                                Cuadrado (0,00 €)
+                                Cuentas saldadas
                             @endif
                         </span>
                     </div>
 
-                    <!-- Métricas del socio -->
-                    <div class="space-y-1.5 text-xs text-slate-600 dark:text-slate-300 pt-2 border-t border-slate-200/60 dark:border-slate-800">
-                        <div class="flex items-center justify-between">
-                            <span class="text-[11px] text-slate-500">Cobrado de clientes:</span>
-                            <span class="font-bold">{{ number_format($origCollected, 2, ',', '.') }} €</span>
+                    <div class="space-y-1.5 pt-2 border-t border-slate-200/60 dark:border-slate-800 text-xs">
+                        <div class="flex items-center justify-between text-slate-500">
+                            <span>Cobrado de clientes:</span>
+                            <span class="font-bold text-slate-700 dark:text-slate-300">{{ number_format($origCollected, 2, ',', '.') }} €</span>
                         </div>
-                        <div class="flex items-center justify-between text-teal-700 dark:text-teal-400">
-                            <span class="text-[11px]">Traspasado a cuenta común:</span>
-                            <span class="font-extrabold">-{{ number_format($transferred, 2, ',', '.') }} €</span>
+                        <div class="flex items-center justify-between text-slate-500">
+                            <span>Traspasado a cuenta común:</span>
+                            <span class="font-bold text-emerald-600 dark:text-emerald-400">-{{ number_format($transferred, 2, ',', '.') }} €</span>
                         </div>
-                        <div class="flex items-center justify-between font-black text-slate-900 dark:text-white bg-white/70 dark:bg-slate-900/70 p-1.5 rounded-lg border border-slate-200/50 dark:border-slate-800">
-                            <span class="text-[11px]">Dinero real en mano actual:</span>
-                            <span>{{ number_format($inHand, 2, ',', '.') }} €</span>
+                        <div class="flex items-center justify-between pt-1 border-t border-slate-200/40 dark:border-slate-800 font-bold">
+                            <span class="text-slate-700 dark:text-slate-300">Dinero real en mano actual:</span>
+                            <span class="{{ $inHand > 0 ? 'text-indigo-600 dark:text-indigo-400 font-black' : 'text-slate-500' }}">{{ number_format($inHand, 2, ',', '.') }} €</span>
                         </div>
 
-                        <div class="flex items-center justify-between pt-1">
-                            <span class="text-[11px] text-slate-500">Gastos de bolsillo adelantados:</span>
-                            <span class="font-bold">{{ number_format((float)($p['reimbursement'] ?? 0), 2, ',', '.') }} €</span>
+                        <div class="flex items-center justify-between text-slate-500 pt-1">
+                            <span>Gastos de bolsillo adelantados:</span>
+                            <span class="font-bold text-slate-700 dark:text-slate-300">{{ number_format($pendReimb + $doneReimb, 2, ',', '.') }} €</span>
                         </div>
-                        <div class="flex items-center justify-between text-[11px]">
-                            <span class="text-emerald-600 dark:text-emerald-400">↳ Ya reembolsados por común:</span>
+                        <div class="flex items-center justify-between text-[11px] text-slate-400">
+                            <span>↳ Ya reembolsados por común:</span>
                             <span class="font-bold text-emerald-600 dark:text-emerald-400">{{ number_format($doneReimb, 2, ',', '.') }} €</span>
                         </div>
                         <div class="flex items-center justify-between text-[11px]">
@@ -189,21 +184,49 @@
     </div>
 
     <!-- 3. EXTRACTO / LIBRO CRONOLÓGICO DE MOVIMIENTOS DE LA CUENTA COMÚN -->
-    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden">
-        <div class="px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/60 dark:bg-slate-950/50">
+    <div x-data="{ channelFilter: 'all' }" class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden">
+        <div class="px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-3 bg-slate-50/60 dark:bg-slate-950/50">
             <div>
                 <h3 class="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
                     <span>📜</span>
                     <span>Libro de Movimientos de la Cuenta Común ({{ count($jointAccountLedger) }} operaciones)</span>
                 </h3>
                 <p class="text-[11px] text-slate-500 mt-0.5">
-                    Historial cronológico continuo de cobros ingresados/traspasados, pagos a proveedores, compras de material y reembolsos abonados.
+                    Historial cronológico continuo de cobros ingresados/traspasados, pagos a proveedores, compras de material y gastos compartidos.
                 </p>
             </div>
-            <div class="flex items-center gap-2 self-start sm:self-auto">
-                <span class="text-xs font-black px-3 py-1 rounded-xl bg-teal-100 text-teal-900 dark:bg-teal-950 dark:text-teal-300 border border-teal-300 dark:border-teal-700">
-                    🏦 Saldo: {{ number_format($jaSummary['theoretical_bank_balance'] ?? 0, 2, ',', '.') }} €
-                </span>
+            
+            <!-- Selector de Canal: Todos, Banco o Efectivo -->
+            <div class="flex flex-wrap items-center gap-2">
+                <div class="inline-flex rounded-xl p-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xs gap-1">
+                    <button type="button" 
+                        @click="channelFilter = 'all'" 
+                        :class="channelFilter === 'all' ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'" 
+                        class="px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer">
+                        🌍 Todos ({{ count($jointAccountLedger) }})
+                    </button>
+                    <button type="button" 
+                        @click="channelFilter = 'bank'" 
+                        :class="channelFilter === 'bank' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'" 
+                        class="px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1">
+                        <span>🏦</span> Solo Banco ({{ collect($jointAccountLedger)->where('channel', 'bank')->count() }})
+                    </button>
+                    <button type="button" 
+                        @click="channelFilter = 'cash'" 
+                        :class="channelFilter === 'cash' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'" 
+                        class="px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1">
+                        <span>💵</span> Solo Efectivo ({{ collect($jointAccountLedger)->where('channel', 'cash')->count() }})
+                    </button>
+                </div>
+
+                <div class="flex items-center gap-1.5">
+                    <span class="text-xs font-black px-3 py-1 rounded-xl bg-blue-50 text-blue-900 dark:bg-blue-950 dark:text-blue-300 border border-blue-200 dark:border-blue-800" title="Saldo disponible en Banco">
+                        🏦 Banco: {{ number_format($bankBalance, 2, ',', '.') }} €
+                    </span>
+                    <span class="text-xs font-black px-3 py-1 rounded-xl bg-emerald-50 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800" title="Saldo disponible en Caja de Efectivo">
+                        💵 Caja: {{ number_format($cashBalance, 2, ',', '.') }} €
+                    </span>
+                </div>
             </div>
         </div>
 
@@ -212,6 +235,7 @@
                 <thead>
                     <tr class="border-b border-slate-200 dark:border-slate-800 text-[10px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-950">
                         <th class="py-3 px-4">Fecha</th>
+                        <th class="py-3 px-3 text-center">Cuenta / Canal</th>
                         <th class="py-3 px-3 text-center">Tipo</th>
                         <th class="py-3 px-4">Concepto / Detalle</th>
                         <th class="py-3 px-3">Evento Asociado</th>
@@ -225,11 +249,32 @@
                         @php
                             $isInflow = ($row['type'] ?? '') === 'inflow';
                             $rowDate = !empty($row['date']) ? ($row['date'] instanceof \Carbon\Carbon ? $row['date']->format('d/m/Y') : \Carbon\Carbon::parse($row['date'])->format('d/m/Y')) : '—';
+                            $rChan = $row['channel'] ?? 'bank';
                         @endphp
-                        <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-850/60 transition">
+                        <tr 
+                            x-show="channelFilter === 'all' || channelFilter === '{{ $rChan }}'" 
+                            class="hover:bg-slate-50/80 dark:hover:bg-slate-850/60 transition"
+                        >
                             <!-- Fecha -->
                             <td class="py-3 px-4 font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap">
                                 📅 {{ $rowDate }}
+                            </td>
+
+                            <!-- Canal / Cuenta (Banco vs Efectivo) -->
+                            <td class="py-3 px-3 text-center whitespace-nowrap">
+                                @if($rChan === 'bank')
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 border border-blue-300 dark:border-blue-700">
+                                        🏦 Banco
+                                    </span>
+                                @elseif($rChan === 'cash')
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700">
+                                        💵 Efectivo
+                                    </span>
+                                @else
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300 border border-purple-300 dark:border-purple-700">
+                                        🤝 Reparto
+                                    </span>
+                                @endif
                             </td>
 
                             <!-- Tipo (Entrada / Salida) -->
@@ -281,13 +326,13 @@
                             <!-- Estado -->
                             <td class="py-3 px-3 text-center whitespace-nowrap">
                                 <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-black bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-                                    ✅ Efectivo
+                                    ✓ Confirmado
                                 </span>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="py-12 text-center text-slate-400">
+                            <td colspan="8" class="py-12 text-center text-slate-400">
                                 <span class="text-3xl block mb-2">🔍</span>
                                 <p class="font-bold text-sm">No hay movimientos registrados en la cuenta común para los filtros seleccionados.</p>
                                 <p class="text-xs">Prueba a seleccionar otra temporada o ampliar el rango de fechas.</p>

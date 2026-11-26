@@ -1049,7 +1049,11 @@ class BillingReportService
         $jointRefundInflows = (float) $jointRefundReceived;
         $jointAccountLedger = [];
 
-        // Inflows por cobros de clientes
+        // 1. Entradas (Inflows) separadas por canal: Banco vs Caja Efectivo
+        $jointDirectBankInflows = 0.0;
+        $jointCashInflows = 0.0;
+        $jointTransferredInflows = 0.0;
+
         foreach ($ledgerRows as $lr) {
             if (($lr['status'] ?? '') === 'paid') {
                 $cBy = trim((string)($lr['collected_by'] ?? ''));
@@ -1057,32 +1061,56 @@ class BillingReportService
                 $isDirectJoint = str_contains($cByLower, 'conjunt') || str_contains($cByLower, 'empresa') || str_contains($cByLower, 'comun') || str_contains($cByLower, 'común') || str_contains($cByLower, 'fondo');
                 $isTransferred = !empty($lr['transferred_to_joint']);
                 $amt = (float)$lr['total'];
+                $mMethod = strtolower((string)($lr['method'] ?? ''));
+                $isCash = ($mMethod === 'cash') || str_contains($cByLower, 'efectivo') || str_contains($cByLower, 'caja');
 
                 if ($isDirectJoint) {
-                    $jointDirectInflows += $amt;
-                    $jointAccountLedger[] = [
-                        'date' => $lr['date'] ?? null,
-                        'type' => 'inflow',
-                        'type_label' => 'Cobro Directo',
-                        'category' => 'client_payment',
-                        'concept' => ($lr['concept'] ?? 'Cobro de cliente') . ' (' . ($lr['document_number'] ?? '') . ')',
-                        'event_id' => $lr['event_id'] ?? null,
-                        'event_name' => $lr['event_name'] ?? null,
-                        'actor' => 'Cliente → Cuenta Común',
-                        'amount' => $amt,
-                        'status' => 'confirmed',
-                    ];
+                    if ($isCash) {
+                        $jointCashInflows += $amt;
+                        $jointAccountLedger[] = [
+                            'date' => $lr['date'] ?? null,
+                            'channel' => 'cash',
+                            'channel_label' => '💵 Efectivo',
+                            'type' => 'inflow',
+                            'type_label' => 'Cobro en Efectivo (Caja)',
+                            'category' => 'client_payment_cash',
+                            'concept' => ($lr['concept'] ?? 'Cobro en efectivo') . ' (' . ($lr['document_number'] ?? '') . ')',
+                            'event_id' => $lr['event_id'] ?? null,
+                            'event_name' => $lr['event_name'] ?? null,
+                            'actor' => 'Cliente → Caja Efectivo Común',
+                            'amount' => $amt,
+                            'status' => 'confirmed',
+                        ];
+                    } else {
+                        $jointDirectBankInflows += $amt;
+                        $jointAccountLedger[] = [
+                            'date' => $lr['date'] ?? null,
+                            'channel' => 'bank',
+                            'channel_label' => '🏦 Banco',
+                            'type' => 'inflow',
+                            'type_label' => 'Cobro Directo Banco',
+                            'category' => 'client_payment_bank',
+                            'concept' => ($lr['concept'] ?? 'Cobro directo en banco') . ' (' . ($lr['document_number'] ?? '') . ')',
+                            'event_id' => $lr['event_id'] ?? null,
+                            'event_name' => $lr['event_name'] ?? null,
+                            'actor' => 'Cliente → Cuenta Bancaria Común',
+                            'amount' => $amt,
+                            'status' => 'confirmed',
+                        ];
+                    }
                 } elseif ($isTransferred) {
                     $jointTransferredInflows += $amt;
                     $jointAccountLedger[] = [
                         'date' => $lr['transferred_at'] ?? $lr['date'] ?? null,
+                        'channel' => 'bank',
+                        'channel_label' => '🏦 Banco',
                         'type' => 'inflow',
-                        'type_label' => 'Señal Traspasada',
+                        'type_label' => 'Señal Traspasada a Banco',
                         'category' => 'transferred_deposit',
                         'concept' => 'Traspaso de ' . ($lr['concept'] ?? 'Señal') . ' (' . ($lr['document_number'] ?? '') . ')',
                         'event_id' => $lr['event_id'] ?? null,
                         'event_name' => $lr['event_name'] ?? null,
-                        'actor' => $cBy . ' → Cuenta Común',
+                        'actor' => $cBy . ' → Cuenta Bancaria Común',
                         'amount' => $amt,
                         'status' => 'confirmed',
                     ];
@@ -1090,26 +1118,27 @@ class BillingReportService
             }
         }
 
-        // Inflow por devoluciones de proveedores (Artístamente a cuenta conjunta)
+        // Devoluciones de proveedores (Artístamente a cuenta bancaria común)
         if ($jointRefundInflows > 0) {
             $jointAccountLedger[] = [
                 'date' => null,
+                'channel' => 'bank',
+                'channel_label' => '🏦 Banco',
                 'type' => 'inflow',
                 'type_label' => 'Devolución Proveedor',
                 'category' => 'provider_refund',
                 'concept' => 'Liquidación/Devolución Cooperativa (Artístamente) a Cuenta Común',
                 'event_id' => null,
                 'event_name' => 'Fondo Común',
-                'actor' => 'Artístamente → Cuenta Común',
+                'actor' => 'Artístamente → Cuenta Bancaria Común',
                 'amount' => $jointRefundInflows,
                 'status' => 'confirmed',
             ];
         }
 
-        $jointTotalInflows = round($jointDirectInflows + $jointTransferredInflows + $jointRefundInflows, 2);
-
-        // Salidas: Compras de Material
-        $jointDirectMaterial = 0.0;
+        // 2. Salidas: Compras de Material y Gastos de Empresa
+        $jointBankMaterial = 0.0;
+        $jointCashMaterial = 0.0;
         $jointReimbursedMaterialToPartners = 0.0;
         $jointPendingMaterialDebtToPartners = 0.0;
 
@@ -1122,36 +1151,57 @@ class BillingReportService
             $isCena = ($mat->category === 'cena_empresa');
             $isDieta = ($mat->category === 'team_dietas');
             $typeLbl = $isCena ? 'Cena de Empresa' : ($isDieta ? 'Dietas / Comidas' : 'Gasto Empresa / Material');
-            $actorLbl = str_contains($pByLower, 'efectivo') || str_contains($pByLower, 'caja') 
-                ? 'Caja Efectivo → Gasto Común' 
-                : 'Cuenta Común → Proveedor';
+            $matMethod = strtolower((string)($mat->payment_method ?? ''));
+            $isCash = ($matMethod === 'cash') || str_contains($pByLower, 'efectivo') || str_contains($pByLower, 'caja');
 
             if ($isJoint) {
-                $jointDirectMaterial += $amt;
-                $jointAccountLedger[] = [
-                    'date' => $mat->purchase_date ? Carbon::parse($mat->purchase_date) : null,
-                    'type' => 'outflow',
-                    'type_label' => $typeLbl,
-                    'category' => $mat->category ?: 'material_direct',
-                    'concept' => $mat->concept . ($mat->supplier ? ' (' . $mat->supplier . ')' : ''),
-                    'event_id' => $mat->event_id,
-                    'event_name' => $mat->event?->name,
-                    'actor' => $actorLbl,
-                    'amount' => $amt,
-                    'status' => 'confirmed',
-                ];
+                if ($isCash) {
+                    $jointCashMaterial += $amt;
+                    $jointAccountLedger[] = [
+                        'date' => $mat->purchase_date ? Carbon::parse($mat->purchase_date) : null,
+                        'channel' => 'cash',
+                        'channel_label' => '💵 Efectivo',
+                        'type' => 'outflow',
+                        'type_label' => $typeLbl . ' (Caja)',
+                        'category' => $mat->category ?: 'material_cash',
+                        'concept' => $mat->concept . ($mat->supplier ? ' (' . $mat->supplier . ')' : ''),
+                        'event_id' => $mat->event_id,
+                        'event_name' => $mat->event?->name,
+                        'actor' => 'Caja Efectivo → Gasto Común',
+                        'amount' => $amt,
+                        'status' => 'confirmed',
+                    ];
+                } else {
+                    $jointBankMaterial += $amt;
+                    $jointAccountLedger[] = [
+                        'date' => $mat->purchase_date ? Carbon::parse($mat->purchase_date) : null,
+                        'channel' => 'bank',
+                        'channel_label' => '🏦 Banco',
+                        'type' => 'outflow',
+                        'type_label' => $typeLbl . ' (Banco)',
+                        'category' => $mat->category ?: 'material_direct',
+                        'concept' => $mat->concept . ($mat->supplier ? ' (' . $mat->supplier . ')' : ''),
+                        'event_id' => $mat->event_id,
+                        'event_name' => $mat->event?->name,
+                        'actor' => 'Cuenta Bancaria Común → Proveedor/Comercio',
+                        'amount' => $amt,
+                        'status' => 'confirmed',
+                    ];
+                }
             } else {
                 if (!empty($mat->is_reimbursed)) {
                     $jointReimbursedMaterialToPartners += $amt;
                     $jointAccountLedger[] = [
                         'date' => $mat->reimbursed_at ? Carbon::parse($mat->reimbursed_at) : ($mat->purchase_date ? Carbon::parse($mat->purchase_date) : null),
+                        'channel' => 'bank',
+                        'channel_label' => '🏦 Banco',
                         'type' => 'outflow',
                         'type_label' => 'Reembolso a Socio (' . $typeLbl . ')',
                         'category' => 'partner_reimbursement',
                         'concept' => 'Reembolso a ' . $pBy . ' por: ' . $mat->concept,
                         'event_id' => $mat->event_id,
                         'event_name' => $mat->event?->name,
-                        'actor' => 'Cuenta Común → ' . $pBy,
+                        'actor' => 'Cuenta Bancaria Común → ' . $pBy,
                         'amount' => $amt,
                         'status' => 'confirmed',
                     ];
@@ -1161,7 +1211,7 @@ class BillingReportService
             }
         }
 
-        // Salidas: Pagos a Proveedores (Fotomatón / 360 / Artístamente)
+        // 3. Salidas: Pagos a Proveedores (Fotomatón / 360 / Artístamente)
         $jointDirectProvider = 0.0;
         $jointReimbursedProviderToPartners = 0.0;
         $jointPendingProviderDebtToPartners = 0.0;
@@ -1185,13 +1235,15 @@ class BillingReportService
                             $jointDirectProvider += $paid;
                             $jointAccountLedger[] = [
                                 'date' => $b->final_paid_at ? Carbon::parse($b->final_paid_at) : ($b->deposit_paid_at ? Carbon::parse($b->deposit_paid_at) : null),
+                                'channel' => 'bank',
+                                'channel_label' => '🏦 Banco',
                                 'type' => 'outflow',
                                 'type_label' => 'Pago Proveedor',
                                 'category' => 'provider_direct',
                                 'concept' => 'Pago a ' . ($b->provider_name ?: 'Proveedor') . ' (' . ($b->service_description ?: 'Servicio') . ')',
                                 'event_id' => $ev->id,
                                 'event_name' => $ev->name,
-                                'actor' => 'Cuenta Común → ' . ($b->provider_name ?: 'Proveedor'),
+                                'actor' => 'Cuenta Bancaria Común → ' . ($b->provider_name ?: 'Proveedor'),
                                 'amount' => $paid,
                                 'status' => 'confirmed',
                             ];
@@ -1200,13 +1252,15 @@ class BillingReportService
                                 $jointReimbursedProviderToPartners += $paid;
                                 $jointAccountLedger[] = [
                                     'date' => $b->reimbursed_at ? Carbon::parse($b->reimbursed_at) : null,
+                                    'channel' => 'bank',
+                                    'channel_label' => '🏦 Banco',
                                     'type' => 'outflow',
                                     'type_label' => 'Reembolso Proveedor',
                                     'category' => 'partner_reimbursement',
                                     'concept' => 'Retorno a ' . $pBy . ' por adelanto de ' . ($b->provider_name ?: 'Proveedor'),
                                     'event_id' => $ev->id,
                                     'event_name' => $ev->name,
-                                    'actor' => 'Cuenta Común → ' . $pBy,
+                                    'actor' => 'Cuenta Bancaria Común → ' . $pBy,
                                     'amount' => $paid,
                                     'status' => 'confirmed',
                                 ];
@@ -1219,7 +1273,7 @@ class BillingReportService
             }
         }
 
-        // Salidas: Beneficios de eventos ya liquidados a socios
+        // 4. Repartos de socios liquidados (Informativos en extracto, no restan del saldo bancario si se cobraron en mano)
         $jointSettledProfitsDistributed = 0.0;
         $jointPendingEventProfits = 0.0;
 
@@ -1233,13 +1287,15 @@ class BillingReportService
                     $jointSettledProfitsDistributed += $evNetProf;
                     $jointAccountLedger[] = [
                         'date' => $ev->settlement_paid_at ? Carbon::parse($ev->settlement_paid_at) : null,
+                        'channel' => 'settlement',
+                        'channel_label' => '🤝 Reparto',
                         'type' => 'outflow',
-                        'type_label' => 'Liquidación Socios',
+                        'type_label' => 'Reparto Liquidado',
                         'category' => 'partner_settlement',
                         'concept' => 'Reparto de beneficio liquidado a socios (' . $ev->name . ')',
                         'event_id' => $ev->id,
                         'event_name' => $ev->name,
-                        'actor' => 'Cuenta Común → Socios',
+                        'actor' => 'Recaudador Evento → Socios',
                         'amount' => $evNetProf,
                         'status' => 'confirmed',
                     ];
@@ -1249,10 +1305,18 @@ class BillingReportService
             }
         }
 
-        $jointTotalOutflows = round($jointDirectMaterial + $jointDirectProvider + $jointReimbursedMaterialToPartners + $jointReimbursedProviderToPartners + $jointSettledProfitsDistributed, 2);
-        $jointTheoreticalBankBalance = round($jointTotalInflows - $jointTotalOutflows, 2);
+        // 5. Cálculos de Balances Separados (Banco vs Caja) y Liquidez Total
+        $bankTotalInflows = round($jointDirectBankInflows + $jointTransferredInflows + $jointRefundInflows, 2);
+        $bankTotalOutflows = round($jointBankMaterial + $jointDirectProvider + $jointReimbursedMaterialToPartners + $jointReimbursedProviderToPartners, 2);
+        $theoreticalBankBalance = round($bankTotalInflows - $bankTotalOutflows, 2);
+
+        $cashTotalInflows = round($jointCashInflows, 2);
+        $cashTotalOutflows = round($jointCashMaterial, 2);
+        $cashBalance = round($cashTotalInflows - $cashTotalOutflows, 2);
+
+        $totalAvailableBalance = round($theoreticalBankBalance + $cashBalance, 2);
         $jointPendingPartnerDebts = round($jointPendingMaterialDebtToPartners + $jointPendingProviderDebtToPartners, 2);
-        $jointAvailableFreeBalance = round($jointTheoreticalBankBalance - $jointPendingPartnerDebts, 2);
+        $jointAvailableFreeBalance = round($totalAvailableBalance - $jointPendingPartnerDebts, 2);
 
         // Ordenar cronológicamente el extracto de cuenta común (más reciente primero)
         usort($jointAccountLedger, function ($a, $b) {
@@ -1262,22 +1326,40 @@ class BillingReportService
         });
 
         $kpis['joint_account_summary'] = [
-            'total_inflows' => $jointTotalInflows,
-            'direct_inflows' => round($jointDirectInflows, 2),
+            // Cuenta Bancaria
+            'bank_inflows' => $bankTotalInflows,
+            'direct_bank_inflows' => round($jointDirectBankInflows, 2),
             'transferred_inflows' => round($jointTransferredInflows, 2),
             'refund_inflows' => round($jointRefundInflows, 2),
-            'total_outflows' => $jointTotalOutflows,
-            'direct_material' => round($jointDirectMaterial, 2),
+            'bank_outflows' => $bankTotalOutflows,
+            'bank_material' => round($jointBankMaterial, 2),
+            'bank_provider' => round($jointDirectProvider, 2),
+            'bank_reimbursed' => round($jointReimbursedMaterialToPartners + $jointReimbursedProviderToPartners, 2),
+            'theoretical_bank_balance' => $theoreticalBankBalance,
+
+            // Caja Efectivo
+            'cash_inflows' => $cashTotalInflows,
+            'cash_outflows' => $cashTotalOutflows,
+            'cash_material' => round($jointCashMaterial, 2),
+            'cash_balance' => $cashBalance,
+
+            // Total Liquidez y Deudas
+            'total_available_balance' => $totalAvailableBalance,
+            'pending_material_debt' => round($jointPendingMaterialDebtToPartners, 2),
+            'pending_provider_debt' => round($jointPendingProviderDebtToPartners, 2),
+            'pending_partner_debts' => $jointPendingPartnerDebts,
+            'available_free_balance' => $jointAvailableFreeBalance,
+
+            // Compatibilidad legacy
+            'total_inflows' => round($bankTotalInflows + $cashTotalInflows, 2),
+            'direct_inflows' => round($jointDirectBankInflows, 2),
+            'total_outflows' => round($bankTotalOutflows + $cashTotalOutflows, 2),
+            'direct_material' => round($jointBankMaterial + $jointCashMaterial, 2),
             'direct_provider' => round($jointDirectProvider, 2),
             'reimbursed_material' => round($jointReimbursedMaterialToPartners, 2),
             'reimbursed_provider' => round($jointReimbursedProviderToPartners, 2),
             'settled_profits_distributed' => round($jointSettledProfitsDistributed, 2),
             'pending_event_profits' => round($jointPendingEventProfits, 2),
-            'theoretical_bank_balance' => $jointTheoreticalBankBalance,
-            'pending_material_debt' => round($jointPendingMaterialDebtToPartners, 2),
-            'pending_provider_debt' => round($jointPendingProviderDebtToPartners, 2),
-            'pending_partner_debts' => $jointPendingPartnerDebts,
-            'available_free_balance' => $jointAvailableFreeBalance,
         ];
 
         $kpis['settlement_summary'] = [

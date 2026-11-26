@@ -100,6 +100,7 @@ class EventShow extends Component
 
     // Notas de Evento / Acuerdos WhatsApp & Email
     public $event_notes;
+    public $packing_notes = ''; // Notas de montaje y logística técnica para la Hoja de Carga (PDF)
     public $whatsapp_chat_input = '';
     public $whatsapp_sender_brand = null; // 'miguel', 'fran', 'ezequiel', 'mago_leugim'
     public $whatsapp_sync_phone = '';
@@ -486,6 +487,7 @@ class EventShow extends Component
         $this->venue_notes = $this->event->venue_notes;
         $this->is_dossier_completed = $this->event->is_dossier_completed;
         $this->event_notes = $this->event->notes;
+        $this->packing_notes = (string)($this->event->packing_notes ?? '');
         $this->whatsapp_sync_phone = $this->event->client ? ($this->event->client->phone ?? '') : ($this->event->partner_phone ?? '');
         $this->email_chat_to = $this->event->client_contact_email ?? '';
         $this->email_chat_subject = \App\Services\WhatsAppTemplateService::getEmailSubjectForKey($this->event, 'default');
@@ -916,6 +918,7 @@ class EventShow extends Component
         $this->event->update($updateData);
         $this->event->refresh();
         $this->event_notes = $this->event->notes;
+        $this->packing_notes = (string)($this->event->packing_notes ?? '');
         $this->showCancellationModal = false;
 
         $statusText = $status === 'rejected' ? 'Rechazado' : 'Cancelado';
@@ -977,6 +980,7 @@ class EventShow extends Component
 
         $this->event->refresh();
         $this->event_notes = $this->event->notes;
+        $this->packing_notes = (string)($this->event->packing_notes ?? '');
 
         if ($status === 'no_response') {
             session()->flash('message', '⏳ Estado actualizado a: Sin Respuesta. Se ha activado el recordatorio de seguimiento.');
@@ -1066,6 +1070,7 @@ class EventShow extends Component
         ]);
         $this->event->refresh();
         $this->event_notes = $this->event->notes;
+        $this->packing_notes = (string)($this->event->packing_notes ?? '');
         $this->showConfirmFollowupModal = false;
         session()->flash('message', "¡Seguimiento registrado! ({$templateName}). El contador se ha reseteado a 0.");
     }
@@ -1106,6 +1111,7 @@ class EventShow extends Component
         ]);
         $this->event->refresh();
         $this->event_notes = $this->event->notes;
+        $this->packing_notes = (string)($this->event->packing_notes ?? '');
         $this->event->load('whatsappMessages.user');
         $this->showConfirmFollowupModal = false;
 
@@ -1157,6 +1163,7 @@ class EventShow extends Component
 
         $this->event->refresh();
         $this->event_notes = $this->event->notes;
+        $this->packing_notes = (string)($this->event->packing_notes ?? '');
         $this->email_chat_to = $toEmail;
         $this->event->load('whatsappMessages.user');
         $this->showConfirmFollowupModal = false;
@@ -3533,6 +3540,17 @@ class EventShow extends Component
     }
 
     /**
+     * Guarda las notas específicas de montaje y equipo para la Hoja de Carga (PDF de almacén y montadores).
+     */
+    public function savePackingNotes()
+    {
+        $this->event->update(['packing_notes' => $this->packing_notes]);
+        $this->event->refresh();
+        $this->packing_notes = (string)($this->event->packing_notes ?? '');
+        session()->flash('equipment_message', '🚚 Notas de montaje y hoja de carga guardadas correctamente (se imprimen en el PDF).');
+    }
+
+    /**
      * Añade con marca de fecha y hora el texto o acuerdo de WhatsApp introducido al principio de las notas del evento.
      */
     public function applyWhatsappTextToNotes()
@@ -3798,6 +3816,7 @@ class EventShow extends Component
         $this->email_chat_to = $toEmail;
         $this->event->refresh();
         $this->event_notes = $this->event->notes;
+        $this->packing_notes = (string)($this->event->packing_notes ?? '');
         $this->event->load('whatsappMessages.user');
 
         if ($result['mode'] === 'mailto_fallback' && !empty($result['mailto_url'])) {
@@ -3836,6 +3855,7 @@ class EventShow extends Component
             $emailResult = (new \App\Services\ImapLeadFetcherService())->syncEmailHistoryForEvent($this->event, $query);
             $this->event->refresh();
             $this->event_notes = $this->event->notes;
+        $this->packing_notes = (string)($this->event->packing_notes ?? '');
             $this->event->load('whatsappMessages.user');
             if (!empty($emailResult['success'])) {
                 session()->flash('whatsapp_success', $emailResult['message']);
@@ -3856,6 +3876,7 @@ class EventShow extends Component
 
         $this->event->refresh();
         $this->event_notes = $this->event->notes;
+        $this->packing_notes = (string)($this->event->packing_notes ?? '');
         $this->event->load('whatsappMessages.user');
 
         if (!empty($result['success'])) {
@@ -3899,6 +3920,7 @@ class EventShow extends Component
             if (!empty($result['imported']) && $result['imported'] > 0) {
                 $this->event->refresh();
                 $this->event_notes = $this->event->notes;
+        $this->packing_notes = (string)($this->event->packing_notes ?? '');
                 $this->event->load('whatsappMessages.user');
             }
         } catch (\Throwable $e) {
@@ -4148,6 +4170,7 @@ class EventShow extends Component
         ]);
         $this->event->refresh();
         $this->event_notes = $this->event->notes;
+        $this->packing_notes = (string)($this->event->packing_notes ?? '');
         $this->event->load('whatsappMessages');
 
         if ($result['mode'] === 'api' && $result['success']) {
@@ -4203,6 +4226,7 @@ class EventShow extends Component
             ]);
             $this->event->refresh();
             $this->event_notes = $this->event->notes;
+        $this->packing_notes = (string)($this->event->packing_notes ?? '');
             $this->event->load('whatsappMessages');
 
             if (($result['mode'] ?? '') === 'api' && !empty($result['success'])) {
@@ -4264,6 +4288,7 @@ class EventShow extends Component
         ]);
         $this->event->refresh();
         $this->event_notes = $this->event->notes;
+        $this->packing_notes = (string)($this->event->packing_notes ?? '');
         $this->event->load('whatsappMessages');
 
         if ($result['mode'] === 'api' && $result['success']) {
@@ -4317,6 +4342,7 @@ class EventShow extends Component
         ]);
         $this->event->refresh();
         $this->event_notes = $this->event->notes;
+        $this->packing_notes = (string)($this->event->packing_notes ?? '');
         $this->event->load('whatsappMessages');
 
         if ($result['mode'] === 'api' && $result['success']) {
@@ -4372,6 +4398,7 @@ class EventShow extends Component
         ]);
         $this->event->refresh();
         $this->event_notes = $this->event->notes;
+        $this->packing_notes = (string)($this->event->packing_notes ?? '');
         $this->event->load('whatsappMessages');
 
         if ($result['mode'] === 'api' && $result['success']) {
@@ -8110,6 +8137,7 @@ class EventShow extends Component
             \App\Services\FotosEventosQrService::markDriveFolderSent($this->event);
             $this->event->refresh();
             $this->event_notes = $this->event->notes;
+        $this->packing_notes = (string)($this->event->packing_notes ?? '');
             $this->event->load('whatsappMessages.user');
 
             if (($emailRes['mode'] ?? '') === 'mailto_fallback' && !empty($emailRes['mailto_url'])) {
@@ -8143,6 +8171,7 @@ class EventShow extends Component
         \App\Services\FotosEventosQrService::markDriveFolderSent($this->event);
         $this->event->refresh();
         $this->event_notes = $this->event->notes;
+        $this->packing_notes = (string)($this->event->packing_notes ?? '');
         $this->event->load('whatsappMessages.user');
 
         if (($waRes['mode'] ?? '') === 'api' && !empty($waRes['success'])) {

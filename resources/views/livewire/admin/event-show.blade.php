@@ -3246,6 +3246,12 @@
                                 </div>
                             @endif
                             <textarea wire:model="event_notes" rows="6" class="w-full text-xs font-mono bg-white dark:bg-slate-900 border border-amber-300 dark:border-slate-700 rounded-xl p-3 focus:ring-indigo-500 focus:border-indigo-500 text-slate-900 dark:text-white leading-relaxed placeholder-slate-400 dark:placeholder-slate-500" placeholder="Aquí aparecen las notas que escribe el cliente al pedir presupuesto o rellenar el formulario, además de tus notas internas y servicios solicitados..."></textarea>
+                            <div class="flex items-center justify-between text-[11px] text-amber-800 dark:text-amber-400 bg-amber-50/50 dark:bg-slate-950 px-2 py-1 rounded-lg border border-amber-200/50 dark:border-slate-800">
+                                <span>💬 Registros del cliente y chat. Para las indicaciones del montaje técnico, usa <strong>Notas de Montaje</strong> en la pestaña <em>Equipamiento</em> (salen en el PDF de carga).</span>
+                                <button type="button" wire:click="$set('activeTab', 'equipment')" class="text-indigo-600 dark:text-indigo-400 font-bold hover:underline shrink-0 ml-2 cursor-pointer">
+                                    🚚 Ir a Carga
+                                </button>
+                            </div>
 
                             <!-- Pegar fragmento o nota rápida arriba -->
                             <div class="pt-1 border-t border-amber-200/70 dark:border-slate-800 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
@@ -4775,6 +4781,27 @@
                         {{ session('equipment_message') }}
                     </div>
                 @endif
+
+                <!-- NOTAS OPERATIVAS DE MONTAJE Y CARGA (SALEN IMPRESAS EN EL PDF) -->
+                <div class="bg-indigo-50/70 dark:bg-slate-900 border-2 border-indigo-300 dark:border-indigo-800 rounded-xl p-4 mb-6 shadow-2xs space-y-3">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl">🚚</span>
+                            <div>
+                                <h5 class="font-black text-indigo-950 dark:text-indigo-200 text-sm">
+                                    Notas Operativas de Montaje y Carga (Salen impresas en la Hoja de Carga PDF)
+                                </h5>
+                                <p class="text-xs text-indigo-800 dark:text-indigo-400">
+                                    Escribe aquí las indicaciones para almacén y montadores (accesos, escaleras, alargadores, peticiones del metre/sala...). No se mezcla con el chat de WhatsApp.
+                                </p>
+                            </div>
+                        </div>
+                        <button type="button" wire:click="savePackingNotes" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3 py-1.5 rounded-lg text-xs shadow-xs transition cursor-pointer flex items-center gap-1">
+                            <span>💾</span> Guardar Notas de Montaje
+                        </button>
+                    </div>
+                    <textarea wire:model="packing_notes" rows="3" class="w-full text-xs font-mono bg-white dark:bg-slate-950 border border-indigo-200 dark:border-slate-800 rounded-xl p-3 focus:ring-indigo-500 focus:border-indigo-500 text-slate-900 dark:text-white leading-relaxed placeholder-slate-400 dark:placeholder-slate-500" placeholder="Ej: Montaje en salón interior (2ª planta con montacargas). Llevar alargador de 20m y cinta americana. El metre pide tener la música lista a las 13:00. No usar humo pesado dentro..."></textarea>
+                </div>
 
                 <!-- Panel de Cosas Importantes / Compras / Preparación (Sincronizado con Resumen y Dossier) -->
                 @php

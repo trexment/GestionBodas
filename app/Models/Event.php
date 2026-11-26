@@ -58,6 +58,7 @@ class Event extends Model
         'dj_id',
         'assistant_id',
         'notes',
+        'packing_notes',
         'photo_qr_slug',
         'photo_qr_url',
         'photo_qr_drive_url',
@@ -202,6 +203,18 @@ class Event extends Model
                         });
                     } catch (\Throwable $ex) {
                         \Illuminate\Support\Facades\DB::statement("ALTER TABLE `events` ADD `lead_source` VARCHAR(50) NULL AFTER `event_type`");
+                    }
+                }
+
+                if (!\Illuminate\Support\Facades\Schema::hasColumn('events', 'packing_notes')) {
+                    try {
+                        \Illuminate\Support\Facades\Schema::table('events', function (\Illuminate\Database\Schema\Blueprint $table) {
+                            $table->text('packing_notes')->nullable()->after('notes');
+                        });
+                    } catch (\Throwable $ex) {
+                        try {
+                            \Illuminate\Support\Facades\DB::statement("ALTER TABLE `events` ADD `packing_notes` TEXT NULL AFTER `notes`");
+                        } catch (\Throwable $ignore) {}
                     }
                 }
 
@@ -2618,7 +2631,7 @@ class Event extends Model
 
     /**
      * Extrae de las notas generales del evento únicamente las notas manuales o la solicitud original del cliente,
-     * ocultando el ruido de registros automáticos de envíos de WhatsApp ("[dd/mm/yyyy HH:mm] 💬 WhatsApp...").
+     * ocultando completamente los registros de chat de WhatsApp ("[dd/mm/yyyy HH:mm] 👤 [WhatsApp de ...").
      */
     public function getCleanClientRequestNotesAttribute(): string
     {
@@ -2637,8 +2650,20 @@ class Event extends Model
                 }
                 continue;
             }
-            // Omitir líneas automáticas de envíos de plantillas o reseteos de contador
-            if (preg_match('/^\[\d{2}\/\d{2}\/\d{4}\s+\d{2}:\d{2}\]\s*💬\s*WhatsApp\s*\(/u', $trimmed)) {
+            // Omitir líneas con marca de fecha entre corchetes (mensajes sincronizados de chat)
+            if (preg_match('/^\[\d{1,2}\/\d{1,2}\/\d{2,4}/', $trimmed)) {
+                continue;
+            }
+            // Omitir menciones de WhatsApp o chat
+            if (preg_match('/\[WhatsApp|WhatsApp de|💬\s*WhatsApp/iu', $trimmed)) {
+                continue;
+            }
+            // Omitir enlaces sincronizados de chat
+            if (str_starts_with($trimmed, 'https://maps.app.goo.gl') || str_starts_with($trimmed, 'https://open.spotify.com')) {
+                continue;
+            }
+            // Omitir separadores de chat
+            if (preg_match('/^--- (Acuerdos|Historial|WhatsApp|Email)/iu', $trimmed)) {
                 continue;
             }
             $kept[] = $line;
