@@ -256,12 +256,14 @@ class Event extends Model
                 try {
                     $vidalia = \Illuminate\Support\Facades\DB::table('events')
                         ->where('name', 'LIKE', '%Vidalia%')
-                        ->whereNull('settlement_custom_split')
                         ->first();
                     if ($vidalia) {
                         \Illuminate\Support\Facades\DB::table('events')
                             ->where('id', $vidalia->id)
                             ->update([
+                                'deposit_collected_by' => 'Miguel',
+                                'deposit_transferred_to_joint' => false,
+                                'deposit_transferred_at' => null,
                                 'settlement_custom_split' => json_encode([
                                     'mode' => 'custom_amounts',
                                     'partners' => [
@@ -280,9 +282,18 @@ class Event extends Model
                                             'is_settled' => true,
                                         ],
                                     ],
-                                    'notes' => 'Miguel cobró 400 € por DJ y Fran 600 € por Fotografía',
+                                    'notes' => 'Miguel cobró 200 € de señal en mano y 200 € que le dio Fran del cobro final (400 € en total). Fran se quedó 600 € en mano por Fotografía. Cero euros en cuenta bancaria común.',
                                     'updated_at' => now()->toIso8601String(),
                                 ], JSON_UNESCAPED_UNICODE),
+                            ]);
+
+                        \Illuminate\Support\Facades\DB::table('invoices')
+                            ->where('event_id', $vidalia->id)
+                            ->where('payment_concept', 'deposit')
+                            ->update([
+                                'collected_by' => 'Miguel',
+                                'transferred_to_joint' => false,
+                                'transferred_at' => null,
                             ]);
                     }
                 } catch (\Throwable $ex2) {
