@@ -2150,7 +2150,7 @@
                         <!-- Desglose de importes -->
                         <div class="py-4 space-y-2.5 text-xs">
                             <div class="flex items-center justify-between">
-                                <span class="text-slate-500 dark:text-slate-400">Cuota de Beneficio ({{ $partner['percentage'] }}% de {{ number_format($sData['net_profit'] ?? 0, 2, ',', '.') }}€):</span>
+                                <span class="text-slate-500 dark:text-slate-400">Cuota acordada por servicios / eventos:</span>
                                 <strong class="text-slate-800 dark:text-slate-200 font-bold text-sm">
                                     {{ number_format($partner['profit_share'], 2, ',', '.') }} €
                                 </strong>
@@ -2165,10 +2165,21 @@
                                 </strong>
                             </div>
 
+                            @if(($partner['provider_assumed_cost'] ?? 0) > 0)
+                                <div class="flex items-center justify-between">
+                                    <span class="text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                                        <span>🎭 Coste proveedor asumido (Artístamente, etc.):</span>
+                                    </span>
+                                    <strong class="text-rose-600 dark:text-rose-400 font-bold text-sm">
+                                        -{{ number_format($partner['provider_assumed_cost'], 2, ',', '.') }} €
+                                    </strong>
+                                </div>
+                            @endif
+
                             @if(($partner['provider_reimbursement'] ?? 0) > 0)
                                 <div class="flex items-center justify-between">
                                     <span class="text-slate-500 dark:text-slate-400 flex items-center gap-1">
-                                        <span>🎭 Reembolso proveedores adelantados (Artístamente, etc.):</span>
+                                        <span>🎭 Reembolso proveedores adelantados:</span>
                                     </span>
                                     <strong class="text-purple-600 dark:text-purple-400 font-bold text-sm">
                                         +{{ number_format($partner['provider_reimbursement'], 2, ',', '.') }} €
@@ -2190,8 +2201,12 @@
                                 </strong>
                             </div>
 
-                            @if(($partner['reimbursement'] ?? 0) > 0)
-                                <div class="text-[10px] text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 p-2 rounded-xl">
+                            @if(($partner['provider_assumed_cost'] ?? 0) > 0)
+                                <div class="text-[10px] text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/40 p-2.5 rounded-xl border border-rose-200 dark:border-rose-900/50">
+                                    💡 De su cuota de <strong>{{ number_format($partner['profit_share'], 2, ',', '.') }} €</strong>, se le descuentan <strong>-{{ number_format($partner['provider_assumed_cost'], 2, ',', '.') }} €</strong> que salieron de su bolsillo para Artístamente. Su beneficio neto real es <strong>{{ number_format($partner['total_to_receive'], 2, ',', '.') }} €</strong>.
+                                </div>
+                            @elseif(($partner['reimbursement'] ?? 0) > 0)
+                                <div class="text-[10px] text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 p-2.5 rounded-xl border border-amber-200 dark:border-amber-900/50">
                                     💡 Se le reembolsan <strong>{{ number_format($partner['reimbursement'], 2, ',', '.') }} €</strong> por gastos que adelantó de su bolsillo (material y proveedores).
                                 </div>
                             @endif
@@ -2203,7 +2218,13 @@
                                 <span class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-800 dark:text-emerald-300 block">
                                     TOTAL NETO A PERCIBIR
                                 </span>
-                                <span class="text-[11px] text-slate-500">Beneficio + Reembolsos</span>
+                                <span class="text-[11px] text-slate-500">
+                                    @if(($partner['provider_assumed_cost'] ?? 0) > 0)
+                                        Cuota ({{ number_format($partner['profit_share'], 2, ',', '.') }} €) - Coste asumido ({{ number_format($partner['provider_assumed_cost'], 2, ',', '.') }} €)
+                                    @else
+                                        Beneficio + Reembolsos
+                                    @endif
+                                </span>
                             </div>
                             <div class="text-3xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight">
                                 {{ number_format($partner['total_to_receive'], 2, ',', '.') }} €
@@ -2231,9 +2252,9 @@
                             <tr class="border-b border-slate-200 dark:border-slate-800 text-[10px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-950">
                                 <th class="py-3 px-4">Socio</th>
                                 <th class="py-3 px-2 text-center">% Reparto</th>
-                                <th class="py-3 px-3 text-right">Beneficio Neto</th>
+                                <th class="py-3 px-3 text-right">Beneficio Acordado</th>
                                 <th class="py-3 px-3 text-right">Reemb. Material</th>
-                                <th class="py-3 px-3 text-right">Reemb. Proveedores</th>
+                                <th class="py-3 px-3 text-right">Coste Asumido / Reemb. Prov.</th>
                                 <th class="py-3 px-3 text-right">TOTAL A PERCIBIR</th>
                                 <th class="py-3 px-3 text-right">Cobrado en Mano</th>
                                 <th class="py-3 px-3 text-center">Ajuste de Arqueo</th>
@@ -2254,8 +2275,14 @@
                                     <td class="py-3 px-3 text-right font-bold text-amber-600 dark:text-amber-400 whitespace-nowrap">
                                         {{ number_format($partner['material_reimbursement'] ?? 0, 2, ',', '.') }} €
                                     </td>
-                                    <td class="py-3 px-3 text-right font-bold text-purple-600 dark:text-purple-400 whitespace-nowrap">
-                                        {{ number_format($partner['provider_reimbursement'] ?? 0, 2, ',', '.') }} €
+                                    <td class="py-3 px-3 text-right font-bold whitespace-nowrap">
+                                        @if(($partner['provider_assumed_cost'] ?? 0) > 0)
+                                            <span class="text-rose-600 dark:text-rose-400 font-extrabold" title="Coste de proveedor asumido por el socio (descontado de su cuota)">-{{ number_format($partner['provider_assumed_cost'], 2, ',', '.') }} €</span>
+                                        @elseif(($partner['provider_reimbursement'] ?? 0) > 0)
+                                            <span class="text-purple-600 dark:text-purple-400 font-extrabold" title="Reembolso de proveedor a favor del socio">+{{ number_format($partner['provider_reimbursement'], 2, ',', '.') }} €</span>
+                                        @else
+                                            <span class="text-slate-400">0,00 €</span>
+                                        @endif
                                     </td>
                                     <td class="py-3 px-3 text-right font-black text-sm text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
                                         {{ number_format($partner['total_to_receive'], 2, ',', '.') }} €
@@ -2290,8 +2317,19 @@
                                 <td class="py-3.5 px-3 text-right text-amber-600 dark:text-amber-400 whitespace-nowrap">
                                     {{ number_format(array_sum(array_column($settlementPartners, 'material_reimbursement')), 2, ',', '.') }} €
                                 </td>
-                                <td class="py-3.5 px-3 text-right text-purple-600 dark:text-purple-400 whitespace-nowrap">
-                                    {{ number_format(array_sum(array_column($settlementPartners, 'provider_reimbursement')), 2, ',', '.') }} €
+                                <td class="py-3.5 px-3 text-right whitespace-nowrap">
+                                    @php
+                                        $sumProvReimb = array_sum(array_column($settlementPartners, 'provider_reimbursement'));
+                                        $sumProvAssumed = array_sum(array_column($settlementPartners, 'provider_assumed_cost'));
+                                        $netProvDiff = $sumProvReimb - $sumProvAssumed;
+                                    @endphp
+                                    @if($netProvDiff < 0)
+                                        <span class="text-rose-600 dark:text-rose-400 font-black">-{{ number_format(abs($netProvDiff), 2, ',', '.') }} €</span>
+                                    @elseif($netProvDiff > 0)
+                                        <span class="text-purple-600 dark:text-purple-400 font-black">+{{ number_format($netProvDiff, 2, ',', '.') }} €</span>
+                                    @else
+                                        <span class="text-slate-400 font-bold">0,00 €</span>
+                                    @endif
                                 </td>
                                 <td class="py-3.5 px-3 text-right text-emerald-600 dark:text-emerald-400 text-sm whitespace-nowrap">
                                     {{ number_format(array_sum(array_column($settlementPartners, 'total_to_receive')), 2, ',', '.') }} €

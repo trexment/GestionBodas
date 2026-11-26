@@ -146,8 +146,18 @@
                     <div class="space-y-1.5 pt-2 border-t border-slate-200/60 dark:border-slate-800 text-xs">
                         <div class="flex items-center justify-between font-bold">
                             <span class="text-slate-700 dark:text-slate-300">💼 Cuota asignada (Eventos):</span>
-                            <span class="text-emerald-600 dark:text-emerald-400 font-black">{{ number_format((float)($p['profit_share'] ?? 0), 2, ',', '.') }} €</span>
+                            <span class="text-slate-800 dark:text-slate-200 font-bold">{{ number_format((float)($p['profit_share'] ?? 0), 2, ',', '.') }} €</span>
                         </div>
+                        @if(($p['provider_assumed_cost'] ?? 0) > 0)
+                            <div class="flex items-center justify-between text-[11px]">
+                                <span class="text-slate-500">Coste proveedor asumido (Artístamente):</span>
+                                <span class="font-bold text-rose-600 dark:text-rose-400">-{{ number_format($p['provider_assumed_cost'], 2, ',', '.') }} €</span>
+                            </div>
+                            <div class="flex items-center justify-between text-[11px] font-bold">
+                                <span class="text-slate-700 dark:text-slate-300">💼 Neto real a percibir:</span>
+                                <span class="text-emerald-600 dark:text-emerald-400 font-black">{{ number_format((float)($p['total_to_receive'] ?? 0), 2, ',', '.') }} €</span>
+                            </div>
+                        @endif
                         <div class="flex items-center justify-between pt-0.5 font-bold">
                             <span class="text-slate-700 dark:text-slate-300">💵 Dinero real en mano:</span>
                             <span class="{{ $inHand > 0 ? 'text-indigo-600 dark:text-indigo-400 font-black' : 'text-slate-500' }}">{{ number_format($inHand, 2, ',', '.') }} €</span>

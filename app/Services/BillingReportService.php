@@ -983,6 +983,12 @@ class BillingReportService
             $pCollectedInHand = round((float)($pTotals['collected_in_hand'] ?? 0.0), 2);
             $pBalanceDiff = round((float)($pTotals['balance_diff'] ?? 0.0), 2);
 
+            $pProvAssumedCost = 0.0;
+            foreach (($partnerEventsBreakdown[$pName] ?? []) as $peb) {
+                $pProvAssumedCost += (float) ($peb['provider_assumed_cost'] ?? 0.0);
+            }
+            $pProvAssumedCost = round($pProvAssumedCost, 2);
+
             $pMatTotal = round((float) ($materialByPaidBy[$pName] ?? 0.0), 2);
             $pMatReimbursed = round((float) ($materialReimbursedByPartner[$pName] ?? 0.0), 2);
             $pMatPending = round((float) ($materialPendingByPartner[$pName] ?? 0.0), 2);
@@ -991,9 +997,13 @@ class BillingReportService
             $pProvReimbursed = round((float) ($providerReimbursedByPartner[$pName] ?? 0.0), 2);
             $pProvPending = round((float) ($providerPendingByPartner[$pName] ?? 0.0), 2);
 
-            $pTotalReimb = round($pMatTotal + $pProvTotal, 2);
-            $pTotalPendingReimb = round($pMatPending + $pProvPending, 2);
-            $pTotalAlreadyReimbursed = round($pMatReimbursed + $pProvReimbursed, 2);
+            // Reembolso real a favor del socio (excluyendo lo que asumió como coste propio de su cuota)
+            $pProvReimbTotal = max(0.0, round($pProvTotal - $pProvAssumedCost, 2));
+            $pProvPendingReal = max(0.0, round($pProvPending - $pProvAssumedCost, 2));
+
+            $pTotalReimb = round($pMatTotal + $pProvReimbTotal, 2);
+            $pTotalPendingReimb = round($pMatPending + $pProvPendingReal, 2);
+            $pTotalAlreadyReimbursed = round($pMatReimbursed + max(0.0, $pProvReimbursed - $pProvAssumedCost), 2);
 
             $pOriginalCollected = round((float) ($originalCollectedByPartner[$pName] ?? 0.0), 2);
             $pTransferredToJoint = round((float) ($transferredByPartner[$pName] ?? 0.0), 2);
@@ -1004,12 +1014,13 @@ class BillingReportService
                 'name' => $pName,
                 'percentage' => $pPct,
                 'profit_share' => $pShare,
+                'provider_assumed_cost' => $pProvAssumedCost,
                 'material_reimbursement' => $pMatTotal,
                 'material_reimbursed' => $pMatReimbursed,
                 'material_pending' => $pMatPending,
-                'provider_reimbursement' => $pProvTotal,
-                'provider_reimbursed' => $pProvReimbursed,
-                'provider_pending' => $pProvPending,
+                'provider_reimbursement' => $pProvReimbTotal,
+                'provider_reimbursed' => max(0.0, $pProvReimbursed - $pProvAssumedCost),
+                'provider_pending' => $pProvPendingReal,
                 'reimbursement' => $pTotalReimb,
                 'reimbursement_pending' => $pTotalPendingReimb,
                 'reimbursement_done' => $pTotalAlreadyReimbursed,
