@@ -2312,7 +2312,7 @@
                             <tr class="border-t-2 border-slate-300 dark:border-slate-700 bg-slate-100/90 dark:bg-slate-950 font-black text-xs text-slate-900 dark:text-white">
                                 <td class="py-3.5 px-4" colspan="2">TOTALES AUDITORÍA</td>
                                 <td class="py-3.5 px-3 text-right text-indigo-700 dark:text-indigo-300 whitespace-nowrap">
-                                    {{ number_format($sData['net_profit'] ?? 0, 2, ',', '.') }} €
+                                    {{ number_format(array_sum(array_column($settlementPartners, 'profit_share')), 2, ',', '.') }} €
                                 </td>
                                 <td class="py-3.5 px-3 text-right text-amber-600 dark:text-amber-400 whitespace-nowrap">
                                     {{ number_format(array_sum(array_column($settlementPartners, 'material_reimbursement')), 2, ',', '.') }} €
