@@ -95,6 +95,17 @@ class BillingManager extends Component
     public bool $showPartnersModal = false;
     public array $partnersList = [];
 
+    // Modal para Personalizar Reparto del Evento
+    public bool $showEventSplitModal = false;
+    public ?int $splitEventId = null;
+    public string $splitEventName = '';
+    public float $splitEventTotal = 0.0;
+    public float $splitEventCosts = 0.0;
+    public float $splitEventNet = 0.0;
+    public string $splitMode = 'custom_amounts'; // 'custom_amounts' | 'percentages'
+    public array $splitPartners = [];
+    public string $splitNotes = '';
+
     /**
      * Inicializa el componente comprobando el rol de administrador y estableciendo la fecha actual para cobros rápidos.
      *
@@ -1270,6 +1281,223 @@ class BillingManager extends Component
         ]);
 
         session()->flash('message', "ℹ️ Reparto del evento '{$event->name}' revertido a PENDIENTE de liquidar.");
+    }
+
+    /**
+     * Abre el modal para personalizar el reparto de ingresos/beneficio de un evento concreto.
+     */
+    public function openEventSplitModal(int $eventId): void
+    {
+        \App\Models\Event::ensureTokenColumnsExist();
+        $event = Event::with(['quotes.items', 'assistants', 'dj'])->find($eventId);
+        if (!$event) return;
+
+        $this->splitEventId = $event->id;
+        $this->splitEventName = $event->name;
+
+        // Obtener datos calculados del evento
+        $report = BillingReportService::buildReportData(['event_id' => $event->id]);
+        $evItem = collect($report['filtered_events'] ?? [])->firstWhere('event.id', $event->id);
+
+        $this->splitEventTotal = (float)($evItem['settlement']['total_collected'] ?? 0.0);
+        $this->splitEventCosts = (float)($evItem['settlement']['total_costs'] ?? 0.0);
+        $this->splitEventNet = (float)($evItem['settlement']['net_profit'] ?? 0.0);
+
+        $existingSplit = $event->settlement_custom_split;
+        if (is_string($existingSplit)) {
+            $existingSplit = json_decode($existingSplit, true);
+        }
+
+        if (!empty($existingSplit['partners'])) {
+            $this->splitMode = $existingSplit['mode'] ?? 'custom_amounts';
+            $this->splitPartners = (array) $existingSplit['partners'];
+            $this->splitNotes = (string)($existingSplit['notes'] ?? '');
+        } else {
+            // Sugerir reparto inteligente por servicios del evento
+            $suggested = $event->getEventSuggestedStaffSplit();
+            $this->splitMode = $suggested['mode'] ?? 'custom_amounts';
+            $this->splitPartners = (array) ($suggested['partners'] ?? []);
+            $this->splitNotes = (string)($suggested['notes'] ?? '');
+        }
+
+        $this->showEventSplitModal = true;
+    }
+
+    /**
+     * Cierra el modal de personalización de reparto.
+     */
+    public function closeEventSplitModal(): void
+    {
+        $this->showEventSplitModal = false;
+        $this->splitEventId = null;
+        $this->splitPartners = [];
+    }
+
+    /**
+     * Aplica una plantilla de reparto rápido en el modal.
+     */
+    public function applySplitPreset(string $preset): void
+    {
+        if (!$this->splitEventId) return;
+        $event = Event::with(['quotes.items', 'assistants', 'dj'])->find($this->splitEventId);
+        if (!$event) return;
+
+        if ($preset === 'by_services') {
+            $suggested = $event->getEventSuggestedStaffSplit();
+            $this->splitMode = 'custom_amounts';
+            $this->splitPartners = (array) $suggested['partners'];
+            $this->splitNotes = $suggested['notes'] ?? 'Reparto por servicios presupuestados';
+        } elseif ($preset === 'staff_50_50') {
+            $djName = $event->dj?->name ?: 'Miguel';
+            $asName = $event->assistants->first()?->name ?: 'Fran';
+            $half = round($this->splitEventTotal / 2, 2);
+            $this->splitMode = 'custom_amounts';
+            $this->splitPartners = [
+                ['name' => $djName, 'amount' => $half, 'percentage' => 50.0, 'role' => 'DJ Titular', 'is_settled' => true],
+                ['name' => $asName, 'amount' => $half, 'percentage' => 50.0, 'role' => 'Asistente / Equipo', 'is_settled' => true],
+            ];
+            $this->splitNotes = "Reparto 50% / 50% entre {$djName} y {$asName}";
+        } elseif ($preset === 'global_partners') {
+            $partners = \App\Models\Setting::getSettlementPartners();
+            $this->splitMode = 'percentages';
+            $this->splitPartners = array_map(function($p) {
+                return [
+                    'name' => $p['name'],
+                    'amount' => round($this->splitEventNet * (((float)$p['percentage']) / 100), 2),
+                    'percentage' => (float)$p['percentage'],
+                    'role' => 'Socio (' . $p['percentage'] . '%)',
+                    'is_settled' => false,
+                ];
+            }, $partners);
+            $this->splitNotes = 'Reparto estándar entre los 3 socios';
+        }
+    }
+
+    /**
+     * Añade una fila de participante al reparto del evento.
+     */
+    public function addPartnerToSplit(): void
+    {
+        $this->splitPartners[] = [
+            'name' => '',
+            'amount' => 0.0,
+            'percentage' => 0.0,
+            'role' => '',
+            'is_settled' => false,
+        ];
+    }
+
+    /**
+     * Elimina una fila del reparto del evento.
+     */
+    public function removePartnerFromSplit(int $index): void
+    {
+        unset($this->splitPartners[$index]);
+        $this->splitPartners = array_values($this->splitPartners);
+    }
+
+    /**
+     * Alterna en el modal si un socio ya tiene cobrado su importe.
+     */
+    public function togglePartnerSettledInSplit(int $index): void
+    {
+        if (isset($this->splitPartners[$index])) {
+            $this->splitPartners[$index]['is_settled'] = !($this->splitPartners[$index]['is_settled'] ?? false);
+        }
+    }
+
+    /**
+     * Guarda la personalización de reparto del evento.
+     */
+    public function saveEventSplit(): void
+    {
+        if (!$this->splitEventId) return;
+        $event = Event::find($this->splitEventId);
+        if (!$event) return;
+
+        \App\Models\Event::ensureTokenColumnsExist();
+
+        $cleanPartners = [];
+        foreach ($this->splitPartners as $p) {
+            $name = trim((string)($p['name'] ?? ''));
+            if ($name === '') continue;
+            $amt = round((float)($p['amount'] ?? 0.0), 2);
+            $pct = (float)($p['percentage'] ?? 0.0);
+            $role = trim((string)($p['role'] ?? ''));
+            $isSettled = !empty($p['is_settled']);
+
+            $cleanPartners[] = [
+                'name' => $name,
+                'amount' => $amt,
+                'percentage' => $pct,
+                'role' => $role,
+                'is_settled' => $isSettled,
+            ];
+        }
+
+        $event->update([
+            'settlement_custom_split' => [
+                'mode' => $this->splitMode,
+                'partners' => $cleanPartners,
+                'notes' => trim($this->splitNotes),
+                'updated_at' => now()->toIso8601String(),
+            ],
+        ]);
+
+        $this->showEventSplitModal = false;
+        session()->flash('message', "✅ Reparto personalizado guardado para '{$event->name}'.");
+    }
+
+    /**
+     * Restablece el evento para usar el reparto general de socios.
+     */
+    public function resetEventSplitToDefault(): void
+    {
+        if (!$this->splitEventId) return;
+        $event = Event::find($this->splitEventId);
+        if (!$event) return;
+
+        $event->update(['settlement_custom_split' => null]);
+        $this->showEventSplitModal = false;
+        session()->flash('message', "ℹ️ Reparto de '{$event->name}' restablecido al reparto estándar de socios.");
+    }
+
+    /**
+     * Alterna en 1 clic desde la tarjeta del evento si un socio ya cobró o tiene liquidada su parte.
+     */
+    public function togglePartnerSettledDirect(int $eventId, string $partnerName): void
+    {
+        \App\Models\Event::ensureTokenColumnsExist();
+        $event = Event::find($eventId);
+        if (!$event) return;
+
+        $split = $event->settlement_custom_split;
+        if (is_string($split)) {
+            $split = json_decode($split, true);
+        }
+
+        if (empty($split['partners'])) {
+            $suggested = $event->getEventSuggestedStaffSplit();
+            $split = [
+                'mode' => $suggested['mode'] ?? 'custom_amounts',
+                'partners' => $suggested['partners'] ?? [],
+                'notes' => $suggested['notes'] ?? '',
+            ];
+        }
+
+        $found = false;
+        foreach ($split['partners'] as &$p) {
+            if (strcasecmp(trim((string)($p['name'] ?? '')), trim($partnerName)) === 0) {
+                $p['is_settled'] = !($p['is_settled'] ?? false);
+                $found = true;
+                break;
+            }
+        }
+
+        if ($found) {
+            $event->update(['settlement_custom_split' => $split]);
+            session()->flash('message', "🔄 Estado de cobro de {$partnerName} actualizado.");
+        }
     }
 
     /**

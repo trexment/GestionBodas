@@ -765,41 +765,107 @@ class BillingReportService
             $evTotalCost = round($evNetProvCost + $evMaterialCost, 2);
             $evNetProfit = max(0.0, round($evTotalCollected - $evTotalCost, 2));
 
-            // 6. Desglose individual para cada socio
+            // 6. Desglose individual para cada socio (personalizado por evento o general)
+            $evCustomSplit = $ev->settlement_custom_split;
+            if (is_string($evCustomSplit)) {
+                $evCustomSplit = json_decode($evCustomSplit, true);
+            }
+
+            $useCustomSplit = !empty($evCustomSplit) && !empty($evCustomSplit['partners']);
+            $splitMode = $evCustomSplit['mode'] ?? 'custom_amounts';
+            $customNotes = (string) ($evCustomSplit['notes'] ?? '');
+
             $evPartners = [];
-            foreach ($partners as $partner) {
-                $pName = trim((string)($partner['name'] ?? 'Socio'));
-                $pPct = (float) ($partner['percentage'] ?? 50.0);
 
-                if ($isFondoComun) {
-                    $pShare = 0.0; // Se destina 100% al fondo común de empresa / cena / material
-                } else {
-                    $pShare = round($evNetProfit * ($pPct / 100), 2);
+            if ($useCustomSplit) {
+                $customPartners = (array) $evCustomSplit['partners'];
+                foreach ($customPartners as $cp) {
+                    $pName = trim((string)($cp['name'] ?? 'Socio'));
+                    $isSettled = !empty($cp['is_settled']) || !empty($cp['has_collected']);
+                    $pRole = trim((string)($cp['role'] ?? ''));
+
+                    if ($isFondoComun) {
+                        $pShare = 0.0;
+                        $pPct = 0.0;
+                    } elseif ($splitMode === 'custom_amounts') {
+                        $pShare = round((float)($cp['amount'] ?? 0.0), 2);
+                        $pPct = $evTotalCollected > 0 ? round(($pShare / $evTotalCollected) * 100, 1) : (float)($cp['percentage'] ?? 0.0);
+                    } else {
+                        // Porcentajes
+                        $pPct = (float)($cp['percentage'] ?? 0.0);
+                        $pShare = round($evNetProfit * ($pPct / 100), 2);
+                    }
+
+                    $pMatReimb = (float) ($evMaterialByPaidBy[$pName] ?? 0.0);
+                    $pProvReimb = ($evProvPaidBy === $pName && $evProvPaid > 0) ? $evProvPaid : 0.0;
+                    $pTotalToReceive = round($pShare + $pMatReimb + $pProvReimb, 2);
+                    $pInHand = (float) ($evCollectedByPartner[$pName] ?? 0.0);
+
+                    // Si está marcado como liquidado / cobrado por ese socio:
+                    if ($isSettled) {
+                        $pBalanceDiff = 0.0; // Ya cobró su parte exacta, saldo cuadrado
+                    } else {
+                        $pBalanceDiff = round($pInHand - $pTotalToReceive, 2);
+                    }
+
+                    $evPartners[] = [
+                        'name' => $pName,
+                        'percentage' => $pPct,
+                        'profit_share' => $pShare,
+                        'role' => $pRole,
+                        'is_settled' => $isSettled,
+                        'material_reimbursement' => $pMatReimb,
+                        'provider_reimbursement' => $pProvReimb,
+                        'total_to_receive' => $pTotalToReceive,
+                        'collected_in_hand' => $pInHand,
+                        'balance_diff' => $pBalanceDiff,
+                    ];
+
+                    if (isset($evSettlementTotals['by_partner'][$pName])) {
+                        $evSettlementTotals['by_partner'][$pName]['profit_share'] += $pShare;
+                        $evSettlementTotals['by_partner'][$pName]['reimbursements'] += ($pMatReimb + $pProvReimb);
+                        $evSettlementTotals['by_partner'][$pName]['total_to_receive'] += $pTotalToReceive;
+                        $evSettlementTotals['by_partner'][$pName]['collected_in_hand'] += $pInHand;
+                        $evSettlementTotals['by_partner'][$pName]['balance_diff'] += $pBalanceDiff;
+                    }
                 }
+            } else {
+                foreach ($partners as $partner) {
+                    $pName = trim((string)($partner['name'] ?? 'Socio'));
+                    $pPct = (float) ($partner['percentage'] ?? 50.0);
 
-                $pMatReimb = (float) ($evMaterialByPaidBy[$pName] ?? 0.0);
-                $pProvReimb = ($evProvPaidBy === $pName && $evProvPaid > 0) ? $evProvPaid : 0.0;
-                $pTotalToReceive = round($pShare + $pMatReimb + $pProvReimb, 2);
-                $pInHand = (float) ($evCollectedByPartner[$pName] ?? 0.0);
-                $pBalanceDiff = round($pInHand - $pTotalToReceive, 2);
+                    if ($isFondoComun) {
+                        $pShare = 0.0; // Se destina 100% al fondo común de empresa / cena / material
+                    } else {
+                        $pShare = round($evNetProfit * ($pPct / 100), 2);
+                    }
 
-                $evPartners[] = [
-                    'name' => $pName,
-                    'percentage' => $pPct,
-                    'profit_share' => $pShare,
-                    'material_reimbursement' => $pMatReimb,
-                    'provider_reimbursement' => $pProvReimb,
-                    'total_to_receive' => $pTotalToReceive,
-                    'collected_in_hand' => $pInHand,
-                    'balance_diff' => $pBalanceDiff,
-                ];
+                    $pMatReimb = (float) ($evMaterialByPaidBy[$pName] ?? 0.0);
+                    $pProvReimb = ($evProvPaidBy === $pName && $evProvPaid > 0) ? $evProvPaid : 0.0;
+                    $pTotalToReceive = round($pShare + $pMatReimb + $pProvReimb, 2);
+                    $pInHand = (float) ($evCollectedByPartner[$pName] ?? 0.0);
+                    $pBalanceDiff = round($pInHand - $pTotalToReceive, 2);
 
-                if (isset($evSettlementTotals['by_partner'][$pName])) {
-                    $evSettlementTotals['by_partner'][$pName]['profit_share'] += $pShare;
-                    $evSettlementTotals['by_partner'][$pName]['reimbursements'] += ($pMatReimb + $pProvReimb);
-                    $evSettlementTotals['by_partner'][$pName]['total_to_receive'] += $pTotalToReceive;
-                    $evSettlementTotals['by_partner'][$pName]['collected_in_hand'] += $pInHand;
-                    $evSettlementTotals['by_partner'][$pName]['balance_diff'] += $pBalanceDiff;
+                    $evPartners[] = [
+                        'name' => $pName,
+                        'percentage' => $pPct,
+                        'profit_share' => $pShare,
+                        'role' => '',
+                        'is_settled' => false,
+                        'material_reimbursement' => $pMatReimb,
+                        'provider_reimbursement' => $pProvReimb,
+                        'total_to_receive' => $pTotalToReceive,
+                        'collected_in_hand' => $pInHand,
+                        'balance_diff' => $pBalanceDiff,
+                    ];
+
+                    if (isset($evSettlementTotals['by_partner'][$pName])) {
+                        $evSettlementTotals['by_partner'][$pName]['profit_share'] += $pShare;
+                        $evSettlementTotals['by_partner'][$pName]['reimbursements'] += ($pMatReimb + $pProvReimb);
+                        $evSettlementTotals['by_partner'][$pName]['total_to_receive'] += $pTotalToReceive;
+                        $evSettlementTotals['by_partner'][$pName]['collected_in_hand'] += $pInHand;
+                        $evSettlementTotals['by_partner'][$pName]['balance_diff'] += $pBalanceDiff;
+                    }
                 }
             }
 
@@ -809,6 +875,12 @@ class BillingReportService
                 $humanExplanation = 'Sin cobros registrados aún en este evento.';
             } elseif ($isFondoComun) {
                 $humanExplanation = "Importe cobrado (" . number_format($evTotalCollected, 2, ',', '.') . " €) destinado íntegramente a Fondo Común / Empresa (0,00 € a repartir a cuentas personales).";
+            } elseif ($useCustomSplit) {
+                $parts = [];
+                foreach ($evPartners as $ep) {
+                    $parts[] = "{$ep['name']}: " . number_format($ep['profit_share'], 2, ',', '.') . " €" . ($ep['role'] ? " ({$ep['role']})" : "");
+                }
+                $humanExplanation = "Reparto personalizado de este evento: " . implode(', ', $parts) . ".";
             } else {
                 $parts = [];
                 foreach ($evPartners as $ep) {
@@ -849,6 +921,8 @@ class BillingReportService
                 'material_items' => $evMaterials,
                 'total_costs' => round($evTotalCost, 2),
                 'net_profit' => round($evNetProfit, 2),
+                'has_custom_split' => $useCustomSplit,
+                'custom_split' => $evCustomSplit,
                 'partners' => $evPartners,
                 'explanation' => $humanExplanation,
                 'quote_total' => (float) ($evFb['quote_total'] ?? 0.0),

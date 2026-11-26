@@ -2022,4 +2022,5 @@
     @include('livewire.admin.billing.partials.modals.provider-modal')
     @include('livewire.admin.billing.partials.modals.material-modal')
     @include('livewire.admin.billing.partials.modals.partners-modal')
+    @include('livewire.admin.billing.partials.modals.event-split-modal')
 </div>

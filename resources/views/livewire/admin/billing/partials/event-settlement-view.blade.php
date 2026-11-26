@@ -399,28 +399,48 @@
                     <!-- COLUMNA 3: REPARTO DEL EVENTO ENTRE SOCIOS (4 COLS) -->
                     <div class="lg:col-span-4 space-y-3 bg-slate-50 dark:bg-slate-950/60 p-4 rounded-2xl border border-slate-200 dark:border-slate-800">
                         <div class="flex items-center justify-between gap-1 flex-wrap">
-                            <span class="text-[10px] font-black uppercase tracking-wider text-slate-400 block">
-                                ⚖️ 3. Reparto de este Evento
-                            </span>
-                            @if(($sett['settlement_status'] ?? 'pending') === 'settled')
+                            <div class="flex items-center gap-1.5 flex-wrap">
+                                <span class="text-[10px] font-black uppercase tracking-wider text-slate-400 block">
+                                    ⚖️ 3. Reparto de este Evento
+                                </span>
+                                @if(!empty($sett['has_custom_split']))
+                                    <span class="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800" title="Reparto personalizado para este evento">
+                                        ⚡ A medida
+                                    </span>
+                                @endif
+                            </div>
+
+                            <div class="flex items-center gap-1.5">
                                 <button
                                     type="button"
-                                    wire:click="unsettleEventPartners({{ $ev->id }})"
-                                    class="text-[9px] font-black px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 cursor-pointer hover:opacity-80"
-                                    title="Pulsar para revertir liquidación a pendiente"
+                                    wire:click="openEventSplitModal({{ $ev->id }})"
+                                    class="text-[9px] font-black px-2 py-0.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer transition shadow-2xs flex items-center gap-1"
+                                    title="Personalizar quién cobra en este evento y qué importe"
                                 >
-                                    ✅ Liquidado a Socios ({{ $sett['settlement_paid_at'] ?? 'Registrado' }}) ↩️
+                                    <span>✏️</span>
+                                    <span>Personalizar</span>
                                 </button>
-                            @else
-                                <button
-                                    type="button"
-                                    wire:click="settleEventPartners({{ $ev->id }})"
-                                    class="text-[9px] font-black px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-700 cursor-pointer hover:scale-105 transition shadow-2xs"
-                                    title="Marcar que el reparto de este evento ya se pagó y liquidó a los socios"
-                                >
-                                    💸 Marcar Liquidado a Socios
-                                </button>
-                            @endif
+
+                                @if(($sett['settlement_status'] ?? 'pending') === 'settled')
+                                    <button
+                                        type="button"
+                                        wire:click="unsettleEventPartners({{ $ev->id }})"
+                                        class="text-[9px] font-black px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 cursor-pointer hover:opacity-80"
+                                        title="Pulsar para revertir liquidación a pendiente"
+                                    >
+                                        ✅ Liquidado ({{ $sett['settlement_paid_at'] ?? 'Registrado' }}) ↩️
+                                    </button>
+                                @else
+                                    <button
+                                        type="button"
+                                        wire:click="settleEventPartners({{ $ev->id }})"
+                                        class="text-[9px] font-black px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-700 cursor-pointer hover:scale-105 transition shadow-2xs"
+                                        title="Marcar que el reparto de este evento ya se pagó y liquidó a los socios"
+                                    >
+                                        💸 Marcar Liquidado
+                                    </button>
+                                @endif
+                            </div>
                         </div>
 
                         @if($isFondo)
@@ -441,14 +461,23 @@
                                     @endphp
                                     <div class="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-1">
                                         <div class="flex items-center justify-between text-xs font-black text-slate-900 dark:text-white">
-                                            <span>👤 {{ $pRow['name'] }} ({{ $pRow['percentage'] }}%)</span>
+                                            <div class="flex items-center gap-1.5">
+                                                <span>👤 {{ $pRow['name'] }}</span>
+                                                @if(!empty($pRow['role']))
+                                                    <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+                                                        {{ $pRow['role'] }}
+                                                    </span>
+                                                @elseif(($pRow['percentage'] ?? 0) > 0)
+                                                    <span class="text-[10px] text-slate-400 font-normal">({{ $pRow['percentage'] }}%)</span>
+                                                @endif
+                                            </div>
                                             <span class="text-emerald-600 dark:text-emerald-400 font-extrabold text-sm">
                                                 {{ number_format($pRow['total_to_receive'], 2, ',', '.') }} €
                                             </span>
                                         </div>
 
                                         <div class="flex items-center justify-between text-[10px] text-slate-500">
-                                            <span>Cuota beneficio: {{ number_format($pRow['profit_share'], 2, ',', '.') }}€</span>
+                                            <span>Cuota: {{ number_format($pRow['profit_share'], 2, ',', '.') }}€</span>
                                             @if(($pRow['material_reimbursement'] + $pRow['provider_reimbursement']) > 0)
                                                 <span class="text-amber-600 dark:text-amber-400 font-bold">
                                                     +{{ number_format($pRow['material_reimbursement'] + $pRow['provider_reimbursement'], 2, ',', '.') }}€ reemb.
@@ -457,20 +486,36 @@
                                         </div>
 
                                         <!-- Situación de arqueo en este evento -->
-                                        <div class="pt-1 border-t border-slate-100 dark:border-slate-800 text-[10px]">
-                                            @if($pDiff > 0.05)
-                                                <span class="text-amber-600 dark:text-amber-400 font-bold">
-                                                    ⚠️ Cobró {{ number_format($pRow['collected_in_hand'], 2, ',', '.') }}€ (tiene {{ number_format($pDiff, 2, ',', '.') }}€ de más a compensar)
-                                                </span>
-                                            @elseif($pDiff < -0.05)
-                                                <span class="text-indigo-600 dark:text-indigo-400 font-bold">
-                                                    ⏳ Cobró 0€ (tiene pendiente recibir {{ number_format(abs($pDiff), 2, ',', '.') }}€)
-                                                </span>
-                                            @else
-                                                <span class="text-emerald-600 dark:text-emerald-400 font-bold">
-                                                    ✅ Saldo cuadrado en este evento
-                                                </span>
-                                            @endif
+                                        <div class="pt-1 border-t border-slate-100 dark:border-slate-800 text-[10px] flex items-center justify-between gap-1 flex-wrap">
+                                            <div>
+                                                @if(!empty($pRow['is_settled']))
+                                                    <span class="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
+                                                        <span>✅</span>
+                                                        <span>Cobró sus {{ number_format($pRow['total_to_receive'], 2, ',', '.') }}€ (Cuentas cuadradas)</span>
+                                                    </span>
+                                                @elseif($pDiff > 0.05)
+                                                    <span class="text-amber-600 dark:text-amber-400 font-bold">
+                                                        ⚠️ Cobró {{ number_format($pRow['collected_in_hand'], 2, ',', '.') }}€ (tiene {{ number_format($pDiff, 2, ',', '.') }}€ de más a compensar)
+                                                    </span>
+                                                @elseif($pDiff < -0.05)
+                                                    <span class="text-indigo-600 dark:text-indigo-400 font-bold">
+                                                        ⏳ Cobró 0€ (tiene pendiente recibir {{ number_format(abs($pDiff), 2, ',', '.') }}€)
+                                                    </span>
+                                                @else
+                                                    <span class="text-emerald-600 dark:text-emerald-400 font-bold">
+                                                        ✅ Saldo cuadrado en este evento
+                                                    </span>
+                                                @endif
+                                            </div>
+
+                                            <button
+                                                type="button"
+                                                wire:click="togglePartnerSettledDirect({{ $ev->id }}, '{{ $pRow['name'] }}')"
+                                                class="text-[9px] font-bold px-1.5 py-0.5 rounded cursor-pointer transition {{ !empty($pRow['is_settled']) ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 hover:bg-emerald-200' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 hover:bg-slate-200' }}"
+                                                title="Pulsar para alternar si este socio ya cobró su dinero de este evento"
+                                            >
+                                                {{ !empty($pRow['is_settled']) ? '✅ Pagado' : '⏳ Marcar Cobrado' }}
+                                            </button>
                                         </div>
                                     </div>
                                 @empty

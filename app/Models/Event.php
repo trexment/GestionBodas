@@ -45,6 +45,7 @@ class Event extends Model
         'settlement_status',
         'settlement_paid_at',
         'settlement_notes',
+        'settlement_custom_split',
         'deposit_paid_at',
         'deposit_notes',
         'token',
@@ -73,6 +74,7 @@ class Event extends Model
         'deposit_transferred_to_joint' => 'boolean',
         'deposit_transferred_at' => 'date',
         'settlement_paid_at' => 'date',
+        'settlement_custom_split' => 'array',
         'deposit_paid_amount' => 'decimal:2',
         'deposit_paid_at' => 'date',
         'photo_qr_created_at' => 'datetime',
@@ -221,10 +223,57 @@ class Event extends Model
                             $table->string('settlement_status', 30)->default('pending')->after('deposit_transferred_at');
                             $table->date('settlement_paid_at')->nullable()->after('settlement_status');
                             $table->text('settlement_notes')->nullable()->after('settlement_paid_at');
+                            $table->text('settlement_custom_split')->nullable()->after('settlement_notes');
                         });
                     } catch (\Throwable $ex) {
                         // Tolerar si ya se creó en migración
                     }
+                }
+
+                if (!\Illuminate\Support\Facades\Schema::hasColumn('events', 'settlement_custom_split')) {
+                    try {
+                        \Illuminate\Support\Facades\Schema::table('events', function (\Illuminate\Database\Schema\Blueprint $table) {
+                            $table->text('settlement_custom_split')->nullable()->after('settlement_notes');
+                        });
+                    } catch (\Throwable $ex) {
+                        // Tolerar
+                    }
+                }
+
+                try {
+                    $vidalia = \Illuminate\Support\Facades\DB::table('events')
+                        ->where('name', 'LIKE', '%Vidalia%')
+                        ->whereNull('settlement_custom_split')
+                        ->first();
+                    if ($vidalia) {
+                        \Illuminate\Support\Facades\DB::table('events')
+                            ->where('id', $vidalia->id)
+                            ->update([
+                                'settlement_custom_split' => json_encode([
+                                    'mode' => 'custom_amounts',
+                                    'partners' => [
+                                        [
+                                            'name' => 'Fran',
+                                            'amount' => 600.00,
+                                            'percentage' => 60.0,
+                                            'role' => 'Fotografía',
+                                            'is_settled' => true,
+                                        ],
+                                        [
+                                            'name' => 'Miguel',
+                                            'amount' => 400.00,
+                                            'percentage' => 40.0,
+                                            'role' => 'DJ',
+                                            'is_settled' => true,
+                                        ],
+                                    ],
+                                    'notes' => 'Miguel cobró 400 € por DJ y Fran 600 € por Fotografía',
+                                    'updated_at' => now()->toIso8601String(),
+                                ], JSON_UNESCAPED_UNICODE),
+                            ]);
+                    }
+                } catch (\Throwable $ex2) {
+                    // Tolerar
                 }
             }
         } catch (\Throwable $e) {
@@ -1378,6 +1427,108 @@ class Event extends Model
             'by_method' => $byMethod,
             'payments_list' => $paymentsList,
             'invoices_count' => $invoices->count(),
+        ];
+    }
+
+    /**
+     * Sugiere un reparto del evento basado en los servicios del presupuesto y el personal asignado (DJ y Asistentes).
+     */
+    public function getEventSuggestedStaffSplit(): array
+    {
+        $quotes = $this->relationLoaded('quotes') ? $this->quotes : $this->quotes()->with('items')->get();
+        $primaryQuote = $quotes->firstWhere('status', 'accepted')
+            ?: ($quotes->whereIn('status', ['sent', 'pending'])->first() ?: $quotes->first());
+
+        $djName = $this->dj?->name ?: 'Miguel';
+        $assistants = $this->relationLoaded('assistants') ? $this->assistants : $this->assistants()->get();
+        $assistantNames = $assistants->pluck('name')->all();
+        if (empty($assistantNames)) {
+            if ($this->assistant_id) {
+                $asUser = \App\Models\User::find($this->assistant_id);
+                if ($asUser) {
+                    $assistantNames[] = $asUser->name;
+                }
+            }
+        }
+        if (empty($assistantNames)) {
+            $assistantNames = ['Fran'];
+        }
+
+        $items = $primaryQuote ? ($primaryQuote->relationLoaded('items') ? $primaryQuote->items : $primaryQuote->items()->get()) : collect();
+
+        $djTotal = 0.0;
+        $photoTotal = 0.0;
+        $otherTotal = 0.0;
+
+        foreach ($items as $it) {
+            $sName = mb_strtolower((string)($it->service_name ?? ''));
+            $desc = mb_strtolower((string)($it->description ?? ''));
+            $comb = $sName . ' ' . $desc;
+            $price = (float)($it->price ?? $it->total_price ?? 0.0);
+            $qty = max(1, (int)($it->quantity ?? 1));
+            $line = round($price * $qty, 2);
+
+            if (str_contains($comb, 'fotograf') || str_contains($comb, 'foto') || str_contains($comb, 'álbum') || str_contains($comb, 'album')) {
+                $photoTotal += $line;
+            } elseif (str_contains($comb, 'dj') || str_contains($comb, 'sonido') || str_contains($comb, 'música') || str_contains($comb, 'musica') || str_contains($comb, 'baile') || str_contains($comb, 'cóctel') || str_contains($comb, 'banquete')) {
+                $djTotal += $line;
+            } else {
+                $otherTotal += $line;
+            }
+        }
+
+        // Si se detectaron importes de DJ y Fotografía (ej. Vidalia y Omar: DJ 400€, Foto 600€)
+        if ($djTotal > 0 && $photoTotal > 0) {
+            $firstAssistant = $assistantNames[0] ?? 'Fran';
+            $sum = $djTotal + $photoTotal + $otherTotal;
+            return [
+                'mode' => 'custom_amounts',
+                'partners' => [
+                    [
+                        'name' => $firstAssistant,
+                        'amount' => $photoTotal + $otherTotal,
+                        'percentage' => $sum > 0 ? round((($photoTotal + $otherTotal) / $sum) * 100, 1) : 60.0,
+                        'role' => 'Fotografía (' . number_format($photoTotal + $otherTotal, 2, ',', '.') . ' €)',
+                        'is_settled' => true,
+                    ],
+                    [
+                        'name' => $djName,
+                        'amount' => $djTotal,
+                        'percentage' => $sum > 0 ? round(($djTotal / $sum) * 100, 1) : 40.0,
+                        'role' => 'DJ (' . number_format($djTotal, 2, ',', '.') . ' €)',
+                        'is_settled' => true,
+                    ],
+                ],
+                'notes' => "Reparto por servicios presupuestados: {$firstAssistant} (" . ($photoTotal + $otherTotal) . "€ Fotografía) y {$djName} ({$djTotal}€ DJ)",
+            ];
+        }
+
+        // Si no hay líneas de fotografía pero hay DJ y Asistentes: reparto equitativo
+        $activeStaff = array_values(array_unique(array_filter(array_merge([$djName], $assistantNames))));
+        $staffCount = count($activeStaff);
+        if ($staffCount > 0) {
+            $pctEach = round(100 / $staffCount, 2);
+            $partnersList = [];
+            foreach ($activeStaff as $idx => $stName) {
+                $partnersList[] = [
+                    'name' => $stName,
+                    'amount' => 0.0,
+                    'percentage' => $idx === ($staffCount - 1) ? round(100 - ($pctEach * ($staffCount - 1)), 2) : $pctEach,
+                    'role' => $stName === $djName ? 'DJ Titular' : 'Asistente / Equipo',
+                    'is_settled' => false,
+                ];
+            }
+            return [
+                'mode' => 'custom_percentages',
+                'partners' => $partnersList,
+                'notes' => 'Reparto a partes iguales entre el personal del evento (' . implode(', ', $activeStaff) . ')',
+            ];
+        }
+
+        return [
+            'mode' => 'global',
+            'partners' => \App\Models\Setting::getSettlementPartners(),
+            'notes' => 'Reparto estándar entre los socios',
         ];
     }
 
