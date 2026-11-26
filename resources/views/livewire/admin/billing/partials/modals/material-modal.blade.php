@@ -115,9 +115,6 @@
                 </select>
             </div>
         </div>
-                </select>
-            </div>
-        </div>
 
         <!-- Proveedor y Nº Factura -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
