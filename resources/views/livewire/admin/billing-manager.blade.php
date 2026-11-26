@@ -239,19 +239,6 @@
                 </div>
             </x-ui.stat-card>
         </div>
-                <span class="text-slate-500 dark:text-slate-400">Facturas ({{ $kpis['tax_summary']['invoices_count'] }}):</span>
-                <strong class="text-blue-600 dark:text-blue-400">{{ number_format($kpis['tax_summary']['invoices_total'], 2, ',', '.') }} €</strong>
-            </div>
-            <div class="flex items-center justify-between text-[10px] text-slate-400">
-                <span>Base: {{ number_format($kpis['tax_summary']['invoices_base'], 2, ',', '.') }} €</span>
-                <span>IVA: {{ number_format($kpis['tax_summary']['invoices_tax'], 2, ',', '.') }} €</span>
-            </div>
-            <div class="flex items-center justify-between text-[11px] pt-1 border-t border-slate-100 dark:border-slate-800">
-                <span class="text-slate-500 dark:text-slate-400">Recibos:</span>
-                <strong class="text-emerald-600 dark:text-emerald-400">{{ number_format($kpis['tax_summary']['receipts_total'], 2, ',', '.') }} €</strong>
-            </div>
-        </x-ui.stat-card>
-    </div>
 
     <!-- DESGLOSE INTERACTIVO POR MÉTODO DE PAGO (1 CLIC PARA FILTRAR) -->
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -1415,6 +1402,7 @@
                     </table>
                 </div>
             </div>
+            </div>
             @endif
 
             @if(in_array($expensesSubTab, ['all', 'materials'], true))
@@ -2105,6 +2093,7 @@
                 <div class="p-4 bg-slate-50 dark:bg-slate-950/70 border-t border-slate-200 dark:border-slate-800 text-[11px] text-slate-500 space-y-1">
                     <p>💡 <strong>Cuadre exacto de caja:</strong> La suma de lo que percibe cada socio más las compras de material realizadas desde caja común de empresa y los pagos a proveedores externos equivale exactamente a los {{ number_format($sData['total_collected'] ?? 0, 2, ',', '.') }} € ingresados en el período.</p>
                 </div>
+            </div>
             </div>
             @endif
         </div>
