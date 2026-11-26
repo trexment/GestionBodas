@@ -13,8 +13,10 @@ use Livewire\Component;
  */
 class BillingManager extends Component
 {
-    // Vista activa: 'events' (Control de pagos por evento) o 'ledger' (Libro cronológico de cobros/facturas)
+    // Vista activa de las 4 Pestañas Maestras:
+    // 'events' / 'ledger' (1. Cobros Clientes) | 'settlement' (2. Reparto Socios) | 'expenses' (3. Gastos & Proveedores) | 'joint_account' (4. Caja & Banco)
     public string $viewMode = 'events';
+    public string $expensesSubTab = 'all'; // 'all' (Todo) | 'providers' (Fotomatón/360) | 'materials' (Material y Cenas)
 
     // Filtros
     public string $season = 'all'; // 'all' | '2026' | '2027' | '2028' (Año de celebración del evento / Temporada)
@@ -162,6 +164,31 @@ class BillingManager extends Component
     public function filterByMethod(string $method)
     {
         $this->paymentMethod = ($this->paymentMethod === $method) ? 'all' : $method;
+    }
+
+    /**
+     * Cambia la vista o pestaña principal de Finanzas de forma limpia y coherente.
+     */
+    public function setViewMode(string $mode, string $subTab = 'all'): void
+    {
+        if ($mode === 'providers') {
+            $this->viewMode = 'expenses';
+            $this->expensesSubTab = 'providers';
+            return;
+        }
+        if ($mode === 'materials') {
+            $this->viewMode = 'expenses';
+            $this->expensesSubTab = 'materials';
+            return;
+        }
+        if ($mode === 'event_settlement') {
+            $this->viewMode = 'settlement';
+            return;
+        }
+        $this->viewMode = $mode;
+        if (!empty($subTab)) {
+            $this->expensesSubTab = $subTab;
+        }
     }
 
     /**

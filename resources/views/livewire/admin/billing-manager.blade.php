@@ -1,101 +1,91 @@
 <div class="space-y-6">
-    <!-- CABECERA PRINCIPAL Y BOTONES DE EXPORTACIÓN -->
-    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs">
+    <!-- CABECERA PRINCIPAL Y BARRA DE NAVEGACIÓN EN 4 PESTAÑAS MAESTRAS -->
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs space-y-4">
         <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             <div>
                 <div class="flex items-center gap-2.5">
                     <span class="text-2xl">💶</span>
                     <h2 class="text-xl font-black text-slate-900 dark:text-white tracking-tight">
-                        Panel de Facturación y Control de Ingresos
+                        Gestión Financiera & Cuentas
                     </h2>
                 </div>
                 <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                    Consulta de un vistazo qué eventos han pagado señal o liquidación, en qué fecha, por qué método de pago (Bizum, Transferencia, Efectivo, Tarjeta) y exporta el informe a <strong>Excel (.xlsx)</strong> o <strong>PDF</strong>.
+                    Control ordenado de cobros a clientes, liquidaciones entre socios, gastos de proveedores y arqueo de caja y banco.
                 </p>
             </div>
 
-            <div class="flex flex-wrap items-center gap-2.5">
-                <!-- Selector de Vista -->
-                <div class="inline-flex flex-wrap bg-slate-100 dark:bg-slate-950 p-1 rounded-xl border border-slate-200 dark:border-slate-800 gap-1">
-                    <button
-                        type="button"
-                        wire:click="$set('viewMode', 'events')"
-                        class="px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1.5 {{ $viewMode === 'events' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white' }}"
-                    >
-                        <span>📋</span>
-                        <span>Por Eventos ({{ count($eventsRows) }})</span>
-                    </button>
-                    <button
-                        type="button"
-                        wire:click="$set('viewMode', 'ledger')"
-                        class="px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1.5 {{ $viewMode === 'ledger' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white' }}"
-                    >
-                        <span>🧾</span>
-                        <span>Libro de Cobros ({{ count($ledgerRows) }})</span>
-                    </button>
-                    <button
-                        type="button"
-                        wire:click="$set('viewMode', 'providers')"
-                        class="px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1.5 {{ $viewMode === 'providers' ? 'bg-purple-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white' }}"
-                    >
-                        <span>📸</span>
-                        <span>Fotomatón / 360º ({{ count($providerRows) }})</span>
-                    </button>
-                    <button
-                        type="button"
-                        wire:click="$set('viewMode', 'materials')"
-                        class="px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1.5 {{ $viewMode === 'materials' ? 'bg-amber-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white' }}"
-                    >
-                        <span>🛠️</span>
-                        <span>Gastos Material ({{ count($materialRows) }})</span>
-                    </button>
-                    <button
-                        type="button"
-                        wire:click="$set('viewMode', 'settlement')"
-                        class="px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1.5 {{ $viewMode === 'settlement' ? 'bg-emerald-600 text-white shadow-xs ring-1 ring-emerald-400' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white' }}"
-                    >
-                        <span>⚖️</span>
-                        <span>Reparto Global</span>
-                    </button>
-                    <button
-                        type="button"
-                        wire:click="$set('viewMode', 'event_settlement')"
-                        class="px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1.5 {{ $viewMode === 'event_settlement' ? 'bg-indigo-600 text-white shadow-xs ring-1 ring-indigo-400' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white' }}"
-                    >
-                        <span>📑</span>
-                        <span>Desglose por Evento ({{ count($eventsRows) }})</span>
-                    </button>
-                    <button
-                        type="button"
-                        wire:click="$set('viewMode', 'joint_account')"
-                        class="px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1.5 {{ $viewMode === 'joint_account' ? 'bg-teal-600 text-white shadow-xs ring-1 ring-teal-400' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white' }}"
-                    >
-                        <span>🏦</span>
-                        <span>Cuenta Común & Arqueo</span>
-                    </button>
-                </div>
-
-                <!-- Botón Exportar Excel (.xlsx) -->
+            <!-- Botones de Exportación -->
+            <div class="flex flex-wrap items-center gap-2">
                 <a
                     href="{{ route('admin.billing.export.excel') }}{{ $exportQuery ? '?' . $exportQuery : '' }}"
-                    class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold shadow-sm shadow-emerald-600/20 transition cursor-pointer"
-                    title="Descargar libro Excel (.xlsx) con 3 pestañas: Control por Eventos, Libro de Cobros y Resumen"
+                    class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black shadow-xs transition cursor-pointer"
+                    title="Descargar libro Excel (.xlsx) con hojas ordenadas"
                 >
                     <span>📊</span>
-                    <span>Exportar Excel (.xlsx)</span>
+                    <span>Exportar Excel</span>
                 </a>
-
-                <!-- Botón Exportar Informe PDF -->
                 <a
                     href="{{ route('admin.billing.export.pdf') }}{{ $exportQuery ? '?' . $exportQuery : '' }}"
                     target="_blank"
-                    class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-extrabold shadow-sm shadow-rose-600/20 transition cursor-pointer"
-                    title="Descargar informe en PDF listo para imprimir o enviar a gestoría"
+                    class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-black shadow-xs transition cursor-pointer"
+                    title="Descargar informe en PDF oficial"
                 >
                     <span>📄</span>
                     <span>Exportar PDF</span>
                 </a>
             </div>
+        </div>
+
+        <!-- 4 PESTAÑAS MAESTRAS FINANCIERAS -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+            <!-- 1. Cobros Clientes -->
+            <button
+                type="button"
+                wire:click="setViewMode('events')"
+                class="flex items-center justify-center gap-2 py-3 px-3 rounded-2xl text-xs font-black transition cursor-pointer {{ in_array($viewMode, ['events', 'ledger'], true) ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/25 ring-2 ring-indigo-400/40' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700' }}"
+            >
+                <span class="text-base">💳</span>
+                <span>1. Cobros Clientes</span>
+                <span class="px-1.5 py-0.5 rounded-md text-[10px] {{ in_array($viewMode, ['events', 'ledger'], true) ? 'bg-white/20 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300' }}">
+                    {{ count($eventsRows) }}
+                </span>
+            </button>
+
+            <!-- 2. Reparto Socios -->
+            <button
+                type="button"
+                wire:click="setViewMode('settlement')"
+                class="flex items-center justify-center gap-2 py-3 px-3 rounded-2xl text-xs font-black transition cursor-pointer {{ in_array($viewMode, ['settlement', 'event_settlement'], true) ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/25 ring-2 ring-emerald-400/40' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700' }}"
+            >
+                <span class="text-base">⚖️</span>
+                <span>2. Reparto Socios</span>
+                <span class="px-1.5 py-0.5 rounded-md text-[10px] {{ in_array($viewMode, ['settlement', 'event_settlement'], true) ? 'bg-white/20 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300' }}">
+                    {{ count($eventsRows) }}
+                </span>
+            </button>
+
+            <!-- 3. Gastos & Proveedores -->
+            <button
+                type="button"
+                wire:click="setViewMode('expenses')"
+                class="flex items-center justify-center gap-2 py-3 px-3 rounded-2xl text-xs font-black transition cursor-pointer {{ in_array($viewMode, ['expenses', 'providers', 'materials'], true) ? 'bg-amber-600 text-white shadow-md shadow-amber-600/25 ring-2 ring-amber-400/40' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700' }}"
+            >
+                <span class="text-base">🍽️</span>
+                <span>3. Gastos & Proveedores</span>
+                <span class="px-1.5 py-0.5 rounded-md text-[10px] {{ in_array($viewMode, ['expenses', 'providers', 'materials'], true) ? 'bg-white/20 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300' }}">
+                    {{ count($providerRows) + count($materialRows) }}
+                </span>
+            </button>
+
+            <!-- 4. Caja & Banco -->
+            <button
+                type="button"
+                wire:click="setViewMode('joint_account')"
+                class="flex items-center justify-center gap-2 py-3 px-3 rounded-2xl text-xs font-black transition cursor-pointer {{ $viewMode === 'joint_account' ? 'bg-teal-600 text-white shadow-md shadow-teal-600/25 ring-2 ring-teal-400/40' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700' }}"
+            >
+                <span class="text-base">🏦</span>
+                <span>4. Caja & Banco</span>
+            </button>
         </div>
 
         <!-- SELECTOR RÁPIDO DE TEMPORADA (AÑO DEL EVENTO) -->
@@ -147,117 +137,108 @@
     </div>
 
     <!-- TARJETAS KPI GLOBALES Y FILTROS (SOLO EN EVENTOS Y LIBRO DE COBROS) -->
+    <!-- PESTAÑA 1: COBROS A CLIENTES Y FACTURACIÓN -->
     @if(in_array($viewMode, ['events', 'ledger'], true))
-    <!-- TARJETAS KPI GLOBALES (INGRESOS, PENDIENTE, GASTO PROVEEDORES, MATERIAL, BENEFICIO NETO Y FISCALIDAD) -->
-    @php
-        $pSummary = $kpis['provider_summary'] ?? [];
-        $mSummary = $kpis['material_summary'] ?? [];
-        $sSummary = $kpis['settlement_summary'] ?? [];
-    @endphp
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6 gap-3.5">
-        <!-- 1. TOTAL INGRESADO / COBRADO -->
-        <x-ui.stat-card
-            label="Total Cobrado"
-            value="{{ number_format($kpis['total_collected'], 2, ',', '.') }} €"
-            variant="emerald"
-            icon="💶"
-        >
-            <div class="flex items-center justify-between text-[11px]">
-                <span>Señales: <strong class="text-slate-800 dark:text-slate-200">{{ number_format($kpis['total_deposits_collected'], 2, ',', '.') }} €</strong></span>
-                <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 font-bold">{{ $kpis['events_with_payment_count'] }} ev.</span>
+        <!-- SUB-BARRA DE NAVEGACIÓN EN COBROS A CLIENTES -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs">
+            <div class="flex items-center gap-2">
+                <span class="text-[11px] font-black uppercase tracking-wider text-slate-400 pl-1">
+                    Vista:
+                </span>
+                <button
+                    type="button"
+                    wire:click="$set('viewMode', 'events')"
+                    class="px-3.5 py-1.5 rounded-xl text-xs font-black transition cursor-pointer flex items-center gap-1.5 {{ $viewMode === 'events' ? 'bg-indigo-600 text-white shadow-xs' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700' }}"
+                >
+                    <span>📋</span>
+                    <span>Por Eventos ({{ count($eventsRows) }})</span>
+                </button>
+                <button
+                    type="button"
+                    wire:click="$set('viewMode', 'ledger')"
+                    class="px-3.5 py-1.5 rounded-xl text-xs font-black transition cursor-pointer flex items-center gap-1.5 {{ $viewMode === 'ledger' ? 'bg-indigo-600 text-white shadow-xs' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700' }}"
+                >
+                    <span>🧾</span>
+                    <span>Libro de Facturas y Recibos ({{ count($ledgerRows) }})</span>
+                </button>
             </div>
-            <div class="flex items-center justify-between text-[11px]">
-                <span>Resto: <strong class="text-slate-800 dark:text-slate-200">{{ number_format($kpis['total_finals_collected'], 2, ',', '.') }} €</strong></span>
+            <div class="text-[11px] text-slate-500 font-semibold">
+                Control de cobros de clientes, señales y emisión de justificantes en PDF.
             </div>
-        </x-ui.stat-card>
+        </div>
 
-        <!-- 2. PENDIENTE DE COBRO -->
-        <x-ui.stat-card
-            label="Pendiente Cobro"
-            value="{{ number_format($kpis['total_pending'], 2, ',', '.') }} €"
-            variant="amber"
-            icon="⏳"
-        >
-            <div class="flex items-center justify-between text-[11px]">
-                <span>Total acordado:</span>
-                <strong class="text-slate-700 dark:text-slate-300">{{ number_format($kpis['total_agreed'], 2, ',', '.') }} €</strong>
-            </div>
-            <div class="flex items-center justify-between text-[10px] text-slate-400">
-                <span>Liquidados 100%: <strong>{{ $kpis['events_fully_paid_count'] }}</strong></span>
-                <span>{{ $kpis['events_partial_count'] + $kpis['events_unpaid_count'] }} pend.</span>
-            </div>
-        </x-ui.stat-card>
+        <!-- TARJETAS KPI DE COBROS A CLIENTES -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+            <!-- 1. TOTAL INGRESADO / COBRADO -->
+            <x-ui.stat-card
+                label="Total Cobrado Clientes"
+                value="{{ number_format($kpis['total_collected'], 2, ',', '.') }} €"
+                variant="emerald"
+                icon="💶"
+            >
+                <div class="flex items-center justify-between text-[11px]">
+                    <span>Señales: <strong class="text-slate-800 dark:text-slate-200">{{ number_format($kpis['total_deposits_collected'], 2, ',', '.') }} €</strong></span>
+                    <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 font-bold">{{ $kpis['events_with_payment_count'] }} ev.</span>
+                </div>
+                <div class="flex items-center justify-between text-[11px]">
+                    <span>Restos: <strong class="text-slate-800 dark:text-slate-200">{{ number_format($kpis['total_finals_collected'], 2, ',', '.') }} €</strong></span>
+                </div>
+            </x-ui.stat-card>
 
-        <!-- 3. GASTO DE PROVEEDORES (FOTOMATÓN / 360º) -->
-        <x-ui.stat-card
-            wire:click="$set('viewMode', 'providers')"
-            class="cursor-pointer"
-            label="Proveedores (Fotomatón/360)"
-            value="{{ number_format($pSummary['total_cost'] ?? 0, 2, ',', '.') }} €"
-            variant="purple"
-            icon="📸"
-        >
-            <div class="flex items-center justify-between text-[11px]">
-                <span>Pagado: <strong class="text-emerald-600 dark:text-emerald-400">{{ number_format($pSummary['total_paid'] ?? 0, 2, ',', '.') }} €</strong></span>
-                <span class="text-[10px] font-bold text-purple-700 dark:text-purple-300">{{ $pSummary['events_count'] ?? 0 }} ev.</span>
-            </div>
-            <div class="flex items-center justify-between text-[11px]">
-                <span>Pendiente: <strong class="text-amber-600 dark:text-amber-400">{{ number_format($pSummary['total_pending'] ?? 0, 2, ',', '.') }} €</strong></span>
-            </div>
-        </x-ui.stat-card>
+            <!-- 2. PENDIENTE DE COBRO -->
+            <x-ui.stat-card
+                label="Pendiente de Cobro"
+                value="{{ number_format($kpis['total_pending'], 2, ',', '.') }} €"
+                variant="amber"
+                icon="⏳"
+            >
+                <div class="flex items-center justify-between text-[11px]">
+                    <span>Total acordado:</span>
+                    <strong class="text-slate-700 dark:text-slate-300">{{ number_format($kpis['total_agreed'], 2, ',', '.') }} €</strong>
+                </div>
+                <div class="flex items-center justify-between text-[10px] text-slate-400">
+                    <span>Liquidados 100%: <strong>{{ $kpis['events_fully_paid_count'] }}</strong></span>
+                    <span>{{ $kpis['events_partial_count'] + $kpis['events_unpaid_count'] }} pend.</span>
+                </div>
+            </x-ui.stat-card>
 
-        <!-- 4. GASTO MATERIAL DEDUCIBLE -->
-        <x-ui.stat-card
-            wire:click="$set('viewMode', 'materials')"
-            class="cursor-pointer"
-            label="Gasto Material"
-            value="{{ number_format($mSummary['total_amount'] ?? 0, 2, ',', '.') }} €"
-            variant="amber"
-            icon="🛠️"
-        >
-            <div class="flex items-center justify-between text-[11px] text-amber-700 dark:text-amber-300 font-bold">
-                <span>Deducible en reparto</span>
-                <span>{{ $mSummary['total_count'] ?? 0 }} compras</span>
-            </div>
-            <div class="text-[10px] text-slate-400 truncate">
-                @if(!empty($mSummary['by_paid_by']))
-                    @foreach($mSummary['by_paid_by'] as $pName => $pAmt)
-                        <span class="mr-1.5">{{ $pName }}: <strong>{{ number_format($pAmt, 0, ',', '.') }}€</strong></span>
-                    @endforeach
-                @else
-                    <span>Sin compras aún</span>
-                @endif
-            </div>
-        </x-ui.stat-card>
+            <!-- 3. FACTURACIÓN NETA CLIENTES -->
+            <x-ui.stat-card
+                label="Facturación Neta Acordada"
+                value="{{ number_format($kpis['net_agreed_after_providers'], 2, ',', '.') }} €"
+                variant="indigo"
+                icon="💎"
+            >
+                <div class="flex items-center justify-between text-[11px]">
+                    <span>Ingresos brutos:</span>
+                    <strong class="text-slate-700 dark:text-slate-300">{{ number_format($kpis['total_agreed'], 2, ',', '.') }} €</strong>
+                </div>
+                <div class="flex items-center justify-between text-[10px] text-slate-500">
+                    <span>Descontando costes externos</span>
+                </div>
+            </x-ui.stat-card>
 
-        <!-- 5. BENEFICIO NETO DISPONIBLE PARA REPARTO -->
-        <x-ui.stat-card
-            wire:click="$set('viewMode', 'settlement')"
-            class="cursor-pointer ring-1 ring-emerald-400/50"
-            label="Beneficio Neto"
-            value="{{ number_format($sSummary['net_profit'] ?? 0, 2, ',', '.') }} €"
-            variant="emerald"
-            icon="⚖️"
-        >
-            <div class="flex items-center justify-between text-[10px] font-bold text-emerald-700 dark:text-emerald-300">
-                <span>Cobrado - Prov. - Material</span>
-                <span class="text-indigo-600 dark:text-indigo-400">Ver Reparto ➔</span>
-            </div>
-            <div class="text-[10px] font-semibold text-slate-500 dark:text-slate-400 truncate">
-                @foreach($sSummary['partners'] ?? [] as $prt)
-                    <span class="mr-1.5">{{ $prt['name'] }}: <strong class="text-emerald-700 dark:text-emerald-300">{{ number_format($prt['total_to_receive'], 0, ',', '.') }}€</strong></span>
-                @endforeach
-            </div>
-        </x-ui.stat-card>
-
-        <!-- 6. DESGLOSE FACTURAS (IVA) vs RECIBOS -->
-        <x-ui.stat-card
-            label="Facturas vs Recibos"
-            value="{{ number_format(($kpis['tax_summary']['invoices_total'] ?? 0) + ($kpis['tax_summary']['receipts_total'] ?? 0), 2, ',', '.') }} €"
-            variant="neutral"
-            icon="🧾"
-        >
-            <div class="flex items-center justify-between text-[11px]">
+            <!-- 4. FACTURAS (IVA) vs RECIBOS -->
+            <x-ui.stat-card
+                label="Facturas vs Recibos"
+                value="{{ number_format(($kpis['tax_summary']['invoices_total'] ?? 0) + ($kpis['tax_summary']['receipts_total'] ?? 0), 2, ',', '.') }} €"
+                variant="neutral"
+                icon="🧾"
+            >
+                <div class="flex items-center justify-between text-[11px]">
+                    <span class="text-slate-500 dark:text-slate-400">Facturas ({{ $kpis['tax_summary']['invoices_count'] }}):</span>
+                    <strong class="text-blue-600 dark:text-blue-400">{{ number_format($kpis['tax_summary']['invoices_total'], 2, ',', '.') }} €</strong>
+                </div>
+                <div class="flex items-center justify-between text-[10px] text-slate-400">
+                    <span>Base: {{ number_format($kpis['tax_summary']['invoices_base'], 2, ',', '.') }} €</span>
+                    <span>IVA: {{ number_format($kpis['tax_summary']['invoices_tax'], 2, ',', '.') }} €</span>
+                </div>
+                <div class="flex items-center justify-between text-[11px] pt-1 border-t border-slate-100 dark:border-slate-800">
+                    <span class="text-slate-500 dark:text-slate-400">Recibos:</span>
+                    <strong class="text-emerald-600 dark:text-emerald-400">{{ number_format($kpis['tax_summary']['receipts_total'], 2, ',', '.') }} €</strong>
+                </div>
+            </x-ui.stat-card>
+        </div>
                 <span class="text-slate-500 dark:text-slate-400">Facturas ({{ $kpis['tax_summary']['invoices_count'] }}):</span>
                 <strong class="text-blue-600 dark:text-blue-400">{{ number_format($kpis['tax_summary']['invoices_total'], 2, ',', '.') }} €</strong>
             </div>
@@ -1010,14 +991,70 @@
                 </table>
             </div>
         </div>
-    @elseif($viewMode === 'providers')
+    @elseif(in_array($viewMode, ['expenses', 'providers', 'materials'], true))
         <!-- ==================================================================== -->
-        <!-- VISTA 3: RESERVAS Y PAGOS A PROVEEDOR (FOTOMATÓN Y PLATAFORMA 360º)  -->
+        <!-- PESTAÑA 3: GASTOS DE EMPRESA, PROVEEDORES Y MATERIAL (SALIDAS)      -->
         <!-- ==================================================================== -->
         @php
             $pKpis = $kpis['provider_summary'] ?? [];
+            $mKpis = $kpis['material_summary'] ?? [];
         @endphp
-        <div class="space-y-4">
+        <div class="space-y-6">
+            <!-- SUB-BARRA DE NAVEGACIÓN EN GASTOS -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs">
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="text-[11px] font-black uppercase tracking-wider text-slate-400 pl-1">
+                        Ver Gastos:
+                    </span>
+                    <button
+                        type="button"
+                        wire:click="$set('expensesSubTab', 'all')"
+                        class="px-3.5 py-1.5 rounded-xl text-xs font-black transition cursor-pointer flex items-center gap-1.5 {{ $expensesSubTab === 'all' ? 'bg-amber-600 text-white shadow-xs' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700' }}"
+                    >
+                        <span>👁️</span>
+                        <span>Ver Todo ({{ count($providerRows) + count($materialRows) }})</span>
+                    </button>
+                    <button
+                        type="button"
+                        wire:click="$set('expensesSubTab', 'providers')"
+                        class="px-3.5 py-1.5 rounded-xl text-xs font-black transition cursor-pointer flex items-center gap-1.5 {{ $expensesSubTab === 'providers' ? 'bg-purple-600 text-white shadow-xs' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700' }}"
+                    >
+                        <span>📸</span>
+                        <span>Proveedores Externos ({{ count($providerRows) }})</span>
+                    </button>
+                    <button
+                        type="button"
+                        wire:click="$set('expensesSubTab', 'materials')"
+                        class="px-3.5 py-1.5 rounded-xl text-xs font-black transition cursor-pointer flex items-center gap-1.5 {{ $expensesSubTab === 'materials' ? 'bg-amber-600 text-white shadow-xs' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700' }}"
+                    >
+                        <span>🍽️</span>
+                        <span>Cenas, Empresa y Material ({{ count($materialRows) }})</span>
+                    </button>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <button
+                        type="button"
+                        wire:click="openMaterialModal"
+                        class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-black shadow-xs transition cursor-pointer"
+                    >
+                        <span>➕</span>
+                        <span>Gasto / Cena Empresa</span>
+                    </button>
+                    <button
+                        type="button"
+                        wire:click="openProviderModal(null, 'deposit')"
+                        class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-black shadow-xs transition cursor-pointer"
+                    >
+                        <span>📸</span>
+                        <span>Reserva Proveedor</span>
+                    </button>
+                </div>
+            </div>
+
+            @if(in_array($expensesSubTab, ['all', 'providers'], true))
+            <!-- SECCIÓN: RESERVAS Y PAGOS A PROVEEDOR (FOTOMATÓN Y PLATAFORMA 360º) -->
+            <div class="space-y-4">
             <!-- Resumen de Pagos a la Empresa de Fotomatón / 360º -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div class="bg-white dark:bg-slate-900 rounded-2xl border border-purple-200 dark:border-purple-900/60 p-4 shadow-xs">
@@ -1378,15 +1415,11 @@
                     </table>
                 </div>
             </div>
-        </div>
-    @elseif($viewMode === 'materials')
-    <!-- ========================================================== -->
-    <!-- VISTA 4: COMPRAS Y GASTOS DE MATERIAL DEDUCIBLES -->
-    <!-- ========================================================== -->
-        @php
-            $mKpis = $kpis['material_summary'] ?? [];
-        @endphp
-        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden">
+            @endif
+
+            @if(in_array($expensesSubTab, ['all', 'materials'], true))
+            <!-- SECCIÓN: COMPRAS Y GASTOS DE MATERIAL Y EMPRESA -->
+            <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden">
             <div class="px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/60 dark:bg-slate-950/50">
                 <div>
                     <h3 class="text-sm font-black text-slate-800 dark:text-white flex items-center gap-2">
@@ -1598,18 +1631,61 @@
                 </table>
             </div>
         </div>
-    @elseif($viewMode === 'settlement')
+        @endif
+    </div>
+    @elseif(in_array($viewMode, ['settlement', 'event_settlement'], true))
     <!-- ========================================================== -->
-    <!-- VISTA 5: REPARTO DE BENEFICIOS Y LIQUIDACIÓN ENTRE SOCIOS -->
+    <!-- PESTAÑA 2: LIQUIDACIÓN Y REPARTO ENTRE SOCIOS              -->
     <!-- ========================================================== -->
         @php
             $sData = $kpis['settlement_summary'] ?? [];
             $settlementPartners = $sData['partners'] ?? [];
         @endphp
         <div class="space-y-6">
-            <!-- CABECERA Y BOTÓN DE CONFIGURACIÓN -->
-            <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                <div>
+            <!-- SUB-BARRA DE NAVEGACIÓN EN REPARTO DE SOCIOS -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs">
+                <div class="flex items-center gap-2">
+                    <span class="text-[11px] font-black uppercase tracking-wider text-slate-400 pl-1">
+                        Ver Reparto:
+                    </span>
+                    <button
+                        type="button"
+                        wire:click="$set('viewMode', 'event_settlement')"
+                        class="px-3.5 py-1.5 rounded-xl text-xs font-black transition cursor-pointer flex items-center gap-1.5 {{ $viewMode === 'event_settlement' ? 'bg-indigo-600 text-white shadow-xs' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700' }}"
+                    >
+                        <span>📑</span>
+                        <span>Desglose Evento a Evento ({{ count($eventsRows) }})</span>
+                    </button>
+                    <button
+                        type="button"
+                        wire:click="$set('viewMode', 'settlement')"
+                        class="px-3.5 py-1.5 rounded-xl text-xs font-black transition cursor-pointer flex items-center gap-1.5 {{ $viewMode === 'settlement' ? 'bg-emerald-600 text-white shadow-xs' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700' }}"
+                    >
+                        <span>⚖️</span>
+                        <span>Resumen Global & Transferencias</span>
+                    </button>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <button
+                        type="button"
+                        wire:click="openPartnersModal"
+                        class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-900 text-xs font-black shadow-xs transition cursor-pointer"
+                    >
+                        <span>⚙️</span>
+                        <span>Configurar Socios y %</span>
+                    </button>
+                </div>
+            </div>
+
+            @if($viewMode === 'event_settlement')
+                @include('livewire.admin.billing.partials.event-settlement-view')
+            @else
+            <!-- VISTA 5: REPARTO GLOBAL Y AJUSTE DE TRANSFERENCIAS ENTRE SOCIOS -->
+            <div class="space-y-6">
+                <!-- CABECERA Y BOTÓN DE CONFIGURACIÓN -->
+                <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                    <div>
                     <h3 class="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
                         <span>⚖️</span>
                         <span>Liquidación y Reparto de Beneficios entre Socios</span>
@@ -2030,9 +2106,8 @@
                     <p>💡 <strong>Cuadre exacto de caja:</strong> La suma de lo que percibe cada socio más las compras de material realizadas desde caja común de empresa y los pagos a proveedores externos equivale exactamente a los {{ number_format($sData['total_collected'] ?? 0, 2, ',', '.') }} € ingresados en el período.</p>
                 </div>
             </div>
+            @endif
         </div>
-    @elseif($viewMode === 'event_settlement')
-        @include('livewire.admin.billing.partials.event-settlement-view')
     @elseif($viewMode === 'joint_account')
         @include('livewire.admin.billing.partials.joint-account-view')
     @endif
