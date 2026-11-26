@@ -62,7 +62,7 @@
             </div>
             <div class="space-y-0.5 text-[10px] text-slate-500 pt-1 border-t border-slate-100 dark:border-slate-800">
                 <div class="flex justify-between">
-                    <span>Material pagado por banco:</span>
+                    <span>Gastos Empresa, Cenas y Material:</span>
                     <strong class="text-slate-700 dark:text-slate-300">{{ number_format($jaSummary['direct_material'] ?? 0, 2, ',', '.') }} €</strong>
                 </div>
                 <div class="flex justify-between">

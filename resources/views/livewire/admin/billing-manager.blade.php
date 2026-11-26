@@ -567,9 +567,20 @@
                                                             || str_contains(mb_strtolower($fb['deposit_collected_by']), 'fondo');
                                                     @endphp
                                                     @if($isDepJoint)
-                                                        <span class="inline-flex items-center gap-1 font-extrabold px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-[10px]" title="Fondo común / Caja de empresa">
-                                                            🏦 Fondo Común
+                                                        @php
+                                                            $isDepCash = ($fb['deposit_method'] ?? '') === 'cash' || str_contains(mb_strtolower($fb['deposit_collected_by']), 'efectivo') || str_contains(mb_strtolower($fb['deposit_collected_by']), 'caja');
+                                                        @endphp
+                                                        <span class="inline-flex items-center gap-1 font-extrabold px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-[10px]" title="{{ $isDepCash ? 'Fondo Común en Efectivo / Caja física (no en banco)' : 'Fondo común en cuenta bancaria' }}">
+                                                            {{ $isDepCash ? '💵 Fondo Común (Efectivo / Caja)' : '🏦 Fondo Común (Banco)' }}
                                                         </span>
+                                                        <button
+                                                            type="button"
+                                                            wire:click="openExpenseForEvent({{ $ev->id }}, {{ $fb['deposit_amount'] }})"
+                                                            class="inline-flex items-center gap-0.5 text-[10px] text-amber-700 dark:text-amber-400 hover:underline font-bold cursor-pointer"
+                                                            title="Anotar en qué se va a gastar este dinero (Cena de Navidad, compras, etc.)"
+                                                        >
+                                                            🍽️ Anotar Gasto / Uso
+                                                        </button>
                                                     @else
                                                         <span class="inline-flex items-center gap-1 font-extrabold px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 text-[10px]" title="Cobrado en cuenta de {{ $fb['deposit_collected_by'] }}">
                                                             👤 {{ $fb['deposit_collected_by'] }}
@@ -632,9 +643,20 @@
                                                             || str_contains(mb_strtolower($fb['final_collected_by']), 'fondo');
                                                     @endphp
                                                     @if($isFinJoint)
-                                                        <span class="inline-flex items-center gap-1 font-extrabold px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-[10px]" title="Fondo común / Caja de empresa">
-                                                            🏦 Fondo Común
+                                                        @php
+                                                            $isFinCash = ($fb['final_method'] ?? '') === 'cash' || str_contains(mb_strtolower($fb['final_collected_by']), 'efectivo') || str_contains(mb_strtolower($fb['final_collected_by']), 'caja');
+                                                        @endphp
+                                                        <span class="inline-flex items-center gap-1 font-extrabold px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-[10px]" title="{{ $isFinCash ? 'Fondo Común en Efectivo / Caja física (no en banco)' : 'Fondo común en cuenta bancaria' }}">
+                                                            {{ $isFinCash ? '💵 Fondo Común (Efectivo / Caja)' : '🏦 Fondo Común (Banco)' }}
                                                         </span>
+                                                        <button
+                                                            type="button"
+                                                            wire:click="openExpenseForEvent({{ $ev->id }}, {{ $fb['final_paid_amount'] }})"
+                                                            class="inline-flex items-center gap-0.5 text-[10px] text-amber-700 dark:text-amber-400 hover:underline font-bold cursor-pointer"
+                                                            title="Anotar en qué se va a gastar este dinero (Cena de Navidad, compras, etc.)"
+                                                        >
+                                                            🍽️ Anotar Gasto / Uso
+                                                        </button>
                                                     @else
                                                         <span class="inline-flex items-center gap-1 font-extrabold px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 text-[10px]" title="Cobrado en cuenta de {{ $fb['final_collected_by'] }}">
                                                             👤 {{ $fb['final_collected_by'] }}
@@ -1368,11 +1390,11 @@
             <div class="px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/60 dark:bg-slate-950/50">
                 <div>
                     <h3 class="text-sm font-black text-slate-800 dark:text-white flex items-center gap-2">
-                        <span>🛠️</span>
-                        <span>Compras y Gastos de Material Deducibles ({{ count($materialRows) }})</span>
+                        <span>🍽️</span>
+                        <span>Gastos de Empresa, Cenas y Material ({{ count($materialRows) }})</span>
                     </h3>
                     <p class="text-[11px] text-slate-500 mt-0.5">
-                        Material de sonido, iluminación, cables, consumibles fotomatón o combustible. Se descuenta del beneficio común antes de repartir y se reembolsa íntegro al socio que lo pagó de su bolsillo.
+                        Cenas de navidad y comidas de equipo, material técnico de sonido/iluminación, consumibles o combustible. Si se paga con Fondo Común (Efectivo o Banco), descuenta directamente de la caja común sin generar deudas; si lo adelanta un socio de su bolsillo, se le reembolsa íntegro.
                     </p>
                 </div>
                 <button
@@ -1381,7 +1403,7 @@
                     class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-black shadow-sm shadow-amber-600/20 transition cursor-pointer self-start sm:self-auto shrink-0"
                 >
                     <span>➕</span>
-                    <span>Registrar Compra de Material</span>
+                    <span>Registrar Gasto / Cena de Empresa</span>
                 </button>
             </div>
 

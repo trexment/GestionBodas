@@ -35,47 +35,56 @@
             </div>
         </div>
 
-        <!-- Quién cobró este dinero -->
+        <!-- Quién cobró este dinero / Destino -->
         <div>
-            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">¿Quién cobró este dinero? *</label>
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">¿Quién cobró este dinero o a qué fondo va? *</label>
+            <div class="grid grid-cols-2 sm:grid-cols-5 gap-2">
                 <button
                     type="button"
                     wire:click="$set('quickCollectedBy', 'Fran')"
-                    class="p-2.5 rounded-xl border text-center font-bold text-xs transition cursor-pointer {{ $quickCollectedBy === 'Fran' ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800' }}"
+                    class="p-2 rounded-xl border text-center font-bold text-xs transition cursor-pointer {{ $quickCollectedBy === 'Fran' ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800' }}"
                 >
                     👤 Fran
                 </button>
                 <button
                     type="button"
                     wire:click="$set('quickCollectedBy', 'Miguel')"
-                    class="p-2.5 rounded-xl border text-center font-bold text-xs transition cursor-pointer {{ $quickCollectedBy === 'Miguel' ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800' }}"
+                    class="p-2 rounded-xl border text-center font-bold text-xs transition cursor-pointer {{ $quickCollectedBy === 'Miguel' ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800' }}"
                 >
                     👤 Miguel
                 </button>
                 <button
                     type="button"
                     wire:click="$set('quickCollectedBy', 'Ezequiel')"
-                    class="p-2.5 rounded-xl border text-center font-bold text-xs transition cursor-pointer {{ $quickCollectedBy === 'Ezequiel' ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800' }}"
+                    class="p-2 rounded-xl border text-center font-bold text-xs transition cursor-pointer {{ $quickCollectedBy === 'Ezequiel' ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800' }}"
                 >
                     👤 Ezequiel
                 </button>
                 <button
                     type="button"
-                    wire:click="$set('quickCollectedBy', 'Cuenta Conjunta / Fondo Común')"
-                    class="p-2.5 rounded-xl border text-center font-bold text-xs transition cursor-pointer {{ in_array($quickCollectedBy, ['Cuenta Conjunta', 'Cuenta Conjunta / Fondo Común', 'Fondo Común', 'Empresa'], true) ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm' : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800' }}"
+                    wire:click="$set('quickCollectedBy', 'Fondo Común (Efectivo / Caja)')"
+                    class="p-2 rounded-xl border text-center font-bold text-xs transition cursor-pointer {{ in_array($quickCollectedBy, ['Fondo Común (Efectivo / Caja)', 'Caja Efectivo', 'Efectivo'], true) ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm' : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800' }}"
+                    title="Cobrado en efectivo y guardado en caja física común (para cenas, compras o gastos en mano, no ingresado en banco)"
                 >
-                    🏦 Fondo Común
+                    💵 Caja Efectivo
+                </button>
+                <button
+                    type="button"
+                    wire:click="$set('quickCollectedBy', 'Cuenta Conjunta / Fondo Común')"
+                    class="p-2 rounded-xl border text-center font-bold text-xs transition cursor-pointer {{ in_array($quickCollectedBy, ['Cuenta Conjunta', 'Cuenta Conjunta / Fondo Común', 'Fondo Común', 'Empresa', 'Banco Común'], true) ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm' : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800' }}"
+                    title="Ingresado directamente en la cuenta bancaria de la empresa"
+                >
+                    🏦 Banco Común
                 </button>
             </div>
             <p class="text-[10px] text-slate-400 mt-1">
-                * Selecciona <strong>Fondo Común</strong> si el dinero se destinó a material, cenas de empresa o caja compartida (no se sumará a la cuenta personal de ningún socio).
+                * Selecciona <strong>Caja Efectivo</strong> o <strong>Banco Común</strong> si el dinero se destina a cenas de empresa, compras o fondo común (no suma a la cuenta personal de ningún socio).
             </p>
         </div>
 
         <div>
-            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Notas / Observaciones (Opcional)</label>
-            <input type="text" wire:model="quickNotes" placeholder="Ej: Pagado por el novio, Bizum recibido..." class="w-full rounded-xl border border-slate-300 dark:border-slate-700 p-2.5">
+            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Notas / Destino de este dinero (Opcional)</label>
+            <input type="text" wire:model="quickNotes" placeholder="Ej: Se usará para la cena de navidad de empresa, Bizum recibido..." class="w-full rounded-xl border border-slate-300 dark:border-slate-700 p-2.5">
         </div>
 
         @if($quickPaymentType === 'deposit')

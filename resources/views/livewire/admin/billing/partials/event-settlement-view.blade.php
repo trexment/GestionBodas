@@ -297,17 +297,21 @@
                                 </div>
                             @endif
 
-                            <!-- Costes Material Imputado -->
+                            <!-- Costes de Empresa, Cenas y Material Imputados -->
                             @if(!empty($sett['has_material']))
-                                <div class="pt-2 border-t border-slate-200 dark:border-slate-800">
+                                <div class="pt-2 border-t border-slate-200 dark:border-slate-800 space-y-1">
                                     <div class="flex items-center justify-between text-amber-700 dark:text-amber-400 font-semibold">
-                                        <span>🛠️ Compras Material:</span>
+                                        <span>🛠️ Gastos Empresa / Material:</span>
                                         <span>-{{ number_format($sett['material_cost'] ?? 0, 2, ',', '.') }} €</span>
                                     </div>
-                                    @foreach($sett['material_by_paid_by'] as $pPaid => $pAmt)
-                                        <p class="text-[10px] text-slate-400">
-                                            Pagado por: <strong>{{ $pPaid }}</strong> ({{ number_format($pAmt, 2, ',', '.') }}€)
-                                        </p>
+                                    @foreach($sett['material_items'] ?? [] as $mItem)
+                                        <div class="text-[10px] flex items-center justify-between text-slate-500 dark:text-slate-400">
+                                            <span class="truncate max-w-[190px]">
+                                                {{ $mItem->category === 'cena_empresa' ? '🥂' : ($mItem->category === 'team_dietas' ? '🍽️' : '📦') }}
+                                                {{ $mItem->concept }}
+                                            </span>
+                                            <span class="font-bold">-{{ number_format($mItem->amount, 2, ',', '.') }}€ ({{ $mItem->paid_by }})</span>
+                                        </div>
                                     @endforeach
                                 </div>
                             @endif
@@ -317,6 +321,19 @@
                                     Sin costes externos imputados (100% margen).
                                 </div>
                             @endif
+
+                            <!-- Botón para Imputar Gasto de Empresa / Cena con este evento -->
+                            <div class="pt-1.5">
+                                <button
+                                    type="button"
+                                    wire:click="openExpenseForEvent({{ $ev->id }}, {{ $sett['net_profit'] > 0 ? $sett['net_profit'] : $fb['total_paid'] }})"
+                                    class="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 dark:text-amber-300 bg-amber-50/80 dark:bg-amber-950/50 hover:bg-amber-100 px-2 py-0.5 rounded-lg border border-amber-200 dark:border-amber-800 transition cursor-pointer"
+                                    title="Imputar cena de navidad, comida de equipo o compra técnica con los ingresos de este evento"
+                                >
+                                    <span>🍽️</span>
+                                    <span>Imputar Gasto / Cena de Empresa</span>
+                                </button>
+                            </div>
                         </div>
 
                         <!-- RESULTADO NETO LIMPIO DEL EVENTO -->

@@ -110,6 +110,9 @@ class MaterialExpense extends Model
     public static function getCategories(): array
     {
         return [
+            'cena_empresa' => ['label' => 'Cena / Comida de Empresa (Navidad, etc.)', 'icon' => '🥂'],
+            'team_dietas' => ['label' => 'Dietas, Comidas y Celebraciones de Equipo', 'icon' => '🍽️'],
+            'gastos_empresa' => ['label' => 'Gastos Generales de Empresa / Fondo Común', 'icon' => '🏢'],
             'sonido' => ['label' => 'Sonido & Audio', 'icon' => '🔊'],
             'sound_lighting' => ['label' => 'Sonido e Iluminación', 'icon' => '🔊'],
             'iluminacion' => ['label' => 'Iluminación & Efectos', 'icon' => '💡'],

@@ -940,6 +940,29 @@ class BillingManager extends Component
     }
 
     /**
+     * Abre el modal de gastos pre-rellenado para imputar un uso o gasto a partir de un evento o cobro.
+     * Útil por ejemplo para registrar la cena de navidad financiada con un cobro en efectivo.
+     */
+    public function openExpenseForEvent(int $eventId, float $amount = 0.0, string $concept = '', string $paidBy = 'Fondo Común (Efectivo / Caja)', string $category = 'cena_empresa')
+    {
+        $this->openMaterialModal(null);
+        $this->matEventId = $eventId;
+        if ($amount > 0) {
+            $this->matAmount = round($amount, 2);
+        }
+        if (!empty($concept)) {
+            $this->matConcept = $concept;
+        } else {
+            $ev = Event::find($eventId);
+            $this->matConcept = 'Cena de Navidad de empresa' . ($ev ? ' (' . $ev->name . ')' : '');
+        }
+        $this->matPaidBy = $paidBy;
+        $this->matCategory = $category;
+        $this->matPaymentMethod = str_contains(mb_strtolower($paidBy), 'efectivo') ? 'cash' : 'transfer';
+        $this->showMaterialModal = true;
+    }
+
+    /**
      * Cierra el modal de compra de material.
      *
      * @return void

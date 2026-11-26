@@ -1036,20 +1036,27 @@ class BillingReportService
         foreach ($materialRows as $mat) {
             $pBy = trim((string)($mat->paid_by ?: 'Fran'));
             $pByLower = mb_strtolower($pBy);
-            $isJoint = str_contains($pByLower, 'conjunt') || str_contains($pByLower, 'empresa') || str_contains($pByLower, 'comun') || str_contains($pByLower, 'común') || str_contains($pByLower, 'fondo');
+            $isJoint = str_contains($pByLower, 'conjunt') || str_contains($pByLower, 'empresa') || str_contains($pByLower, 'comun') || str_contains($pByLower, 'común') || str_contains($pByLower, 'fondo') || str_contains($pByLower, 'caja');
             $amt = (float)$mat->amount;
+
+            $isCena = ($mat->category === 'cena_empresa');
+            $isDieta = ($mat->category === 'team_dietas');
+            $typeLbl = $isCena ? 'Cena de Empresa' : ($isDieta ? 'Dietas / Comidas' : 'Gasto Empresa / Material');
+            $actorLbl = str_contains($pByLower, 'efectivo') || str_contains($pByLower, 'caja') 
+                ? 'Caja Efectivo → Gasto Común' 
+                : 'Cuenta Común → Proveedor';
 
             if ($isJoint) {
                 $jointDirectMaterial += $amt;
                 $jointAccountLedger[] = [
                     'date' => $mat->purchase_date ? Carbon::parse($mat->purchase_date) : null,
                     'type' => 'outflow',
-                    'type_label' => 'Compra Material',
-                    'category' => 'material_direct',
+                    'type_label' => $typeLbl,
+                    'category' => $mat->category ?: 'material_direct',
                     'concept' => $mat->concept . ($mat->supplier ? ' (' . $mat->supplier . ')' : ''),
                     'event_id' => $mat->event_id,
                     'event_name' => $mat->event?->name,
-                    'actor' => 'Cuenta Común → Proveedor',
+                    'actor' => $actorLbl,
                     'amount' => $amt,
                     'status' => 'confirmed',
                 ];
@@ -1059,7 +1066,7 @@ class BillingReportService
                     $jointAccountLedger[] = [
                         'date' => $mat->reimbursed_at ? Carbon::parse($mat->reimbursed_at) : ($mat->purchase_date ? Carbon::parse($mat->purchase_date) : null),
                         'type' => 'outflow',
-                        'type_label' => 'Reembolso Material',
+                        'type_label' => 'Reembolso a Socio (' . $typeLbl . ')',
                         'category' => 'partner_reimbursement',
                         'concept' => 'Reembolso a ' . $pBy . ' por: ' . $mat->concept,
                         'event_id' => $mat->event_id,
