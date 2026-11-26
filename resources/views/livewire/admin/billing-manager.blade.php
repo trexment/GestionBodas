@@ -1111,6 +1111,70 @@
                 </div>
             </div>
 
+            <!-- BARRA DE FILTROS: TEMPORADA/AÑO, ORDEN Y BÚSQUEDA -->
+            <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-3.5 shadow-xs flex flex-wrap items-center justify-between gap-3">
+                <div class="flex flex-wrap items-center gap-2.5">
+                    <!-- Selector de Temporada / Año -->
+                    <div class="flex flex-wrap items-center gap-1 bg-slate-100 dark:bg-slate-950 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-800 text-xs">
+                        <span class="text-[11px] font-black uppercase tracking-wider text-indigo-700 dark:text-indigo-400 pl-2 pr-1 flex items-center gap-1">
+                            <span>💍</span>
+                            <span>Año:</span>
+                        </span>
+                        <button
+                            type="button"
+                            wire:click="$set('season', 'all')"
+                            class="px-2.5 py-1 rounded-xl font-black transition cursor-pointer text-xs {{ $season === 'all' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800' }}"
+                        >
+                            🌍 Todos
+                        </button>
+                        @foreach($availableSeasons as $sy)
+                            <button
+                                type="button"
+                                wire:click="$set('season', '{{ $sy }}')"
+                                class="px-2.5 py-1 rounded-xl font-black transition cursor-pointer text-xs {{ (string)$season === (string)$sy ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800' }}"
+                            >
+                                {{ $sy }}
+                            </button>
+                        @endforeach
+                    </div>
+
+                    <!-- Selector de Orden Cronológico -->
+                    <div class="flex flex-wrap items-center gap-1 bg-slate-100 dark:bg-slate-950 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-800 text-xs">
+                        <span class="text-[11px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 pl-2 pr-1">
+                            Orden:
+                        </span>
+                        <button
+                            type="button"
+                            wire:click="$set('eventSortOrder', 'event_date_asc')"
+                            class="px-2.5 py-1 rounded-xl font-black transition cursor-pointer text-xs flex items-center gap-1 {{ ($eventSortOrder ?? 'event_date_asc') === 'event_date_asc' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800' }}"
+                            title="Cronológico: eventos más cercanos primero (Nov 2026 ➔ Dic 2026 ➔ 2027 ➔ 2028)"
+                        >
+                            <span>📅</span>
+                            <span>Cronológico (2026 ➔ 2028)</span>
+                        </button>
+                        <button
+                            type="button"
+                            wire:click="$set('eventSortOrder', 'event_date_desc')"
+                            class="px-2.5 py-1 rounded-xl font-black transition cursor-pointer text-xs flex items-center gap-1 {{ ($eventSortOrder ?? '') === 'event_date_desc' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800' }}"
+                            title="Más lejanos en el futuro primero (2028 ➔ 2027 ➔ 2026)"
+                        >
+                            <span>⏳</span>
+                            <span>Más Lejanos primero</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Buscador Rápido -->
+                <div class="w-full sm:w-64">
+                    <input
+                        type="text"
+                        wire:model.live.debounce.250ms="search"
+                        placeholder="🔍 Filtrar boda, cliente, fotomatón..."
+                        class="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-1.5 text-xs font-semibold text-slate-900 dark:text-white"
+                    >
+                </div>
+            </div>
+
             @if(in_array($expensesSubTab, ['all', 'providers'], true))
             <!-- SECCIÓN: RESERVAS Y PAGOS A PROVEEDOR (FOTOMATÓN Y PLATAFORMA 360º) -->
             <div class="space-y-4">

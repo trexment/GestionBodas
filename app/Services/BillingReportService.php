@@ -148,8 +148,10 @@ class BillingReportService
                 $location = mb_strtolower((string) ($event->location ?? ''));
                 $invNumbers = mb_strtolower($event->invoices->pluck('invoice_number')->implode(' '));
                 $invNotes = mb_strtolower($event->invoices->pluck('notes')->implode(' ') . ' ' . ($event->deposit_notes ?? ''));
+                $provName = mb_strtolower((string) ($prov['provider_name'] ?? ''));
+                $provService = mb_strtolower((string) ($prov['service_description'] ?? ''));
 
-                $haystack = "{$eventName} {$clientName} {$clientDni} {$partnerName} {$partnerDni} {$location} {$invNumbers} {$invNotes}";
+                $haystack = "{$eventName} {$clientName} {$clientDni} {$partnerName} {$partnerDni} {$location} {$invNumbers} {$invNotes} {$provName} {$provService}";
                 if (!str_contains($haystack, $search)) {
                     continue;
                 }
@@ -393,11 +395,27 @@ class BillingReportService
         $kpis['net_agreed_after_providers'] = round($kpis['total_agreed'] - $kpis['provider_cost_in_events'], 2);
         $kpis['net_collected_after_providers'] = round($kpis['total_collected'] - $kpis['provider_paid_in_events'], 2);
 
-        // Ordenar providerRows por fecha de evento ascendente (próximos primero) o más recientes
-        usort($providerRows, function ($a, $b) {
+        $sortOrder = $filters['event_sort_order'] ?? 'event_date_asc';
+
+        // Ordenar providerRows según criterio (por defecto: cronológico ascendente nov 2026 -> dic 2026 -> 2027)
+        usort($providerRows, function ($a, $b) use ($sortOrder) {
             $evA = $a['event']->event_date ? Carbon::parse($a['event']->event_date)->timestamp : 0;
             $evB = $b['event']->event_date ? Carbon::parse($b['event']->event_date)->timestamp : 0;
-            return $evB <=> $evA;
+
+            if ($sortOrder === 'event_date_desc') {
+                if ($evA !== $evB) {
+                    return $evB <=> $evA;
+                }
+                return ($b['event']->id ?? 0) <=> ($a['event']->id ?? 0);
+            }
+
+            // 'event_date_asc' (predeterminado): Del más cercano/antiguo al más lejano (Nov 2026 -> 2027 -> 2028...)
+            if ($evA !== $evB) {
+                if ($evA === 0) return 1;
+                if ($evB === 0) return -1;
+                return $evA <=> $evB;
+            }
+            return ($a['event']->id ?? 0) <=> ($b['event']->id ?? 0);
         });
 
         // Ordenar el Libro de Cobros por fecha de pago descendente
@@ -409,8 +427,6 @@ class BillingReportService
             }
             return $tsB <=> $tsA;
         });
-
-        $sortOrder = $filters['event_sort_order'] ?? 'event_date_asc';
 
         // Ordenar eventos según criterio (por defecto: cronológico ascendente nov 2026 -> dic 2026 -> 2027)
         usort($filteredEvents, function ($a, $b) use ($sortOrder, $dateBasis) {

@@ -46,7 +46,7 @@
             </div>
         </div>
 
-        <!-- FILTROS: BASE Y ORDEN CRONOLÓGICO -->
+        <!-- FILTROS: BASE, TEMPORADA/AÑO Y ORDEN CRONOLÓGICO -->
         <div class="pt-3 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
             <div class="flex flex-wrap items-center gap-3">
                 <!-- Selector de Base de Cálculo -->
@@ -72,6 +72,30 @@
                         <span>🌐</span>
                         <span>Todos con Cobros</span>
                     </button>
+                </div>
+
+                <!-- Selector de Temporada / Año -->
+                <div class="flex flex-wrap items-center gap-1 bg-slate-100 dark:bg-slate-950 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-800 text-xs">
+                    <span class="text-[11px] font-black uppercase tracking-wider text-indigo-700 dark:text-indigo-400 pl-2 pr-1 flex items-center gap-1">
+                        <span>💍</span>
+                        <span>Año:</span>
+                    </span>
+                    <button
+                        type="button"
+                        wire:click="$set('season', 'all')"
+                        class="px-2.5 py-1.5 rounded-xl font-black transition cursor-pointer flex items-center gap-1 {{ $season === 'all' ? 'bg-indigo-600 text-white shadow-xs ring-2 ring-indigo-400/40' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800' }}"
+                    >
+                        🌍 Todos
+                    </button>
+                    @foreach($availableSeasons as $sy)
+                        <button
+                            type="button"
+                            wire:click="$set('season', '{{ $sy }}')"
+                            class="px-2.5 py-1.5 rounded-xl font-black transition cursor-pointer flex items-center gap-1 {{ (string)$season === (string)$sy ? 'bg-indigo-600 text-white shadow-xs ring-2 ring-indigo-400/40' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800' }}"
+                        >
+                            {{ $sy }}
+                        </button>
+                    @endforeach
                 </div>
 
                 <!-- Selector de Orden Cronológico -->
