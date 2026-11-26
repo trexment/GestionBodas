@@ -19,7 +19,8 @@ class BillingManager extends Component
     // Filtros
     public string $season = 'all'; // 'all' | '2026' | '2027' | '2028' (Año de celebración del evento / Temporada)
     public string $year = 'all';
-    public string $dateBasis = 'payment_date'; // 'payment_date' | 'event_date'
+    public string $dateBasis = 'event_date'; // 'event_date' (por defecto) | 'payment_date'
+    public string $eventSortOrder = 'event_date_asc'; // 'event_date_asc' (Nov 2026 -> Dic 2026 -> 2027...) | 'event_date_desc'
     public string $quarter = 'all'; // 'all' | '1' | '2' | '3' | '4'
     public string $dateFrom = '';
     public string $dateTo = '';
@@ -1136,6 +1137,7 @@ class BillingManager extends Component
             'season' => $this->season,
             'year' => $this->year,
             'date_basis' => $this->dateBasis,
+            'event_sort_order' => $this->eventSortOrder,
             'quarter' => $this->quarter,
             'date_from' => $this->dateFrom,
             'date_to' => $this->dateTo,

@@ -50,6 +50,31 @@
                 </button>
             </div>
 
+            <!-- Selector de Orden Cronológico -->
+            <div class="flex flex-wrap items-center gap-1 bg-slate-100 dark:bg-slate-950 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-800 text-xs">
+                <span class="text-[11px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 pl-2 pr-1">
+                    Orden:
+                </span>
+                <button
+                    type="button"
+                    wire:click="$set('eventSortOrder', 'event_date_asc')"
+                    class="px-2.5 py-1.5 rounded-xl font-black transition cursor-pointer flex items-center gap-1.5 {{ ($eventSortOrder ?? 'event_date_asc') === 'event_date_asc' ? 'bg-indigo-600 text-white shadow-xs ring-2 ring-indigo-400/40' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800' }}"
+                    title="Cronológico: del más cercano/antiguo hacia el futuro (Nov 2026 ➔ Dic 2026 ➔ Enero 2027...)"
+                >
+                    <span>📅</span>
+                    <span>Cronológico (Nov 26 ➔ 2027)</span>
+                </button>
+                <button
+                    type="button"
+                    wire:click="$set('eventSortOrder', 'event_date_desc')"
+                    class="px-2.5 py-1.5 rounded-xl font-black transition cursor-pointer flex items-center gap-1 {{ ($eventSortOrder ?? '') === 'event_date_desc' ? 'bg-indigo-600 text-white shadow-xs ring-2 ring-indigo-400/40' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800' }}"
+                    title="Inverso: eventos más lejanos en el futuro primero"
+                >
+                    <span>⏳</span>
+                    <span>Más Lejanos primero</span>
+                </button>
+            </div>
+
             <!-- Botón Configurar Socios -->
             <button
                 type="button"

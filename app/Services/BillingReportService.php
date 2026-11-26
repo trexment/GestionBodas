@@ -42,8 +42,8 @@ class BillingReportService
         \App\Models\MaterialExpense::ensureTableExists();
 
         $events = Event::with(['client', 'quotes.items', 'invoices', 'providerBookings'])
-            ->orderByDesc('event_date')
-            ->orderByDesc('id')
+            ->orderBy('event_date', 'asc')
+            ->orderBy('id', 'asc')
             ->get();
 
         $filteredEvents = [];
@@ -410,18 +410,36 @@ class BillingReportService
             return $tsB <=> $tsA;
         });
 
-        // Ordenar eventos: primero los que tienen pagos más recientes o fecha de evento más próxima
-        usort($filteredEvents, function ($a, $b) use ($dateBasis) {
-            if ($dateBasis === 'payment_date') {
+        $sortOrder = $filters['event_sort_order'] ?? 'event_date_asc';
+
+        // Ordenar eventos según criterio (por defecto: cronológico ascendente nov 2026 -> dic 2026 -> 2027)
+        usort($filteredEvents, function ($a, $b) use ($sortOrder, $dateBasis) {
+            $evA = $a['event']->event_date ? Carbon::parse($a['event']->event_date)->timestamp : 0;
+            $evB = $b['event']->event_date ? Carbon::parse($b['event']->event_date)->timestamp : 0;
+
+            if ($sortOrder === 'event_date_desc') {
+                if ($evA !== $evB) {
+                    return $evB <=> $evA;
+                }
+                return ($b['event']->id ?? 0) <=> ($a['event']->id ?? 0);
+            }
+
+            if ($sortOrder === 'payment_date_desc') {
                 $dA = $a['fb']['last_payment_date'] ? Carbon::parse($a['fb']['last_payment_date'])->timestamp : 0;
                 $dB = $b['fb']['last_payment_date'] ? Carbon::parse($b['fb']['last_payment_date'])->timestamp : 0;
                 if ($dA !== $dB) {
                     return $dB <=> $dA;
                 }
+                return $evA <=> $evB;
             }
-            $evA = $a['event']->event_date ? Carbon::parse($a['event']->event_date)->timestamp : 0;
-            $evB = $b['event']->event_date ? Carbon::parse($b['event']->event_date)->timestamp : 0;
-            return $evB <=> $evA;
+
+            // 'event_date_asc' (predeterminado): Del más antiguo/cercano al más lejano (Nov 2026 -> Dic 2026 -> 2027...)
+            if ($evA !== $evB) {
+                if ($evA === 0) return 1;
+                if ($evB === 0) return -1;
+                return $evA <=> $evB;
+            }
+            return ($a['event']->id ?? 0) <=> ($b['event']->id ?? 0);
         });
 
         // 7. Carga y cálculo de Gastos y Compras de Material
