@@ -84,6 +84,24 @@ class MaterialExpense extends Model
                         \Illuminate\Support\Facades\DB::statement("ALTER TABLE `material_expenses` ADD `reimbursed_at` DATE NULL AFTER `is_reimbursed`");
                     }
                 }
+
+                // Limpieza de duplicado idéntico accidental en Larriba si existe
+                try {
+                    $dups = \Illuminate\Support\Facades\DB::table('material_expenses')
+                        ->where('amount', 450.00)
+                        ->where(function($q) {
+                            $q->where('concept', 'like', '%Larriba%')
+                              ->orWhere('supplier', 'like', '%Marketing%')
+                              ->orWhere('notes', 'like', '%marketing%');
+                        })
+                        ->orderBy('id', 'desc')
+                        ->get();
+                    if ($dups->count() > 1) {
+                        \Illuminate\Support\Facades\DB::table('material_expenses')->where('id', $dups->first()->id)->delete();
+                    }
+                } catch (\Throwable $ex) {
+                    // Silencioso
+                }
             }
         } catch (\Throwable $e) {
             // Silencioso si no hay permisos de DDL en este instante

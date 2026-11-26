@@ -1080,8 +1080,10 @@ class BillingManager extends Component
     {
         $mat = \App\Models\MaterialExpense::find($id);
         if ($mat) {
+            $concept = $mat->concept;
             $mat->delete();
-            session()->flash('message', "Gasto de material eliminado.");
+            $this->closeMaterialModal();
+            session()->flash('message', "🗑️ Gasto '{$concept}' eliminado correctamente.");
         }
     }
 

@@ -175,11 +175,28 @@
     </div>
 
     <x-slot:footer>
-        <x-ui.button type="button" wire:click="closeMaterialModal" variant="secondary" size="sm">
-            Cancelar
-        </x-ui.button>
-        <x-ui.button type="button" wire:click="saveMaterialExpense" variant="amber" size="sm" icon="💾">
-            Guardar Gasto / Compra
-        </x-ui.button>
+        <div class="flex items-center justify-between w-full">
+            <div>
+                @if($materialExpenseId)
+                    <button
+                        type="button"
+                        wire:click="deleteMaterialExpense({{ $materialExpenseId }})"
+                        wire:confirm="¿Seguro que deseas eliminar este gasto de material?"
+                        class="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/50 dark:hover:bg-rose-900/50 dark:text-rose-300 border border-rose-200 dark:border-rose-800 text-xs font-bold transition cursor-pointer"
+                    >
+                        <span>🗑️</span>
+                        <span>Eliminar</span>
+                    </button>
+                @endif
+            </div>
+            <div class="flex items-center gap-2">
+                <x-ui.button type="button" wire:click="closeMaterialModal" variant="secondary" size="sm">
+                    Cancelar
+                </x-ui.button>
+                <x-ui.button type="button" wire:click="saveMaterialExpense" variant="amber" size="sm" icon="💾">
+                    Guardar Gasto / Compra
+                </x-ui.button>
+            </div>
+        </div>
     </x-slot:footer>
 </x-ui.modal>

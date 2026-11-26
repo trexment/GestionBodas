@@ -323,12 +323,31 @@
                                         <span>-{{ number_format($sett['material_cost'] ?? 0, 2, ',', '.') }} €</span>
                                     </div>
                                     @foreach($sett['material_items'] ?? [] as $mItem)
-                                        <div class="text-[10px] flex items-center justify-between text-slate-500 dark:text-slate-400">
-                                            <span class="truncate max-w-[190px]">
+                                        <div class="text-[10px] flex items-center justify-between text-slate-600 dark:text-slate-300 gap-1.5 py-0.5">
+                                            <span class="truncate max-w-[170px]" title="{{ $mItem->concept }}">
                                                 {{ $mItem->category === 'cena_empresa' ? '🥂' : ($mItem->category === 'team_dietas' ? '🍽️' : '📦') }}
                                                 {{ $mItem->concept }}
                                             </span>
-                                            <span class="font-bold">-{{ number_format($mItem->amount, 2, ',', '.') }}€ ({{ $mItem->paid_by }})</span>
+                                            <div class="flex items-center gap-1.5 shrink-0">
+                                                <span class="font-bold text-amber-700 dark:text-amber-400">-{{ number_format($mItem->amount, 2, ',', '.') }}€</span>
+                                                <button
+                                                    type="button"
+                                                    wire:click="openMaterialModal({{ $mItem->id }})"
+                                                    class="text-[10px] text-amber-700 dark:text-amber-400 hover:text-amber-600 font-bold cursor-pointer p-0.5"
+                                                    title="Editar este gasto"
+                                                >
+                                                    ✏️
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    wire:click="deleteMaterialExpense({{ $mItem->id }})"
+                                                    wire:confirm="¿Seguro que deseas eliminar este gasto de {{ number_format($mItem->amount, 2, ',', '.') }} €?"
+                                                    class="text-[10px] text-rose-500 hover:text-rose-700 font-bold cursor-pointer p-0.5"
+                                                    title="Eliminar este gasto"
+                                                >
+                                                    🗑️
+                                                </button>
+                                            </div>
                                         </div>
                                     @endforeach
                                 </div>
