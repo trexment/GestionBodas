@@ -481,10 +481,19 @@ class Quote extends Model
     }
 
     /**
-     * Indica si la propuesta ya ha caducado
+     * Indica si la propuesta ya ha caducado.
+     * Una propuesta aceptada (o rechazada) NUNCA se considera caducada.
      */
     public function getIsExpiredAttribute(): bool
     {
+        if ($this->status !== 'pending') {
+            return false;
+        }
+
+        if (empty($this->expires_at)) {
+            return false;
+        }
+
         return now()->greaterThan($this->expires_at);
     }
 

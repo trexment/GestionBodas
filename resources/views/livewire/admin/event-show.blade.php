@@ -7081,11 +7081,13 @@
                                                         @endif
                                                     </div>
 
-                                                    @if($quote->is_expired)
+                                                    @if($quote->status === 'accepted')
+                                                        {{-- Presupuesto aceptado: no mostrar badge de caducidad --}}
+                                                    @elseif($quote->is_expired)
                                                         <span class="text-[10px] bg-rose-100 text-rose-800 border border-rose-300 font-bold px-2 py-0.5 rounded-full flex items-center gap-1" title="Caducó el {{ $quote->expires_at_formatted }}">
                                                             ⚠️ Caducada ({{ $quote->expires_at ? $quote->expires_at->format('d/m/Y') : '' }})
                                                         </span>
-                                                    @else
+                                                    @elseif($quote->expires_at)
                                                         <span class="text-[10px] bg-amber-100 text-amber-800 border border-amber-300 font-bold px-2 py-0.5 rounded-full flex items-center gap-1" title="Válida hasta el {{ $quote->expires_at_formatted }}">
                                                             ⏳ Válida hasta {{ $quote->expires_at ? $quote->expires_at->format('d/m/Y') : '' }}
                                                         </span>
