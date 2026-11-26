@@ -24,6 +24,8 @@ class MaterialExpense extends Model
         'amount',
         'purchase_date',
         'paid_by',
+        'is_reimbursed',
+        'reimbursed_at',
         'payment_method',
         'supplier',
         'invoice_number',
@@ -34,6 +36,8 @@ class MaterialExpense extends Model
     protected $casts = [
         'amount' => 'decimal:2',
         'purchase_date' => 'date',
+        'is_reimbursed' => 'boolean',
+        'reimbursed_at' => 'date',
     ];
 
     protected static bool $schemaChecked = false;
@@ -59,6 +63,8 @@ class MaterialExpense extends Model
                     $table->decimal('amount', 10, 2)->default(0);
                     $table->date('purchase_date');
                     $table->string('paid_by', 100)->default('Fran');
+                    $table->boolean('is_reimbursed')->default(false);
+                    $table->date('reimbursed_at')->nullable();
                     $table->string('payment_method', 50)->default('card');
                     $table->string('supplier', 150)->nullable();
                     $table->string('invoice_number', 100)->nullable();
@@ -66,10 +72,28 @@ class MaterialExpense extends Model
                     $table->text('notes')->nullable();
                     $table->timestamps();
                 });
+            } else {
+                if (!Schema::hasColumn('material_expenses', 'is_reimbursed')) {
+                    try {
+                        Schema::table('material_expenses', function (Blueprint $table) {
+                            $table->boolean('is_reimbursed')->default(false)->after('paid_by');
+                            $table->date('reimbursed_at')->nullable()->after('is_reimbursed');
+                        });
+                    } catch (\Throwable $ex) {
+                        \Illuminate\Support\Facades\DB::statement("ALTER TABLE `material_expenses` ADD `is_reimbursed` TINYINT(1) NOT NULL DEFAULT 0 AFTER `paid_by`");
+                        \Illuminate\Support\Facades\DB::statement("ALTER TABLE `material_expenses` ADD `reimbursed_at` DATE NULL AFTER `is_reimbursed`");
+                    }
+                }
             }
         } catch (\Throwable $e) {
             // Silencioso si no hay permisos de DDL en este instante
         }
+    }
+
+    protected static function boot()
+    {
+        parent::boot();
+        static::ensureTableExists();
     }
 
     /**

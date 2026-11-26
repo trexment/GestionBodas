@@ -27,6 +27,8 @@ class Invoice extends Model
         'notes',
         'payment_method',
         'collected_by',
+        'transferred_to_joint',
+        'transferred_at',
     ];
 
     protected static bool $schemaChecked = false;
@@ -42,13 +44,26 @@ class Invoice extends Model
         static::$schemaChecked = true;
 
         try {
-            if (\Illuminate\Support\Facades\Schema::hasTable('invoices') && !\Illuminate\Support\Facades\Schema::hasColumn('invoices', 'collected_by')) {
-                try {
-                    \Illuminate\Support\Facades\Schema::table('invoices', function (\Illuminate\Database\Schema\Blueprint $table) {
-                        $table->string('collected_by', 100)->nullable()->default('Fran')->after('payment_method');
-                    });
-                } catch (\Throwable $ex) {
-                    \Illuminate\Support\Facades\DB::statement("ALTER TABLE `invoices` ADD `collected_by` VARCHAR(100) NULL DEFAULT 'Fran' AFTER `payment_method`");
+            if (\Illuminate\Support\Facades\Schema::hasTable('invoices')) {
+                if (!\Illuminate\Support\Facades\Schema::hasColumn('invoices', 'collected_by')) {
+                    try {
+                        \Illuminate\Support\Facades\Schema::table('invoices', function (\Illuminate\Database\Schema\Blueprint $table) {
+                            $table->string('collected_by', 100)->nullable()->default('Fran')->after('payment_method');
+                        });
+                    } catch (\Throwable $ex) {
+                        \Illuminate\Support\Facades\DB::statement("ALTER TABLE `invoices` ADD `collected_by` VARCHAR(100) NULL DEFAULT 'Fran' AFTER `payment_method`");
+                    }
+                }
+                if (!\Illuminate\Support\Facades\Schema::hasColumn('invoices', 'transferred_to_joint')) {
+                    try {
+                        \Illuminate\Support\Facades\Schema::table('invoices', function (\Illuminate\Database\Schema\Blueprint $table) {
+                            $table->boolean('transferred_to_joint')->default(false)->after('collected_by');
+                            $table->date('transferred_at')->nullable()->after('transferred_to_joint');
+                        });
+                    } catch (\Throwable $ex) {
+                        \Illuminate\Support\Facades\DB::statement("ALTER TABLE `invoices` ADD `transferred_to_joint` TINYINT(1) NOT NULL DEFAULT 0 AFTER `collected_by`");
+                        \Illuminate\Support\Facades\DB::statement("ALTER TABLE `invoices` ADD `transferred_at` DATE NULL AFTER `transferred_to_joint`");
+                    }
                 }
             }
         } catch (\Throwable $e) {}
@@ -62,6 +77,8 @@ class Invoice extends Model
 
     protected $casts = [
         'issue_date' => 'date',
+        'transferred_at' => 'date',
+        'transferred_to_joint' => 'boolean',
         'amount' => 'decimal:2',
         'tax' => 'decimal:2',
         'tax_rate' => 'decimal:2',

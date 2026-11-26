@@ -362,10 +362,24 @@
                         <span class="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-300 dark:border-emerald-800 px-3 py-1.5 rounded-xl shadow-2xs">
                             <span>{{ $event->deposit_method_icon }}</span>
                             <span>Señal: <strong>{{ number_format($event->deposit_paid_amount, 2, ',', '.') }} €</strong></span>
+                            <span class="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">({{ $event->deposit_collected_by ?: 'Fran' }})</span>
                             <button type="button" wire:click="openDepositModal('confirmed')" class="text-[11px] text-emerald-700 dark:text-emerald-400 hover:underline font-bold ml-1 cursor-pointer" title="Modificar señal">
                                 ✏️
                             </button>
                         </span>
+                        <!-- Botón 1-clic para Traspaso a Cuenta Común -->
+                        <button
+                            type="button"
+                            wire:click="toggleDepositTransferredToJoint"
+                            class="inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1.5 rounded-xl transition cursor-pointer border shadow-2xs hover:scale-[1.02] {{ $event->deposit_transferred_to_joint ? 'bg-teal-50 dark:bg-teal-950/60 text-teal-800 dark:text-teal-300 border-teal-300 dark:border-teal-700' : 'bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-700' }}"
+                            title="{{ $event->deposit_transferred_to_joint ? 'Pulsar para marcar como pendiente de transferir a común' : 'Pulsar para marcar que ya se transfirió a la Cuenta Conjunta' }}"
+                        >
+                            @if($event->deposit_transferred_to_joint)
+                                <span>🏦 ✅ En Cuenta Común</span>
+                            @else
+                                <span>🏦 ⏳ En mano (Pulsar si pasó a Común)</span>
+                            @endif
+                        </button>
                         @if($quoteAmount > 0)
                             @php
                                 $realRemaining = max(0, $quoteAmount - (float)($event->deposit_paid_amount ?? 0));
@@ -2592,9 +2606,30 @@
                                                         <span class="text-[11px] font-black uppercase tracking-wider text-slate-800 dark:text-white">
                                                             Reserva a Proveedor ({{ $evProvSummary['provider_name'] }}): {{ $evProvSummary['service_description'] }}
                                                         </span>
-                                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-black {{ $evProvSummary['paid_by'] === 'Fran' ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/60 dark:text-indigo-200' : ($evProvSummary['paid_by'] === 'Miguel' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/60 dark:text-purple-200' : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-200') }}">
-                                                            👤 Pagado por: {{ $evProvSummary['paid_by'] }}
-                                                        </span>
+                                                        <button
+                                                            type="button"
+                                                            wire:click="openProviderBookingModal('deposit')"
+                                                            class="px-2 py-0.5 rounded-full text-[10px] font-black transition cursor-pointer hover:opacity-85 inline-flex items-center gap-1 {{ $evProvSummary['paid_by'] === 'Fran' ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/60 dark:text-indigo-200' : ($evProvSummary['paid_by'] === 'Miguel' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/60 dark:text-purple-200' : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-200') }}"
+                                                            title="Pulsar para cambiar quién pagó este gasto o editar el proveedor"
+                                                        >
+                                                            <span>👤 Pagado por: <strong>{{ $evProvSummary['paid_by'] }}</strong></span>
+                                                            <span>✏️</span>
+                                                        </button>
+
+                                                        @if(!empty($evProvSummary['is_partner_pocket']))
+                                                            <button
+                                                                type="button"
+                                                                wire:click="toggleProviderReimbursed"
+                                                                class="px-2 py-0.5 rounded-full text-[10px] font-black transition cursor-pointer hover:scale-105 inline-flex items-center gap-1 border {{ !empty($evProvSummary['is_reimbursed']) ? 'bg-emerald-50 text-emerald-800 border-emerald-300 dark:bg-emerald-950/70 dark:text-emerald-300 dark:border-emerald-700' : 'bg-amber-50 text-amber-800 border-amber-300 dark:bg-amber-950/70 dark:text-amber-300 dark:border-amber-700' }}"
+                                                                title="Pulsar para alternar si la cuenta común ya devolvió/reembolsó este dinero a {{ $evProvSummary['paid_by'] }}"
+                                                            >
+                                                                @if(!empty($evProvSummary['is_reimbursed']))
+                                                                    <span>✅ Reembolsado de Común</span>
+                                                                @else
+                                                                    <span>⏳ Pendiente Retorno a {{ $evProvSummary['paid_by'] }}</span>
+                                                                @endif
+                                                            </button>
+                                                        @endif
                                                     </div>
                                                     <div class="flex flex-wrap items-center gap-1.5">
                                                         <button
@@ -2610,7 +2645,7 @@
                                                             wire:click="openProviderBookingModal('deposit')"
                                                             class="px-2.5 py-1 rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-[10px] font-bold transition cursor-pointer shadow-2xs"
                                                         >
-                                                            {{ $evProvSummary['deposit_paid'] ? '✏️ Editar Pagos' : '+ Anotar Señal' }}
+                                                            {{ ($evProvSummary['deposit_paid'] || $evProvSummary['final_paid'] || ($evProvSummary['total_paid'] ?? 0) > 0) ? '✏️ Editar Pagos / Gasto' : '+ Anotar Señal' }}
                                                         </button>
                                                         @if($evProvSummary['deposit_paid'] && $evProvSummary['pending_amount'] > 0)
                                                             <button
@@ -9546,6 +9581,18 @@
                     <p class="text-[10px] text-slate-400 mt-1">
                         * Si un socio pagó al proveedor de su bolsillo (ej. factura de Artístamente), se le reembolsa íntegramente en el arqueo de socios.
                     </p>
+
+                    @if($prov_paid_by !== 'Caja Común / Empresa')
+                        <div class="mt-2.5 p-2.5 rounded-xl border {{ $prov_is_reimbursed ? 'bg-emerald-50/80 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-700' : 'bg-amber-50/80 dark:bg-amber-950/40 border-amber-300 dark:border-amber-700' }} flex items-center justify-between">
+                            <label class="flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-slate-200 cursor-pointer">
+                                <input type="checkbox" wire:model.live="prov_is_reimbursed" class="rounded border-slate-300 text-emerald-600">
+                                <span>¿La cuenta común ya reembolsó este dinero a <strong>{{ $prov_paid_by }}</strong>?</span>
+                            </label>
+                            <span class="text-[10px] font-black {{ $prov_is_reimbursed ? 'text-emerald-700 dark:text-emerald-300' : 'text-amber-700 dark:text-amber-300' }}">
+                                {{ $prov_is_reimbursed ? '✅ Reembolsado' : '⏳ Pendiente de retorno' }}
+                            </span>
+                        </div>
+                    @endif
                 </div>
 
                 <!-- 1º Pago: Señal -->

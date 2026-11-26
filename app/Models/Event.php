@@ -40,6 +40,11 @@ class Event extends Model
         'deposit_paid_amount',
         'deposit_payment_method',
         'deposit_collected_by',
+        'deposit_transferred_to_joint',
+        'deposit_transferred_at',
+        'settlement_status',
+        'settlement_paid_at',
+        'settlement_notes',
         'deposit_paid_at',
         'deposit_notes',
         'token',
@@ -65,6 +70,9 @@ class Event extends Model
         'no_response_at' => 'datetime',
         'dance_duration_hours' => 'decimal:1',
         'deposit_paid' => 'boolean',
+        'deposit_transferred_to_joint' => 'boolean',
+        'deposit_transferred_at' => 'date',
+        'settlement_paid_at' => 'date',
         'deposit_paid_amount' => 'decimal:2',
         'deposit_paid_at' => 'date',
         'photo_qr_created_at' => 'datetime',
@@ -202,6 +210,20 @@ class Event extends Model
                         });
                     } catch (\Throwable $ex) {
                         \Illuminate\Support\Facades\DB::statement("ALTER TABLE `events` ADD `deposit_collected_by` VARCHAR(100) NULL DEFAULT 'Fran' AFTER `deposit_payment_method`");
+                    }
+                }
+
+                if (!\Illuminate\Support\Facades\Schema::hasColumn('events', 'deposit_transferred_to_joint')) {
+                    try {
+                        \Illuminate\Support\Facades\Schema::table('events', function (\Illuminate\Database\Schema\Blueprint $table) {
+                            $table->boolean('deposit_transferred_to_joint')->default(false)->after('deposit_collected_by');
+                            $table->date('deposit_transferred_at')->nullable()->after('deposit_transferred_to_joint');
+                            $table->string('settlement_status', 30)->default('pending')->after('deposit_transferred_at');
+                            $table->date('settlement_paid_at')->nullable()->after('settlement_status');
+                            $table->text('settlement_notes')->nullable()->after('settlement_paid_at');
+                        });
+                    } catch (\Throwable $ex) {
+                        // Tolerar si ya se creó en migración
                     }
                 }
             }
@@ -795,6 +817,9 @@ class Event extends Model
             'status' => $status,
             'status_label' => $statusLabel,
             'paid_by' => $primaryPaidBy,
+            'is_reimbursed' => $primaryBooking ? (bool) ($primaryBooking->is_reimbursed ?? false) : false,
+            'reimbursed_at' => $primaryBooking?->reimbursed_at,
+            'is_partner_pocket' => !in_array(mb_strtolower(trim($primaryPaidBy)), ['caja común / empresa', 'caja comun / empresa', 'cuenta conjunta / fondo común', 'fondo común', 'fondo comun', 'empresa'], true),
             'has_refund' => $hasRefund,
             'refund_amount' => $totalRefund,
             'net_cost' => $netCost,
@@ -1242,6 +1267,10 @@ class Event extends Model
         }
 
         // Lista de pagos individuales de este evento (para el Libro de Ingresos)
+        $isDepositTransferred = (bool) ($this->deposit_transferred_to_joint ?? false);
+        $depositTransferredAt = !empty($this->deposit_transferred_at) ? \Carbon\Carbon::parse($this->deposit_transferred_at) : null;
+        $effectiveDepositHolder = $isDepositTransferred ? 'Cuenta Conjunta / Fondo Común' : $depositCollectedBy;
+
         $paymentsList = [];
         if ($depositPaid && $depositAmount > 0) {
             $paymentsList[] = [
@@ -1260,6 +1289,9 @@ class Event extends Model
                 'method_icon' => $depositMethodIcon,
                 'status' => 'paid',
                 'collected_by' => $depositCollectedBy,
+                'transferred_to_joint' => $isDepositTransferred,
+                'transferred_at' => $depositTransferredAt,
+                'effective_holder' => $effectiveDepositHolder,
                 'notes' => $this->deposit_notes ?: ($signalInvoice?->notes ?? 'Señal de reserva registrada en el evento'),
             ];
         }
@@ -1269,6 +1301,11 @@ class Event extends Model
                 continue; // Ya incluido arriba como señal con todos sus metadatos
             }
             $pm = $inv->effective_payment_method ?: ($this->deposit_payment_method ?: 'other');
+            $isInvTransferred = (bool) ($inv->transferred_to_joint ?? false);
+            $invTransferredAt = !empty($inv->transferred_at) ? \Carbon\Carbon::parse($inv->transferred_at) : null;
+            $invCollectedBy = $inv->collected_by ?: ($this->deposit_collected_by ?: 'Fran');
+            $effectiveInvHolder = $isInvTransferred ? 'Cuenta Conjunta / Fondo Común' : $invCollectedBy;
+
             $paymentsList[] = [
                 'event_id' => $this->id,
                 'invoice_id' => $inv->id,
@@ -1284,7 +1321,10 @@ class Event extends Model
                 'method_label' => $inv->payment_method_label,
                 'method_icon' => $inv->payment_method_icon,
                 'status' => $inv->status,
-                'collected_by' => $inv->collected_by ?: ($this->deposit_collected_by ?: 'Fran'),
+                'collected_by' => $invCollectedBy,
+                'transferred_to_joint' => $isInvTransferred,
+                'transferred_at' => $invTransferredAt,
+                'effective_holder' => $effectiveInvHolder,
                 'notes' => $inv->notes,
             ];
         }
@@ -1315,6 +1355,12 @@ class Event extends Model
             'deposit_method_label' => $depositMethodLabel,
             'deposit_method_icon' => $depositMethodIcon,
             'deposit_collected_by' => $depositCollectedBy,
+            'deposit_transferred_to_joint' => $isDepositTransferred,
+            'deposit_transferred_at' => $depositTransferredAt,
+            'effective_deposit_holder' => $effectiveDepositHolder,
+            'settlement_status' => $this->settlement_status ?: 'pending',
+            'settlement_paid_at' => !empty($this->settlement_paid_at) ? \Carbon\Carbon::parse($this->settlement_paid_at) : null,
+            'settlement_notes' => $this->settlement_notes ?: null,
             'signal_invoice' => $signalInvoice,
             'final_paid_amount' => $finalPaidAmount,
             'final_paid_date' => $finalPaidDate,

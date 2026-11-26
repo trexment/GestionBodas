@@ -255,9 +255,19 @@
                                         <span>-{{ number_format($sett['provider_net_cost'] ?? 0, 2, ',', '.') }} €</span>
                                     </div>
                                     @if($sett['provider_paid'] > 0)
-                                        <p class="text-[10px] text-slate-400">
-                                            Adelantado por: <strong>{{ $sett['provider_paid_by'] ?: 'Fran' }}</strong>
-                                        </p>
+                                        <div class="flex items-center justify-between text-[10px] text-slate-400">
+                                            <span>Adelantado por: <strong>{{ $sett['provider_paid_by'] ?: 'Fran' }}</strong></span>
+                                            @if(!empty($sett['provider_is_partner_pocket']) && !empty($sett['provider_booking_id']))
+                                                <button
+                                                    type="button"
+                                                    wire:click="toggleProviderReimbursed({{ $sett['provider_booking_id'] }})"
+                                                    class="px-1.5 py-0.5 rounded text-[9px] font-black transition cursor-pointer border {{ !empty($sett['provider_is_reimbursed']) ? 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300' : 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950 dark:text-amber-300' }}"
+                                                    title="Pulsar para alternar si este gasto adelantado ya fue retornado por la cuenta común"
+                                                >
+                                                    {{ !empty($sett['provider_is_reimbursed']) ? '✅ Reembolsado' : '⏳ Pendiente Retorno' }}
+                                                </button>
+                                            @endif
+                                        </div>
                                     @endif
                                 </div>
                             @endif
@@ -322,12 +332,35 @@
                                             <span class="text-sm">{{ $isJoint ? '🏢' : '👤' }}</span>
                                             <div>
                                                 <strong class="text-xs font-bold block">{{ $collectorName }}</strong>
-                                                <span class="text-[10px] opacity-75">Cobrado en mano</span>
+                                                <span class="text-[10px] opacity-75">
+                                                    {{ $isJoint ? 'En Cuenta Bancaria Común' : 'Cobrado en mano / personal' }}
+                                                </span>
                                             </div>
                                         </div>
-                                        <span class="text-sm font-black">
-                                            {{ number_format($amountCollected, 2, ',', '.') }} €
-                                        </span>
+                                        <div class="text-right">
+                                            <span class="text-sm font-black block">
+                                                {{ number_format($amountCollected, 2, ',', '.') }} €
+                                            </span>
+                                            @if(!$isJoint)
+                                                <button
+                                                    type="button"
+                                                    wire:click="toggleDepositTransferredToJoint({{ $ev->id }})"
+                                                    class="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-amber-200 dark:bg-amber-900/60 text-amber-900 dark:text-amber-200 hover:bg-amber-300 transition cursor-pointer mt-0.5 inline-block shadow-2xs"
+                                                    title="Pulsar si este dinero ya se transfirió a la cuenta común"
+                                                >
+                                                    🏦 Traspasado a Común
+                                                </button>
+                                            @elseif(!empty($sett['deposit_transferred_to_joint']))
+                                                <button
+                                                    type="button"
+                                                    wire:click="toggleDepositTransferredToJoint({{ $ev->id }})"
+                                                    class="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-teal-200 dark:bg-teal-900/60 text-teal-900 dark:text-teal-200 hover:bg-teal-300 transition cursor-pointer mt-0.5 inline-block"
+                                                    title="Traspasado el {{ $sett['deposit_transferred_at'] ?? 'recientemente' }}. Pulsar para revertir."
+                                                >
+                                                    ✅ Traspasado (Deshacer)
+                                                </button>
+                                            @endif
+                                        </div>
                                     </div>
                                 @endforeach
                             @endif
@@ -365,9 +398,30 @@
 
                     <!-- COLUMNA 3: REPARTO DEL EVENTO ENTRE SOCIOS (4 COLS) -->
                     <div class="lg:col-span-4 space-y-3 bg-slate-50 dark:bg-slate-950/60 p-4 rounded-2xl border border-slate-200 dark:border-slate-800">
-                        <span class="text-[10px] font-black uppercase tracking-wider text-slate-400 block">
-                            ⚖️ 3. Reparto de este Evento
-                        </span>
+                        <div class="flex items-center justify-between gap-1 flex-wrap">
+                            <span class="text-[10px] font-black uppercase tracking-wider text-slate-400 block">
+                                ⚖️ 3. Reparto de este Evento
+                            </span>
+                            @if(($sett['settlement_status'] ?? 'pending') === 'settled')
+                                <button
+                                    type="button"
+                                    wire:click="unsettleEventPartners({{ $ev->id }})"
+                                    class="text-[9px] font-black px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 cursor-pointer hover:opacity-80"
+                                    title="Pulsar para revertir liquidación a pendiente"
+                                >
+                                    ✅ Liquidado a Socios ({{ $sett['settlement_paid_at'] ?? 'Registrado' }}) ↩️
+                                </button>
+                            @else
+                                <button
+                                    type="button"
+                                    wire:click="settleEventPartners({{ $ev->id }})"
+                                    class="text-[9px] font-black px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-700 cursor-pointer hover:scale-105 transition shadow-2xs"
+                                    title="Marcar que el reparto de este evento ya se pagó y liquidó a los socios"
+                                >
+                                    💸 Marcar Liquidado a Socios
+                                </button>
+                            @endif
+                        </div>
 
                         @if($isFondo)
                             <div class="p-3.5 rounded-2xl bg-teal-500/10 border-2 border-teal-500 text-teal-900 dark:text-teal-200 space-y-1.5">

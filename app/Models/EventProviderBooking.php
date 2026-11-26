@@ -32,6 +32,8 @@ class EventProviderBooking extends Model
         'final_paid_at',
         'final_payment_method',
         'paid_by',
+        'is_reimbursed',
+        'reimbursed_at',
         'has_refund',
         'refund_amount',
         'refund_recipient',
@@ -55,6 +57,8 @@ class EventProviderBooking extends Model
         'final_paid' => 'boolean',
         'final_amount' => 'decimal:2',
         'final_paid_at' => 'date',
+        'is_reimbursed' => 'boolean',
+        'reimbursed_at' => 'date',
         'has_refund' => 'boolean',
         'refund_amount' => 'decimal:2',
         'refund_fran_amount' => 'decimal:2',
@@ -124,6 +128,17 @@ class EventProviderBooking extends Model
                         \Illuminate\Support\Facades\DB::statement("ALTER TABLE `event_provider_bookings` ADD `invoice_number` VARCHAR(100) NULL AFTER `settlement_number`");
                     } catch (\Throwable $ex) {
                         // Silencioso
+                    }
+                }
+                if (!Schema::hasColumn('event_provider_bookings', 'is_reimbursed')) {
+                    try {
+                        Schema::table('event_provider_bookings', function (Blueprint $table) {
+                            $table->boolean('is_reimbursed')->default(false)->after('paid_by');
+                            $table->date('reimbursed_at')->nullable()->after('is_reimbursed');
+                        });
+                    } catch (\Throwable $ex) {
+                        \Illuminate\Support\Facades\DB::statement("ALTER TABLE `event_provider_bookings` ADD `is_reimbursed` TINYINT(1) NOT NULL DEFAULT 0 AFTER `paid_by`");
+                        \Illuminate\Support\Facades\DB::statement("ALTER TABLE `event_provider_bookings` ADD `reimbursed_at` DATE NULL AFTER `is_reimbursed`");
                     }
                 }
             }

@@ -1134,6 +1134,140 @@ class BillingManager extends Component
     }
 
     /**
+     * Alterna en 1 clic si una señal o pago recibido inicialmente por un socio ya fue traspasado a la cuenta común.
+     */
+    public function toggleDepositTransferredToJoint(int $eventId): void
+    {
+        $event = Event::with('invoices')->find($eventId);
+        if (!$event) return;
+
+        \App\Models\Event::ensureTokenColumnsExist();
+        \App\Models\Invoice::ensureColumnsExist();
+
+        $newVal = !((bool) ($event->deposit_transferred_to_joint ?? false));
+        $dateVal = $newVal ? now()->format('Y-m-d') : null;
+
+        $event->update([
+            'deposit_transferred_to_joint' => $newVal,
+            'deposit_transferred_at' => $dateVal,
+        ]);
+
+        $signalInv = $event->invoices->first(function ($inv) {
+            $n = mb_strtolower((string) ($inv->notes ?? ''));
+            return str_contains($n, 'señal') || str_contains($n, 'senal') || str_contains($n, 'reserva');
+        });
+        if ($signalInv && \Illuminate\Support\Facades\Schema::hasColumn('invoices', 'transferred_to_joint')) {
+            $signalInv->update([
+                'transferred_to_joint' => $newVal,
+                'transferred_at' => $dateVal,
+            ]);
+        }
+
+        session()->flash('message', $newVal
+            ? "🏦 Señal de '{$event->name}' marcada como TRASPASADA a la Cuenta Común."
+            : "ℹ️ Señal de '{$event->name}' marcada como en mano del socio (pendiente traspaso)."
+        );
+    }
+
+    /**
+     * Alterna si un recibo o factura cobrada fue traspasada a la cuenta común.
+     */
+    public function toggleInvoiceTransferredToJoint(int $invoiceId): void
+    {
+        $inv = Invoice::find($invoiceId);
+        if (!$inv) return;
+
+        \App\Models\Invoice::ensureColumnsExist();
+        $newVal = !((bool) ($inv->transferred_to_joint ?? false));
+        $inv->update([
+            'transferred_to_joint' => $newVal,
+            'transferred_at' => $newVal ? now()->format('Y-m-d') : null,
+        ]);
+
+        session()->flash('message', $newVal
+            ? "🏦 Cobro '{$inv->invoice_number}' marcado como TRASPASADO a la Cuenta Común."
+            : "ℹ️ Cobro '{$inv->invoice_number}' marcado como pendiente de traspasar."
+        );
+    }
+
+    /**
+     * Alterna en 1 clic si una compra de material adelantada por un socio ya fue reembolsada desde la cuenta común.
+     */
+    public function toggleMaterialReimbursed(int $expenseId): void
+    {
+        \App\Models\MaterialExpense::ensureTableExists();
+        $expense = \App\Models\MaterialExpense::find($expenseId);
+        if (!$expense) return;
+
+        $newVal = !((bool) ($expense->is_reimbursed ?? false));
+        $expense->update([
+            'is_reimbursed' => $newVal,
+            'reimbursed_at' => $newVal ? now()->format('Y-m-d') : null,
+        ]);
+
+        session()->flash('message', $newVal
+            ? "✅ Gasto de material '{$expense->concept}' marcado como REEMBOLSADO a {$expense->paid_by}."
+            : "⏳ Gasto de material '{$expense->concept}' marcado como PENDIENTE de retorno a {$expense->paid_by}."
+        );
+    }
+
+    /**
+     * Alterna en 1 clic si un pago a proveedor adelantado por un socio (ej. Artístamente) ya fue reembolsado desde la cuenta común.
+     */
+    public function toggleProviderReimbursed(int $bookingId): void
+    {
+        \App\Models\EventProviderBooking::ensureTableExists();
+        $booking = \App\Models\EventProviderBooking::find($bookingId);
+        if (!$booking) return;
+
+        $newVal = !((bool) ($booking->is_reimbursed ?? false));
+        $booking->update([
+            'is_reimbursed' => $newVal,
+            'reimbursed_at' => $newVal ? now()->format('Y-m-d') : null,
+        ]);
+
+        session()->flash('message', $newVal
+            ? "✅ Pago a proveedor '{$booking->provider_name}' marcado como REEMBOLSADO a {$booking->paid_by}."
+            : "⏳ Pago a proveedor '{$booking->provider_name}' marcado como PENDIENTE de retorno a {$booking->paid_by}."
+        );
+    }
+
+    /**
+     * Marca el reparto de un evento como liquidado y transferido a los socios.
+     */
+    public function settleEventPartners(int $eventId, ?string $notes = null): void
+    {
+        \App\Models\Event::ensureTokenColumnsExist();
+        $event = Event::find($eventId);
+        if (!$event) return;
+
+        $event->update([
+            'settlement_status' => 'settled',
+            'settlement_paid_at' => now()->format('Y-m-d'),
+            'settlement_notes' => $notes ?: null,
+        ]);
+
+        session()->flash('message', "✅ Reparto del evento '{$event->name}' marcado como LIQUIDADO a socios.");
+    }
+
+    /**
+     * Revierte el estado de liquidación de un evento a pendiente.
+     */
+    public function unsettleEventPartners(int $eventId): void
+    {
+        \App\Models\Event::ensureTokenColumnsExist();
+        $event = Event::find($eventId);
+        if (!$event) return;
+
+        $event->update([
+            'settlement_status' => 'pending',
+            'settlement_paid_at' => null,
+        ]);
+
+        session()->flash('message', "ℹ️ Reparto del evento '{$event->name}' revertido a PENDIENTE de liquidar.");
+    }
+
+    /**
      * Genera los datos del informe de facturación y renderiza la vista correspondiente.
      *
      * @return \Illuminate\Contracts\View\View
@@ -1180,6 +1314,7 @@ class BillingManager extends Component
             'ledgerRows' => $report['ledger_rows'],
             'providerRows' => $report['provider_rows'] ?? [],
             'materialRows' => $report['material_rows'] ?? [],
+            'jointAccountLedger' => $report['joint_account_ledger'] ?? [],
             'kpis' => $report['kpis'],
             'partners' => \App\Models\Setting::getSettlementPartners(),
             'availableYears' => $availableYears,

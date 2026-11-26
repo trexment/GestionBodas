@@ -65,6 +65,14 @@
                         <span>📑</span>
                         <span>Desglose por Evento ({{ count($eventsRows) }})</span>
                     </button>
+                    <button
+                        type="button"
+                        wire:click="$set('viewMode', 'joint_account')"
+                        class="px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1.5 {{ $viewMode === 'joint_account' ? 'bg-teal-600 text-white shadow-xs ring-1 ring-teal-400' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white' }}"
+                    >
+                        <span>🏦</span>
+                        <span>Cuenta Común & Arqueo</span>
+                    </button>
                 </div>
 
                 <!-- Botón Exportar Excel (.xlsx) -->
@@ -1493,6 +1501,17 @@
                                             👤 {{ $mat->paid_by }}
                                         </span>
                                     @endif
+
+                                    @if(!str_contains($paidByLower, 'caja') && !str_contains($paidByLower, 'empresa'))
+                                        <button
+                                            type="button"
+                                            wire:click="toggleMaterialReimbursed({{ $mat->id }})"
+                                            class="block mt-1 text-[9px] font-black px-1.5 py-0.5 rounded border transition cursor-pointer {{ $mat->is_reimbursed ? 'bg-emerald-50 text-emerald-800 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300' : 'bg-amber-50 text-amber-800 border-amber-300 dark:bg-amber-950 dark:text-amber-300' }}"
+                                            title="Pulsar para alternar si este gasto ya fue reembolsado por la cuenta común a {{ $mat->paid_by }}"
+                                        >
+                                            {{ $mat->is_reimbursed ? '✅ Reembolsado' : '⏳ Pendiente Retorno' }}
+                                        </button>
+                                    @endif
                                 </td>
 
                                 <!-- Método de Pago -->
@@ -1992,6 +2011,8 @@
         </div>
     @elseif($viewMode === 'event_settlement')
         @include('livewire.admin.billing.partials.event-settlement-view')
+    @elseif($viewMode === 'joint_account')
+        @include('livewire.admin.billing.partials.joint-account-view')
     @endif
 
     <!-- ========================================================== -->

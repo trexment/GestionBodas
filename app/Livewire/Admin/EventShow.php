@@ -164,6 +164,8 @@ class EventShow extends Component
     public $prov_final_date;
     public $prov_final_method = 'transfer';
     public $prov_paid_by = 'Fran';
+    public $prov_is_reimbursed = false;
+    public $prov_reimbursed_at;
     public $prov_notes = '';
     public $prov_has_refund = false;
     public $prov_refund_amount = 0.0;
@@ -1594,6 +1596,8 @@ class EventShow extends Component
         $this->prov_registration_fee = $booking ? (float) $booking->registration_fee : (float) ($prov['registration_fee'] ?? 0);
         $this->prov_settlement_number = (string) ($booking?->settlement_number ?? ($prov['settlement_number'] ?? ''));
         $this->prov_invoice_number = (string) ($booking?->invoice_number ?? ($prov['invoice_number'] ?? ''));
+        $this->prov_is_reimbursed = $booking ? (bool) ($booking->is_reimbursed ?? false) : false;
+        $this->prov_reimbursed_at = $booking?->reimbursed_at ? \Carbon\Carbon::parse($booking->reimbursed_at)->format('Y-m-d') : null;
 
         if ($this->prov_has_refund && $this->prov_refund_amount > 0 && $this->prov_refund_fran_amount <= 0 && $this->prov_refund_miguel_amount <= 0 && $this->prov_refund_recipient === '50_50') {
             $this->prov_refund_fran_amount = round($this->prov_refund_amount / 2, 2);
@@ -1856,6 +1860,11 @@ class EventShow extends Component
             $data['invoice_number'] = trim((string) $this->prov_invoice_number) ?: null;
         }
 
+        if (\Illuminate\Support\Facades\Schema::hasColumn('event_provider_bookings', 'is_reimbursed')) {
+            $data['is_reimbursed'] = (bool) $this->prov_is_reimbursed;
+            $data['reimbursed_at'] = $this->prov_is_reimbursed ? ($this->prov_reimbursed_at ?: now()->format('Y-m-d')) : null;
+        }
+
         $existing = $this->prov_booking_id
             ? $this->event->providerBookings()->find($this->prov_booking_id)
             : $this->event->providerBookings()->first();
@@ -1872,6 +1881,96 @@ class EventShow extends Component
         $this->event->refresh();
 
         session()->flash('message', "📸 Gasto y pagos a proveedor ({$data['provider_name']} - Pagado por {$data['paid_by']}) guardados correctamente.");
+    }
+
+    /**
+     * Alterna en 1 clic si la señal de reserva ya fue traspasada a la cuenta común.
+     */
+    public function toggleDepositTransferredToJoint(): void
+    {
+        \App\Models\Event::ensureTokenColumnsExist();
+        \App\Models\Invoice::ensureColumnsExist();
+
+        $newVal = !((bool) ($this->event->deposit_transferred_to_joint ?? false));
+        $dateVal = $newVal ? now()->format('Y-m-d') : null;
+
+        $this->event->update([
+            'deposit_transferred_to_joint' => $newVal,
+            'deposit_transferred_at' => $dateVal,
+        ]);
+
+        $signalInv = $this->event->invoices->first(function ($inv) {
+            $n = mb_strtolower((string) ($inv->notes ?? ''));
+            return str_contains($n, 'señal') || str_contains($n, 'senal') || str_contains($n, 'reserva');
+        });
+        if ($signalInv && \Illuminate\Support\Facades\Schema::hasColumn('invoices', 'transferred_to_joint')) {
+            $signalInv->update([
+                'transferred_to_joint' => $newVal,
+                'transferred_at' => $dateVal,
+            ]);
+        }
+
+        $this->event->refresh();
+        session()->flash('message', $newVal
+            ? "🏦 Señal marcada como TRASPASADA a la Cuenta Común."
+            : "ℹ️ Señal marcada como en mano del socio (pendiente traspaso a común)."
+        );
+    }
+
+    /**
+     * Alterna en 1 clic si un pago a proveedor adelantado del bolsillo ya fue reembolsado desde la cuenta común.
+     */
+    public function toggleProviderReimbursed(?int $bookingId = null): void
+    {
+        \App\Models\EventProviderBooking::ensureTableExists();
+        $booking = $bookingId
+            ? $this->event->providerBookings()->find($bookingId)
+            : $this->event->providerBookings()->latest()->first();
+
+        if (!$booking) {
+            return;
+        }
+
+        $newVal = !((bool) ($booking->is_reimbursed ?? false));
+        $booking->update([
+            'is_reimbursed' => $newVal,
+            'reimbursed_at' => $newVal ? now()->format('Y-m-d') : null,
+        ]);
+
+        $this->event->refresh();
+        session()->flash('message', $newVal
+            ? "✅ Gasto de proveedor marcado como REEMBOLSADO a {$booking->paid_by}."
+            : "⏳ Gasto de proveedor marcado como PENDIENTE de retorno a {$booking->paid_by}."
+        );
+    }
+
+    /**
+     * Marca el reparto de este evento como liquidado a los socios.
+     */
+    public function settleEventPartners(?string $notes = null): void
+    {
+        \App\Models\Event::ensureTokenColumnsExist();
+        $this->event->update([
+            'settlement_status' => 'settled',
+            'settlement_paid_at' => now()->format('Y-m-d'),
+            'settlement_notes' => $notes ?: null,
+        ]);
+        $this->event->refresh();
+        session()->flash('message', "✅ Reparto del evento marcado como LIQUIDADO a los socios.");
+    }
+
+    /**
+     * Revierte el reparto del evento a pendiente de liquidar.
+     */
+    public function unsettleEventPartners(): void
+    {
+        \App\Models\Event::ensureTokenColumnsExist();
+        $this->event->update([
+            'settlement_status' => 'pending',
+            'settlement_paid_at' => null,
+        ]);
+        $this->event->refresh();
+        session()->flash('message', "ℹ️ Reparto del evento restablecido a PENDIENTE de liquidar.");
     }
 
     /**
