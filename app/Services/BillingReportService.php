@@ -645,17 +645,6 @@ class BillingReportService
             ];
             $partnerEventsBreakdown[$pName] = [];
         }
-            $pName = trim((string)($p['name'] ?? 'Socio'));
-            $evSettlementTotals['by_partner'][$pName] = [
-                'name' => $pName,
-                'percentage' => (float)($p['percentage'] ?? 50.0),
-                'profit_share' => 0.0,
-                'reimbursements' => 0.0,
-                'total_to_receive' => 0.0,
-                'collected_in_hand' => 0.0,
-                'balance_diff' => 0.0,
-            ];
-        }
 
         foreach ($filteredEvents as &$evItem) {
             $ev = $evItem['event'];
