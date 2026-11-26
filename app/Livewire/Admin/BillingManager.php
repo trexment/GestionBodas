@@ -1351,6 +1351,67 @@ class BillingManager extends Component
     }
 
     /**
+     * Actualiza en 1 clic el pagador de un proveedor (ej: 'Caja Común / Empresa', 'Fran', 'Miguel', 'Ezequiel').
+     */
+    public function setProviderPaidBy(int $bookingId, string $paidBy): void
+    {
+        \App\Models\EventProviderBooking::ensureTableExists();
+        $booking = \App\Models\EventProviderBooking::find($bookingId);
+        if (!$booking) return;
+
+        $isJoint = in_array(mb_strtolower(trim($paidBy)), ['caja común / empresa', 'caja comun / empresa', 'cuenta conjunta', 'empresa', 'fondo común', 'fondo comun'], true);
+
+        $booking->update([
+            'paid_by' => $paidBy,
+            'reimbursement_type' => $isJoint ? 'assumed' : ($booking->reimbursement_type ?: 'assumed'),
+            'is_reimbursed' => $isJoint ? false : $booking->is_reimbursed,
+        ]);
+
+        $label = $isJoint ? '🏛️ Cuenta Común / Empresa (se resta de Caja & Banco)' : "👤 Socio {$paidBy}";
+        session()->flash('message', "✅ Pagador de '{$booking->provider_name}' actualizado a {$label}.");
+    }
+
+    /**
+     * Asegura o crea la reserva del proveedor para un evento y le asigna el pagador seleccionado.
+     */
+    public function assignProviderPaidBy(int $eventId, string $paidBy, ?int $bookingId = null): void
+    {
+        \App\Models\EventProviderBooking::ensureTableExists();
+        if ($bookingId) {
+            $this->setProviderPaidBy($bookingId, $paidBy);
+            return;
+        }
+
+        $event = Event::find($eventId);
+        if (!$event) return;
+
+        $provSummary = $event->external_provider_summary;
+        $isJoint = in_array(mb_strtolower(trim($paidBy)), ['caja común / empresa', 'caja comun / empresa', 'cuenta conjunta', 'empresa', 'fondo común', 'fondo comun'], true);
+
+        $booking = \App\Models\EventProviderBooking::create([
+            'event_id' => $event->id,
+            'provider_key' => $provSummary['provider_key'] ?? 'logrono',
+            'provider_name' => $provSummary['provider_name'] ?? 'Proveedor Externo',
+            'service_description' => $provSummary['service_description'] ?? 'Fotomatón / 360º',
+            'client_price' => (float)($provSummary['client_price'] ?? 0),
+            'provider_total_cost' => (float)($provSummary['provider_total_cost'] ?? 0),
+            'deposit_paid' => (bool)($provSummary['deposit_paid'] ?? false),
+            'deposit_amount' => (float)($provSummary['deposit_amount'] ?? 0),
+            'deposit_paid_at' => $provSummary['deposit_date'] ?? null,
+            'deposit_payment_method' => $provSummary['deposit_method'] ?? 'bizum',
+            'final_paid' => (bool)($provSummary['final_paid'] ?? false),
+            'final_amount' => (float)($provSummary['final_amount'] ?? 0),
+            'final_paid_at' => $provSummary['final_date'] ?? null,
+            'final_payment_method' => $provSummary['final_method'] ?? 'transfer',
+            'paid_by' => $paidBy,
+            'reimbursement_type' => 'assumed',
+        ]);
+
+        $label = $isJoint ? '🏛️ Cuenta Común / Empresa (se resta de Caja & Banco)' : "👤 Socio {$paidBy}";
+        session()->flash('message', "✅ Pagador de '{$booking->provider_name}' configurado a {$label}.");
+    }
+
+    /**
      * Marca el reparto de un evento como liquidado y transferido a los socios.
      */
     public function settleEventPartners(int $eventId, ?string $notes = null): void

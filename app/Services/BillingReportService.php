@@ -1233,20 +1233,58 @@ class BillingReportService
                     if ($paid > 0) {
                         if ($isJoint) {
                             $jointDirectProvider += $paid;
-                            $jointAccountLedger[] = [
-                                'date' => $b->final_paid_at ? Carbon::parse($b->final_paid_at) : ($b->deposit_paid_at ? Carbon::parse($b->deposit_paid_at) : null),
-                                'channel' => 'bank',
-                                'channel_label' => '🏦 Banco',
-                                'type' => 'outflow',
-                                'type_label' => 'Pago Proveedor',
-                                'category' => 'provider_direct',
-                                'concept' => 'Pago a ' . ($b->provider_name ?: 'Proveedor') . ' (' . ($b->service_description ?: 'Servicio') . ')',
-                                'event_id' => $ev->id,
-                                'event_name' => $ev->name,
-                                'actor' => 'Cuenta Bancaria Común → ' . ($b->provider_name ?: 'Proveedor'),
-                                'amount' => $paid,
-                                'status' => 'confirmed',
-                            ];
+                            if ($dep > 0) {
+                                $isCashDep = strtolower((string)($b->deposit_payment_method ?? '')) === 'cash';
+                                $mLabel = \App\Models\EventProviderBooking::formatMethodLabel($b->deposit_payment_method);
+                                $jointAccountLedger[] = [
+                                    'date' => $b->deposit_paid_at ? Carbon::parse($b->deposit_paid_at) : null,
+                                    'channel' => $isCashDep ? 'cash' : 'bank',
+                                    'channel_label' => $isCashDep ? '💵 Efectivo' : '🏦 Banco',
+                                    'type' => 'outflow',
+                                    'type_label' => 'Pago Señal Proveedor',
+                                    'category' => 'provider_deposit_direct',
+                                    'concept' => 'Pago Señal Reserva a ' . ($b->provider_name ?: 'Proveedor') . ' (' . ($b->service_description ?: 'Servicio') . ')',
+                                    'event_id' => $ev->id,
+                                    'event_name' => $ev->name,
+                                    'actor' => 'Cuenta Bancaria Común → ' . ($b->provider_name ?: 'Proveedor') . ' (' . $mLabel . ')',
+                                    'amount' => $dep,
+                                    'status' => 'confirmed',
+                                ];
+                            }
+                            if ($fin > 0) {
+                                $isCashFin = strtolower((string)($b->final_payment_method ?? '')) === 'cash';
+                                $mLabelFin = \App\Models\EventProviderBooking::formatMethodLabel($b->final_payment_method);
+                                $jointAccountLedger[] = [
+                                    'date' => $b->final_paid_at ? Carbon::parse($b->final_paid_at) : null,
+                                    'channel' => $isCashFin ? 'cash' : 'bank',
+                                    'channel_label' => $isCashFin ? '💵 Efectivo' : '🏦 Banco',
+                                    'type' => 'outflow',
+                                    'type_label' => 'Pago Liquidación Proveedor',
+                                    'category' => 'provider_final_direct',
+                                    'concept' => 'Pago Liquidación/Resto a ' . ($b->provider_name ?: 'Proveedor') . ' (' . ($b->service_description ?: 'Servicio') . ')',
+                                    'event_id' => $ev->id,
+                                    'event_name' => $ev->name,
+                                    'actor' => 'Cuenta Bancaria Común → ' . ($b->provider_name ?: 'Proveedor') . ' (' . $mLabelFin . ')',
+                                    'amount' => $fin,
+                                    'status' => 'confirmed',
+                                ];
+                            }
+                            if ($dep <= 0 && $fin <= 0) {
+                                $jointAccountLedger[] = [
+                                    'date' => $b->final_paid_at ? Carbon::parse($b->final_paid_at) : ($b->deposit_paid_at ? Carbon::parse($b->deposit_paid_at) : null),
+                                    'channel' => 'bank',
+                                    'channel_label' => '🏦 Banco',
+                                    'type' => 'outflow',
+                                    'type_label' => 'Pago Proveedor',
+                                    'category' => 'provider_direct',
+                                    'concept' => 'Pago a ' . ($b->provider_name ?: 'Proveedor') . ' (' . ($b->service_description ?: 'Servicio') . ')',
+                                    'event_id' => $ev->id,
+                                    'event_name' => $ev->name,
+                                    'actor' => 'Cuenta Bancaria Común → ' . ($b->provider_name ?: 'Proveedor'),
+                                    'amount' => $paid,
+                                    'status' => 'confirmed',
+                                ];
+                            }
                         } else {
                             if (!empty($b->is_reimbursed)) {
                                 $jointReimbursedProviderToPartners += $paid;

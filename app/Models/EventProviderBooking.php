@@ -151,6 +151,37 @@ class EventProviderBooking extends Model
                         \Illuminate\Support\Facades\DB::statement("ALTER TABLE `event_provider_bookings` ADD `reimbursement_type` VARCHAR(30) NOT NULL DEFAULT 'assumed' AFTER `paid_by`");
                     }
                 }
+
+                // Auto-healing de reservas de proveedores pagadas desde la cuenta común / fondo común
+                try {
+                    $jointEvents = \Illuminate\Support\Facades\DB::table('events')
+                        ->where(function ($q) {
+                            $q->where(function ($q2) {
+                                $q2->where('name', 'LIKE', '%Miguel%')
+                                   ->where('name', 'LIKE', '%Paula%');
+                            })->orWhere(function ($q3) {
+                                $q3->where('name', 'LIKE', '%Javi%')
+                                   ->where('name', 'LIKE', '%Cristina%');
+                            });
+                        })
+                        ->pluck('id');
+
+                    if ($jointEvents->isNotEmpty()) {
+                        \Illuminate\Support\Facades\DB::table('event_provider_bookings')
+                            ->whereIn('event_id', $jointEvents)
+                            ->where(function ($q) {
+                                $q->where('paid_by', 'Fran')
+                                  ->orWhereNull('paid_by');
+                            })
+                            ->update([
+                                'paid_by' => 'Caja Común / Empresa',
+                                'reimbursement_type' => 'assumed',
+                                'is_reimbursed' => false,
+                            ]);
+                    }
+                } catch (\Throwable $e2) {
+                    // Silencioso
+                }
             }
         } catch (\Throwable $e) {
             // Silencioso si no hay permisos de DDL en este instante

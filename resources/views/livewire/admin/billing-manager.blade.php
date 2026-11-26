@@ -1293,15 +1293,87 @@
 
                                     <!-- Empresa Proveedora y Servicio -->
                                     <td class="py-3.5 px-3 align-top">
+                                        @php
+                                            $pByStr = (string)($prov['paid_by'] ?? 'Fran');
+                                            $isJointPBy = in_array(mb_strtolower(trim($pByStr)), ['caja común / empresa', 'caja comun / empresa', 'cuenta conjunta', 'empresa', 'fondo común', 'fondo comun'], true);
+                                            $provBookingId = $prov['booking_id'] ?? null;
+                                        @endphp
                                         <div class="flex flex-wrap items-center gap-1.5">
                                             <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-purple-100 dark:bg-purple-950 text-purple-800 dark:text-purple-300 text-[10px] font-black">
                                                 🏢 {{ $prov['provider_name'] }}
                                             </span>
-                                            @if(!empty($prov['paid_by']))
-                                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 text-[10px] font-bold" title="Abonado por {{ $prov['paid_by'] }}">
-                                                    👤 Pagado por: {{ $prov['paid_by'] }}
-                                                </span>
-                                            @endif
+
+                                            <!-- Dropdown rápido para cambiar pagador en 1 clic -->
+                                            <div class="relative inline-block text-left" x-data="{ open: false }">
+                                                <button
+                                                    type="button"
+                                                    @click="open = !open"
+                                                    class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold transition cursor-pointer border {{ $isJointPBy ? 'bg-emerald-50 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800' : 'bg-indigo-50 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800' }}"
+                                                    title="Pulsar para cambiar quién pagó este proveedor (Caja Común vs Socio)"
+                                                >
+                                                    <span>{{ $isJointPBy ? '🏛️' : '👤' }}</span>
+                                                    <span>Pagado por: <strong>{{ $pByStr }}</strong></span>
+                                                    <span class="text-[9px] opacity-70">▼</span>
+                                                </button>
+                                                <div
+                                                    x-show="open"
+                                                    @click.outside="open = false"
+                                                    x-cloak
+                                                    class="absolute left-0 mt-1 w-52 rounded-xl bg-white dark:bg-slate-900 shadow-xl border border-slate-200 dark:border-slate-800 py-1 z-30 text-xs"
+                                                >
+                                                    <div class="px-2.5 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 dark:border-slate-800">
+                                                        Cambiar Pagador
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        wire:click="assignProviderPaidBy({{ $ev->id }}, 'Caja Común / Empresa', {{ $provBookingId ? $provBookingId : 'null' }})"
+                                                        @click="open = false"
+                                                        class="w-full text-left px-3 py-1.5 text-xs hover:bg-emerald-50 dark:hover:bg-emerald-950/50 flex items-center justify-between {{ $isJointPBy ? 'font-black text-emerald-700 dark:text-emerald-300 bg-emerald-50/50' : 'text-slate-700 dark:text-slate-300' }}"
+                                                    >
+                                                        <span class="flex items-center gap-1.5">
+                                                            <span>🏛️</span>
+                                                            <span>Caja Común / Empresa</span>
+                                                        </span>
+                                                        @if($isJointPBy) <span>✓</span> @endif
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        wire:click="assignProviderPaidBy({{ $ev->id }}, 'Fran', {{ $provBookingId ? $provBookingId : 'null' }})"
+                                                        @click="open = false"
+                                                        class="w-full text-left px-3 py-1.5 text-xs hover:bg-indigo-50 dark:hover:bg-indigo-950/50 flex items-center justify-between {{ $pByStr === 'Fran' ? 'font-black text-indigo-700 dark:text-indigo-300 bg-indigo-50/50' : 'text-slate-700 dark:text-slate-300' }}"
+                                                    >
+                                                        <span class="flex items-center gap-1.5">
+                                                            <span>👤</span>
+                                                            <span>Fran (Adelanto Socio)</span>
+                                                        </span>
+                                                        @if($pByStr === 'Fran') <span>✓</span> @endif
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        wire:click="assignProviderPaidBy({{ $ev->id }}, 'Miguel', {{ $provBookingId ? $provBookingId : 'null' }})"
+                                                        @click="open = false"
+                                                        class="w-full text-left px-3 py-1.5 text-xs hover:bg-indigo-50 dark:hover:bg-indigo-950/50 flex items-center justify-between {{ $pByStr === 'Miguel' ? 'font-black text-indigo-700 dark:text-indigo-300 bg-indigo-50/50' : 'text-slate-700 dark:text-slate-300' }}"
+                                                    >
+                                                        <span class="flex items-center gap-1.5">
+                                                            <span>👤</span>
+                                                            <span>Miguel (Adelanto Socio)</span>
+                                                        </span>
+                                                        @if($pByStr === 'Miguel') <span>✓</span> @endif
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        wire:click="assignProviderPaidBy({{ $ev->id }}, 'Ezequiel', {{ $provBookingId ? $provBookingId : 'null' }})"
+                                                        @click="open = false"
+                                                        class="w-full text-left px-3 py-1.5 text-xs hover:bg-indigo-50 dark:hover:bg-indigo-950/50 flex items-center justify-between {{ $pByStr === 'Ezequiel' ? 'font-black text-indigo-700 dark:text-indigo-300 bg-indigo-50/50' : 'text-slate-700 dark:text-slate-300' }}"
+                                                    >
+                                                        <span class="flex items-center gap-1.5">
+                                                            <span>👤</span>
+                                                            <span>Ezequiel (Adelanto Socio)</span>
+                                                        </span>
+                                                        @if($pByStr === 'Ezequiel') <span>✓</span> @endif
+                                                    </button>
+                                                </div>
+                                            </div>
                                         </div>
                                         <div class="font-bold text-slate-800 dark:text-slate-200 mt-1 leading-snug">
                                             {{ $prov['service_description'] }}

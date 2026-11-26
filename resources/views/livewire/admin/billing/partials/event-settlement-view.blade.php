@@ -313,26 +313,36 @@
                                         <span>-{{ number_format($sett['provider_net_cost'] ?? 0, 2, ',', '.') }} €</span>
                                     </div>
                                     @if($sett['provider_paid'] > 0)
-                                        <div class="flex items-center justify-between text-[10px] text-slate-400">
-                                            <span>Adelantado por: <strong>{{ $sett['provider_paid_by'] ?: 'Fran' }}</strong></span>
-                                            @if(!empty($sett['provider_is_partner_pocket']) && !empty($sett['provider_booking_id']))
-                                                @php
-                                                    $rType = $sett['provider_reimbursement_type'] ?? 'assumed';
-                                                @endphp
-                                                <button
-                                                    type="button"
-                                                    wire:click="toggleProviderReimbursed({{ $sett['provider_booking_id'] }})"
-                                                    class="px-1.5 py-0.5 rounded text-[9px] font-black transition cursor-pointer border {{ $rType === 'assumed' ? 'bg-indigo-100 text-indigo-800 border-indigo-300 dark:bg-indigo-950 dark:text-indigo-300' : (!empty($sett['provider_is_reimbursed']) ? 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300' : 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950 dark:text-amber-300') }}"
-                                                    title="Pulsar para alternar: 👤 Coste Asumido (-{{ number_format($sett['provider_paid'], 2, ',', '.') }}€) ➔ ⏳ Pendiente Retorno (+{{ number_format($sett['provider_paid'], 2, ',', '.') }}€) ➔ ✅ Reembolsado"
-                                                >
-                                                    @if($rType === 'assumed')
-                                                        👤 Asumido por {{ $sett['provider_paid_by'] ?: 'Socio' }} (-{{ number_format($sett['provider_paid'], 2, ',', '.') }}€)
-                                                    @elseif(!empty($sett['provider_is_reimbursed']))
-                                                        ✅ Reembolsado (+{{ number_format($sett['provider_paid'], 2, ',', '.') }}€)
-                                                    @else
-                                                        ⏳ Pendiente Retorno (+{{ number_format($sett['provider_paid'], 2, ',', '.') }}€)
-                                                    @endif
-                                                </button>
+                                        <div class="flex items-center justify-between text-[10px] text-slate-400 mt-1">
+                                            @if(!empty($sett['provider_is_partner_pocket']))
+                                                <span>Adelantado por: <strong>{{ $sett['provider_paid_by'] ?: 'Fran' }}</strong></span>
+                                                @if(!empty($sett['provider_booking_id']))
+                                                    @php
+                                                        $rType = $sett['provider_reimbursement_type'] ?? 'assumed';
+                                                    @endphp
+                                                    <button
+                                                        type="button"
+                                                        wire:click="toggleProviderReimbursed({{ $sett['provider_booking_id'] }})"
+                                                        class="px-1.5 py-0.5 rounded text-[9px] font-black transition cursor-pointer border {{ $rType === 'assumed' ? 'bg-indigo-100 text-indigo-800 border-indigo-300 dark:bg-indigo-950 dark:text-indigo-300' : (!empty($sett['provider_is_reimbursed']) ? 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300' : 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950 dark:text-amber-300') }}"
+                                                        title="Pulsar para alternar: 👤 Coste Asumido (-{{ number_format($sett['provider_paid'], 2, ',', '.') }}€) ➔ ⏳ Pendiente Retorno (+{{ number_format($sett['provider_paid'], 2, ',', '.') }}€) ➔ ✅ Reembolsado"
+                                                    >
+                                                        @if($rType === 'assumed')
+                                                            👤 Asumido por {{ $sett['provider_paid_by'] ?: 'Socio' }} (-{{ number_format($sett['provider_paid'], 2, ',', '.') }}€)
+                                                        @elseif(!empty($sett['provider_is_reimbursed']))
+                                                            ✅ Reembolsado (+{{ number_format($sett['provider_paid'], 2, ',', '.') }}€)
+                                                        @else
+                                                            ⏳ Pendiente Retorno (+{{ number_format($sett['provider_paid'], 2, ',', '.') }}€)
+                                                        @endif
+                                                    </button>
+                                                @endif
+                                            @else
+                                                <span class="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
+                                                    <span>🏦</span>
+                                                    <span>Pagado con Fondos Comunes ({{ $sett['provider_paid_by'] ?: 'Caja Común / Empresa' }})</span>
+                                                </span>
+                                                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-black bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                                                    ✅ Restado en Banco
+                                                </span>
                                             @endif
                                         </div>
                                     @endif
