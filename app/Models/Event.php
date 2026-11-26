@@ -795,6 +795,7 @@ class Event extends Model
             'service_description' => $serviceLabel,
             'detected_services' => $detectedServiceText,
             'detected_services_with_prices' => $detectedServicesWithPricesText,
+            'detected_from_quote' => $detectedClientPrice > 0,
             'detected_client_price' => $detectedClientPrice,
             'client_price' => $clientPrice,
             'provider_total_cost' => $effectiveCost,

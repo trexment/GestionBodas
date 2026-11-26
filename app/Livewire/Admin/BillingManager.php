@@ -51,6 +51,7 @@ class BillingManager extends Component
     public string $provName = 'Logroño';
     public string $provService = 'Fotomatón + Plataforma 360º';
     public $provClientPrice = 0;
+    public float $provDetectedQuotePrice = 0.0;
     public string $provDetectedItemsText = '';
     public $provTotalCost = 0;
     public bool $provDepositPaid = true;
@@ -538,6 +539,7 @@ class BillingManager extends Component
         $this->provKey = (string) ($booking?->provider_key ?: ($prov['provider_key'] ?: 'logrono'));
         $this->provName = (string) ($booking?->provider_name ?: ($prov['provider_name'] ?: 'Logroño'));
         $this->provService = (string) ($booking?->service_description ?: ($prov['service_description'] ?: 'Fotomatón / Plataforma 360º'));
+        $this->provDetectedQuotePrice = (float) ($prov['detected_client_price'] ?? 0);
         $this->provClientPrice = (float) ($booking ? $booking->client_price : ($prov['client_price'] ?? 0));
         $this->provDetectedItemsText = (string) ($prov['detected_services_with_prices'] ?: ($prov['detected_services'] ?? ''));
         $this->provTotalCost = (float) ($booking ? $booking->provider_total_cost : ($prov['provider_total_cost'] > 0 ? $prov['provider_total_cost'] : ($prov['client_price'] > 0 ? $prov['client_price'] : 0)));
@@ -655,12 +657,13 @@ class BillingManager extends Component
             $this->provKey = 'artistamente';
             $this->provName = 'Artístamente (Events Branch S.L.)';
             $this->provService = 'Facturación y Liquidación Cooperativa / Alta Artistas';
-            $this->provClientPrice = 242.0;
-            $this->provTotalCost = 242.0;
+            $this->provDetectedQuotePrice = 0.0;
+            $this->provClientPrice = 169.40;
+            $this->provTotalCost = 169.40;
             $this->provDepositPaid = false;
             $this->provDepositAmount = 0.0;
             $this->provFinalPaid = true;
-            $this->provFinalAmount = 242.0;
+            $this->provFinalAmount = 169.40;
             $this->provFinalDate = now()->format('Y-m-d');
             $this->provFinalMethod = 'transfer';
             $this->provPaidBy = 'Fran';
@@ -675,7 +678,7 @@ class BillingManager extends Component
             $this->provRegistrationFee = 0.00;
             $this->provInvoiceNumber = 'PEV-322971-1';
             $this->provSettlementNumber = 'EAM-322971';
-            $this->provNotes = 'Factura 242,00 € pagada a Artístamente. Liquidación neta devuelta: 136,44 € (Coste neto asumido por el evento: 105,56 €).';
+            $this->provNotes = 'Factura pagada a Artístamente. Liquidación neta devuelta: 136,44 €.';
         } elseif ($preset === 'photobooth_vitoria') {
             $this->provKey = 'vitoria';
             $this->provName = 'Vitoria (FotomatonCheese)';
@@ -704,15 +707,16 @@ class BillingManager extends Component
         $this->provKey = 'artistamente';
         $this->provName = 'Artístamente (Events Branch S.L.)';
         $this->provService = 'Facturación y Liquidación Cooperativa / Alta Artistas';
-        $this->provClientPrice = 242.0;
+        $this->provDetectedQuotePrice = 0.0;
+        $this->provClientPrice = 169.40;
         $this->provDetectedItemsText = '';
-        $this->provTotalCost = 242.0;
+        $this->provTotalCost = 169.40;
         $this->provDepositPaid = false;
         $this->provDepositAmount = 0.0;
         $this->provDepositDate = now()->format('Y-m-d');
         $this->provDepositMethod = 'transfer';
         $this->provFinalPaid = true;
-        $this->provFinalAmount = 242.0;
+        $this->provFinalAmount = 169.40;
         $this->provFinalDate = now()->format('Y-m-d');
         $this->provFinalMethod = 'transfer';
         $this->provPaidBy = 'Fran';
@@ -727,7 +731,7 @@ class BillingManager extends Component
         $this->provRegistrationFee = 0.00;
         $this->provInvoiceNumber = 'PEV-322971-1';
         $this->provSettlementNumber = 'EAM-322971';
-        $this->provNotes = 'Factura 242,00 € pagada a Artístamente. Liquidación neta devuelta: 136,44 € (Coste neto asumido: 105,56 €).';
+        $this->provNotes = 'Factura pagada a Artístamente. Liquidación neta devuelta: 136,44 €.';
     }
 
     /**
@@ -745,7 +749,8 @@ class BillingManager extends Component
             return;
         }
         $prov = $event->external_provider_summary;
-        $detectedPrice = (float) ($prov['detected_client_price'] ?: ($prov['client_price'] ?? 0));
+        $detectedPrice = (float) ($prov['detected_client_price'] ?? 0);
+        $this->provDetectedQuotePrice = $detectedPrice;
         if ($detectedPrice > 0) {
             $this->provClientPrice = $detectedPrice;
             $this->provTotalCost = $detectedPrice;
@@ -815,7 +820,7 @@ class BillingManager extends Component
             'provider_key' => $this->provKey ?: 'logrono',
             'provider_name' => trim($this->provName),
             'service_description' => trim($this->provService),
-            'client_price' => round((float) ($this->provClientPrice > 0 ? $this->provClientPrice : $this->provTotalCost), 2),
+            'client_price' => round((float) ($this->provDetectedQuotePrice > 0 ? $this->provDetectedQuotePrice : $this->provTotalCost), 2),
             'provider_total_cost' => round((float) $this->provTotalCost, 2),
             'deposit_paid' => $this->provDepositPaid && $depAmt > 0,
             'deposit_amount' => $depAmt,

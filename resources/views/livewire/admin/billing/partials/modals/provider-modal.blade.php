@@ -56,11 +56,11 @@
             </select>
         </div>
 
-        @if($provClientPrice > 0 || !empty($provDetectedItemsText))
+        @if($provDetectedQuotePrice > 0 || !empty($provDetectedItemsText))
             <div class="p-3.5 rounded-2xl bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 flex flex-wrap items-center justify-between gap-2">
                 <div>
                     <div class="text-[11px] font-black text-indigo-800 dark:text-indigo-300">
-                        💶 Detectado en el presupuesto del cliente: {{ number_format((float)$provClientPrice, 2, ',', '.') }} €
+                        💶 Detectado en el presupuesto del cliente: {{ number_format((float)$provDetectedQuotePrice, 2, ',', '.') }} €
                     </div>
                     @if(!empty($provDetectedItemsText))
                         <div class="text-[10px] text-indigo-600 dark:text-indigo-400 font-semibold mt-0.5">
@@ -68,13 +68,13 @@
                         </div>
                     @endif
                 </div>
-                @if($provClientPrice > 0 && abs((float)$provTotalCost - (float)$provClientPrice) > 0.05)
+                @if($provDetectedQuotePrice > 0 && abs((float)$provTotalCost - (float)$provDetectedQuotePrice) > 0.05)
                     <button
                         type="button"
                         wire:click="syncProviderFromQuote"
                         class="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold transition cursor-pointer shrink-0"
                     >
-                        🔄 Usar {{ number_format((float)$provClientPrice, 2, ',', '.') }} €
+                        🔄 Usar {{ number_format((float)$provDetectedQuotePrice, 2, ',', '.') }} €
                     </button>
                 @endif
             </div>

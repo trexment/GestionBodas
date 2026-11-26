@@ -2698,18 +2698,18 @@
                                                             </span>
                                                             <span class="text-[10px] text-slate-400 block">
                                                                 Gasto prov.: {{ number_format($evProvSummary['provider_total_cost'], 2, ',', '.') }} €
-                                                                @if($evProvSummary['client_price'] > 0)
+                                                                @if(!empty($evProvSummary['detected_from_quote']) && $evProvSummary['client_price'] > 0)
                                                                     &bull; PVP Cliente: {{ number_format($evProvSummary['client_price'], 2, ',', '.') }} €
                                                                 @endif
                                                             </span>
                                                         @elseif($evProvSummary['total_paid'] > 0)
                                                             <span class="font-black text-emerald-600 dark:text-emerald-400">¡Todo Pagado! ({{ number_format($evProvSummary['total_paid'], 2, ',', '.') }} €)</span>
-                                                            @if($evProvSummary['client_price'] > 0)
+                                                            @if(!empty($evProvSummary['detected_from_quote']) && $evProvSummary['client_price'] > 0)
                                                                 <span class="text-[10px] text-slate-400 block">PVP Cliente: {{ number_format($evProvSummary['client_price'], 2, ',', '.') }} €</span>
                                                             @endif
                                                         @else
                                                             <span class="text-slate-400">—</span>
-                                                            @if($evProvSummary['client_price'] > 0)
+                                                            @if(!empty($evProvSummary['detected_from_quote']) && $evProvSummary['client_price'] > 0)
                                                                 <span class="text-[10px] text-indigo-600 dark:text-indigo-400 font-bold block">PVP Presupuesto: {{ number_format($evProvSummary['client_price'], 2, ',', '.') }} €</span>
                                                             @endif
                                                         @endif
@@ -9473,11 +9473,11 @@
                     </div>
                 </div>
 
-                @if($prov_client_price > 0 || !empty($prov_detected_items_text))
+                @if($prov_detected_quote_price > 0 || !empty($prov_detected_items_text))
                     <div class="p-3 rounded-2xl bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 flex flex-wrap items-center justify-between gap-2">
                         <div>
                             <div class="text-[11px] font-black text-indigo-800 dark:text-indigo-300">
-                                💶 Detectado en presupuesto del cliente: {{ number_format((float)$prov_client_price, 2, ',', '.') }} €
+                                💶 Detectado en presupuesto del cliente: {{ number_format((float)$prov_detected_quote_price, 2, ',', '.') }} €
                             </div>
                             @if(!empty($prov_detected_items_text))
                                 <div class="text-[10px] text-indigo-600 dark:text-indigo-400 font-semibold mt-0.5">
@@ -9485,13 +9485,13 @@
                                 </div>
                             @endif
                         </div>
-                        @if($prov_client_price > 0 && abs((float)$prov_total_cost - (float)$prov_client_price) > 0.05)
+                        @if($prov_detected_quote_price > 0 && abs((float)$prov_total_cost - (float)$prov_detected_quote_price) > 0.05)
                             <button
                                 type="button"
                                 wire:click="syncProviderFromQuoteInEvent"
                                 class="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold transition cursor-pointer shrink-0"
                             >
-                                🔄 Usar {{ number_format((float)$prov_client_price, 2, ',', '.') }} €
+                                🔄 Usar {{ number_format((float)$prov_detected_quote_price, 2, ',', '.') }} €
                             </button>
                         @endif
                     </div>

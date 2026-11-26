@@ -709,7 +709,7 @@
                                                     ✏️
                                                 </button>
                                             </div>
-                                            @if($evProv['client_price'] > 0)
+                                            @if(!empty($evProv['detected_from_quote']) && (float)($evProv['client_price'] ?? 0) > 0)
                                                 <div class="text-[10px] text-slate-500 dark:text-slate-400">
                                                     PVP Cliente: <strong class="text-slate-700 dark:text-slate-200">{{ number_format($evProv['client_price'], 2, ',', '.') }} €</strong>
                                                 </div>
