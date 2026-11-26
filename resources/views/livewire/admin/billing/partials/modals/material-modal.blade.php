@@ -7,6 +7,12 @@
     maxWidth="lg"
 >
     <div class="space-y-3.5 text-xs">
+        @if(session()->has('error'))
+            <div class="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/50 border border-rose-300 dark:border-rose-800 text-rose-700 dark:text-rose-300 font-bold text-xs flex items-center gap-2">
+                <span>⚠️</span>
+                <span>{{ session('error') }}</span>
+            </div>
+        @endif
         <!-- Concepto -->
         <div>
             <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Concepto / Descripción del Gasto o Material *</label>
@@ -150,6 +156,7 @@
                         </option>
                     @endforeach
                 </select>
+                @error('matEventId') <span class="text-rose-600 text-[11px] font-bold">{{ $message }}</span> @enderror
             </div>
             <div>
                 <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Temporada (Año)</label>
@@ -159,6 +166,7 @@
                     placeholder="Ej: 2026, 2027..."
                     class="w-full rounded-xl border border-slate-300 dark:border-slate-700 p-2 font-bold"
                 >
+                @error('matSeason') <span class="text-rose-600 text-[11px] font-bold">{{ $message }}</span> @enderror
             </div>
         </div>
 

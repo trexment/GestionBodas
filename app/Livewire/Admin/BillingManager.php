@@ -1026,6 +1026,18 @@ class BillingManager extends Component
     {
         \App\Models\MaterialExpense::ensureTableExists();
 
+        if (empty($this->matEventId)) {
+            $this->matEventId = null;
+        }
+
+        if (is_string($this->matAmount)) {
+            $this->matAmount = (float) str_replace(',', '.', trim($this->matAmount));
+        }
+
+        if (empty($this->matPurchaseDate)) {
+            $this->matPurchaseDate = now()->format('Y-m-d');
+        }
+
         $this->validate([
             'matConcept' => 'required|string|max:255',
             'matAmount' => 'required|numeric|min:0.01',
@@ -1033,7 +1045,7 @@ class BillingManager extends Component
             'matPaidBy' => 'required|string|max:100',
             'matCategory' => 'required|string|max:50',
             'matPaymentMethod' => 'required|string|max:50',
-            'matEventId' => 'nullable|integer|exists:events,id',
+            'matEventId' => 'nullable|integer',
             'matSeason' => 'nullable|string|max:10',
         ]);
 
@@ -1056,18 +1068,21 @@ class BillingManager extends Component
             'notes' => trim($this->matNotes) ?: null,
         ];
 
-        if ($this->materialExpenseId) {
-            $mat = \App\Models\MaterialExpense::find($this->materialExpenseId);
-            if ($mat) {
-                $mat->update($data);
-                session()->flash('message', "🛠️ Gasto de material '{$mat->concept}' actualizado correctamente.");
+        try {
+            if ($this->materialExpenseId) {
+                $mat = \App\Models\MaterialExpense::find($this->materialExpenseId);
+                if ($mat) {
+                    $mat->update($data);
+                    session()->flash('message', "🛠️ Gasto '{$mat->concept}' actualizado correctamente.");
+                }
+            } else {
+                \App\Models\MaterialExpense::create($data);
+                session()->flash('message', "🛠️ Gasto '{$data['concept']}' (" . number_format($data['amount'], 2, ',', '.') . " €) guardado con éxito.");
             }
-        } else {
-            \App\Models\MaterialExpense::create($data);
-            session()->flash('message', "🛠️ Compra de material '{$data['concept']}' (" . number_format($data['amount'], 2, ',', '.') . " €) registrada con éxito.");
+            $this->closeMaterialModal();
+        } catch (\Throwable $e) {
+            session()->flash('error', "Error al guardar el gasto: " . $e->getMessage());
         }
-
-        $this->closeMaterialModal();
     }
 
     /**
