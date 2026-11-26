@@ -1672,62 +1672,69 @@
             <!-- VISTA 5: REPARTO GLOBAL Y AJUSTE DE TRANSFERENCIAS ENTRE SOCIOS -->
             <div class="space-y-6">
                 <!-- CABECERA Y BOTÓN DE CONFIGURACIÓN -->
-                <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                    <div>
-                    <h3 class="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
-                        <span>⚖️</span>
-                        <span>Liquidación y Reparto de Beneficios entre Socios</span>
-                    </h3>
-                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                        Cálculo automático y transparente de beneficios netos. El dinero efectivamente cobrado se limpia restando los costes a proveedores (Fotomatón/360º) y compras de material. A cada socio se le abona su cuota (%) más el reembolso de las compras adelantadas de su propio bolsillo.
-                    </p>
-                </div>
-                <div class="flex flex-wrap items-center gap-2.5">
-                    <!-- Selector de Eventos a Repartir -->
-                    <div class="flex flex-wrap items-center gap-2 bg-slate-100 dark:bg-slate-950 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-800 text-xs">
-                        <span class="text-[11px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 pl-2">
-                            Base de Cálculo:
-                        </span>
-                        <button
-                            type="button"
-                            wire:click="$set('eventStatus', 'completed')"
-                            class="px-3 py-1.5 rounded-xl font-black transition cursor-pointer flex items-center gap-1.5 {{ $eventStatus === 'completed' ? 'bg-indigo-600 text-white shadow-sm ring-2 ring-indigo-400/40' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800' }}"
-                            title="Calcular beneficios únicamente de eventos ya completados/realizados"
-                        >
-                            <span>🎯</span>
-                            <span>Solo Eventos Realizados (Completados)</span>
-                        </button>
-                        <button
-                            type="button"
-                            wire:click="$set('eventStatus', 'active')"
-                            class="px-3 py-1.5 rounded-xl font-black transition cursor-pointer flex items-center gap-1.5 {{ $eventStatus === 'active' ? 'bg-indigo-600 text-white shadow-sm ring-2 ring-indigo-400/40' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800' }}"
-                            title="Calcular beneficios incluyendo señales cobradas de eventos futuros"
-                        >
-                            <span>🌐</span>
-                            <span>Todos con Cobros (Señales + Resto)</span>
-                        </button>
+                <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs space-y-4">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div class="flex-1 min-w-0">
+                            <h3 class="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
+                                <span>⚖️</span>
+                                <span>Liquidación y Reparto de Beneficios entre Socios</span>
+                            </h3>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-4xl leading-relaxed">
+                                Cálculo automático y transparente de beneficios netos. El dinero efectivamente cobrado se limpia restando los costes a proveedores (Fotomatón/360º) y compras de material. A cada socio se le abona su cuota (%) más el reembolso de las compras adelantadas de su propio bolsillo.
+                            </p>
+                        </div>
+                        <div class="flex items-center gap-2 shrink-0">
+                            <button
+                                type="button"
+                                wire:click="$set('viewMode', 'event_settlement')"
+                                class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black shadow-sm transition cursor-pointer"
+                                title="Ver desglose detallado de reparto evento a evento"
+                            >
+                                <span>📑</span>
+                                <span>Ver Desglose por Evento</span>
+                            </button>
+                            <button
+                                type="button"
+                                wire:click="openPartnersModal"
+                                class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-900 text-xs font-black shadow-sm transition cursor-pointer"
+                            >
+                                <span>⚙️</span>
+                                <span>Socios y %</span>
+                            </button>
+                        </div>
                     </div>
 
-                    <button
-                        type="button"
-                        wire:click="$set('viewMode', 'event_settlement')"
-                        class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black shadow-sm transition cursor-pointer shrink-0"
-                        title="Ver desglose detallado de reparto evento a evento"
-                    >
-                        <span>📑</span>
-                        <span>Ver Desglose por Evento</span>
-                    </button>
+                    <div class="pt-3 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
+                        <!-- Selector de Eventos a Repartir -->
+                        <div class="flex flex-wrap items-center gap-2 bg-slate-100 dark:bg-slate-950 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-800 text-xs">
+                            <span class="text-[11px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 pl-2">
+                                Base de Cálculo:
+                            </span>
+                            <button
+                                type="button"
+                                wire:click="$set('eventStatus', 'completed')"
+                                class="px-3 py-1.5 rounded-xl font-black transition cursor-pointer flex items-center gap-1.5 {{ $eventStatus === 'completed' ? 'bg-indigo-600 text-white shadow-sm ring-2 ring-indigo-400/40' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800' }}"
+                                title="Calcular beneficios únicamente de eventos ya completados/realizados"
+                            >
+                                <span>🎯</span>
+                                <span>Solo Eventos Realizados (Completados)</span>
+                            </button>
+                            <button
+                                type="button"
+                                wire:click="$set('eventStatus', 'active')"
+                                class="px-3 py-1.5 rounded-xl font-black transition cursor-pointer flex items-center gap-1.5 {{ $eventStatus === 'active' ? 'bg-indigo-600 text-white shadow-sm ring-2 ring-indigo-400/40' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800' }}"
+                                title="Calcular beneficios incluyendo señales cobradas de eventos futuros"
+                            >
+                                <span>🌐</span>
+                                <span>Todos con Cobros (Señales + Resto)</span>
+                            </button>
+                        </div>
 
-                    <button
-                        type="button"
-                        wire:click="openPartnersModal"
-                        class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-900 text-xs font-black shadow-sm transition cursor-pointer shrink-0"
-                    >
-                        <span>⚙️</span>
-                        <span>Configurar Socios y %</span>
-                    </button>
+                        <span class="text-[11px] text-slate-400 font-semibold">
+                            Reparto entre <strong>{{ count($settlementPartners) }}</strong> socios
+                        </span>
+                    </div>
                 </div>
-            </div>
 
             <!-- CUENTA DE RESULTADOS: CASCADA DE INGRESOS Y GASTOS -->
             <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs">

@@ -9,91 +9,100 @@
 
 <div class="space-y-6">
     <!-- CABECERA Y ACCIONES RÁPIDAS -->
-    <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-5 sm:p-6 shadow-xs flex flex-col xl:flex-row xl:items-center justify-between gap-5">
-        <div class="space-y-1.5 max-w-3xl">
-            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-black bg-indigo-50 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
-                <span>📑</span>
-                <span>Auditoría Evento a Evento</span>
+    <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-5 sm:p-6 shadow-xs space-y-4">
+        <!-- TÍTULO Y DESCRIPCIÓN -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div class="space-y-1.5 flex-1 min-w-0">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-black bg-indigo-50 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+                    <span>📑</span>
+                    <span>Auditoría Evento a Evento</span>
+                </div>
+                <h3 class="text-base sm:text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
+                    <span>⚖️</span>
+                    <span>Desglose de Reparto e Ingresos por Evento</span>
+                </h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed max-w-4xl">
+                    Aquí ves exactamente el viaje de cada euro: cuánto pagó el cliente de cada evento, qué costes externos tuvo (Fotomatón, cooperativa, compras de material), el beneficio neto limpio que dejó y cómo se reparte entre los socios (o si se apartó para <strong>Fondo Común</strong> para cenas o material).
+                </p>
             </div>
-            <h3 class="text-lg sm:text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">
-                <span>⚖️</span>
-                <span>Desglose de Reparto e Ingresos por Evento</span>
-            </h3>
-            <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                Aquí ves exactamente el viaje de cada euro: cuánto pagó el cliente de cada evento, qué costes externos tuvo (Fotomatón, cooperativa, compras de material), el beneficio neto limpio que dejó y cómo se reparte entre los socios (o si se apartó para <strong>Fondo Común</strong> para cenas o material).
-            </p>
+
+            <div class="flex items-center gap-2 shrink-0">
+                <button
+                    type="button"
+                    wire:click="openPartnersModal"
+                    class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-900 text-xs font-black shadow-xs transition cursor-pointer"
+                >
+                    <span>⚙️</span>
+                    <span>Configurar Socios y %</span>
+                </button>
+                <button
+                    type="button"
+                    wire:click="$set('viewMode', 'settlement')"
+                    class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/70 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs font-black shadow-xs hover:bg-emerald-100 dark:hover:bg-emerald-900 transition cursor-pointer"
+                >
+                    <span>📊</span>
+                    <span>Ver Transferencias</span>
+                </button>
+            </div>
         </div>
 
-        <div class="flex flex-wrap items-center gap-2.5 shrink-0">
-            <!-- Selector de Base de Cálculo -->
-            <div class="flex flex-wrap items-center gap-1.5 bg-slate-100 dark:bg-slate-950 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-800 text-xs">
-                <span class="text-[11px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 pl-2 pr-1">
-                    Base:
-                </span>
-                <button
-                    type="button"
-                    wire:click="$set('eventStatus', 'completed')"
-                    class="px-3 py-1.5 rounded-xl font-black transition cursor-pointer flex items-center gap-1.5 {{ $eventStatus === 'completed' ? 'bg-indigo-600 text-white shadow-sm ring-2 ring-indigo-400/40' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800' }}"
-                    title="Ver solo eventos ya realizados"
-                >
-                    <span>🎯</span>
-                    <span>Solo Realizados</span>
-                </button>
-                <button
-                    type="button"
-                    wire:click="$set('eventStatus', 'active')"
-                    class="px-3 py-1.5 rounded-xl font-black transition cursor-pointer flex items-center gap-1.5 {{ $eventStatus === 'active' ? 'bg-indigo-600 text-white shadow-sm ring-2 ring-indigo-400/40' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800' }}"
-                    title="Ver todos los eventos con algún cobro"
-                >
-                    <span>🌐</span>
-                    <span>Todos con Cobros</span>
-                </button>
+        <!-- FILTROS: BASE Y ORDEN CRONOLÓGICO -->
+        <div class="pt-3 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
+            <div class="flex flex-wrap items-center gap-3">
+                <!-- Selector de Base de Cálculo -->
+                <div class="flex flex-wrap items-center gap-1.5 bg-slate-100 dark:bg-slate-950 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-800 text-xs">
+                    <span class="text-[11px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 pl-2 pr-1">
+                        Base:
+                    </span>
+                    <button
+                        type="button"
+                        wire:click="$set('eventStatus', 'completed')"
+                        class="px-3 py-1.5 rounded-xl font-black transition cursor-pointer flex items-center gap-1.5 {{ $eventStatus === 'completed' ? 'bg-indigo-600 text-white shadow-sm ring-2 ring-indigo-400/40' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800' }}"
+                        title="Ver solo eventos ya realizados"
+                    >
+                        <span>🎯</span>
+                        <span>Solo Realizados</span>
+                    </button>
+                    <button
+                        type="button"
+                        wire:click="$set('eventStatus', 'active')"
+                        class="px-3 py-1.5 rounded-xl font-black transition cursor-pointer flex items-center gap-1.5 {{ $eventStatus === 'active' ? 'bg-indigo-600 text-white shadow-sm ring-2 ring-indigo-400/40' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800' }}"
+                        title="Ver todos los eventos con algún cobro"
+                    >
+                        <span>🌐</span>
+                        <span>Todos con Cobros</span>
+                    </button>
+                </div>
+
+                <!-- Selector de Orden Cronológico -->
+                <div class="flex flex-wrap items-center gap-1 bg-slate-100 dark:bg-slate-950 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-800 text-xs">
+                    <span class="text-[11px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 pl-2 pr-1">
+                        Orden:
+                    </span>
+                    <button
+                        type="button"
+                        wire:click="$set('eventSortOrder', 'event_date_asc')"
+                        class="px-3 py-1.5 rounded-xl font-black transition cursor-pointer flex items-center gap-1.5 {{ ($eventSortOrder ?? 'event_date_asc') === 'event_date_asc' ? 'bg-indigo-600 text-white shadow-xs ring-2 ring-indigo-400/40' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800' }}"
+                        title="Cronológico: del más cercano/antiguo hacia el futuro (Nov 2026 ➔ Dic 2026 ➔ Enero 2027...)"
+                    >
+                        <span>📅</span>
+                        <span>Cronológico (Nov 26 ➔ 2027)</span>
+                    </button>
+                    <button
+                        type="button"
+                        wire:click="$set('eventSortOrder', 'event_date_desc')"
+                        class="px-3 py-1.5 rounded-xl font-black transition cursor-pointer flex items-center gap-1 {{ ($eventSortOrder ?? '') === 'event_date_desc' ? 'bg-indigo-600 text-white shadow-xs ring-2 ring-indigo-400/40' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800' }}"
+                        title="Inverso: eventos más lejanos en el futuro primero"
+                    >
+                        <span>⏳</span>
+                        <span>Más Lejanos primero</span>
+                    </button>
+                </div>
             </div>
 
-            <!-- Selector de Orden Cronológico -->
-            <div class="flex flex-wrap items-center gap-1 bg-slate-100 dark:bg-slate-950 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-800 text-xs">
-                <span class="text-[11px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 pl-2 pr-1">
-                    Orden:
-                </span>
-                <button
-                    type="button"
-                    wire:click="$set('eventSortOrder', 'event_date_asc')"
-                    class="px-2.5 py-1.5 rounded-xl font-black transition cursor-pointer flex items-center gap-1.5 {{ ($eventSortOrder ?? 'event_date_asc') === 'event_date_asc' ? 'bg-indigo-600 text-white shadow-xs ring-2 ring-indigo-400/40' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800' }}"
-                    title="Cronológico: del más cercano/antiguo hacia el futuro (Nov 2026 ➔ Dic 2026 ➔ Enero 2027...)"
-                >
-                    <span>📅</span>
-                    <span>Cronológico (Nov 26 ➔ 2027)</span>
-                </button>
-                <button
-                    type="button"
-                    wire:click="$set('eventSortOrder', 'event_date_desc')"
-                    class="px-2.5 py-1.5 rounded-xl font-black transition cursor-pointer flex items-center gap-1 {{ ($eventSortOrder ?? '') === 'event_date_desc' ? 'bg-indigo-600 text-white shadow-xs ring-2 ring-indigo-400/40' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800' }}"
-                    title="Inverso: eventos más lejanos en el futuro primero"
-                >
-                    <span>⏳</span>
-                    <span>Más Lejanos primero</span>
-                </button>
-            </div>
-
-            <!-- Botón Configurar Socios -->
-            <button
-                type="button"
-                wire:click="openPartnersModal"
-                class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-900 text-xs font-black shadow-xs transition cursor-pointer"
-            >
-                <span>⚙️</span>
-                <span>Socios y %</span>
-            </button>
-
-            <!-- Botón Ir a Resumen Global y Arqueo -->
-            <button
-                type="button"
-                wire:click="$set('viewMode', 'settlement')"
-                class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/70 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs font-black shadow-xs hover:bg-emerald-100 dark:hover:bg-emerald-900 transition cursor-pointer"
-            >
-                <span>📊</span>
-                <span>Ver Arqueo Global y Transferencias</span>
-            </button>
+            <span class="text-[11px] text-slate-400 font-semibold">
+                Mostrando <strong>{{ count($eventsRows) }}</strong> eventos
+            </span>
         </div>
     </div>
 
